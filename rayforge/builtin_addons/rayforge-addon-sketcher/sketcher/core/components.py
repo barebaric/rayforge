@@ -8,17 +8,18 @@ the solve to the component containing the dragged geometry.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any
 
+from . import constraint_info
 from .types import EntityID
 
 if TYPE_CHECKING:
-    from .constraints import Constraint
-    from .registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
 
 
 def get_referenced_points(
-    registry: EntityRegistry, constraint: Constraint
+    registry: EntityRegistry, constraint: Any
 ) -> set[EntityID]:
     """
     Returns all point IDs a constraint couples: the points it
@@ -27,17 +28,17 @@ def get_referenced_points(
     line and a circle) couple their entities' points through their
     gradients.
     """
-    pids = set(constraint.get_referenced_point_ids())
-    for eid in constraint.get_referenced_entity_ids():
-        entity = registry.get_entity(eid)
-        if entity is not None:
-            pids.update(entity.get_point_ids())
+    pids = set(constraint.referenced_points())
+    for eid in constraint_info.referenced_entity_ids(registry, constraint):
+        entity_pids = registry.entity_point_ids(eid)
+        if entity_pids:
+            pids.update(entity_pids)
     return pids
 
 
 def compute_constraint_components(
     registry: EntityRegistry,
-    constraints: list[Constraint],
+    constraints: Sequence[Any],
 ) -> list[set[EntityID]]:
     """
     Partitions all points referenced by constraints into connected

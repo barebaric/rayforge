@@ -18,7 +18,7 @@ class EntityPointsProducer(SnapLineProducer):
         drag_context: DragContext,
         threshold: float,
     ) -> Iterator[SnapLine]:
-        for point in registry.points:
+        for point in registry.points():
             if drag_context.is_point_dragged(point.id):
                 continue
             if drag_context.coincides_with_dragged(point.x, point.y, registry):
@@ -46,7 +46,7 @@ class EntityPointsProducer(SnapLineProducer):
         threshold: float,
     ) -> Iterator[SnapPoint]:
         x, y = drag_position
-        for point in registry.points:
+        for point in registry.points():
             if drag_context.is_point_dragged(point.id):
                 continue
             if drag_context.coincides_with_dragged(point.x, point.y, registry):

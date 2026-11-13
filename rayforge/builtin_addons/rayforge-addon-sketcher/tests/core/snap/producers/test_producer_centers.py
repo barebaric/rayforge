@@ -152,7 +152,7 @@ def test_centers_producer_construction_excluded(
     center_point_id = registry.add_point(10.0, 20.0)
     radius_point_id = registry.add_point(20.0, 20.0)
     circle_id = registry.add_circle(center_point_id, radius_point_id)
-    registry.get_entity(circle_id).construction = True
+    registry.get_entity_object(circle_id).construction = True
 
     drag_position = (12.0, 18.0)
     threshold = 5.0
@@ -171,7 +171,7 @@ def test_centers_producer_construction_included(
     center_point_id = registry.add_point(10.0, 20.0)
     radius_point_id = registry.add_point(20.0, 20.0)
     circle_id = registry.add_circle(center_point_id, radius_point_id)
-    registry.get_entity(circle_id).construction = True
+    registry.get_entity_object(circle_id).construction = True
 
     drag_position = (12.0, 18.0)
     threshold = 5.0
@@ -212,7 +212,7 @@ def test_centers_producer_source_attribute(producer, registry, drag_context):
     center_point_id = registry.add_point(10.0, 20.0)
     radius_point_id = registry.add_point(20.0, 20.0)
     circle_id = registry.add_circle(center_point_id, radius_point_id)
-    circle = registry.get_entity(circle_id)
+    circle = registry.get_entity_object(circle_id)
 
     drag_position = (12.0, 18.0)
     threshold = 5.0

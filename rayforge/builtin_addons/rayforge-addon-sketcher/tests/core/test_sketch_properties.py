@@ -1,6 +1,7 @@
 import pytest
 from sketcher.core import Sketch
-from sketcher.core.constraints import ConstraintStatus
+from sketcher.core import constraint_info
+from sketcher.core.constraint_info import ConstraintStatus
 
 
 @pytest.fixture
@@ -26,9 +27,9 @@ class TestIsFullyConstrained:
         p2 = sketch.add_point(10, 0, fixed=True)
         sketch.add_line(p1, p2)
 
-        for pt in sketch.registry.points:
+        for pt in sketch.registry.points():
             pt.constrained = True
-        for ent in sketch.registry.entities:
+        for ent in sketch.registry.entities():
             ent.constrained = True
 
         assert sketch.is_fully_constrained is True
@@ -44,7 +45,7 @@ class TestIsFullyConstrained:
         pt1 = sketch.registry.get_point(p1)
         pt1.constrained = True
 
-        for ent in sketch.registry.entities:
+        for ent in sketch.registry.entities():
             ent.constrained = True
 
         assert sketch.is_fully_constrained is False
@@ -57,7 +58,7 @@ class TestIsFullyConstrained:
         center_pt = sketch.registry.get_point(center)
         center_pt.constrained = True
 
-        circle = sketch.registry.get_entity(circle_id)
+        circle = sketch.registry.get_entity_object(circle_id)
         circle.constrained = True
 
         origin = sketch.registry.get_point(sketch.origin_id)
@@ -78,7 +79,7 @@ class TestIsFullyConstrained:
         radius_pt = sketch.registry.get_point(radius)
         radius_pt.constrained = False
 
-        circle = sketch.registry.get_entity(circle_id)
+        circle = sketch.registry.get_entity_object(circle_id)
         circle.constrained = True
 
         origin = sketch.registry.get_point(sketch.origin_id)
@@ -97,7 +98,7 @@ class TestConflictingConstraints:
         p2 = sketch.add_point(10, 0)
         sketch.add_line(p1, p2)
 
-        from sketcher.core.constraints import DistanceConstraint
+        from raygeo.sketch.constraints.distance import DistanceConstraint
 
         constr = DistanceConstraint(p1, p2, 10.0)
         constr.status = ConstraintStatus.CONFLICTING
@@ -111,7 +112,7 @@ class TestConflictingConstraints:
         p2 = sketch.add_point(10, 0)
         sketch.add_line(p1, p2)
 
-        from sketcher.core.constraints import DistanceConstraint
+        from raygeo.sketch.constraints.distance import DistanceConstraint
 
         constr1 = DistanceConstraint(p1, p2, 10.0)
         constr1.status = ConstraintStatus.VALID
@@ -132,7 +133,7 @@ class TestConflictingConstraints:
         sketch.add_line(p1, p2)
         sketch.add_line(p2, p3)
 
-        from sketcher.core.constraints import DistanceConstraint
+        from raygeo.sketch.constraints.distance import DistanceConstraint
 
         constr1 = DistanceConstraint(p1, p2, 10.0)
         constr1.status = ConstraintStatus.CONFLICTING

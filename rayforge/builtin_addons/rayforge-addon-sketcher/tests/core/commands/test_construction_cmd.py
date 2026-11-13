@@ -36,13 +36,13 @@ def test_toggle_construction_command_normal_to_construction(sketch, entities):
     cmd = ToggleConstructionCommand(sketch, "Toggle", entities)
 
     for eid in entities:
-        ent = sketch.registry.get_entity(eid)
+        ent = sketch.registry.get_entity_object(eid)
         assert not ent.construction
 
     cmd.execute()
 
     for eid in entities:
-        ent = sketch.registry.get_entity(eid)
+        ent = sketch.registry.get_entity_object(eid)
         assert ent.construction
 
     assert cmd.new_state is True
@@ -51,19 +51,19 @@ def test_toggle_construction_command_normal_to_construction(sketch, entities):
 def test_toggle_construction_command_construction_to_normal(sketch, entities):
     """Test toggling from construction to normal state."""
     for eid in entities:
-        ent = sketch.registry.get_entity(eid)
+        ent = sketch.registry.get_entity_object(eid)
         ent.construction = True
 
     cmd = ToggleConstructionCommand(sketch, "Toggle", entities)
 
     for eid in entities:
-        ent = sketch.registry.get_entity(eid)
+        ent = sketch.registry.get_entity_object(eid)
         assert ent.construction
 
     cmd.execute()
 
     for eid in entities:
-        ent = sketch.registry.get_entity(eid)
+        ent = sketch.registry.get_entity_object(eid)
         assert not ent.construction
 
     assert cmd.new_state is False
@@ -71,7 +71,7 @@ def test_toggle_construction_command_construction_to_normal(sketch, entities):
 
 def test_toggle_construction_command_mixed_states(sketch, entities):
     """Test toggling with mixed initial states."""
-    ent1 = sketch.registry.get_entity(entities[0])
+    ent1 = sketch.registry.get_entity_object(entities[0])
     ent1.construction = True
 
     cmd = ToggleConstructionCommand(sketch, "Toggle", entities)
@@ -79,7 +79,7 @@ def test_toggle_construction_command_mixed_states(sketch, entities):
     cmd.execute()
 
     for eid in entities:
-        ent = sketch.registry.get_entity(eid)
+        ent = sketch.registry.get_entity_object(eid)
         assert ent.construction
 
     assert cmd.new_state is True
@@ -87,20 +87,20 @@ def test_toggle_construction_command_mixed_states(sketch, entities):
 
 def test_toggle_construction_command_undo(sketch, entities):
     """Test that undo restores original construction states."""
-    ent1 = sketch.registry.get_entity(entities[0])
+    ent1 = sketch.registry.get_entity_object(entities[0])
     ent1.construction = True
 
     cmd = ToggleConstructionCommand(sketch, "Toggle", entities)
     cmd.execute()
 
     for eid in entities:
-        ent = sketch.registry.get_entity(eid)
+        ent = sketch.registry.get_entity_object(eid)
         assert ent.construction
 
     cmd.undo()
 
-    assert sketch.registry.get_entity(entities[0]).construction is True
-    assert sketch.registry.get_entity(entities[1]).construction is False
+    assert sketch.registry.get_entity_object(entities[0]).construction is True
+    assert sketch.registry.get_entity_object(entities[1]).construction is False
 
 
 def test_toggle_construction_command_with_invalid_entity_id(sketch):
@@ -120,7 +120,7 @@ def test_toggle_construction_cmd_with_mixed_valid_invalid(sketch, entities):
     cmd.execute()
 
     for eid in entities:
-        ent = sketch.registry.get_entity(eid)
+        ent = sketch.registry.get_entity_object(eid)
         assert ent.construction
 
     assert cmd.new_state is True
@@ -133,11 +133,11 @@ def test_toggle_construction_command_execute_undo_cycle(sketch, entities):
     for _ in range(3):
         cmd.execute()
         for eid in entities:
-            assert sketch.registry.get_entity(eid).construction
+            assert sketch.registry.get_entity_object(eid).construction
 
         cmd.undo()
         for eid in entities:
-            assert not sketch.registry.get_entity(eid).construction
+            assert not sketch.registry.get_entity_object(eid).construction
 
 
 def test_toggle_construction_command_empty_entity_list(sketch):

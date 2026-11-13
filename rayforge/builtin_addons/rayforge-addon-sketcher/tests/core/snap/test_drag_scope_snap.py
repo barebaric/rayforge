@@ -1,6 +1,6 @@
 from unittest.mock import Mock
 
-from sketcher.core.constraints import CoincidentConstraint
+from raygeo.sketch.constraints.coincident import CoincidentConstraint
 from sketcher.core.sketch import Sketch
 from sketcher.core.snap.producers import OnEntityProducer
 from sketcher.core.snap.types import DragContext
@@ -20,8 +20,8 @@ def build_coupled_triangle():
     cd_id = sk.add_line(c, d)
     sk.add_line(d, a)
     sk.constraints.append(CoincidentConstraint(d, a))
-    ab = sk.registry.get_entity(ab_id)
-    cd = sk.registry.get_entity(cd_id)
+    ab = sk.registry.get_entity_object(ab_id)
+    cd = sk.registry.get_entity_object(cd_id)
     assert ab is not None and cd is not None
     return sk, ab, cd, (a, b, c, d)
 

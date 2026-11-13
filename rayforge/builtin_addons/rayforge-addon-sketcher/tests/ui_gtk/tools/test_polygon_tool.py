@@ -3,8 +3,9 @@ from unittest.mock import MagicMock
 
 import pytest
 from sketcher.core import Sketch
-from sketcher.core.constraints import RadiusConstraint
-from sketcher.core.entities import Circle, Line
+from raygeo.sketch.constraints.radius import RadiusConstraint
+from raygeo.sketch.entities.circle import Circle
+from raygeo.sketch.entities.line import Line
 from sketcher.ui_gtk.tools import PolygonTool
 from sketcher.ui_gtk.tools.base import SketcherKey
 
@@ -39,7 +40,7 @@ def tool(element, monkeypatch):
 def _outline(sketch):
     return [
         e
-        for e in sketch.registry.entities
+        for e in sketch.registry.entities()
         if isinstance(e, Line) and not e.construction
     ]
 
@@ -58,7 +59,7 @@ def test_drag_creates_a_hexagon(tool, element):
     lines = _outline(element.sketch)
     assert len(lines) == 6
     circles = [
-        e for e in element.sketch.registry.entities if isinstance(e, Circle)
+        e for e in element.sketch.registry.entities() if isinstance(e, Circle)
     ]
     assert len(circles) == 1 and circles[0].construction
 
@@ -115,8 +116,8 @@ def test_typed_values_set_radius_corners_and_star(tool, element):
     ]
     assert radius.value == 20.0
     first = sketch.registry.get_point(_outline(sketch)[0].p1_idx)
-    assert math.hypot(first.x, first.y) == pytest.approx(20.0)
-    assert math.atan2(first.y, first.x) == pytest.approx(math.atan2(4, 3))
+    assert math.hypot(first[0], first[1]) == pytest.approx(20.0)
+    assert math.atan2(first[1], first[0]) == pytest.approx(math.atan2(4, 3))
 
 
 @pytest.mark.ui
@@ -135,12 +136,12 @@ def test_invalid_corner_count_is_ignored(tool, element):
 
 @pytest.mark.ui
 def test_deactivate_removes_the_preview(tool, element):
-    points_before = len(element.sketch.registry.points)
+    points_before = len(element.sketch.registry.points())
     tool.on_press(0.0, 0.0, 1)
     tool.on_hover_motion(10.0, 0.0)
     tool.on_deactivate()
-    assert element.sketch.registry.entities == []
-    assert len(element.sketch.registry.points) == points_before
+    assert element.sketch.registry.entities() == []
+    assert len(element.sketch.registry.points()) == points_before
 
 
 @pytest.mark.ui

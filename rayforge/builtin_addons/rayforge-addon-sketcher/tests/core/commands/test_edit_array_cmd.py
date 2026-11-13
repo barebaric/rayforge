@@ -3,7 +3,8 @@ import math
 import pytest
 from sketcher.core.arrays import CircularArrayStrategy
 from sketcher.core.commands import CreateArrayCommand, EditArrayCommand
-from sketcher.core.constraints import RadiusConstraint, RotationalConstraint
+from raygeo.sketch.constraints.radius import RadiusConstraint
+from raygeo.sketch.constraints.rotational import RotationalConstraint
 from sketcher.core.params import ParameterContext
 from sketcher.core.sketch import Sketch
 
@@ -30,7 +31,7 @@ def sketch_with_array():
 
 
 def count_circles(sketch):
-    return [e for e in sketch.registry.entities if e.type == "circle"]
+    return [e for e in sketch.registry.entities() if e.type == "circle"]
 
 
 def member_count(sketch, array):
@@ -44,7 +45,7 @@ def test_edit_fills_missing_slots_only(sketch_with_array):
 
     # Delete two non-template members.
     victims = [eid for slot, eids in array.members[1:3] for eid in eids]
-    sketch.registry.remove_entities_by_id(victims)
+    sketch.registry.remove_entities(victims)
     sketch.prune_arrays()
     assert member_count(sketch, array) == 4
     survivors_before = [
@@ -76,7 +77,7 @@ def test_edit_full_regen_when_template_deleted(sketch_with_array):
     """Without the template member, the array is fully re-distributed."""
     sketch, array = sketch_with_array
     first_two = [eid for slot, eids in array.members[:2] for eid in eids]
-    sketch.registry.remove_entities_by_id(first_two)
+    sketch.registry.remove_entities(first_two)
     sketch.prune_arrays()
     assert member_count(sketch, array) == 4
 
@@ -146,7 +147,7 @@ def test_multi_entity_template_stays_grouped():
     full_victim = list(group1)
     _slot2, group2 = array.members[2]
     fragment_victim = group2[0]
-    sketch.registry.remove_entities_by_id(full_victim + [fragment_victim])
+    sketch.registry.remove_entities(full_victim + [fragment_victim])
     sketch.prune_arrays()
     assert len(array.members) == 3
     # The damaged group keeps its three surviving lines.
@@ -168,13 +169,13 @@ def test_multi_entity_template_stays_grouped():
     registry = sketch.registry
     member_points = set()
     for eid in array.living_entity_ids(registry):
-        entity = registry.get_entity(eid)
+        entity = registry.get_entity_object(eid)
         if entity is not None:
             member_points.update(entity.get_point_ids())
     positions = sorted(
         (
-            round(registry.get_point(pid).x, 3),
-            round(registry.get_point(pid).y, 3),
+            round(registry.get_point(pid)[0], 3),
+            round(registry.get_point(pid)[1], 3),
         )
         for pid in member_points
     )
@@ -187,11 +188,11 @@ def test_edit_moves_master_geometry(sketch_with_array):
     edit_cmd = EditArrayCommand(sketch, array, new_params)
     edit_cmd.execute()
 
-    circle = sketch.registry.get_entity(array.guide_circle_id)
+    circle = sketch.registry.get_entity_object(array.guide_circle_id)
     center = sketch.registry.get_point(circle.center_idx)
     radius_pt = sketch.registry.get_point(circle.radius_pt_idx)
-    assert (center.x, center.y) == pytest.approx((10.0, 5.0))
-    assert math.hypot(radius_pt.x - center.x, radius_pt.y - center.y) == (
+    assert (center[0], center[1]) == pytest.approx((10.0, 5.0))
+    assert math.hypot(radius_pt[0] - center[0], radius_pt[1] - center[1]) == (
         pytest.approx(30.0)
     )
 
@@ -206,7 +207,7 @@ def test_edit_moves_master_geometry(sketch_with_array):
 def test_edit_undo_restores_previous_state(sketch_with_array):
     sketch, array = sketch_with_array
     members_before = list(array.members)
-    points_before = sorted((p.x, p.y) for p in sketch.registry.points)
+    points_before = sorted((p.x, p.y) for p in sketch.registry.points())
 
     edit_cmd = EditArrayCommand(
         sketch, array, make_strategy(count=8, center=(5.0, 5.0), radius=20.0)
@@ -217,7 +218,7 @@ def test_edit_undo_restores_previous_state(sketch_with_array):
     edit_cmd.undo()
     assert array.members == members_before
     assert member_count(sketch, array) == 6
-    points_after = sorted((p.x, p.y) for p in sketch.registry.points)
+    points_after = sorted((p.x, p.y) for p in sketch.registry.points())
     assert points_after == [pytest.approx(p) for p in points_before]
 
 
@@ -240,7 +241,7 @@ def test_edit_keeps_master_alive_while_members_deleted(sketch_with_array):
     """Deleting all members must keep the definition (master survives)."""
     sketch, array = sketch_with_array
     all_ids = [eid for _slot, eids in array.members for eid in eids]
-    sketch.registry.remove_entities_by_id(all_ids)
+    sketch.registry.remove_entities(all_ids)
     sketch.prune_arrays()
 
     assert len(sketch.arrays) == 1
@@ -249,7 +250,7 @@ def test_edit_keeps_master_alive_while_members_deleted(sketch_with_array):
 
 def test_deleting_master_dissolves_array(sketch_with_array):
     sketch, array = sketch_with_array
-    sketch.registry.remove_entities_by_id([array.guide_circle_id])
+    sketch.registry.remove_entities([array.guide_circle_id])
     sketch.prune_arrays()
 
     assert sketch.arrays == []
@@ -268,7 +269,7 @@ def test_edited_copies_are_static_baked(sketch_with_array):
         for eid in eids
         if eids != template_group
     ]
-    sketch.registry.remove_entities_by_id(stale)
+    sketch.registry.remove_entities(stale)
     sketch.prune_arrays()
 
     EditArrayCommand(sketch, array, make_strategy()).execute()
@@ -277,7 +278,7 @@ def test_edited_copies_are_static_baked(sketch_with_array):
         pid
         for _slot, eids in array.living_members(sketch.registry)[1:]
         for eid in eids
-        for pid in sketch.registry.get_entity(eid).get_point_ids()
+        for pid in sketch.registry.get_entity_object(eid).get_point_ids()
     }
     for constr in sketch.constraints:
         assert not constr.get_referenced_point_ids() & copy_pids
@@ -335,5 +336,5 @@ def test_empty_selection_creates_nothing():
     cmd = CreateArrayCommand(sketch, make_strategy(), [])
     cmd.execute()
     assert cmd.created_entity_ids == []
-    assert sketch.registry.entities == []
+    assert sketch.registry.entities() == []
     assert sketch.arrays == []

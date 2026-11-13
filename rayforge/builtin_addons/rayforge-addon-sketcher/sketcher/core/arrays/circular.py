@@ -3,8 +3,9 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING, Any
 
-from ..constraints import RadiusConstraint
-from ..entities import Circle, Point
+from raygeo.sketch.constraints.radius import RadiusConstraint
+from raygeo.sketch.entities.circle import Circle
+
 from ..entity_group import EntityGroup
 from .base import (
     Array,
@@ -14,9 +15,7 @@ from .base import (
 )
 
 if TYPE_CHECKING:
-    from ..constraints import Constraint
-    from ..entities import Entity
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
 
 
 class CircularArrayStrategy(ArrayStrategy):
@@ -118,46 +117,43 @@ class CircularArrayStrategy(ArrayStrategy):
         self,
         center_pid: int | None,
         radius_pt_pid: int | None,
-    ) -> tuple[list[Point], list[Entity], list[Constraint]]:
+    ) -> tuple[list[Any], list[Any], list[Any]]:
         if center_pid is None or radius_pt_pid is None:
             return [], [], []
         if self.radius <= 0.0:
             return [], [], []
 
-        circle_temp_id = -(abs(radius_pt_pid) + 1)
         guide_circle = Circle(
-            circle_temp_id,
-            center_idx=center_pid,
-            radius_pt_idx=radius_pt_pid,
+            center_pid,
+            radius_pt_pid,
             construction=True,
         )
 
-        constraints: list[Constraint] = [
-            RadiusConstraint(circle_temp_id, value=self.radius)
+        constraint_dicts: list[dict[str, Any]] = [
+            {
+                "type": "RadiusConstraint",
+                "entity_id": -1,
+                "value": self.radius,
+            }
         ]
 
-        radius_point = Point(
-            radius_pt_pid,
-            self.center[0] + self.radius,
-            self.center[1],
-        )
-        return [radius_point], [guide_circle], constraints
+        point_specs = [(radius_pt_pid, self.center[0] + self.radius,
+                        self.center[1], False)]
+        return point_specs, [guide_circle], constraint_dicts
 
     def capture_master_frame(
         self, registry: EntityRegistry, array_def: Array
     ) -> tuple[tuple[float, float], float] | None:
-        circle = registry.get_entity(array_def.guide_circle_id)
+        circle = registry.get_entity_object(array_def.guide_circle_id)
         if not isinstance(circle, Circle):
             return None
-        try:
-            center = registry.get_point(circle.center_idx)
-            radius_pt = registry.get_point(circle.radius_pt_idx)
-        except IndexError:
+        center = registry.get_point(circle.center_idx)
+        radius_pt = registry.get_point(circle.radius_pt_idx)
+        if center is None or radius_pt is None:
             return None
-        return (
-            center.x,
-            center.y,
-        ), math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
+        return center, math.hypot(
+            radius_pt[0] - center[0], radius_pt[1] - center[1]
+        )
 
     def apply_frame(
         self,
@@ -230,27 +226,30 @@ class CircularArrayStrategy(ArrayStrategy):
     ) -> dict[str, Any] | None:
         """Writes the master circle geometry and its radius constraint
         exactly onto the target frame."""
-        circle = registry.get_entity(array_def.guide_circle_id)
-        radius_constraint: RadiusConstraint | None = None
+        circle = registry.get_entity_object(array_def.guide_circle_id)
+        radius_constraint = None
         old_radius_value: float | None = None
         if isinstance(circle, Circle):
-            center_pt = registry.get_point(circle.center_idx)
-            center_pt.x, center_pt.y = self.center
-            radius_pt = registry.get_point(circle.radius_pt_idx)
-            radius_pt.x = self.center[0] + self.radius
-            radius_pt.y = self.center[1]
+            registry.set_point_position(
+                circle.center_idx, self.center[0], self.center[1]
+            )
+            registry.set_point_position(
+                circle.radius_pt_idx, self.center[0] + self.radius,
+                self.center[1],
+            )
 
         for constr in constraints:
             if (
                 isinstance(constr, RadiusConstraint)
-                and constr.entity_id == array_def.guide_circle_id
+                and constr.constrains_radius(registry, 
+                    array_def.guide_circle_id)
             ):
                 radius_constraint = constr
                 if frame_state is not None:
                     old_radius_value = frame_state.get("old_radius_value")
                 if old_radius_value is None:
                     old_radius_value = constr.value
-                constr.value = self.radius
+                constr.set_value(self.radius)
                 break
 
         return {
@@ -331,15 +330,17 @@ class CircularArray(Array):
         """Reads the orbit's live geometry — the guide circle's center
         and radius — from the registry; the stored radius constraint
         is the single source of truth for the orbit."""
-        circle = registry.get_entity(self.guide_circle_id)
+        circle = registry.get_entity_object(self.guide_circle_id)
         assert isinstance(circle, Circle)
         center = registry.get_point(circle.center_idx)
         radius_pt = registry.get_point(circle.radius_pt_idx)
         return CircularArrayStrategy(
             count=self.count,
             total_angle_deg=self.total_angle_deg,
-            center=(center.x, center.y),
-            radius=math.hypot(radius_pt.x - center.x, radius_pt.y - center.y),
+            center=center,
+            radius=math.hypot(
+                radius_pt[0] - center[0], radius_pt[1] - center[1]
+            ),
             rotate_copies=self.rotate_copies,
         )
 

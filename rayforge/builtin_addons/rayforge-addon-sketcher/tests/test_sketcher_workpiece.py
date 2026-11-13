@@ -5,7 +5,7 @@ import pytest
 from raygeo.geo import Geometry, Matrix
 from raygeo.geo.shape.text import FontConfig
 from sketcher.core import Sketch
-from sketcher.core.entities import TextBoxEntity
+from raygeo.sketch.entities.text_box import TextBox
 
 from rayforge.core.doc import Doc
 from rayforge.core.source_asset_segment import SourceAssetSegment
@@ -260,8 +260,7 @@ class TestWorkPieceWithSketch:
         w_pt = sketch.add_point(10, 0)
         h_pt = sketch.add_point(0, 10)
         sketch.registry.add_text_box(
-            origin, w_pt, h_pt, "{uuid4()}", FontConfig()
-        )
+            origin, w_pt, h_pt, "{uuid4()}")
         sketch.solve()
         doc.add_asset(sketch)
 
@@ -289,8 +288,7 @@ class TestWorkPieceWithSketch:
         w_pt = sketch.add_point(10, 0)
         h_pt = sketch.add_point(0, 10)
         sketch.registry.add_text_box(
-            origin, w_pt, h_pt, "{uuid4()}", FontConfig()
-        )
+            origin, w_pt, h_pt, "{uuid4()}")
         sketch.solve()
         doc.add_asset(sketch)
 
@@ -316,8 +314,7 @@ class TestWorkPieceWithSketch:
         w_pt = sketch.add_point(10, 0)
         h_pt = sketch.add_point(0, 10)
         sketch.registry.add_text_box(
-            origin, w_pt, h_pt, "{uuid4()}", FontConfig()
-        )
+            origin, w_pt, h_pt, "{uuid4()}")
         sketch.solve()
         doc.add_asset(sketch)
 
@@ -340,8 +337,7 @@ class TestWorkPieceWithSketch:
         w_pt = sketch.add_point(10, 0)
         h_pt = sketch.add_point(0, 10)
         sketch.registry.add_text_box(
-            origin, w_pt, h_pt, "{uuid4()}", FontConfig()
-        )
+            origin, w_pt, h_pt, "{uuid4()}")
         sketch.solve()
         doc.add_asset(sketch)
 
@@ -365,8 +361,7 @@ class TestWorkPieceWithSketch:
         w_pt = sketch.add_point(10, 0)
         h_pt = sketch.add_point(0, 10)
         sketch.registry.add_text_box(
-            origin, w_pt, h_pt, "{uuid4()}", FontConfig()
-        )
+            origin, w_pt, h_pt, "{uuid4()}")
         sketch.solve()
         doc.add_asset(sketch)
 
@@ -396,8 +391,7 @@ def test_undo_reverts_rendered_text_not_just_size(doc):
     w_pt = sketch.add_point(30, 0)
     h_pt = sketch.add_point(0, 10)
     box_id = sketch.registry.add_text_box(
-        origin, w_pt, h_pt, "ab", FontConfig()
-    )
+        origin, w_pt, h_pt, "ab")
     sketch.solve()
     doc.add_asset(sketch)
 
@@ -410,7 +404,7 @@ def test_undo_reverts_rendered_text_not_just_size(doc):
 
     # Session: the live asset is mutated, then a render caches the
     # resolved NEW text into the workpiece.
-    box = cast(TextBoxEntity, sketch.registry.get_entity(box_id))
+    box = cast(TextBox, sketch.registry.get_entity_object(box_id))
     box.content = "abcdef"
     sketch.solve()
     # The provider-update handler invalidates geometry caches in the

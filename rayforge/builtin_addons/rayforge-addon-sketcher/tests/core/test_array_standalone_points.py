@@ -15,7 +15,7 @@ from sketcher.core.commands import (
     EditArrayCommand,
     RemoveItemsCommand,
 )
-from sketcher.core.constraints import SymmetryConstraint
+from raygeo.sketch.constraints.symmetry import SymmetryConstraint
 from sketcher.core.params import ParameterContext
 from sketcher.core.sketch import Sketch
 
@@ -61,10 +61,10 @@ def member_entity_points(sketch, array, slot):
     eids = next(eids for s, eids in array.members if s == slot)
     pts = []
     for eid in eids:
-        entity = sketch.registry.get_entity(eid)
+        entity = sketch.registry.get_entity_object(eid)
         for pid in entity.get_point_ids():
             pt = sketch.registry.get_point(pid)
-            pts.append((pt.x, pt.y))
+            pts.append((pt[0], pt[1]))
     return pts
 
 
@@ -72,7 +72,7 @@ def member_center(sketch, array, slot):
     pids = array.standalone_pids[slot]
     assert len(pids) == 1
     pt = sketch.registry.get_point(pids[0])
-    return (pt.x, pt.y)
+    return (pt[0], pt[1])
 
 
 def assert_center_is_corner_midpoint(sketch, array, slot):
@@ -120,18 +120,18 @@ def test_standalone_points_are_derived_geometry(rect_array):
     for slot in range(1, array.count):
         assert set(array.standalone_pids[slot]) <= derived
 
-    bezier = sketch.registry.get_entity(guide)
+    bezier = sketch.registry.get_entity_object(guide)
     assert bezier.start_idx not in derived
 
 
 def test_guide_drag_keeps_copy_centers_with_copies(rect_array):
     sketch, guide, array, _center_pid, _cmd = rect_array
-    bezier = sketch.registry.get_entity(guide)
+    bezier = sketch.registry.get_entity_object(guide)
 
     for frame in range(4):
         start_pt = sketch.registry.get_point(bezier.start_idx)
-        start_pt.x += 3.0
-        start_pt.y -= 2.0
+        start_pt[0] += 3.0
+        start_pt[1] -= 2.0
         sketch.solve()
 
         assert symmetry_residual(sketch) < 1e-6
@@ -169,12 +169,12 @@ def test_gap_fill_creates_standalone_points(rect_array):
 def test_undo_create_restores_template_center(rect_array):
     sketch, _guide, _array, center_pid, cmd = rect_array
     placed = sketch.registry.get_point(center_pid)
-    assert (placed.x, placed.y) != pytest.approx((10.0, 10.0))
+    assert (placed[0], placed[1]) != pytest.approx((10.0, 10.0))
 
     cmd.undo()
 
     restored = sketch.registry.get_point(center_pid)
-    assert (restored.x, restored.y) == pytest.approx((10.0, 10.0))
+    assert (restored[0], restored[1]) == pytest.approx((10.0, 10.0))
 
 
 class _Selection:

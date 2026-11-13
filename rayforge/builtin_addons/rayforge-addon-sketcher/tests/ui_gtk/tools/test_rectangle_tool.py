@@ -1,12 +1,13 @@
 from unittest.mock import MagicMock, patch
+from raygeo.sketch.entities.point import SketchPoint
 
 import pytest
 from sketcher.core.commands import (
     RectangleCommand,
     RectanglePreviewState,
 )
-from sketcher.core.entities import Point
-from sketcher.core.entities import Point as SketchPoint
+from typing import Any
+
 from sketcher.core.snap import SnapLineType
 from sketcher.ui_gtk.tools import RectangleTool
 
@@ -115,7 +116,7 @@ def test_second_click_no_hit_creates_rectangle(rect_tool, mock_element):
         preview_ids={"p2": 2, "line1": 10},
     )
     mock_element.sketch.registry.get_point.side_effect = lambda pid: (
-        Point(pid, 100, 50) if pid == 1 else Point(pid, 0, 0)
+        SketchPoint(pid, 100, 50) if pid == 1 else SketchPoint(pid, 0, 0)
     )
 
     # --- Simulate second click ---
@@ -151,7 +152,7 @@ def test_second_click_with_hit_creates_rectangle(rect_tool, mock_element):
         preview_ids={"p2": 2, "line1": 10},
     )
     mock_element.sketch.registry.get_point.side_effect = lambda pid: (
-        Point(pid, 100, 50) if pid == 1 else Point(pid, 0, 0)
+        SketchPoint(pid, 100, 50) if pid == 1 else SketchPoint(pid, 0, 0)
     )
 
     # --- Simulate second click ---
@@ -228,7 +229,7 @@ def test_degenerate_rectangle_aborts_creation(rect_tool, mock_element):
         p_end_id=1,
         preview_ids={"p2": 2, "line1": 10},
     )
-    mock_element.sketch.registry.get_point.return_value = Point(0, 10, 20)
+    mock_element.sketch.registry.get_point.return_value = SketchPoint(0, 10, 20)
     mock_element.sketch.remove_point_if_unused = MagicMock()
 
     # --- Simulate second click at nearly same spot ---
@@ -261,7 +262,7 @@ def test_drag_release_creates_rectangle(rect_tool, mock_element):
     )
     rect_tool._press_world_pos = (100.0, 200.0)
     mock_element.sketch.registry.get_point.side_effect = lambda pid: (
-        Point(pid, 100, 50) if pid == 1 else Point(pid, 0, 0)
+        SketchPoint(pid, 100, 50) if pid == 1 else SketchPoint(pid, 0, 0)
     )
 
     rect_tool.on_release(140.0, 200.0)
@@ -360,7 +361,7 @@ def test_ctrl_constrain_square_passed_to_command(rect_tool, mock_element):
     rect_tool._ctrl_held = True
     mock_element.hittester.screen_to_model.return_value = (100, 50)
     mock_element.sketch.registry.get_point.side_effect = lambda pid: (
-        Point(pid, 100, 50) if pid == 1 else Point(pid, 0, 0)
+        SketchPoint(pid, 100, 50) if pid == 1 else SketchPoint(pid, 0, 0)
     )
 
     rect_tool.on_press(100, 200, 1)
@@ -400,7 +401,7 @@ def test_commit_uses_preview_mode_not_live_modifier(rect_tool, mock_element):
     rect_tool._shift_held = False
     mock_element.hittester.screen_to_model.return_value = (100, 50)
     mock_element.sketch.registry.get_point.side_effect = lambda pid: (
-        Point(pid, 100, 50) if pid == 1 else Point(pid, 0, 0)
+        SketchPoint(pid, 100, 50) if pid == 1 else SketchPoint(pid, 0, 0)
     )
 
     rect_tool.on_press(100, 200, 1)

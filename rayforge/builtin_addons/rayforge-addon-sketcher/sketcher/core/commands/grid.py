@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
-from ..constraints import HorizontalConstraint, VerticalConstraint
-from ..entities import Line, Point
+from raygeo.sketch.constraints.horizontal import HorizontalConstraint
+from raygeo.sketch.constraints.vertical import VerticalConstraint
+from raygeo.sketch.entities.line import Line
+
 from .base import SketchChangeCommand
 from .items import AddItemsCommand
 
@@ -33,31 +35,20 @@ class GridCommand(SketchChangeCommand):
         self.cell_height = cell_height
         self.construction = construction
         self.add_cmd: AddItemsCommand | None = None
+        self._grid_pids: list[int] = []
 
     @staticmethod
-    def calculate_geometry(
+    def grid_point_ids(
         rows: int,
         cols: int,
         origin: tuple[float, float],
         cell_width: float,
         cell_height: float,
-        construction: bool = True,
-    ) -> dict[str, Any] | None:
-        """
-        Calculates points, entities, and constraints for a grid.
-
-        Args:
-            rows: Number of cell rows (horizontal bands)
-            cols: Number of cell columns (vertical bands)
-            origin: Bottom-left corner of the grid
-            cell_width: Width of each cell
-            cell_height: Height of each cell
-            construction: Whether to create as construction geometry
-
-        Returns:
-            Dict with 'points', 'entities', and 'constraints' keys, or None
-            if invalid.
-        """
+        add_point,
+    ) -> list[int] | None:
+        """Allocates the grid's point ids through ``add_point``,
+        row-major from the bottom-left corner. Returns None for
+        invalid parameters."""
         if rows < 1 or cols < 1:
             return None
         if cell_width <= 0 or cell_height <= 0:
@@ -66,81 +57,57 @@ class GridCommand(SketchChangeCommand):
         rows = rows + 1
         cols = cols + 1
         ox, oy = origin
-        temp_id_counter = -1
 
-        def next_temp_id():
-            nonlocal temp_id_counter
-            temp_id_counter -= 1
-            return temp_id_counter
-
-        points: list[Point] = []
         point_ids: list[int] = []
-
         for row in range(rows):
             for col in range(cols):
-                pid = next_temp_id()
                 x = ox + col * cell_width
                 y = oy + row * cell_height
-                points.append(Point(pid, x, y))
-                point_ids.append(pid)
-
-        def get_point_id(row: int, col: int) -> int:
-            return point_ids[row * cols + col]
-
-        entities: list[Line] = []
-        constraints: list[Any] = []
-
-        for row in range(rows):
-            for col in range(cols - 1):
-                p1_id = get_point_id(row, col)
-                p2_id = get_point_id(row, col + 1)
-                entities.append(
-                    Line(
-                        next_temp_id(), p1_id, p2_id, construction=construction
-                    )
-                )
-                constraints.append(HorizontalConstraint(p1_id, p2_id))
-
-        for col in range(cols):
-            for row in range(rows - 1):
-                p1_id = get_point_id(row, col)
-                p2_id = get_point_id(row + 1, col)
-                entities.append(
-                    Line(
-                        next_temp_id(), p1_id, p2_id, construction=construction
-                    )
-                )
-                constraints.append(VerticalConstraint(p1_id, p2_id))
-
-        return {
-            "points": points,
-            "entities": entities,
-            "constraints": constraints,
-        }
+                point_ids.append(add_point(x, y))
+        return point_ids
 
     def _do_execute(self) -> None:
         if self.add_cmd:
-            return self.add_cmd._do_execute()
+            return self.add_cmd._redo()
 
-        result = self.calculate_geometry(
+        add_cmd = AddItemsCommand(self.sketch, "")
+        point_ids = self.grid_point_ids(
             self.rows,
             self.cols,
             self.origin,
             self.cell_width,
             self.cell_height,
-            self.construction,
+            add_cmd.add_point,
         )
-        if not result:
+        if point_ids is None:
             return
 
-        self.add_cmd = AddItemsCommand(
-            self.sketch,
-            "",
-            points=result["points"],
-            entities=result["entities"],
-            constraints=result["constraints"],
-        )
-        self.add_cmd._do_execute()
+        rows = self.rows + 1
+        cols = self.cols + 1
+
+        def get_point_id(row: int, col: int) -> int:
+            return point_ids[row * cols + col]
+
+        for row in range(rows):
+            for col in range(cols - 1):
+                p1_id = get_point_id(row, col)
+                p2_id = get_point_id(row, col + 1)
+                add_cmd.add_entity(
+                    Line(p1_id, p2_id, construction=self.construction)
+                )
+                add_cmd.add_constraint(HorizontalConstraint(p1_id, p2_id))
+
+        for col in range(cols):
+            for row in range(rows - 1):
+                p1_id = get_point_id(row, col)
+                p2_id = get_point_id(row + 1, col)
+                add_cmd.add_entity(
+                    Line(p1_id, p2_id, construction=self.construction)
+                )
+                add_cmd.add_constraint(VerticalConstraint(p1_id, p2_id))
+
+        self.add_cmd = add_cmd
+        self._grid_pids = point_ids
 
     def _do_undo(self) -> None:
         if self.add_cmd:

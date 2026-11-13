@@ -4,7 +4,7 @@ from sketcher.core.commands import (
     EqualConstraintCommand,
     EqualConstraintMergeResult,
 )
-from sketcher.core.constraints import EqualLengthConstraint
+from raygeo.sketch.constraints.equal_length import EqualLengthConstraint
 
 
 @pytest.fixture

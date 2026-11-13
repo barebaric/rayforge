@@ -63,17 +63,17 @@ def test_restore_undo_state(sketch, command):
 
     command.capture_undo_state()
 
-    sketch.registry.get_point(p1_id).x = 100.0
-    sketch.registry.get_point(p1_id).y = 200.0
-    sketch.registry.get_point(p2_id).x = 300.0
-    sketch.registry.get_point(p2_id).y = 400.0
+    sketch.registry.get_point(p1_id)[0] = 100.0
+    sketch.registry.get_point(p1_id)[1] = 200.0
+    sketch.registry.get_point(p2_id)[0] = 300.0
+    sketch.registry.get_point(p2_id)[1] = 400.0
 
     command.restore_undo_state()
 
-    assert sketch.registry.get_point(p1_id).x == 10.0
-    assert sketch.registry.get_point(p1_id).y == 20.0
-    assert sketch.registry.get_point(p2_id).x == 30.0
-    assert sketch.registry.get_point(p2_id).y == 40.0
+    assert sketch.registry.get_point(p1_id)[0] == 10.0
+    assert sketch.registry.get_point(p1_id)[1] == 20.0
+    assert sketch.registry.get_point(p2_id)[0] == 30.0
+    assert sketch.registry.get_point(p2_id)[1] == 40.0
 
 
 def test_restore_undo_state_with_missing_point(sketch, command):
@@ -107,7 +107,7 @@ def test_execute_uses_existing_undo_state(sketch):
     cmd = ConcreteSketchChangeCommand(sketch, "Test Command")
 
     cmd.capture_undo_state()
-    sketch.registry.get_point(p1_id).x = 100.0
+    sketch.registry.get_point(p1_id)[0] = 100.0
 
     cmd.execute()
 
@@ -123,14 +123,14 @@ def test_undo_restores_snapshot(sketch, command):
     p1_id = sketch.add_point(10.0, 20.0)
 
     command.execute()
-    sketch.registry.get_point(p1_id).x = 100.0
-    sketch.registry.get_point(p1_id).y = 200.0
+    sketch.registry.get_point(p1_id)[0] = 100.0
+    sketch.registry.get_point(p1_id)[1] = 200.0
 
     command.undo()
 
     assert command.undone
-    assert sketch.registry.get_point(p1_id).x == 10.0
-    assert sketch.registry.get_point(p1_id).y == 20.0
+    assert sketch.registry.get_point(p1_id)[0] == 10.0
+    assert sketch.registry.get_point(p1_id)[1] == 20.0
 
 
 def test_abstract_methods_raise_not_implemented(sketch):

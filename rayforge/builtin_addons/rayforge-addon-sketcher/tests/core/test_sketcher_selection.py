@@ -195,7 +195,7 @@ class TestSelectEntity:
         registry = EntityRegistry()
         p1 = registry.add_point(0, 0)
         p2 = registry.add_point(10, 0)
-        line = registry.get_entity(registry.add_line(p1, p2))
+        line = registry.get_entity_object(registry.add_line(p1, p2))
         assert line is not None
 
         selection = SketchSelection()
@@ -215,8 +215,8 @@ class TestSelectEntity:
         p1 = registry.add_point(0, 0)
         p2 = registry.add_point(10, 0)
         p3 = registry.add_point(20, 0)
-        line1 = registry.get_entity(registry.add_line(p1, p2))
-        line2 = registry.get_entity(registry.add_line(p2, p3))
+        line1 = registry.get_entity_object(registry.add_line(p1, p2))
+        line2 = registry.get_entity_object(registry.add_line(p2, p3))
         assert line1 is not None
         assert line2 is not None
 
@@ -230,7 +230,7 @@ class TestSelectEntity:
         registry = EntityRegistry()
         p1 = registry.add_point(0, 0)
         p2 = registry.add_point(10, 0)
-        line = registry.get_entity(registry.add_line(p1, p2))
+        line = registry.get_entity_object(registry.add_line(p1, p2))
         assert line is not None
 
         selection = SketchSelection()
@@ -243,7 +243,7 @@ class TestSelectEntity:
         registry = EntityRegistry()
         p1 = registry.add_point(0, 0)
         p2 = registry.add_point(10, 0)
-        line = registry.get_entity(registry.add_line(p1, p2))
+        line = registry.get_entity_object(registry.add_line(p1, p2))
         assert line is not None
 
         selection = SketchSelection()
@@ -257,7 +257,7 @@ class TestSelectEntity:
         registry = EntityRegistry()
         p1 = registry.add_point(0, 0)
         p2 = registry.add_point(10, 0)
-        line = registry.get_entity(registry.add_line(p1, p2))
+        line = registry.get_entity_object(registry.add_line(p1, p2))
 
         selection = SketchSelection()
         signal_received = []

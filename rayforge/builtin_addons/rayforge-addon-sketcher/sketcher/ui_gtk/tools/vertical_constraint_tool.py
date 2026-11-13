@@ -3,12 +3,12 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING, ClassVar, Union
 
 from ...core.commands import AddItemsCommand
-from ...core.constraints import VerticalConstraint
-from ...core.entities import Entity, Line, Point
+from raygeo.sketch.constraints.vertical import VerticalConstraint
+from ...core import constraint_info
 from .base import SketchTool
 
 if TYPE_CHECKING:
-    from ...core.constraints import Constraint
+    from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -21,10 +21,10 @@ class VerticalConstraintTool(SketchTool):
 
     def is_available(
         self,
-        target: Union[Point, Entity, "Constraint"] | None,
+        target: Any | None,
         target_type: str | None,
     ) -> bool:
-        return VerticalConstraint.can_apply_to(
+        return constraint_info.can_apply(VerticalConstraint, 
             self.element.selection, self.element.sketch
         )
 
@@ -56,7 +56,7 @@ class VerticalConstraintTool(SketchTool):
             constraints_to_add.append(VerticalConstraint(p1_id, p2_id))
         elif len(sel.entity_ids) > 0 and not sel.point_ids:
             for eid in sel.entity_ids:
-                e = sketch.registry.get_entity(eid)
+                e = sketch.registry.get_entity_object(eid)
                 if isinstance(e, Line):
                     constraints_to_add.append(
                         VerticalConstraint(e.p1_idx, e.p2_idx)

@@ -214,12 +214,9 @@ class DragContext:
         if not self.suppress_coincident_points:
             return False
         for pid in self.dragged_point_ids:
-            try:
-                point = registry.get_point(pid)
-            except (IndexError, KeyError):
-                continue
+            point = registry.get_point(pid)
             if point is None:
                 continue
-            if abs(point.x - x) <= epsilon and abs(point.y - y) <= epsilon:
+            if abs(point[0] - x) <= epsilon and abs(point[1] - y) <= epsilon:
                 return True
         return False

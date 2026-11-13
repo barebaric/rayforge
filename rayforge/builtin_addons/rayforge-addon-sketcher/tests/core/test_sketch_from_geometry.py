@@ -1,7 +1,9 @@
 import pytest
 from raygeo.geo import Geometry
 from sketcher.core import Sketch
-from sketcher.core.entities import Arc, Bezier, Line
+from raygeo.sketch.entities.arc import Arc
+from raygeo.sketch.entities.bezier import Bezier
+from raygeo.sketch.entities.line import Line
 
 
 class TestSketchFromGeometry:
@@ -24,10 +26,10 @@ class TestSketchFromGeometry:
 
         sketch = Sketch.from_geometry(geo)
 
-        assert len(sketch.registry.entities) == 1
-        assert isinstance(sketch.registry.entities[0], Line)
+        assert len(sketch.registry.entities()) == 1
+        assert isinstance(sketch.registry.entities()[0], Line)
 
-        points = sketch.registry.points
+        points = sketch.registry.points()
         assert len(points) == 3
         assert points[0].fixed is True
 
@@ -41,8 +43,8 @@ class TestSketchFromGeometry:
 
         sketch = Sketch.from_geometry(geo)
 
-        assert len(sketch.registry.entities) == 3
-        for entity in sketch.registry.entities:
+        assert len(sketch.registry.entities()) == 3
+        for entity in sketch.registry.entities():
             assert isinstance(entity, Line)
 
     def test_from_geometry_with_arc(self):
@@ -53,8 +55,8 @@ class TestSketchFromGeometry:
 
         sketch = Sketch.from_geometry(geo)
 
-        assert len(sketch.registry.entities) == 1
-        arc = sketch.registry.entities[0]
+        assert len(sketch.registry.entities()) == 1
+        arc = sketch.registry.entities()[0]
         assert isinstance(arc, Arc)
         assert arc.clockwise is False
 
@@ -66,8 +68,8 @@ class TestSketchFromGeometry:
 
         sketch = Sketch.from_geometry(geo)
 
-        assert len(sketch.registry.entities) == 1
-        arc = sketch.registry.entities[0]
+        assert len(sketch.registry.entities()) == 1
+        arc = sketch.registry.entities()[0]
         assert isinstance(arc, Arc)
         assert arc.clockwise is True
 
@@ -79,8 +81,8 @@ class TestSketchFromGeometry:
 
         sketch = Sketch.from_geometry(geo)
 
-        assert len(sketch.registry.entities) == 1
-        bezier = sketch.registry.entities[0]
+        assert len(sketch.registry.entities()) == 1
+        bezier = sketch.registry.entities()[0]
         assert isinstance(bezier, Bezier)
 
     def test_from_geometry_with_multiple_beziers(self):
@@ -92,8 +94,8 @@ class TestSketchFromGeometry:
 
         sketch = Sketch.from_geometry(geo)
 
-        assert len(sketch.registry.entities) == 2
-        for entity in sketch.registry.entities:
+        assert len(sketch.registry.entities()) == 2
+        for entity in sketch.registry.entities():
             assert isinstance(entity, Bezier)
 
     def test_from_geometry_mixed_with_bezier(self):
@@ -105,9 +107,9 @@ class TestSketchFromGeometry:
 
         sketch = Sketch.from_geometry(geo)
 
-        assert len(sketch.registry.entities) == 2
-        assert isinstance(sketch.registry.entities[0], Line)
-        assert isinstance(sketch.registry.entities[1], Bezier)
+        assert len(sketch.registry.entities()) == 2
+        assert isinstance(sketch.registry.entities()[0], Line)
+        assert isinstance(sketch.registry.entities()[1], Bezier)
 
     def test_from_geometry_bezier_roundtrip(self):
         """Test bezier roundtrip conversion."""
@@ -133,8 +135,8 @@ class TestSketchFromGeometry:
 
         sketch = Sketch.from_geometry(geo)
 
-        assert len(sketch.registry.points) == 4
-        assert len(sketch.registry.entities) == 3
+        assert len(sketch.registry.points()) == 4
+        assert len(sketch.registry.entities()) == 3
 
     def test_from_geometry_with_disconnected_paths(self):
         """Converting geometry with multiple disconnected paths."""
@@ -146,8 +148,8 @@ class TestSketchFromGeometry:
 
         sketch = Sketch.from_geometry(geo)
 
-        assert len(sketch.registry.entities) == 2
-        assert len(sketch.registry.points) == 5
+        assert len(sketch.registry.entities()) == 2
+        assert len(sketch.registry.points()) == 5
 
     def test_from_geometry_mixed_lines_and_arcs(self):
         """Converting geometry with both lines and arcs."""
@@ -158,9 +160,9 @@ class TestSketchFromGeometry:
 
         sketch = Sketch.from_geometry(geo)
 
-        assert len(sketch.registry.entities) == 2
-        assert isinstance(sketch.registry.entities[0], Line)
-        assert isinstance(sketch.registry.entities[1], Arc)
+        assert len(sketch.registry.entities()) == 2
+        assert isinstance(sketch.registry.entities()[0], Line)
+        assert isinstance(sketch.registry.entities()[1], Arc)
 
     def test_from_geometry_roundtrip(self):
         """Test that converting to sketch and back to geometry preserves
@@ -201,7 +203,7 @@ class TestSketchFromGeometry:
         geo_cw.arc_to(10, 0, i=0, j=-10, clockwise=True)
 
         sketch_cw = Sketch.from_geometry(geo_cw)
-        arc_cw = sketch_cw.registry.entities[0]
+        arc_cw = sketch_cw.registry.entities()[0]
         assert isinstance(arc_cw, Arc)
         assert arc_cw.clockwise is True
 
@@ -210,6 +212,6 @@ class TestSketchFromGeometry:
         geo_ccw.arc_to(0, 10, i=-10, j=0, clockwise=False)
 
         sketch_ccw = Sketch.from_geometry(geo_ccw)
-        arc_ccw = sketch_ccw.registry.entities[0]
+        arc_ccw = sketch_ccw.registry.entities()[0]
         assert isinstance(arc_ccw, Arc)
         assert arc_ccw.clockwise is False

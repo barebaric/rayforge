@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from sketcher.core.commands.ellipse import EllipsePreviewState
-from sketcher.core.entities import Point as SketchPoint
+
 from sketcher.core.snap import SnapLineType
 from sketcher.ui_gtk.tools.base import SketcherKey
 from sketcher.ui_gtk.tools.circle_tool import CircleTool
@@ -14,8 +14,8 @@ def mock_element():
     element = Mock()
     element.sketch = Mock()
     element.sketch.registry = Mock()
-    element.sketch.registry.points = []
-    element.sketch.registry.entities = []
+    element.sketch.registry.points = Mock(return_value=[])
+    element.sketch.registry.entities = Mock(return_value=[])
     element.sketch.registry._id_counter = 0
     element.sketch.registry._entity_map = {}
     element.sketch.registry.add_point = Mock(return_value=0)

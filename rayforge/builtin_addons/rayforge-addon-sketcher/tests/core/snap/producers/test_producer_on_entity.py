@@ -236,7 +236,7 @@ def test_on_entity_producer_source_attribute(producer, registry, drag_context):
     p1 = registry.add_point(0.0, 0.0)
     p2 = registry.add_point(10.0, 0.0)
     line_id = registry.add_line(p1, p2)
-    line = registry.get_entity(line_id)
+    line = registry.get_entity_object(line_id)
 
     drag_position = (5.0, 3.0)
     threshold = 5.0

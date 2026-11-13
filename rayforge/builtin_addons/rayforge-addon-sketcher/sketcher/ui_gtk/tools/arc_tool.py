@@ -286,19 +286,17 @@ class ArcTool(SnapMixin, SketchTool):
         start_id = self._preview_state.start_id
         start_temp = self._preview_state.start_temp
 
-        try:
-            end_pt = self.element.sketch.registry.get_point(
-                self._preview_state.temp_end_id
-            )
-        except IndexError:
+        end_pt = self.element.sketch.registry.get_point(
+            self._preview_state.temp_end_id
+        )
+        if end_pt is None:
             self._preview_state = None
             self.element.preview_changed.send(self.element)
             self._dim_input.cancel()
             self.element.mark_dirty()
             return
 
-        mx = end_pt.x
-        my = end_pt.y
+        mx, my = end_pt
         ArcCommand.cleanup_preview(
             self.element.sketch.registry, self._preview_state
         )

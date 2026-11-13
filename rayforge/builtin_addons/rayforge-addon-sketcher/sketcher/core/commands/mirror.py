@@ -4,14 +4,14 @@ import logging
 from dataclasses import dataclass
 from enum import Enum, auto
 from gettext import gettext as _
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
+from .. import constraint_info
 from ..entity_group import EntityGroup, points_bbox_center
 from ..types import EntityID
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
-    from ..constraints import Constraint
     from ..selection import SketchSelection
     from ..sketch import Sketch
 
@@ -81,9 +81,7 @@ class MirrorCommand(SketchChangeCommand):
         self._selection = selection
         self._direction: MirrorDirection = direction
         self._axis: MirrorAxis | None = None
-        self._dropped_constraints: list[Constraint] = []
-        # Save state of internal constraints that were mutated by mirror()
-        # so undo can restore them (e.g. AngleConstraint.value negation).
+        self._dropped_constraints: list[Any] = []
         self._mirrored_constraint_states: dict[int, dict] = {}
 
     @staticmethod
@@ -95,7 +93,7 @@ class MirrorCommand(SketchChangeCommand):
         tuple[
             list[EntityID],
             set[EntityID],
-            list[Constraint],
+            list[Any],
             MirrorAxis,
         ]
         | None
@@ -119,11 +117,11 @@ class MirrorCommand(SketchChangeCommand):
         changed = True
         while changed:
             changed = False
-            for e in registry.entities:
-                helper_ids = e.get_helper_ids()
+            for eid in registry.entity_ids():
+                helper_ids = registry.helper_ids(eid)
 
                 if helper_ids and (
-                    e.id in entity_id_set
+                    eid in entity_id_set
                     or not entity_id_set.isdisjoint(helper_ids)
                 ):
                     for hid in helper_ids:
@@ -142,7 +140,11 @@ class MirrorCommand(SketchChangeCommand):
         # 3. Compute mirror axis = bbox center of the selected points
         # (plain bbox: unlike an array group's logical center, a
         # selected circle contributes its defining points only).
-        pts = [registry.get_point(pid) for pid in sorted(point_id_set)]
+        pts = []
+        for pid in sorted(point_id_set):
+            position = registry.get_point(pid)
+            if position is not None:
+                pts.append(position)
         bbox_cx, bbox_cy = points_bbox_center(pts)
         if direction == MirrorDirection.VERTICAL:
             axis_pos = bbox_cy
@@ -156,10 +158,12 @@ class MirrorCommand(SketchChangeCommand):
         #      ref outside the selection.
         #    - Constraints that are not mirror-compatible (e.g. expression-
         #      based AngleConstraint) with all refs inside.
-        constraints_to_drop: list[Constraint] = []
+        constraints_to_drop: list[Any] = []
         for constr in sketch.constraints:
-            ref_points = constr.get_referenced_point_ids()
-            ref_entities = constr.get_referenced_entity_ids()
+            ref_points = constr.referenced_points()
+            ref_entities = constraint_info.referenced_entity_ids(
+                registry, constr
+            )
 
             has_internal = bool(ref_points & point_id_set) or bool(
                 ref_entities & entity_id_set
@@ -174,7 +178,7 @@ class MirrorCommand(SketchChangeCommand):
                 or (
                     has_internal
                     and not has_external
-                    and (not constr.is_mirror_compatible())
+                    and (not constraint_info.is_mirror_compatible(constr))
                 )
             ):
                 constraints_to_drop.append(constr)
@@ -192,57 +196,57 @@ class MirrorCommand(SketchChangeCommand):
         self._dropped_constraints = list(dropped)
 
         registry = self.sketch.registry
-        group = EntityGroup(registry, entity_ids)
+        group = EntityGroup(
+            registry, entity_ids, flags=self.sketch.flags
+        )
+        direction = (
+            "vertical"
+            if self._direction is MirrorDirection.VERTICAL
+            else "horizontal"
+        )
 
         # Mirror points centrally (fixed points, e.g. the origin,
         # stay put). The set also carries bare selected points, which
         # belong to no entity and are therefore not in the group.
         for pid in point_ids:
-            p = registry.get_point(pid)
-            if p and not p.fixed:
-                p.x, p.y = axis.apply(p.x, p.y)
+            position = registry.get_point(pid)
+            if position is not None and not registry.point_is_fixed(pid):
+                x, y = axis.apply(*position)
+                registry.set_point_position(pid, x, y)
 
-        # Mirror entity-specific state
-        for e in group.entities():
-            e.mirror(axis)
+        # Mirror entity-specific state (arc chirality, bezier control
+        # offsets, polygon ring chirality)
+        for entity in group.entities():
+            registry.mirror(entity.id, direction, axis.position)
 
         # Mirror internal constraints (e.g. negate angle values)
         # Constraints that were dropped are skipped.
         dropped_set = {id(c) for c in self._dropped_constraints}
+        entity_id_set = set(entity_ids)
         for constr in self.sketch.constraints:
             if id(constr) in dropped_set:
                 continue
-            ref_points = constr.get_referenced_point_ids()
-            ref_entities = constr.get_referenced_entity_ids()
+            ref_points = constr.referenced_points()
+            ref_entities = constraint_info.referenced_entity_ids(
+                registry, constr
+            )
             has_internal = bool(ref_points & point_ids) or bool(
-                ref_entities & set(entity_ids)
+                ref_entities & entity_id_set
             )
             has_external = bool(ref_points - point_ids) or bool(
-                ref_entities - set(entity_ids)
+                ref_entities - entity_id_set
             )
             if has_internal and not has_external:
-                # Save value before mirroring so undo can restore it
-                # (e.g. AngleConstraint.mirror negates self.value)
-                if hasattr(constr, "value"):
+                expression = getattr(constr, "expression", None)
+                if callable(expression):
                     self._mirrored_constraint_states[id(constr)] = {
-                        "value": constr.value
+                        "expression": expression()
                     }
-                constr.mirror(axis)
 
         # Drop incompatible constraints
-        for c in self._dropped_constraints:
-            if c in self.sketch.constraints:
-                self.sketch.constraints.remove(c)
+        self.sketch.remove_constraints(self._dropped_constraints)
 
     def _do_undo(self) -> None:
-        # Restore constraint values that were mutated by mirror()
-        # (e.g. AngleConstraint.value negation).
-        for constr in self.sketch.constraints:
-            state = self._mirrored_constraint_states.get(id(constr))
-            if state and hasattr(constr, "value"):
-                constr.value = state["value"]
-
-        # Re-add dropped constraints.
-        for c in self._dropped_constraints:
-            if c not in self.sketch.constraints:
-                self.sketch.constraints.append(c)
+        # Restore constraint expressions that were dropped because
+        # they do not survive mirroring.
+        self.sketch.add_constraints(self._dropped_constraints)

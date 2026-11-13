@@ -6,11 +6,10 @@ from gi.repository import Adw, Gtk
 from rayforge.ui_gtk.shared.pref_rows import SpinRow
 
 from ...core.commands import GridCommand
-from ...core.entities import Entity, Point
 from .base import SketchTool
 
 if TYPE_CHECKING:
-    from ...core.constraints import Constraint
+    from typing import Any
 
 
 class GridTool(SketchTool):
@@ -21,7 +20,7 @@ class GridTool(SketchTool):
 
     def is_available(
         self,
-        target: Union["Point", "Entity", "Constraint"] | None,
+        target: Any | None,
         target_type: str | None,
     ) -> bool:
         return target is None

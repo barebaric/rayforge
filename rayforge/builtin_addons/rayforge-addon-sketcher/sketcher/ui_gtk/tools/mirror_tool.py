@@ -2,11 +2,10 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING, ClassVar, Union
 
 from ...core.commands import MirrorCommand, MirrorDirection
-from ...core.entities import Entity, Point
 from .base import SketchTool
 
 if TYPE_CHECKING:
-    from ...core.constraints import Constraint
+    from typing import Any
 
 
 class MirrorVerticalTool(SketchTool):
@@ -17,7 +16,7 @@ class MirrorVerticalTool(SketchTool):
 
     def is_available(
         self,
-        target: Union[Point, Entity, "Constraint"] | None,
+        target: Any | None,
         target_type: str | None,
     ) -> bool:
         sel = self.element.selection
@@ -47,7 +46,7 @@ class MirrorHorizontalTool(SketchTool):
 
     def is_available(
         self,
-        target: Union[Point, Entity, "Constraint"] | None,
+        target: Any | None,
         target_type: str | None,
     ) -> bool:
         sel = self.element.selection

@@ -1,7 +1,10 @@
 from sketcher.core import Sketch
+from raygeo.sketch.entities.point import SketchPoint
 from sketcher.core.commands import EllipseCommand, EllipsePreviewState
-from sketcher.core.constraints import EqualDistanceConstraint
-from sketcher.core.entities import Ellipse, Line, Point
+from raygeo.sketch.constraints.equal_distance import EqualDistanceConstraint
+from raygeo.sketch.entities.ellipse import Ellipse
+from raygeo.sketch.entities.line import Line
+from typing import Any
 
 
 def test_ellipse_command_execute_no_snap():
@@ -11,11 +14,11 @@ def test_ellipse_command_execute_no_snap():
     cmd = EllipseCommand(sketch, start_pid, (100, 50))
     cmd.execute()
 
-    assert len(sketch.registry.entities) == 5
-    assert len(sketch.registry.points) == 5
+    assert len(sketch.registry.entities()) == 5
+    assert len(sketch.registry.points()) == 5
 
     ellipse = next(
-        e for e in sketch.registry.entities if isinstance(e, Ellipse)
+        e for e in sketch.registry.entities() if isinstance(e, Ellipse)
     )
     assert ellipse is not None
 
@@ -29,7 +32,7 @@ def test_ellipse_command_execute_with_snap():
     cmd.execute()
 
     ellipse = next(
-        e for e in sketch.registry.entities if isinstance(e, Ellipse)
+        e for e in sketch.registry.entities() if isinstance(e, Ellipse)
     )
     assert ellipse is not None
 
@@ -38,12 +41,12 @@ def test_ellipse_command_execute_temp_start():
     """Test command execution when the start point was temporary."""
     sketch = Sketch()
     start_pid = 100
-    sketch.registry.add_points([Point(start_pid, 0, 0)])
+    sketch.registry.add_points([SketchPoint(start_pid, 0, 0)])
 
     cmd = EllipseCommand(sketch, start_pid, (100, 50), is_start_temp=True)
     cmd.execute()
 
-    assert len(sketch.registry.entities) == 5
+    assert len(sketch.registry.entities()) == 5
     assert cmd.add_cmd is not None
 
 
@@ -55,11 +58,11 @@ def test_ellipse_command_execute_center_on_start():
     cmd.execute()
 
     ellipse = next(
-        e for e in sketch.registry.entities if isinstance(e, Ellipse)
+        e for e in sketch.registry.entities() if isinstance(e, Ellipse)
     )
     center = sketch.registry.get_point(ellipse.center_idx)
-    assert center.x == 50.0
-    assert center.y == 50.0
+    assert center[0] == 50.0
+    assert center[1] == 50.0
 
 
 def test_ellipse_command_execute_constrain_circle():
@@ -70,7 +73,7 @@ def test_ellipse_command_execute_constrain_circle():
     cmd.execute()
 
     ellipse = next(
-        e for e in sketch.registry.entities if isinstance(e, Ellipse)
+        e for e in sketch.registry.entities() if isinstance(e, Ellipse)
     )
     rx, ry = ellipse._get_radii(sketch.registry)
     assert rx == ry
@@ -91,11 +94,11 @@ def test_ellipse_command_execute_center_on_start_constrain_circle():
     cmd.execute()
 
     ellipse = next(
-        e for e in sketch.registry.entities if isinstance(e, Ellipse)
+        e for e in sketch.registry.entities() if isinstance(e, Ellipse)
     )
     center = sketch.registry.get_point(ellipse.center_idx)
-    assert center.x == 50.0
-    assert center.y == 50.0
+    assert center[0] == 50.0
+    assert center[1] == 50.0
     rx, ry = ellipse._get_radii(sketch.registry)
     assert rx == ry
 
@@ -104,12 +107,12 @@ def test_ellipse_command_execute_zero_radii():
     """Test command does nothing if radii would be zero."""
     sketch = Sketch()
     start_pid = sketch.add_point(0, 0)
-    initial_entity_count = len(sketch.registry.entities)
+    initial_entity_count = len(sketch.registry.entities())
 
     cmd = EllipseCommand(sketch, start_pid, (0, 0))
     cmd.execute()
 
-    assert len(sketch.registry.entities) == initial_entity_count
+    assert len(sketch.registry.entities()) == initial_entity_count
 
 
 def test_ellipse_command_undo():
@@ -117,16 +120,16 @@ def test_ellipse_command_undo():
     sketch = Sketch()
     start_pid = sketch.add_point(0, 0)
 
-    initial_entity_count = len(sketch.registry.entities)
+    initial_entity_count = len(sketch.registry.entities())
 
     cmd = EllipseCommand(sketch, start_pid, (100, 50))
     cmd.execute()
 
-    assert len(sketch.registry.entities) > initial_entity_count
+    assert len(sketch.registry.entities()) > initial_entity_count
 
     cmd.undo()
 
-    assert len(sketch.registry.entities) == initial_entity_count
+    assert len(sketch.registry.entities()) == initial_entity_count
 
 
 def test_ellipse_command_undo_with_temp_start():
@@ -137,11 +140,11 @@ def test_ellipse_command_undo_with_temp_start():
     cmd = EllipseCommand(sketch, start_pid, (100, 50), is_start_temp=True)
     cmd.execute()
 
-    assert len(sketch.registry.entities) == 5
+    assert len(sketch.registry.entities()) == 5
 
     cmd.undo()
 
-    assert len(sketch.registry.entities) == 0
+    assert len(sketch.registry.entities()) == 0
 
 
 def test_calculate_ellipse_params_default():
@@ -212,8 +215,8 @@ def test_ellipse_start_preview_no_snap():
     assert state.entity_id is not None
 
     center_p = sketch.registry.get_point(state.center_id)
-    assert center_p.x == 10
-    assert center_p.y == 20
+    assert center_p[0] == 10
+    assert center_p[1] == 20
 
 
 def test_ellipse_start_preview_with_snap():
@@ -249,10 +252,10 @@ def test_ellipse_update_preview():
     radius_x_p = sketch.registry.get_point(state.radius_x_id)
     radius_y_p = sketch.registry.get_point(state.radius_y_id)
 
-    assert center_p.x == 50.0
-    assert center_p.y == 25.0
-    assert radius_x_p.x == 100.0
-    assert radius_y_p.y == 50.0
+    assert center_p[0] == 50.0
+    assert center_p[1] == 25.0
+    assert radius_x_p[0] == 100.0
+    assert radius_y_p[1] == 50.0
 
 
 def test_ellipse_update_preview_center_on_start():
@@ -272,8 +275,8 @@ def test_ellipse_update_preview_center_on_start():
     )
 
     center_p = sketch.registry.get_point(state.center_id)
-    assert center_p.x == 50.0
-    assert center_p.y == 50.0
+    assert center_p[0] == 50.0
+    assert center_p[1] == 50.0
 
 
 def test_ellipse_update_preview_constrain_circle():
@@ -296,25 +299,25 @@ def test_ellipse_update_preview_constrain_circle():
     radius_x_p = sketch.registry.get_point(state.radius_x_id)
     radius_y_p = sketch.registry.get_point(state.radius_y_id)
 
-    rx = abs(radius_x_p.x - center_p.x)
-    ry = abs(radius_y_p.y - center_p.y)
+    rx = abs(radius_x_p[0] - center_p[0])
+    ry = abs(radius_y_p[1] - center_p[1])
     assert rx == ry
 
 
 def test_ellipse_cleanup_preview():
     """Test cleanup_preview removes preview entities."""
     sketch = Sketch()
-    initial_entity_count = len(sketch.registry.entities)
+    initial_entity_count = len(sketch.registry.entities())
 
     state = EllipseCommand.start_preview(
         sketch.registry, 0, 0, snapped_pid=None
     )
 
-    assert len(sketch.registry.entities) > initial_entity_count
+    assert len(sketch.registry.entities()) > initial_entity_count
 
     EllipseCommand.cleanup_preview(sketch.registry, state)
 
-    assert len(sketch.registry.entities) == initial_entity_count
+    assert len(sketch.registry.entities()) == initial_entity_count
 
 
 def test_ellipse_cleanup_preview_with_snapped_start():
@@ -328,7 +331,7 @@ def test_ellipse_cleanup_preview_with_snapped_start():
 
     EllipseCommand.cleanup_preview(sketch.registry, state)
 
-    assert existing_pid in [p.id for p in sketch.registry.points]
+    assert existing_pid in [p.id for p in sketch.registry.points()]
 
 
 def test_ellipse_preview_lifecycle():
@@ -349,13 +352,13 @@ def test_ellipse_preview_lifecycle():
         constrain_circle=False,
     )
     center_p = sketch.registry.get_point(state.center_id)
-    assert center_p.x == 25.0
-    assert center_p.y == 25.0
+    assert center_p[0] == 25.0
+    assert center_p[1] == 25.0
 
     EllipseCommand.cleanup_preview(sketch.registry, state)
 
     assert (
-        len([e for e in sketch.registry.entities if isinstance(e, Ellipse)])
+        len([e for e in sketch.registry.entities() if isinstance(e, Ellipse)])
         == 0
     )
 
@@ -394,11 +397,11 @@ def test_ellipse_creates_helper_lines():
     cmd.execute()
 
     ellipse = next(
-        e for e in sketch.registry.entities if isinstance(e, Ellipse)
+        e for e in sketch.registry.entities() if isinstance(e, Ellipse)
     )
     assert len(ellipse.helper_line_ids) == 2
 
-    lines = [e for e in sketch.registry.entities if isinstance(e, Line)]
+    lines = [e for e in sketch.registry.entities() if isinstance(e, Line)]
     assert len(lines) == 4
 
     construction_lines = [ln for ln in lines if ln.construction]
@@ -431,7 +434,7 @@ def test_ellipse_constrain_circle_creates_equal_distance():
     )
     assert equal_constr is not None
     ellipse = next(
-        e for e in sketch.registry.entities if isinstance(e, Ellipse)
+        e for e in sketch.registry.entities() if isinstance(e, Ellipse)
     )
     assert equal_constr.p1 == ellipse.center_idx
     assert equal_constr.p2 == ellipse.radius_x_pt_idx

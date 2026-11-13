@@ -4,12 +4,12 @@ import math
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from ..entities import Line
+from raygeo.sketch.entities.line import Line
+
 from ..types import EntityID
 
 if TYPE_CHECKING:
-    from ..entities import Point
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
 
 
 @dataclass
@@ -30,24 +30,24 @@ class DistanceConstraintCommand:
             p1 = registry.get_point(point_ids[0])
             p2 = registry.get_point(point_ids[1])
             if p1 and p2:
-                dist = math.hypot(p1.x - p2.x, p1.y - p2.y)
+                dist = math.hypot(p1[0] - p2[0], p1[1] - p2[1])
                 return DistanceConstraintParams(
-                    p1_id=p1.id,
-                    p2_id=p2.id,
+                    p1_id=point_ids[0],
+                    p2_id=point_ids[1],
                     distance=dist,
                 )
 
         if len(entity_ids) == 1:
             eid = entity_ids[0]
-            e = registry.get_entity(eid)
-            if isinstance(e, Line):
-                p1 = registry.get_point(e.p1_idx)
-                p2 = registry.get_point(e.p2_idx)
+            entity = registry.get_entity_object(eid)
+            if isinstance(entity, Line):
+                p1 = registry.get_point(entity.p1_idx)
+                p2 = registry.get_point(entity.p2_idx)
                 if p1 and p2:
-                    dist = math.hypot(p1.x - p2.x, p1.y - p2.y)
+                    dist = math.hypot(p1[0] - p2[0], p1[1] - p2[1])
                     return DistanceConstraintParams(
-                        p1_id=p1.id,
-                        p2_id=p2.id,
+                        p1_id=entity.p1_idx,
+                        p2_id=entity.p2_idx,
                         distance=dist,
                     )
 
@@ -55,7 +55,7 @@ class DistanceConstraintCommand:
 
     @staticmethod
     def calculate_distance_from_points(
-        p1: Point,
-        p2: Point,
+        p1: tuple[float, float],
+        p2: tuple[float, float],
     ) -> float:
-        return math.hypot(p1.x - p2.x, p1.y - p2.y)
+        return math.hypot(p1[0] - p2[0], p1[1] - p2[1])

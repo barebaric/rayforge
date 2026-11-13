@@ -7,31 +7,30 @@ from sketcher.core.commands import (
     PolygonPreviewState,
     polygon_vertices,
 )
-from sketcher.core.constraints import (
-    AspectRatioConstraint,
-    EqualLengthConstraint,
-    PointOnLineConstraint,
-    RadiusConstraint,
-)
-from sketcher.core.entities import Circle, Line
+from raygeo.sketch.constraints.aspect_ratio import AspectRatioConstraint
+from raygeo.sketch.constraints.equal_length import EqualLengthConstraint
+from raygeo.sketch.constraints.point_on_line import PointOnLineConstraint
+from raygeo.sketch.constraints.radius import RadiusConstraint
+from raygeo.sketch.entities.circle import Circle
+from raygeo.sketch.entities.line import Line
 
 
 def _lines(sketch):
     return [
         e
-        for e in sketch.registry.entities
+        for e in sketch.registry.entities()
         if isinstance(e, Line) and not e.construction
     ]
 
 
 def _circles(sketch):
-    return [e for e in sketch.registry.entities if isinstance(e, Circle)]
+    return [e for e in sketch.registry.entities() if isinstance(e, Circle)]
 
 
 def _corner_positions(sketch):
     registry = sketch.registry
     return [
-        (registry.get_point(line.p1_idx).x, registry.get_point(line.p1_idx).y)
+        (registry.get_point(line.p1_idx)[0], registry.get_point(line.p1_idx)[1])
         for line in _lines(sketch)
     ]
 
@@ -79,7 +78,7 @@ class TestPolygonCommand:
         sketch, _center, _cmd = _execute(sides=6)
         lines = _lines(sketch)
         assert len(lines) == 6
-        assert len(sketch.registry.points) == 1 + 1 + 6
+        assert len(sketch.registry.points()) == 1 + 1 + 6
         for a, b in zip(lines, lines[1:] + lines[:1]):
             assert a.p2_idx == b.p1_idx
 
@@ -143,11 +142,11 @@ class TestPolygonCommand:
         sketch, center, _cmd = _execute(sides=6)
         first = _lines(sketch)[0].p1_idx
         point = sketch.registry.get_point(first)
-        point.x, point.y = 0.0, 20.0
+        point[0], point.y = 0.0, 20.0
         sketch.solve()
         c = sketch.registry.get_point(center)
         radii = [
-            math.hypot(x - c.x, y - c.y) for x, y in _corner_positions(sketch)
+            math.hypot(x - c[0], y - c[1]) for x, y in _corner_positions(sketch)
         ]
         assert radii == pytest.approx([radii[0]] * 6, rel=1e-4)
 
@@ -161,7 +160,7 @@ class TestPolygonCommand:
         assert _corner_positions(sketch)[1] == pytest.approx(
             (-10 * math.sin(math.pi / 3), 5.0)
         )
-        assert len(sketch.registry.points) == 8
+        assert len(sketch.registry.points()) == 8
         cmd.undo()
         assert sketch.registry.get_point(target) is not None
 
@@ -184,7 +183,7 @@ class TestPolygonCommand:
         cmd.undo()
         assert _lines(sketch) == []
         assert _circles(sketch) == []
-        assert len(sketch.registry.points) == 2
+        assert len(sketch.registry.points()) == 2
 
     def test_temporary_center_is_taken_over(self):
         sketch = Sketch()
@@ -196,7 +195,7 @@ class TestPolygonCommand:
         cmd.execute()
         assert registry.get_point(center) is not None
         cmd.undo()
-        assert all(p.id != center for p in registry.points)
+        assert all(p.id != center for p in registry.points())
 
 
 class TestPolygonPreview:
@@ -207,7 +206,7 @@ class TestPolygonPreview:
         assert isinstance(state, PolygonPreviewState)
         PolygonCommand.update_preview(registry, state, 10.0, 0.0)
         assert len(state.line_ids) == 5
-        assert registry.get_point(state.radius_id).x == pytest.approx(10.0)
+        assert registry.get_point(state.radius_id)[0] == pytest.approx(10.0)
 
     def test_changing_the_shape_rebuilds_the_preview(self):
         sketch = Sketch()
@@ -217,8 +216,8 @@ class TestPolygonPreview:
         state.set_shape(registry, sides=5, star_ratio=0.5)
         assert len(state.line_ids) == 10
         PolygonCommand.cleanup_preview(registry, state)
-        assert registry.entities == []
-        assert {p.id for p in registry.points} == {0, state.center_id}
+        assert registry.entities() == []
+        assert {p.id for p in registry.points()} == {0, state.center_id}
 
     def test_rebuilding_keeps_point_usage_counts(self):
         sketch = Sketch()
@@ -239,10 +238,10 @@ class TestPolygonPreview:
         PolygonCommand.update_preview(registry, state, 3.0, 4.0)
         state.set_radius(registry, 10.0)
         p = registry.get_point(state.radius_id)
-        assert (p.x, p.y) == pytest.approx((6.0, 8.0))
+        assert (p[0], p[1]) == pytest.approx((6.0, 8.0))
         PolygonCommand.update_preview(registry, state, 1.0, 1.0)
         p = registry.get_point(state.radius_id)
-        assert math.hypot(p.x, p.y) == pytest.approx(10.0)
+        assert math.hypot(p[0], p[1]) == pytest.approx(10.0)
 
     def test_dimensions(self):
         sketch = Sketch()

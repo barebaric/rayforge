@@ -4,12 +4,12 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING, ClassVar, Union
 
 from ...core.commands import AddItemsCommand
-from ...core.constraints import AspectRatioConstraint
-from ...core.entities import Entity, Line, Point
+from raygeo.sketch.constraints.aspect_ratio import AspectRatioConstraint
+from ...core import constraint_info
 from .base import SketchTool
 
 if TYPE_CHECKING:
-    from ...core.constraints import Constraint
+    from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -22,10 +22,10 @@ class AspectRatioConstraintTool(SketchTool):
 
     def is_available(
         self,
-        target: Union[Point, Entity, "Constraint"] | None,
+        target: Any | None,
         target_type: str | None,
     ) -> bool:
-        return AspectRatioConstraint.can_apply_to(
+        return constraint_info.can_apply(AspectRatioConstraint, 
             self.element.selection, self.element.sketch
         )
 
@@ -56,8 +56,8 @@ class AspectRatioConstraintTool(SketchTool):
         e1_id = sel.entity_ids[0]
         e2_id = sel.entity_ids[1]
 
-        e1 = sketch.registry.get_entity(e1_id)
-        e2 = sketch.registry.get_entity(e2_id)
+        e1 = sketch.registry.get_entity_object(e1_id)
+        e2 = sketch.registry.get_entity_object(e2_id)
 
         if not isinstance(e1, Line) or not isinstance(e2, Line):
             logger.warning("Aspect ratio constraint requires 2 lines.")

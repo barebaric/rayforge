@@ -2,7 +2,7 @@ from unittest.mock import Mock
 
 from sketcher.core import Sketch
 from sketcher.core.commands import BezierCommand, BezierPreviewState
-from sketcher.core.entities import Bezier
+from raygeo.sketch.entities.bezier import Bezier
 
 
 def test_bezier_command_preserves_control_points():
@@ -21,9 +21,9 @@ def test_bezier_command_preserves_control_points():
     )
     cmd.execute()
 
-    bezier = next(e for e in sketch.registry.entities if isinstance(e, Bezier))
-    assert bezier.cp1 == (30.0, 40.0)
-    assert bezier.cp2 == (-30.0, -40.0)
+    bezier = next(e for e in sketch.registry.entities() if isinstance(e, Bezier))
+    assert bezier.cp1_offset == (30.0, 40.0)
+    assert bezier.cp2_offset == (-30.0, -40.0)
 
 
 def test_bezier_command_mirrors_cp_from_adjacent_segment():
@@ -54,10 +54,10 @@ def test_bezier_command_mirrors_cp_from_adjacent_segment():
     )
     second.execute()
 
-    beziers = [e for e in sketch.registry.entities if isinstance(e, Bezier)]
+    beziers = [e for e in sketch.registry.entities() if isinstance(e, Bezier)]
     assert len(beziers) == 2
-    assert beziers[1].cp1 == (-20.0, -15.0)
-    assert beziers[1].cp2 == (10.0, -5.0)
+    assert beziers[1].cp1_offset == (-20.0, -15.0)
+    assert beziers[1].cp2_offset == (10.0, -5.0)
 
 
 def test_bezier_preview_state_defaults():

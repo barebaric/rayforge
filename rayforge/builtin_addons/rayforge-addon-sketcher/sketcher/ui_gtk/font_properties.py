@@ -11,7 +11,7 @@ from rayforge.ui_gtk.shared.pref_rows import SpinRow
 from ..core.commands.text_property import (
     ModifyTextPropertyCommand,
 )
-from ..core.entities.text_box import TextBoxEntity
+
 
 if TYPE_CHECKING:
     from .editor import SketchEditor
@@ -101,13 +101,34 @@ class FontPropertiesWidget(Adw.PreferencesGroup):
             self.set_visible(False)
             return
 
-        entity = sketch_element.sketch.registry.get_entity(entity_id)
-        if not isinstance(entity, TextBoxEntity):
+        entity = sketch_element.sketch.registry.get_entity_object(entity_id)
+        if entity is None or entity.type_name() != "text_box":
             self.set_visible(False)
             return
 
         self.set_visible(True)
-        self._update_ui_from_model(entity.font_config)
+        self._update_ui_from_model(self._font_config(sketch_element, entity_id))
+
+    def _font_config(self, sketch_element, entity_id: int) -> FontConfig:
+        """The text box's effective font properties, overlay first."""
+        sketch = sketch_element.sketch
+        entity = sketch.registry.get_entity_object(entity_id)
+        props = sketch.flags.text_properties(entity_id)
+        return FontConfig(
+            family=props.get(
+                "font_family",
+                entity.font_family if entity is not None else "sans-serif",
+            ),
+            size=props.get(
+                "font_size", entity.font_size if entity is not None else 10.0
+            ),
+            bold=props.get(
+                "bold", entity.bold if entity is not None else False
+            ),
+            italic=props.get(
+                "italic", entity.italic if entity is not None else False
+            ),
+        )
 
     def _update_ui_from_model(self, font_config: FontConfig):
         """Updates the UI widgets from the font configuration."""
@@ -230,10 +251,10 @@ class FontPropertiesWidget(Adw.PreferencesGroup):
         if not sketch_element:
             return
 
-        entity = sketch_element.sketch.registry.get_entity(
+        entity = sketch_element.sketch.registry.get_entity_object(
             self._text_entity_id
         )
-        if not isinstance(entity, TextBoxEntity):
+        if entity is None or entity.type_name() != "text_box":
             return
 
         new_font_config = self._get_font_config_from_ui()
@@ -254,7 +275,9 @@ class FontPropertiesWidget(Adw.PreferencesGroup):
         cmd = ModifyTextPropertyCommand(
             sketch=sketch_element.sketch,
             text_entity_id=self._text_entity_id,
-            new_content=entity.content,
+            new_content=sketch_element.sketch.flags.text_content(
+                self._text_entity_id, entity.content
+            ),
             new_font_config=new_font_config,
         )
         self.editor.history_manager.execute(cmd)

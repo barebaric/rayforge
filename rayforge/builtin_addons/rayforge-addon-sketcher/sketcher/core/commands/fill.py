@@ -90,9 +90,14 @@ class SetTextFillCommand(SketchChangeCommand):
         self.fill_color = fill_color
 
     def _do_execute(self) -> None:
-        entity = self.sketch.registry.get_entity(self.entity_id)
-        if entity and entity.supports_fill():
-            entity.set_fill_color(self.fill_color)
+        entity = self.sketch.registry.get_entity_object(self.entity_id)
+        if entity is None:
+            return
+        if entity.type_name() != "text_box" and not (
+            self.sketch.registry.is_closed_loop(self.entity_id)
+        ):
+            return
+        self.sketch.flags.set_fill_color(self.entity_id, self.fill_color)
 
     def _do_undo(self) -> None:
         pass

@@ -16,7 +16,7 @@ if sys.platform.startswith("linux"):
 from raygeo.geo.shape.text import FontConfig
 from sketcher.core import Sketch
 from sketcher.core.commands import ModifyTextPropertyCommand
-from sketcher.core.entities import TextBoxEntity
+from raygeo.sketch.entities.text_box import TextBox
 from sketcher.ui_gtk.renderer import SketchRenderer
 from sketcher.ui_gtk.sketchelement import SketchElement
 from sketcher.ui_gtk.tools import TextBoxTool
@@ -39,7 +39,7 @@ def sketch_with_text_box():
         p_width,
         p_height,
         content="Hello",
-        font_config=FontConfig(family="sans-serif", size=10.0),
+        font_family="sans-serif", font_size=10.0,
     )
 
     return sketch, tb_id
@@ -59,7 +59,7 @@ def sketch_with_empty_text_box():
         p_width,
         p_height,
         content="",
-        font_config=FontConfig(family="sans-serif", size=10.0),
+        font_family="sans-serif", font_size=10.0,
     )
 
     return sketch, tb_id
@@ -190,8 +190,8 @@ def test_text_box_rendering_in_sketch_renderer(
     renderer = SketchRenderer(mock_element)
     renderer.draw(mock_cairo_context)
 
-    tb = sketch.registry.get_entity(tb_id)
-    assert isinstance(tb, TextBoxEntity)
+    tb = sketch.registry.get_entity_object(tb_id)
+    assert isinstance(tb, TextBox)
     assert tb.content == "Hello"
 
 
@@ -206,8 +206,8 @@ def test_text_box_rendering_with_empty_content(
     renderer = SketchRenderer(mock_element)
     renderer.draw(mock_cairo_context)
 
-    tb = sketch.registry.get_entity(tb_id)
-    assert isinstance(tb, TextBoxEntity)
+    tb = sketch.registry.get_entity_object(tb_id)
+    assert isinstance(tb, TextBox)
     assert tb.content == ""
 
 
@@ -226,8 +226,8 @@ def test_text_box_rendering_produces_visible_output(
     renderer = SketchRenderer(mock_element)
     renderer.draw(mock_cairo_context)
 
-    tb = sketch.registry.get_entity(tb_id)
-    assert isinstance(tb, TextBoxEntity)
+    tb = sketch.registry.get_entity_object(tb_id)
+    assert isinstance(tb, TextBox)
     assert tb.content == "Hello"
 
     mock_cairo_context.save.assert_called()
@@ -243,7 +243,7 @@ def test_text_box_rendering_with_different_font_params(
     sketch, tb_id = sketch_with_text_box
     mock_element.sketch = sketch
 
-    tb = sketch.registry.get_entity(tb_id)
+    tb = sketch.registry.get_entity_object(tb_id)
     tb.font_config = FontConfig(
         family="serif",
         size=14.0,
@@ -450,11 +450,11 @@ def test_font_change_during_edit_does_not_push_separate_command(
     assert isinstance(text_tool, TextBoxTool)
     text_tool.start_editing(tb_id)
 
-    entity = sketch.registry.get_entity(tb_id)
+    entity = sketch.registry.get_entity_object(tb_id)
     p_width = sketch.registry.get_point(entity.width_id)
-    orig_width = (p_width.x, p_width.y)
+    orig_width = (p_width[0], p_width[1])
     # Simulate the live resize that typing has performed so far.
-    p_width.x += 30.0
+    p_width[0] += 30.0
 
     widget._apply_font_config()
 

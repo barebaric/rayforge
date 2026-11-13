@@ -2,7 +2,7 @@ import logging
 import math
 from collections import defaultdict
 from collections.abc import Callable
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import cairo
 from gi.repository import PangoCairo
@@ -14,23 +14,26 @@ from rayforge.image.geo_renderer import geometry_to_cairo
 from rayforge.ui_gtk.canvas import WorldSurface
 from rayforge.ui_gtk.shared.text import create_text_layout
 
+from raygeo.sketch.constraints.coincident import CoincidentConstraint
+from raygeo.sketch.constraints.point_on_curve import (
+    PointOnCurveConstraint,
+)
+from raygeo.sketch.constraints.point_on_line import PointOnLineConstraint
+from raygeo.sketch.entities.arc import Arc
+from raygeo.sketch.entities.bezier import Bezier
+from raygeo.sketch.entities.circle import Circle
+from raygeo.sketch.entities.ellipse import Ellipse
+from raygeo.sketch.entities.line import Line
+from raygeo.sketch.entities.polygon import Polygon
+from raygeo.sketch.entities.text_box import TextBox
+
+from ..core import constraint_info
 from ..core.commands import BezierPreviewState
 from ..core.commands.dimension import DimensionData
-from ..core.constraints import (
-    CoincidentConstraint,
-    PointOnCurveConstraint,
-    PointOnLineConstraint,
-)
-from ..core.entities import (
-    Arc,
-    Bezier,
-    Circle,
-    Ellipse,
-    Entity,
-    Line,
-    Point,
-    PolygonEntity,
-    TextBoxEntity,
+from ..core.commands.waypoint import get_connected_beziers
+from ..core.entity_ops import (
+    polygon_world_rings,
+    text_box_fourth_corner,
 )
 from ..core.sketch import FillStyle
 from ..core.types import EntityID
@@ -40,6 +43,18 @@ if TYPE_CHECKING:
     from .sketchelement import SketchElement
 
 logger = logging.getLogger(__name__)
+
+
+def _font_config(entity: TextBox, props: dict) -> Any:
+    """The text box's effective font configuration, overlay first."""
+    from raygeo.geo.shape.text import FontConfig
+
+    return FontConfig(
+        family=props.get("font_family", entity.font_family),
+        size=props.get("font_size", entity.font_size),
+        bold=props.get("bold", entity.bold),
+        italic=props.get("italic", entity.italic),
+    )
 
 
 class SketchRenderer:
@@ -101,7 +116,7 @@ class SketchRenderer:
     def draw_entity_highlight(
         self,
         ctx: cairo.Context,
-        entity: Entity,
+        entity: Any,
         color: tuple,
         line_width: float = 3.0,
     ) -> bool:
@@ -121,7 +136,7 @@ class SketchRenderer:
             has_path = self._define_bezier_path(ctx, entity)
         elif isinstance(entity, Ellipse):
             has_path = self._define_ellipse_path(ctx, entity)
-        elif isinstance(entity, PolygonEntity):
+        elif isinstance(entity, Polygon):
             has_path = self._define_polygon_path(ctx, entity)
 
         if has_path:
@@ -196,44 +211,40 @@ class SketchRenderer:
 
     def _get_fill_geometry(self, fill, exclude_ids):
         """Generate geometry for a single fill."""
+        registry = self.element.sketch.registry
         if len(fill.boundary) == 1:
             eid, _ = fill.boundary[0]
             if eid in exclude_ids:
                 return None
-            entity = self.element.sketch.registry.get_entity(eid)
-            if entity:
-                return entity.create_fill_geometry(
-                    self.element.sketch.registry
-                )
+            if registry.get_entity_object(eid) is not None:
+                return registry.to_geometry(eid)
             return None
 
         try:
             first_eid, first_fwd = fill.boundary[0]
             if first_eid in exclude_ids:
                 return None
-            first_ent = self.element.sketch.registry.get_entity(first_eid)
-            if not first_ent:
+            endpoints = registry.entity_endpoint_ids(first_eid)
+            if not endpoints:
                 return None
 
-            p_ids = first_ent.get_endpoint_ids()
-            start_pid = p_ids[0] if first_fwd else p_ids[1]
-            start_pt = self.element.sketch.registry.get_point(start_pid)
+            start_pid = endpoints[0] if first_fwd else endpoints[1]
+            start_pt = registry.get_point(start_pid)
+            if start_pt is None:
+                return None
 
             geo = Geometry()
-            geo.move_to(start_pt.x, start_pt.y)
+            geo.move_to(start_pt[0], start_pt[1])
 
             valid_loop = True
             for eid, fwd in fill.boundary:
                 if eid in exclude_ids:
                     valid_loop = False
                     break
-                entity = self.element.sketch.registry.get_entity(eid)
-                if not entity:
+                if registry.get_entity_object(eid) is None:
                     valid_loop = False
                     break
-                entity.append_to_geometry(
-                    geo, self.element.sketch.registry, fwd
-                )
+                registry.append_to_geometry(geo, eid, fwd)
 
             if valid_loop:
                 return geo
@@ -299,21 +310,27 @@ class SketchRenderer:
 
     def _draw_text_box_fills(self, ctx: cairo.Context, exclude_ids: set):
         """Draw fills for text box entities."""
-        for entity in self.element.sketch.registry.entities:
+        sketch = self.element.sketch
+        for entity in sketch.registry.entities():
             if entity.id in exclude_ids:
                 continue
+            fill_color = sketch.flags.fill_color(entity.id)
+            if fill_color is None:
+                fill_color = entity.fill_color
             if (
                 not entity.construction
-                and isinstance(entity, TextBoxEntity)
-                and entity.fill_color is not None
+                and entity.type_name() == "text_box"
+                and fill_color is not None
             ):
-                text_geo = entity.to_geometry(self.element.sketch.registry)
+                text_geo = sketch.resolved_text_box(entity).to_geometry(
+                    sketch.registry
+                )
                 if text_geo:
                     ctx.new_path()
                     geometry_to_cairo(text_geo, ctx)
                     ctx.close_path()
                     ctx.save()
-                    ctx.set_source_rgba(*entity.fill_color)
+                    ctx.set_source_rgba(*fill_color)
                     ctx.fill()
                     ctx.restore()
 
@@ -322,11 +339,14 @@ class SketchRenderer:
     def _draw_entities(
         self, ctx: cairo.Context, is_editing: bool, base_line_width: float
     ):
-        is_sketch_fully_constrained = self.element.sketch.is_fully_constrained
-        entities = self.element.sketch.registry.entities or []
+        sketch = self.element.sketch
+        is_sketch_fully_constrained = sketch.is_fully_constrained
+        entities = sketch.registry.entities()
         # Draw array copies first (behind) so original geometry like
         # the guide path stays on top and easy to select.
-        entities = sorted(entities, key=lambda e: not e.array_copy)
+        entities = sorted(
+            entities, key=lambda e: sketch.flags.is_array_copy(e.id)
+        )
         text_tool = self.element.tools.get("text_box")
         select_tool = self.element.tools.get("select")
         hovered_entity_id = (
@@ -334,10 +354,15 @@ class SketchRenderer:
         )
 
         for entity in entities:
+            is_text_box = entity.type_name() == "text_box"
+            invisible = sketch.flags.is_invisible(entity.id)
+            array_copy = sketch.flags.is_array_copy(entity.id)
+            fill_color = sketch.flags.fill_color(entity.id)
+
             # If a text box is being actively edited, its tool overlay will
             # draw it, so we skip the main render pass to avoid flicker.
             is_being_edited = (
-                isinstance(entity, TextBoxEntity)
+                is_text_box
                 and self.element.active_tool_name == "text_box"
                 and isinstance(text_tool, TextBoxTool)
                 and text_tool.editing_entity_id == entity.id
@@ -351,7 +376,7 @@ class SketchRenderer:
             ):
                 continue
 
-            if entity.invisible:
+            if invisible:
                 continue
 
             is_sel = entity.id in self.element.selection.entity_ids
@@ -370,9 +395,9 @@ class SketchRenderer:
                 has_path = self._define_circle_path(ctx, entity)
             elif isinstance(entity, Ellipse):
                 has_path = self._define_ellipse_path(ctx, entity)
-            elif isinstance(entity, PolygonEntity):
+            elif isinstance(entity, Polygon):
                 has_path = self._define_polygon_path(ctx, entity)
-            elif isinstance(entity, TextBoxEntity):
+            elif is_text_box:
                 has_path = self._define_text_box_path(ctx, entity)
 
             if not has_path:
@@ -384,7 +409,7 @@ class SketchRenderer:
                 ctx.save()
                 ctx.set_dash([])
                 ctx.set_source_rgba(0.2, 0.6, 1.0, 0.4)
-                if isinstance(entity, TextBoxEntity):
+                if is_text_box:
                     ctx.set_line_width(base_line_width * 2.0)
                 else:
                     ctx.set_line_width(base_line_width * 3.0)
@@ -394,7 +419,7 @@ class SketchRenderer:
                 ctx.save()
                 ctx.set_dash([])
                 ctx.set_source_rgba(1.0, 0.4, 0.2, 0.4)
-                if isinstance(entity, TextBoxEntity):
+                if is_text_box:
                     ctx.set_line_width(base_line_width * 2.0)
                 else:
                     ctx.set_line_width(base_line_width * 3.0)
@@ -402,9 +427,9 @@ class SketchRenderer:
                 ctx.restore()
 
             # 3. Draw Actual Entity
-            if isinstance(entity, TextBoxEntity):
-                if entity.fill_color is not None:
-                    ctx.set_source_rgba(*entity.fill_color)
+            if is_text_box:
+                if fill_color is not None:
+                    ctx.set_source_rgba(*fill_color)
                 else:
                     self._set_standard_color(
                         ctx,
@@ -424,7 +449,7 @@ class SketchRenderer:
                 else:
                     ctx.set_source_rgb(0.3, 0.5, 0.8)
                 ctx.stroke()
-            elif entity.array_copy:
+            elif array_copy:
                 # Solid like regular geometry, slightly thinner to read
                 # as derived rather than seed geometry.
                 ctx.set_line_width(base_line_width * 0.6)
@@ -467,19 +492,16 @@ class SketchRenderer:
             else:
                 ctx.set_source_rgb(0.0, 0.0, 0.0)
 
-    def _safe_get_point(self, pid: EntityID) -> Point | None:
-        try:
-            return self.element.sketch.registry.get_point(pid)
-        except IndexError:
-            return None
+    def _safe_get_point(self, pid: EntityID) -> tuple | None:
+        return self.element.sketch.registry.get_point(pid)
 
     def _define_line_path(self, ctx: cairo.Context, line: Line) -> bool:
         """Defines the path for a line without stroking."""
         p1 = self._safe_get_point(line.p1_idx)
         p2 = self._safe_get_point(line.p2_idx)
         if p1 and p2:
-            ctx.move_to(p1.x, p1.y)
-            ctx.line_to(p2.x, p2.y)
+            ctx.move_to(p1[0], p1[1])
+            ctx.line_to(p2[0], p2[1])
             return True
         return False
 
@@ -491,15 +513,17 @@ class SketchRenderer:
         if not (start and end and center):
             return False
 
-        radius = math.hypot(start.x - center.x, start.y - center.y)
-        start_a = math.atan2(start.y - center.y, start.x - center.x)
-        end_a = math.atan2(end.y - center.y, end.x - center.x)
+        radius = math.hypot(start[0] - center[0], start[1] - center[1])
+        start_a = math.atan2(
+            start[1] - center[1], start[0] - center[0]
+        )
+        end_a = math.atan2(end[1] - center[1], end[0] - center[0])
 
         ctx.new_sub_path()
         if arc.clockwise:
-            ctx.arc_negative(center.x, center.y, radius, start_a, end_a)
+            ctx.arc_negative(center[0], center[1], radius, start_a, end_a)
         else:
-            ctx.arc(center.x, center.y, radius, start_a, end_a)
+            ctx.arc(center[0], center[1], radius, start_a, end_a)
         return True
 
     def _define_circle_path(self, ctx: cairo.Context, circle: Circle) -> bool:
@@ -509,9 +533,11 @@ class SketchRenderer:
         if not (center and radius_pt):
             return False
 
-        radius = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
+        radius = math.hypot(
+            radius_pt[0] - center[0], radius_pt[1] - center[1]
+        )
         ctx.new_sub_path()
-        ctx.arc(center.x, center.y, radius, 0, 2 * math.pi)
+        ctx.arc(center[0], center[1], radius, 0, 2 * math.pi)
         return True
 
     def _define_ellipse_path(
@@ -519,22 +545,26 @@ class SketchRenderer:
     ) -> bool:
         """Defines the path for an ellipse without stroking."""
         center = self._safe_get_point(ellipse.center_idx)
-        radius_x_pt = self._safe_get_point(ellipse.radius_x_pt_idx)
-        radius_y_pt = self._safe_get_point(ellipse.radius_y_pt_idx)
+        radius_x_pt = self._safe_get_point(ellipse.radius_x_point_idx)
+        radius_y_pt = self._safe_get_point(ellipse.radius_y_point_idx)
         if not (center and radius_x_pt and radius_y_pt):
             return False
 
-        rx = math.hypot(radius_x_pt.x - center.x, radius_x_pt.y - center.y)
-        ry = math.hypot(radius_y_pt.x - center.x, radius_y_pt.y - center.y)
+        rx = math.hypot(
+            radius_x_pt[0] - center[0], radius_x_pt[1] - center[1]
+        )
+        ry = math.hypot(
+            radius_y_pt[0] - center[0], radius_y_pt[1] - center[1]
+        )
         if rx < 1e-9 or ry < 1e-9:
             return False
 
         rotation = math.atan2(
-            radius_x_pt.y - center.y, radius_x_pt.x - center.x
+            radius_x_pt[1] - center[1], radius_x_pt[0] - center[0]
         )
 
         ctx.save()
-        ctx.translate(center.x, center.y)
+        ctx.translate(center[0], center[1])
         ctx.rotate(rotation)
         ctx.scale(rx, ry)
         ctx.new_sub_path()
@@ -543,13 +573,13 @@ class SketchRenderer:
         return True
 
     def _define_polygon_path(
-        self, ctx: cairo.Context, polygon: PolygonEntity
+        self, ctx: cairo.Context, polygon: Polygon
     ) -> bool:
         """Defines the path for a polygon outline without stroking.
         Hole rings are added to the same path; their reversed winding
         cancels the enclosed area under Cairo's winding fill rule."""
         registry = self.element.sketch.registry
-        rings = polygon.get_world_rings(registry)
+        rings = polygon_world_rings(registry, polygon)
         if not rings or len(rings[0]) < 2:
             return False
         for vertices in rings:
@@ -567,22 +597,27 @@ class SketchRenderer:
         if not (start and end):
             return False
 
-        if bezier.is_line(self.element.sketch.registry):
-            ctx.move_to(start.x, start.y)
-            ctx.line_to(end.x, end.y)
+        if bezier.is_line:
+            ctx.move_to(start[0], start[1])
+            ctx.line_to(end[0], end[1])
             return True
 
-        cp1_x, cp1_y, cp2_x, cp2_y = bezier.get_control_points_or_endpoints(
-            self.element.sketch.registry
+        cp1 = bezier.cp1_offset or (start[0], start[1])
+        cp2 = bezier.cp2_offset or (end[0], end[1])
+        cp1_abs = (start[0] + cp1[0], start[1] + cp1[1])
+        cp2_abs = (end[0] + cp2[0], end[1] + cp2[1])
+        ctx.move_to(start[0], start[1])
+        ctx.curve_to(
+            cp1_abs[0], cp1_abs[1], cp2_abs[0], cp2_abs[1], end[0], end[1]
         )
-        ctx.move_to(start.x, start.y)
-        ctx.curve_to(cp1_x, cp1_y, cp2_x, cp2_y, end.x, end.y)
         return True
 
     def _define_text_box_path(
-        self, ctx: cairo.Context, entity: TextBoxEntity
+        self, ctx: cairo.Context, entity: TextBox
     ) -> bool:
-        if not entity.content:
+        sketch = self.element.sketch
+        content = sketch.flags.text_content(entity.id, entity.content)
+        if not content:
             return False
 
         p_origin = self._safe_get_point(entity.origin_id)
@@ -592,17 +627,17 @@ class SketchRenderer:
         if not (p_origin and p_width and p_height):
             return False
 
-        natural_geo = text_to_geometry(
-            entity.content, font_config=entity.font_config
-        )
+        props = sketch.flags.text_properties(entity.id)
+        font = _font_config(entity, props)
+        natural_geo = text_to_geometry(content, font_config=font)
         _, geo_min_y, _, geo_max_y = natural_geo.rect()
-        text_width = entity.font_config.get_text_width(entity.content)
+        text_width = font.get_text_width(content)
         advance_width = text_width or 1.0
 
         transformed_geo = natural_geo.map_to_frame(
-            (p_origin.x, p_origin.y),
-            (p_width.x, p_width.y),
-            (p_height.x, p_height.y),
+            p_origin,
+            p_width,
+            p_height,
             anchor_x=0.0,
             stable_src_width=advance_width,
             anchor_y=geo_min_y,
@@ -630,19 +665,21 @@ class SketchRenderer:
 
         # Collect all points associated with text boxes to hide their overlays
         text_box_point_ids = set()
-        for entity in self.element.sketch.registry.entities:
-            if isinstance(entity, TextBoxEntity):
-                text_box_point_ids.update(
-                    entity.get_all_frame_point_ids(
-                        self.element.sketch.registry
-                    )
-                )
+        for entity in self.element.sketch.registry.entities():
+            if entity.type_name() != "text_box":
+                continue
+            text_box_point_ids.update(entity.get_point_ids())
+            fourth = text_box_fourth_corner(
+                self.element.sketch.registry, entity
+            )
+            if fourth is not None:
+                text_box_point_ids.add(fourth)
 
         # Collect construction entity IDs and their point IDs
         construction_entity_ids = set()
         construction_point_ids = set()
         if not self.element.show_construction_geometry:
-            for entity in self.element.sketch.registry.entities:
+            for entity in self.element.sketch.registry.entities():
                 if entity.construction:
                     construction_entity_ids.add(entity.id)
                     construction_point_ids.update(entity.get_point_ids())
@@ -653,9 +690,10 @@ class SketchRenderer:
         to_screen_func = to_screen_transform.transform_point
 
         # --- Stage 1: Draw Individual Constraints ---
-        constraints = self.element.sketch.constraints or []
+        sketch = self.element.sketch
+        constraints = sketch.constraints
         for idx, constr in enumerate(constraints):
-            if not constr.user_visible:
+            if not constraint_info.user_visible(constr):
                 continue
 
             # Filter specific constraints on text box points to reduce clutter
@@ -666,13 +704,19 @@ class SketchRenderer:
                     PointOnCurveConstraint,
                     PointOnLineConstraint,
                 ),
-            ) and constr.depends_on_points(text_box_point_ids):
+            ) and constraint_info.depends_on_points(
+                constr, text_box_point_ids
+            ):
                 continue
 
             # Hide constraints referencing construction geometry when hidden
             if (construction_entity_ids or construction_point_ids) and (
-                constr.depends_on_entities(construction_entity_ids)
-                or constr.depends_on_points(construction_point_ids)
+                constraint_info.depends_on_entities(
+                    sketch.registry, constr, construction_entity_ids
+                )
+                or constraint_info.depends_on_points(
+                    constr, construction_point_ids
+                )
             ):
                 continue
 
@@ -681,7 +725,7 @@ class SketchRenderer:
 
             constr.draw(
                 ctx,
-                self.element.sketch.registry,
+                sketch.registry,
                 to_screen_func,
                 is_sel,
                 is_hovered,
@@ -709,7 +753,7 @@ class SketchRenderer:
         )
 
         point_counts = defaultdict(int)
-        for entity in registry.entities:
+        for entity in registry.entities():
             if isinstance(entity, Line):
                 point_counts[entity.p1_idx] += 1
                 point_counts[entity.p2_idx] += 1
@@ -725,8 +769,8 @@ class SketchRenderer:
                 point_counts[entity.radius_pt_idx] += 1
             elif isinstance(entity, Ellipse):
                 point_counts[entity.center_idx] += 1
-                point_counts[entity.radius_x_pt_idx] += 1
-                point_counts[entity.radius_y_pt_idx] += 1
+                point_counts[entity.radius_x_point_idx] += 1
+                point_counts[entity.radius_y_point_idx] += 1
 
         for pid, count in point_counts.items():
             if count > 1:
@@ -742,7 +786,7 @@ class SketchRenderer:
                 is_hovered = pid == hovered_junction_pid
                 p = self._safe_get_point(pid)
                 if p:
-                    sx, sy = to_screen((p.x, p.y))
+                    sx, sy = to_screen(p)
                     ctx.save()
                     ctx.set_line_width(1.5)
 
@@ -773,8 +817,8 @@ class SketchRenderer:
         ctx.stroke_preserve()
         ctx.restore()
 
-    def _get_entity_by_id(self, eid: EntityID) -> Entity | None:
-        return self.element.sketch.registry.get_entity(eid)
+    def _get_entity_by_id(self, eid: EntityID) -> Any | None:
+        return self.element.sketch.registry.get_entity_object(eid)
 
     # --- Points ---
 
@@ -783,7 +827,7 @@ class SketchRenderer:
     ) -> None:
         """Draws all sketch points, including selection highlights."""
         is_sketch_fully_constrained = self.element.sketch.is_fully_constrained
-        points = self.element.sketch.registry.points or []
+        points = self.element.sketch.registry.points()
         origin_id = getattr(self.element.sketch, "origin_id", -1)
         hover_pid = self.element.tools["select"].hovered_point_id
 
@@ -798,17 +842,19 @@ class SketchRenderer:
 
         for eid in self.element.selection.entity_ids:
             ent = self._get_entity_by_id(eid)
-            if isinstance(ent, TextBoxEntity):
-                entity_points.update(
-                    ent.get_all_frame_point_ids(self.element.sketch.registry)
-                )
-            elif ent:
+            if ent is not None:
                 entity_points.update(ent.get_point_ids())
+                if ent.type_name() == "text_box":
+                    fourth = text_box_fourth_corner(
+                        self.element.sketch.registry, ent
+                    )
+                    if fourth is not None:
+                        entity_points.add(fourth)
 
         # Collect construction point IDs to hide when construction is hidden
         construction_point_ids = set()
         if not self.element.show_construction_geometry:
-            for entity in self.element.sketch.registry.entities:
+            for entity in self.element.sketch.registry.entities():
                 if entity.construction:
                     construction_point_ids.update(entity.get_point_ids())
 
@@ -1006,11 +1052,13 @@ class SketchRenderer:
             waypoint = self._safe_get_point(pid)
             if waypoint is None:
                 continue
-            connected = waypoint.get_connected_beziers(
-                self.element.sketch.registry
+            connected = get_connected_beziers(
+                self.element.sketch.registry, self.element.sketch, pid
             )
             if connected:
-                self._draw_waypoint_handles(ctx, to_screen, waypoint)
+                self._draw_waypoint_handles(
+                    ctx, to_screen, waypoint, pid
+                )
 
     def _draw_bezier_preview_handles(
         self, ctx: cairo.Context, to_screen, preview_state: BezierPreviewState
@@ -1019,25 +1067,21 @@ class SketchRenderer:
         if preview_state.end_id is None:
             return
 
-        try:
-            start_pt = self.element.sketch.registry.get_point(
-                preview_state.start_id
-            )
-            end_pt = self.element.sketch.registry.get_point(
-                preview_state.end_id
-            )
-        except IndexError:
-            return
-
+        start_pt = self.element.sketch.registry.get_point(
+            preview_state.start_id
+        )
+        end_pt = self.element.sketch.registry.get_point(
+            preview_state.end_id
+        )
         if not (start_pt and end_pt):
             return
 
-        start_sx, start_sy = to_screen((start_pt.x, start_pt.y))
-        end_sx, end_sy = to_screen((end_pt.x, end_pt.y))
+        start_sx, start_sy = to_screen(start_pt)
+        end_sx, end_sy = to_screen(end_pt)
 
         temp_bezier = None
         if preview_state.temp_entity_id is not None:
-            temp_entity = self.element.sketch.registry.get_entity(
+            temp_entity = self.element.sketch.registry.get_entity_object(
                 preview_state.temp_entity_id
             )
             if isinstance(temp_entity, Bezier):
@@ -1048,20 +1092,20 @@ class SketchRenderer:
         ctx.set_source_rgba(0.6, 0.4, 0.8, 0.8)
 
         if temp_bezier is not None:
-            if temp_bezier.cp1 is not None:
+            if temp_bezier.cp1_offset is not None:
                 cp1_abs = (
-                    start_pt.x + temp_bezier.cp1[0],
-                    start_pt.y + temp_bezier.cp1[1],
+                    start_pt[0] + temp_bezier.cp1_offset[0],
+                    start_pt[1] + temp_bezier.cp1_offset[1],
                 )
                 cp1_sx, cp1_sy = to_screen(cp1_abs)
                 ctx.move_to(start_sx, start_sy)
                 ctx.line_to(cp1_sx, cp1_sy)
                 ctx.stroke()
 
-            if temp_bezier.cp2 is not None:
+            if temp_bezier.cp2_offset is not None:
                 cp2_abs = (
-                    end_pt.x + temp_bezier.cp2[0],
-                    end_pt.y + temp_bezier.cp2[1],
+                    end_pt[0] + temp_bezier.cp2_offset[0],
+                    end_pt[1] + temp_bezier.cp2_offset[1],
                 )
                 cp2_sx, cp2_sy = to_screen(cp2_abs)
                 ctx.move_to(end_sx, end_sy)
@@ -1080,19 +1124,19 @@ class SketchRenderer:
         ctx.set_source_rgba(0.6, 0.4, 0.8, 1.0)
 
         if temp_bezier is not None:
-            if temp_bezier.cp1 is not None:
+            if temp_bezier.cp1_offset is not None:
                 cp1_abs = (
-                    start_pt.x + temp_bezier.cp1[0],
-                    start_pt.y + temp_bezier.cp1[1],
+                    start_pt[0] + temp_bezier.cp1_offset[0],
+                    start_pt[1] + temp_bezier.cp1_offset[1],
                 )
                 cp1_sx, cp1_sy = to_screen(cp1_abs)
                 ctx.rectangle(cp1_sx - 4, cp1_sy - 4, 8, 8)
                 ctx.fill()
 
-            if temp_bezier.cp2 is not None:
+            if temp_bezier.cp2_offset is not None:
                 cp2_abs = (
-                    end_pt.x + temp_bezier.cp2[0],
-                    end_pt.y + temp_bezier.cp2[1],
+                    end_pt[0] + temp_bezier.cp2_offset[0],
+                    end_pt[1] + temp_bezier.cp2_offset[1],
                 )
                 cp2_sx, cp2_sy = to_screen(cp2_abs)
                 ctx.rectangle(cp2_sx - 4, cp2_sy - 4, 8, 8)
@@ -1109,31 +1153,35 @@ class SketchRenderer:
         self,
         ctx: cairo.Context,
         to_screen,
-        waypoint: Point,
+        waypoint: tuple,
+        waypoint_id: EntityID,
     ):
         """Draw control handles for all beziers connected to a waypoint."""
         sketch = self.element.sketch
-        connected_beziers = waypoint.get_connected_beziers(
-            sketch.registry, sketch
+        connected_beziers = get_connected_beziers(
+            sketch.registry, sketch, waypoint_id
         )
 
         if not connected_beziers:
             return
 
-        wp_sx, wp_sy = to_screen((waypoint.x, waypoint.y))
+        wp_sx, wp_sy = to_screen(waypoint)
 
-        point_ids = {waypoint.id}
-        point_ids.update(sketch.get_coincident_points(waypoint.id))
+        point_ids = {waypoint_id}
+        point_ids.update(sketch.get_coincident_points(waypoint_id))
 
         ctx.save()
         ctx.set_line_width(1.0)
         ctx.set_source_rgba(0.2, 0.6, 1.0, 0.8)
 
         for bezier in connected_beziers:
-            if bezier.start_idx in point_ids and bezier.cp1 is not None:
+            if (
+                bezier.start_idx in point_ids
+                and bezier.cp1_offset is not None
+            ):
                 cp_abs = (
-                    waypoint.x + bezier.cp1[0],
-                    waypoint.y + bezier.cp1[1],
+                    waypoint[0] + bezier.cp1_offset[0],
+                    waypoint[1] + bezier.cp1_offset[1],
                 )
                 cp_sx, cp_sy = to_screen(cp_abs)
                 ctx.move_to(wp_sx, wp_sy)
@@ -1144,10 +1192,13 @@ class SketchRenderer:
                 ctx.fill()
                 ctx.set_source_rgba(0.2, 0.6, 1.0, 0.8)
 
-            if bezier.end_idx in point_ids and bezier.cp2 is not None:
+            if (
+                bezier.end_idx in point_ids
+                and bezier.cp2_offset is not None
+            ):
                 cp_abs = (
-                    waypoint.x + bezier.cp2[0],
-                    waypoint.y + bezier.cp2[1],
+                    waypoint[0] + bezier.cp2_offset[0],
+                    waypoint[1] + bezier.cp2_offset[1],
                 )
                 cp_sx, cp_sy = to_screen(cp_abs)
                 ctx.move_to(wp_sx, wp_sy)

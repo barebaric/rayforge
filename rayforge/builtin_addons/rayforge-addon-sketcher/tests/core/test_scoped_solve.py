@@ -3,11 +3,9 @@ from sketcher.core.components import (
     compute_constraint_components,
     get_referenced_points,
 )
-from sketcher.core.constraints import (
-    Constraint,
-    DragConstraint,
-    TangentConstraint,
-)
+from typing import Any
+from raygeo.sketch.constraints.drag import DragConstraint
+from raygeo.sketch.constraints.tangent import TangentConstraint
 from sketcher.core.params import ParameterContext
 from sketcher.core.registry import EntityRegistry
 from sketcher.core.sketch import Sketch
@@ -42,8 +40,8 @@ def add_rect(sketch, x, y, w, h, anchored=True):
 def positions(sketch, pids):
     return {
         pid: (
-            sketch.registry.get_point(pid).x,
-            sketch.registry.get_point(pid).y,
+            sketch.registry.get_point(pid)[0],
+            sketch.registry.get_point(pid)[1],
         )
         for pid in pids
     }
@@ -114,20 +112,20 @@ def test_solver_point_filter_ignores_other_points():
     p1 = registry.add_point(0, 0)
     p2 = registry.add_point(10, 0)
 
-    solver = Solver(registry, params, [], point_filter={p1})
+    solver = Solver(registry, [], point_filter={p1})
     assert solver.solve(update_dof=False) is True
 
-    assert registry.get_point(p1).x == pytest.approx(0.0)
-    assert registry.get_point(p1).y == pytest.approx(0.0)
-    assert registry.get_point(p2).x == 10.0
+    assert registry.get_point(p1)[0] == pytest.approx(0.0)
+    assert registry.get_point(p1)[1] == pytest.approx(0.0)
+    assert registry.get_point(p2)[0] == 10.0
 
     solver = Solver(
         registry, params, [DragConstraint(p1, 5.0, 5.0)], point_filter={p1}
     )
     assert solver.solve(update_dof=False) is True
 
-    assert registry.get_point(p1).x == pytest.approx(5.0, abs=1e-4)
-    assert registry.get_point(p2).x == 10.0
+    assert registry.get_point(p1)[0] == pytest.approx(5.0, abs=1e-4)
+    assert registry.get_point(p2)[0] == 10.0
 
 
 def test_scoped_solve_moves_dragged_island_only():
@@ -197,13 +195,13 @@ def test_scoped_solve_matches_global_solve():
     for pid_g, pid_s in zip(rect_a_g, rect_a_s):
         pg = sketch_g.registry.get_point(pid_g)
         ps = sketch_s.registry.get_point(pid_s)
-        assert pg.x == pytest.approx(ps.x, abs=1e-4)
-        assert pg.y == pytest.approx(ps.y, abs=1e-4)
+        assert pg[0] == pytest.approx(ps[0], abs=1e-4)
+        assert pg[1] == pytest.approx(ps[1], abs=1e-4)
     for pid_g, pid_s in zip(rect_b_g, rect_b_s):
         pg = sketch_g.registry.get_point(pid_g)
         ps = sketch_s.registry.get_point(pid_s)
-        assert pg.x == pytest.approx(ps.x, abs=1e-6)
-        assert pg.y == pytest.approx(ps.y, abs=1e-6)
+        assert pg[0] == pytest.approx(ps[0], abs=1e-6)
+        assert pg[1] == pytest.approx(ps[1], abs=1e-6)
 
 
 def test_scoped_solve_falls_back_on_stale_scope():
@@ -221,8 +219,8 @@ def test_scoped_solve_falls_back_on_stale_scope():
     )
 
     p = sketch.registry.get_point(p_far)
-    assert p.x == pytest.approx(300.0, abs=1e-3)
-    assert p.y == pytest.approx(200.0, abs=1e-3)
+    assert p[0] == pytest.approx(300.0, abs=1e-3)
+    assert p[1] == pytest.approx(200.0, abs=1e-3)
 
 
 def test_tool_style_drag_keeps_other_islands_frozen():

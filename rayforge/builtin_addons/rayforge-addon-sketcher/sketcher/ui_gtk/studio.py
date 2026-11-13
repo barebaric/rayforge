@@ -12,7 +12,7 @@ from rayforge.ui_gtk.shared.status_bar import StatusBar
 from rayforge.ui_gtk.shared.undo_button import RedoButton, UndoButton
 from rayforge.ui_gtk.varset.varset_editor import VarSetEditorWidget
 
-from ..core.entities.text_box import TextBoxEntity
+
 from ..core.sketch import DEFAULT_FILL_COLOR, Sketch
 from .conflicts_widget import ConflictingConstraintsWidget
 from .font_properties import FontPropertiesWidget
@@ -506,10 +506,10 @@ class SketchStudio(Gtk.Box):
         text_entity_id = None
         if len(selection.entity_ids) == 1:
             entity_id = selection.entity_ids[0]
-            entity = self.canvas.sketch_element.sketch.registry.get_entity(
+            entity = self.canvas.sketch_element.sketch.registry.get_entity_object(
                 entity_id
             )
-            if isinstance(entity, TextBoxEntity):
+            if entity is not None and entity.type_name() == "text_box":
                 text_entity_id = entity_id
 
         self.font_properties.set_text_entity(text_entity_id)

@@ -14,7 +14,7 @@ from sketcher.core.arrays import (
     resolve_template_center,
 )
 from sketcher.core.commands import CreateArrayCommand
-from sketcher.core.constraints import CoincidentConstraint
+from raygeo.sketch.constraints.coincident import CoincidentConstraint
 from sketcher.core.params import ParameterContext
 from sketcher.core.sketch import Sketch
 
@@ -40,7 +40,7 @@ def _build_sketch():
     p2 = sketch.registry.add_point(3.0, -2.0)
     p3 = sketch.registry.add_point(6.0, -2.0)
     line1 = sketch.registry.add_line(p0, p1)
-    arc = sketch.registry.add_arc(a0, a1, center, cw=False)
+    arc = sketch.registry.add_arc(a0, a1, center, clockwise=False)
     line2 = sketch.registry.add_line(p2, p3)
     sketch.constrain_coincident(p1, a0)
     sketch.constrain_coincident(p2, a1)
@@ -65,10 +65,10 @@ def _member_points(sketch, array, slot):
     eids = next(eids for s, eids in array.members if s == slot)
     pts = []
     for eid in eids:
-        entity = sketch.registry.get_entity(eid)
+        entity = sketch.registry.get_entity_object(eid)
         for pid in entity.get_point_ids():
             pt = sketch.registry.get_point(pid)
-            pts.append((pt.x, pt.y))
+            pts.append((pt[0], pt[1]))
     return pts
 
 
@@ -121,13 +121,13 @@ def _drag_template(sketch, array, dx, dy):
     _slot, template_eids = array.members[0]
     pids: dict[int, None] = {}
     for eid in template_eids:
-        entity = sketch.registry.get_entity(eid)
+        entity = sketch.registry.get_entity_object(eid)
         for pid in entity.get_point_ids():
             pids.setdefault(pid)
     for pid in pids:
         pt = sketch.registry.get_point(pid)
-        pt.x += dx
-        pt.y += dy
+        pt[0] += dx
+        pt[1] += dy
     sketch.solve()
 
 
@@ -155,7 +155,7 @@ def _template_center(sketch, array):
     eids = array.members[0][1]
     pts = []
     for eid in eids:
-        entity = sketch.registry.get_entity(eid)
+        entity = sketch.registry.get_entity_object(eid)
         for pid in entity.get_point_ids():
             pt = sketch.registry.get_point(pid)
             if pt is not None:
@@ -164,9 +164,9 @@ def _template_center(sketch, array):
 
 
 def _guide_start(sketch, guide):
-    bezier = sketch.registry.get_entity(guide)
+    bezier = sketch.registry.get_entity_object(guide)
     pt = sketch.registry.get_point(bezier.start_idx)
-    return (pt.x, pt.y)
+    return (pt[0], pt[1])
 
 
 def test_user_repro_drag_template_away_and_back_then_guide(array_flow):
@@ -177,7 +177,7 @@ def test_user_repro_drag_template_away_and_back_then_guide(array_flow):
     to the guide's start: a template drag is undone by the next sync,
     and guide drags keep every frame consistent."""
     sketch, guide, array = array_flow
-    bezier = sketch.registry.get_entity(guide)
+    bezier = sketch.registry.get_entity_object(guide)
 
     # Drag the template away: the next sync snaps it back onto the
     # guide's start point (the template's position is guide-owned).
@@ -191,7 +191,7 @@ def test_user_repro_drag_template_away_and_back_then_guide(array_flow):
 
     # Now drag the guide control point over several frames.
     for frame in range(4):
-        bezier.cp1 = (bezier.cp1[0] + 3.0, bezier.cp1[1] - 3.0)
+        bezier.cp1_offset = (bezier.cp1_offset[0] + 3.0, bezier.cp1_offset[1] - 3.0)
         sketch.solve()
         residual = _coincident_residual(sketch)
         assert residual < 1e-6, f"frame {frame}: residual {residual}"
@@ -205,12 +205,12 @@ def test_dragging_guide_endpoint_moves_template_with_it(array_flow):
     """Dragging the guide's start endpoint (a solver point) carries
     the pinned template and the copies along rigidly."""
     sketch, guide, array = array_flow
-    bezier = sketch.registry.get_entity(guide)
+    bezier = sketch.registry.get_entity_object(guide)
 
     for frame in range(4):
         start_pt = sketch.registry.get_point(bezier.start_idx)
-        start_pt.x += 3.0
-        start_pt.y += 2.0
+        start_pt[0] += 3.0
+        start_pt[1] += 2.0
         sketch.solve()
 
         residual = _coincident_residual(sketch)
@@ -228,10 +228,10 @@ def test_dragging_guide_cp_keeps_members_rigid(array_flow):
     moves no solver point: every sync frame must leave the template's
     coincidences exactly satisfied and the copies rigid."""
     sketch, guide, array = array_flow
-    bezier = sketch.registry.get_entity(guide)
+    bezier = sketch.registry.get_entity_object(guide)
 
     for frame in range(4):
-        bezier.cp1 = (bezier.cp1[0] + 3.0, bezier.cp1[1] - 3.0)
+        bezier.cp1_offset = (bezier.cp1_offset[0] + 3.0, bezier.cp1_offset[1] - 3.0)
         sketch.solve()
 
         residual = _coincident_residual(sketch)

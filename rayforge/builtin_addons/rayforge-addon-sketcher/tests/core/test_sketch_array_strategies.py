@@ -13,7 +13,7 @@ from sketcher.core.arrays import (
     PlacementKind,
     find_array_for_entity,
 )
-from sketcher.core.entities import Circle
+from raygeo.sketch.entities.circle import Circle
 
 
 def test_full_circle_rotation_placements():
@@ -273,34 +273,40 @@ class _FakeRegistry:
     """Minimal registry lookalike mapping ids to simple objects."""
 
     def __init__(self):
-        self.entities = {}
-        self.points = {}
+        self._entities = {}
+        self._points = {}
+
+    def entities(self):
+        return list(self._entities.values())
+
+    def points(self):
+        return list(self._points.values())
 
     def add_point(self, x, y):
-        pid = len(self.points)
-        self.points[pid] = SimpleNamespace(id=pid, x=x, y=y)
+        pid = len(self._points)
+        self._points[pid] = SimpleNamespace(id=pid, x=x, y=y)
         return pid
 
     def add_line(self, p1, p2):
-        eid = len(self.entities)
-        self.entities[eid] = SimpleNamespace(
+        eid = len(self._entities)
+        self._entities[eid] = SimpleNamespace(
             id=eid, type="line", get_point_ids=lambda: [p1, p2]
         )
         return eid
 
     def get_entity(self, eid):
-        return self.entities.get(eid)
+        return self._entities.get(eid)
 
     def get_point(self, pid):
-        return self.points.get(pid)
+        return self._points.get(pid)
 
     def geometry_signature(self, entity_id):
-        entity = self.entities.get(entity_id)
+        entity = self._entities.get(entity_id)
         if entity is None:
             return None
         return tuple(
             (round(p.x, 6), round(p.y, 6))
-            for p in (self.points.get(pid) for pid in entity.get_point_ids())
+            for p in (self._points.get(pid) for pid in entity.get_point_ids())
             if p is not None
         )
 

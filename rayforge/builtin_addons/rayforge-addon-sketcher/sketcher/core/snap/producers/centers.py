@@ -3,7 +3,9 @@ from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point as GeoPoint
 
-from ...entities import Arc, Circle, Ellipse
+from raygeo.sketch.entities.arc import Arc
+from raygeo.sketch.entities.circle import Circle
+from raygeo.sketch.entities.ellipse import Ellipse
 from ..engine import SnapLineProducer
 from ..types import DragContext, SnapLine, SnapLineType, SnapPoint
 
@@ -22,7 +24,7 @@ class CentersProducer(SnapLineProducer):
         drag_context: DragContext,
         threshold: float,
     ) -> Iterator[SnapLine]:
-        for entity in registry.entities:
+        for entity in registry.entities():
             if drag_context.is_entity_dragged(entity.id):
                 continue
             if not self._include_construction and entity.construction:
@@ -64,7 +66,7 @@ class CentersProducer(SnapLineProducer):
         threshold: float,
     ) -> Iterator[SnapPoint]:
         x, y = drag_position
-        for entity in registry.entities:
+        for entity in registry.entities():
             if drag_context.is_entity_dragged(entity.id):
                 continue
             if not self._include_construction and entity.construction:
@@ -100,5 +102,5 @@ class CentersProducer(SnapLineProducer):
         if isinstance(entity, (Arc, Circle, Ellipse)):
             center = registry.get_point(entity.center_idx)
             if center:
-                return (center.x, center.y)
+                return center
         return None

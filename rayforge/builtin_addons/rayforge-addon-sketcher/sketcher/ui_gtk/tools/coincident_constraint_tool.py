@@ -3,16 +3,14 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING, ClassVar, Union
 
 from ...core.commands import AddItemsCommand
-from ...core.constraints import (
-    CoincidentConstraint,
-    PointOnCurveConstraint,
-    PointOnLineConstraint,
-)
-from ...core.entities import Entity, Point
+from raygeo.sketch.constraints.coincident import CoincidentConstraint
+from raygeo.sketch.constraints.point_on_curve import PointOnCurveConstraint
+from raygeo.sketch.constraints.point_on_line import PointOnLineConstraint
+from ...core import constraint_info
 from .base import SketchTool
 
 if TYPE_CHECKING:
-    from ...core.constraints import Constraint
+    from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -25,21 +23,21 @@ class CoincidentConstraintTool(SketchTool):
 
     def is_available(
         self,
-        target: Union[Point, Entity, "Constraint"] | None,
+        target: Any | None,
         target_type: str | None,
     ) -> bool:
         sel = self.element.selection
         sketch = self.element.sketch
-        if CoincidentConstraint.can_apply_to(sel, sketch):
+        if constraint_info.can_apply(CoincidentConstraint, sel, sketch):
             p1_id, p2_id = sel.point_ids
             return not self._has_coincident_constraint(sketch, p1_id, p2_id)
-        if PointOnCurveConstraint.can_apply_to(sel, sketch):
+        if constraint_info.can_apply(PointOnCurveConstraint, sel, sketch):
             point_id = sel.point_ids[0]
             entity_id = sel.entity_ids[0]
             return not self._has_point_on_curve_constraint(
                 sketch, point_id, entity_id
             )
-        if PointOnLineConstraint.can_apply_to(sel, sketch):
+        if constraint_info.can_apply(PointOnLineConstraint, sel, sketch):
             point_id = sel.point_ids[0]
             entity_id = sel.entity_ids[0]
             return not self._has_point_on_line_constraint(
@@ -99,7 +97,7 @@ class CoincidentConstraintTool(SketchTool):
         sel = self.element.selection
         sketch = self.element.sketch
 
-        if CoincidentConstraint.can_apply_to(sel, sketch):
+        if constraint_info.can_apply(CoincidentConstraint, sel, sketch):
             p1_id, p2_id = sel.point_ids
             constr = CoincidentConstraint(p1_id, p2_id)
             cmd = AddItemsCommand(
@@ -110,7 +108,7 @@ class CoincidentConstraintTool(SketchTool):
             self.element.execute_command(cmd)
             sel.point_ids = [p1_id]
             sel.changed.send(sel)
-        elif PointOnCurveConstraint.can_apply_to(sel, sketch):
+        elif constraint_info.can_apply(PointOnCurveConstraint, sel, sketch):
             target_pid = sel.point_ids[0]
             sel_entity_id = sel.entity_ids[0]
             constr = PointOnCurveConstraint(target_pid, sel_entity_id)
@@ -118,7 +116,7 @@ class CoincidentConstraintTool(SketchTool):
                 sketch, _("Add Point On Curve"), constraints=[constr]
             )
             self.element.execute_command(cmd)
-        elif PointOnLineConstraint.can_apply_to(sel, sketch):
+        elif constraint_info.can_apply(PointOnLineConstraint, sel, sketch):
             sel_entity_id = sel.entity_ids[0]
             target_pid = sel.point_ids[0]
             constr = PointOnLineConstraint(target_pid, sel_entity_id)

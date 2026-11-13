@@ -1,11 +1,12 @@
 from unittest.mock import MagicMock, patch
+from raygeo.sketch.entities.point import SketchPoint
 
 import pytest
 from sketcher.core.commands import (
     RoundedRectCommand,
     RoundedRectPreviewState,
 )
-from sketcher.core.entities import Point
+from typing import Any
 from sketcher.ui_gtk.tools import RoundedRectTool
 
 
@@ -87,7 +88,7 @@ def test_second_click_creates_rounded_rectangle(tool, mock_element):
         radius=10.0,
     )
     mock_element.sketch.registry.get_point.side_effect = lambda pid: (
-        Point(pid, 100, 50) if pid == 1 else Point(pid, 0, 0)
+        SketchPoint(pid, 100, 50) if pid == 1 else SketchPoint(pid, 0, 0)
     )
 
     mock_element.hittester.screen_to_model.return_value = (100, 50)
@@ -155,7 +156,7 @@ def test_degenerate_rounded_rectangle_aborts_creation(tool, mock_element):
         preview_ids={"t2": 2, "line1": 10},
         radius=10.0,
     )
-    mock_element.sketch.registry.get_point.return_value = Point(0, 10, 20)
+    mock_element.sketch.registry.get_point.return_value = SketchPoint(0, 10, 20)
     mock_element.sketch.remove_point_if_unused = MagicMock()
 
     # --- Simulate second click at nearly same spot ---
@@ -188,7 +189,7 @@ def test_drag_release_creates_rounded_rectangle(tool, mock_element):
     )
     tool._press_world_pos = (100.0, 200.0)
     mock_element.sketch.registry.get_point.side_effect = lambda pid: (
-        Point(pid, 100, 50) if pid == 1 else Point(pid, 0, 0)
+        SketchPoint(pid, 100, 50) if pid == 1 else SketchPoint(pid, 0, 0)
     )
 
     tool.on_release(140.0, 200.0)
@@ -340,7 +341,7 @@ def test_commit_uses_preview_modifier_flags(tool, mock_element):
     tool._ctrl_held = False
     mock_element.hittester.screen_to_model.return_value = (100, 50)
     mock_element.sketch.registry.get_point.side_effect = lambda pid: (
-        Point(pid, 100, 50) if pid == 1 else Point(pid, 0, 0)
+        SketchPoint(pid, 100, 50) if pid == 1 else SketchPoint(pid, 0, 0)
     )
 
     tool.on_press(100, 200, 1)

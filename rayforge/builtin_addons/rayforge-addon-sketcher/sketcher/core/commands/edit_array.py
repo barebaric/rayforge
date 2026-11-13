@@ -5,13 +5,14 @@ from collections.abc import Sequence
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
+from raygeo.sketch.entities.circle import Circle
+
 from ..arrays import (
     Array,
     ArrayStrategy,
     InstancePlacement,
     resolve_template_center,
 )
-from ..entities import Circle
 from ..entity_group import EntityGroup
 from ..params import ParameterContext
 from .base import SketchChangeCommand
@@ -19,8 +20,8 @@ from .create_array import CreateArrayCommand
 from .items import AddItemsCommand, RemoveItemsCommand
 
 if TYPE_CHECKING:
-    from ..entities import Entity, Point
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
+
     from ..sketch import Sketch
 
 logger = logging.getLogger(__name__)
@@ -65,8 +66,8 @@ class EditArrayCommand(SketchChangeCommand):
         self._old_array_state: dict[str, Any] | None = None
         self._old_guide_sig: tuple | None = None
         self._old_template_sig: tuple | None = None
-        self._template_point_snapshot: list[tuple[Any, float, float]] = []
-        self._copy_updates: list[tuple[Any, float, float]] = []
+        self._template_point_snapshot: list[tuple[int, float, float]] = []
+        self._copy_updates: list[tuple[int, float, float]] = []
         self._updated_members: list[tuple[int, list[int]]] = []
         self._force_full_regen: bool = force_full_regen
         self._template_standalone: list[int] = []
@@ -274,7 +275,7 @@ class EditArrayCommand(SketchChangeCommand):
         if not stale_ids:
             return
         sketch = self.sketch
-        points, entities, constraints = (
+        point_dicts, entity_ids, constraints = (
             RemoveItemsCommand.calculate_dependencies_for_ids(
                 sketch, set(stale_ids)
             )
@@ -285,44 +286,56 @@ class EditArrayCommand(SketchChangeCommand):
         # machinery owns its copies' points, so collect the fixed
         # orphans of the removed entities here — without this, every
         # re-apply would leak them.
-        removed = {e.id for e in entities}
+        removed = set(entity_ids)
         registry = sketch.registry
         used_by_remaining = {
             pid
-            for e in registry.entities
-            if e.id not in removed
-            for pid in e.get_point_ids()
+            for eid in registry.entity_ids()
+            if eid not in removed
+            for pid in registry.entity_point_ids(eid) or []
         }
-        known = {p.id for p in points}
+        known = {d["id"] for d in point_dicts}
         for eid in removed:
-            entity = registry.get_entity(eid)
+            entity = registry.get_entity_object(eid)
             if entity is None:
                 continue
             for pid in entity.get_point_ids():
                 if pid in known or pid in used_by_remaining:
                     continue
-                try:
-                    pt = registry.get_point(pid)
-                except IndexError:
+                position = registry.get_point(pid)
+                if position is None:
                     continue
-                if pt.fixed:
-                    points.append(pt)
+                if registry.point_is_fixed(pid):
+                    point_dicts.append(
+                        {
+                            "id": pid,
+                            "x": position[0],
+                            "y": position[1],
+                            "fixed": True,
+                        }
+                    )
                     known.add(pid)
         for slot in stale_slots:
             for pid in self.array.standalone_pids.get(slot, []):
                 if pid in known:
                     continue
-                try:
-                    pt = registry.get_point(pid)
-                except IndexError:
+                position = registry.get_point(pid)
+                if position is None:
                     continue
-                points.append(pt)
+                point_dicts.append(
+                    {
+                        "id": pid,
+                        "x": position[0],
+                        "y": position[1],
+                        "fixed": False,
+                    }
+                )
                 known.add(pid)
         self.remove_cmd = RemoveItemsCommand(
             sketch,
             "",
-            points=points,
-            entities=entities,
+            points=point_dicts,
+            entity_ids=entity_ids,
             constraints=constraints,
         )
         self.remove_cmd.apply_direct()
@@ -396,8 +409,10 @@ class EditArrayCommand(SketchChangeCommand):
         assert self._template_group
         registry = self.sketch.registry
 
+        add_cmd = AddItemsCommand(self.sketch, "")
         result = CreateArrayCommand.calculate_geometry(
-            registry,
+            self.sketch,
+            add_cmd,
             self.strategy,
             list(self._template_group),
             center_pid=self._array_center_pid(registry),
@@ -407,51 +422,35 @@ class EditArrayCommand(SketchChangeCommand):
         if result is None:
             return
 
-        add_points: list[Point] = []
-        add_entities: list[Entity] = []
-        pending_groups: list[tuple[int, list[Entity]]] = []
-        slot_extras: dict[int, list[Point]] = {}
-
+        self.add_cmd = add_cmd
         # Placements are generated in slot order starting at slot 1;
         # the template member (slot 0) is not a placement.
+        created_groups = []
         for slot in slots:
             i = slot - 1
             if i < 0 or i >= len(result["instance_maps"]):
                 continue
-            add_points.extend(result["instance_point_groups"][i])
-            instance_entities = result["instance_entity_groups"][i]
-            add_entities.extend(instance_entities)
-            # Entity IDs are assigned by AddItemsCommand during execute;
-            # resolve them into real IDs afterwards.
-            pending_groups.append((slot, instance_entities))
-            if i < len(result["instance_extra_points"]):
-                slot_extras[slot] = result["instance_extra_points"][i]
-
-        self.add_cmd = AddItemsCommand(
-            self.sketch,
-            "",
-            points=add_points,
-            entities=add_entities,
-            constraints=[],
-        )
-        self.add_cmd._do_execute()
-        self.created_groups = [
-            (slot, [e.id for e in entities])
-            for slot, entities in pending_groups
+            created_groups.append(
+                (slot, result["instance_entity_groups"][i])
+            )
+        self.created_groups = created_groups
+        self.created_entity_ids = [
+            eid for _slot, eids in created_groups for eid in eids
         ]
-        self.created_entity_ids = [e.id for e in add_entities]
-        # Standalone points of the new members; IDs are read after
-        # AddItemsCommand executed, when they are final.
-        self._created_standalone = {
-            slot: [pt.id for pt in extras]
-            for slot, extras in slot_extras.items()
-        }
+        # Standalone points of the new members.
+        self._created_standalone = {}
+        for slot in slots:
+            i = slot - 1
+            if 0 <= i < len(result["instance_extra_pids"]):
+                self._created_standalone[slot] = result[
+                    "instance_extra_pids"
+                ][i]
         self.array.standalone_pids.update(self._created_standalone)
         logger.info(
             "ArrayEdit[%s]: created %d instances (%d entities)",
             self.array.uid[:8],
             len(self.created_groups),
-            len(add_entities),
+            len(self.created_entity_ids),
         )
 
     def _reanchor_template(
@@ -476,7 +475,7 @@ class EditArrayCommand(SketchChangeCommand):
         )
 
     def _array_center_pid(self, registry: EntityRegistry) -> int | None:
-        circle = registry.get_entity(self.array.guide_circle_id)
+        circle = registry.get_entity_object(self.array.guide_circle_id)
         if isinstance(circle, Circle):
             return circle.center_idx
         return None
@@ -493,11 +492,10 @@ class EditArrayCommand(SketchChangeCommand):
         template_group = EntityGroup(registry, template_eids)
         snapshot = template_group.with_helpers().snapshot_positions()
         for pid in self._template_standalone:
-            try:
-                pt = registry.get_point(pid)
-            except IndexError:
+            position = registry.get_point(pid)
+            if position is None:
                 continue
-            snapshot.append((pt, pt.x, pt.y))
+            snapshot.append((pid, position[0], position[1]))
         self._template_point_snapshot = snapshot
 
     def _redo(self) -> None:
@@ -525,9 +523,8 @@ class EditArrayCommand(SketchChangeCommand):
             # reproduces the edited state exactly (the in-place copies
             # kept their ids, so the recorded groups are still valid).
             self._reanchor_template(registry, self._template_group)
-            for pt, x, y in self._copy_updates:
-                pt.x = x
-                pt.y = y
+            for pid, x, y in self._copy_updates:
+                registry.set_point_position(pid, x, y)
             kept_members = [(0, list(self._template_group))] + [
                 (slot, list(eids)) for slot, eids in self._updated_members
             ]
@@ -552,7 +549,9 @@ class EditArrayCommand(SketchChangeCommand):
             self.remove_cmd._do_undo()
         # Restore template point positions that were moved by
         # _reanchor_template.
-        EntityGroup.restore_positions(self._template_point_snapshot)
+        EntityGroup.restore_positions(
+            self._template_point_snapshot, self.sketch.registry
+        )
         self._template_point_snapshot = []
         if self._old_array_state is None:
             return
@@ -567,9 +566,9 @@ class EditArrayCommand(SketchChangeCommand):
             and self._frame_state.get("radius_constraint") is not None
             and self._frame_state.get("old_radius_value") is not None
         ):
-            self._frame_state["radius_constraint"].value = self._frame_state[
-                "old_radius_value"
-            ]
+            self._frame_state["radius_constraint"].set_value(
+                self._frame_state["old_radius_value"]
+            )
 
 
 def _log_array_residuals(sketch: Sketch) -> None:
@@ -577,15 +576,13 @@ def _log_array_residuals(sketch: Sketch) -> None:
     Logs the worst constraint residual per type so a broken edit state
     is visible in the log immediately, before any solve runs.
     """
-    ctx = ParameterContext()
+    residuals = sketch.registry.constraint_residuals()
     worst: dict[str, float] = {}
-    for constr in sketch.constraints:
-        name = type(constr).__name__
-        err = constr.error(sketch.registry, ctx)
-        if not isinstance(err, (list, tuple)):
-            err = [err]
-        for value in err:
-            worst[name] = max(worst.get(name, 0.0), abs(value))
+    for index, value in enumerate(residuals):
+        name = "constraint"
+        if index < len(sketch.constraints):
+            name = type(sketch.constraints[index]).__name__
+        worst[name] = max(worst.get(name, 0.0), abs(value))
     summary = ", ".join(
         f"{name}={value:.3e}" for name, value in sorted(worst.items())
     )

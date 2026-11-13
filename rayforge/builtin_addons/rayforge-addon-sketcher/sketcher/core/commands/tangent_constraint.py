@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from ..entities import Arc, Circle, Line
+from raygeo.sketch.entities.arc import Arc
+from raygeo.sketch.entities.circle import Circle
+from raygeo.sketch.entities.line import Line
+
 from ..types import EntityID
 
 if TYPE_CHECKING:
@@ -26,7 +29,7 @@ class TangentConstraintCommand:
         sel_shape: Arc | Circle | None = None
 
         for eid in entity_ids:
-            e = registry.get_entity(eid)
+            e = registry.get_entity_object(eid)
             if isinstance(e, Line):
                 sel_line = e
             elif isinstance(e, (Arc, Circle)):

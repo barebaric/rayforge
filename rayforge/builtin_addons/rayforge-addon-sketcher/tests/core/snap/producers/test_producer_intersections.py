@@ -264,7 +264,7 @@ def test_construction_excluded(producer, registry, drag_context):
     p3 = registry.add_point(0.0, 10.0)
     p4 = registry.add_point(10.0, 0.0)
     line2_id = registry.add_line(p3, p4)
-    registry.get_entity(line2_id).construction = True
+    registry.get_entity_object(line2_id).construction = True
 
     drag_position = (5.0, 5.0)
     threshold = 5.0
@@ -283,12 +283,12 @@ def test_construction_included(producer, registry, drag_context):
     p1 = registry.add_point(0.0, 0.0)
     p2 = registry.add_point(10.0, 10.0)
     line1_id = registry.add_line(p1, p2)
-    registry.get_entity(line1_id).construction = True
+    registry.get_entity_object(line1_id).construction = True
 
     p3 = registry.add_point(0.0, 10.0)
     p4 = registry.add_point(10.0, 0.0)
     line2_id = registry.add_line(p3, p4)
-    registry.get_entity(line2_id).construction = True
+    registry.get_entity_object(line2_id).construction = True
 
     drag_position = (5.0, 5.0)
     threshold = 5.0

@@ -1,11 +1,11 @@
 import pytest
-from sketcher.core.constraints import (
-    CoincidentConstraint,
-    HorizontalConstraint,
-    PointOnLineConstraint,
-    VerticalConstraint,
-)
-from sketcher.core.entities import Line, Point
+from raygeo.sketch.entities.point import SketchPoint
+from raygeo.sketch.constraints.coincident import CoincidentConstraint
+from raygeo.sketch.constraints.horizontal import HorizontalConstraint
+from raygeo.sketch.constraints.point_on_line import PointOnLineConstraint
+from raygeo.sketch.constraints.vertical import VerticalConstraint
+from raygeo.sketch.entities.line import Line
+from typing import Any
 from sketcher.core.snap import SnapLineType
 from sketcher.core.snap.types import SnapLine, SnapPoint, SnapResult
 from sketcher.ui_gtk.tools.snap_mixin import SnapMixin
@@ -17,7 +17,7 @@ class Harness(SnapMixin):
 
 
 def axis_lines(source_pid):
-    src = Point(source_pid, 0.0, 0.0)
+    src = SketchPoint(source_pid, 0.0, 0.0)
     return [
         SnapLine(
             is_horizontal=True,
@@ -110,7 +110,7 @@ def test_axis_constraints_skip_primary_snap_point():
         x=0.0,
         y=0.0,
         line_type=SnapLineType.ENTITY_POINT,
-        source=Point(7, 0.0, 0.0),
+        source=SketchPoint(7, 0.0, 0.0),
     )
 
     constraints = harness._build_axis_constraints(

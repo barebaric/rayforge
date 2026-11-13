@@ -17,8 +17,9 @@ from ...core.arrays import (
     CircularArray,
     CircularArrayStrategy,
 )
+from raygeo.sketch.entities.circle import Circle
+
 from ...core.commands import CreateArrayCommand
-from ...core.entities import Circle
 from ...core.entity_group import EntityGroup
 from .array_base import ArrayToolBase
 
@@ -67,24 +68,22 @@ class CircularArrayTool(ArrayToolBase):
         assert self._edit_target is not None
         assert isinstance(self._edit_target, CircularArray)
         registry = self.element.sketch.registry
-        circle = registry.get_entity(self._edit_target.guide_circle_id)
+        circle = registry.get_entity_object(self._edit_target.guide_circle_id)
         center = (0.0, 0.0)
         radius = 10.0
         if isinstance(circle, Circle):
-            try:
-                center_pt = registry.get_point(circle.center_idx)
-                radius_pt = registry.get_point(circle.radius_pt_idx)
-                center = (center_pt.x, center_pt.y)
+            center_pt = registry.get_point(circle.center_idx)
+            radius_pt = registry.get_point(circle.radius_pt_idx)
+            if center_pt is not None and radius_pt is not None:
+                center = center_pt
                 radius = math.hypot(
-                    radius_pt.x - center_pt.x, radius_pt.y - center_pt.y
+                    radius_pt[0] - center_pt[0], radius_pt[1] - center_pt[1]
                 )
                 logger.info(
                     "ArrayTool: master circle read back center=%r radius=%.3f",
                     center,
                     radius,
                 )
-            except IndexError:
-                pass
         strategy = CircularArrayStrategy(
             count=self._edit_target.count,
             total_angle_deg=self._edit_target.total_angle_deg,

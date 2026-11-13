@@ -1,11 +1,10 @@
 import pytest
 from sketcher.core import Sketch
 from sketcher.core.commands import DuplicateCommand
-from sketcher.core.constraints import (
-    DistanceConstraint,
-    TangentConstraint,
-)
-from sketcher.core.entities import Arc, Line
+from raygeo.sketch.constraints.distance import DistanceConstraint
+from raygeo.sketch.constraints.tangent import TangentConstraint
+from raygeo.sketch.entities.arc import Arc
+from raygeo.sketch.entities.line import Line
 from sketcher.core.selection import SketchSelection
 
 
@@ -94,8 +93,8 @@ class TestDuplicatePrepare:
 class TestDuplicateExecute:
     def test_creates_copies_at_same_position(self, sketch_with_l):
         s, entity_ids, point_ids = sketch_with_l
-        num_points = len(s.registry.points)
-        num_entities = len(s.registry.entities)
+        num_points = len(s.registry.points())
+        num_entities = len(s.registry.entities())
 
         sel = SketchSelection()
         sel.entity_ids = entity_ids
@@ -108,12 +107,12 @@ class TestDuplicateExecute:
         cmd.capture_undo_state()
         cmd._do_execute()
 
-        assert len(s.registry.points) == num_points + len(dup_point_ids)
-        assert len(s.registry.entities) == 2 * num_entities
+        assert len(s.registry.points()) == num_points + len(dup_point_ids)
+        assert len(s.registry.entities()) == 2 * num_entities
         assert len(cmd.new_entity_ids) == 2
 
         for eid in cmd.new_entity_ids:
-            clone = s.registry.get_entity(eid)
+            clone = s.registry.get_entity_object(eid)
             assert clone is not None
             assert clone.id not in entity_ids
             for pid in clone.get_point_ids():
@@ -131,9 +130,9 @@ class TestDuplicateExecute:
 
         for pid in point_ids:
             p = s.registry.get_point(pid)
-            assert p.x == pytest.approx([-100, 0, 0][point_ids.index(pid)])
-            assert p.y == pytest.approx([0, 0, 100][point_ids.index(pid)])
-        assert all(e.id in entity_ids for e in s.registry.entities[:2])
+            assert p[0] == pytest.approx([-100, 0, 0][point_ids.index(pid)])
+            assert p[1] == pytest.approx([0, 0, 100][point_ids.index(pid)])
+        assert all(e.id in entity_ids for e in s.registry.entities()[:2])
 
     def test_internal_constraint_duplicated_and_remapped(self):
         s = Sketch()
@@ -157,7 +156,7 @@ class TestDuplicateExecute:
         assert clone.p2 != p2
         assert clone.value == pytest.approx(100.0)
 
-        clone_line = s.registry.get_entity(cmd.new_entity_ids[0])
+        clone_line = s.registry.get_entity_object(cmd.new_entity_ids[0])
         assert isinstance(clone_line, Line)
         assert set(clone_line.get_point_ids()) == {clone.p1, clone.p2}
 
@@ -196,7 +195,7 @@ class TestDuplicateExecute:
         cmd.capture_undo_state()
         cmd._do_execute()
 
-        clone = s.registry.get_entity(cmd.new_entity_ids[0])
+        clone = s.registry.get_entity_object(cmd.new_entity_ids[0])
         assert isinstance(clone, Arc)
         assert clone.clockwise is True
 
@@ -213,12 +212,12 @@ class TestDuplicateExecute:
         cmd.capture_undo_state()
         cmd._do_execute()
 
-        clone_line = s.registry.get_entity(cmd.new_entity_ids[0])
+        clone_line = s.registry.get_entity_object(cmd.new_entity_ids[0])
         assert isinstance(clone_line, Line)
         clone_origin = s.registry.get_point(clone_line.p1_idx)
         assert clone_origin.fixed is False
-        assert clone_origin.x == pytest.approx(0)
-        assert clone_origin.y == pytest.approx(0)
+        assert clone_origin[0] == pytest.approx(0)
+        assert clone_origin[1] == pytest.approx(0)
 
     def test_new_point_ids_track_selected_bare_points(self):
         s = Sketch()
@@ -236,7 +235,7 @@ class TestDuplicateExecute:
         assert len(cmd.new_point_ids) == 2
         for new_pid in cmd.new_point_ids:
             p = s.registry.get_point(new_pid)
-            assert p.x in (pytest.approx(0), pytest.approx(100))
+            assert p[0] in (pytest.approx(0), pytest.approx(100))
 
     def test_construction_flag_preserved(self):
         s = Sketch()
@@ -251,7 +250,7 @@ class TestDuplicateExecute:
         cmd.capture_undo_state()
         cmd._do_execute()
 
-        clone = s.registry.get_entity(cmd.new_entity_ids[0])
+        clone = s.registry.get_entity_object(cmd.new_entity_ids[0])
         assert isinstance(clone, Line)
         assert clone.construction is True
 
@@ -259,23 +258,23 @@ class TestDuplicateExecute:
 class TestDuplicateUndo:
     def test_undo_removes_duplicates(self, sketch_with_l):
         s, entity_ids, _point_ids = sketch_with_l
-        num_points = len(s.registry.points)
-        num_entities = len(s.registry.entities)
+        num_points = len(s.registry.points())
+        num_entities = len(s.registry.entities())
 
         sel = SketchSelection()
         sel.entity_ids = entity_ids
 
         cmd = DuplicateCommand(s, sel)
         cmd.execute()
-        assert len(s.registry.points) == num_points + len(cmd.created_points)
-        assert len(s.registry.entities) == 2 * num_entities
+        assert len(s.registry.points()) == num_points + len(cmd.created_points)
+        assert len(s.registry.entities()) == 2 * num_entities
 
         cmd.undo()
 
-        assert len(s.registry.points) == num_points
-        assert len(s.registry.entities) == num_entities
+        assert len(s.registry.points()) == num_points
+        assert len(s.registry.entities()) == num_entities
         for eid in cmd.new_entity_ids:
-            assert s.registry.get_entity(eid) is None
+            assert s.registry.get_entity_object(eid) is None
 
     def test_undo_removes_duplicated_constraints(self):
         s = Sketch()
@@ -307,11 +306,11 @@ class TestDuplicateUndo:
         cmd.execute()
 
         # Move the duplicate to prove undo restores the full state
-        clone_line = s.registry.get_entity(cmd.new_entity_ids[0])
+        clone_line = s.registry.get_entity_object(cmd.new_entity_ids[0])
         assert isinstance(clone_line, Line)
-        s.registry.get_point(clone_line.p1_idx).x = 500
+        s.registry.get_point(clone_line.p1_idx)[0] = 500
 
         cmd.undo()
 
-        assert s.registry.get_point(p1).x == pytest.approx(0)
-        assert s.registry.get_point(p2).x == pytest.approx(100)
+        assert s.registry.get_point(p1)[0] == pytest.approx(0)
+        assert s.registry.get_point(p2)[0] == pytest.approx(100)

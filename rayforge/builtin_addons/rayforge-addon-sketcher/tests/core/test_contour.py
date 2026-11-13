@@ -2,7 +2,10 @@
 
 from sketcher.core import Sketch
 from sketcher.core.contour import build_offset_items
-from sketcher.core.entities import Arc, Circle, Ellipse, PolygonOutline
+from sketcher.core.offset import PolygonOutline
+from raygeo.sketch.entities.arc import Arc
+from raygeo.sketch.entities.circle import Circle
+from raygeo.sketch.entities.ellipse import Ellipse
 
 
 def _square_sketch():

@@ -4,11 +4,10 @@ from typing import TYPE_CHECKING, Union
 
 from ...core.commands import UnstickJunctionCommand
 from ...core.commands.items import RemoveItemsCommand
-from ...core.entities import Entity, Point
 from .base import SketchTool
 
 if TYPE_CHECKING:
-    from ...core.constraints import Constraint
+    from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +18,7 @@ class DeleteTool(SketchTool):
 
     def is_available(
         self,
-        target: Union[Point, Entity, "Constraint"] | None,
+        target: Any | None,
         target_type: str | None,
     ) -> bool:
         sel = self.element.selection

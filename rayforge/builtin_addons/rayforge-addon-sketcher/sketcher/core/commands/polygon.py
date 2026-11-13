@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import itertools
 import math
 from collections.abc import Iterator
 from gettext import gettext as _
@@ -8,21 +7,17 @@ from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point as GeoPoint
 
-from ..constraints import (
-    AspectRatioConstraint,
-    Constraint,
-    EqualLengthConstraint,
-    PointOnLineConstraint,
-    RadiusConstraint,
-)
-from ..entities import Circle, Entity, Line, Point
+from raygeo.sketch.entities.circle import Circle
+from raygeo.sketch.entities.line import Line
+
 from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData
 from .items import AddItemsCommand
 
 if TYPE_CHECKING:
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
+
     from ..sketch import Sketch
 
 MIN_SIDES = 3
@@ -102,17 +97,19 @@ class PolygonPreviewState(PreviewState):
     def _vertices(self, registry: EntityRegistry) -> list[GeoPoint]:
         center = registry.get_point(self.center_id)
         first = registry.get_point(self.radius_id)
+        if center is None or first is None:
+            return []
         return polygon_vertices(
-            (center.x, center.y),
-            (first.x, first.y),
+            center,
+            first,
             self.sides,
             self.star_ratio,
         )
 
     def _remove_outline(self, registry: EntityRegistry) -> None:
         corners = set(self.corner_ids)
-        registry.remove_entities_by_id(self.line_ids)
-        registry.remove_points(corners)
+        registry.remove_entities(self.line_ids)
+        registry.remove_points(list(corners))
         self.line_ids = []
         self.corner_ids = []
 
@@ -126,12 +123,12 @@ class PolygonPreviewState(PreviewState):
 
     def reposition(self, registry: EntityRegistry) -> None:
         """Moves the corner points to follow the radius point."""
-        if len(self.corner_ids) + 1 != len(self._vertices(registry)):
+        vertices = self._vertices(registry)
+        if len(self.corner_ids) + 1 != len(vertices):
             self.rebuild(registry)
             return
-        for pid, (x, y) in zip(self.corner_ids, self._vertices(registry)[1:]):
-            point = registry.get_point(pid)
-            point.x, point.y = x, y
+        for pid, (x, y) in zip(self.corner_ids, vertices[1:]):
+            registry.set_point_position(pid, x, y)
 
     def set_shape(
         self, registry: EntityRegistry, sides: int, star_ratio: float | None
@@ -147,41 +144,45 @@ class PolygonPreviewState(PreviewState):
         self.locked_radius = radius
         center = registry.get_point(self.center_id)
         first = registry.get_point(self.radius_id)
-        first.x, first.y = _at_radius(center, first.x, first.y, radius)
+        if center is None or first is None:
+            return
+        x, y = _at_radius(center, first[0], first[1], radius)
+        registry.set_point_position(self.radius_id, x, y)
         self.reposition(registry)
 
     def get_dimensions(self, registry: EntityRegistry) -> list[DimensionData]:
         """Radius, corner count and star ratio, in dimension-field order."""
-        try:
-            center = registry.get_point(self.center_id)
-            first = registry.get_point(self.radius_id)
-        except IndexError:
+        center = registry.get_point(self.center_id)
+        first = registry.get_point(self.radius_id)
+        if center is None or first is None:
             return []
-        radius = math.hypot(first.x - center.x, first.y - center.y)
+        radius = math.hypot(first[0] - center[0], first[1] - center[1])
         ratio = "-" if self.star_ratio is None else f"{self.star_ratio:g}"
         return [
             DimensionData(
                 label=f"R{DimensionData.format_length(radius)}",
                 position=(
-                    (center.x + first.x) / 2.0,
-                    (center.y + first.y) / 2.0,
+                    (center[0] + first[0]) / 2.0,
+                    (center[1] + first[1]) / 2.0,
                 ),
             ),
             DimensionData(
-                label=f"{self.sides}", position=(center.x, center.y)
+                label=f"{self.sides}", position=(center[0], center[1])
             ),
-            DimensionData(label=ratio, position=(first.x, first.y)),
+            DimensionData(label=ratio, position=(first[0], first[1])),
         ]
 
 
-def _at_radius(center: Point, x: float, y: float, radius: float) -> GeoPoint:
-    dx, dy = x - center.x, y - center.y
+def _at_radius(
+    center: tuple[float, float], x: float, y: float, radius: float
+) -> GeoPoint:
+    dx, dy = x - center[0], y - center[1]
     length = math.hypot(dx, dy)
     if length < 1e-9:
         dx, dy, length = 1.0, 0.0, 1.0
     return (
-        center.x + dx / length * radius,
-        center.y + dy / length * radius,
+        center[0] + dx / length * radius,
+        center[1] + dy / length * radius,
     )
 
 
@@ -249,16 +250,13 @@ class PolygonCommand(SketchChangeCommand):
         """Moves the first corner, which sets radius and rotation."""
         if not isinstance(preview_state, PolygonPreviewState):
             raise TypeError("Expected PolygonPreviewState")
-        try:
-            center = registry.get_point(preview_state.center_id)
-            first = registry.get_point(preview_state.radius_id)
-        except IndexError:
+        center = registry.get_point(preview_state.center_id)
+        if center is None:
             return
         if preview_state.locked_radius is not None:
             radius = preview_state.locked_radius
-            first.x, first.y = _at_radius(center, x, y, radius)
-        else:
-            first.x, first.y = x, y
+            x, y = _at_radius(center, x, y, radius)
+        registry.set_point_position(preview_state.radius_id, x, y)
         preview_state.reposition(registry)
 
     @staticmethod
@@ -274,81 +272,93 @@ class PolygonCommand(SketchChangeCommand):
         preview_state._remove_outline(registry)
         registry.remove_points([preview_state.radius_id])
 
-    def _first_corner(self, center: Point) -> GeoPoint:
+    def _first_corner(self, center) -> GeoPoint:
         x, y = self.end_pos
         if self.end_pid is not None:
             end = self.sketch.registry.get_point(self.end_pid)
-            x, y = end.x, end.y
+            if end is not None:
+                x, y = end
         if self.fixed_radius is not None:
             return _at_radius(center, x, y, self.fixed_radius)
         return x, y
 
     def _shape(
-        self, center: Point, first: GeoPoint
-    ) -> tuple[list[Point], list[Entity], list[Constraint]]:
-        temp_ids = itertools.count(-2, -1)
+        self, center, first: GeoPoint, add_cmd: AddItemsCommand
+    ) -> tuple[list[int], list[int], list]:
         vertices = polygon_vertices(
-            (center.x, center.y), first, self.sides, self.star_ratio
+            center, first, self.sides, self.star_ratio
         )
-        points = [Point(next(temp_ids), x, y) for x, y in vertices]
-        ids = [p.id for p in points]
-        if self.end_pid is not None:
-            points.pop(0)
-            ids[0] = self.end_pid
-        lines = [Line(next(temp_ids), a, b) for a, b in _ring(ids)]
+        ids = []
+        for index, (x, y) in enumerate(vertices):
+            if index == 0 and self.end_pid is not None:
+                ids.append(self.end_pid)
+            else:
+                ids.append(add_cmd.add_point(x, y))
+        lines = [add_cmd.add_entity(Line(a, b)) for a, b in _ring(ids)]
         stride = 1 if self.star_ratio is None else 2
         rings = [ids[0::stride]]
         if self.star_ratio is not None:
             rings.append(ids[1::2])
         circles = [
-            Circle(next(temp_ids), center.id, ring[0], construction=True)
+            add_cmd.add_entity(
+                Circle(self.center_id, ring[0], construction=True)
+            )
             for ring in rings
         ]
-        constraints: list[Constraint] = [
-            EqualLengthConstraint([line.id for line in lines])
+        constraints: list = [
+            {
+                "type": "EqualLengthConstraint",
+                "entity_ids": lines,
+            }
         ]
         for circle, ring in zip(circles, rings):
             constraints += [
-                PointOnLineConstraint(pid, circle.id) for pid in ring[1:]
+                {
+                    "type": "PointOnLineConstraint",
+                    "point_id": pid,
+                    "shape_id": circle,
+                }
+                for pid in ring[1:]
             ]
         if self.star_ratio is not None:
             constraints.append(
-                AspectRatioConstraint(
-                    center.id, ids[1], center.id, ids[0], self.star_ratio
-                )
+                {
+                    "type": "AspectRatioConstraint",
+                    "p1": self.center_id,
+                    "p2": ids[1],
+                    "p3": self.center_id,
+                    "p4": ids[0],
+                    "ratio": self.star_ratio,
+                }
             )
         if self.fixed_radius is not None:
             constraints.append(
-                RadiusConstraint(circles[0].id, self.fixed_radius)
+                {
+                    "type": "RadiusConstraint",
+                    "entity_id": circles[0],
+                    "value": self.fixed_radius,
+                }
             )
-        return points, [*lines, *circles], constraints
+        return ids, [*lines, *circles], constraints
 
     def _do_execute(self) -> None:
         if self.add_cmd:
-            return self.add_cmd._do_execute()
+            return self.add_cmd._redo()
         registry = self.sketch.registry
-        try:
-            center = registry.get_point(self.center_id)
-            first = self._first_corner(center)
-        except IndexError:
+        center = registry.get_point(self.center_id)
+        if center is None:
             return
-        radius = math.hypot(first[0] - center.x, first[1] - center.y)
+        first = self._first_corner(center)
+        radius = math.hypot(first[0] - center[0], first[1] - center[1])
         if radius < 1e-9 or self.end_pid == self.center_id:
             if self.is_center_temp:
                 self.sketch.remove_point_if_unused(self.center_id)
             return
-        points, entities, constraints = self._shape(center, first)
+        add_cmd = AddItemsCommand(self.sketch, "")
+        self._shape(center, first, add_cmd)
         if self.is_center_temp:
-            registry.remove_points([center.id])
-            points.append(center)
-        self.add_cmd = AddItemsCommand(
-            self.sketch,
-            "",
-            points=points,
-            entities=entities,
-            constraints=constraints,
-        )
-        self.add_cmd._do_execute()
+            add_cmd.adopt_point(self.center_id)
+        self.add_cmd = add_cmd
 
     def _do_undo(self) -> None:
         if self.add_cmd:

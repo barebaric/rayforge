@@ -106,10 +106,10 @@ class SnapEngine:
         cannot make the index stale and must not trigger a rebuild.
         """
         return (
-            registry._entity_version,
+            registry.entity_version(),
             tuple(
                 (round(p.x, 6), round(p.y, 6))
-                for p in registry.points
+                for p in registry.points()
                 if skip_point_ids is None or p.id not in skip_point_ids
             ),
         )

@@ -161,7 +161,7 @@ class CircleTool(SnapMixin, SketchTool):
             start_p = self.element.sketch.registry.get_point(start_id)
         except (IndexError, KeyError):
             return False
-        return math.hypot(mx - start_p.x, my - start_p.y) < 1e-6
+        return math.hypot(mx - start_p[0], my - start_p[1]) < 1e-6
 
     def on_hover_motion(self, world_x: float, world_y: float):
         """Updates the live preview of the ellipse."""

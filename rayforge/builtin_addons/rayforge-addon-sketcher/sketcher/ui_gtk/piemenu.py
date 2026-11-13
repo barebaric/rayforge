@@ -1,6 +1,6 @@
 import logging
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Protocol, Union
+from typing import TYPE_CHECKING, Any, Protocol
 
 from blinker import Signal
 from gi.repository import Gtk
@@ -10,8 +10,6 @@ from rayforge.ui_gtk.shared.piemenu import PieMenu, PieMenuItem
 from .tools import PIE_GROUPS, TOOL_REGISTRY
 
 if TYPE_CHECKING:
-    from ..core.constraints import Constraint
-    from ..core.entities import Entity, Point
     from .sketchelement import SketchElement
 
 logger = logging.getLogger(__name__)
@@ -33,7 +31,7 @@ class SketchPieMenu(PieMenu):
         super().__init__(parent_widget)
 
         self.sketch_element: SketchElement | None = None
-        self.target: Point | Entity | Constraint | None = None
+        self.target: Any | None = None
         self.target_type: str | None = None
 
         self.tool_selected = Signal()
@@ -48,7 +46,7 @@ class SketchPieMenu(PieMenu):
     def set_context(
         self,
         sketch_element: "SketchElement",
-        target: Union["Point", "Entity", "Constraint"] | None,
+        target: Any | None,
         target_type: str | None,
     ):
         self.sketch_element = sketch_element

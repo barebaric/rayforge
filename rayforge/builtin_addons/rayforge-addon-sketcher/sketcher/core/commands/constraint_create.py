@@ -4,20 +4,27 @@ import math
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
+from raygeo.sketch.constraints.diameter import DiameterConstraint
+from raygeo.sketch.constraints.distance import DistanceConstraint
+from raygeo.sketch.constraints.radius import RadiusConstraint
+from raygeo.sketch.entities.arc import Arc
+from raygeo.sketch.entities.circle import Circle
+from raygeo.sketch.entities.line import Line
 from rayforge.core.undo.command import Command
 
-from ..constraints import (
-    DiameterConstraint,
-    DistanceConstraint,
-    RadiusConstraint,
-)
-from ..entities import Arc, Circle, Entity, Line
 from .base import SketchChangeCommand
 from .constraint import ModifyConstraintCommand
 from .items import AddItemsCommand
 
+_DICT_LABELS = {
+    "RadiusConstraint": _("Radius"),
+    "DistanceConstraint": _("Distance"),
+    "DiameterConstraint": _("Diameter"),
+}
+
 if TYPE_CHECKING:
-    from ..constraints import Constraint
+    from typing import Any
+
     from ..sketch import Sketch
 
 
@@ -32,7 +39,7 @@ class CreateOrEditConstraintCommand(SketchChangeCommand):
     def __init__(
         self,
         sketch: Sketch,
-        entity: Entity,
+        entity: Any,
         name: str = _("Add Constraint"),
     ):
         super().__init__(sketch, name)
@@ -44,8 +51,8 @@ class CreateOrEditConstraintCommand(SketchChangeCommand):
     @staticmethod
     def get_constraint_for_entity(
         sketch: Sketch,
-        entity: Entity,
-    ) -> Constraint | None:
+        entity: Any,
+    ) -> Any | None:
         """
         Returns existing constraint for entity, or None.
 
@@ -56,13 +63,13 @@ class CreateOrEditConstraintCommand(SketchChangeCommand):
         Returns:
             The existing constraint if found, or None.
         """
-        constraints = sketch.constraints or []
+        registry = sketch.registry
+        constraints = sketch.constraints
 
         if isinstance(entity, Arc):
             for constr in constraints:
-                if (
-                    isinstance(constr, RadiusConstraint)
-                    and constr.entity_id == entity.id
+                if isinstance(constr, RadiusConstraint) and (
+                    constr.constrains_radius(registry, entity.id)
                 ):
                     return constr
 
@@ -77,9 +84,8 @@ class CreateOrEditConstraintCommand(SketchChangeCommand):
 
         elif isinstance(entity, Circle):
             for constr in constraints:
-                if (
-                    isinstance(constr, DiameterConstraint)
-                    and constr.circle_id == entity.id
+                if isinstance(constr, DiameterConstraint) and (
+                    constr.constrains_radius(registry, entity.id)
                 ):
                     return constr
 
@@ -88,11 +94,12 @@ class CreateOrEditConstraintCommand(SketchChangeCommand):
     @staticmethod
     def create_constraint_for_entity(
         sketch: Sketch,
-        entity: Entity,
+        entity: Any,
         initial_value: float | None = None,
-    ) -> Constraint | None:
+    ) -> dict[str, Any] | None:
         """
-        Creates and returns a new constraint for the entity.
+        Creates and returns a reference dictionary for a new entity
+        constraint.
 
         Args:
             sketch: The sketch containing the entity.
@@ -101,8 +108,9 @@ class CreateOrEditConstraintCommand(SketchChangeCommand):
                 If None, the value is calculated from current geometry.
 
         Returns:
-            The newly created constraint, or None if entity type
-            doesn't support constraint creation.
+            The constraint dictionary for
+            ``Sketch.add_constraint_from_dict``, or None if the entity
+            type doesn't support constraint creation.
         """
         registry = sketch.registry
 
@@ -110,34 +118,49 @@ class CreateOrEditConstraintCommand(SketchChangeCommand):
             start = registry.get_point(entity.start_idx)
             center = registry.get_point(entity.center_idx)
             if start and center:
-                radius = math.hypot(start.x - center.x, start.y - center.y)
+                radius = math.hypot(
+                    start[0] - center[0], start[1] - center[1]
+                )
                 value = initial_value if initial_value is not None else radius
-                return RadiusConstraint(entity.id, value)
+                return {
+                    "type": "RadiusConstraint",
+                    "entity_id": entity.id,
+                    "value": value,
+                }
 
         elif isinstance(entity, Line):
             p1 = registry.get_point(entity.p1_idx)
             p2 = registry.get_point(entity.p2_idx)
             if p1 and p2:
-                dist = math.hypot(p1.x - p2.x, p1.y - p2.y)
+                dist = math.hypot(p1[0] - p2[0], p1[1] - p2[1])
                 value = initial_value if initial_value is not None else dist
-                return DistanceConstraint(entity.p1_idx, entity.p2_idx, value)
+                return {
+                    "type": "DistanceConstraint",
+                    "p1": entity.p1_idx,
+                    "p2": entity.p2_idx,
+                    "value": value,
+                }
 
         elif isinstance(entity, Circle):
             center = registry.get_point(entity.center_idx)
             radius_pt = registry.get_point(entity.radius_pt_idx)
             if center and radius_pt:
                 radius = math.hypot(
-                    radius_pt.x - center.x, radius_pt.y - center.y
+                    radius_pt[0] - center[0], radius_pt[1] - center[1]
                 )
                 value = (
                     initial_value if initial_value is not None else radius * 2
                 )
-                return DiameterConstraint(entity.id, value)
+                return {
+                    "type": "DiameterConstraint",
+                    "circle_id": entity.id,
+                    "value": value,
+                }
 
         return None
 
     @property
-    def constraint(self) -> Constraint | None:
+    def constraint(self) -> Any | None:
         """
         Returns the constraint involved in this operation.
 
@@ -158,7 +181,7 @@ class CreateOrEditConstraintCommand(SketchChangeCommand):
 
     def _do_execute(self) -> None:
         if self._add_cmd is not None:
-            return self._add_cmd._do_execute()
+            return self._add_cmd._redo()
 
         existing = self.get_constraint_for_entity(self.sketch, self.entity)
 
@@ -166,22 +189,20 @@ class CreateOrEditConstraintCommand(SketchChangeCommand):
             self._existing_constraint = existing
             return
 
-        new_constr = self.create_constraint_for_entity(
+        constraint_dict = self.create_constraint_for_entity(
             self.sketch, self.entity
         )
 
-        if new_constr is None:
+        if constraint_dict is None:
             return
 
-        self._created_constraint = new_constr
-
-        label = self._get_command_label(new_constr)
-        self._add_cmd = AddItemsCommand(
-            self.sketch,
-            label,
-            constraints=[new_constr],
+        label = _("Add {}").format(
+            _DICT_LABELS.get(constraint_dict.get("type"), _("Constraint"))
         )
-        self._add_cmd._do_execute()
+        self._add_cmd = AddItemsCommand(self.sketch, label)
+        self._created_constraint = self._add_cmd.add_constraint(
+            constraint_dict
+        )
 
     def _do_undo(self) -> None:
         if self._add_cmd is not None:
@@ -208,5 +229,4 @@ class CreateOrEditConstraintCommand(SketchChangeCommand):
         self.timestamp = next_command.timestamp
         return True
 
-    def _get_command_label(self, constraint: Constraint) -> str:
-        return _("Add {}").format(constraint.get_type_name())
+

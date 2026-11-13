@@ -10,7 +10,8 @@ from sketcher.core.boolean import (
     apply_boolean,
     build_boolean_regions,
 )
-from sketcher.core.entities import Circle, PolygonEntity
+from raygeo.sketch.entities.circle import Circle
+from raygeo.sketch.entities.polygon import Polygon
 
 
 def _square_sketch(sketch, x=0.0, y=0.0, size=20.0):
@@ -82,7 +83,7 @@ def test_regions_include_polygon_holes():
     sketch = Sketch()
     center = sketch.add_point(0.0, 0.0)
     handle = sketch.add_point(10.0, 0.0)
-    _center_pt, _handle_pt, polygon = PolygonEntity.build(
+    _center_pt, _handle_pt, polygon = Polygon.build(
         9000,
         center,
         handle,
@@ -92,9 +93,7 @@ def test_regions_include_polygon_holes():
         closed=True,
         world_holes=[[(5.0, 5.0), (9.0, 5.0), (9.0, 9.0), (5.0, 9.0)]],
     )
-    sketch.registry.add_points([_center_pt, _handle_pt])
-    sketch.registry.entities.append(polygon)
-    sketch.registry._entity_map[polygon.id] = polygon
+    sketch.registry.add_entity(polygon)
     circle = _circle_sketch(sketch, 40.0)
     regions = _regions(sketch, [polygon.id, circle])
     solid = next(r for r in regions if len(r.rings) == 2)
@@ -115,7 +114,7 @@ def test_regions_skip_construction_entities():
     sketch = Sketch()
     c1 = _circle_sketch(sketch, 0.0)
     c2 = _circle_sketch(sketch, 8.0)
-    entity = sketch.registry.get_entity(c2)
+    entity = sketch.registry.get_entity_object(c2)
     assert entity is not None
     entity.construction = True
     assert build_boolean_regions(sketch, [c1, c2]) is None
@@ -218,6 +217,6 @@ def test_entities_of_type_circle_sampled_fully():
     regions = _regions(sketch, [c1, c2])
     for region in regions:
         assert isinstance(
-            sketch.registry.get_entity(region.entity_ids[0]), Circle
+            sketch.registry.get_entity_object(region.entity_ids[0]), Circle
         )
         assert len(region.rings[0]) >= 16

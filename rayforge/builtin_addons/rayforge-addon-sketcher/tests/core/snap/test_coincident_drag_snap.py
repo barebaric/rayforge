@@ -42,7 +42,7 @@ def test_coincident_point_axis_lines_are_suppressed(registry):
     endpoint_lines = [
         sl
         for sl in snap_lines
-        if sl.source is endpoint or sl.coordinate in (endpoint.x, endpoint.y)
+        if sl.source is endpoint or sl.coordinate in (endpoint[0], endpoint[1])
     ]
     assert endpoint_lines == []
 
@@ -94,7 +94,7 @@ def test_drag_still_snaps_to_other_points(registry, engine):
 
     assert result.snapped
     assert result.primary_snap_point is not None
-    assert result.primary_snap_point.x == pytest.approx(target.x)
+    assert result.primary_snap_point.x == pytest.approx(target[0])
     assert result.primary_snap_point.line_type == SnapLineType.ENTITY_POINT
 
 
@@ -145,9 +145,7 @@ def test_index_rebuilds_when_points_move_in_place(registry, engine):
 
     assert engine.query(registry, (10.0, 3.0), context).snapped
 
-    moved = registry.get_point(0)
-    moved.x = 50.0
-    moved.y = 20.0
+    registry.set_point_position(0, 50.0, 20.0)
 
     assert engine.query(registry, (50.0, 23.0), context).snapped
     assert not engine.query(registry, (10.0, 3.0), context).snapped
@@ -169,7 +167,7 @@ def test_snap_result_current_tracks_geometry_changes(registry, engine):
     engine.query(registry, (10.0, 3.0), context)
     assert engine.is_snap_result_current(registry)
 
-    registry.get_point(0).x = 12.0
+    registry.get_point(0)[0] = 12.0
     assert not engine.is_snap_result_current(registry)
 
     engine.query(registry, (12.0, 3.0), context)

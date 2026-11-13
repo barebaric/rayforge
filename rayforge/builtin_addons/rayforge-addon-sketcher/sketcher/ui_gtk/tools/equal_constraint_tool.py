@@ -7,12 +7,12 @@ from ...core.commands import (
     EqualConstraintCommand,
 )
 from ...core.commands.items import RemoveItemsCommand
-from ...core.constraints import EqualLengthConstraint
-from ...core.entities import Entity, Point
+from raygeo.sketch.constraints.equal_length import EqualLengthConstraint
+from ...core import constraint_info
 from .base import SketchTool
 
 if TYPE_CHECKING:
-    from ...core.constraints import Constraint
+    from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -25,10 +25,10 @@ class EqualConstraintTool(SketchTool):
 
     def is_available(
         self,
-        target: Union[Point, Entity, "Constraint"] | None,
+        target: Any | None,
         target_type: str | None,
     ) -> bool:
-        return EqualLengthConstraint.can_apply_to(
+        return constraint_info.can_apply(EqualLengthConstraint, 
             self.element.selection, self.element.sketch
         )
 

@@ -3,7 +3,7 @@ from typing import cast
 import pytest
 from sketcher.core import Sketch
 from sketcher.core.commands import TextBoxCommand
-from sketcher.core.entities import TextBoxEntity
+from raygeo.sketch.entities.text_box import TextBox
 
 from rayforge.core.doc import Doc
 from rayforge.core.workpiece import WorkPiece
@@ -80,7 +80,7 @@ def test_update_asset_undo_restores_workpiece_size(doc):
     box_cmd.execute()
     assert box_cmd.text_box_id is not None
     text_box = cast(
-        TextBoxEntity, sketch.registry.get_entity(box_cmd.text_box_id)
+        TextBox, sketch.registry.get_entity_object(box_cmd.text_box_id)
     )
     text_box.content = "ab"
     sketch.solve()

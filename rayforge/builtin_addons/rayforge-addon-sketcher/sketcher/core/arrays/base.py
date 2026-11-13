@@ -8,13 +8,12 @@ from dataclasses import dataclass
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Any, ClassVar
 
-from ..entities import Circle
+from raygeo.sketch.entities.circle import Circle
+
 from ..entity_group import EntityGroup
 
 if TYPE_CHECKING:
-    from ..constraints import Constraint
-    from ..entities import Entity, Point
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -170,10 +169,13 @@ class ArrayStrategy(ABC):
         self,
         center_pid: int | None,
         radius_pt_pid: int | None,
-    ) -> tuple[list[Any], list[Entity], list[Constraint]]:
+    ) -> tuple[list[Any], list[Any], list[Any]]:
         """
-        Returns the master construction geometry (points, entities,
-        constraints) that visualizes and carries the array definition.
+        Returns the master construction geometry as
+        ``(point_specs, entity_objects, constraint_dicts)``: point
+        specs are ``(pid, x, y, fixed)`` tuples, entity objects are
+        unattached raygeo entities, constraint dicts are reference
+        dictionaries for ``Sketch.add_constraint_from_dict``.
         Instances are equal static copies; only the master is special.
         """
         return [], [], []
@@ -213,13 +215,13 @@ class ArrayStrategy(ABC):
         The default is a no-op (curve-along arrays have no scalable
         master).
         """
-        return
+        return None
 
 
 def resolve_template_center(
     registry: EntityRegistry,
     template_entity_ids: list[int],
-    template_points: list[Point],
+    template_points: Any = None,
 ) -> tuple[float, float]:
     """Returns the logical center of the template entities.
 
@@ -308,8 +310,8 @@ class Array(ABC):
         # Transient caches for sync_arrays: store the guide's and the
         # template's geometry after each solve so changes can be
         # detected.
-        self._cached_guide_sig: tuple | None = None
-        self._cached_template_sig: tuple | None = None
+        self._cached_guide_sig: Any | None = None
+        self._cached_template_sig: Any | None = None
         self._cached_guide_frame: tuple[tuple[float, float], float] | None = (
             None
         )
@@ -446,7 +448,7 @@ class Array(ABC):
     # decisions and maintains its own caches.
     # ------------------------------------------------------------------
 
-    def guide_signature(self, registry: EntityRegistry) -> tuple:
+    def guide_signature(self, registry: EntityRegistry) -> Any:
         """
         Quantized signature of the guide geometry that array members
         depend on: the full guide shape. For circular arrays this
@@ -457,21 +459,21 @@ class Array(ABC):
         sig = registry.geometry_signature(self.guide_entity_id)
         return sig if sig is not None else ()
 
-    def template_signature(self, registry: EntityRegistry) -> tuple:
+    def template_signature(self, registry: EntityRegistry) -> Any:
         """Quantized geometry signature of the template member (slot
         0), one entry per surviving template entity."""
         living = self.living_members(registry)
         if not living:
             return ()
-        signatures: list[tuple] = []
+        signatures: list[Any] = []
         for eid in living[0][1]:
             sig = registry.geometry_signature(eid)
             if sig is not None:
                 signatures.append(sig)
-        return tuple(signatures)
+        return signatures
 
     def signatures_changed(
-        self, guide_sig: tuple, template_sig: tuple
+        self, guide_sig: Any, template_sig: Any
     ) -> bool:
         """True if the stored sync caches disagree with the given
         signatures, i.e. the guide or the template was edited since
@@ -501,7 +503,7 @@ class Array(ABC):
             )
         return guide_changed or template_changed
 
-    def update_caches(self, guide_sig: tuple, template_sig: tuple) -> None:
+    def update_caches(self, guide_sig: Any, template_sig: Any) -> None:
         """Stores the current guide/template signatures after a
         sync cycle."""
         self._cached_guide_sig = guide_sig
@@ -527,7 +529,7 @@ class Array(ABC):
         them does not dissolve the array as long as the master
         geometry still exists.
         """
-        if registry.get_entity(self.guide_circle_id) is None:
+        if registry.get_entity_object(self.guide_circle_id) is None:
             return False
         self.members = self.living_members(registry)
         self.standalone_pids = {
@@ -546,7 +548,7 @@ class Array(ABC):
         move it. Arrays whose guide is not a circle have no radius
         point.
         """
-        circle = registry.get_entity(self.guide_circle_id)
+        circle = registry.get_entity_object(self.guide_circle_id)
         return isinstance(circle, Circle) and circle.radius_pt_idx == pid
 
     def reanchor_template(
@@ -585,7 +587,9 @@ class Array(ABC):
         living: list[tuple[int, list[int]]] = []
         for slot, eids in self.members:
             alive = [
-                eid for eid in eids if registry.get_entity(eid) is not None
+                eid
+                for eid in eids
+                if registry.get_entity_object(eid) is not None
             ]
             if alive:
                 living.append((slot, alive))
@@ -629,8 +633,4 @@ def find_array_for_entity(arrays: list[Array], entity_id: int) -> Array | None:
 
 
 def _point_exists(registry: EntityRegistry, pid: int) -> bool:
-    try:
-        registry.get_point(pid)
-    except IndexError:
-        return False
-    return True
+    return registry.get_point(pid) is not None

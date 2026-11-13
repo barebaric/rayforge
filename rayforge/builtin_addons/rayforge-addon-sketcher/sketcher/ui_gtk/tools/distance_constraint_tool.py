@@ -6,12 +6,12 @@ from ...core.commands import (
     AddItemsCommand,
     DistanceConstraintCommand,
 )
-from ...core.constraints import DistanceConstraint
-from ...core.entities import Entity, Point
+from raygeo.sketch.constraints.distance import DistanceConstraint
+from ...core import constraint_info
 from .base import SketchTool
 
 if TYPE_CHECKING:
-    from ...core.constraints import Constraint
+    from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -24,10 +24,10 @@ class DistanceConstraintTool(SketchTool):
 
     def is_available(
         self,
-        target: Union[Point, Entity, "Constraint"] | None,
+        target: Any | None,
         target_type: str | None,
     ) -> bool:
-        return DistanceConstraint.can_apply_to(
+        return constraint_info.can_apply(DistanceConstraint, 
             self.element.selection, self.element.sketch
         )
 

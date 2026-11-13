@@ -53,13 +53,11 @@ def test_index_not_rebuilt_while_only_dragged_points_move():
     engine.query(registry, (0.0, 0.0), drag_context)
     assert producer.produce_calls == 1
 
-    point = registry.get_point(dragged)
-    point.x = 1.0
-    point.y = 1.0
+    registry.set_point_position(dragged, 1.0, 1.0)
     engine.query(registry, (1.0, 1.0), drag_context)
     assert producer.produce_calls == 1
 
-    registry.get_point(static).x = 51.0
+    registry.get_point(static)[0] = 51.0
     engine.query(registry, (1.0, 1.0), drag_context)
     assert producer.produce_calls == 2
 
@@ -89,14 +87,12 @@ def test_intersections_producer_caches_across_queries():
     assert first == [(5.0, 5.0)]
     assert len(computations) == 1
 
-    point = registry.get_point(0)
-    point.x = -5.0
-    point.y = -5.0
+    registry.set_point_position(0, -5.0, -5.0)
     second = snap_points_at(5.0, 5.0)
     assert second == [(5.0, 5.0)]
     assert len(computations) == 1
 
-    registry.get_point(2).y = 20.0
+    registry.get_point(2)[1] = 20.0
     third = [
         (p.x, p.y)
         for p in producer.produce_points(
@@ -116,7 +112,7 @@ def test_is_snap_result_current_tracks_dragged_movement():
     engine.query(registry, (5.0, 5.0), drag_context)
     assert engine.is_snap_result_current(registry) is True
 
-    registry.get_point(0).x = 2.0
+    registry.get_point(0)[0] = 2.0
     assert engine.is_snap_result_current(registry) is False
 
     engine.query(registry, (5.0, 5.0), drag_context)

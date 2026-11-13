@@ -3,8 +3,9 @@ from sketcher.core.commands import (
     RoundedRectCommand,
     RoundedRectPreviewState,
 )
-from sketcher.core.constraints import TangentConstraint
-from sketcher.core.entities import Arc, Line
+from raygeo.sketch.constraints.tangent import TangentConstraint
+from raygeo.sketch.entities.arc import Arc
+from raygeo.sketch.entities.line import Line
 
 
 def test_rounded_rect_calculate_geometry():
@@ -87,8 +88,8 @@ def test_rounded_rect_command_execute():
 
     # Points: 1 origin + 1 existing start + (8 tangent + 4 center) added = 14
     # The virtual corner points are not added to the sketch.
-    assert len(sketch.registry.points) == 14
-    assert len(sketch.registry.entities) == 8
+    assert len(sketch.registry.points()) == 14
+    assert len(sketch.registry.entities()) == 8
     assert len(sketch.constraints) == 17
 
 
@@ -101,10 +102,10 @@ def test_rounded_rect_command_execute_center_on_start():
     )
     cmd.execute()
 
-    assert len(sketch.registry.points) == 14
-    assert len(sketch.registry.entities) == 8
+    assert len(sketch.registry.points()) == 14
+    assert len(sketch.registry.entities()) == 8
 
-    pts = {(round(p.x, 3), round(p.y, 3)) for p in sketch.registry.points}
+    pts = {(round(p.x, 3), round(p.y, 3)) for p in sketch.registry.points()}
     # corners span (0, 0) to (100, 50), mirrored through (50, 25)
     assert (10.0, 0.0) in pts
     assert (90.0, 50.0) in pts
@@ -126,8 +127,8 @@ def test_rounded_rect_start_preview_no_snap():
     assert state.radius == 10.0
 
     start_p = sketch.registry.get_point(state.start_id)
-    assert start_p.x == 10
-    assert start_p.y == 20
+    assert start_p[0] == 10
+    assert start_p[1] == 20
 
 
 def test_rounded_rect_start_preview_with_snap():
@@ -154,8 +155,8 @@ def test_rounded_rect_update_preview():
     RoundedRectCommand.update_preview(sketch.registry, state, 100, 50)
 
     end_p = sketch.registry.get_point(state.p_end_id)
-    assert end_p.x == 100
-    assert end_p.y == 50
+    assert end_p[0] == 100
+    assert end_p[1] == 50
 
 
 def test_rounded_rect_update_preview_constrain_square():
@@ -170,8 +171,8 @@ def test_rounded_rect_update_preview_constrain_square():
     )
 
     end_p = sketch.registry.get_point(state.p_end_id)
-    assert end_p.x == 50
-    assert end_p.y == 50
+    assert end_p[0] == 50
+    assert end_p[1] == 50
     assert state.constrain_square is True
 
 
@@ -188,39 +189,39 @@ def test_rounded_rect_update_preview_center_on_start():
 
     # p_end stays on the mouse position; the drawn shape is mirrored
     end_p = sketch.registry.get_point(state.p_end_id)
-    assert end_p.x == 100
-    assert end_p.y == 50
+    assert end_p[0] == 100
+    assert end_p[1] == 50
 
     # far tangent points sit on the mirrored corner (0, 0)
     t1 = sketch.registry.get_point(state.preview_ids["t1"])
-    assert (t1.x, t1.y) == (10.0, 0.0)
+    assert (t1[0], t1[1]) == (10.0, 0.0)
     assert state.center_on_start is True
 
 
 def test_rounded_rect_cleanup_preview():
     """Test cleanup_preview removes all preview geometry except start point."""
     sketch = Sketch()
-    initial_point_count = len(sketch.registry.points)
-    initial_entity_count = len(sketch.registry.entities)
+    initial_point_count = len(sketch.registry.points())
+    initial_entity_count = len(sketch.registry.entities())
 
     state = RoundedRectCommand.start_preview(
         sketch.registry, 0, 0, snapped_pid=None, radius=10.0
     )
 
-    assert len(sketch.registry.points) > initial_point_count
-    assert len(sketch.registry.entities) > initial_entity_count
+    assert len(sketch.registry.points()) > initial_point_count
+    assert len(sketch.registry.entities()) > initial_entity_count
 
     RoundedRectCommand.cleanup_preview(sketch.registry, state)
 
     # cleanup_preview removes preview entities and points (p_end_id,
     # preview_ids) but leaves the start_id point - it's the tool's
     # responsibility to remove it if start_temp is True
-    assert len(sketch.registry.entities) == initial_entity_count
+    assert len(sketch.registry.entities()) == initial_entity_count
     # Only start point remains from preview
     remaining_preview_ids = {
         state.start_id,
     }
-    for p in sketch.registry.points:
+    for p in sketch.registry.points():
         if p.id != 0:  # origin point
             assert p.id in remaining_preview_ids
 
@@ -229,7 +230,7 @@ def test_rounded_rect_cleanup_preview_with_snapped_start():
     """Test cleanup when start point was snapped (not temp)."""
     sketch = Sketch()
     existing_pid = sketch.add_point(50, 50)
-    initial_point_count = len(sketch.registry.points)
+    initial_point_count = len(sketch.registry.points())
 
     state = RoundedRectCommand.start_preview(
         sketch.registry, 0, 0, snapped_pid=existing_pid, radius=10.0
@@ -238,7 +239,7 @@ def test_rounded_rect_cleanup_preview_with_snapped_start():
     RoundedRectCommand.cleanup_preview(sketch.registry, state)
 
     # Existing point should still be there
-    assert len(sketch.registry.points) == initial_point_count
+    assert len(sketch.registry.points()) == initial_point_count
 
 
 def test_rounded_rect_preview_lifecycle():
@@ -253,12 +254,12 @@ def test_rounded_rect_preview_lifecycle():
     RoundedRectCommand.update_preview(sketch.registry, state, 80, 60)
 
     end_p = sketch.registry.get_point(state.p_end_id)
-    assert end_p.x == 80
-    assert end_p.y == 60
+    assert end_p[0] == 80
+    assert end_p[1] == 60
 
     RoundedRectCommand.cleanup_preview(sketch.registry, state)
 
-    assert len(sketch.registry.entities) == 0
+    assert len(sketch.registry.entities()) == 0
 
 
 def test_rounded_rect_create_preview_new():
@@ -288,8 +289,8 @@ def test_rounded_rect_create_preview_update():
         sketch.registry, start_pid, end_pid, 10.0
     )
 
-    sketch.registry.get_point(end_pid).x = 200
-    sketch.registry.get_point(end_pid).y = 100
+    sketch.registry.get_point(end_pid)[0] = 200
+    sketch.registry.get_point(end_pid)[1] = 100
 
     result = RoundedRectCommand.create_preview(
         sketch.registry, start_pid, end_pid, 10.0, preview_ids=preview_ids
@@ -308,8 +309,8 @@ def test_rounded_rect_preview_with_small_radius():
     RoundedRectCommand.update_preview(sketch.registry, state, 30, 20)
 
     end_p = sketch.registry.get_point(state.p_end_id)
-    assert end_p.x == 30
-    assert end_p.y == 20
+    assert end_p[0] == 30
+    assert end_p[1] == 20
 
 
 def test_rounded_rect_preview_get_dimensions_returns_all():

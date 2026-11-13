@@ -1,12 +1,11 @@
 import pytest
 from sketcher.core import Sketch
 from sketcher.core.commands import MirrorAxis, MirrorCommand, MirrorDirection
-from sketcher.core.constraints import (
-    AngleConstraint,
-    DistanceConstraint,
-    TangentConstraint,
-)
-from sketcher.core.entities import Arc, Bezier
+from raygeo.sketch.constraints.angle import AngleConstraint
+from raygeo.sketch.constraints.distance import DistanceConstraint
+from raygeo.sketch.constraints.tangent import TangentConstraint
+from raygeo.sketch.entities.arc import Arc
+from raygeo.sketch.entities.bezier import Bezier
 from sketcher.core.selection import SketchSelection
 
 
@@ -182,16 +181,16 @@ class TestMirrorExecute:
         # p1: x=-100, y=2*50-0=100 -> (-100, 100)
         # corner: x=0, y=2*50-0=100 -> (0, 100)
         # p3: x=0, y=2*50-100=0 -> (0, 0)
-        assert p1.x == pytest.approx(-100)
-        assert p1.y == pytest.approx(100)
-        assert corner.x == pytest.approx(0)
-        assert corner.y == pytest.approx(100)
-        assert p3.x == pytest.approx(0)
-        assert p3.y == pytest.approx(0)
+        assert p1[0] == pytest.approx(-100)
+        assert p1[1] == pytest.approx(100)
+        assert corner[0] == pytest.approx(0)
+        assert corner[1] == pytest.approx(100)
+        assert p3[0] == pytest.approx(0)
+        assert p3[1] == pytest.approx(0)
 
     def test_no_new_points_created(self, sketch_with_l):
         s, entity_ids, _point_ids = sketch_with_l
-        original_point_count = len(s.registry.points)
+        original_point_count = len(s.registry.points())
 
         sel = SketchSelection()
         sel.entity_ids = entity_ids
@@ -200,7 +199,7 @@ class TestMirrorExecute:
         cmd.capture_undo_state()
         cmd._do_execute()
 
-        assert len(s.registry.points) == original_point_count
+        assert len(s.registry.points()) == original_point_count
 
     def test_arc_clockwise_toggled(self):
         s = Sketch()
@@ -216,7 +215,7 @@ class TestMirrorExecute:
         cmd.capture_undo_state()
         cmd._do_execute()
 
-        arc = s.registry.get_entity(arc_id)
+        arc = s.registry.get_entity_object(arc_id)
         assert isinstance(arc, Arc)
         assert arc.clockwise is False
 
@@ -233,11 +232,11 @@ class TestMirrorExecute:
         cmd.capture_undo_state()
         cmd._do_execute()
 
-        bezier = s.registry.get_entity(bezier_id)
+        bezier = s.registry.get_entity_object(bezier_id)
         assert isinstance(bezier, Bezier)
         # Vertical mirror flips dy component of cp deltas
-        assert bezier.cp1 == (30, -40)
-        assert bezier.cp2 == (-20, 10)
+        assert bezier.cp1_offset == (30, -40)
+        assert bezier.cp2_offset == (-20, 10)
 
     def test_external_constraint_removed(self):
         """TangentConstraint to unselected circle is removed on execute."""
@@ -307,14 +306,14 @@ class TestMirrorUndo:
         originals = {}
         for pid in point_ids:
             p = s.registry.get_point(pid)
-            originals[pid] = (p.x, p.y)
+            originals[pid] = (p[0], p[1])
 
         cmd = MirrorCommand(s, sel, MirrorDirection.VERTICAL)
         cmd.execute()
 
         # Verify points moved (VERTICAL flips Y)
         moved = any(
-            s.registry.get_point(pid).y != originals[pid][1]
+            s.registry.get_point(pid)[1] != originals[pid][1]
             for pid in point_ids
         )
         assert moved
@@ -323,8 +322,8 @@ class TestMirrorUndo:
 
         for pid in point_ids:
             p = s.registry.get_point(pid)
-            assert p.x == pytest.approx(originals[pid][0])
-            assert p.y == pytest.approx(originals[pid][1])
+            assert p[0] == pytest.approx(originals[pid][0])
+            assert p[1] == pytest.approx(originals[pid][1])
 
     def test_undo_restores_arc_clockwise(self):
         s = Sketch()
@@ -339,13 +338,13 @@ class TestMirrorUndo:
         cmd = MirrorCommand(s, sel, MirrorDirection.VERTICAL)
         cmd.execute()
 
-        arc = s.registry.get_entity(arc_id)
+        arc = s.registry.get_entity_object(arc_id)
         assert isinstance(arc, Arc)
         assert arc.clockwise is False
 
         cmd.undo()
 
-        arc = s.registry.get_entity(arc_id)
+        arc = s.registry.get_entity_object(arc_id)
         assert isinstance(arc, Arc)
         assert arc.clockwise is True
 
@@ -361,16 +360,16 @@ class TestMirrorUndo:
         cmd = MirrorCommand(s, sel, MirrorDirection.VERTICAL)
         cmd.execute()
 
-        bezier = s.registry.get_entity(bezier_id)
+        bezier = s.registry.get_entity_object(bezier_id)
         assert isinstance(bezier, Bezier)
-        assert bezier.cp1 == (30, -40)
+        assert bezier.cp1_offset == (30, -40)
 
         cmd.undo()
 
-        bezier = s.registry.get_entity(bezier_id)
+        bezier = s.registry.get_entity_object(bezier_id)
         assert isinstance(bezier, Bezier)
-        assert bezier.cp1 == (30, 40)
-        assert bezier.cp2 == (-20, -10)
+        assert bezier.cp1_offset == (30, 40)
+        assert bezier.cp2_offset == (-20, -10)
 
     def test_undo_re_adds_dropped_constraints(self):
         s = Sketch()
@@ -429,6 +428,6 @@ class TestMirrorBarePoints:
 
         # bbox y: [0, 100], VERTICAL flips Y, axis at y=50
         # p1: y=2*50-0=100, p2: y=2*50-0=100, p3: y=2*50-100=0
-        assert s.registry.get_point(p1).y == pytest.approx(100)
-        assert s.registry.get_point(p2).y == pytest.approx(100)
-        assert s.registry.get_point(p3).y == pytest.approx(0)
+        assert s.registry.get_point(p1)[1] == pytest.approx(100)
+        assert s.registry.get_point(p2)[1] == pytest.approx(100)
+        assert s.registry.get_point(p3)[1] == pytest.approx(0)

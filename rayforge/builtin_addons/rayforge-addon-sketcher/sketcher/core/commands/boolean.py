@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-import itertools
 import logging
 import uuid
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
 from ..boolean import BooleanOp, apply_boolean, build_boolean_regions
-from ..entities import OffsetPlan
-from ..entities.polygon import outline_item
+from ..offset import outline_item
 from ..sketch import Fill
 from .base import SketchChangeCommand
 from .items import AddItemsCommand, RemoveItemsCommand
@@ -49,7 +47,7 @@ class BooleanCommand(SketchChangeCommand):
         self.entity_ids = list(entity_ids)
         self.op = op
         self.new_entity_ids: list[int] = []
-        self._new_entities: list = []
+        self._new_entity_ids: list[int] = []
         self._ops: list[tuple[RemoveItemsCommand, AddItemsCommand]] = []
         self._prepared = False
         self._removed_fills: list[tuple[int, Fill]] = []
@@ -85,18 +83,9 @@ class BooleanCommand(SketchChangeCommand):
             logger.warning("Boolean operation produced no geometry.")
             return False
 
-        allocate_id = itertools.count(-1, -1).__next__
-        plan = OffsetPlan()
-        for solid in solids:
-            center_pt, handle_pt, entity = outline_item(
-                solid.outer, True, allocate_id, solid.holes
-            )
-            plan.points.extend((center_pt, handle_pt))
-            plan.entities.append(entity)
-
         source_ids = {eid for region in regions for eid in region.entity_ids}
         self._removed_fills = self._collect_removed_fills(source_ids)
-        points, entities, constraints = (
+        point_dicts, entity_ids, constraints = (
             RemoveItemsCommand.calculate_dependencies_for_ids(
                 self.sketch, source_ids
             )
@@ -104,14 +93,18 @@ class BooleanCommand(SketchChangeCommand):
         remove_cmd = RemoveItemsCommand(
             self.sketch,
             "",
-            points=points,
-            entities=entities,
+            points=point_dicts,
+            entity_ids=entity_ids,
             constraints=constraints,
         )
-        add_cmd = AddItemsCommand(
-            self.sketch, "", points=plan.points, entities=plan.entities
-        )
-        self._new_entities = list(plan.entities)
+        add_cmd = AddItemsCommand(self.sketch, "")
+        new_entity_ids: list[int] = []
+        for solid in solids:
+            polygon = outline_item(
+                solid.outer, True, add_cmd.add_point, solid.holes
+            )
+            new_entity_ids.append(add_cmd.add_entity(polygon))
+        self._new_entity_ids = new_entity_ids
         self._ops = [(remove_cmd, add_cmd)]
         self._prepared = True
         return True
@@ -125,8 +118,10 @@ class BooleanCommand(SketchChangeCommand):
         template: the bottom-most affected fill (registry stacking
         order)."""
         z_of = {
-            entity.id: i
-            for i, entity in enumerate(self.sketch.registry.entities)
+            eid: i
+            for i, eid in enumerate(
+                self.sketch.registry.entity_ids()
+            )
         }
         affected = [
             (index, fill)
@@ -154,16 +149,16 @@ class BooleanCommand(SketchChangeCommand):
             return
         if not self._added_fills:
             self._added_fills = [
-                self._new_fill(entity, template)
-                for entity in self._new_entities
+                self._new_fill(eid, template)
+                for eid in self._new_entity_ids
             ]
         self.sketch.fills.extend(self._added_fills)
 
     @staticmethod
-    def _new_fill(entity, template: Fill) -> Fill:
+    def _new_fill(entity_id: int, template: Fill) -> Fill:
         return Fill(
             uid=str(uuid.uuid4()),
-            boundary=[(entity.id, True)],
+            boundary=[(entity_id, True)],
             style=template.style,
             color=template.color,
             gradient_stops=template.gradient_stops,
@@ -175,8 +170,7 @@ class BooleanCommand(SketchChangeCommand):
             return
         for remove_cmd, add_cmd in self._ops:
             remove_cmd._do_execute()
-            add_cmd._do_execute()
-        self.new_entity_ids = [entity.id for entity in self._new_entities]
+        self.new_entity_ids = list(self._new_entity_ids)
         self._transfer_fills()
 
     def _do_undo(self) -> None:

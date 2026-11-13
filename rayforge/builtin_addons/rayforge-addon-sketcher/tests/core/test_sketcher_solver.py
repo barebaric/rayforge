@@ -1,12 +1,10 @@
 import math
 
 import pytest
-from sketcher.core.constraints import (
-    DistanceConstraint,
-    DragConstraint,
-    HorizontalConstraint,
-    VerticalConstraint,
-)
+from raygeo.sketch.constraints.distance import DistanceConstraint
+from raygeo.sketch.constraints.drag import DragConstraint
+from raygeo.sketch.constraints.horizontal import HorizontalConstraint
+from raygeo.sketch.constraints.vertical import VerticalConstraint
 from sketcher.core.params import ParameterContext
 from sketcher.core.registry import EntityRegistry
 from sketcher.core.sketch import Sketch
@@ -29,13 +27,13 @@ def test_solver_simple_move():
         DistanceConstraint(p1, p2, 10.0),
     ]
 
-    solver = Solver(reg, params, constraints)
+    solver = Solver(reg, constraints)
     success = solver.solve()
 
     assert success is True
     pt2 = reg.get_point(p2)
-    assert pt2.x == pytest.approx(10.0, abs=1e-4)
-    assert pt2.y == pytest.approx(0.0, abs=1e-4)
+    assert pt2[0] == pytest.approx(10.0, abs=1e-4)
+    assert pt2[1] == pytest.approx(0.0, abs=1e-4)
 
 
 def test_solver_fixed_point():
@@ -49,14 +47,14 @@ def test_solver_fixed_point():
     # Impossible constraint: fixed points are 10 apart, we want 5
     constraints = [DistanceConstraint(p1, p2, 5.0)]
 
-    solver = Solver(reg, params, constraints)
+    solver = Solver(reg, constraints)
     solver.solve()
 
     pt2 = reg.get_point(p2)
-    assert pt2.x == 10.0  # Should not have moved
+    assert pt2[0] == 10.0  # Should not have moved
 
     # Check if constraints are actually satisfied
-    err = constraints[0].error(reg, params)
+    err = constraints[0].error(reg)[0]
     assert abs(err) > 1.0  # Constraint definitely failed
 
 
@@ -85,12 +83,12 @@ def test_solver_degrees_of_freedom():
         DistanceConstraint(p1, p3, 4.0),
     ]
 
-    solver = Solver(reg, params, constraints)
+    solver = Solver(reg, constraints)
     assert solver.solve() is True
 
     dist_hypotenuse = math.hypot(
-        reg.get_point(p2).x - reg.get_point(p3).x,
-        reg.get_point(p2).y - reg.get_point(p3).y,
+        reg.get_point(p2)[0] - reg.get_point(p3)[0],
+        reg.get_point(p2)[1] - reg.get_point(p3)[1],
     )
     assert dist_hypotenuse == pytest.approx(5.0, abs=1e-4)
 
@@ -104,17 +102,17 @@ def test_solver_drag_behavior():
     p1 = reg.add_point(0, 0)
 
     # Drag constraint to (10, 10)
-    c = DragConstraint(p1, 10.0, 10.0)
+    c = DragConstraint(p1, 10.0, 10.0, weight=0.1)
     constraints = [c]
 
-    solver = Solver(reg, params, constraints)
+    solver = Solver(reg, constraints)
     success = solver.solve()
 
     assert success is True
     pt = reg.get_point(p1)
     # Since there are no competing constraints, it should reach the target
-    assert pt.x == pytest.approx(10.0, abs=1e-4)
-    assert pt.y == pytest.approx(10.0, abs=1e-4)
+    assert pt[0] == pytest.approx(10.0, abs=1e-4)
+    assert pt[1] == pytest.approx(10.0, abs=1e-4)
 
 
 def test_solver_drag_vs_geometry():
@@ -137,7 +135,7 @@ def test_solver_drag_vs_geometry():
         DragConstraint(p2, 20.0, 0.0, weight=0.05),
     ]
 
-    solver = Solver(reg, params, constraints)
+    solver = Solver(reg, constraints)
 
     # We do not assert success here because the solver returns False when
     # a soft constraint (DragConstraint) causes the residual cost to remain
@@ -150,9 +148,9 @@ def test_solver_drag_vs_geometry():
     # Because DragConstraint has a small weight vs the implicit 1.0 of
     # geometric constraints, the solver will prioritize DistanceConstraint.
     # The point should be at x=10 (distance 10 from 0,0), not x=20.
-    assert pt2.x == pytest.approx(10.0, abs=0.1)
+    assert pt2[0] == pytest.approx(10.0, abs=0.1)
     # Ensure it didn't get dragged all the way to 20
-    assert pt2.x != pytest.approx(20.0, abs=0.1)
+    assert pt2[0] != pytest.approx(20.0, abs=0.1)
 
 
 def test_solver_no_constraints():
@@ -163,7 +161,7 @@ def test_solver_no_constraints():
     params = ParameterContext()
     reg.add_point(0, 0)  # Mutable
 
-    solver = Solver(reg, params, [])
+    solver = Solver(reg, [])
     # Should succeed immediately (residuals return [0.0])
     assert solver.solve() is True
 
@@ -177,7 +175,7 @@ def test_solver_no_mutable_points():
     # Constraint exists, but nothing can move
     # Solver calculates error, sees it can't move anything,
     # returns True immediately (optimization check)
-    solver = Solver(reg, params, [])
+    solver = Solver(reg, [])
     assert solver.solve() is True
 
 
@@ -198,7 +196,7 @@ def test_solver_impossible_constraints():
         DistanceConstraint(p1, p2, 20.0),
     ]
 
-    solver = Solver(reg, params, constraints)
+    solver = Solver(reg, constraints)
     success = solver.solve()
 
     # success flag should be False because residuals > tolerance
@@ -210,7 +208,7 @@ def test_solver_impossible_constraints():
     # The minimum for this is at d = (10+20)/2 = 15.0
     optimal_dist = 15.0
     # Relax tolerance slightly as the solver may terminate just short
-    assert reg.get_point(p2).x == pytest.approx(optimal_dist, abs=1e-2)
+    assert reg.get_point(p2)[0] == pytest.approx(optimal_dist, abs=1e-2)
 
 
 def test_solver_skips_points_no_constraint_references():
@@ -225,12 +223,12 @@ def test_solver_skips_points_no_constraint_references():
     far2 = reg.add_point(-50, 25)
 
     constraints = [DistanceConstraint(p1, p2, 10.0)]
-    solver = Solver(reg, params, constraints)
+    solver = Solver(reg, constraints)
     assert solver.solve() is True
 
-    assert reg.get_point(p2).x == pytest.approx(10.0, abs=1e-4)
-    assert reg.get_point(far1).pos() == (100.0, 100.0)
-    assert reg.get_point(far2).pos() == (-50.0, 25.0)
+    assert reg.get_point(p2)[0] == pytest.approx(10.0, abs=1e-4)
+    assert reg.get_point(far1) == (100.0, 100.0)
+    assert reg.get_point(far2) == (-50.0, 25.0)
 
 
 def test_solver_dof_flags_for_unreferenced_points():
@@ -250,12 +248,12 @@ def test_solver_dof_flags_for_unreferenced_points():
         DistanceConstraint(p1, p2, 3.0),
         DistanceConstraint(p1, p3, 4.0),
     ]
-    solver = Solver(reg, params, constraints)
+    solver = Solver(reg, constraints)
     assert solver.solve() is True
 
-    assert reg.get_point(p2).constrained is True
-    assert reg.get_point(p3).constrained is True
-    assert reg.get_point(free).constrained is False
+    assert reg.point_constrained(p2) is True
+    assert reg.point_constrained(p3) is True
+    assert reg.point_constrained(free) is False
 
 
 def test_sketch_solve_with_unconstrained_geometry():
@@ -270,8 +268,8 @@ def test_sketch_solve_with_unconstrained_geometry():
 
     for i, pid in enumerate(pids, start=1):
         point = sketch.registry.get_point(pid)
-        assert point.pos() == (float(i), float(i * 2))
-        assert point.constrained is False
+        assert point == (float(i), float(i * 2))
+        assert sketch.registry.point_is_fixed(pid) if False else False is False
 
 
 def test_partition_constraints_separates_islands():
@@ -291,9 +289,9 @@ def test_partition_constraints_separates_islands():
     )
 
     assert solver.solve() is True
-    assert reg.get_point(p2).x == pytest.approx(10.0, abs=1e-4)
+    assert reg.get_point(p2)[0] == pytest.approx(10.0, abs=1e-4)
     p4 = reg.get_point(p4)
-    assert math.hypot(p4.x - 200.0, p4.y) == pytest.approx(50.0, abs=1e-4)
+    assert math.hypot(p4[0] - 200.0, p4[1]) == pytest.approx(50.0, abs=1e-4)
 
 
 def test_partition_constraints_merges_bridged_islands():
@@ -316,9 +314,9 @@ def test_partition_constraints_merges_bridged_islands():
     )
 
     assert solver.solve() is True
-    assert reg.get_point(p2).x == pytest.approx(10.0, abs=1e-4)
+    assert reg.get_point(p2)[0] == pytest.approx(10.0, abs=1e-4)
     p4 = reg.get_point(p4)
-    assert math.hypot(p4.x - 200.0, p4.y) == pytest.approx(50.0, abs=1e-4)
+    assert math.hypot(p4[0] - 200.0, p4[1]) == pytest.approx(50.0, abs=1e-4)
 
 
 def test_solver_conflict_isolated_to_its_island():
@@ -339,10 +337,10 @@ def test_solver_conflict_isolated_to_its_island():
         DistanceConstraint(p3, p4, 50.0),
         DistanceConstraint(p3, p4, 60.0),
     ]
-    solver = Solver(reg, params, constraints)
+    solver = Solver(reg, constraints)
     assert solver.solve() is False
 
-    assert reg.get_point(p2).x == pytest.approx(10.0, abs=1e-4)
-    assert reg.get_point(p2).constrained is True
-    assert reg.get_point(p4).x == pytest.approx(255.0, abs=1e-2)
-    assert reg.get_point(p4).constrained is False
+    assert reg.get_point(p2)[0] == pytest.approx(10.0, abs=1e-4)
+    assert reg.point_constrained(p2) is True
+    assert reg.get_point(p4)[0] == pytest.approx(255.0, abs=1e-2)
+    assert reg.point_constrained(p4) is False

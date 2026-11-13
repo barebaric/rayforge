@@ -9,7 +9,8 @@ from rayforge.core.undo.command import Command
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
-    from ..constraints import Constraint
+    from typing import Any
+
     from ..sketch import Sketch
 
 logger = logging.getLogger(__name__)
@@ -23,7 +24,7 @@ class ModifyConstraintCommand(SketchChangeCommand):
     def __init__(
         self,
         sketch: Sketch,
-        constraint: Constraint,
+        constraint: Any,
         new_value: float,
         new_expression: str | None = None,
         name: str = _("Edit Constraint"),
@@ -34,15 +35,17 @@ class ModifyConstraintCommand(SketchChangeCommand):
         self.new_expression = new_expression
 
         self.old_value = float(constraint.value)
-        self.old_expression = getattr(constraint, "expression", None)
+        self.old_expression = constraint.expression()
+
+    def _set(self, value: float, expression: str | None) -> None:
+        self.constraint.set_value(value)
+        self.constraint.set_expression(expression)
 
     def _do_execute(self) -> None:
-        self.constraint.value = self.new_value
-        self.constraint.expression = self.new_expression
+        self._set(self.new_value, self.new_expression)
 
     def _do_undo(self) -> None:
-        self.constraint.value = self.old_value
-        self.constraint.expression = self.old_expression
+        self._set(self.old_value, self.old_expression)
 
     def can_coalesce_with(self, next_command: Command) -> bool:
         return (

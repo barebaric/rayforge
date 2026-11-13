@@ -7,14 +7,12 @@ from raygeo.geo import Arc as GeoArc
 from raygeo.geo import Geometry, Move
 from raygeo.geo import Line as GeoLine
 from sketcher.core import Sketch
-from sketcher.core.constraints import (
-    CoincidentConstraint,
-    EqualDistanceConstraint,
-    EqualLengthConstraint,
-    PerpendicularConstraint,
-    PointOnLineConstraint,
-    SymmetryConstraint,
-)
+from raygeo.sketch.constraints.coincident import CoincidentConstraint
+from raygeo.sketch.constraints.equal_distance import EqualDistanceConstraint
+from raygeo.sketch.constraints.equal_length import EqualLengthConstraint
+from raygeo.sketch.constraints.perpendicular import PerpendicularConstraint
+from raygeo.sketch.constraints.point_on_line import PointOnLineConstraint
+from raygeo.sketch.constraints.symmetry import SymmetryConstraint
 from sketcher.core.sketch import Fill
 
 from rayforge.core.varset import FloatVar
@@ -76,8 +74,8 @@ def test_sketch_is_empty():
     # 1. Initially empty (contains origin point, but no entities)
     assert s.is_empty is True
     # Verify internal state: Origin exists, so points list is not empty
-    assert len(s.registry.points) == 1
-    assert len(s.registry.entities) == 0
+    assert len(s.registry.points()) == 1
+    assert len(s.registry.entities()) == 0
 
     # 2. Adding standalone points doesn't change emptiness regarding drawable
     # geometry
@@ -130,7 +128,7 @@ def test_sketch_circle_workflow():
     # The radius point should be 10 units away from center.
     p = s.registry.get_point(radius_pt)
     c = s.registry.get_point(center)
-    dist = ((p.x - c.x) ** 2 + (p.y - c.y) ** 2) ** 0.5
+    dist = ((p[0] - c[0]) ** 2 + (p[1] - c[1]) ** 2) ** 0.5
     assert dist == pytest.approx(10.0)
 
     geo = s.to_geometry()
@@ -217,10 +215,10 @@ def test_sketch_equal_length_workflow():
     # Check that p4 has moved to make line 2 have length 10
     pt4 = s.registry.get_point(p4)
     pt3 = s.registry.get_point(p3)
-    dist = ((pt4.x - pt3.x) ** 2 + (pt4.y - pt3.y) ** 2) ** 0.5
+    dist = ((pt4[0] - pt3[0]) ** 2 + (pt4[1] - pt3[1]) ** 2) ** 0.5
     assert dist == pytest.approx(10.0)
-    assert pt4.x == pytest.approx(30.0)
-    assert pt4.y == pytest.approx(0.0)
+    assert pt4[0] == pytest.approx(30.0)
+    assert pt4[1] == pytest.approx(0.0)
 
 
 def test_sketch_symmetry_workflow():
@@ -244,15 +242,15 @@ def test_sketch_symmetry_workflow():
     # Assert X symmetry (sum of x relative to center should be 0)
     # They started at -10 and 10, so they should stay there or move
     # symmetrically.
-    assert (pt1.x + pt2.x) == pytest.approx(0.0, abs=1e-4)
+    assert (pt1[0] + pt2[0]) == pytest.approx(0.0, abs=1e-4)
 
     # Assert Y symmetry
     # Since center Y is 0, P1.y + P2.y should equal 0.
     # Initial: 0 and 5. Solver will move them to approx -2.5 and 2.5
-    assert (pt1.y + pt2.y) == pytest.approx(0.0, abs=1e-4)
+    assert (pt1[1] + pt2[1]) == pytest.approx(0.0, abs=1e-4)
     # Check they are actually separated and symmetric, not just both at 0
-    assert pt2.y == pytest.approx(2.5, abs=1.0)
-    assert pt1.y == pytest.approx(-2.5, abs=1.0)
+    assert pt2[1] == pytest.approx(2.5, abs=1.0)
+    assert pt1[1] == pytest.approx(-2.5, abs=1.0)
 
     # --- Test Line Symmetry ---
     s2 = Sketch()
@@ -270,7 +268,7 @@ def test_sketch_symmetry_workflow():
 
     pt3 = s2.registry.get_point(p3)
     pt4 = s2.registry.get_point(p4)
-    assert pt4.y == pytest.approx(pt3.y, abs=1e-4)
+    assert pt4[1] == pytest.approx(pt3[1], abs=1e-4)
 
 
 def test_sketch_parameter_updates():
@@ -283,12 +281,12 @@ def test_sketch_parameter_updates():
     s.constrain_distance(p1, p2, "len")
 
     assert s.solve() is True
-    assert s.registry.get_point(p2).x == pytest.approx(10.0)
+    assert s.registry.get_point(p2)[0] == pytest.approx(10.0)
 
     # Change param
     s.set_param("len", 20.0)
     s.solve()
-    assert s.registry.get_point(p2).x == pytest.approx(20.0)
+    assert s.registry.get_point(p2)[0] == pytest.approx(20.0)
 
 
 def test_solve_with_variable_overrides():
@@ -305,7 +303,7 @@ def test_solve_with_variable_overrides():
     # 2. Solve with the default parameter value
     assert s.solve() is True
     pt2 = s.registry.get_point(p2)
-    assert pt2.x == pytest.approx(10.0)
+    assert pt2[0] == pytest.approx(10.0)
     # Check that the parameter context has the correct value
     assert s.params.get("width") == 10.0
 
@@ -314,17 +312,16 @@ def test_solve_with_variable_overrides():
     assert s.solve(variable_overrides=overrides) is True
     pt2_override = s.registry.get_point(p2)
     # The geometry should reflect the overridden value
-    assert pt2_override.x == pytest.approx(25.0)
+    assert pt2_override[0] == pytest.approx(25.0)
 
     # 4. Check that the override was temporary
     assert s.params.get("width") == 10.0
 
     # 5. Solve again without overrides to confirm it uses the original value.
-    pt2.x = 1.0
-    pt2.y = 0.0
+    s.registry.set_point_position(p2, 1.0, 0.0)
     assert s.solve() is True
     pt2_final = s.registry.get_point(p2)
-    assert pt2_final.x == pytest.approx(10.0)
+    assert pt2_final[0] == pytest.approx(10.0)
 
 
 def test_solve_with_expression_override():
@@ -340,7 +337,7 @@ def test_solve_with_expression_override():
 
     overrides = {"width": 30.0}
     assert s.solve(variable_overrides=overrides) is True
-    assert s.registry.get_point(p2).x == pytest.approx(30.0)
+    assert s.registry.get_point(p2)[0] == pytest.approx(30.0)
     assert s.params.get("width") == 10.0  # Verify it was temporary
 
 
@@ -416,7 +413,7 @@ def test_sketch_serialization_from_file():
     assert sketch2.solve() is True
     p_final_s1 = sketch1.registry.get_point(8)  # A point from the sketch
     p_final_s2 = sketch2.registry.get_point(8)
-    assert p_final_s1.pos() == pytest.approx(p_final_s2.pos())
+    assert p_final_s1 == pytest.approx(p_final_s2)
 
 
 def test_sketch_initializes_with_empty_varset():
@@ -447,7 +444,7 @@ def test_bridge_from_varset_to_solver():
     # 4. Verify the result
     pt1 = sketch.registry.get_point(p1)
     pt2 = sketch.registry.get_point(p2)
-    final_dist = math.hypot(pt2.x - pt1.x, pt2.y - pt1.y)
+    final_dist = math.hypot(pt2[0] - pt1[0], pt2[1] - pt1[1])
 
     assert final_dist == pytest.approx(123.45)
 
@@ -477,7 +474,7 @@ def test_input_parameter_overrides_internal_parameter():
     # 5. Verify the result uses the value from the input_parameter
     pt1 = sketch.registry.get_point(p1)
     pt2 = sketch.registry.get_point(p2)
-    final_dist = math.hypot(pt2.x - pt1.x, pt2.y - pt1.y)
+    final_dist = math.hypot(pt2[0] - pt1[0], pt2[1] - pt1[1])
 
     assert final_dist == pytest.approx(50.0)
 
@@ -496,7 +493,7 @@ def test_solve_with_no_input_parameters():
 
     pt1 = sketch.registry.get_point(p1)
     pt2 = sketch.registry.get_point(p2)
-    final_dist = math.hypot(pt2.x - pt1.x, pt2.y - pt1.y)
+    final_dist = math.hypot(pt2[0] - pt1[0], pt2[1] - pt1[1])
 
     assert final_dist == pytest.approx(25.0)
 
@@ -557,7 +554,7 @@ def test_sketch_serialization_roundtrip_with_input_parameters():
     # 8. Check: does it still solve correctly with restored value?
     assert new_sketch.solve() is True
     pt2_reloaded = new_sketch.registry.get_point(p2)
-    final_dist = math.hypot(pt2_reloaded.x, pt2_reloaded.y)
+    final_dist = math.hypot(pt2_reloaded[0], pt2_reloaded[1])
     assert final_dist == pytest.approx(120.0)
 
     # 9. Test rehydration from definition-only data
@@ -571,7 +568,7 @@ def test_sketch_serialization_roundtrip_with_input_parameters():
     assert new_sketch_from_def.solve() is True
     pt2_reloaded_from_def = new_sketch_from_def.registry.get_point(p2)
     final_dist_from_def = math.hypot(
-        pt2_reloaded_from_def.x, pt2_reloaded_from_def.y
+        pt2_reloaded_from_def[0], pt2_reloaded_from_def[1]
     )
     assert final_dist_from_def == pytest.approx(140.0)
 
@@ -681,7 +678,7 @@ def test_fill_is_removed_when_boundary_is_broken():
     assert len(s.fills) == 1
 
     # 2. Get the entity to remove and call the public removal method
-    l3_entity = s.registry.get_entity(l3)
+    l3_entity = s.registry.get_entity_object(l3)
     assert l3_entity is not None
     s.remove_entities([l3_entity])
 
@@ -698,7 +695,7 @@ def test_remove_point_if_unused():
     # 1. Test removing a point that is not used by any entity
     unused_pid = s.add_point(100, 100)
     assert s.remove_point_if_unused(unused_pid) is True
-    assert unused_pid not in [p.id for p in s.registry.points]
+    assert unused_pid not in [p.id for p in s.registry.points()]
 
     # 2. Test that None returns False and does nothing
     assert s.remove_point_if_unused(None) is False
@@ -708,25 +705,25 @@ def test_remove_point_if_unused():
     p2 = s.add_point(10, 0)
     s.add_line(p1, p2)
     assert s.remove_point_if_unused(p1) is False
-    assert p1 in [p.id for p in s.registry.points]
+    assert p1 in [p.id for p in s.registry.points()]
 
     # 4. Test removing a point after its entity is removed
     p3 = s.add_point(20, 0)
     p4 = s.add_point(30, 0)
     l2 = s.add_line(p3, p4)
-    entity = s.registry.get_entity(l2)
+    entity = s.registry.get_entity_object(l2)
     if entity is not None:
         s.remove_entities([entity])
     assert s.remove_point_if_unused(p3) is True
     assert s.remove_point_if_unused(p4) is True
-    assert p3 not in [p.id for p in s.registry.points]
-    assert p4 not in [p.id for p in s.registry.points]
+    assert p3 not in [p.id for p in s.registry.points()]
+    assert p4 not in [p.id for p in s.registry.points()]
 
     # 5. Test that origin point is removed when not used by any entity
     # (in a new sketch with no entities, origin is considered unused)
     origin_pid = s.origin_id
     assert s.remove_point_if_unused(origin_pid) is True
-    assert origin_pid not in [p.id for p in s.registry.points]
+    assert origin_pid not in [p.id for p in s.registry.points()]
 
     # 6. Test that origin point is NOT removed when used by an entity
     s2 = Sketch()
@@ -734,7 +731,7 @@ def test_remove_point_if_unused():
     p_other = s2.add_point(10, 0)
     s2.add_line(origin_pid2, p_other)
     assert s2.remove_point_if_unused(origin_pid2) is False
-    assert origin_pid2 in [p.id for p in s2.registry.points]
+    assert origin_pid2 in [p.id for p in s2.registry.points()]
 
 
 class TestSketchLoopFindingHelpers:

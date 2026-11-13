@@ -20,7 +20,7 @@ gi.require_version("Adw", "1")
 
 from sketcher.core import Sketch
 from sketcher.core.commands import ChamferCommand, FilletCommand
-from sketcher.core.entities import Line
+from raygeo.sketch.entities.line import Line
 from sketcher.ui_gtk.sketchelement import SketchElement
 
 
@@ -117,11 +117,10 @@ def test_add_chamfer_action_on_short_lines(
     sketch, corner_pid, line1_id, _ = sketch_with_corner
     element = element_with_corner
 
-    line1 = sketch.registry.get_entity(line1_id)
+    line1 = sketch.registry.get_entity_object(line1_id)
 
     assert isinstance(line1, Line)
-    p1 = sketch.registry.get_point(line1.p1_idx)
-    p1.x = -1e-7
+    sketch.registry.set_point_position(line1.p1_idx, -1e-7, 0.0)
 
     element.selection.select_junction(corner_pid, is_multi=False)
     element.add_chamfer_action()
@@ -198,11 +197,10 @@ def test_add_fillet_action_on_short_lines(
     sketch, corner_pid, line1_id, _ = sketch_with_corner
     element = element_with_corner
 
-    line1 = sketch.registry.get_entity(line1_id)
+    line1 = sketch.registry.get_entity_object(line1_id)
 
     assert isinstance(line1, Line)
-    p1 = sketch.registry.get_point(line1.p1_idx)
-    p1.x = -1e-7
+    sketch.registry.set_point_position(line1.p1_idx, -1e-7, 0.0)
 
     element.selection.select_junction(corner_pid, is_multi=False)
     element.add_fillet_action()

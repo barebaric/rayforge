@@ -9,12 +9,37 @@ from raygeo.geo.shape.circle import (
 from raygeo.geo.shape.line import get_line_segment_intersection
 from raygeo.geo.types import Point as GeoPoint
 
-from ...entities import Arc, Circle, Line
+from raygeo.geo.shape.arc import get_arc_sweep
+from raygeo.sketch.entities.arc import Arc
+from raygeo.sketch.entities.circle import Circle
+from raygeo.sketch.entities.line import Line
+
 from ..engine import SnapLineProducer
 from ..types import DragContext, SnapLine, SnapLineType, SnapPoint
 
 if TYPE_CHECKING:
-    from ...registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
+
+
+def arc_is_angle_within_sweep(
+    arc: Arc, angle: float, registry: EntityRegistry
+) -> bool:
+    """Whether the angle lies within the arc's sweep."""
+    start = registry.get_point(arc.start_idx)
+    end = registry.get_point(arc.end_idx)
+    center = registry.get_point(arc.center_idx)
+    if start is None or end is None or center is None:
+        return False
+    start_angle = math.atan2(
+        start[1] - center[1], start[0] - center[0]
+    )
+    end_angle = math.atan2(end[1] - center[1], end[0] - center[0])
+    sweep = get_arc_sweep(start_angle, end_angle, arc.clockwise)
+    delta = (angle - start_angle) % (2.0 * math.pi)
+    sweep = sweep % (2.0 * math.pi)
+    if sweep < 1e-12:
+        return True
+    return delta <= sweep + 1e-9
 
 
 class IntersectionsProducer(SnapLineProducer):
@@ -85,7 +110,7 @@ class IntersectionsProducer(SnapLineProducer):
         dragged_points = drag_context.dragged_point_ids
         dragged_entities = drag_context.dragged_entity_ids
         positions: list[tuple[float, float]] = []
-        for entity in registry.entities:
+        for entity in registry.entities():
             if entity.id in dragged_entities or any(
                 pid in dragged_points for pid in entity.get_point_ids()
             ):
@@ -94,9 +119,10 @@ class IntersectionsProducer(SnapLineProducer):
                 continue
             for pid in entity.get_point_ids():
                 point = registry.get_point(pid)
-                positions.append((round(point.x, 6), round(point.y, 6)))
+                if point is not None:
+                    positions.append((round(point[0], 6), round(point[1], 6)))
         return (
-            registry._entity_version,
+            registry.entity_version(),
             tuple(positions),
             frozenset(dragged_points),
             frozenset(dragged_entities),
@@ -107,7 +133,7 @@ class IntersectionsProducer(SnapLineProducer):
     ) -> Iterator[GeoPoint]:
         entities = [
             e
-            for e in registry.entities
+            for e in registry.entities()
             if not drag_context.is_entity_dragged(e.id)
             and not any(
                 drag_context.is_point_dragged(pid) for pid in e.get_point_ids()
@@ -152,10 +178,10 @@ class IntersectionsProducer(SnapLineProducer):
             return
 
         result = get_line_segment_intersection(
-            (p1.x, p1.y),
-            (p2.x, p2.y),
-            (p3.x, p3.y),
-            (p4.x, p4.y),
+            p1,
+            p2,
+            p3,
+            p4,
         )
         if result is not None:
             yield result
@@ -174,18 +200,18 @@ class IntersectionsProducer(SnapLineProducer):
         if not all([p1, p2, center, start]):
             return
 
-        radius = math.hypot(start.x - center.x, start.y - center.y)
+        radius = math.hypot(start[0] - center[0], start[1] - center[1])
         if radius < 1e-10:
             return
 
         for ix, iy in get_line_circle_intersections(
-            (p1.x, p1.y),
-            (p2.x, p2.y),
-            (center.x, center.y),
+            p1,
+            p2,
+            center,
             radius,
         ):
-            angle = math.atan2(iy - center.y, ix - center.x)
-            if arc.is_angle_within_sweep(angle, registry):
+            angle = math.atan2(iy - center[1], ix - center[0])
+            if arc_is_angle_within_sweep(arc, angle, registry):
                 yield (ix, iy)
 
     def _line_circle_intersections(
@@ -202,14 +228,16 @@ class IntersectionsProducer(SnapLineProducer):
         if not all([p1, p2, center, radius_pt]):
             return
 
-        radius = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
+        radius = math.hypot(
+            radius_pt[0] - center[0], radius_pt[1] - center[1]
+        )
         if radius < 1e-10:
             return
 
         yield from get_line_circle_intersections(
-            (p1.x, p1.y),
-            (p2.x, p2.y),
-            (center.x, center.y),
+            p1,
+            p2,
+            center,
             radius,
         )
 
@@ -227,17 +255,17 @@ class IntersectionsProducer(SnapLineProducer):
         if not all([c1, s1, c2, s2]):
             return
 
-        r1 = math.hypot(s1.x - c1.x, s1.y - c1.y)
-        r2 = math.hypot(s2.x - c2.x, s2.y - c2.y)
+        r1 = math.hypot(s1[0] - c1[0], s1[1] - c1[1])
+        r2 = math.hypot(s2[0] - c2[0], s2[1] - c2[1])
 
         for ix, iy in get_circle_circle_intersections(
-            (c1.x, c1.y), r1, (c2.x, c2.y), r2
+            c1, r1, c2, r2
         ):
-            angle1 = math.atan2(iy - c1.y, ix - c1.x)
-            angle2 = math.atan2(iy - c2.y, ix - c2.x)
-            if arc1.is_angle_within_sweep(
-                angle1, registry
-            ) and arc2.is_angle_within_sweep(angle2, registry):
+            angle1 = math.atan2(iy - c1[1], ix - c1[0])
+            angle2 = math.atan2(iy - c2[1], ix - c2[0])
+            if arc_is_angle_within_sweep(
+                arc1, angle1, registry
+            ) and arc_is_angle_within_sweep(arc2, angle2, registry):
                 yield (ix, iy)
 
     def _circle_circle_intersections(
@@ -254,9 +282,9 @@ class IntersectionsProducer(SnapLineProducer):
         if not all([c1, r1_pt, c2, r2_pt]):
             return
 
-        r1 = math.hypot(r1_pt.x - c1.x, r1_pt.y - c1.y)
-        r2 = math.hypot(r2_pt.x - c2.x, r2_pt.y - c2.y)
+        r1 = math.hypot(r1_pt[0] - c1[0], r1_pt[1] - c1[1])
+        r2 = math.hypot(r2_pt[0] - c2[0], r2_pt[1] - c2[1])
 
         yield from get_circle_circle_intersections(
-            (c1.x, c1.y), r1, (c2.x, c2.y), r2
+            c1, r1, c2, r2
         )

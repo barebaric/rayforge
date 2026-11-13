@@ -67,10 +67,12 @@ class ConflictingConstraintsWidget(Adw.PreferencesGroup):
             self._constraint_indices.append(idx)
 
             row = Adw.ActionRow()
-            row.set_title(constraint.get_title())
+            row.set_title(constraint_info.get_title(constraint))
             row.set_activatable(True)
 
-            subtitle = constraint.get_subtitle(sketch.registry)
+            subtitle = constraint_info.get_subtitle(
+                sketch.registry, constraint
+            )
             if subtitle:
                 row.set_subtitle(subtitle)
 

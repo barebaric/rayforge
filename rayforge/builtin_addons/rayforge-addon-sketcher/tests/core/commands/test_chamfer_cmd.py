@@ -1,11 +1,9 @@
 import pytest
 from sketcher.core import Sketch
 from sketcher.core.commands import ChamferCommand
-from sketcher.core.constraints import (
-    CollinearConstraint,
-    EqualDistanceConstraint,
-)
-from sketcher.core.entities import Line
+from raygeo.sketch.constraints.collinear import CollinearConstraint
+from raygeo.sketch.constraints.equal_distance import EqualDistanceConstraint
+from raygeo.sketch.entities.line import Line
 
 # This is a constant from the implementation, let's use it for consistency
 DEFAULT_CHAMFER_DISTANCE = 10.0
@@ -69,8 +67,8 @@ def test_chamfer_command_execute(sketch_with_corner):
     """Test the direct execution of ChamferCommand."""
     sketch, corner_pid, line1_id, line2_id = sketch_with_corner
 
-    initial_points_count = len(sketch.registry.points)
-    initial_entities_count = len(sketch.registry.entities)
+    initial_points_count = len(sketch.registry.points())
+    initial_entities_count = len(sketch.registry.entities())
     initial_constraints_count = len(sketch.constraints)
 
     command = ChamferCommand(
@@ -79,17 +77,17 @@ def test_chamfer_command_execute(sketch_with_corner):
     command.execute()
 
     # Verify additions
-    assert len(sketch.registry.points) == initial_points_count + 2
+    assert len(sketch.registry.points()) == initial_points_count + 2
     assert (
-        len(sketch.registry.entities) == initial_entities_count + 1
+        len(sketch.registry.entities()) == initial_entities_count + 1
     )  # 2 removed, 3 added
     assert len(sketch.constraints) == initial_constraints_count + 3
 
     # Verify new line and constraints
     assert command.add_cmd is not None
-    assert len(command.add_cmd.entities) == 3
-    chamfer_line = command.add_cmd.entities[0]
-    new_line = sketch.registry.get_entity(chamfer_line.id)
+    assert len(command.add_cmd.entities()) == 3
+    chamfer_line = command.add_cmd.entities()[0]
+    new_line = sketch.registry.get_entity_object(chamfer_line.id)
     assert new_line is not None
     assert isinstance(new_line, Line)
 
@@ -99,23 +97,23 @@ def test_chamfer_command_execute(sketch_with_corner):
     assert isinstance(new_constraints[2], EqualDistanceConstraint)
 
     # Verify original lines were removed
-    assert sketch.registry.get_entity(line1_id) is None
-    assert sketch.registry.get_entity(line2_id) is None
+    assert sketch.registry.get_entity_object(line1_id) is None
+    assert sketch.registry.get_entity_object(line2_id) is None
 
 
 def test_chamfer_command_undo(sketch_with_corner):
     """Test that undoing a ChamferCommand restores the original state."""
     sketch, corner_pid, line1_id, line2_id = sketch_with_corner
 
-    line1 = sketch.registry.get_entity(line1_id)
-    line2 = sketch.registry.get_entity(line2_id)
+    line1 = sketch.registry.get_entity_object(line1_id)
+    line2 = sketch.registry.get_entity_object(line2_id)
     assert isinstance(line1, Line)
     assert isinstance(line2, Line)
 
     # Store initial state
     initial_state = {
-        "points_count": len(sketch.registry.points),
-        "entities_count": len(sketch.registry.entities),
+        "points_count": len(sketch.registry.points()),
+        "entities_count": len(sketch.registry.entities()),
         "constraints_count": len(sketch.constraints),
         "line1_p1": line1.p1_idx,
         "line1_p2": line1.p2_idx,
@@ -129,17 +127,17 @@ def test_chamfer_command_undo(sketch_with_corner):
     command.execute()
 
     # Sanity check that something changed
-    assert len(sketch.registry.points) != initial_state["points_count"]
+    assert len(sketch.registry.points()) != initial_state["points_count"]
 
     command.undo()
 
     # Verify state is restored
-    assert len(sketch.registry.points) == initial_state["points_count"]
-    assert len(sketch.registry.entities) == initial_state["entities_count"]
+    assert len(sketch.registry.points()) == initial_state["points_count"]
+    assert len(sketch.registry.entities()) == initial_state["entities_count"]
     assert len(sketch.constraints) == initial_state["constraints_count"]
 
-    restored_line1 = sketch.registry.get_entity(line1_id)
-    restored_line2 = sketch.registry.get_entity(line2_id)
+    restored_line1 = sketch.registry.get_entity_object(line1_id)
+    restored_line2 = sketch.registry.get_entity_object(line2_id)
     assert isinstance(restored_line1, Line)
     assert isinstance(restored_line2, Line)
     assert restored_line1.p1_idx == initial_state["line1_p1"]

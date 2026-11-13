@@ -47,17 +47,17 @@ def _get_executed_command(history: HistoryManager):
 def test_nudge_moves_selected_entity(element_with_line):
     element, sketch, p1, p2, _, _ = element_with_line
     registry = sketch.registry
-    entity_id = registry.entities[0].id
+    entity_id = registry.entities()[0].id
     element.selection.select_entity(
-        registry.get_entity(entity_id), is_multi=False
+        registry.get_entity_object(entity_id), is_multi=False
     )
 
     assert element.nudge_selection(1.0, -2.0) is True
-    assert (registry.get_point(p1).x, registry.get_point(p1).y) == (
+    assert (registry.get_point(p1)[0], registry.get_point(p1)[1]) == (
         1.0,
         -2.0,
     )
-    assert (registry.get_point(p2).x, registry.get_point(p2).y) == (
+    assert (registry.get_point(p2)[0], registry.get_point(p2)[1]) == (
         11.0,
         -2.0,
     )
@@ -67,7 +67,7 @@ def test_nudge_moves_selected_entity(element_with_line):
 def test_nudge_creates_undoable_command(element_with_line):
     element, sketch, p1, p2, _, history = element_with_line
     registry = sketch.registry
-    entity = registry.entities[0]
+    entity = registry.entities()[0]
     element.selection.select_entity(entity, is_multi=False)
 
     element.nudge_selection(5.0, 0.0)
@@ -76,11 +76,11 @@ def test_nudge_creates_undoable_command(element_with_line):
     assert isinstance(cmd, MoveEntitiesCommand)
 
     history.undo()
-    assert (registry.get_point(p1).x, registry.get_point(p1).y) == (
+    assert (registry.get_point(p1)[0], registry.get_point(p1)[1]) == (
         0.0,
         0.0,
     )
-    assert (registry.get_point(p2).x, registry.get_point(p2).y) == (
+    assert (registry.get_point(p2)[0], registry.get_point(p2)[1]) == (
         10.0,
         0.0,
     )
@@ -100,11 +100,11 @@ def test_nudge_skips_fixed_points(element_with_line):
     element.selection.point_ids.extend([p1, p2])
 
     assert element.nudge_selection(1.0, 1.0) is True
-    assert (registry.get_point(p1).x, registry.get_point(p1).y) == (
+    assert (registry.get_point(p1)[0], registry.get_point(p1)[1]) == (
         0.0,
         0.0,
     )
-    assert (registry.get_point(p2).x, registry.get_point(p2).y) == (
+    assert (registry.get_point(p2)[0], registry.get_point(p2)[1]) == (
         11.0,
         1.0,
     )

@@ -14,7 +14,7 @@ from ..core.commands import (
     DuplicateCommand,
     MoveEntitiesCommand,
 )
-from ..core.entities import Entity, Line, Point
+from typing import Any
 from ..core.selection import SketchSelection
 from ..core.sketch import Sketch
 from ..core.snap import SnapEngine
@@ -218,8 +218,8 @@ class SketchElement(CanvasElement):
         # A sketch is considered "empty" for bounding purposes if it has no
         # entities and at most one point (which would be the origin).
         is_truly_empty = (
-            len(self.sketch.registry.entities) == 0
-            and len(self.sketch.registry.points) <= 1
+            self.sketch.registry.entity_count() == 0
+            and self.sketch.registry.point_count() <= 1
         )
 
         new_width: float
@@ -240,11 +240,11 @@ class SketchElement(CanvasElement):
             geometry = self.sketch.to_geometry()
             if geometry.is_empty():
                 # This case handles sketches with only points.
-                if not self.sketch.registry.points:
+                if not self.sketch.registry.points():
                     min_x, max_x, min_y, max_y = 0, 0, 0, 0
                 else:
-                    xs = [p.x for p in self.sketch.registry.points]
-                    ys = [p.y for p in self.sketch.registry.points]
+                    xs = [p.x for p in self.sketch.registry.points()]
+                    ys = [p.y for p in self.sketch.registry.points()]
                     min_x, max_x = min(xs), max(xs)
                     min_y, max_y = min(ys), max(ys)
             else:
@@ -322,10 +322,12 @@ class SketchElement(CanvasElement):
         tool.on_modifier_change(shift=shift, ctrl=ctrl)
         tool.on_hover_motion(world_x, world_y)
 
-    def get_lines_at_point(self, pid: EntityID) -> list[Line]:
+    def get_lines_at_point(self, pid: EntityID) -> list[Any]:
+        from raygeo.sketch.entities.line import Line
+
         return [
             e
-            for e in self.sketch.registry.entities
+            for e in self.sketch.registry.entities()
             if isinstance(e, Line) and pid in (e.p1_idx, e.p2_idx)
         ]
 
@@ -406,7 +408,7 @@ class SketchElement(CanvasElement):
             point_ids.add(self.selection.junction_pid)
         for eid in self.selection.entity_ids:
             try:
-                entity = registry.get_entity(eid)
+                entity = registry.get_entity_object(eid)
             except IndexError:
                 continue
             if entity:
@@ -419,7 +421,7 @@ class SketchElement(CanvasElement):
             except IndexError:
                 continue
             if not p.fixed:
-                movable[pid] = p
+                movable[pid] = (p.x, p.y)
         if not movable:
             return False
 
@@ -430,9 +432,9 @@ class SketchElement(CanvasElement):
         ldx, ldy = wt_vec.transform_vector((dx_world, dy_world))
         mdx, mdy = ct_vec.transform_vector((ldx, ldy))
 
-        start_positions = {pid: (p.x, p.y) for pid, p in movable.items()}
+        start_positions = movable
         end_positions = {
-            pid: (p.x + mdx, p.y + mdy) for pid, p in movable.items()
+            pid: (x + mdx, y + mdy) for pid, (x, y) in movable.items()
         }
 
         cmd = MoveEntitiesCommand(
@@ -444,7 +446,7 @@ class SketchElement(CanvasElement):
         self.execute_command(cmd)
         return True
 
-    def request_array_edit(self, entity: Entity) -> bool:
+    def request_array_edit(self, entity: Any) -> bool:
         """
         Opens the edit dialog for the array whose master geometry is
         the given entity. Returns True if an array was found and the
@@ -496,7 +498,9 @@ class SketchElement(CanvasElement):
             target = self.sketch.registry.get_point(sel.point_ids[0])
             target_type = "point"
         elif sel.entity_ids:
-            target = self.sketch.registry.get_entity(sel.entity_ids[0])
+            target = self.sketch.registry.get_entity_object(
+                sel.entity_ids[0]
+            )
             target_type = "entity"
         elif sel.constraint_idx is not None:
             if 0 <= sel.constraint_idx < len(self.sketch.constraints):

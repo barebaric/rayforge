@@ -5,18 +5,22 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING
 
 from raygeo.geo.shape.arc import get_arc_direction
+from raygeo.geo.shape.arc import get_arc_sweep
 from raygeo.geo.shape.circle import project_point_onto_circle
 from raygeo.geo.types import Point as GeoPoint
+from raygeo.sketch.constraints.equal_distance import (
+    EqualDistanceConstraint,
+)
+from raygeo.sketch.entities.arc import Arc
 
-from ..constraints import EqualDistanceConstraint, RadiusConstraint
-from ..entities import Arc, Point
 from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData
 from .items import AddItemsCommand
 
 if TYPE_CHECKING:
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
+
     from ..sketch import Sketch
 
 
@@ -70,20 +74,27 @@ class ArcPreviewState(PreviewState):
 
         self.locked_radius = radius
 
-        try:
-            center = registry.get_point(self.center_id)
-            start = registry.get_point(self.start_id)
-            end = registry.get_point(self.temp_end_id)
-        except IndexError:
+        center = registry.get_point(self.center_id)
+        start = registry.get_point(self.start_id)
+        end = registry.get_point(self.temp_end_id)
+        if center is None or start is None or end is None:
             return
 
-        start_angle = math.atan2(start.y - center.y, start.x - center.x)
-        end_angle = math.atan2(end.y - center.y, end.x - center.x)
+        start_angle = math.atan2(
+            start[1] - center[1], start[0] - center[0]
+        )
+        end_angle = math.atan2(end[1] - center[1], end[0] - center[0])
 
-        start.x = center.x + radius * math.cos(start_angle)
-        start.y = center.y + radius * math.sin(start_angle)
-        end.x = center.x + radius * math.cos(end_angle)
-        end.y = center.y + radius * math.sin(end_angle)
+        registry.set_point_position(
+            self.start_id,
+            center[0] + radius * math.cos(start_angle),
+            center[1] + radius * math.sin(start_angle),
+        )
+        registry.set_point_position(
+            self.temp_end_id,
+            center[0] + radius * math.cos(end_angle),
+            center[1] + radius * math.sin(end_angle),
+        )
 
     def get_dimensions(self, registry: EntityRegistry) -> list[DimensionData]:
         """
@@ -97,31 +108,20 @@ class ArcPreviewState(PreviewState):
         """
         if self.start_id is None or self.temp_end_id is None:
             return []
-        try:
-            center = registry.get_point(self.center_id)
-            start = registry.get_point(self.start_id)
-            end = registry.get_point(self.temp_end_id)
-        except IndexError:
+        center = registry.get_point(self.center_id)
+        start = registry.get_point(self.start_id)
+        end = registry.get_point(self.temp_end_id)
+        if center is None or start is None or end is None:
             return []
-        radius = math.hypot(start.x - center.x, start.y - center.y)
-        arc = Arc(
-            -1,
-            self.start_id,
-            self.temp_end_id,
-            self.center_id,
-            clockwise=self.clockwise,
+        radius = math.hypot(start[0] - center[0], start[1] - center[1])
+        start_angle = math.atan2(
+            start[1] - center[1], start[0] - center[0]
         )
-        midpoint = arc.get_midpoint(registry)
-        if not midpoint:
-            start_angle = math.atan2(start.y - center.y, start.x - center.x)
-            end_angle = math.atan2(end.y - center.y, end.x - center.x)
-            mid_angle = (start_angle + end_angle) / 2
-        else:
-            mid_angle = math.atan2(
-                midpoint[1] - center.y, midpoint[0] - center.x
-            )
-        arc_mid_x = center.x + radius * math.cos(mid_angle)
-        arc_mid_y = center.y + radius * math.sin(mid_angle)
+        end_angle = math.atan2(end[1] - center[1], end[0] - center[0])
+        sweep = get_arc_sweep(start_angle, end_angle, self.clockwise)
+        mid_angle = start_angle + sweep / 2
+        arc_mid_x = center[0] + radius * math.cos(mid_angle)
+        arc_mid_y = center[1] + radius * math.sin(mid_angle)
         return [
             DimensionData(
                 label=f"R{DimensionData.format_length(radius)}",
@@ -204,12 +204,6 @@ class ArcCommand(SketchChangeCommand):
         """
         Sets the start point and creates the preview arc entity.
 
-        Args:
-            registry: The entity registry to modify.
-            preview_state: The preview state from start_center_preview.
-            x, y: The start point coordinates.
-            snapped_pid: An existing point ID to snap to, or None.
-
         Raises:
             TypeError: If preview_state is not an ArcPreviewState.
         """
@@ -285,11 +279,6 @@ class ArcCommand(SketchChangeCommand):
         """
         Updates the preview arc's end point position and direction.
 
-        Args:
-            registry: The entity registry.
-            preview_state: The preview state from start_preview.
-            x, y: The new cursor coordinates.
-
         Raises:
             TypeError: If preview_state is not an ArcPreviewState.
         """
@@ -302,36 +291,38 @@ class ArcCommand(SketchChangeCommand):
         ):
             return
 
-        try:
-            center = registry.get_point(preview_state.center_id)
-            start = registry.get_point(preview_state.start_id)
-            end = registry.get_point(preview_state.temp_end_id)
-            arc_ent = registry.get_entity(preview_state.temp_entity_id)
-        except IndexError:
+        center = registry.get_point(preview_state.center_id)
+        start = registry.get_point(preview_state.start_id)
+        if center is None or start is None:
             return
-
-        if not isinstance(arc_ent, Arc):
+        if registry.entity_type(preview_state.temp_entity_id) != "arc":
             return
 
         if preview_state.locked_radius is not None:
             cursor_radius = preview_state.locked_radius
         else:
-            cursor_radius = math.hypot(x - center.x, y - center.y)
+            cursor_radius = math.hypot(x - center[0], y - center[1])
 
-        start_angle = math.atan2(start.y - center.y, start.x - center.x)
-        start.x = center.x + cursor_radius * math.cos(start_angle)
-        start.y = center.y + cursor_radius * math.sin(start_angle)
-        end.x = center.x + cursor_radius * math.cos(
-            math.atan2(y - center.y, x - center.x)
+        start_angle = math.atan2(
+            start[1] - center[1], start[0] - center[0]
         )
-        end.y = center.y + cursor_radius * math.sin(
-            math.atan2(y - center.y, x - center.x)
+        registry.set_point_position(
+            preview_state.start_id,
+            center[0] + cursor_radius * math.cos(start_angle),
+            center[1] + cursor_radius * math.sin(start_angle),
+        )
+        end_angle = math.atan2(y - center[1], x - center[0])
+        registry.set_point_position(
+            preview_state.temp_end_id,
+            center[0] + cursor_radius * math.cos(end_angle),
+            center[1] + cursor_radius * math.sin(end_angle),
         )
 
-        arc_ent.clockwise = get_arc_direction(
-            (center.x, center.y), (start.x, start.y), (x, y)
+        clockwise = get_arc_direction(center, start, (x, y))
+        registry.set_state(
+            preview_state.temp_entity_id, {"clockwise": clockwise}
         )
-        preview_state.clockwise = arc_ent.clockwise
+        preview_state.clockwise = clockwise
 
     @staticmethod
     def cleanup_preview(
@@ -343,10 +334,6 @@ class ArcCommand(SketchChangeCommand):
         Stores the final clockwise direction in preview_state.clockwise
         before cleanup for the tool to read.
 
-        Args:
-            registry: The entity registry to modify.
-            preview_state: The preview state from start_preview.
-
         Raises:
             TypeError: If preview_state is not an ArcPreviewState.
         """
@@ -354,19 +341,10 @@ class ArcCommand(SketchChangeCommand):
             raise TypeError("Expected ArcPreviewState")
 
         if preview_state.temp_entity_id is not None:
-            try:
-                arc_ent = registry.get_entity(preview_state.temp_entity_id)
-                if isinstance(arc_ent, Arc):
-                    preview_state.clockwise = arc_ent.clockwise
-            except IndexError:
-                pass
-
-            registry.entities = [
-                e
-                for e in registry.entities
-                if e.id != preview_state.temp_entity_id
-            ]
-            registry._entity_map = {e.id: e for e in registry.entities}
+            entity = registry.get_entity_object(preview_state.temp_entity_id)
+            if isinstance(entity, Arc):
+                preview_state.clockwise = entity.clockwise
+            registry.remove_entities([preview_state.temp_entity_id])
 
         if preview_state.temp_end_id is not None:
             registry.remove_points([preview_state.temp_end_id])
@@ -378,10 +356,6 @@ class ArcCommand(SketchChangeCommand):
         """
         Removes center point preview (when only center is set).
 
-        Args:
-            registry: The entity registry to modify.
-            preview_state: The preview state from start_center_preview.
-
         Raises:
             TypeError: If preview_state is not an ArcPreviewState.
         """
@@ -390,38 +364,34 @@ class ArcCommand(SketchChangeCommand):
 
     def _do_execute(self) -> None:
         if self.add_cmd:
-            return self.add_cmd._do_execute()
+            return self.add_cmd._redo()
 
         registry = self.sketch.registry
 
-        try:
-            center_p = registry.get_point(self.center_id)
-            start_p = registry.get_point(self.start_id)
-        except IndexError:
+        center_p = registry.get_point(self.center_id)
+        start_p = registry.get_point(self.start_id)
+        if center_p is None or start_p is None:
             return
 
         final_x, final_y = self.end_pos
         if self.end_pid is not None:
-            try:
-                end_p = registry.get_point(self.end_pid)
-                final_x, final_y = end_p.x, end_p.y
-            except IndexError:
-                pass
+            position = registry.get_point(self.end_pid)
+            if position is not None:
+                final_x, final_y = position
 
-        new_point = None
         end_pid = self.end_pid
+        add_cmd = AddItemsCommand(self.sketch, "")
 
         if end_pid is None:
-            radius = math.hypot(start_p.x - center_p.x, start_p.y - center_p.y)
+            radius = math.hypot(
+                start_p[0] - center_p[0], start_p[1] - center_p[1]
+            )
             projected = project_point_onto_circle(
-                (final_x, final_y), (center_p.x, center_p.y), radius
+                (final_x, final_y), center_p, radius
             )
             if projected:
                 final_x, final_y = projected
-
-            temp_id = registry._id_counter
-            end_pid = temp_id
-            new_point = Point(temp_id, final_x, final_y)
+            end_pid = add_cmd.add_point(final_x, final_y)
 
         if end_pid == self.start_id or end_pid == self.center_id:
             if self.is_center_temp:
@@ -430,52 +400,34 @@ class ArcCommand(SketchChangeCommand):
                 self.sketch.remove_point_if_unused(self.start_id)
             return
 
-        temp_arc_id = registry._id_counter + (1 if new_point else 0)
-        new_arc = Arc(
-            temp_arc_id,
-            self.start_id,
-            end_pid,
-            self.center_id,
-            clockwise=self.clockwise,
-        )
+        if self.is_center_temp and registry.get_point(self.center_id):
+            add_cmd.adopt_point(self.center_id)
+        if self.is_start_temp and registry.get_point(self.start_id):
+            add_cmd.adopt_point(self.start_id)
 
-        constraints: list = [
+        arc_id = add_cmd.add_entity(
+            Arc(
+                self.start_id,
+                end_pid,
+                self.center_id,
+                clockwise=self.clockwise,
+            )
+        )
+        add_cmd.add_constraint(
             EqualDistanceConstraint(
                 self.center_id, self.start_id, self.center_id, end_pid
             )
-        ]
-
+        )
         if self.fixed_radius is not None:
-            constraints.append(
-                RadiusConstraint(temp_arc_id, self.fixed_radius)
+            add_cmd.add_constraint(
+                {
+                    "type": "RadiusConstraint",
+                    "entity_id": arc_id,
+                    "value": self.fixed_radius,
+                }
             )
 
-        points_to_add: list[Point] = [new_point] if new_point else []
-
-        if self.is_center_temp:
-            try:
-                p = registry.get_point(self.center_id)
-                registry.remove_points([p.id])
-                points_to_add.append(p)
-            except (IndexError, ValueError):
-                pass
-
-        if self.is_start_temp:
-            try:
-                p = registry.get_point(self.start_id)
-                registry.remove_points([p.id])
-                points_to_add.append(p)
-            except (IndexError, ValueError):
-                pass
-
-        self.add_cmd = AddItemsCommand(
-            self.sketch,
-            "",
-            points=points_to_add,
-            entities=[new_arc],
-            constraints=constraints,
-        )
-        self.add_cmd._do_execute()
+        self.add_cmd = add_cmd
         self._committed_end_id = end_pid
 
     def _do_undo(self) -> None:

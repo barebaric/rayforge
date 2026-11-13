@@ -188,7 +188,7 @@ class PolygonTool(SnapMixin, SketchTool):
         except IndexError:
             self.on_deactivate()
             return
-        end_pos = (first.x, first.y)
+        end_pos = first
         sides, star_ratio = state.sides, state.star_ratio
         PolygonCommand.cleanup_preview(registry, state)
         self._preview_state = None

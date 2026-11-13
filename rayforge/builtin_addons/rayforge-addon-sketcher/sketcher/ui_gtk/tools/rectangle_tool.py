@@ -117,13 +117,11 @@ class RectangleTool(SnapMixin, SketchTool):
         constrain_square = self._preview_state.constrain_square
 
         mx, my = 0.0, 0.0
-        try:
-            end_p = self.element.sketch.registry.get_point(
-                self._preview_state.p_end_id
-            )
-            mx, my = end_p.x, end_p.y
-        except IndexError:
-            pass
+        end_p = self.element.sketch.registry.get_point(
+            self._preview_state.p_end_id
+        )
+        if end_p is not None:
+            mx, my = end_p
 
         RectangleCommand.cleanup_preview(
             self.element.sketch.registry, self._preview_state
@@ -328,18 +326,16 @@ class RectangleTool(SnapMixin, SketchTool):
         start_id = self._preview_state.start_id
         start_temp = self._preview_state.start_temp
         center_on_start = self._preview_state.center_on_start
-        try:
-            end_pt = self.element.sketch.registry.get_point(
-                self._preview_state.p_end_id
-            )
-        except IndexError:
+        end_pt = self.element.sketch.registry.get_point(
+            self._preview_state.p_end_id
+        )
+        if end_pt is None:
             self._preview_state = None
             self.element.preview_changed.send(self.element)
             self._dim_input.cancel()
             self.element.mark_dirty()
             return
-        mx = end_pt.x
-        my = end_pt.y
+        mx, my = end_pt
         RectangleCommand.cleanup_preview(
             self.element.sketch.registry, self._preview_state
         )

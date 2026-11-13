@@ -3,23 +3,112 @@ from __future__ import annotations
 import logging
 import math
 from gettext import gettext as _
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from raygeo.geo.types import Point as GeoPoint
 
-from ..entities import Bezier, Line
-from ..entities.point import WaypointType
+from ..entity_flags import WaypointType
 from ..types import EntityID
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
-    from ..entities.point import Point
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
+
     from ..sketch import Sketch
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_CP_LENGTH = 30.0
+
+
+def get_connected_beziers(
+    registry: EntityRegistry,
+    sketch: Sketch,
+    waypoint_id: EntityID,
+) -> list[Any]:
+    """Bezier entities connected to the waypoint or any point in its
+    coincident group."""
+    point_ids = {waypoint_id}
+    point_ids.update(sketch.get_coincident_points(waypoint_id))
+    connected = []
+    for eid in registry.entity_ids():
+        if registry.entity_type(eid) != "bezier":
+            continue
+        entity = registry.get_entity_object(eid)
+        if entity is None:
+            continue
+        if entity.start_idx in point_ids or entity.end_idx in point_ids:
+            connected.append(entity)
+    return connected
+
+
+def enforce_waypoint_constraint(
+    registry: EntityRegistry,
+    sketch: Sketch,
+    waypoint_id: EntityID,
+    waypoint_type: WaypointType,
+) -> None:
+    """Applies the waypoint's smoothing semantics to the control
+    offsets of its connected beziers: symmetric waypoints get equal
+    and opposite offsets of common length."""
+    if waypoint_type is WaypointType.SHARP:
+        return
+
+    beziers = get_connected_beziers(registry, sketch, waypoint_id)
+    if len(beziers) < 2:
+        return
+
+    point_ids = {waypoint_id}
+    point_ids.update(sketch.get_coincident_points(waypoint_id))
+
+    cp_data = []
+    for bezier in beziers:
+        if bezier.start_idx in point_ids and bezier.cp1_offset is not None:
+            cp_data.append((bezier, "cp1", bezier.cp1_offset))
+        elif bezier.end_idx in point_ids and bezier.cp2_offset is not None:
+            cp_data.append((bezier, "cp2", bezier.cp2_offset))
+
+    if len(cp_data) < 2:
+        return
+
+    if waypoint_type is WaypointType.SYMMETRIC:
+        avg_length = sum(
+            math.sqrt(cp[0] ** 2 + cp[1] ** 2) for _, _, cp in cp_data
+        ) / len(cp_data)
+        if avg_length < 1e-10:
+            return
+
+        sum_dx = 0.0
+        sum_dy = 0.0
+        for _, attr, cp in cp_data:
+            sign = 1.0 if attr == "cp1" else -1.0
+            sum_dx += sign * cp[0]
+            sum_dy += sign * cp[1]
+        length = math.sqrt(sum_dx**2 + sum_dy**2)
+        if length < 1e-10:
+            return
+        direction = (sum_dx / length, sum_dy / length)
+
+        for bezier, attr, _ in cp_data:
+            sign = 1.0 if attr == "cp1" else -1.0
+            _set_cp_offset(
+                registry,
+                bezier.id,
+                attr,
+                (
+                    sign * direction[0] * avg_length,
+                    sign * direction[1] * avg_length,
+                ),
+            )
+
+
+def _set_cp_offset(
+    registry: EntityRegistry,
+    bezier_id: EntityID,
+    attr: str,
+    offset: tuple[float, float],
+) -> None:
+    registry.set_state(bezier_id, {attr: [offset[0], offset[1]]})
 
 
 class SetWaypointTypeCommand(SketchChangeCommand):
@@ -55,7 +144,7 @@ class SetWaypointTypeCommand(SketchChangeCommand):
         self._added_bezier_ids: list[int] | None = None
 
     def _get_segment_directions(
-        self, registry: EntityRegistry, waypoint: Point
+        self, registry: EntityRegistry, waypoint_id: EntityID
     ) -> tuple[GeoPoint | None, GeoPoint | None]:
         """
         Get the incoming and outgoing direction vectors at this waypoint.
@@ -65,63 +154,72 @@ class SetWaypointTypeCommand(SketchChangeCommand):
         incoming_dir: GeoPoint | None = None
         outgoing_dir: GeoPoint | None = None
 
-        point_ids = {waypoint.id}
-        point_ids.update(self.sketch.get_coincident_points(waypoint.id))
+        waypoint = registry.get_point(waypoint_id)
+        if waypoint is None:
+            return None, None
+        wx, wy = waypoint
 
-        for entity in registry.entities:
-            if isinstance(entity, Line):
+        point_ids = {waypoint_id}
+        point_ids.update(self.sketch.get_coincident_points(waypoint_id))
+
+        for eid in registry.entity_ids():
+            entity_type = registry.entity_type(eid)
+            entity = registry.get_entity_object(eid)
+            if entity is None:
+                continue
+            if entity_type == "line":
                 if entity.p2_idx in point_ids:
                     p1 = registry.get_point(entity.p1_idx)
                     if p1:
-                        dx = waypoint.x - p1.x
-                        dy = waypoint.y - p1.y
+                        dx = wx - p1[0]
+                        dy = wy - p1[1]
                         length = math.hypot(dx, dy)
                         if length > 1e-9:
                             incoming_dir = (dx / length, dy / length)
                 elif entity.p1_idx in point_ids:
                     p2 = registry.get_point(entity.p2_idx)
                     if p2:
-                        dx = p2.x - waypoint.x
-                        dy = p2.y - waypoint.y
+                        dx = p2[0] - wx
+                        dy = p2[1] - wy
                         length = math.hypot(dx, dy)
                         if length > 1e-9:
                             outgoing_dir = (dx / length, dy / length)
-            elif isinstance(entity, Bezier):
+            elif entity_type == "bezier":
                 if entity.end_idx in point_ids:
-                    if entity.cp2 is not None:
+                    if entity.cp2_offset is not None:
                         cp_abs = (
-                            waypoint.x + entity.cp2[0],
-                            waypoint.y + entity.cp2[1],
+                            wx + entity.cp2_offset[0],
+                            wy + entity.cp2_offset[1],
                         )
-                        dx = waypoint.x - cp_abs[0]
-                        dy = waypoint.y - cp_abs[1]
+                        dx = wx - cp_abs[0]
+                        dy = wy - cp_abs[1]
                         length = math.hypot(dx, dy)
                         if length > 1e-9:
                             incoming_dir = (dx / length, dy / length)
                     else:
                         start = registry.get_point(entity.start_idx)
                         if start:
-                            dx = waypoint.x - start.x
-                            dy = waypoint.y - start.y
+                            dx = wx - start[0]
+                            dy = wy - start[1]
                             length = math.hypot(dx, dy)
                             if length > 1e-9:
                                 incoming_dir = (dx / length, dy / length)
                 elif entity.start_idx in point_ids:
-                    if entity.cp1 is not None:
+                    if entity.cp1_offset is not None:
                         cp_abs = (
-                            waypoint.x + entity.cp1[0],
-                            waypoint.y + entity.cp1[1],
+                            wx + entity.cp1_offset[0],
+                            wy + entity.cp1_offset[1],
                         )
-                        dx = cp_abs[0] - waypoint.x
-                        dy = cp_abs[1] - waypoint.y
+                        dx = cp_abs[0] - wx
+                        dy = cp_abs[1] - wy
                         length = math.hypot(dx, dy)
                         if length > 1e-9:
                             outgoing_dir = (dx / length, dy / length)
                     else:
                         end = registry.get_point(entity.end_idx)
                         if end:
-                            dx = end.x - waypoint.x
-                            dy = end.y - waypoint.y
+                            dx = end[0] - wx
+                            dy = end[1] - wy
                             length = math.hypot(dx, dy)
                             if length > 1e-9:
                                 outgoing_dir = (dx / length, dy / length)
@@ -139,10 +237,13 @@ class SetWaypointTypeCommand(SketchChangeCommand):
         point_ids.update(self.sketch.get_coincident_points(waypoint_id))
 
         connected = []
-        for entity in registry.entities:
-            if isinstance(entity, Line) and (
-                entity.p1_idx in point_ids or entity.p2_idx in point_ids
-            ):
+        for eid in registry.entity_ids():
+            if registry.entity_type(eid) != "line":
+                continue
+            entity = registry.get_entity_object(eid)
+            if entity is None:
+                continue
+            if entity.p1_idx in point_ids or entity.p2_idx in point_ids:
                 connected.append(
                     (
                         entity.id,
@@ -161,7 +262,7 @@ class SetWaypointTypeCommand(SketchChangeCommand):
         """Remove Line entities and add Bezier entities in their place."""
         bezier_ids = []
         line_ids_to_remove = [lid for lid, *_ in lines]
-        registry.remove_entities_by_id(line_ids_to_remove)
+        registry.remove_entities(line_ids_to_remove)
 
         for entry in lines:
             _, p1_idx, p2_idx, construction = entry
@@ -178,42 +279,56 @@ class SetWaypointTypeCommand(SketchChangeCommand):
         lines: list[tuple[EntityID, EntityID, EntityID, bool]],
         bezier_ids: list[EntityID],
     ):
-        """Remove Bezier entities and restore Line entities."""
-        registry.remove_entities_by_id(bezier_ids)
-        for line_id, p1_idx, p2_idx, construction in lines:
-            new_line = Line(line_id, p1_idx, p2_idx, construction=construction)
-            registry.entities.append(new_line)
-            registry._entity_map[line_id] = new_line
+        """Remove Bezier entities and restore Line entities with their
+        original ids."""
+        registry.remove_entities(bezier_ids)
+        line_dicts = [
+            {
+                "id": line_id,
+                "type": "line",
+                "p1_idx": p1_idx,
+                "p2_idx": p2_idx,
+                "construction": construction,
+            }
+            for line_id, p1_idx, p2_idx, construction in lines
+        ]
+        self.sketch.restore_structure([], line_dicts)
 
     def _do_execute(self) -> None:
         registry = self.sketch.registry
-        try:
-            waypoint = registry.get_point(self.waypoint_id)
-        except IndexError:
+        waypoint = registry.get_point(self.waypoint_id)
+        if waypoint is None:
             return
 
-        connected_beziers = waypoint.get_connected_beziers(
-            registry, self.sketch
+        connected_beziers = get_connected_beziers(
+            registry, self.sketch, self.waypoint_id
         )
         self._old_bezier_states = {}
-        for b in connected_beziers:
-            self._old_bezier_states[b.id] = (b.cp1, b.cp2)
+        for bezier in connected_beziers:
+            self._old_bezier_states[bezier.id] = (
+                bezier.cp1_offset,
+                bezier.cp2_offset,
+            )
 
-        self._old_waypoint_type = waypoint.waypoint_type
+        self._old_waypoint_type = self.sketch.flags.waypoint_type(
+            self.waypoint_id
+        )
 
         if self.new_type in (WaypointType.SMOOTH, WaypointType.SYMMETRIC):
-            connected_lines = self._find_connected_lines(registry, waypoint.id)
+            connected_lines = self._find_connected_lines(
+                registry, self.waypoint_id
+            )
             if connected_lines:
                 self._converted_lines = connected_lines
                 self._added_bezier_ids = self._convert_lines_to_beziers(
                     registry, connected_lines
                 )
-                connected_beziers = waypoint.get_connected_beziers(
-                    registry, self.sketch
+                connected_beziers = get_connected_beziers(
+                    registry, self.sketch, self.waypoint_id
                 )
 
             incoming_dir, outgoing_dir = self._get_segment_directions(
-                registry, waypoint
+                registry, self.waypoint_id
             )
 
             avg_dir: GeoPoint | None = None
@@ -239,36 +354,53 @@ class SetWaypointTypeCommand(SketchChangeCommand):
             cp_in = (-avg_dir[0] * cp_length, -avg_dir[1] * cp_length)
             cp_out = (avg_dir[0] * cp_length, avg_dir[1] * cp_length)
 
-            point_ids = {waypoint.id}
-            point_ids.update(self.sketch.get_coincident_points(waypoint.id))
+            point_ids = {self.waypoint_id}
+            point_ids.update(
+                self.sketch.get_coincident_points(self.waypoint_id)
+            )
 
-            for b in connected_beziers:
-                if b.start_idx in point_ids and b.cp1 is None:
-                    b.cp1 = cp_out
-                if b.end_idx in point_ids and b.cp2 is None:
-                    b.cp2 = cp_in
+            for bezier in connected_beziers:
+                if (
+                    bezier.start_idx in point_ids
+                    and bezier.cp1_offset is None
+                ):
+                    _set_cp_offset(
+                        registry, bezier.id, "cp1", cp_out
+                    )
+                if (
+                    bezier.end_idx in point_ids
+                    and bezier.cp2_offset is None
+                ):
+                    _set_cp_offset(registry, bezier.id, "cp2", cp_in)
 
-        waypoint.waypoint_type = self.new_type
-        waypoint.enforce_constraint(registry, self.sketch)
+        self.sketch.flags.set_waypoint_type(self.waypoint_id, self.new_type)
+        enforce_waypoint_constraint(
+            registry, self.sketch, self.waypoint_id, self.new_type
+        )
 
     def _do_undo(self) -> None:
         if self._old_waypoint_type is None:
             return
 
         registry = self.sketch.registry
-        try:
-            waypoint = registry.get_point(self.waypoint_id)
-        except IndexError:
+        if registry.get_point(self.waypoint_id) is None:
             return
 
-        waypoint.waypoint_type = self._old_waypoint_type
+        self.sketch.flags.set_waypoint_type(
+            self.waypoint_id, self._old_waypoint_type
+        )
 
         if self._old_bezier_states is not None:
             for bezier_id, (cp1, cp2) in self._old_bezier_states.items():
-                bezier = registry.get_entity(bezier_id)
-                if isinstance(bezier, Bezier):
-                    bezier.cp1 = cp1
-                    bezier.cp2 = cp2
+                if registry.entity_type(bezier_id) != "bezier":
+                    continue
+                state: dict[str, Any] = {}
+                if cp1 is not None:
+                    state["cp1"] = [cp1[0], cp1[1]]
+                if cp2 is not None:
+                    state["cp2"] = [cp2[0], cp2[1]]
+                if state:
+                    registry.set_state(bezier_id, state)
 
         if (
             self._converted_lines is not None

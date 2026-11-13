@@ -1,12 +1,11 @@
 from sketcher.core import Sketch
 from sketcher.core.commands import TextBoxCommand
-from sketcher.core.constraints import (
-    AspectRatioConstraint,
-    HorizontalConstraint,
-    ParallelogramConstraint,
-    PerpendicularConstraint,
-)
-from sketcher.core.entities import Line, TextBoxEntity
+from raygeo.sketch.constraints.aspect_ratio import AspectRatioConstraint
+from raygeo.sketch.constraints.horizontal import HorizontalConstraint
+from raygeo.sketch.constraints.parallelogram import ParallelogramConstraint
+from raygeo.sketch.constraints.perpendicular import PerpendicularConstraint
+from raygeo.sketch.entities.line import Line
+from raygeo.sketch.entities.text_box import TextBox
 
 
 def test_text_box_calculate_geometry_default():
@@ -47,7 +46,7 @@ def test_text_box_calculate_geometry_entities():
     entities = result["entities"]
 
     lines = [e for e in entities if isinstance(e, Line)]
-    text_boxes = [e for e in entities if isinstance(e, TextBoxEntity)]
+    text_boxes = [e for e in entities if isinstance(e, TextBox)]
 
     assert len(lines) == 4
     assert len(text_boxes) == 1
@@ -115,8 +114,8 @@ def test_text_box_command_execute():
     cmd = TextBoxCommand(sketch, (0, 0), 10.0, 10.0)
     cmd.execute()
 
-    assert len(sketch.registry.points) == 5
-    assert len(sketch.registry.entities) == 5
+    assert len(sketch.registry.points()) == 5
+    assert len(sketch.registry.entities()) == 5
     assert len(sketch.constraints) == 4
     assert cmd.text_box_id is not None
 
@@ -127,13 +126,13 @@ def test_text_box_command_execute_custom_dimensions():
     cmd = TextBoxCommand(sketch, (5, 10), 20.0, 15.0)
     cmd.execute()
 
-    assert len(sketch.registry.points) == 5
-    assert len(sketch.registry.entities) == 5
+    assert len(sketch.registry.points()) == 5
+    assert len(sketch.registry.entities()) == 5
     assert len(sketch.constraints) == 4
     assert cmd.text_box_id is not None
 
-    text_box = sketch.registry.get_entity(cmd.text_box_id)
-    assert isinstance(text_box, TextBoxEntity)
+    text_box = sketch.registry.get_entity_object(cmd.text_box_id)
+    assert isinstance(text_box, TextBox)
 
 
 def test_text_box_command_undo():
@@ -142,14 +141,14 @@ def test_text_box_command_undo():
     cmd = TextBoxCommand(sketch, (0, 0), 10.0, 10.0)
     cmd.execute()
 
-    assert len(sketch.registry.points) == 5
-    assert len(sketch.registry.entities) == 5
+    assert len(sketch.registry.points()) == 5
+    assert len(sketch.registry.entities()) == 5
     assert len(sketch.constraints) == 4
 
     cmd.undo()
 
-    assert len(sketch.registry.points) == 1
-    assert len(sketch.registry.entities) == 0
+    assert len(sketch.registry.points()) == 1
+    assert len(sketch.registry.entities()) == 0
     assert len(sketch.constraints) == 0
 
 
@@ -159,15 +158,15 @@ def test_text_box_command_execute_after_undo():
     cmd = TextBoxCommand(sketch, (0, 0), 10.0, 10.0)
     cmd.execute()
 
-    initial_points = len(sketch.registry.points)
-    initial_entities = len(sketch.registry.entities)
+    initial_points = len(sketch.registry.points())
+    initial_entities = len(sketch.registry.entities())
     initial_constraints = len(sketch.constraints)
 
     cmd.undo()
     cmd.execute()
 
-    assert len(sketch.registry.points) == initial_points
-    assert len(sketch.registry.entities) == initial_entities
+    assert len(sketch.registry.points()) == initial_points
+    assert len(sketch.registry.entities()) == initial_entities
     assert len(sketch.constraints) == initial_constraints
 
 
@@ -179,7 +178,7 @@ def test_text_box_command_construction_lines():
 
     lines = [
         e
-        for e in sketch.registry.entities
+        for e in sketch.registry.entities()
         if isinstance(e, Line) and e.construction
     ]
 
@@ -187,14 +186,14 @@ def test_text_box_command_construction_lines():
 
 
 def test_text_box_command_text_box_entity():
-    """Test that TextBoxEntity is created with correct properties."""
+    """Test that TextBox is created with correct properties."""
     sketch = Sketch()
     cmd = TextBoxCommand(sketch, (0, 0), 10.0, 10.0)
     cmd.execute()
 
     assert cmd.text_box_id is not None
-    text_box = sketch.registry.get_entity(cmd.text_box_id)
-    assert isinstance(text_box, TextBoxEntity)
+    text_box = sketch.registry.get_entity_object(cmd.text_box_id)
+    assert isinstance(text_box, TextBox)
     assert text_box.content == ""
     assert text_box.construction is False
     assert len(text_box.construction_line_ids) == 4

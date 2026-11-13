@@ -7,7 +7,7 @@ from sketcher.core import Sketch
 from sketcher.core.commands import TextBoxCommand
 from sketcher.core.commands.live_text_edit import LiveTextEditCommand
 from sketcher.core.commands.text_property import ModifyTextPropertyCommand
-from sketcher.core.entities import TextBoxEntity
+from raygeo.sketch.entities.text_box import TextBox
 from sketcher.ui_gtk.tools import TextBoxTool
 from sketcher.ui_gtk.tools.base import SketcherKey
 from sketcher.ui_gtk.tools.text_box_tool import TextBoxState
@@ -19,8 +19,8 @@ def mock_element():
     element = Mock()
     element.sketch = Mock()
     element.sketch.registry._id_counter = 0
-    element.sketch.registry.entities = []
-    element.sketch.registry.points = []
+    element.sketch.registry.entities = Mock(return_value=[])
+    element.sketch.registry.points = Mock(return_value=[])
     element.sketch.constraints = []
     element.sketch.is_fully_constrained = False
     element.hittester.get_hit_data.return_value = (None, None)
@@ -54,9 +54,9 @@ def test_text_box_tool_initialization(text_box_tool):
 def test_text_box_tool_on_press_creates_box(text_box_tool, mock_element):
     """Test that first press creates a text box and enters EDITING state."""
     mock_element.hittester.screen_to_model.return_value = (10, 20)
-    mock_element.sketch.registry.entities = []
+    mock_element.sketch.registry.entities = Mock(return_value=[])
 
-    mock_entity = TextBoxEntity(
+    mock_entity = TextBox(
         5, 0, 1, 2, content="", construction_line_ids=[]
     )
 
@@ -95,16 +95,16 @@ def test_text_box_tool_on_press_outside_box_creates_new(
 
     mock_element.hittester.screen_to_model.return_value = (1000, 1000)
     mock_element.content_transform.transform_point.return_value = (1000, 1000)
-    mock_element.sketch.registry.entities = []
+    mock_element.sketch.registry.entities = Mock(return_value=[])
 
-    mock_entity = MagicMock(spec=TextBoxEntity)
+    mock_entity = MagicMock(spec=TextBox)
     mock_entity.origin_id = 0
     mock_entity.width_id = 1
     mock_entity.height_id = 2
     mock_entity.content = "Test Text"
     mock_entity.font_config = FontConfig(family="sans-serif", size=10.0)
 
-    new_entity = TextBoxEntity(
+    new_entity = TextBox(
         6, 0, 1, 2, content="", construction_line_ids=[]
     )
 
@@ -237,7 +237,7 @@ def test_text_box_tool_handle_key_event_arrow_right(
 @pytest.mark.ui
 def test_text_box_tool_handle_key_event_return(text_box_tool, mock_element):
     """Test that return key finalizes edit."""
-    mock_entity = TextBoxEntity(
+    mock_entity = TextBox(
         5, 0, 1, 2, content="Test", construction_line_ids=[]
     )
     mock_entity.font_config = FontConfig(family="sans-serif", size=10.0)
@@ -305,7 +305,7 @@ def test_text_box_tool_handle_text_input_idle_state(
 @pytest.mark.ui
 def test_text_box_tool_start_editing(text_box_tool, mock_element):
     """Test starting to edit an existing text box."""
-    mock_entity = TextBoxEntity(
+    mock_entity = TextBox(
         5, 0, 1, 2, content="Existing text", construction_line_ids=[]
     )
     mock_entity.font_config = FontConfig(family="sans-serif", size=10.0)
@@ -344,7 +344,7 @@ def test_text_box_tool_deactivate_pushes_only_finalize_command(
     """Ending an edit session must push exactly one command for the edit
     (ModifyTextPropertyCommand). The session-scoped LiveTextEditCommand
     must never become a global history entry."""
-    entity = MagicMock(spec=TextBoxEntity)
+    entity = MagicMock(spec=TextBox)
     entity.content = "before"
     entity.font_config = FontConfig(family="sans-serif", size=10.0)
     entity.origin_id = 0
@@ -443,17 +443,17 @@ def test_text_box_tool_undo_targets_session_start_geometry(
     mock_element.sketch = sketch
 
     entity_id = box_cmd.text_box_id
-    entity = cast(TextBoxEntity, sketch.registry.get_entity(entity_id))
+    entity = cast(TextBox, sketch.registry.get_entity_object(entity_id))
 
     text_box_tool.start_editing(entity_id)
     assert text_box_tool._edit_cmd is not None
 
     p_width = sketch.registry.get_point(entity.width_id)
-    orig_width = (p_width.x, p_width.y)
+    orig_width = (p_width[0], p_width[1])
 
     # Simulate the live resize while typing: the width point moves
     # before any command is executed.
-    p_width.x += 30.0
+    p_width[0] += 30.0
 
     text_box_tool.text_buffer = "something"
     text_box_tool.on_deactivate()
@@ -500,7 +500,7 @@ def test_text_box_tool_apply_font_change_folds_into_finalize_command(
     mock_element.sketch = sketch
 
     entity_id = box_cmd.text_box_id
-    entity = cast(TextBoxEntity, sketch.registry.get_entity(entity_id))
+    entity = cast(TextBox, sketch.registry.get_entity_object(entity_id))
 
     text_box_tool.start_editing(entity_id)
     assert text_box_tool._edit_cmd is not None
@@ -508,8 +508,8 @@ def test_text_box_tool_apply_font_change_folds_into_finalize_command(
     # Simulate the live resize that typing performs: the width point has
     # moved away from its session-start position.
     p_width = sketch.registry.get_point(entity.width_id)
-    orig_width = (p_width.x, p_width.y)
-    p_width.x += 25.0
+    orig_width = (p_width[0], p_width[1])
+    p_width[0] += 25.0
 
     new_font = FontConfig(family="serif", size=14.0, bold=True)
     handled = text_box_tool.apply_font_change(new_font)
@@ -577,7 +577,7 @@ def test_text_box_tool_is_click_outside_box(text_box_tool, mock_element):
     """Test checking if click is outside box bounds."""
     text_box_tool.editing_entity_id = 5
 
-    mock_entity = TextBoxEntity(
+    mock_entity = TextBox(
         5, 0, 1, 2, content="", construction_line_ids=[]
     )
     mock_entity.font_config = FontConfig(family="sans-serif", size=10.0)
@@ -604,7 +604,7 @@ def test_text_box_tool_is_click_inside_box(text_box_tool, mock_element):
     """Test checking if click is inside box bounds."""
     text_box_tool.editing_entity_id = 5
 
-    mock_entity = TextBoxEntity(
+    mock_entity = TextBox(
         5, 0, 1, 2, content="", construction_line_ids=[]
     )
     mock_entity.font_config = FontConfig(family="sans-serif", size=10.0)

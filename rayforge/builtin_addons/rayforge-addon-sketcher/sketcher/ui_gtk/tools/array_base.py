@@ -83,7 +83,7 @@ class ArrayToolBase(SketchTool):
         self._template_entity_ids = [
             eid
             for eid in self.element.selection.entity_ids
-            if registry.get_entity(eid) is not None
+            if registry.get_entity_object(eid) is not None
         ]
         if not self._template_entity_ids:
             self.element.set_tool("select")
@@ -249,7 +249,7 @@ class ArrayToolBase(SketchTool):
         selection = self.element.selection
         selection.clear()
         for eid in entity_ids:
-            entity = registry.get_entity(eid)
+            entity = registry.get_entity_object(eid)
             if entity is not None:
                 selection.select_entity(entity, False)
 

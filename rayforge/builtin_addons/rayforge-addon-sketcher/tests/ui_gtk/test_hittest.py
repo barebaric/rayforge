@@ -3,7 +3,8 @@ from typing import cast
 from raygeo.geo import Matrix
 from sketcher.core import Sketch
 from sketcher.core.arrays import CurveAlongArray
-from sketcher.core.entities import Bezier, Line
+from raygeo.sketch.entities.bezier import Bezier
+from raygeo.sketch.entities.line import Line
 from sketcher.ui_gtk.hittest import SketchHitTester
 
 
@@ -126,7 +127,7 @@ class TestDerivedPointPicking:
         resolve to the guide's endpoint. Derived points lose even
         though they were created later (old z-order tie-break)."""
         s, guide, _array = _build_managed_sketch()
-        bezier = cast(Bezier, s.registry.get_entity(guide))
+        bezier = cast(Bezier, s.registry.get_entity_object(guide))
 
         element = FakeElement(s)
         tester = SketchHitTester()
@@ -137,7 +138,7 @@ class TestDerivedPointPicking:
         (template reshaping stays possible)."""
         s, _guide, array = _build_managed_sketch()
         _slot, template_eids = array.members[0]
-        line = cast(Line, s.registry.get_entity(template_eids[0]))
+        line = cast(Line, s.registry.get_entity_object(template_eids[0]))
         template_pt = s.registry.get_point(line.p2_idx)
 
         element = FakeElement(s)
@@ -148,14 +149,14 @@ class TestDerivedPointPicking:
         s, guide, array = _build_managed_sketch()
         derived = s.get_derived_point_ids()
 
-        bezier = cast(Bezier, s.registry.get_entity(guide))
+        bezier = cast(Bezier, s.registry.get_entity_object(guide))
         assert bezier.start_idx not in derived
         assert bezier.end_idx not in derived
 
         member_pids = set()
         for _slot, eids in array.members:
             for eid in eids:
-                entity = cast(Line, s.registry.get_entity(eid))
+                entity = cast(Line, s.registry.get_entity_object(eid))
                 member_pids.update(entity.get_point_ids())
         assert member_pids
         assert member_pids <= derived

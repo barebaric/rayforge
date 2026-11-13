@@ -7,7 +7,8 @@ from raygeo.geo.shape.polygon import get_polygon_signed_area
 from sketcher.core import Sketch
 from sketcher.core.boolean import BooleanOp
 from sketcher.core.commands import BooleanCommand
-from sketcher.core.entities import Circle, PolygonEntity
+from raygeo.sketch.entities.circle import Circle
+from raygeo.sketch.entities.polygon import Polygon
 from sketcher.core.sketch import Fill
 
 from rayforge.image.structures import FillStyle
@@ -47,7 +48,7 @@ def _fill(sketch, entity_id, color=(0.1, 0.2, 0.3, 0.9)):
 
 def _polygons(sketch):
     return [
-        e for e in sketch.registry.entities if isinstance(e, PolygonEntity)
+        e for e in sketch.registry.entities() if isinstance(e, Polygon)
     ]
 
 
@@ -58,8 +59,8 @@ def test_union_replaces_sources_with_polygon():
     cmd = BooleanCommand(sketch, [c1, c2], BooleanOp.UNION)
     cmd.execute()
 
-    assert sketch.registry.get_entity(c1) is None
-    assert sketch.registry.get_entity(c2) is None
+    assert sketch.registry.get_entity_object(c1) is None
+    assert sketch.registry.get_entity_object(c2) is None
     polygons = _polygons(sketch)
     assert len(polygons) == 1
     assert polygons[0].id in cmd.new_entity_ids
@@ -77,13 +78,13 @@ def test_union_undo_restores_sources():
     cmd.execute()
     cmd.undo()
 
-    assert isinstance(sketch.registry.get_entity(c1), Circle)
-    assert isinstance(sketch.registry.get_entity(c2), Circle)
+    assert isinstance(sketch.registry.get_entity_object(c1), Circle)
+    assert isinstance(sketch.registry.get_entity_object(c2), Circle)
     assert _polygons(sketch) == []
 
 
 def _point_state(sketch):
-    return {p.id: (p.x, p.y) for p in sketch.registry.points}
+    return {p.id: (p.x, p.y) for p in sketch.registry.points()}
 
 
 def test_undo_restores_exact_geometry():
@@ -141,7 +142,7 @@ def test_multi_ring_polygon_survives_serialization():
     cmd.execute()
 
     polygon = _polygons(sketch)[0]
-    clone = PolygonEntity.from_dict(polygon.to_dict())
+    clone = Polygon.from_dict(polygon.to_dict())
     assert len(clone.rings) == 2
     assert clone.closed is True
     for ring_clone, ring in zip(
@@ -176,8 +177,8 @@ def test_no_overlap_aborts_without_changes():
     cmd = BooleanCommand(sketch, [c1, c2], BooleanOp.INTERSECTION)
     cmd.execute()
 
-    assert isinstance(sketch.registry.get_entity(c1), Circle)
-    assert isinstance(sketch.registry.get_entity(c2), Circle)
+    assert isinstance(sketch.registry.get_entity_object(c1), Circle)
+    assert isinstance(sketch.registry.get_entity_object(c2), Circle)
     assert _polygons(sketch) == []
 
 
@@ -186,7 +187,7 @@ def test_insufficient_selection_aborts():
     c1 = _circle(sketch, 0.0)
     cmd = BooleanCommand(sketch, [c1], BooleanOp.UNION)
     cmd.execute()
-    assert isinstance(sketch.registry.get_entity(c1), Circle)
+    assert isinstance(sketch.registry.get_entity_object(c1), Circle)
 
 
 def test_prepare_solids_is_side_effect_free():
@@ -194,13 +195,13 @@ def test_prepare_solids_is_side_effect_free():
     c1 = _circle(sketch, 0.0)
     c2 = _circle(sketch, 8.0)
     points_before = _point_state(sketch)
-    entities_before = len(sketch.registry.entities)
+    entities_before = len(sketch.registry.entities())
     solids = BooleanCommand.prepare_solids(sketch, [c1, c2], BooleanOp.UNION)
     assert solids is not None and len(solids) == 1
     assert _point_state(sketch) == {
         pid: pytest.approx(pt) for pid, pt in points_before.items()
     }
-    assert len(sketch.registry.entities) == entities_before
+    assert len(sketch.registry.entities()) == entities_before
 
 
 def test_exclude_transfers_fill_to_every_result():
@@ -272,8 +273,8 @@ def test_fill_transfer_undo_restores_original_fills():
     cmd.undo()
 
     assert sketch.fills == [unrelated, fill1, fill2]
-    assert isinstance(sketch.registry.get_entity(c1), Circle)
-    assert isinstance(sketch.registry.get_entity(c2), Circle)
+    assert isinstance(sketch.registry.get_entity_object(c1), Circle)
+    assert isinstance(sketch.registry.get_entity_object(c2), Circle)
 
 
 def test_fill_transfer_redo_reapplies_fills():
@@ -292,7 +293,7 @@ def test_fill_transfer_redo_reapplies_fills():
     assert len(sketch.fills) == 2
     for polygon, fill in zip(polygons, sketch.fills):
         assert fill.boundary == [(polygon.id, True)]
-        assert sketch.registry.get_entity(polygon.id) is polygon
+        assert sketch.registry.get_entity_object(polygon.id) is polygon
 
 
 def test_abort_keeps_fills_untouched():

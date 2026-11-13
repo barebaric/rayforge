@@ -21,7 +21,6 @@ def test_move_point_command_initialization(sketch):
     assert cmd.point_id == p_id
     assert cmd.start_pos == (10.0, 20.0)
     assert cmd.end_pos == (30.0, 40.0)
-    assert cmd._point_ref is None
 
 
 def test_move_point_command_initialization_with_snapshot(sketch):
@@ -38,13 +37,13 @@ def test_move_point_command_execute(sketch):
     p_id = sketch.add_point(10.0, 20.0)
     cmd = MovePointCommand(sketch, p_id, (10.0, 20.0), (30.0, 40.0))
 
-    assert sketch.registry.get_point(p_id).x == 10.0
-    assert sketch.registry.get_point(p_id).y == 20.0
+    assert sketch.registry.get_point(p_id)[0] == 10.0
+    assert sketch.registry.get_point(p_id)[1] == 20.0
 
     cmd.execute()
 
-    assert sketch.registry.get_point(p_id).x == 30.0
-    assert sketch.registry.get_point(p_id).y == 40.0
+    assert sketch.registry.get_point(p_id)[0] == 30.0
+    assert sketch.registry.get_point(p_id)[1] == 40.0
 
 
 def test_move_point_command_undo(sketch):
@@ -53,13 +52,13 @@ def test_move_point_command_undo(sketch):
     cmd = MovePointCommand(sketch, p_id, (10.0, 20.0), (30.0, 40.0))
 
     cmd.execute()
-    assert sketch.registry.get_point(p_id).x == 30.0
-    assert sketch.registry.get_point(p_id).y == 40.0
+    assert sketch.registry.get_point(p_id)[0] == 30.0
+    assert sketch.registry.get_point(p_id)[1] == 40.0
 
     cmd.undo()
 
-    assert sketch.registry.get_point(p_id).x == 10.0
-    assert sketch.registry.get_point(p_id).y == 20.0
+    assert sketch.registry.get_point(p_id)[0] == 10.0
+    assert sketch.registry.get_point(p_id)[1] == 20.0
 
 
 def test_move_point_command_execute_undo_cycle(sketch):
@@ -69,12 +68,12 @@ def test_move_point_command_execute_undo_cycle(sketch):
 
     for _ in range(3):
         cmd.execute()
-        assert sketch.registry.get_point(p_id).x == 30.0
-        assert sketch.registry.get_point(p_id).y == 40.0
+        assert sketch.registry.get_point(p_id)[0] == 30.0
+        assert sketch.registry.get_point(p_id)[1] == 40.0
 
         cmd.undo()
-        assert sketch.registry.get_point(p_id).x == 10.0
-        assert sketch.registry.get_point(p_id).y == 20.0
+        assert sketch.registry.get_point(p_id)[0] == 10.0
+        assert sketch.registry.get_point(p_id)[1] == 20.0
 
 
 def test_move_point_command_can_coalesce_with(sketch):
@@ -114,37 +113,24 @@ def test_move_point_command_coalesce_with_invalid(sketch):
     assert result is False
 
 
-def test_move_point_command_get_point(sketch):
-    """Test that _get_point returns the correct point."""
+def test_move_point_command_position_lookup(sketch):
+    """The command reads the point position from the registry."""
     p_id = sketch.add_point(10.0, 20.0)
     cmd = MovePointCommand(sketch, p_id, (10.0, 20.0), (30.0, 40.0))
 
-    point = cmd._get_point()
+    position = sketch.registry.get_point(p_id)
 
-    assert point is not None
-    assert point.id == p_id
-    assert point.x == 10.0
-    assert point.y == 20.0
-
-
-def test_move_point_command_get_point_caches(sketch):
-    """Test that _get_point caches the point reference."""
-    p_id = sketch.add_point(10.0, 20.0)
-    cmd = MovePointCommand(sketch, p_id, (10.0, 20.0), (30.0, 40.0))
-
-    point1 = cmd._get_point()
-    point2 = cmd._get_point()
-
-    assert point1 is point2
+    assert position is not None
+    assert position == (10.0, 20.0)
 
 
 def test_move_point_command_get_point_missing(sketch):
-    """Test that _get_point returns None for missing point."""
+    """A missing point yields no position."""
     cmd = MovePointCommand(sketch, 9999, (0.0, 0.0), (10.0, 10.0))
 
-    point = cmd._get_point()
+    position = sketch.registry.get_point(9999)
 
-    assert point is None
+    assert position is None
 
 
 def test_unstick_junction_command_initialization(sketch):
@@ -154,8 +140,8 @@ def test_unstick_junction_command_initialization(sketch):
 
     assert cmd.sketch is sketch
     assert cmd.junction_pid == p_id
-    assert cmd.new_point is None
-    assert cmd.modified_map == {}
+    assert cmd.new_pid is None
+    assert cmd.modified_entity_ids == set()
 
 
 def test_unstick_junction_command_execute_with_two_lines(sketch):
@@ -169,20 +155,20 @@ def test_unstick_junction_command_execute_with_two_lines(sketch):
 
     cmd = UnstickJunctionCommand(sketch, p2)
 
-    initial_points_count = len(sketch.registry.points)
+    initial_points_count = len(sketch.registry.points())
 
     cmd.execute()
 
-    assert len(sketch.registry.points) == initial_points_count + 1
-    assert cmd.new_point is not None
+    assert len(sketch.registry.points()) == initial_points_count + 1
+    assert cmd.new_pid is not None
 
-    line1 = sketch.registry.get_entity(line1_id)
-    line2 = sketch.registry.get_entity(line2_id)
+    line1 = sketch.registry.get_entity_object(line1_id)
+    line2 = sketch.registry.get_entity_object(line2_id)
 
     assert line1.p1_idx == p1
     assert line1.p2_idx == p2
 
-    assert line2.p1_idx == cmd.new_point.id
+    assert line2.p1_idx == cmd.new_pid
     assert line2.p2_idx == p3
 
 
@@ -195,12 +181,12 @@ def test_unstick_junction_command_execute_with_single_line(sketch):
 
     cmd = UnstickJunctionCommand(sketch, p2)
 
-    initial_points_count = len(sketch.registry.points)
+    initial_points_count = len(sketch.registry.points())
 
     cmd.execute()
 
-    assert len(sketch.registry.points) == initial_points_count
-    assert cmd.new_point is None
+    assert len(sketch.registry.points()) == initial_points_count
+    assert cmd.new_pid is None
 
 
 def test_unstick_junction_command_execute_with_no_entities(sketch):
@@ -209,12 +195,12 @@ def test_unstick_junction_command_execute_with_no_entities(sketch):
 
     cmd = UnstickJunctionCommand(sketch, p1)
 
-    initial_points_count = len(sketch.registry.points)
+    initial_points_count = len(sketch.registry.points())
 
     cmd.execute()
 
-    assert len(sketch.registry.points) == initial_points_count
-    assert cmd.new_point is None
+    assert len(sketch.registry.points()) == initial_points_count
+    assert cmd.new_pid is None
 
 
 def test_unstick_junction_command_undo(sketch):
@@ -230,13 +216,13 @@ def test_unstick_junction_command_undo(sketch):
 
     cmd.execute()
 
-    assert cmd.new_point is not None
-    line2 = sketch.registry.get_entity(line2_id)
-    assert line2.p1_idx == cmd.new_point.id
+    assert cmd.new_pid is not None
+    line2 = sketch.registry.get_entity_object(line2_id)
+    assert line2.p1_idx == cmd.new_pid
 
     cmd.undo()
 
-    line2 = sketch.registry.get_entity(line2_id)
+    line2 = sketch.registry.get_entity_object(line2_id)
     assert line2.p1_idx == p2
 
 
@@ -253,11 +239,11 @@ def test_unstick_junction_command_execute_undo_cycle(sketch):
 
     for _ in range(3):
         cmd.execute()
-        line2 = sketch.registry.get_entity(line2_id)
+        line2 = sketch.registry.get_entity_object(line2_id)
         assert line2.p1_idx != p2
 
         cmd.undo()
-        line2 = sketch.registry.get_entity(line2_id)
+        line2 = sketch.registry.get_entity_object(line2_id)
         assert line2.p1_idx == p2
 
 
@@ -274,9 +260,9 @@ def test_unstick_junction_command_with_arc(sketch):
 
     cmd.execute()
 
-    assert cmd.new_point is not None
-    arc = sketch.registry.get_entity(arc_id)
-    assert arc.start_idx == cmd.new_point.id
+    assert cmd.new_pid is not None
+    arc = sketch.registry.get_entity_object(arc_id)
+    assert arc.start_idx == cmd.new_pid.id
 
 
 def test_unstick_junction_command_with_circle(sketch):
@@ -292,6 +278,6 @@ def test_unstick_junction_command_with_circle(sketch):
 
     cmd.execute()
 
-    assert cmd.new_point is not None
-    circle = sketch.registry.get_entity(circle_id)
-    assert circle.center_idx == cmd.new_point.id
+    assert cmd.new_pid is not None
+    circle = sketch.registry.get_entity_object(circle_id)
+    assert circle.center_idx == cmd.new_pid.id

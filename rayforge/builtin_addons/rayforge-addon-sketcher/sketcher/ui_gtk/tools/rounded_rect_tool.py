@@ -111,13 +111,11 @@ class RoundedRectTool(SketchTool):
         constrain_square = self._preview_state.constrain_square
 
         mx, my = 0.0, 0.0
-        try:
-            end_p = self.element.sketch.registry.get_point(
-                self._preview_state.p_end_id
-            )
-            mx, my = end_p.x, end_p.y
-        except IndexError:
-            pass
+        end_p = self.element.sketch.registry.get_point(
+            self._preview_state.p_end_id
+        )
+        if end_p is not None:
+            mx, my = end_p
 
         RoundedRectCommand.cleanup_preview(
             self.element.sketch.registry, self._preview_state
@@ -325,8 +323,7 @@ class RoundedRectTool(SketchTool):
             self._dim_input.cancel()
             self.element.mark_dirty()
             return
-        mx = end_pt.x
-        my = end_pt.y
+        mx, my = end_pt
         RoundedRectCommand.cleanup_preview(
             self.element.sketch.registry, self._preview_state
         )

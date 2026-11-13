@@ -5,9 +5,6 @@ from collections.abc import Sequence
 from raygeo.sketch import PointDef
 from raygeo.sketch import Solver as GeoSolver
 
-from .constraints import Constraint
-from .params import ParameterContext
-from .registry import EntityRegistry
 from .types import EntityID
 
 CONFLICT_ERROR_THRESHOLD = 1e-3
@@ -16,65 +13,43 @@ logger = logging.getLogger(__name__)
 
 
 class Solver:
+    """Drives the raygeo least-squares solver over the sketch's
+    constraint objects."""
+
     def __init__(
         self,
-        registry: EntityRegistry,
-        params: ParameterContext,
-        constraints: Sequence[Constraint],
-        auxiliary_constraints: Sequence[Constraint] = (),
+        registry,
+        constraints: Sequence,
+        auxiliary_constraints: Sequence = (),
         point_filter: set[EntityID] | None = None,
     ):
         self.registry = registry
-        self.params = params
         self.constraints = list(constraints)
         self.auxiliary_constraints = list(auxiliary_constraints)
         self.point_filter = point_filter
 
-    def _build_problem(
-        self,
-    ) -> tuple[GeoSolver, list[int]]:
-        """
-        Flattens the registry and constraints into a raygeo solver
-        problem.  Constraints without a solver counterpart are
-        skipped; the returned index list maps raygeo constraint
-        positions back to self.constraints positions.
-        """
+    def _build_problem(self) -> GeoSolver:
+        """Flattens the registry into a raygeo solver problem."""
         points = [
-            PointDef(p.id, p.x, p.y, p.fixed) for p in self.registry.points
+            PointDef(point.id, point.x, point.y, point.fixed)
+            for point in self.registry.points()
         ]
-        hard = []
-        kept_indices = []
-        for index, constraint in enumerate(self.constraints):
-            converted = constraint.to_solver_constraint(self.registry)
-            if converted is not None:
-                hard.append(converted)
-                kept_indices.append(index)
-        auxiliary = []
-        for constraint in self.auxiliary_constraints:
-            converted = constraint.to_solver_constraint(self.registry)
-            if converted is not None:
-                auxiliary.append(converted)
         point_filter = (
             sorted(self.point_filter)
             if self.point_filter is not None
             else None
         )
-        return (
-            GeoSolver(points, hard, auxiliary, point_filter),
-            kept_indices,
+        return GeoSolver(
+            points,
+            list(self.constraints),
+            list(self.auxiliary_constraints),
+            point_filter,
         )
 
     def solve(self, tolerance: float = 1e-5, update_dof: bool = True) -> bool:
         """
         Runs the raygeo least-squares solver to satisfy constraints.
         Returns True if successful.
-
-        A global solve (no point_filter) partitions the constraints
-        into independent connected components and solves each one
-        separately, so the work and the DOF analysis scale with the
-        constraint islands instead of the whole sketch.  Success is
-        the conjunction of the component results, and the DOF
-        analysis runs per component on its own Jacobian.
 
         If update_dof is False, the constrained status of points and
         entities is left untouched, which is useful for interactive
@@ -87,24 +62,23 @@ class Solver:
         solve_started = time.perf_counter()
 
         if update_dof:
-            for p in self.registry.points:
-                p.constrained = p.fixed
+            for point in self.registry.points():
+                self.registry.set_point_constrained(point.id, point.fixed)
 
-        geo_solver, _ = self._build_problem()
+        geo_solver = self._build_problem()
         success = geo_solver.solve(tolerance, update_dof)
         self._last_status = geo_solver.status()
         self._last_nfev = geo_solver.nfev()
 
         positions = geo_solver.positions()
-        for point, (x, y) in zip(self.registry.points, positions):
-            point.x = x
-            point.y = y
+        for point, (x, y) in zip(self.registry.points(), positions):
+            self.registry.set_point_position(point.id, x, y)
         if update_dof:
             constrained_flags = geo_solver.constrained()
             for point, constrained in zip(
-                self.registry.points, constrained_flags
+                self.registry.points(), constrained_flags
             ):
-                point.constrained = constrained
+                self.registry.set_point_constrained(point.id, constrained)
 
         if update_dof and success and self.point_filter is None:
             self._update_entity_constraints()
@@ -112,7 +86,7 @@ class Solver:
         logger.debug(
             "Solver.solve: points=%d hard=%d aux=%d nfev=%d status=%d "
             "ms=%.1f success=%s",
-            len(self.registry.points),
+            len(self.registry.points()),
             len(self.constraints),
             len(self.auxiliary_constraints),
             self._last_nfev,
@@ -123,25 +97,44 @@ class Solver:
 
         return success
 
+    def _radius_constrained_entity_ids(self) -> list[int]:
+        """Entities whose radius/length is explicitly dimensioned by a
+        constraint."""
+        constrained: list[int] = []
+        for eid in self.registry.entity_ids():
+            if not self.registry.is_radius_entity(eid):
+                continue
+            for constraint in self.constraints:
+                constrains = getattr(constraint, "constrains_radius", None)
+                if constrains is not None and constrains(
+                    self.registry, eid
+                ):
+                    constrained.append(eid)
+                    break
+        return constrained
+
     def _update_entity_constraints(self):
         """
-        Updates the constrained status of Entities based on their points.
-        An entity is constrained only if all its defining points are
-        constrained.
+        Updates the constrained status of entities from their defining
+        points, honoring constraints that explicitly dimension an
+        entity's radius or length.
         """
-        for entity in self.registry.entities:
-            entity.update_constrained_status(self.registry, self.constraints)
+        self.registry.update_constrained_status(
+            self._radius_constrained_entity_ids()
+        )
 
     def get_conflicting_constraints(
         self, threshold: float = CONFLICT_ERROR_THRESHOLD
     ) -> set[int]:
         """
         Identifies constraints that have significant residual error,
-        indicating they conflict with other constraints or cannot be satisfied.
+        indicating they conflict with other constraints or cannot be
+        satisfied.
 
         Returns:
-            Set of constraint indices in self.constraints that are conflicting.
+            Set of constraint indices in self.constraints that are
+            conflicting.
         """
-        geo_solver, kept_indices = self._build_problem()
+        geo_solver = self._build_problem()
         conflicting = geo_solver.conflicting(threshold)
-        return {kept_indices[index] for index in conflicting}
+        return set(conflicting)

@@ -8,7 +8,6 @@ from rayforge.image.geo_renderer import geometry_to_cairo
 
 from ...core.commands import AddFillCommand, RemoveFillCommand
 from ...core.commands.fill import SetTextFillCommand
-from ...core.entities.text_box import TextBoxEntity
 from ...core.sketch import DEFAULT_FILL_COLOR, FillStyle
 from .base import SketchTool
 
@@ -53,19 +52,19 @@ class FillTool(SketchTool):
     def shortcut_is_active(self) -> bool:
         return True
 
-    def _find_text_entity_at_point(
-        self, mx: float, my: float
-    ) -> TextBoxEntity | None:
+    def _find_text_entity_at_point(self, mx: float, my: float):
         """Check if a model-space point falls inside any text glyph."""
-        registry = self.element.sketch.registry
+        sketch = self.element.sketch
+        registry = sketch.registry
         surface = cairo.RecordingSurface(cairo.CONTENT_COLOR_ALPHA, None)
         ctx = cairo.Context(surface)
-        for entity in registry.entities:
-            if not isinstance(entity, TextBoxEntity):
+        for entity in registry.entities():
+            if entity.type_name() != "text_box":
                 continue
-            if entity.construction or not entity.content:
+            content = sketch.flags.text_content(entity.id, entity.content)
+            if entity.construction or not content:
                 continue
-            text_geo = entity.to_geometry(registry)
+            text_geo = sketch.resolved_text_box(entity).to_geometry(registry)
             if text_geo is None or text_geo.is_empty():
                 continue
             ctx.new_path()
@@ -84,7 +83,10 @@ class FillTool(SketchTool):
 
         text_entity = self._find_text_entity_at_point(mx, my)
         if text_entity is not None:
-            if text_entity.fill_color is not None:
+            if (
+                self.element.sketch.flags.fill_color(text_entity.id)
+                is not None
+            ):
                 cmd = SetTextFillCommand(
                     self.element.sketch, text_entity.id, None
                 )

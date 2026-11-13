@@ -18,8 +18,10 @@ from sketcher.core.commands import (
     TextBoxCommand,
 )
 from sketcher.core.commands.duplicate import DuplicateCommand
-from sketcher.core.constraints import ParallelogramConstraint
-from sketcher.core.entities import Circle, Line, TextBoxEntity
+from raygeo.sketch.constraints.parallelogram import ParallelogramConstraint
+from raygeo.sketch.entities.circle import Circle
+from raygeo.sketch.entities.line import Line
+from raygeo.sketch.entities.text_box import TextBox
 from sketcher.core.params import ParameterContext
 from sketcher.core.selection import SketchSelection
 from sketcher.core.sketch import Sketch
@@ -59,8 +61,8 @@ def text_array():
     cmd = TextBoxCommand(sketch, (30, 0), width=20, height=10)
     cmd.execute()
     assert cmd.text_box_id is not None
-    box = sketch.registry.get_entity(cmd.text_box_id)
-    assert isinstance(box, TextBoxEntity)
+    box = sketch.registry.get_entity_object(cmd.text_box_id)
+    assert isinstance(box, TextBox)
     box.content = "AB"
     box.font_config = FontConfig("sans-serif", 8.0)
 
@@ -81,9 +83,9 @@ def frame_distances(points):
 def member_frame(sketch, eids):
     registry = sketch.registry
     return [
-        (registry.get_point(pid).x, registry.get_point(pid).y)
+        (registry.get_point(pid)[0], registry.get_point(pid)[1])
         for eid in eids
-        for pid in registry.get_entity(eid).get_point_ids()
+        for pid in registry.get_entity_object(eid).get_point_ids()
     ]
 
 
@@ -92,10 +94,10 @@ def test_copies_are_clean_text_boxes(text_array):
     references into the template's helper geometry."""
     sketch, cmd, _box = text_array
     registry = sketch.registry
-    copies = [registry.get_entity(eid) for eid in cmd.created_entity_ids]
+    copies = [registry.get_entity_object(eid) for eid in cmd.created_entity_ids]
     assert len(copies) == 3
     for clone in copies:
-        assert isinstance(clone, TextBoxEntity)
+        assert isinstance(clone, TextBox)
         assert clone.array_copy is True
         assert clone.content == "AB"
         assert clone.font_config.size == 8.0
@@ -120,7 +122,7 @@ def test_content_edit_propagates_to_copies(text_array):
     box.content = "XYZ"
     sketch.solve()
     for eid in cmd.array.living_entity_ids(registry):
-        assert registry.get_entity(eid).content == "XYZ"
+        assert registry.get_entity_object(eid).content == "XYZ"
 
 
 def test_font_edit_propagates_to_copies(text_array):
@@ -129,7 +131,7 @@ def test_font_edit_propagates_to_copies(text_array):
     box.font_config = FontConfig("sans-serif", 14.0, bold=True)
     sketch.solve()
     for eid in cmd.array.living_entity_ids(registry):
-        font = registry.get_entity(eid).font_config
+        font = registry.get_entity_object(eid).font_config
         assert font.size == 14.0
         assert font.bold is True
 
@@ -145,7 +147,7 @@ def test_deleting_a_copy_and_editing_regenerates_it(text_array):
     sketch.solve()
     assert len(cmd.array.living_entity_ids(registry)) == 4
     for eid in cmd.array.living_entity_ids(registry):
-        entity = registry.get_entity(eid)
+        entity = registry.get_entity_object(eid)
         assert entity.content == "AB"
         if entity is not box:
             assert entity.construction_line_ids == []
@@ -160,13 +162,13 @@ def test_undoing_the_create_restores_the_template(text_array):
     sketch.solve()
 
     assert cmd.array not in sketch.arrays
-    assert registry.get_entity(box.id) is not None
+    assert registry.get_entity_object(box.id) is not None
     assert box.construction_line_ids, "helpers restored"
-    remaining = registry.get_entity(box.id)
+    remaining = registry.get_entity_object(box.id)
     for eid in [box.id]:
-        assert registry.get_entity(eid) is remaining
+        assert registry.get_entity_object(eid) is remaining
     assert (
-        len([e for e in registry.entities if isinstance(e, TextBoxEntity)])
+        len([e for e in registry.entities() if isinstance(e, TextBox)])
         == 1
     )
     assert copies_before == 3
@@ -182,9 +184,9 @@ def test_duplicating_a_text_box_does_not_share_the_font(text_array):
     dup_cmd.execute()
     registry = sketch.registry
     dupes = [
-        registry.get_entity(eid)
+        registry.get_entity_object(eid)
         for eid in dup_cmd.new_entity_ids
-        if isinstance(registry.get_entity(eid), TextBoxEntity)
+        if isinstance(registry.get_entity_object(eid), TextBox)
     ]
     assert len(dupes) == 1
     assert dupes[0].content == "AB"
@@ -200,7 +202,7 @@ def test_serialization_round_trip_keeps_text_arrays(text_array):
     assert len(restored.arrays) == 1
     assert restored.arrays[0].mode == "circular"
     text_boxes = [
-        e for e in restored.registry.entities if isinstance(e, TextBoxEntity)
+        e for e in restored.registry.entities() if isinstance(e, TextBox)
     ]
     assert len(text_boxes) == 4
     assert all(e.content == "AB" for e in text_boxes)
@@ -224,7 +226,7 @@ def corner_residual(sketch, box):
     w = registry.get_point(box.width_id)
     h = registry.get_point(box.height_id)
     p4 = registry.get_point(box.get_fourth_corner_id(registry))
-    return math.hypot(p4.x - (w.x + h.x - o.x), p4.y - (w.y + h.y - o.y))
+    return math.hypot(p4[0] - (w[0] + h[0] - o[0]), p4[1] - (w[1] + h[1] - o[1]))
 
 
 def parallelogram_residual(sketch):
@@ -243,7 +245,7 @@ def frame_angle(sketch, box):
     registry = sketch.registry
     o = registry.get_point(box.origin_id)
     w = registry.get_point(box.width_id)
-    return math.degrees(math.atan2(w.y - o.y, w.x - o.x))
+    return math.degrees(math.atan2(w[1] - o[1], w[0] - o[0]))
 
 
 @pytest.fixture
@@ -254,8 +256,8 @@ def text_curve_array():
     cmd = TextBoxCommand(sketch, (30, 0), width=20, height=10)
     cmd.execute()
     assert cmd.text_box_id is not None
-    box = sketch.registry.get_entity(cmd.text_box_id)
-    assert isinstance(box, TextBoxEntity)
+    box = sketch.registry.get_entity_object(cmd.text_box_id)
+    assert isinstance(box, TextBox)
     box.content = "AB"
     box.font_config = FontConfig("sans-serif", 8.0)
 
@@ -279,10 +281,10 @@ def test_corner_follows_the_frame_while_the_guide_is_dragged(
     """Dragging the guide re-anchors the template every frame; the
     fourth corner must move with it instead of lagging behind."""
     sketch, guide, _cmd, box = text_curve_array
-    bezier = sketch.registry.get_entity(guide)
+    bezier = sketch.registry.get_entity_object(guide)
 
     for frame in range(4):
-        bezier.cp1 = (bezier.cp1[0], bezier.cp1[1] - 4.0)
+        bezier.cp1_offset = (bezier.cp1_offset[0], bezier.cp1_offset[1] - 4.0)
         sketch.solve()
         assert corner_residual(sketch, box) < 1e-6, f"frame {frame}"
         assert parallelogram_residual(sketch) < 1e-6, f"frame {frame}"
@@ -295,10 +297,10 @@ def test_settling_solve_after_a_drag_does_not_rotate_the_template(
     already satisfied: the orientation the re-anchor chose must
     survive it unchanged."""
     sketch, guide, _cmd, box = text_curve_array
-    bezier = sketch.registry.get_entity(guide)
+    bezier = sketch.registry.get_entity_object(guide)
 
     for _frame in range(3):
-        bezier.cp1 = (bezier.cp1[0], bezier.cp1[1] - 4.0)
+        bezier.cp1_offset = (bezier.cp1_offset[0], bezier.cp1_offset[1] - 4.0)
         sketch.solve()
 
     angle_before = frame_angle(sketch, box)
@@ -315,8 +317,8 @@ def test_guide_center_drag_keeps_corner_on_circular_members():
     cmd = TextBoxCommand(sketch, (30, 0), width=20, height=10)
     cmd.execute()
     assert cmd.text_box_id is not None
-    box = sketch.registry.get_entity(cmd.text_box_id)
-    assert isinstance(box, TextBoxEntity)
+    box = sketch.registry.get_entity_object(cmd.text_box_id)
+    assert isinstance(box, TextBox)
     box.content = "AB"
     box.font_config = FontConfig("sans-serif", 8.0)
 
@@ -325,13 +327,13 @@ def test_guide_center_drag_keeps_corner_on_circular_members():
     sketch.solve()
     array = create_cmd.array
     assert array is not None
-    circle = sketch.registry.get_entity(array.guide_circle_id)
+    circle = sketch.registry.get_entity_object(array.guide_circle_id)
     assert isinstance(circle, Circle)
     center_pt = sketch.registry.get_point(circle.center_idx)
 
     for _frame in range(3):
-        center_pt.x += 3.0
-        center_pt.y -= 2.0
+        center_pt[0] += 3.0
+        center_pt[1] -= 2.0
         sketch.solve()
         assert corner_residual(sketch, box) < 1e-6
         assert parallelogram_residual(sketch) < 1e-6
@@ -341,14 +343,14 @@ def test_guide_center_drag_keeps_corner_on_circular_members():
     registry = sketch.registry
     corners = {
         (
-            round(registry.get_point(pid).x, 6),
-            round(registry.get_point(pid).y, 6),
+            round(registry.get_point(pid)[0], 6),
+            round(registry.get_point(pid)[1], 6),
         )
         for pid in box.get_all_frame_point_ids(registry)
     }
     for eid in box.construction_line_ids:
-        line = registry.get_entity(eid)
+        line = registry.get_entity_object(eid)
         assert isinstance(line, Line)
         for pid in line.get_point_ids():
             pt = registry.get_point(pid)
-            assert (round(pt.x, 6), round(pt.y, 6)) in corners
+            assert (round(pt[0], 6), round(pt[1], 6)) in corners

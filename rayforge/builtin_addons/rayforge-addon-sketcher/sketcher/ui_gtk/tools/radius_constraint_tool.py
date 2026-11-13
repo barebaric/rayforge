@@ -6,12 +6,12 @@ from ...core.commands import (
     AddItemsCommand,
     CreateOrEditConstraintCommand,
 )
-from ...core.constraints import RadiusConstraint
-from ...core.entities import Arc, Circle, Entity, Point
+from raygeo.sketch.constraints.radius import RadiusConstraint
+from ...core import constraint_info
 from .base import SketchTool
 
 if TYPE_CHECKING:
-    from ...core.constraints import Constraint
+    from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -24,10 +24,10 @@ class RadiusConstraintTool(SketchTool):
 
     def is_available(
         self,
-        target: Union[Point, Entity, "Constraint"] | None,
+        target: Any | None,
         target_type: str | None,
     ) -> bool:
-        return RadiusConstraint.can_apply_to(
+        return constraint_info.can_apply(RadiusConstraint, 
             self.element.selection, self.element.sketch
         )
 
@@ -53,7 +53,7 @@ class RadiusConstraintTool(SketchTool):
             return
 
         eid = sel.entity_ids[0]
-        e = sketch.registry.get_entity(eid)
+        e = sketch.registry.get_entity_object(eid)
 
         if not isinstance(e, (Arc, Circle)):
             logger.warning("Could not add radius constraint.")

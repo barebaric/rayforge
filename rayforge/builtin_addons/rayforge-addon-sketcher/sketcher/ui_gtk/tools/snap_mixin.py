@@ -5,14 +5,16 @@ from typing import TYPE_CHECKING, Any
 import cairo
 from raygeo.geo.types import Point as GeoPoint
 
-from ...core.constraints import (
-    CoincidentConstraint,
-    HorizontalConstraint,
-    PointOnLineConstraint,
-    SymmetryConstraint,
-    VerticalConstraint,
-)
-from ...core.entities import Arc, Circle, Line, Point
+from raygeo.sketch.constraints.coincident import CoincidentConstraint
+from raygeo.sketch.constraints.horizontal import HorizontalConstraint
+from raygeo.sketch.constraints.point_on_line import PointOnLineConstraint
+from raygeo.sketch.constraints.symmetry import SymmetryConstraint
+from raygeo.sketch.constraints.symmetry import SymmetryTarget
+from raygeo.sketch.constraints.vertical import VerticalConstraint
+from raygeo.sketch.entities.arc import Arc
+from raygeo.sketch.entities.circle import Circle
+from raygeo.sketch.entities.line import Line
+
 from ...core.snap import (
     SNAP_LINE_STYLES,
     DragContext,
@@ -239,14 +241,14 @@ class SnapMixin:
             return []
         return [
             SymmetryConstraint(
-                p1=line.p1_idx,
-                p2=line.p2_idx,
-                center=pid,
+                line.p1_idx,
+                line.p2_idx,
+                SymmetryTarget.Point(center=pid),
             )
         ]
 
     def _build_coincident_constraint(self, sp, pid):
-        if not isinstance(sp.source, Point):
+        if not _is_sketch_point(sp.source):
             return []
         if sp.source.id == pid:
             return []
@@ -290,13 +292,13 @@ class SnapMixin:
         if (
             sp is not None
             and sp.line_type == SnapLineType.ENTITY_POINT
-            and isinstance(sp.source, Point)
+            and _is_sketch_point(sp.source)
         ):
             primary_pid = sp.source.id
 
         axes: dict[int, set[str]] = {}
         for sl in result.snap_lines:
-            if not isinstance(sl.source, Point):
+            if not _is_sketch_point(sl.source):
                 continue
             src_id = sl.source.id
             if src_id == end_pid or src_id == primary_pid:
@@ -459,8 +461,8 @@ class SnapMixin:
                 p1 = element.sketch.registry.get_point(line.p1_idx)
                 p2 = element.sketch.registry.get_point(line.p2_idx)
                 if p1 and p2:
-                    s1 = to_screen.transform_point((p1.x, p1.y))
-                    s2 = to_screen.transform_point((p2.x, p2.y))
+                    s1 = to_screen.transform_point(p1)
+                    s2 = to_screen.transform_point(p2)
                     style = SNAP_LINE_STYLES.get(sp.line_type, SnapLineStyle())
                     ctx.set_source_rgba(*style.color)
                     ctx.set_dash([])
@@ -626,3 +628,14 @@ class SnapMixin:
             ctx.stroke()
 
         ctx.restore()
+
+
+def _is_sketch_point(source: Any) -> bool:
+    """Whether the snap source is a sketch point (carries an id and
+    coordinates)."""
+    return (
+        source is not None
+        and hasattr(source, "id")
+        and hasattr(source, "x")
+        and hasattr(source, "y")
+    )

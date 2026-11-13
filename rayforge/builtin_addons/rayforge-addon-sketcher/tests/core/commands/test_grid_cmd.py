@@ -1,7 +1,8 @@
 from sketcher.core import Sketch
 from sketcher.core.commands import GridCommand
-from sketcher.core.constraints import HorizontalConstraint, VerticalConstraint
-from sketcher.core.entities import Line
+from raygeo.sketch.constraints.horizontal import HorizontalConstraint
+from raygeo.sketch.constraints.vertical import VerticalConstraint
+from raygeo.sketch.entities.line import Line
 
 
 def test_grid_calculate_geometry_2x2():
@@ -63,21 +64,21 @@ def test_grid_calculate_geometry_invalid_cell_size():
 
 def test_grid_command_execute():
     sketch = Sketch()
-    initial_count = len(sketch.registry.points)
+    initial_count = len(sketch.registry.points())
     cmd = GridCommand(sketch, 3, 4, (0, 0), 10, 10)
     cmd.execute()
 
-    assert len(sketch.registry.points) == initial_count + 20
-    assert len(sketch.registry.entities) == 31
+    assert len(sketch.registry.points()) == initial_count + 20
+    assert len(sketch.registry.entities()) == 31
 
 
 def test_grid_command_execute_with_origin():
     sketch = Sketch()
-    initial_count = len(sketch.registry.points)
+    initial_count = len(sketch.registry.points())
     cmd = GridCommand(sketch, 2, 2, (100, 200), 50, 75)
     cmd.execute()
 
-    points = sketch.registry.points
+    points = sketch.registry.points()
     assert len(points) == initial_count + 9
 
     p0 = points[initial_count]
@@ -91,7 +92,7 @@ def test_grid_command_execute_construction():
     cmd = GridCommand(sketch, 2, 2, (0, 0), 10, 10, construction=True)
     cmd.execute()
 
-    for entity in sketch.registry.entities:
+    for entity in sketch.registry.entities():
         assert entity.construction is True
 
 
@@ -100,35 +101,35 @@ def test_grid_command_execute_normal():
     cmd = GridCommand(sketch, 2, 2, (0, 0), 10, 10, construction=False)
     cmd.execute()
 
-    for entity in sketch.registry.entities:
+    for entity in sketch.registry.entities():
         assert entity.construction is False
 
 
 def test_grid_command_undo():
     sketch = Sketch()
-    initial_point_count = len(sketch.registry.points)
-    initial_entity_count = len(sketch.registry.entities)
+    initial_point_count = len(sketch.registry.points())
+    initial_entity_count = len(sketch.registry.entities())
 
     cmd = GridCommand(sketch, 2, 2, (0, 0), 10, 10)
     cmd.execute()
 
-    assert len(sketch.registry.points) == initial_point_count + 9
-    assert len(sketch.registry.entities) == initial_entity_count + 12
+    assert len(sketch.registry.points()) == initial_point_count + 9
+    assert len(sketch.registry.entities()) == initial_entity_count + 12
 
     cmd.undo()
 
-    assert len(sketch.registry.points) == initial_point_count
-    assert len(sketch.registry.entities) == initial_entity_count
+    assert len(sketch.registry.points()) == initial_point_count
+    assert len(sketch.registry.entities()) == initial_entity_count
 
 
 def test_grid_command_invalid_does_nothing():
     sketch = Sketch()
-    initial_point_count = len(sketch.registry.points)
+    initial_point_count = len(sketch.registry.points())
 
     cmd = GridCommand(sketch, 0, 0, (0, 0), 10, 10)
     cmd.execute()
 
-    assert len(sketch.registry.points) == initial_point_count
+    assert len(sketch.registry.points()) == initial_point_count
 
 
 def test_grid_command_horizontal_line_count():
@@ -138,11 +139,11 @@ def test_grid_command_horizontal_line_count():
 
     horizontal_lines = [
         e
-        for e in sketch.registry.entities
+        for e in sketch.registry.entities()
         if isinstance(e, Line)
         and abs(
-            sketch.registry.get_point(e.p1_idx).y
-            - sketch.registry.get_point(e.p2_idx).y
+            sketch.registry.get_point(e.p1_idx)[1]
+            - sketch.registry.get_point(e.p2_idx)[1]
         )
         < 1e-6
     ]
@@ -157,11 +158,11 @@ def test_grid_command_vertical_line_count():
 
     vertical_lines = [
         e
-        for e in sketch.registry.entities
+        for e in sketch.registry.entities()
         if isinstance(e, Line)
         and abs(
-            sketch.registry.get_point(e.p1_idx).x
-            - sketch.registry.get_point(e.p2_idx).x
+            sketch.registry.get_point(e.p1_idx)[0]
+            - sketch.registry.get_point(e.p2_idx)[0]
         )
         < 1e-6
     ]

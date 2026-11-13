@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from ..entities import Bezier, Line
+from raygeo.sketch.entities.bezier import Bezier
+
 from ..types import EntityID
 from .base import SketchChangeCommand
 
@@ -15,72 +16,42 @@ class StraightenBezierCommand(SketchChangeCommand):
     """
     Command to convert a Bezier curve to a straight Line.
 
-    Removes control points and replaces the Bezier entity with a Line entity.
+    Removes control points and replaces the Bezier entity with a Line
+    entity keeping the same id.
     """
 
     def __init__(self, sketch: Sketch, bezier_id: EntityID):
         label = _("Straighten")
         super().__init__(sketch, label)
         self.bezier_id = bezier_id
-        self._old_bezier: (
-            tuple[
-                EntityID,
-                EntityID,
-                EntityID,
-                bool,
-                tuple[float, float] | None,
-                tuple[float, float] | None,
-            ]
-            | None
-        ) = None
+        self._old_bezier_dict: dict[str, Any] | None = None
 
     def _do_execute(self) -> None:
         registry = self.sketch.registry
-        bezier = registry.get_entity(self.bezier_id)
+        bezier = registry.get_entity_object(self.bezier_id)
         if not isinstance(bezier, Bezier):
             return
 
-        self._old_bezier = (
-            bezier.id,
-            bezier.start_idx,
-            bezier.end_idx,
-            bezier.construction,
-            bezier.cp1,
-            bezier.cp2,
-        )
+        self._old_bezier_dict = registry.entity_to_dict(bezier.id)
 
-        line = Line(
-            bezier.id,
-            bezier.start_idx,
-            bezier.end_idx,
-            bezier.construction,
-        )
-
-        registry.remove_entities_by_id([bezier.id])
-        registry.entities.append(line)
-        registry._entity_map[line.id] = line
+        line_dict = {
+            "id": bezier.id,
+            "type": "line",
+            "p1_idx": bezier.start_idx,
+            "p2_idx": bezier.end_idx,
+            "construction": bezier.construction,
+        }
+        registry.remove_entities([bezier.id])
+        self.sketch.restore_structure([], [line_dict])
 
     def _do_undo(self) -> None:
-        if self._old_bezier is None:
+        if self._old_bezier_dict is None:
             return
 
         registry = self.sketch.registry
-        (
-            bezier_id,
-            start_idx,
-            end_idx,
-            construction,
-            cp1,
-            cp2,
-        ) = self._old_bezier
-
-        line = registry.get_entity(bezier_id)
-        if not isinstance(line, Line):
+        entity = registry.get_entity_object(self.bezier_id)
+        if entity is None or entity.type_name() != "line":
             return
 
-        bezier = Bezier(bezier_id, start_idx, end_idx, construction, cp1, cp2)
-
-        registry.entities.remove(line)
-        del registry._entity_map[bezier_id]
-        registry.entities.append(bezier)
-        registry._entity_map[bezier_id] = bezier
+        registry.remove_entities([self.bezier_id])
+        self.sketch.restore_structure([], [self._old_bezier_dict])

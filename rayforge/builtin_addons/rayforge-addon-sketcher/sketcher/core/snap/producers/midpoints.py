@@ -3,7 +3,8 @@ from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point as GeoPoint
 
-from ...entities import Arc, Line
+from raygeo.sketch.entities.arc import Arc
+from raygeo.sketch.entities.line import Line
 from ..engine import SnapLineProducer
 from ..types import DragContext, SnapLine, SnapLineType, SnapPoint
 
@@ -29,7 +30,7 @@ class MidpointsProducer(SnapLineProducer):
         threshold: float,
     ) -> Iterator[SnapPoint]:
         x, y = drag_position
-        for entity in registry.entities:
+        for entity in registry.entities():
             if drag_context.is_entity_dragged(entity.id):
                 continue
             entity_points = entity.get_point_ids()
@@ -67,7 +68,7 @@ class MidpointsProducer(SnapLineProducer):
         p1 = registry.get_point(line.p1_idx)
         p2 = registry.get_point(line.p2_idx)
         if p1 and p2:
-            return ((p1.x + p2.x) / 2, (p1.y + p2.y) / 2)
+            return ((p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2)
         return None
 
     def _arc_midpoint(

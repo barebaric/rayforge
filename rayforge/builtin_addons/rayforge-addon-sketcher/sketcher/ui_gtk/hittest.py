@@ -5,16 +5,15 @@ import cairo
 
 from rayforge.ui_gtk.canvas.worldsurface import WorldSurface
 
-from ..core.constraints import (
-    CoincidentConstraint,
+from raygeo.sketch.constraints.coincident import CoincidentConstraint
+from raygeo.sketch.constraints.point_on_curve import (
     PointOnCurveConstraint,
-    PointOnLineConstraint,
 )
-from ..core.entities import (
-    Bezier,
-    Entity,
-    TextBoxEntity,
-)
+from raygeo.sketch.constraints.point_on_line import PointOnLineConstraint
+from raygeo.sketch.entities.bezier import Bezier
+
+from ..core import constraint_info
+from ..core.entity_ops import text_box_fourth_corner
 
 logger = logging.getLogger(__name__)
 
@@ -119,20 +118,27 @@ class SketchHitTester:
         rect = (min_x, min_y, max_x, max_y)
 
         # 1. Check Points
-        for p in registry.points:
-            if p.is_in_rect(rect):
+        for p in registry.points():
+            x, y = p.x, p.y
+            if (
+                rect[0] <= x <= rect[2]
+                and rect[1] <= y <= rect[3]
+            ):
                 points_inside.append(p.id)
 
         # 2. Check Entities
-        for e in registry.entities:
-            if e.invisible:
+        for e in registry.entities():
+            if element.sketch.flags.is_invisible(e.id):
                 continue
+            endpoints = registry.entity_endpoint_ids(e.id)
             is_match = False
+            if not endpoints:
+                continue
             if strict_containment:
-                if e.is_contained_by(rect, registry):
+                if registry.is_contained_by(e.id, rect):
                     is_match = True
             else:
-                if e.intersects_rect(rect, registry):
+                if registry.intersects_rect(e.id, rect):
                     is_match = True
 
             if is_match:
@@ -159,7 +165,7 @@ class SketchHitTester:
         )
         threshold = element.point_radius + 2.0
 
-        points = element.sketch.registry.points or []
+        points = element.sketch.registry.points()
         derived = element.sketch.get_derived_point_ids()
 
         def closest(predicate) -> int | None:
@@ -187,51 +193,56 @@ class SketchHitTester:
         cursor_sx, cursor_sy = element.canvas.view_transform.transform_point(
             (wx, wy)
         )
-        constraints = element.sketch.constraints or []
+        constraints = element.sketch.constraints
         text_box_point_ids = set()
-        for entity in element.sketch.registry.entities:
-            if isinstance(entity, TextBoxEntity):
-                text_box_point_ids.update(
-                    entity.get_all_frame_point_ids(element.sketch.registry)
+        for entity in element.sketch.registry.entities():
+            if entity.type_name() != "text_box":
+                continue
+            text_box_point_ids.update(entity.get_point_ids())
+            fourth = text_box_fourth_corner(
+                element.sketch.registry, entity
+            )
+            if fourth is not None:
+                text_box_point_ids.add(fourth)
+        for entity in element.sketch.registry.entities():
+            if not isinstance(entity, Bezier):
+                continue
+            start_pt = element.sketch.registry.get_point(entity.start_idx)
+            end_pt = element.sketch.registry.get_point(entity.end_idx)
+            if start_pt is None or end_pt is None:
+                continue
+            if entity.cp1_offset is not None:
+                cp1_abs = (
+                    start_pt[0] + entity.cp1_offset[0],
+                    start_pt[1] + entity.cp1_offset[1],
                 )
-        for entity in element.sketch.registry.entities:
-            if isinstance(entity, Bezier):
-                start_pt = element.sketch.registry.get_point(entity.start_idx)
-                end_pt = element.sketch.registry.get_point(entity.end_idx)
-                if start_pt is None or end_pt is None:
-                    continue
-                if entity.cp1 is not None:
-                    cp1_abs = (
-                        start_pt.x + entity.cp1[0],
-                        start_pt.y + entity.cp1[1],
+                cp1_sx, cp1_sy = to_screen.transform_point(cp1_abs)
+                dx = cursor_sx - cp1_sx
+                dy = cursor_sy - cp1_sy
+                dist_sq = dx * dx + dy * dy
+                if dist_sq < OVERLAY_HIT_THRESHOLD**2:
+                    return "control_point_out", (
+                        start_pt.id if hasattr(start_pt, "id") else entity.start_idx,
+                        entity.id,
+                        1,
                     )
-                    cp1_sx, cp1_sy = to_screen.transform_point(cp1_abs)
-                    dx = cursor_sx - cp1_sx
-                    dy = cursor_sy - cp1_sy
-                    dist_sq = dx * dx + dy * dy
-                    if dist_sq < OVERLAY_HIT_THRESHOLD**2:
-                        return "control_point_out", (
-                            start_pt.id,
-                            entity.id,
-                            1,
-                        )
-                if entity.cp2 is not None:
-                    cp2_abs = (
-                        end_pt.x + entity.cp2[0],
-                        end_pt.y + entity.cp2[1],
+            if entity.cp2_offset is not None:
+                cp2_abs = (
+                    end_pt[0] + entity.cp2_offset[0],
+                    end_pt[1] + entity.cp2_offset[1],
+                )
+                cp2_sx, cp2_sy = to_screen.transform_point(cp2_abs)
+                dx = cursor_sx - cp2_sx
+                dy = cursor_sy - cp2_sy
+                dist_sq = dx * dx + dy * dy
+                if dist_sq < OVERLAY_HIT_THRESHOLD**2:
+                    return "control_point_in", (
+                        end_pt.id if hasattr(end_pt, "id") else entity.end_idx,
+                        entity.id,
+                        2,
                     )
-                    cp2_sx, cp2_sy = to_screen.transform_point(cp2_abs)
-                    dx = cursor_sx - cp2_sx
-                    dy = cursor_sy - cp2_sy
-                    dist_sq = dx * dx + dy * dy
-                    if dist_sq < OVERLAY_HIT_THRESHOLD**2:
-                        return "control_point_in", (
-                            end_pt.id,
-                            entity.id,
-                            2,
-                        )
         for idx, constr in enumerate(constraints):
-            if not constr.user_visible:
+            if not constraint_info.user_visible(constr):
                 continue
             if isinstance(constr, CoincidentConstraint):
                 if (
@@ -243,7 +254,7 @@ class SketchHitTester:
                 isinstance(
                     constr, (PointOnCurveConstraint, PointOnLineConstraint)
                 )
-                and constr.point_id in text_box_point_ids
+                and constr.point in text_box_point_ids
             ):
                 continue
             if constr.is_hit(
@@ -257,7 +268,7 @@ class SketchHitTester:
                 return "constraint", idx
         return None, None
 
-    def _hit_test_entities(self, wx, wy, element) -> Entity | None:
+    def _hit_test_entities(self, wx, wy, element) -> Any | None:
         mx, my = self.screen_to_model(wx, wy, element)
         scale = 1.0
         if isinstance(element.canvas, WorldSurface):
@@ -266,9 +277,9 @@ class SketchHitTester:
         threshold = self.snap_distance / scale
 
         registry = element.sketch.registry
-        entities = registry.entities or []
+        entities = registry.entities()
         for entity in reversed(entities):
-            if entity.invisible:
+            if element.sketch.flags.is_invisible(entity.id):
                 continue
             if entity.hit_test(mx, my, threshold, registry):
                 return entity

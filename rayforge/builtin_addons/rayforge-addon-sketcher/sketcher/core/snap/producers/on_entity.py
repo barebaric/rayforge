@@ -4,7 +4,9 @@ from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point as GeoPoint
 
-from ...entities import Arc, Circle, Line
+from raygeo.sketch.entities.arc import Arc
+from raygeo.sketch.entities.circle import Circle
+from raygeo.sketch.entities.line import Line
 from ..engine import SnapLineProducer
 from ..types import DragContext, SnapLine, SnapLineType, SnapPoint
 
@@ -31,7 +33,7 @@ class OnEntityProducer(SnapLineProducer):
     ) -> Iterator[SnapPoint]:
         x, y = drag_position
 
-        for entity in registry.entities:
+        for entity in registry.entities():
             if drag_context.is_entity_dragged(entity.id):
                 continue
             entity_points = entity.get_point_ids()
@@ -76,21 +78,21 @@ class OnEntityProducer(SnapLineProducer):
         if not p1 or not p2:
             return None
 
-        dx = p2.x - p1.x
-        dy = p2.y - p1.y
+        dx = p2[0] - p1[0]
+        dy = p2[1] - p1[1]
         len_sq = dx * dx + dy * dy
 
         if len_sq < 1e-10:
-            dist = math.hypot(x - p1.x, y - p1.y)
+            dist = math.hypot(x - p1[0], y - p1[1])
             if dist <= threshold:
-                return (p1.x, p1.y)
+                return p1
             return None
 
-        t = ((x - p1.x) * dx + (y - p1.y) * dy) / len_sq
+        t = ((x - p1[0]) * dx + (y - p1[1]) * dy) / len_sq
         t = max(0.0, min(1.0, t))
 
-        nearest_x = p1.x + t * dx
-        nearest_y = p1.y + t * dy
+        nearest_x = p1[0] + t * dx
+        nearest_y = p1[1] + t * dy
 
         dist = math.hypot(x - nearest_x, y - nearest_y)
         if dist <= threshold:
@@ -110,21 +112,21 @@ class OnEntityProducer(SnapLineProducer):
         if not center or not start:
             return None
 
-        radius = math.hypot(start.x - center.x, start.y - center.y)
+        radius = math.hypot(start[0] - center[0], start[1] - center[1])
         if radius < 1e-10:
             return None
 
-        dist_to_center = math.hypot(x - center.x, y - center.y)
+        dist_to_center = math.hypot(x - center[0], y - center[1])
         if dist_to_center < 1e-10:
             angle = 0.0
         else:
-            angle = math.atan2(y - center.y, x - center.x)
+            angle = math.atan2(y - center[1], x - center[0])
 
         if not arc.is_angle_within_sweep(angle, registry):
             return None
 
-        nearest_x = center.x + radius * math.cos(angle)
-        nearest_y = center.y + radius * math.sin(angle)
+        nearest_x = center[0] + radius * math.cos(angle)
+        nearest_y = center[1] + radius * math.sin(angle)
 
         dist = math.hypot(x - nearest_x, y - nearest_y)
         if dist <= threshold:
@@ -144,18 +146,20 @@ class OnEntityProducer(SnapLineProducer):
         if not center or not radius_pt:
             return None
 
-        radius = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
+        radius = math.hypot(
+            radius_pt[0] - center[0], radius_pt[1] - center[1]
+        )
         if radius < 1e-10:
             return None
 
-        dist_to_center = math.hypot(x - center.x, y - center.y)
+        dist_to_center = math.hypot(x - center[0], y - center[1])
         if dist_to_center < 1e-10:
             angle = 0.0
         else:
-            angle = math.atan2(y - center.y, x - center.x)
+            angle = math.atan2(y - center[1], x - center[0])
 
-        nearest_x = center.x + radius * math.cos(angle)
-        nearest_y = center.y + radius * math.sin(angle)
+        nearest_x = center[0] + radius * math.cos(angle)
+        nearest_y = center[1] + radius * math.sin(angle)
 
         dist = math.hypot(x - nearest_x, y - nearest_y)
         if dist <= threshold:

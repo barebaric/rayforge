@@ -3,65 +3,93 @@ from sketcher.core.commands import (
     RectangleCommand,
     RectanglePreviewState,
 )
-from sketcher.core.constraints import (
-    PerpendicularConstraint,
-    SymmetryConstraint,
-)
-from sketcher.core.entities import Point
+from sketcher.core.commands.items import AddItemsCommand
+from sketcher.core import constraint_info
+from raygeo.sketch.constraints.perpendicular import PerpendicularConstraint
+from raygeo.sketch.constraints.symmetry import SymmetryConstraint
+
+
+def _run_calculate_geometry(
+    sketch, x1, y1, x2, y2, start_pid, end_pid, **kwargs
+):
+    """Runs the geometry builder on a real sketch and returns the
+    result dict plus resolved corner positions."""
+    add_cmd = AddItemsCommand(sketch, "")
+    result = RectangleCommand.calculate_geometry(
+        sketch,
+        add_cmd,
+        x1,
+        y1,
+        x2,
+        y2,
+        start_pid,
+        end_pid,
+        **kwargs,
+    )
+    return result
+
+
+def _position(sketch, pid):
+    return sketch.registry.get_point(pid)
 
 
 def test_rectangle_calculate_geometry_no_snap():
-    """Test static calculation when no points are snapped."""
-    result = RectangleCommand.calculate_geometry(0, 0, 100, 50, 0, None)
+    """The builder places the corners and center at the frame."""
+    sketch = Sketch()
+    start_pid = sketch.add_point(0, 0)
+    result = _run_calculate_geometry(
+        sketch, 0, 0, 100, 50, start_pid, None
+    )
     assert result is not None
-    points = result["points"]
-    assert len(points) == 7
     assert len(result["entities"]) == 4
-    assert len(result["constraints"]) == 5
 
-    # p1 is the start point, represented by its ID
-    assert points["p1_id"] == 0
-    assert points["p1"] is None
-    assert points["center_id"] == points["center"].id
-
-    # p2, p3, p4, center are new Point objects
-    assert points["p2"].x == 100 and points["p2"].y == 0
-    assert points["p3"].x == 100 and points["p3"].y == 50
-    assert points["p4"].x == 0 and points["p4"].y == 50
-    assert points["center"].x == 50 and points["center"].y == 25
+    assert result["p1_id"] == start_pid
+    assert _position(sketch, result["p2_id"]) == (100.0, 0.0)
+    assert _position(sketch, result["p3_id"]) == (100.0, 50.0)
+    assert _position(sketch, result["p4_id"]) == (0.0, 50.0)
+    assert _position(sketch, result["center_id"]) == (50.0, 25.0)
 
 
 def test_rectangle_calculate_geometry_with_snap():
-    """Test static calculation when the end point is snapped."""
-    result = RectangleCommand.calculate_geometry(0, 0, 100, 50, 0, 7)
+    """The snapped end corner id is preserved."""
+    sketch = Sketch()
+    start_pid = sketch.add_point(0, 0)
+    end_pid = sketch.add_point(100, 50)
+    result = _run_calculate_geometry(
+        sketch, 0, 0, 100, 50, start_pid, end_pid
+    )
     assert result is not None
-    points = result["points"]
-    # Check that the snapped point ID is preserved
-    assert points["p3"].id == 7
+    assert result["p3_id"] == end_pid
 
 
 def test_rectangle_calculate_geometry_degenerate():
-    """Test static calculation returns None for a zero-size rectangle."""
-    assert RectangleCommand.calculate_geometry(0, 0, 0, 50, 0, None) is None
-    assert RectangleCommand.calculate_geometry(0, 0, 100, 0, 0, None) is None
+    """Zero-size rectangles are rejected."""
+    sketch = Sketch()
+    start_pid = sketch.add_point(0, 0)
+    assert (
+        _run_calculate_geometry(sketch, 0, 0, 0, 50, start_pid, None)
+        is None
+    )
+    assert (
+        _run_calculate_geometry(sketch, 0, 0, 100, 0, start_pid, None)
+        is None
+    )
 
 
 def test_rectangle_calculate_geometry_center_on_start():
-    """Test center_on_start draws the rectangle around the start point."""
-    result = RectangleCommand.calculate_geometry(
-        50, 25, 100, 50, 0, None, center_on_start=True
+    """center_on_start draws the rectangle around the start point."""
+    sketch = Sketch()
+    start_pid = sketch.add_point(50, 25)
+    result = _run_calculate_geometry(
+        sketch, 50, 25, 100, 50, start_pid, None, center_on_start=True
     )
     assert result is not None
-    points = result["points"]
-    # dx = 50, dy = 25 from center; corners span +/- those around start
-    assert points["p1"] is not None
-    assert points["p1"].x == 0 and points["p1"].y == 0
-    assert points["p2"].x == 100 and points["p2"].y == 0
-    assert points["p3"].x == 100 and points["p3"].y == 50
-    assert points["p4"].x == 0 and points["p4"].y == 50
-    # The start point itself is the symmetry center; no new center point
-    assert points["center"] is None
-    assert points["center_id"] == 0
+    # The start point itself is the symmetry center.
+    assert result["center_id"] == start_pid
+    assert _position(sketch, result["p1_id"]) == (0.0, 0.0)
+    assert _position(sketch, result["p2_id"]) == (100.0, 0.0)
+    assert _position(sketch, result["p3_id"]) == (100.0, 50.0)
+    assert _position(sketch, result["p4_id"]) == (0.0, 50.0)
 
 
 def test_rectangle_command_execute_center_on_start():
@@ -72,13 +100,13 @@ def test_rectangle_command_execute_center_on_start():
     cmd.execute()
 
     # origin + start + 4 corners = 6 points; start doubles as center
-    assert len(sketch.registry.points) == 6
-    assert len(sketch.registry.entities) == 4
+    assert len(sketch.registry.points()) == 6
+    assert len(sketch.registry.entities()) == 4
 
-    pts = {p.id: p for p in sketch.registry.points}
+    pts = {p.id: p for p in sketch.registry.points()}
     corners = sorted(
         (p.x, p.y)
-        for p in sketch.registry.points
+        for p in sketch.registry.points()
         if p.id not in (0, start_pid)
     )
     assert corners == [(0.0, 0.0), (0.0, 50.0), (100.0, 0.0), (100.0, 50.0)]
@@ -86,58 +114,75 @@ def test_rectangle_command_execute_center_on_start():
 
 
 def test_rectangle_calculate_geometry_constrain_square():
-    """Test constrain_square equalizes both extents from the start."""
-    result = RectangleCommand.calculate_geometry(
-        0, 0, 100, 50, 0, None, constrain_square=True
+    """constrain_square equalizes both extents from the start."""
+    sketch = Sketch()
+    start_pid = sketch.add_point(0, 0)
+    result = _run_calculate_geometry(
+        sketch, 0, 0, 100, 50, start_pid, None, constrain_square=True
     )
     assert result is not None
-    points = result["points"]
     # min(100, 50) = 50 wins on both axes
-    assert points["p2"].x == 50 and points["p2"].y == 0
-    assert points["p3"].x == 50 and points["p3"].y == 50
-    assert points["p4"].x == 0 and points["p4"].y == 50
-    assert points["center"].x == 25 and points["center"].y == 25
+    assert _position(sketch, result["p2_id"]) == (50.0, 0.0)
+    assert _position(sketch, result["p3_id"]) == (50.0, 50.0)
+    assert _position(sketch, result["p4_id"]) == (0.0, 50.0)
+    assert _position(sketch, result["center_id"]) == (25.0, 25.0)
 
 
 def test_rectangle_calculate_geometry_constrain_square_center_on_start():
-    """Test constrain_square combined with center_on_start."""
-    result = RectangleCommand.calculate_geometry(
-        50, 25, 100, 50, 0, None, center_on_start=True, constrain_square=True
+    """constrain_square combined with center_on_start."""
+    sketch = Sketch()
+    start_pid = sketch.add_point(50, 25)
+    result = _run_calculate_geometry(
+        sketch,
+        50,
+        25,
+        100,
+        50,
+        start_pid,
+        None,
+        center_on_start=True,
+        constrain_square=True,
     )
     assert result is not None
-    points = result["points"]
     # half-extent min(50, 25) = 25 on both axes
-    assert points["p1"].x == 25 and points["p1"].y == 0
-    assert points["p2"].x == 75 and points["p2"].y == 0
-    assert points["p3"].x == 75 and points["p3"].y == 50
-    assert points["p4"].x == 25 and points["p4"].y == 50
-    assert points["center"] is None
-    assert points["center_id"] == 0
+    assert _position(sketch, result["p1_id"]) == (25.0, 0.0)
+    assert _position(sketch, result["p2_id"]) == (75.0, 0.0)
+    assert _position(sketch, result["p3_id"]) == (75.0, 50.0)
+    assert _position(sketch, result["p4_id"]) == (25.0, 50.0)
+    assert result["center_id"] == start_pid
 
 
 def test_rectangle_calculate_geometry_square_skipped_when_snapped():
-    """Test a snapped end corner takes precedence over square constraining."""
-    result = RectangleCommand.calculate_geometry(
-        0, 0, 100, 50, 0, 7, constrain_square=True
+    """A snapped end corner takes precedence over square constraining."""
+    sketch = Sketch()
+    start_pid = sketch.add_point(0, 0)
+    end_pid = sketch.add_point(100, 50)
+    result = _run_calculate_geometry(
+        sketch, 0, 0, 100, 50, start_pid, end_pid, constrain_square=True
     )
     assert result is not None
-    points = result["points"]
     # No squashing: the snapped point defines the corner
-    assert points["p2"].x == 100 and points["p2"].y == 0
-    assert points["p3"].x == 100 and points["p3"].y == 50
-    assert points["p4"].x == 0 and points["p4"].y == 50
+    assert _position(sketch, result["p2_id"]) == (100.0, 0.0)
+    assert _position(sketch, result["p3_id"]) == (100.0, 50.0)
+    assert _position(sketch, result["p4_id"]) == (0.0, 50.0)
 
 
 def test_rectangle_calculate_geometry_has_symmetry_constraint():
-    """Test that calculate_geometry adds a center symmetry constraint."""
-    result = RectangleCommand.calculate_geometry(0, 0, 100, 50, 0, None)
+    """The builder adds a center symmetry constraint."""
+    sketch = Sketch()
+    start_pid = sketch.add_point(0, 0)
+    result = _run_calculate_geometry(
+        sketch, 0, 0, 100, 50, start_pid, None
+    )
     assert result is not None
     sym = [
-        c for c in result["constraints"] if isinstance(c, SymmetryConstraint)
+        c
+        for c in sketch.constraints
+        if isinstance(c, SymmetryConstraint)
     ]
     assert len(sym) == 1
-    assert sym[0].center == result["points"]["center"].id
-    assert sym[0].user_visible is False
+    assert sym[0].target.center == result["center_id"]
+    assert constraint_info.user_visible(sym[0]) is False
 
 
 def test_rectangle_command_execute_no_snap():
@@ -149,8 +194,8 @@ def test_rectangle_command_execute_no_snap():
 
     # 1 origin + 1 start_point + 2 new corners + 1 new end corner
     #   + 1 center = 6 points total
-    assert len(sketch.registry.points) == 6
-    assert len(sketch.registry.entities) == 4
+    assert len(sketch.registry.points()) == 6
+    assert len(sketch.registry.entities()) == 4
     assert len(sketch.constraints) == 5
     assert (
         sum(isinstance(c, PerpendicularConstraint) for c in sketch.constraints)
@@ -170,35 +215,27 @@ def test_rectangle_command_execute_with_snap():
     cmd.execute()
 
     # 1 origin + 1 start + 1 end + 2 new corners + 1 center = 6 total
-    assert len(sketch.registry.points) == 6
+    assert len(sketch.registry.points()) == 6
 
 
 def test_rectangle_command_execute_temp_start():
-    """Test command execution when the start point was temporary."""
+    """Execution adopts the temporary start point for undo."""
     sketch = Sketch()
-    # Manually add a "temp" point to the registry
-    start_pid = 100
-    sketch.registry.add_points([Point(start_pid, 0, 0)])
-    assert len(sketch.registry.points) == 2  # Origin + temp start
+    start_pid = sketch.add_point(0, 0)
+    assert len(sketch.registry.points()) == 2  # Origin + temp start
 
     cmd = RectangleCommand(sketch, start_pid, (100, 50), is_start_temp=True)
     cmd.execute()
 
-    # 1 origin + 3 new points (p2, p3, p4) + 1 center
-    #   + 1 re-added temp start point = 6
-    assert len(sketch.registry.points) == 6
-    # Verify the start point ID was reassigned by AddItemsCommand
+    # 1 origin + start + p2 + p3 + p4 + center = 6 points total
+    assert len(sketch.registry.points()) == 6
     assert cmd.add_cmd is not None
-    # Find the re-added start point in the command's point list
-    re_added_start_point = next(
-        p for p in cmd.add_cmd.points if p.x == 0 and p.y == 0
-    )
-    assert re_added_start_point.id != 100
+    assert start_pid in cmd.add_cmd.point_ids
 
     cmd.undo()
-    # Temp points should NOT be restored on undo - only origin remains
-    assert len(sketch.registry.points) == 1
-    assert sketch.registry.points[0].id == 0  # Only origin
+    # The adopted temp start point is removed with the rectangle.
+    assert len(sketch.registry.points()) == 1
+    assert sketch.registry.points()[0].id == 0  # Only origin
 
 
 def test_rectangle_command_undo_no_dangling_points():
@@ -206,21 +243,21 @@ def test_rectangle_command_undo_no_dangling_points():
     sketch = Sketch()
     start_pid = sketch.add_point(0, 0)
 
-    initial_point_count = len(sketch.registry.points)
-    initial_entity_count = len(sketch.registry.entities)
+    initial_point_count = len(sketch.registry.points())
+    initial_entity_count = len(sketch.registry.entities())
 
     cmd = RectangleCommand(sketch, start_pid, (100, 50))
     cmd.execute()
 
     # Added 4 new points (p2, p3, p4, center)
-    assert len(sketch.registry.points) == initial_point_count + 4
-    assert len(sketch.registry.entities) > initial_entity_count
+    assert len(sketch.registry.points()) == initial_point_count + 4
+    assert len(sketch.registry.entities()) > initial_entity_count
 
     cmd.undo()
 
     # All should be back to initial state
-    assert len(sketch.registry.points) == initial_point_count
-    assert len(sketch.registry.entities) == initial_entity_count
+    assert len(sketch.registry.points()) == initial_point_count
+    assert len(sketch.registry.entities()) == initial_entity_count
 
 
 def test_rectangle_command_undo_with_temp_start():
@@ -232,15 +269,15 @@ def test_rectangle_command_undo_with_temp_start():
     cmd = RectangleCommand(sketch, start_pid, (100, 50), is_start_temp=True)
     cmd.execute()
 
-    assert len(sketch.registry.entities) == 4
+    assert len(sketch.registry.entities()) == 4
 
     cmd.undo()
 
     # After undo: all entities removed, temp start should NOT be restored
-    assert len(sketch.registry.entities) == 0
+    assert len(sketch.registry.entities()) == 0
     # Temp start point should NOT be restored - only origin remains
-    assert len(sketch.registry.points) == 1
-    assert sketch.registry.points[0].id == 0  # Only origin
+    assert len(sketch.registry.points()) == 1
+    assert sketch.registry.points()[0].id == 0  # Only origin
 
 
 def test_rectangle_start_preview_no_snap():
@@ -257,8 +294,8 @@ def test_rectangle_start_preview_no_snap():
     assert len(state.preview_ids) > 0
 
     start_p = sketch.registry.get_point(state.start_id)
-    assert start_p.x == 10
-    assert start_p.y == 20
+    assert start_p[0] == 10
+    assert start_p[1] == 20
 
 
 def test_rectangle_start_preview_with_snap():
@@ -284,17 +321,17 @@ def test_rectangle_update_preview():
     RectangleCommand.update_preview(sketch.registry, state, 100, 50)
 
     end_p = sketch.registry.get_point(state.p_end_id)
-    assert end_p.x == 100
-    assert end_p.y == 50
+    assert end_p[0] == 100
+    assert end_p[1] == 50
 
     p2 = sketch.registry.get_point(state.preview_ids["p2"])
-    assert p2.x == 100
-    assert p2.y == 0
+    assert p2[0] == 100
+    assert p2[1] == 0
 
     # Center point should be at the midpoint of the two corners
     center = sketch.registry.get_point(state.preview_ids["center"])
-    assert center.x == 50
-    assert center.y == 25
+    assert center[0] == 50
+    assert center[1] == 25
 
 
 def test_rectangle_update_preview_center_on_start():
@@ -310,34 +347,34 @@ def test_rectangle_update_preview_center_on_start():
 
     # In center mode, start is the center; end defines half-extent
     center = sketch.registry.get_point(state.preview_ids["center"])
-    assert center.x == 50
-    assert center.y == 25
+    assert center[0] == 50
+    assert center[1] == 25
 
 
 def test_rectangle_cleanup_preview():
     """Test cleanup_preview removes all preview geometry except start."""
     sketch = Sketch()
-    initial_point_count = len(sketch.registry.points)
-    initial_entity_count = len(sketch.registry.entities)
+    initial_point_count = len(sketch.registry.points())
+    initial_entity_count = len(sketch.registry.entities())
 
     state = RectangleCommand.start_preview(
         sketch.registry, 0, 0, snapped_pid=None
     )
 
-    assert len(sketch.registry.points) > initial_point_count
-    assert len(sketch.registry.entities) > initial_entity_count
+    assert len(sketch.registry.points()) > initial_point_count
+    assert len(sketch.registry.entities()) > initial_entity_count
 
     RectangleCommand.cleanup_preview(sketch.registry, state)
 
     # cleanup_preview removes preview entities and points
     # (p_end_id, preview_ids) but leaves the start_id point -
     # it's the tool's responsibility to remove it if start_temp is True
-    assert len(sketch.registry.entities) == initial_entity_count
+    assert len(sketch.registry.entities()) == initial_entity_count
     # Only start point remains from preview
     remaining_preview_ids = {
         state.start_id,
     }
-    for p in sketch.registry.points:
+    for p in sketch.registry.points():
         if p.id != 0:  # origin point
             assert p.id in remaining_preview_ids
 
@@ -346,7 +383,7 @@ def test_rectangle_cleanup_preview_with_snapped_start():
     """Test cleanup when start point was snapped (not temp)."""
     sketch = Sketch()
     existing_pid = sketch.add_point(50, 50)
-    initial_point_count = len(sketch.registry.points)
+    initial_point_count = len(sketch.registry.points())
 
     state = RectangleCommand.start_preview(
         sketch.registry, 0, 0, snapped_pid=existing_pid
@@ -355,7 +392,7 @@ def test_rectangle_cleanup_preview_with_snapped_start():
     RectangleCommand.cleanup_preview(sketch.registry, state)
 
     # Existing point should still be there
-    assert len(sketch.registry.points) == initial_point_count
+    assert len(sketch.registry.points()) == initial_point_count
 
 
 def test_rectangle_preview_lifecycle():
@@ -370,12 +407,12 @@ def test_rectangle_preview_lifecycle():
     RectangleCommand.update_preview(sketch.registry, state, 80, 60)
 
     end_p = sketch.registry.get_point(state.p_end_id)
-    assert end_p.x == 80
-    assert end_p.y == 60
+    assert end_p[0] == 80
+    assert end_p[1] == 60
 
     RectangleCommand.cleanup_preview(sketch.registry, state)
 
-    assert len(sketch.registry.entities) == 0
+    assert len(sketch.registry.entities()) == 0
 
 
 def test_rectangle_create_preview_new():
@@ -406,8 +443,7 @@ def test_rectangle_create_preview_update():
     )
     assert preview_ids is not None
 
-    sketch.registry.get_point(end_pid).x = 200
-    sketch.registry.get_point(end_pid).y = 100
+    sketch.registry.set_point_position(end_pid, 200, 100)
 
     result = RectangleCommand.create_preview(
         sketch.registry, start_pid, end_pid, preview_ids=preview_ids
@@ -415,10 +451,10 @@ def test_rectangle_create_preview_update():
 
     assert result == preview_ids
     p2 = sketch.registry.get_point(preview_ids["p2"])
-    assert p2.x == 200
+    assert p2[0] == 200
     center = sketch.registry.get_point(preview_ids["center"])
-    assert center.x == 100
-    assert center.y == 50
+    assert center[0] == 100
+    assert center[1] == 50
 
 
 def test_rectangle_preview_get_dimensions_returns_width_and_height():
@@ -505,7 +541,9 @@ def test_rectangle_preview_get_dimensions_missing_point():
     state = RectangleCommand.start_preview(
         sketch.registry, 0, 0, snapped_pid=None
     )
-    sketch.registry.set_points([])
+    sketch.registry.remove_points(
+        [p.id for p in sketch.registry.points() if p.id != 0]
+    )
 
     dims = state.get_dimensions(sketch.registry)
 
@@ -523,22 +561,26 @@ def test_rectangle_delete_cleans_up_center_point():
     cmd.execute()
 
     # Find the rectangle's line entity ids
-    line_ids = [e.id for e in sketch.registry.entities]
+    line_ids = [e.id for e in sketch.registry.entities()]
     assert len(line_ids) == 4
 
     # Delete all the rectangle's lines
     selection = SketchSelection()
     selection.entity_ids = line_ids
-    points, entities, constraints = RemoveItemsCommand.calculate_dependencies(
-        sketch, selection
+    point_dicts, entity_ids, constraints = (
+        RemoveItemsCommand.calculate_dependencies(sketch, selection)
     )
     del_cmd = RemoveItemsCommand(
-        sketch, "Delete", points, entities, constraints
+        sketch,
+        "Delete",
+        points=point_dicts,
+        entity_ids=entity_ids,
+        constraints=constraints,
     )
     del_cmd.execute()
 
     # Center point should be gone (it was only referenced by the
     # deleted SymmetryConstraint, not by any entity).
-    assert len(sketch.registry.points) == 1  # only origin remains
+    assert len(sketch.registry.points()) == 1  # only origin remains
     assert len(sketch.constraints) == 0
-    assert len(sketch.registry.entities) == 0
+    assert len(sketch.registry.entities()) == 0

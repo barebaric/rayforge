@@ -83,7 +83,7 @@ class EquidistantLinesProducer(SnapLineProducer):
         coords: list[float] = []
         axis_values: list[float] = []
 
-        for point in registry.points:
+        for point in registry.points():
             if drag_context.is_point_dragged(point.id):
                 continue
 

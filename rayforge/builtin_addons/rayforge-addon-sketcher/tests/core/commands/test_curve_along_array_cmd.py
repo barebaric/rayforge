@@ -7,13 +7,13 @@ from sketcher.core.arrays import (
     find_array_for_entity,
 )
 from sketcher.core.commands import CreateArrayCommand, EditArrayCommand
-from sketcher.core.constraints import (
-    CoincidentConstraint,
-    HorizontalConstraint,
-    TangentConstraint,
-    VerticalConstraint,
-)
-from sketcher.core.entities import Bezier, Ellipse, Line
+from raygeo.sketch.constraints.coincident import CoincidentConstraint
+from raygeo.sketch.constraints.horizontal import HorizontalConstraint
+from raygeo.sketch.constraints.tangent import TangentConstraint
+from raygeo.sketch.constraints.vertical import VerticalConstraint
+from raygeo.sketch.entities.bezier import Bezier
+from raygeo.sketch.entities.ellipse import Ellipse
+from raygeo.sketch.entities.line import Line
 from sketcher.core.sketch import Sketch
 
 
@@ -56,7 +56,7 @@ def test_creates_static_copies_along_path(sketch_with_template_and_path):
     )
     cmd.execute()
 
-    copies = [e for e in sketch.registry.entities if e.array_copy]
+    copies = [e for e in sketch.registry.entities() if e.array_copy]
     # count=4 members: the template (the seed, left in place) plus
     # 3 copies on the path.
     assert len(copies) == 3
@@ -65,13 +65,13 @@ def test_creates_static_copies_along_path(sketch_with_template_and_path):
     assert array.mode == "curve_along"
     # The guide entity is the pre-existing path, not a new circle.
     assert array.guide_circle_id == path
-    circles = [e for e in sketch.registry.entities if e.type == "circle"]
+    circles = [e for e in sketch.registry.entities() if e.type == "circle"]
     assert circles == []
     # The template member is the original seed entity, unmoved.
     assert array.living_members(sketch.registry)[0] == (0, [seed])
-    seed_entity = sketch.registry.get_entity(seed)
+    seed_entity = sketch.registry.get_entity_object(seed)
     seed_p0 = sketch.registry.get_point(seed_entity.p1_idx)
-    assert (seed_p0.x, seed_p0.y) == (0.0, -2.0)
+    assert (seed_p0[0], seed_p0[1]) == (0.0, -2.0)
 
 
 def test_array_findable_by_path_entity(sketch_with_template_and_path):
@@ -100,10 +100,10 @@ def test_copy_positions_span_the_path(sketch_with_template_and_path):
     member_ids = array.living_entity_ids(sketch.registry)
     centers_x = []
     for eid in member_ids[1:]:  # skip template
-        entity = sketch.registry.get_entity(eid)
+        entity = sketch.registry.get_entity_object(eid)
         assert entity is not None
         pids = entity.get_point_ids()
-        xs = [sketch.registry.get_point(p).x for p in pids]
+        xs = [sketch.registry.get_point(p)[0] for p in pids]
         centers_x.append(sum(xs) / len(xs))
     assert sorted(centers_x) == pytest.approx([10.0, 20.0, 30.0])
 
@@ -150,11 +150,11 @@ def test_template_points_remain_editable(sketch_with_template_and_path):
     array = cmd.array
     assert array is not None
     template_eid = array.living_entity_ids(sketch.registry)[0]
-    entity = sketch.registry.get_entity(template_eid)
+    entity = sketch.registry.get_entity_object(template_eid)
     assert entity is not None
     for pid in entity.get_point_ids():
         pt = sketch.registry.get_point(pid)
-        assert pt.fixed is False
+        assert sketch.registry.point_is_fixed(pid) is False
 
 
 def test_dragging_path_redistributes_copies(sketch_with_template_and_path):
@@ -172,28 +172,28 @@ def test_dragging_path_redistributes_copies(sketch_with_template_and_path):
 
     copies_before = []
     for eid in array.living_entity_ids(sketch.registry)[1:]:
-        entity = sketch.registry.get_entity(eid)
+        entity = sketch.registry.get_entity_object(eid)
         assert entity is not None
         pids = entity.get_point_ids()
         copies_before.append(
             tuple(
-                sorted(round(sketch.registry.get_point(p).x, 1) for p in pids)
+                sorted(round(sketch.registry.get_point(p)[0], 1) for p in pids)
             )
         )
 
-    path_entity = sketch.registry.get_entity(path)
+    path_entity = sketch.registry.get_entity_object(path)
     end_pt = sketch.registry.get_point(path_entity.p2_idx)
-    end_pt.x = 60.0
+    sketch.registry.set_point_position(path_entity.p2_idx, 60.0, end_pt[1])
     sketch.solve()
 
     copies_after = []
     for eid in array.living_entity_ids(sketch.registry)[1:]:
-        entity = sketch.registry.get_entity(eid)
+        entity = sketch.registry.get_entity_object(eid)
         assert entity is not None
         pids = entity.get_point_ids()
         copies_after.append(
             tuple(
-                sorted(round(sketch.registry.get_point(p).x, 1) for p in pids)
+                sorted(round(sketch.registry.get_point(p)[0], 1) for p in pids)
             )
         )
     assert copies_before != copies_after
@@ -220,41 +220,41 @@ def test_dragging_bezier_endpoint_redistributes_copies():
 
     before = []
     for eid in array.living_entity_ids(sketch.registry)[1:]:
-        entity = sketch.registry.get_entity(eid)
+        entity = sketch.registry.get_entity_object(eid)
         assert entity is not None
         pids = entity.get_point_ids()
         before.append(
             tuple(
-                sorted(round(sketch.registry.get_point(p).x, 1) for p in pids)
+                sorted(round(sketch.registry.get_point(p)[0], 1) for p in pids)
             )
         )
 
-    path_entity = sketch.registry.get_entity(path)
+    path_entity = sketch.registry.get_entity_object(path)
     assert isinstance(path_entity, Bezier)
     end_pt = sketch.registry.get_point(path_entity.end_idx)
-    end_pt.x = 80.0
+    sketch.registry.set_point_position(path_entity.end_idx, 80.0, end_pt[1])
     sketch.solve()
 
     after = []
     for eid in array.living_entity_ids(sketch.registry)[1:]:
-        entity = sketch.registry.get_entity(eid)
+        entity = sketch.registry.get_entity_object(eid)
         assert entity is not None
         pids = entity.get_point_ids()
         after.append(
             tuple(
-                sorted(round(sketch.registry.get_point(p).x, 1) for p in pids)
+                sorted(round(sketch.registry.get_point(p)[0], 1) for p in pids)
             )
         )
     assert before != after
-    assert sketch.registry.get_point(path_entity.end_idx).x == pytest.approx(
+    assert sketch.registry.get_point(path_entity.end_idx)[0] == pytest.approx(
         80.0
     )
 
 
 def test_undo_removes_copies_and_array(sketch_with_template_and_path):
     sketch, seed, path = sketch_with_template_and_path
-    n_entities = len(sketch.registry.entities)
-    n_points = len(sketch.registry.points)
+    n_entities = len(sketch.registry.entities())
+    n_points = len(sketch.registry.points())
 
     cmd = CreateArrayCommand(
         sketch,
@@ -265,8 +265,8 @@ def test_undo_removes_copies_and_array(sketch_with_template_and_path):
     assert len(sketch.arrays) == 1
 
     cmd.undo()
-    assert len(sketch.registry.entities) == n_entities
-    assert len(sketch.registry.points) == n_points
+    assert len(sketch.registry.entities()) == n_entities
+    assert len(sketch.registry.points()) == n_points
     assert sketch.arrays == []
 
 
@@ -281,7 +281,7 @@ def test_redo_restores_array(sketch_with_template_and_path):
     cmd.undo()
     cmd.execute()
     # count=4 members: template (in place) + 3 copies.
-    assert len([e for e in sketch.registry.entities if e.array_copy]) == 3
+    assert len([e for e in sketch.registry.entities() if e.array_copy]) == 3
     assert len(sketch.arrays) == 1
 
 
@@ -359,12 +359,12 @@ def test_solver_keeps_geometry_stable_after_apply(
         [seed],
     )
     cmd.execute()
-    before = [(p.id, p.x, p.y) for p in sketch.registry.points]
+    before = [(p.id, p.x, p.y) for p in sketch.registry.points()]
     sketch.solve()
     for pid, x, y in before:
         pt = sketch.registry.get_point(pid)
-        assert pt.x == pytest.approx(x, abs=1e-3)
-        assert pt.y == pytest.approx(y, abs=1e-3)
+        assert pt[0] == pytest.approx(x, abs=1e-3)
+        assert pt[1] == pytest.approx(y, abs=1e-3)
 
 
 # ----------------------------------------------------------------------
@@ -385,7 +385,7 @@ def test_edit_fills_missing_slots(sketch_with_template_and_path):
 
     # Delete two non-template members.
     victims = [eid for _slot, eids in array.members[1:3] for eid in eids]
-    sketch.registry.remove_entities_by_id(victims)
+    sketch.registry.remove_entities(victims)
     sketch.prune_arrays()
     assert len(array.living_members(sketch.registry)) == 4
 
@@ -465,7 +465,7 @@ def test_deleting_path_dissolves_array(sketch_with_template_and_path):
     )
     cmd.execute()
 
-    sketch.registry.remove_entities_by_id([path])
+    sketch.registry.remove_entities([path])
     sketch.prune_arrays()
     assert sketch.arrays == []
 
@@ -481,7 +481,7 @@ def test_edit_with_arc_path_aligns_copies():
     c = sketch.registry.add_point(0.0, 0.0)
     s = sketch.registry.add_point(10.0, 0.0)
     e = sketch.registry.add_point(0.0, 10.0)
-    arc = sketch.registry.add_arc(s, e, c, cw=False)
+    arc = sketch.registry.add_arc(s, e, c, clockwise=False)
 
     cmd = CreateArrayCommand(
         sketch,
@@ -498,30 +498,30 @@ def test_edit_with_arc_path_aligns_copies():
     # points in -x (angle ~pi). A horizontal seed rotated by ~180deg
     # is still horizontal, so dx stays larger than dy.
     last_eid = members[-1][1][0]
-    last_entity = sketch.registry.get_entity(last_eid)
+    last_entity = sketch.registry.get_entity_object(last_eid)
     assert last_entity is not None
     lp1, lp2 = last_entity.get_point_ids()
     p1 = sketch.registry.get_point(lp1)
     p2 = sketch.registry.get_point(lp2)
-    dx = abs(p2.x - p1.x)
-    dy = abs(p2.y - p1.y)
+    dx = abs(p2[0] - p1[0])
+    dy = abs(p2[1] - p1[1])
     assert dx > dy
     # Center near the arc end.
-    cx = (p1.x + p2.x) / 2
-    cy = (p1.y + p2.y) / 2
+    cx = (p1[0] + p2[0]) / 2
+    cy = (p1[1] + p2[1]) / 2
     assert math.hypot(cx - 0.0, cy - 10.0) < 1.5
 
     # The middle copy (slot 1) sits near (10*cos45, 10*sin45) and is
     # rotated ~45deg, so a horizontal 1-unit seed now spans roughly
     # equally in x and y.
     mid_eid = members[1][1][0]
-    mid_entity = sketch.registry.get_entity(mid_eid)
+    mid_entity = sketch.registry.get_entity_object(mid_eid)
     assert mid_entity is not None
     mp1, mp2 = mid_entity.get_point_ids()
     m1 = sketch.registry.get_point(mp1)
     m2 = sketch.registry.get_point(mp2)
-    mdx = abs(m2.x - m1.x)
-    mdy = abs(m2.y - m1.y)
+    mdx = abs(m2[0] - m1[0])
+    mdy = abs(m2[1] - m1[1])
     assert mdx == pytest.approx(mdy, abs=0.2)
 
 
@@ -536,16 +536,16 @@ def test_template_extraction_severs_guide_links(sketch_with_template_and_path):
     cloned, external constraints are erased, and applying the array
     never moves the guide.
     """
-    from sketcher.core.constraints import DistanceConstraint
+    from raygeo.sketch.constraints.distance import DistanceConstraint
 
     sketch, seed, path = sketch_with_template_and_path
     registry = sketch.registry
     # Rebuild the seed so its first point IS the guide path's start
     # point (a shared pid), and tie its second point to a foreign
     # point.
-    path_entity = registry.get_entity(path)
+    path_entity = registry.get_entity_object(path)
     shared_pid = path_entity.p1_idx
-    registry.remove_entities_by_id([seed])
+    registry.remove_entities([seed])
     seed_p2 = registry.add_point(10.0, 5.0)
     seed = registry.add_line(shared_pid, seed_p2)
     foreign = registry.add_point(30.0, 20.0)
@@ -561,16 +561,16 @@ def test_template_extraction_severs_guide_links(sketch_with_template_and_path):
     sketch.solve()
 
     # The guide is untouched.
-    path_entity = registry.get_entity(path)
+    path_entity = registry.get_entity_object(path)
     start = registry.get_point(path_entity.p1_idx)
     end = registry.get_point(path_entity.p2_idx)
-    assert (start.x, start.y) == (0.0, 0.0)
-    assert (end.x, end.y) == (30.0, 0.0)
+    assert (start[0], start[1]) == (0.0, 0.0)
+    assert (end[0], end[1]) == (30.0, 0.0)
     # The foreign point is untouched and the template no longer
     # shares the guide's point.
-    tpl_entity = registry.get_entity(seed)
+    tpl_entity = registry.get_entity_object(seed)
     assert tpl_entity.p1_idx != shared_pid
-    assert (registry.get_point(foreign).x, registry.get_point(foreign).y) == (
+    assert (registry.get_point(foreign)[0], registry.get_point(foreign)[1]) == (
         30.0,
         20.0,
     )
@@ -579,10 +579,10 @@ def test_template_extraction_severs_guide_links(sketch_with_template_and_path):
     # The solve reached a stable state: a second solve does not move
     # the template.
     tpl_p1 = registry.get_point(tpl_entity.p1_idx)
-    pos = (tpl_p1.x, tpl_p1.y)
+    pos = (tpl_p1[0], tpl_p1[1])
     sketch.solve()
     tpl_p1 = registry.get_point(tpl_entity.p1_idx)
-    assert (tpl_p1.x, tpl_p1.y) == pos
+    assert (tpl_p1[0], tpl_p1[1]) == pos
 
 
 def test_template_internal_constraints_survive_extraction():
@@ -618,17 +618,17 @@ def test_template_internal_constraints_survive_extraction():
     # Every member group is still glued: the two lines share (a
     # coincident copy of) the middle point.
     for slot, eids in array.living_members(registry):
-        first = registry.get_entity(eids[0])
-        second = registry.get_entity(eids[1])
+        first = registry.get_entity_object(eids[0])
+        second = registry.get_entity_object(eids[1])
         assert isinstance(first, Line)
         assert isinstance(second, Line)
         joined_a = registry.get_point(first.p2_idx)
         joined_b = registry.get_point(second.p1_idx)
-        assert (joined_a.x, joined_a.y) == pytest.approx(
-            (joined_b.x, joined_b.y)
+        assert (joined_a[0], joined_a[1]) == pytest.approx(
+            (joined_b[0], joined_b[1])
         )
     # The external tie is gone: the foreign point is untouched.
-    assert (registry.get_point(foreign).x, registry.get_point(foreign).y) == (
+    assert (registry.get_point(foreign)[0], registry.get_point(foreign)[1]) == (
         50.0,
         50.0,
     )
@@ -686,11 +686,11 @@ def test_world_anchored_constraints_erased_tangents_kept():
     def member_shape(eids):
         shape = []
         for eid in eids:
-            member_entity = registry.get_entity(eid)
+            member_entity = registry.get_entity_object(eid)
             assert member_entity is not None
             for pid in member_entity.get_point_ids():
                 pt = registry.get_point(pid)
-                shape.append((pt.x, pt.y))
+                shape.append((pt[0], pt[1]))
         return shape
 
     template_shape = member_shape(template_eids)
@@ -712,7 +712,7 @@ def test_world_anchored_constraints_erased_tangents_kept():
         # fixed and carry no constraints.
         if slot != 0:
             for eid in eids:
-                copy_entity = registry.get_entity(eid)
+                copy_entity = registry.get_entity_object(eid)
                 assert copy_entity is not None
                 for pid in copy_entity.get_point_ids():
                     assert registry.get_point(pid).fixed
@@ -743,27 +743,27 @@ def test_reapply_does_not_leak_fixed_copy_points():
 
     array = sketch.arrays[0]
     registry = sketch.registry
-    n_points = len(registry.points)
-    n_entities = len(registry.entities)
+    n_points = len(registry.points())
+    n_entities = len(registry.entities())
 
     # Copies are fixed and unconstrained.
     for slot, eids in array.living_members(registry)[1:]:
         for eid in eids:
-            copy_entity = registry.get_entity(eid)
+            copy_entity = registry.get_entity_object(eid)
             assert copy_entity is not None
             for pid in copy_entity.get_point_ids():
                 assert registry.get_point(pid).fixed
 
     # Drag the template and re-apply via the solver sync several
     # times: geometry must stay bounded.
-    tpl_entity = registry.get_entity(array.living_members(registry)[0][1][0])
+    tpl_entity = registry.get_entity_object(array.living_members(registry)[0][1][0])
     assert isinstance(tpl_entity, Line)
     dragged = registry.get_point(tpl_entity.p1_idx)
     for _ in range(10):
-        dragged.x += 0.5
+        dragged[0] += 0.5
         sketch.solve()
-        assert len(registry.points) == n_points
-        assert len(registry.entities) == n_entities
+        assert len(registry.points()) == n_points
+        assert len(registry.entities()) == n_entities
 
 
 def test_ellipse_helper_lines_follow_the_template():
@@ -780,7 +780,7 @@ def test_ellipse_helper_lines_follow_the_template():
     registry = sketch.registry
     h1 = sketch.registry.add_line(c, rx)
     h2 = sketch.registry.add_line(c, ry)
-    ellipse = registry.get_entity(eid)
+    ellipse = registry.get_entity_object(eid)
     assert isinstance(ellipse, Ellipse)
     ellipse.helper_line_ids = [h1, h2]
 
@@ -798,11 +798,11 @@ def test_ellipse_helper_lines_follow_the_template():
 
     registry = sketch.registry
     array = sketch.arrays[0]
-    template = registry.get_entity(array.living_members(registry)[0][1][0])
+    template = registry.get_entity_object(array.living_members(registry)[0][1][0])
     assert isinstance(template, Ellipse)
     assert sorted(template.helper_line_ids) == sorted([h1, h2])
     for hid in template.helper_line_ids:
-        helper = registry.get_entity(hid)
+        helper = registry.get_entity_object(hid)
         assert isinstance(helper, Line)
         # The helpers share the template's (extracted) points, so
         # they follow it onto the guide.

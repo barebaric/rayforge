@@ -5,7 +5,10 @@ import math
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
-from ..entities import Arc, Bezier, Line
+from raygeo.sketch.entities.arc import Arc
+from raygeo.sketch.entities.bezier import Bezier
+from raygeo.sketch.entities.line import Line
+
 from ..entity_group import EntityGroup
 from .base import (
     Array,
@@ -15,10 +18,7 @@ from .base import (
 )
 
 if TYPE_CHECKING:
-    from ..constraints import Constraint
-    from ..entities import Entity
-    from ..entities.point import Point
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -147,7 +147,7 @@ class CurveAlongArrayStrategy(ArrayStrategy):
         self,
         center_pid: int | None,
         radius_pt_pid: int | None,
-    ) -> tuple[list[Point], list[Entity], list[Constraint]]:
+    ) -> tuple[list[Any], list[Any], list[Any]]:
         # The guide path entity is created by the user before invoking
         # the tool, so the array reuses it as master instead of
         # generating new construction geometry here.
@@ -173,7 +173,7 @@ def sample_path(
     aside) and the last is the path end. Sample 0 is position 0,
     where the template sits; the copy of slot j lands on sample j.
     """
-    entity = registry.get_entity(path_entity_id)
+    entity = registry.get_entity_object(path_entity_id)
     if entity is None:
         return []
 
@@ -201,11 +201,11 @@ def sample_path(
 
 
 def _polyline_for(
-    entity: Entity, registry: EntityRegistry
+    entity: Any, registry: EntityRegistry
 ) -> list[tuple[float, float]]:
     def p(pid):
-        pt = registry.get_point(pid)
-        return (pt.x, pt.y)
+        position = registry.get_point(pid)
+        return position if position is not None else (0.0, 0.0)
 
     if isinstance(entity, Line):
         return [p(entity.p1_idx), p(entity.p2_idx)]
@@ -237,11 +237,17 @@ def _polyline_for(
         start = p(entity.start_idx)
         end = p(entity.end_idx)
         cp1 = start
-        if entity.cp1 is not None:
-            cp1 = (start[0] + entity.cp1[0], start[1] + entity.cp1[1])
+        if entity.cp1_offset is not None:
+            cp1 = (
+                start[0] + entity.cp1_offset[0],
+                start[1] + entity.cp1_offset[1],
+            )
         cp2 = end
-        if entity.cp2 is not None:
-            cp2 = (end[0] + entity.cp2[0], end[1] + entity.cp2[1])
+        if entity.cp2_offset is not None:
+            cp2 = (
+                end[0] + entity.cp2_offset[0],
+                end[1] + entity.cp2_offset[1],
+            )
         segments = 32
         pts = []
         for i in range(segments + 1):
@@ -320,7 +326,7 @@ def path_length(
     path_entity_id: int,
 ) -> float:
     """Returns the total arc length of the guide path entity."""
-    entity = registry.get_entity(path_entity_id)
+    entity = registry.get_entity_object(path_entity_id)
     if entity is None:
         return 0.0
     polyline = _polyline_for(entity, registry)
@@ -551,11 +557,11 @@ class CurveAlongArray(Array):
         # behind would tear the member and violate its constraints.
         group.with_helpers().apply_rigid_motion(motion)
         for pid in standalone_pids:
-            try:
-                pt = registry.get_point(pid)
-            except IndexError:
+            position = registry.get_point(pid)
+            if position is None:
                 continue
-            pt.x, pt.y = motion.transform_point(pt.x, pt.y)
+            x, y = motion.transform_point(position[0], position[1])
+            registry.set_point_position(pid, x, y)
         self.template_anchor = (
             (float(target[0]), float(target[1])),
             float(placement.angle),

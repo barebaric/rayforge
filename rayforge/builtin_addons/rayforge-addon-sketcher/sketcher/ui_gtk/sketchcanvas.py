@@ -9,13 +9,15 @@ from raygeo.geo import Matrix
 from rayforge.camera.controller import CameraController
 from rayforge.context import get_context
 from rayforge.core.expression import ExpressionContext, safe_evaluate
+
+from ..core import constraint_info
 from rayforge.shared.units.formatter import get_preferred_unit_factor
 from rayforge.ui_gtk.canvas import WorldSurface
 from rayforge.ui_gtk.canvas2d.elements.camera_image import CameraImageElement
 from rayforge.ui_gtk.shared.expression_entry import ExpressionEntry
 
 from ..core.commands import ModifyConstraintCommand
-from ..core.constraints import Constraint
+from typing import Any
 from ..core.sketch import Sketch
 from .editor import SketchEditor
 from .sketchelement import SketchElement
@@ -221,10 +223,10 @@ class SketchCanvas(WorldSurface):
         if not geometry.is_empty():
             min_x, min_y, max_x, max_y = geometry.rect()
             has_bounds = True
-        elif sketch.registry.points:
+        elif sketch.registry.points():
             # This case handles sketches with only points.
-            xs = [p.x for p in sketch.registry.points]
-            ys = [p.y for p in sketch.registry.points]
+            xs = [p.x for p in sketch.registry.points()]
+            ys = [p.y for p in sketch.registry.points()]
             if xs and ys:
                 min_x, max_x = min(xs), max(xs)
                 min_y, max_y = min(ys), max(ys)
@@ -257,7 +259,7 @@ class SketchCanvas(WorldSurface):
         self.set_pan(pan_x, pan_y)
         self.set_zoom(1.0)
 
-    def _on_constraint_edit_requested(self, sender, constraint: Constraint):
+    def _on_constraint_edit_requested(self, sender, constraint: Any):
         """
         Opens a dialog to edit the value of a constraint. This is triggered
         by a double-click on a constraint label.
@@ -274,13 +276,14 @@ class SketchCanvas(WorldSurface):
             return
 
         # Get initial text: expression if present, else value
-        if constraint.expression is not None:
-            initial_text = constraint.expression
+        expression = constraint.expression()
+        if expression is not None:
+            initial_text = expression
         else:
             initial_text = f"{float(getattr(constraint, 'value', 0)):g}"
 
         # Determine the user-friendly label and description based on type
-        row_subtitle = constraint.get_edit_subtitle()
+        row_subtitle = constraint_info.get_edit_subtitle(constraint)
 
         # Create ExpressionContext
         var_set = self.sketch_element.sketch.input_parameters

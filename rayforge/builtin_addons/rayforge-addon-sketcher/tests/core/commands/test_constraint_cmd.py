@@ -1,7 +1,7 @@
 import pytest
 from sketcher.core import Sketch
 from sketcher.core.commands import ModifyConstraintCommand
-from sketcher.core.constraints import DistanceConstraint
+from raygeo.sketch.constraints.distance import DistanceConstraint
 
 
 @pytest.fixture

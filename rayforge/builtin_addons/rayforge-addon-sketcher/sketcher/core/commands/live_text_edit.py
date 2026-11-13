@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 from rayforge.core.undo.command import Command
 from rayforge.core.undo.history import COALESCE_THRESHOLD
 
-from ..entities.text_box import TextBoxEntity
 from ..types import EntityID
 
 if TYPE_CHECKING:
@@ -40,8 +39,7 @@ class LiveTextEditCommand(Command):
         self._last_capture_time: float = 0.0
 
     def execute(self) -> None:
-        entity = self._sketch.registry.get_entity(self.text_entity_id)
-        if not isinstance(entity, TextBoxEntity):
+        if not self._is_text_box():
             return
 
         # Initialize history with the earliest known state, but never
@@ -50,9 +48,23 @@ class LiveTextEditCommand(Command):
         if self.history:
             return
 
-        self.history = [(entity.content, 0, time.time())]
+        self.history = [(self._content(), 0, time.time())]
         self.current_index = 0
         self._last_capture_time = time.time()
+
+    def _is_text_box(self) -> bool:
+        entity = self._sketch.registry.get_entity_object(
+            self.text_entity_id
+        )
+        return entity is not None and entity.type_name() == "text_box"
+
+    def _content(self) -> str:
+        return self._sketch.flags.text_content(
+            self.text_entity_id,
+            self._sketch.registry.get_entity_object(
+                self.text_entity_id
+            ).content,
+        )
 
     def should_skip_undo(self) -> bool:
         # This command is session-scoped only and is never a valid
@@ -77,9 +89,10 @@ class LiveTextEditCommand(Command):
     def _restore_state(self, index: int) -> None:
         if 0 <= index < len(self.history):
             content, _, _ = self.history[index]
-            entity = self._sketch.registry.get_entity(self.text_entity_id)
-            if isinstance(entity, TextBoxEntity):
-                entity.content = content
+            if self._is_text_box():
+                self._sketch.flags.set_text_property(
+                    self.text_entity_id, "content", content
+                )
 
     def capture_state(self, content: str, cursor_pos: int) -> None:
         now = time.time()

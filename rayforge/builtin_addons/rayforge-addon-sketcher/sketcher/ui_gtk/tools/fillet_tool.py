@@ -3,13 +3,14 @@ import math
 from gettext import gettext as _
 from typing import TYPE_CHECKING, ClassVar, Union
 
+from raygeo.sketch.entities.line import Line
+
 from ...core.commands import FilletCommand
-from ...core.entities import Entity, Line, Point
 from ...core.types import EntityID
 from .base import SketchTool
 
 if TYPE_CHECKING:
-    from ...core.constraints import Constraint
+    from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -22,14 +23,12 @@ class FilletTool(SketchTool):
 
     def is_available(
         self,
-        target: Union[Point, Entity, "Constraint"] | None,
+        target: Any | None,
         target_type: str | None,
     ) -> bool:
-        if target_type != "junction":
+        if target_type != "junction" or not isinstance(target, int):
             return False
-        if target is None or not isinstance(target, Point):
-            return False
-        lines = self._get_lines_at_point(target.id)
+        lines = self._get_lines_at_point(target)
         return len(lines) == 2
 
     def on_press(self, world_x: float, world_y: float, n_press: int) -> bool:
@@ -49,7 +48,7 @@ class FilletTool(SketchTool):
         sketch = self.element.sketch
         return [
             e
-            for e in sketch.registry.entities
+            for e in sketch.registry.entities()
             if isinstance(e, Line) and pid in (e.p1_idx, e.p2_idx)
         ]
 
@@ -77,8 +76,8 @@ class FilletTool(SketchTool):
         if not other1_pt or not other2_pt:
             return 10.0
 
-        v1 = (other1_pt.x - corner_point.x, other1_pt.y - corner_point.y)
-        v2 = (other2_pt.x - corner_point.x, other2_pt.y - corner_point.y)
+        v1 = (other1_pt[0] - corner_point[0], other1_pt[1] - corner_point[1])
+        v2 = (other2_pt[0] - corner_point[0], other2_pt[1] - corner_point[1])
         len1 = math.hypot(v1[0], v1[1])
         len2 = math.hypot(v2[0], v2[1])
 
@@ -106,19 +105,6 @@ class FilletTool(SketchTool):
         line1, line2 = lines_at_junction
 
         default_radius = self._get_default_radius(corner_pid)
-        geom = FilletCommand.calculate_geometry(
-            sketch.registry,
-            corner_pid,
-            line1.id,
-            line2.id,
-            default_radius,
-        )
-        if not geom:
-            logger.warning(
-                "Lines are too short or angle too acute for fillet."
-            )
-            return
-
         cmd = FilletCommand(
             sketch,
             corner_pid,

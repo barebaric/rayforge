@@ -1,12 +1,16 @@
 from __future__ import annotations
 
-import itertools
 import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
-from ..contour import OffsetItem, build_offset_items
-from ..entities import OffsetPlan
+from ..contour import build_offset_items
+from ..offset import (
+    OffsetPlan,
+    outline_item,
+    plan_offset_for_item,
+    preview_polylines_for_item,
+)
 from .base import SketchChangeCommand
 from .items import AddItemsCommand, RemoveItemsCommand
 
@@ -63,12 +67,11 @@ class OffsetCommand(SketchChangeCommand):
         if items is None:
             return False
 
-        allocate_id = itertools.count(-1, -1).__next__
         point_moves: dict[int, tuple[float, float]] = {}
         ops: list[tuple[RemoveItemsCommand | None, AddItemsCommand]] = []
         for item in items:
-            plan: OffsetPlan | None = item.plan_offset(
-                self.sketch.registry, self.distance, allocate_id
+            plan: OffsetPlan | None = plan_offset_for_item(
+                self.sketch.registry, item, self.distance
             )
             if plan is None:
                 logger.warning(
@@ -76,11 +79,11 @@ class OffsetCommand(SketchChangeCommand):
                 )
                 return False
             point_moves.update(plan.point_moves)
-            if not plan.entities:
+            if not plan.outlines and not plan.removed_entity_ids:
                 continue
             remove_cmd = None
             if plan.removed_entity_ids:
-                points, entities, constraints = (
+                point_dicts, entity_ids, constraints = (
                     RemoveItemsCommand.calculate_dependencies_for_ids(
                         self.sketch, set(plan.removed_entity_ids)
                     )
@@ -88,13 +91,16 @@ class OffsetCommand(SketchChangeCommand):
                 remove_cmd = RemoveItemsCommand(
                     self.sketch,
                     "",
-                    points=points,
-                    entities=entities,
+                    points=point_dicts,
+                    entity_ids=entity_ids,
                     constraints=constraints,
                 )
-            add_cmd = AddItemsCommand(
-                self.sketch, "", points=plan.points, entities=plan.entities
-            )
+            add_cmd = AddItemsCommand(self.sketch, "")
+            for vertices, closed, holes in plan.outlines:
+                polygon = outline_item(
+                    vertices, closed, add_cmd.add_point, holes
+                )
+                add_cmd.add_entity(polygon)
             ops.append((remove_cmd, add_cmd))
 
         self._point_moves = point_moves
@@ -107,8 +113,7 @@ class OffsetCommand(SketchChangeCommand):
             return
         registry = self.sketch.registry
         for pid, (x, y) in self._point_moves.items():
-            point = registry.get_point(pid)
-            point.x, point.y = x, y
+            registry.set_point_position(pid, x, y)
         for remove_cmd, add_cmd in self._ops:
             if remove_cmd:
                 remove_cmd._do_execute()
@@ -122,14 +127,13 @@ class OffsetCommand(SketchChangeCommand):
 
     @staticmethod
     def preview_polylines(
-        items: list[OffsetItem],
+        items,
         registry,
         distance: float,
     ) -> list[list[tuple[float, float]]] | None:
         """
         Polylines of the offset result for live preview. Each item
-        previews its own offset polymorphically (preview_polylines on
-        the item protocol); no geometry is committed. Takes
+        previews its own offset; no geometry is committed. Takes
         preprocessed items (see prepare_items) so the selection has to
         be validated only once.
         """
@@ -137,5 +141,7 @@ class OffsetCommand(SketchChangeCommand):
             return None
         polylines: list[list[tuple[float, float]]] = []
         for item in items:
-            polylines.extend(item.preview_polylines(registry, distance))
+            polylines.extend(
+                preview_polylines_for_item(registry, item, distance)
+            )
         return polylines or None

@@ -5,6 +5,7 @@ import math
 import time
 import uuid
 from collections import defaultdict
+from collections.abc import Iterable, Sequence
 from gettext import gettext as _
 from pathlib import Path
 from typing import Any, ClassVar
@@ -17,6 +18,21 @@ from raygeo.geo import Geometry
 from raygeo.geo import Line as GeoLine
 from raygeo.geo import Move as GeoMove
 from raygeo.geo.shape.polygon import is_point_inside_polygon
+from raygeo.sketch.constraints.coincident import CoincidentConstraint
+from raygeo.sketch.constraints.distance import DistanceConstraint
+from raygeo.sketch.constraints.drag import DragConstraint
+from raygeo.sketch.constraints.equal_distance import (
+    EqualDistanceConstraint,
+)
+from raygeo.sketch.constraints.horizontal import HorizontalConstraint
+from raygeo.sketch.constraints.point_on_line import PointOnLineConstraint
+from raygeo.sketch.constraints.radius import RadiusConstraint
+from raygeo.sketch.constraints.diameter import DiameterConstraint
+from raygeo.sketch.constraints.symmetry import SymmetryConstraint
+from raygeo.sketch.constraints.symmetry import SymmetryTarget
+from raygeo.sketch.constraints.vertical import VerticalConstraint
+from raygeo.sketch.entities.text_box import TextBox
+from raygeo.sketch.registry import EntityRegistry
 
 from rayforge.core.asset import IAsset
 from rayforge.core.color import ColorRGBA
@@ -26,35 +42,13 @@ from rayforge.core.varset import VarSet
 from rayforge.image.geo_renderer import render_geometry_to_png
 from rayforge.image.structures import FillRenderData, FillStyle
 
+from . import constraint_info
 from .arrays import Array
 from .components import get_referenced_points
-from .constraints import (
-    AngleConstraint,
-    AspectRatioConstraint,
-    CoincidentConstraint,
-    CollinearConstraint,
-    Constraint,
-    ConstraintStatus,
-    DiameterConstraint,
-    DistanceConstraint,
-    EqualDistanceConstraint,
-    EqualLengthConstraint,
-    HorizontalConstraint,
-    ParallelogramConstraint,
-    PerpendicularConstraint,
-    PointOnCurveConstraint,
-    PointOnLineConstraint,
-    RadiusConstraint,
-    RotationalConstraint,
-    SymmetryConstraint,
-    TangentConstraint,
-    VerticalConstraint,
-)
-from .constraints.drag import DragConstraint
-from .entities import Arc, Bezier, Entity, Line, TextBoxEntity
-from .entities.point import Point, WaypointType
+from .constraint_ops import rebuild as _rebuild_constraint
+from .entity_flags import EntityFlags, WaypointType
+from .legacy import migrate_sketch_data
 from .params import ParameterContext
-from .registry import EntityRegistry
 from .solver import Solver
 from .template_functions import get_template_functions
 from .types import EntityID
@@ -67,28 +61,6 @@ _DEFAULT_VARSET_DESCRIPTION = _(
 )
 
 logger = logging.getLogger(__name__)
-
-
-_CONSTRAINT_CLASSES = {
-    "AngleConstraint": AngleConstraint,
-    "AspectRatioConstraint": AspectRatioConstraint,
-    "CoincidentConstraint": CoincidentConstraint,
-    "CollinearConstraint": CollinearConstraint,
-    "DiameterConstraint": DiameterConstraint,
-    "DistanceConstraint": DistanceConstraint,
-    "EqualDistanceConstraint": EqualDistanceConstraint,
-    "EqualLengthConstraint": EqualLengthConstraint,
-    "HorizontalConstraint": HorizontalConstraint,
-    "ParallelogramConstraint": ParallelogramConstraint,
-    "PerpendicularConstraint": PerpendicularConstraint,
-    "PointOnCurveConstraint": PointOnCurveConstraint,
-    "PointOnLineConstraint": PointOnLineConstraint,
-    "RadiusConstraint": RadiusConstraint,
-    "RotationalConstraint": RotationalConstraint,
-    "SymmetryConstraint": SymmetryConstraint,
-    "TangentConstraint": TangentConstraint,
-    "VerticalConstraint": VerticalConstraint,
-}
 
 
 class Fill:
@@ -173,7 +145,8 @@ class Sketch(IAsset, IGeometryProvider):
         self._name = name
         self.params = ParameterContext()
         self.registry = EntityRegistry()
-        self.constraints: list[Constraint] = []
+        self._constraints: list[Any] = []
+        self.flags = EntityFlags()
         self.fills: list[Fill] = []
         self.arrays: list[Array] = []
         self.input_parameters = VarSet(
@@ -196,6 +169,68 @@ class Sketch(IAsset, IGeometryProvider):
             0.0, 0.0, fixed=True
         )
 
+    @property
+    def constraints(self) -> list[Any]:
+        """The sketch's constraints, in registration order. The list
+        is a snapshot; add and remove constraints through the sketch's
+        ``add_constraint``/``remove_constraint`` methods."""
+        return list(self._constraints)
+
+    def add_constraint(self, constraint: Any) -> Any:
+        """Registers a constraint object and returns it."""
+        self.registry.add_constraint(constraint)
+        self._constraints.append(constraint)
+        self._coincident_dirty = True
+        return constraint
+
+    def add_constraints(self, constraints: Iterable[Any]) -> list[Any]:
+        """Registers several constraint objects and returns them."""
+        added = []
+        for constraint in constraints:
+            added.append(self.add_constraint(constraint))
+        return added
+
+    def add_constraint_from_dict(self, data: dict[str, Any]) -> Any:
+        """Registers a constraint from its reference dictionary
+        (entity references resolved by the registry) and returns the
+        stored constraint object."""
+        index = self.registry.add_constraint_json(data)
+        constraint = self.registry.get_constraint_object(index)
+        self._constraints.append(constraint)
+        self._coincident_dirty = True
+        return constraint
+
+    def remove_constraint_at(self, index: int) -> Any:
+        """Removes the constraint at the given position and returns
+        it."""
+        constraint = self._constraints.pop(index)
+        self.registry.remove_constraint(index)
+        self._coincident_dirty = True
+        return constraint
+
+    def remove_constraint_object(self, constraint: Any) -> bool:
+        """Removes the given constraint (matched by identity). Returns
+        whether it was found."""
+        for index, candidate in enumerate(self._constraints):
+            if candidate is constraint:
+                self.remove_constraint_at(index)
+                return True
+        return False
+
+    def remove_constraints(self, constraints: Sequence[Any]) -> list[Any]:
+        """Removes the given constraints (matched by identity) and
+        returns the removed subset, in registration order."""
+        targets = set(id(c) for c in constraints)
+        removed = [c for c in self._constraints if id(c) in targets]
+        for constraint in removed:
+            self.remove_constraint_object(constraint)
+        return removed
+
+    def replace_constraint_at(self, index: int, constraint: Any) -> None:
+        """Replaces the constraint at the given position."""
+        self._constraints[index] = constraint
+        self.registry.replace_constraint(index, constraint)
+
     def notify_update(self):
         """Public method to signal that the sketch has been modified."""
         if self._solving:
@@ -209,17 +244,26 @@ class Sketch(IAsset, IGeometryProvider):
         self._updated.send(self)
 
     def capture_undo_state(self) -> dict[str, Any]:
-        """Captures full sketch state for undo: points, entity states
-        and array definitions.  The returned dict is opaque — callers
-        store and pass it back via ``apply_undo_state``."""
-        points = {p.id: (p.x, p.y) for p in self.registry.points}
+        """Captures full sketch state for undo: points, entity states,
+        app-level flags and array definitions.  The returned dict is
+        opaque — callers store and pass it back via
+        ``apply_undo_state``."""
+        points = {
+            point.id: (point.x, point.y)
+            for point in self.registry.points()
+        }
         entities: dict[int, Any] = {}
-        for e in self.registry.entities:
-            state = e.get_state()
+        for eid in self.registry.entity_ids():
+            state = self.registry.get_state(eid)
             if state is not None:
-                entities[e.id] = state
+                entities[eid] = state
         arrays = [(a.uid, a.snapshot()) for a in self.arrays]
-        return {"points": points, "entities": entities, "arrays": arrays}
+        return {
+            "points": points,
+            "entities": entities,
+            "arrays": arrays,
+            "flags": self.flags.snapshot(),
+        }
 
     def apply_undo_state(self, state: dict[str, Any]) -> None:
         """Restores sketch state from a dict captured by
@@ -229,17 +273,12 @@ class Sketch(IAsset, IGeometryProvider):
         arrays = state["arrays"]
 
         for pid, (x, y) in points.items():
-            try:
-                p = self.registry.get_point(pid)
-                p.x = x
-                p.y = y
-            except IndexError:
-                pass
+            self.registry.set_point_position(pid, x, y)
 
         for eid, estate in entities.items():
-            entity = self.registry.get_entity(eid)
-            if entity is not None:
-                entity.set_state(estate)
+            self.registry.set_state(eid, estate)
+
+        self.flags.restore(state.get("flags", {}))
 
         by_uid = {a.uid: a for a in self.arrays}
         for uid, astate in arrays:
@@ -313,8 +352,7 @@ class Sketch(IAsset, IGeometryProvider):
         solver anchor, so geometry constrained to it stays registered
         when parameters change.
         """
-        origin = self.registry.get_point(self.origin_id)
-        return (origin.x, origin.y)
+        return self.registry.get_point(self.origin_id) or (0.0, 0.0)
 
     def get_geometry(
         self,
@@ -360,17 +398,17 @@ class Sketch(IAsset, IGeometryProvider):
         """
         Lightweight clone for geometry generation.
 
-        Copies only the mutable state modified by solve (point positions,
+        Copies the mutable state a solve modifies (point positions,
         parameter context) while sharing structural data (entities,
-        constraints, fills) by reference.  Much faster than
-        the full to_dict / from_dict round-trip.
+        constraints, fills) with the original.  Much cheaper than a
+        full to_dict / from_dict round-trip of the whole Sketch.
 
-        Entity/constraint *lists* and the array *definitions* are
-        copied, not shared: the clone runs a full solve, whose
-        sync_arrays may re-apply arrays (removing/adding
-        entities, dropping constraints, rewriting Array
-        members).  Sharing those containers would corrupt the
-        original sketch's registry.
+        The registry itself is cloned (fresh point objects, the solver
+        mutates positions); the entity and constraint definitions come
+        along through its serialized form.  Entity/constraint lists
+        and array definitions are copied because the clone's solve may
+        re-apply arrays (removing/adding entities, dropping
+        constraints, rewriting Array members).
         """
         clone = Sketch.__new__(Sketch)
         clone._uid = self._uid
@@ -381,18 +419,10 @@ class Sketch(IAsset, IGeometryProvider):
         # subscribers (solve/repaint) mid-clone-solve.
         clone._updated = Signal()
 
-        # Shallow-copy the registry: new Point objects (solver mutates x/y),
-        # copied entity list (sync_arrays may rebuild it).
-        clone.registry = EntityRegistry()
-        clone.registry.set_points(
-            Point(p.id, p.x, p.y, p.fixed, p.waypoint_type)
-            for p in self.registry.points
-        )
-        clone.registry.entities = list(self.registry.entities)
-        clone.registry._entity_map = dict(self.registry._entity_map)
-        clone.registry._id_counter = self.registry._id_counter
-        # Rebuild point-usage counters for the clone.
-        clone.registry.rebuild_usage_counts()
+        registry_dict = self.registry.to_dict()
+        clone.registry = EntityRegistry.from_dict(registry_dict)
+        clone._constraints = list(clone.registry.constraints())
+        clone.flags = copy.deepcopy(self.flags)
 
         # ParameterContext: copy expressions so evaluate_all on the clone
         # does not disturb the original's cache.
@@ -400,7 +430,6 @@ class Sketch(IAsset, IGeometryProvider):
 
         # Copy containers and definitions that a solve may mutate
         # (removals/extensions during an array re-apply).
-        clone.constraints = list(self.constraints)
         clone.arrays = copy.deepcopy(self.arrays)
         # Share references to data not mutated by solve.
         clone.fills = self.fills
@@ -445,7 +474,7 @@ class Sketch(IAsset, IGeometryProvider):
         """Returns True if the sketch has no drawable entities."""
         # We check entities rather than points, because an empty sketch
         # always contains at least one point (the origin).
-        return len(self.registry.entities) == 0
+        return self.registry.entity_count() == 0
 
     @property
     def is_fully_constrained(self) -> bool:
@@ -457,57 +486,69 @@ class Sketch(IAsset, IGeometryProvider):
         constrained entities (e.g., Circle radius point) are ignored if they
         are not constrained, provided they are not used by any other entity.
         """
-        # An empty sketch (just origin) is considered fully constrained
-        if not self.registry.points:
+        if self.registry.point_count() == 0:
             return True
 
+        entities = self.registry.entities()
+
         # 1. All entities must be constrained
-        if not all(e.constrained for e in self.registry.entities):
+        if not all(entity.constrained for entity in entities):
             return False
 
         # 2. Calculate point usage counts to ensure exclusive ownership
         usage_count: dict[EntityID, int] = {}
-        for e in self.registry.entities:
-            for pid in e.get_point_ids():
+        for entity in entities:
+            for pid in entity.get_point_ids():
                 usage_count[pid] = usage_count.get(pid, 0) + 1
 
         # 3. Collect allowed exemptions polymorphically
         allowed_unconstrained_ids = set()
-        for e in self.registry.entities:
-            candidates = e.get_ignorable_unconstrained_points()
+        for entity in entities:
+            candidates = self.registry.ignorable_unconstrained_points(
+                entity.id
+            )
             for pid in candidates:
-                # Only allow exemption if the point is used exclusively by this
-                # entity (usage count == 1)
+                # Only allow exemption if the point is used exclusively
+                # by this entity (usage count == 1)
                 if usage_count.get(pid, 0) == 1:
                     allowed_unconstrained_ids.add(pid)
 
         # 4. Check all points
-        for p in self.registry.points:
-            if not p.constrained and p.id not in allowed_unconstrained_ids:
+        for point in self.registry.points():
+            if (
+                not point.constrained
+                and point.id not in allowed_unconstrained_ids
+            ):
                 # Unconstrained points must be in the exempt list
                 return False
         return True
 
     @property
-    def conflicting_constraints(self) -> list[Constraint]:
+    def conflicting_constraints(self) -> list[Any]:
         """
         Returns a list of constraints that are currently marked as CONFLICTING.
         """
         return [
             c
-            for c in self.constraints
-            if c.status == ConstraintStatus.CONFLICTING
+            for c in self._constraints
+            if constraint_info.status_of(c)
+            is constraint_info.ConstraintStatus.CONFLICTING
         ]
 
     @property
     def has_conflicts(self) -> bool:
         """Returns True if any constraint has CONFLICTING status."""
+        conflicting = constraint_info.ConstraintStatus.CONFLICTING
         return any(
-            c.status == ConstraintStatus.CONFLICTING for c in self.constraints
+            constraint_info.status_of(c) is conflicting
+            for c in self._constraints
         )
 
     def to_dict(self, include_input_values: bool = False) -> dict[str, Any]:
         """Serializes the Sketch to a dictionary."""
+        registry_dict = self.registry.to_dict()
+        registry_dict.pop("constraints", None)
+        self.flags.apply_to_registry_dict(registry_dict)
         return {
             "version": FORMAT_VERSION,
             "uid": self.uid,
@@ -517,8 +558,8 @@ class Sketch(IAsset, IGeometryProvider):
                 include_value=include_input_values, include_metadata=False
             ),
             "params": self.params.to_dict(),
-            "registry": self.registry.to_dict(),
-            "constraints": [c.to_dict() for c in self.constraints],
+            "registry": registry_dict,
+            "constraints": [c.to_dict() for c in self._constraints],
             "fills": [f.to_dict() for f in self.fills],
             "arrays": [p.to_dict() for p in self.arrays],
             "origin_id": self.origin_id,
@@ -563,14 +604,21 @@ class Sketch(IAsset, IGeometryProvider):
             )
 
         new_sketch.params = ParameterContext.from_dict(data["params"])
-        new_sketch.registry = EntityRegistry.from_dict(data["registry"])
+        migrated = migrate_sketch_data(data)
+        new_sketch.registry = EntityRegistry.from_dict(migrated["registry"])
         new_sketch.origin_id = data["origin_id"]
-        new_sketch.constraints = []
-        for c_data in data["constraints"]:
-            c_type = c_data.get("type")
-            c_cls = _CONSTRAINT_CLASSES.get(c_type)
-            if c_cls:
-                new_sketch.constraints.append(c_cls.from_dict(c_data))
+        new_sketch._constraints = list(new_sketch.registry.constraints())
+        for index, constraint in enumerate(new_sketch._constraints):
+            stored = new_sketch.registry.constraint_dict(index)
+            expression = stored.get("expression")
+            if expression and hasattr(constraint, "set_expression"):
+                constraint.set_expression(expression)
+            if hasattr(constraint, "set_user_visible"):
+                constraint.set_user_visible(
+                    stored.get("user_visible", True)
+                )
+
+        new_sketch.flags.absorb(new_sketch.registry)
 
         new_sketch.fills = []
         for f_data in data.get("fills", []):
@@ -664,7 +712,7 @@ class Sketch(IAsset, IGeometryProvider):
         for array in self.arrays:
             for _slot, entity_ids in array.members:
                 for eid in entity_ids:
-                    entity = self.registry.get_entity(eid)
+                    entity = self.registry.get_entity_object(eid)
                     if entity is not None:
                         pids.update(entity.get_point_ids())
             for standalone in array.standalone_pids.values():
@@ -689,18 +737,20 @@ class Sketch(IAsset, IGeometryProvider):
         group = set(entity_ids)
         group_pids: set[int] = set()
         for eid in group:
-            entity = self.registry.get_entity(eid)
+            entity = self.registry.get_entity_object(eid)
             if entity is not None:
                 group_pids.update(entity.get_point_ids())
         extra: list[int] = []
         changed = True
         while changed:
             changed = False
-            for constr in self.constraints:
-                eids = constr.get_referenced_entity_ids()
+            for constr in self._constraints:
+                eids = constraint_info.referenced_entity_ids(
+                    self.registry, constr
+                )
                 if not (eids <= group):
                     continue
-                pids = constr.get_referenced_point_ids()
+                pids = constraint_info.referenced_point_ids(constr)
                 missing = pids - group_pids
                 if len(missing) == 1 and len(pids & group_pids) > 1:
                     group_pids.update(missing)
@@ -711,14 +761,12 @@ class Sketch(IAsset, IGeometryProvider):
 
     def get_internal_constraints(
         self, entity_ids: set[int] | list[int]
-    ) -> list[Constraint]:
+    ) -> list[Any]:
         """
         Returns the constraints that hold a group of entities together
         as one shape: every point and entity they reference belongs to
         the group (e.g. the coincident edge/corner-arc endpoints or the
-        line/arc tangencies of a rounded rectangle). Constraints
-        referencing only entities (e.g. tangents) are internal when
-        both entities are in the group.
+        line/arc tangencies of a rounded rectangle).
 
         Constraints referencing anything outside the group (the
         origin, other geometry) are global and excluded — and so are
@@ -731,28 +779,28 @@ class Sketch(IAsset, IGeometryProvider):
         wanted = set(entity_ids)
         group_pids: set[int] = set()
         for eid in wanted:
-            entity = self.registry.get_entity(eid)
+            entity = self.registry.get_entity_object(eid)
             if entity is not None:
                 group_pids.update(entity.get_point_ids())
-            else:
+            elif self.registry.get_point(eid) is not None:
                 # Standalone Point (e.g. rectangle center) – include
                 # its ID so its constraints count as internal.
-                try:
-                    self.registry.get_point(eid)
-                    group_pids.add(eid)
-                except IndexError:
-                    pass
+                group_pids.add(eid)
 
-        internal: list[Constraint] = []
+        internal: list[Any] = []
         paired_axes = self._find_axis_coincidence_pairs()
-        for constr in self.constraints:
+        for constr in self._constraints:
             # Constraints pinned to the sketch origin are world-anchored.
-            pids = constr.get_referenced_point_ids()
+            pids = constraint_info.referenced_point_ids(constr)
             if pids & {self.origin_id}:
                 continue
-            if constr.is_world_anchored() and id(constr) not in paired_axes:
+            if constraint_info.is_world_anchored(
+                constr
+            ) and id(constr) not in paired_axes:
                 continue
-            eids = constr.get_referenced_entity_ids()
+            eids = constraint_info.referenced_entity_ids(
+                self.registry, constr
+            )
             if not (pids & group_pids or eids & wanted):
                 continue
             if pids <= group_pids and eids <= wanted:
@@ -770,11 +818,11 @@ class Sketch(IAsset, IGeometryProvider):
         open closed shapes whose only closure is the pair.
         """
         verticals: dict[frozenset[EntityID], VerticalConstraint] = {}
-        for constr in self.constraints:
+        for constr in self._constraints:
             if isinstance(constr, VerticalConstraint):
                 verticals[frozenset((constr.p1, constr.p2))] = constr
         paired: set[int] = set()
-        for constr in self.constraints:
+        for constr in self._constraints:
             if isinstance(constr, HorizontalConstraint):
                 partner = verticals.get(frozenset((constr.p1, constr.p2)))
                 if partner is not None:
@@ -855,17 +903,19 @@ class Sketch(IAsset, IGeometryProvider):
                 cp1_x, cp1_y, _ = cmd.control1
                 cp2_x, cp2_y, _ = cmd.control2
 
-                start_pt = sketch.registry.get_point(current_pid)
-                if start_pt:
-                    start_pt.waypoint_type = WaypointType.SMOOTH
+                sketch.flags.set_waypoint_type(
+                    current_pid, WaypointType.SMOOTH
+                )
 
                 end_pid = get_or_add_point(end_x, end_y)
-                end_pt = sketch.registry.get_point(end_pid)
-                if end_pt:
-                    end_pt.waypoint_type = WaypointType.SMOOTH
+                sketch.flags.set_waypoint_type(
+                    end_pid, WaypointType.SMOOTH
+                )
 
-                cp1_offset = (cp1_x - start_pt.x, cp1_y - start_pt.y)
-                cp2_offset = (cp2_x - end_pt.x, cp2_y - end_pt.y)
+                start_pt = sketch.registry.get_point(current_pid)
+                end_pt = sketch.registry.get_point(end_pid)
+                cp1_offset = (cp1_x - start_pt[0], cp1_y - start_pt[1])
+                cp2_offset = (cp2_x - end_pt[0], cp2_y - end_pt[1])
                 sketch.add_bezier(
                     current_pid, end_pid, cp1=cp1_offset, cp2=cp2_offset
                 )
@@ -922,15 +972,43 @@ class Sketch(IAsset, IGeometryProvider):
         """Adds a circle defined by a center and a point on its radius."""
         return self.registry.add_circle(center, radius_pt, construction)
 
-    def remove_entities(self, entities_to_remove: list[Entity]):
+    def get_point_position(self, pid: EntityID) -> tuple[float, float] | None:
+        """The point's coordinates, or None when it does not exist."""
+        return self.registry.get_point(pid)
+
+    def set_point_position(
+        self, pid: EntityID, x: float, y: float
+    ) -> None:
+        """Moves a point to the given coordinates."""
+        self.registry.set_point_position(pid, x, y)
+
+    def get_entity(self, eid: EntityID) -> Any | None:
+        """The entity object for an id, or None."""
+        return self.registry.get_entity_object(eid)
+
+    def remove_entities(self, entities_to_remove: Iterable[Any]) -> None:
         """
         Removes entities from the sketch and automatically cleans up any
         dependent fills.
         """
-        if not entities_to_remove:
+        ids_to_remove = [
+            e.id if hasattr(e, "id") else e
+            for e in entities_to_remove
+        ]
+        if not ids_to_remove:
             return
-        ids_to_remove = [e.id for e in entities_to_remove]
-        self.registry.remove_entities_by_id(ids_to_remove)
+        self.registry.remove_entities(ids_to_remove)
+        self.flags.drop_ids(set(ids_to_remove), set())
+        self._validate_and_cleanup_fills()
+
+    def remove_entities_by_id(self, entity_ids: Sequence[EntityID]) -> None:
+        """
+        Removes entities by their ids and cleans up dependent fills.
+        """
+        if not entity_ids:
+            return
+        self.registry.remove_entities(list(entity_ids))
+        self.flags.drop_ids(set(entity_ids), set())
         self._validate_and_cleanup_fills()
 
     def remove_point_if_unused(self, pid: EntityID | None) -> bool:
@@ -947,8 +1025,105 @@ class Sketch(IAsset, IGeometryProvider):
             return False
         if not self.registry.is_point_used(pid):
             self.registry.remove_points([pid])
+            self.flags.drop_ids(set(), {pid})
             return True
         return False
+
+    def restore_structure(
+        self,
+        point_dicts: list[dict[str, Any]],
+        entity_dicts: list[dict[str, Any]],
+    ) -> None:
+        """Restores points and entities (by their reference
+        dictionaries, ids preserved) after a structural undo removed
+        them. The registry is rebuilt from its serialized form; the
+        sketch's constraint objects stay stable and are re-registered
+        at their existing indices."""
+        data = self.registry.to_dict()
+        data.pop("constraints", None)
+        points = data.setdefault("points", [])
+        entities = data.setdefault("entities", [])
+        known_points = {p.get("id") for p in points}
+        known_entities = {e.get("id") for e in entities}
+        for point_dict in point_dicts:
+            if point_dict.get("id") not in known_points:
+                points.append(point_dict)
+        for entity_dict in entity_dicts:
+            if entity_dict.get("id") not in known_entities:
+                entities.append(entity_dict)
+        self.registry = EntityRegistry.from_dict(data)
+        for constraint in self._constraints:
+            self.registry.add_constraint(constraint)
+
+    def remap_entity_point_refs(
+        self,
+        pid_map: dict[int, int],
+        entity_ids: set[int] | None = None,
+    ) -> None:
+        """Rewrites the point id references of entities through the
+        given map, keeping entity ids stable. With ``entity_ids`` only
+        those entities are rewritten.
+
+        Raygeo entity objects are immutable, so the registry is
+        rebuilt from its serialized form with the mapped ids; the
+        sketch's constraint objects are re-registered at their stable
+        indices. Used when a group's shared points are re-owned (array
+        extraction, junction unsticking)."""
+        if not pid_map:
+            return
+        registry_dict = self.registry.to_dict()
+        registry_dict.pop("constraints", None)
+        id_keys = (
+            "p1_idx",
+            "p2_idx",
+            "start_idx",
+            "end_idx",
+            "center_idx",
+            "radius_pt_idx",
+            "radius_x_pt_idx",
+            "radius_y_pt_idx",
+            "origin_id",
+            "width_id",
+            "height_id",
+            "handle_idx",
+        )
+        for entity_dict in registry_dict.get("entities", []):
+            if entity_ids is not None and (
+                entity_dict.get("id") not in entity_ids
+            ):
+                continue
+            for key in id_keys:
+                value = entity_dict.get(key)
+                if value in pid_map:
+                    entity_dict[key] = pid_map[value]
+        self.registry = EntityRegistry.from_dict(registry_dict)
+        for constraint in self._constraints:
+            self.registry.add_constraint(constraint)
+
+    def rebuild_constraints(
+        self, constraints: Sequence[Any], pid_map: dict[int, int]
+    ) -> None:
+        """Replaces the given constraints with rebuilt objects whose
+        point references are remapped through ``pid_map``."""
+        for index, constraint in enumerate(self._constraints):
+            if any(constraint is c for c in constraints):
+                self.replace_constraint_at(
+                    index, _rebuild_constraint(constraint, pid_map)
+                )
+
+    def copy_entity_flags(self, source_eid: int, target_eid: int) -> None:
+        """Copies the app-level flags of one entity onto another
+        (e.g. a text box's edited content onto its array copy)."""
+        if self.flags.is_invisible(source_eid):
+            self.flags.set_invisible(target_eid, True)
+        if self.flags.is_array_copy(source_eid):
+            self.flags.set_array_copy(target_eid, True)
+        color = self.flags.fill_color(source_eid)
+        if color is not None:
+            self.flags.set_fill_color(target_eid, color)
+        text = self.flags.text_properties(source_eid)
+        for key, value in text.items():
+            self.flags.set_text_property(target_eid, key, value)
 
     def _build_adjacency_list(self) -> dict[EntityID, list[dict[str, Any]]]:
         """
@@ -962,18 +1137,18 @@ class Sketch(IAsset, IGeometryProvider):
 
         # Build a mapping from each point to its coincident group
         point_to_group: dict[EntityID, set[EntityID]] = {}
-        for p in self.registry.points:
-            if p.id not in point_to_group:
-                coincident_group = self.get_coincident_points(p.id)
+        for point in self.registry.points():
+            if point.id not in point_to_group:
+                coincident_group = self.get_coincident_points(point.id)
                 for pid in coincident_group:
                     point_to_group[pid] = coincident_group
 
-        for e in self.registry.entities:
+        for eid in self.registry.entity_ids():
             # Only edge entities participate in graph traversal; closed
             # loops (circles, ellipses) are handled separately.
-            if not e.is_edge_entity():
+            if not self.registry.is_edge_entity(eid):
                 continue
-            p_ids = e.get_endpoint_ids()
+            p_ids = self.registry.entity_endpoint_ids(eid)
             p1_id, p2_id = p_ids[0], p_ids[1]
 
             # Get the coincident groups for both endpoints
@@ -984,13 +1159,13 @@ class Sketch(IAsset, IGeometryProvider):
             for src in group1:
                 for dst in group2:
                     if src != dst:
-                        adj[src].append({"to": dst, "id": e.id, "fwd": True})
+                        adj[src].append({"to": dst, "id": eid, "fwd": True})
 
             # Add edges from all points in group2 to all points in group1
             for src in group2:
                 for dst in group1:
                     if src != dst:
-                        adj[src].append({"to": dst, "id": e.id, "fwd": False})
+                        adj[src].append({"to": dst, "id": eid, "fwd": False})
         return adj
 
     def _sort_edges_by_angle(
@@ -1003,10 +1178,9 @@ class Sketch(IAsset, IGeometryProvider):
         for p_id, edges in adj.items():
             edges_with_angle = []
             for edge in edges:
-                entity = self.registry.get_entity(edge["id"])
-                if not entity:
+                tangent_vec = self.registry.tangent_at(edge["id"], p_id)
+                if tangent_vec is None:
                     continue
-                tangent_vec = entity.tangent_at(self.registry, p_id)
                 angle = math.atan2(tangent_vec[1], tangent_vec[0])
                 edges_with_angle.append({"angle": angle, **edge})
 
@@ -1057,29 +1231,29 @@ class Sketch(IAsset, IGeometryProvider):
 
         # Special case for single-entity closed loops (circle, ellipse)
         if len(loop) == 1:
-            entity = self.registry.get_entity(loop[0][0])
-            if entity and entity.is_closed_loop():
-                return entity.enclosed_signed_area(self.registry)
+            eid = loop[0][0]
+            if self.registry.is_closed_loop(eid):
+                return (
+                    self.registry.enclosed_signed_area(eid) or 0.0
+                )
 
         points = []
-        first_ent = self.registry.get_entity(loop[0][0])
+        first_ent = self.registry.entity_point_ids(loop[0][0])
         if not first_ent:
             return 0.0
         first_fwd = loop[0][1]
-        p_ids = first_ent.get_endpoint_ids()
+        p_ids = first_ent
         curr_p_id = p_ids[0] if first_fwd else p_ids[1]
 
         for eid, fwd in loop:
-            try:
-                pt = self.registry.get_point(curr_p_id)
-                points.append((pt.x, pt.y))
-                ent = self.registry.get_entity(eid)
-                if not ent:
-                    return 0.0
-                p_ids = ent.get_endpoint_ids()
-                curr_p_id = p_ids[1] if curr_p_id == p_ids[0] else p_ids[0]
-            except IndexError:
+            pt = self.registry.get_point(curr_p_id)
+            if pt is None:
                 return 0.0
+            points.append(pt)
+            p_ids = self.registry.entity_point_ids(eid)
+            if not p_ids or len(p_ids) != 2:
+                return 0.0
+            curr_p_id = p_ids[1] if curr_p_id == p_ids[0] else p_ids[0]
 
         area = 0.0
         for i in range(len(points)):
@@ -1090,53 +1264,57 @@ class Sketch(IAsset, IGeometryProvider):
 
         # Add contributions from Arcs (area between chord and arc)
         for eid, fwd in loop:
-            ent = self.registry.get_entity(eid)
-            if isinstance(ent, Arc):
-                # Calculate area of the circular segment
-                start = self.registry.get_point(ent.start_idx)
-                end = self.registry.get_point(ent.end_idx)
-                center = self.registry.get_point(ent.center_idx)
+            if self.registry.entity_type(eid) != "arc":
+                continue
+            entity = self.registry.get_entity_object(eid)
+            if entity is None:
+                continue
+            start = self.registry.get_point(entity.start_idx)
+            end = self.registry.get_point(entity.end_idx)
+            center = self.registry.get_point(entity.center_idx)
+            if not (start and end and center):
+                continue
 
-                # Vectors from center
-                r_vec_start = (start.x - center.x, start.y - center.y)
-                r_vec_end = (end.x - center.x, end.y - center.y)
-                radius_sq = r_vec_start[0] ** 2 + r_vec_start[1] ** 2
+            # Vectors from center
+            r_vec_start = (start[0] - center[0], start[1] - center[1])
+            r_vec_end = (end[0] - center[0], end[1] - center[1])
+            radius_sq = r_vec_start[0] ** 2 + r_vec_start[1] ** 2
 
-                # Calculate sweep angle of the arc definition
-                ang_start = math.atan2(r_vec_start[1], r_vec_start[0])
-                ang_end = math.atan2(r_vec_end[1], r_vec_end[0])
+            # Calculate sweep angle of the arc definition
+            ang_start = math.atan2(r_vec_start[1], r_vec_start[0])
+            ang_end = math.atan2(r_vec_end[1], r_vec_end[0])
 
-                if ent.clockwise:
-                    # CW: Start -> End decreases angle
-                    diff = ang_start - ang_end
-                else:
-                    # CCW: Start -> End increases angle
-                    diff = ang_end - ang_start
+            if entity.clockwise:
+                # CW: Start -> End decreases angle
+                diff = ang_start - ang_end
+            else:
+                # CCW: Start -> End increases angle
+                diff = ang_end - ang_start
 
-                # Normalize to [0, 2pi)
-                while diff < 0:
-                    diff += 2 * math.pi
-                while diff >= 2 * math.pi:
-                    diff -= 2 * math.pi
+            # Normalize to [0, 2pi)
+            while diff < 0:
+                diff += 2 * math.pi
+            while diff >= 2 * math.pi:
+                diff -= 2 * math.pi
 
-                # Area of segment = 0.5 * r^2 * (theta - sin(theta))
-                # This area is always positive.
-                seg_area = 0.5 * radius_sq * (diff - math.sin(diff))
+            # Area of segment = 0.5 * r^2 * (theta - sin(theta))
+            # This area is always positive.
+            seg_area = 0.5 * radius_sq * (diff - math.sin(diff))
 
-                # Determine sign contribution to the loop area (assumed
-                # CCW positive).
-                # If Arc is CCW and we traverse Fwd: Left turn. Add.
-                # If Arc is CW and we traverse Fwd: Right turn. Subtract.
-                # If Arc is CCW and we traverse Rev: Right turn. Subtract.
-                # If Arc is CW and we traverse Rev: Left turn. Add.
+            # Determine sign contribution to the loop area (assumed
+            # CCW positive).
+            # If Arc is CCW and we traverse Fwd: Left turn. Add.
+            # If Arc is CW and we traverse Fwd: Right turn. Subtract.
+            # If Arc is CCW and we traverse Rev: Right turn. Subtract.
+            # If Arc is CW and we traverse Rev: Left turn. Add.
 
-                is_ccw_arc = not ent.clockwise
-                is_left_turn = is_ccw_arc == fwd
+            is_ccw_arc = not entity.clockwise
+            is_left_turn = is_ccw_arc == fwd
 
-                if is_left_turn:
-                    area += seg_area
-                else:
-                    area -= seg_area
+            if is_left_turn:
+                area += seg_area
+            else:
+                area -= seg_area
 
         return area
 
@@ -1161,7 +1339,7 @@ class Sketch(IAsset, IGeometryProvider):
                 curr_p = p_start
                 curr_edge = start_edge
 
-                for __ in range(len(self.registry.entities) + 1):
+                for __ in range(self.registry.entity_count() + 1):
                     current_half_edge = (
                         curr_p,
                         curr_edge["id"],
@@ -1203,9 +1381,9 @@ class Sketch(IAsset, IGeometryProvider):
                     visited_half_edges.update(loop_half_edges)
 
         # Add closed single entities (circles, ellipses) as loops
-        for e in self.registry.entities:
-            if e.is_closed_loop():
-                loops.append([(e.id, True)])
+        for eid in self.registry.entity_ids():
+            if self.registry.is_closed_loop(eid):
+                loops.append([(eid, True)])
 
         return loops
 
@@ -1219,11 +1397,9 @@ class Sketch(IAsset, IGeometryProvider):
         polygon: list[tuple[float, float]] = []
 
         for eid, fwd in loop:
-            entity = self.registry.get_entity(eid)
-            if not entity:
+            if self.registry.get_entity_object(eid) is None:
                 return []
-
-            vertices = entity.to_polygon_vertices(self.registry, fwd)
+            vertices = self.registry.to_polygon_vertices(eid, fwd)
             if not vertices:
                 return []
             polygon.extend(vertices)
@@ -1244,9 +1420,11 @@ class Sketch(IAsset, IGeometryProvider):
             is_hit = False
 
             if len(loop) == 1:
-                entity = self.registry.get_entity(loop[0][0])
-                if entity and entity.is_closed_loop():
-                    is_hit = entity.contains_point(self.registry, mx, my)
+                eid = loop[0][0]
+                if self.registry.is_closed_loop(eid) and (
+                    self.registry.contains_point(eid, mx, my)
+                ):
+                    is_hit = True
             else:
                 polygon = self._loop_to_polygon(loop)
                 if polygon and is_point_inside_polygon((mx, my), polygon):
@@ -1280,7 +1458,7 @@ class Sketch(IAsset, IGeometryProvider):
     def _build_coincident_cache(self) -> None:
         """Build the coincident-point group cache from current constraints."""
         adjacency: dict[EntityID, set[EntityID]] = defaultdict(set)
-        for constr in self.constraints:
+        for constr in self._constraints:
             if isinstance(constr, CoincidentConstraint):
                 adjacency[constr.p1].add(constr.p2)
                 adjacency[constr.p2].add(constr.p1)
@@ -1308,55 +1486,92 @@ class Sketch(IAsset, IGeometryProvider):
     def constrain_distance(
         self, p1: EntityID, p2: EntityID, dist: str | float
     ) -> DistanceConstraint:
-        constr = DistanceConstraint(p1, p2, dist)
-        self.constraints.append(constr)
+        if isinstance(dist, str):
+            constr = DistanceConstraint(p1, p2, 0.0)
+            constr.set_expression(dist)
+        else:
+            constr = DistanceConstraint(p1, p2, float(dist))
+        self.add_constraint(constr)
         return constr
 
     def constrain_equal_distance(
         self, p1: EntityID, p2: EntityID, p3: EntityID, p4: EntityID
     ) -> None:
         """Enforces dist(p1, p2) == dist(p3, p4)."""
-        self.constraints.append(EqualDistanceConstraint(p1, p2, p3, p4))
+        self.add_constraint(EqualDistanceConstraint(p1, p2, p3, p4))
 
     def constrain_horizontal(self, p1: EntityID, p2: EntityID) -> None:
-        self.constraints.append(HorizontalConstraint(p1, p2))
+        self.add_constraint(HorizontalConstraint(p1, p2))
 
     def constrain_vertical(self, p1: EntityID, p2: EntityID) -> None:
-        self.constraints.append(VerticalConstraint(p1, p2))
+        self.add_constraint(VerticalConstraint(p1, p2))
 
     def constrain_coincident(self, p1: EntityID, p2: EntityID) -> None:
-        self.constraints.append(CoincidentConstraint(p1, p2))
+        self.add_constraint(CoincidentConstraint(p1, p2))
 
     def constrain_point_on_line(
         self, point_id: EntityID, shape_id: EntityID
     ) -> None:
-        self.constraints.append(PointOnLineConstraint(point_id, shape_id))
+        self.add_constraint_from_dict(
+            {
+                "type": "PointOnLineConstraint",
+                "point_id": point_id,
+                "shape_id": shape_id,
+            }
+        )
 
     def constrain_radius(
         self, entity_id: EntityID, radius: str | float
     ) -> RadiusConstraint:
-        constr = RadiusConstraint(entity_id, radius)
-        self.constraints.append(constr)
+        data = {
+            "type": "RadiusConstraint",
+            "entity_id": entity_id,
+            "value": float(radius) if not isinstance(radius, str) else 0.0,
+        }
+        if isinstance(radius, str):
+            data["expression"] = radius
+        constr = self.add_constraint_from_dict(data)
         return constr
 
     def constrain_diameter(
         self, circle_id: EntityID, diameter: str | float
     ) -> DiameterConstraint:
-        constr = DiameterConstraint(circle_id, diameter)
-        self.constraints.append(constr)
+        data = {
+            "type": "DiameterConstraint",
+            "circle_id": circle_id,
+            "value": (
+                float(diameter) if not isinstance(diameter, str) else 0.0
+            ),
+        }
+        if isinstance(diameter, str):
+            data["expression"] = diameter
+        constr = self.add_constraint_from_dict(data)
         return constr
 
     def constrain_perpendicular(self, l1: EntityID, l2: EntityID) -> None:
-        self.constraints.append(PerpendicularConstraint(l1, l2))
+        self.add_constraint_from_dict(
+            {"type": "PerpendicularConstraint", "e1_id": l1, "e2_id": l2}
+        )
 
     def constrain_tangent(self, line: EntityID, shape: EntityID) -> None:
-        self.constraints.append(TangentConstraint(line, shape))
+        self.add_constraint_from_dict(
+            {
+                "type": "TangentConstraint",
+                "line_id": line,
+                "shape_id": shape,
+            }
+        )
 
     def constrain_equal_length(self, entity_ids: list[EntityID]) -> None:
         """Enforces equal length/radius between two or more entities."""
         if len(entity_ids) < 2:
             return
-        self.constraints.append(EqualLengthConstraint(entity_ids))
+        self.add_constraint_from_dict(
+            {
+                "type": "EqualLengthConstraint",
+                "entity_ids": list(entity_ids),
+            }
+        )
 
     def constrain_symmetry(
         self, point_ids: list[EntityID], entity_ids: list[EntityID]
@@ -1371,14 +1586,25 @@ class Sketch(IAsset, IGeometryProvider):
             center = point_ids[0]
             p1 = point_ids[1]
             p2 = point_ids[2]
-            self.constraints.append(SymmetryConstraint(p1, p2, center=center))
+            self.add_constraint(
+                SymmetryConstraint(
+                    p1, p2, SymmetryTarget.Point(center=center)
+                )
+            )
 
         elif len(point_ids) == 2 and len(entity_ids) == 1:
             # 2 Points + 1 Line: Line is Axis
             p1 = point_ids[0]
             p2 = point_ids[1]
             axis = entity_ids[0]
-            self.constraints.append(SymmetryConstraint(p1, p2, axis=axis))
+            self.add_constraint_from_dict(
+                {
+                    "type": "SymmetryConstraint",
+                    "p1": p1,
+                    "p2": p2,
+                    "axis": axis,
+                }
+            )
 
     # --- Manipulation & Processing ---
 
@@ -1387,28 +1613,25 @@ class Sketch(IAsset, IGeometryProvider):
         Attempts to move a point to a new location and resolve constraints.
         Returns True if the point was moved, False if it is locked/constrained.
         """
-        try:
-            p = self.registry.get_point(pid)
-        except IndexError:
+        if self.registry.get_point(pid) is None:
             return False
 
-        if p.fixed:
+        if self.registry.point_is_fixed(pid):
             return False
 
         # Backend Logic: If the solver has determined this point has 0 degrees
         # of freedom (fully constrained), we reject kinematic movement.
-        if p.constrained:
+        if self.registry.point_constrained(pid):
             return False
 
         # Perturbation Strategy: Update initial guess, then solve.
-        p.x = x
-        p.y = y
+        self.registry.set_point_position(pid, x, y)
 
         return self.solve()
 
     def solve(
         self,
-        extra_constraints: list[Constraint] | None = None,
+        extra_constraints: Sequence[Any] | None = None,
         update_constraint_status: bool = True,
         variable_overrides: dict[str, Any] | None = None,
         excluded_constraints: set[int] | None = None,
@@ -1425,7 +1648,7 @@ class Sketch(IAsset, IGeometryProvider):
             variable_overrides: A dictionary of parameter values to use for
                 this solve only, without permanently changing the sketch's
                 parameters. e.g., `{'width': 150.0}`.
-            excluded_constraints: Indices (into self.constraints) of
+            excluded_constraints: Indices (into the sketch's constraints) of
                 constraints to skip for this solve, e.g. an array's radius
                 dimension while a member is being dragged.
             point_scope: If given, only these points are optimized and
@@ -1452,7 +1675,7 @@ class Sketch(IAsset, IGeometryProvider):
         params_done = prep_done = solver_done = arrays_done = solve_started
         success = False
         solver: Solver | None = None
-        all_constraints: list[Constraint] = []
+        all_constraints: list[Any] = []
         update_status = False
         solve_completed = False
         scope = point_scope
@@ -1461,7 +1684,7 @@ class Sketch(IAsset, IGeometryProvider):
             # re-apply removed geometry mid-drag) cannot be honored;
             # solve globally instead.
             if scope is not None:
-                existing = {p.id for p in self.registry.points}
+                existing = {p.id for p in self.registry.points()}
                 if not scope.issubset(existing):
                     scope = None
 
@@ -1495,9 +1718,9 @@ class Sketch(IAsset, IGeometryProvider):
             # Step 4: Update constraints with the final, resolved values.
             excluded = excluded_constraints or set()
             kept_indices = [
-                i for i in range(len(self.constraints)) if i not in excluded
+                i for i in range(len(self._constraints)) if i not in excluded
             ]
-            all_constraints = [self.constraints[i] for i in kept_indices]
+            all_constraints = [self._constraints[i] for i in kept_indices]
             if scope is not None:
                 # For a valid scope, every constraint touching a scope
                 # point lies fully inside it, so filtering by overlap
@@ -1518,8 +1741,8 @@ class Sketch(IAsset, IGeometryProvider):
                     ]
                 all_constraints = all_constraints + extra
             for c in all_constraints:
-                if hasattr(c, "update_from_context"):
-                    c.update_from_context(ctx)
+                if constraint_info.has_expression(c):
+                    constraint_info.update_from_context(c, ctx)
 
             # --- Solver Stabilization ---
             # Add weak, temporary constraints to every non-fixed point
@@ -1534,20 +1757,19 @@ class Sketch(IAsset, IGeometryProvider):
                 touched |= get_referenced_points(self.registry, c)
             stabilizer_constraints = []
             hold_weight = 1e-4
-            for p in self.registry.points:
+            for point in self.registry.points():
                 if (
-                    p.fixed
-                    or p.id not in touched
-                    or (scope is not None and p.id not in scope)
+                    point.fixed
+                    or point.id not in touched
+                    or (scope is not None and point.id not in scope)
                 ):
                     continue
                 stabilizer_constraints.append(
                     DragConstraint(
-                        p.id,
-                        p.x,
-                        p.y,
+                        point.id,
+                        point.x,
+                        point.y,
                         weight=hold_weight,
-                        user_visible=False,
                     )
                 )
 
@@ -1557,7 +1779,6 @@ class Sketch(IAsset, IGeometryProvider):
             # evaluated context.
             solver = Solver(
                 self.registry,
-                solve_params,
                 all_constraints,
                 auxiliary_constraints=stabilizer_constraints,
                 point_filter=scope,
@@ -1587,16 +1808,14 @@ class Sketch(IAsset, IGeometryProvider):
         # violate constraints the solver had just satisfied (the
         # template's placement belongs to the array), so residuals are
         # evaluated against the final geometry. Solver indices are
-        # mapped back by constraint identity, since sync_arrays may
-        # have changed self.constraints.
+        # mapped back to sketch constraint positions, since
+        # sync_arrays may have changed the constraint list.
         if solve_completed and update_status and solver is not None:
             conflicting = solver.get_conflicting_constraints()
-            index_of = {id(c): i for i, c in enumerate(self.constraints)}
             mapped = {
-                index_of[id(all_constraints[i])]
+                kept_indices[i]
                 for i in conflicting
-                if 0 <= i < len(all_constraints)
-                and id(all_constraints[i]) in index_of
+                if 0 <= i < len(kept_indices)
             }
             self._apply_conflict_status(mapped)
 
@@ -1604,7 +1823,7 @@ class Sketch(IAsset, IGeometryProvider):
             "Sketch.solve: points=%d constraints=%d scope=%s "
             "params=%.1fms prep=%.1fms solver=%.1fms arrays=%.1fms "
             "total=%.1fms ok=%s",
-            len(self.registry.points),
+            len(self.registry.points()),
             len(all_constraints),
             len(scope) if scope is not None else None,
             (params_done - solve_started) * 1000.0,
@@ -1619,18 +1838,22 @@ class Sketch(IAsset, IGeometryProvider):
     def _apply_conflict_status(self, conflicting_indices: set[int]) -> None:
         """
         Updates the conflict status of all constraints based on solver
-        results. Indices refer to positions in self.constraints.
-        Constraints with significant residual error are marked as
+        results. Indices refer to positions in the sketch's constraint
+        list. Constraints with significant residual error are marked as
         CONFLICTING.
         """
-        for idx, constraint in enumerate(self.constraints):
+        status = constraint_info.ConstraintStatus
+        for idx, constraint in enumerate(self._constraints):
+            current = constraint_info.status_of(constraint)
             if idx in conflicting_indices:
-                if constraint.status != ConstraintStatus.ERROR:
-                    constraint.status = ConstraintStatus.CONFLICTING
-            elif constraint.status == ConstraintStatus.CONFLICTING:
-                constraint.status = ConstraintStatus.VALID
+                if current is not status.ERROR:
+                    constraint_info.set_status(
+                        constraint, status.CONFLICTING
+                    )
+            elif current is status.CONFLICTING:
+                constraint_info.set_status(constraint, status.VALID)
 
-    def _resolve_text_content(self, entity: TextBoxEntity) -> str | None:
+    def _resolve_text_content(self, entity: TextBox) -> str | None:
         """
         Resolves template expressions in a text box's content using
         the sketch's current parameter values. Returns None if the
@@ -1643,13 +1866,16 @@ class Sketch(IAsset, IGeometryProvider):
         longer matches the entity's current content is re-resolved,
         otherwise reverting an edit would keep rendering stale text.
         """
+        source_content = self.flags.text_content(
+            entity.id, entity.content
+        )
         cached = self._resolved_text_cache.get(entity.id)
         if isinstance(cached, (tuple, list)):
-            source, resolved = cached
-            if source == entity.content:
+            cached_source, resolved = cached
+            if cached_source == source_content:
                 return resolved
 
-        if not entity.content:
+        if not source_content:
             self._resolved_text_cache[entity.id] = ("", None)
             return None
 
@@ -1670,26 +1896,47 @@ class Sketch(IAsset, IGeometryProvider):
                 ctx.update(get_template_functions())
 
             expr_map = ExpressionMap(ctx)
-            resolved = expr_map.format(entity.content)
+            resolved = expr_map.format(source_content)
             logger.debug(
                 f"_resolve_text_content: content="
-                f"{entity.content!r} -> {resolved!r} "
+                f"{source_content!r} -> {resolved!r} "
                 f"values={list(ctx.keys())[:5]}"
             )
             self._resolved_text_cache[entity.id] = (
-                entity.content,
+                source_content,
                 resolved,
             )
             return resolved
         except (KeyError, IndexError, ValueError) as e:
             logger.debug(
-                f"Template resolution failed for '{entity.content}': {e}"
+                f"Template resolution failed for '{source_content}': {e}"
             )
             self._resolved_text_cache[entity.id] = (
-                entity.content,
+                source_content,
                 None,
             )
             return None
+
+    def resolved_text_box(self, entity: TextBox) -> TextBox:
+        """A text box carrying the resolved template content and the
+        app-level font properties, sharing the entity's frame points.
+
+        The raygeo entity object is an immutable snapshot, so template
+        substitution renders through a stand-in box with the same
+        frame points."""
+        props = self.flags.text_properties(entity.id)
+        content = props.get("content", entity.content)
+        resolved = self._resolve_text_content(entity)
+        return TextBox(
+            entity.origin_id,
+            entity.width_id,
+            entity.height_id,
+            content=resolved if resolved is not None else content,
+            font_family=props.get("font_family", entity.font_family),
+            font_size=props.get("font_size", entity.font_size),
+            bold=props.get("bold", entity.bold),
+            italic=props.get("italic", entity.italic),
+        )
 
     def to_geometry(self) -> Geometry:
         """
@@ -1697,37 +1944,39 @@ class Sketch(IAsset, IGeometryProvider):
         Links separate entities into continuous paths where possible.
         """
         geo = Geometry()
+        registry = self.registry
 
         # 1. Identify chainable vs standalone
-        chainable = []
-        standalone = []
+        chainable: list[tuple[EntityID, str]] = []
+        standalone: list[tuple[EntityID, str]] = []
 
-        for e in self.registry.entities:
-            if e.construction:
+        for eid in registry.entity_ids():
+            entity_type = registry.entity_type(eid)
+            entity = registry.get_entity_object(eid)
+            if entity is None or entity.construction:
                 continue
-            if e.invisible:
+            if self.flags.is_invisible(eid):
                 continue
-            if isinstance(e, (Line, Arc, Bezier)):
-                chainable.append(e)
+            if entity_type in ("line", "arc", "bezier"):
+                chainable.append((eid, entity_type))
             else:
-                standalone.append(e)
+                standalone.append((eid, entity_type))
 
-        # 2. Add standalone geometry (Circles, Text)
-        for e in standalone:
-            if isinstance(e, TextBoxEntity):
-                resolved = self._resolve_text_content(e)
-                geo.extend(
-                    e.to_geometry(self.registry, resolved_content=resolved)
-                )
+        # 2. Add standalone geometry (Circles, Polygons, Text)
+        for eid, entity_type in standalone:
+            entity = registry.get_entity_object(eid)
+            if entity_type == "text_box":
+                resolved_box = self.resolved_text_box(entity)
+                geo.extend(resolved_box.to_geometry(registry))
             else:
-                geo.extend(e.to_geometry(self.registry))
+                geo.extend(registry.to_geometry(eid))
 
         if not chainable:
             return geo
 
         # 3. Build Connectivity Graph for Lines/Arcs
         # Use simple Union-Find to group coincident points
-        parent = {p.id: p.id for p in self.registry.points}
+        parent = {p.id: p.id for p in registry.points()}
 
         def find(i):
             path = []
@@ -1745,7 +1994,7 @@ class Sketch(IAsset, IGeometryProvider):
                 parent[root_i] = root_j
 
         # Apply Coincident Constraints
-        for c in self.constraints:
+        for c in self._constraints:
             if (
                 isinstance(c, CoincidentConstraint)
                 and c.p1 in parent
@@ -1755,36 +2004,36 @@ class Sketch(IAsset, IGeometryProvider):
                 union(c.p1, c.p2)
 
         adj = defaultdict(list)
-        for e in chainable:
-            p_ids = e.get_endpoint_ids()
-            if len(p_ids) != 2:
+        for eid, _type in chainable:
+            p_ids = registry.entity_endpoint_ids(eid)
+            if not p_ids or len(p_ids) != 2:
                 continue
             u, v = p_ids[0], p_ids[1]
 
             root_u = find(u)
             root_v = find(v)
-            adj[root_u].append((e, root_v))
-            adj[root_v].append((e, root_u))
+            adj[root_u].append((eid, root_v))
+            adj[root_v].append((eid, root_u))
 
         # 4. Traverse Graph to build continuous paths
         visited = set()
 
         # Helper to get start/end group IDs
-        def get_endpoints(ent):
-            p_ids = ent.get_endpoint_ids()
-            if len(p_ids) != 2:
+        def get_endpoints(ent_id):
+            p_ids = registry.entity_endpoint_ids(ent_id)
+            if not p_ids or len(p_ids) != 2:
                 return -1, -1
             return find(p_ids[0]), find(p_ids[1])
 
-        for start_e in chainable:
-            if start_e.id in visited:
+        for start_eid, _type in chainable:
+            if start_eid in visited:
                 continue
 
             # Start a new chain
-            visited.add(start_e.id)
+            visited.add(start_eid)
 
             # Seed direction
-            u, v = get_endpoints(start_e)
+            u, v = get_endpoints(start_eid)
 
             # Grow Right (from v)
             right_list = []
@@ -1792,12 +2041,12 @@ class Sketch(IAsset, IGeometryProvider):
             while True:
                 found = None
                 for cand, neighbor in adj[curr]:
-                    if cand.id not in visited:
+                    if cand not in visited:
                         found = (cand, neighbor)
                         break
                 if found:
                     cand, next_node = found
-                    visited.add(cand.id)
+                    visited.add(cand)
                     # Direction check: if c_u == curr, then Forward (u->v)
                     c_u, _ = get_endpoints(cand)
                     is_fwd = c_u == curr
@@ -1812,12 +2061,12 @@ class Sketch(IAsset, IGeometryProvider):
             while True:
                 found = None
                 for cand, neighbor in adj[curr]:
-                    if cand.id not in visited:
+                    if cand not in visited:
                         found = (cand, neighbor)
                         break
                 if found:
                     cand, next_node = found
-                    visited.add(cand.id)
+                    visited.add(cand)
                     # We are growing backwards from u.
                     # cand connects next_node <-> curr(u).
                     # We want flow: next_node -> curr.
@@ -1832,19 +2081,19 @@ class Sketch(IAsset, IGeometryProvider):
 
             # Assemble: Reversed(Left) -> Seed -> Right
             final_chain = (
-                list(reversed(left_list)) + [(start_e, True)] + right_list
+                list(reversed(left_list)) + [(start_eid, True)] + right_list
             )
 
             # Generate Geometry
-            first_e, first_fwd = final_chain[0]
-            p_ids = first_e.get_endpoint_ids()
+            first_eid, first_fwd = final_chain[0]
+            p_ids = registry.entity_endpoint_ids(first_eid)
             s_id = p_ids[0] if first_fwd else p_ids[1]
 
-            start_pt = self.registry.get_point(s_id)
-            geo.move_to(start_pt.x, start_pt.y)
+            start_pt = registry.get_point(s_id)
+            geo.move_to(start_pt[0], start_pt[1])
 
-            for ent, fwd in final_chain:
-                ent.append_to_geometry(geo, self.registry, fwd)
+            for ent_id, fwd in final_chain:
+                registry.append_to_geometry(geo, ent_id, fwd)
 
         return geo
 
@@ -1881,28 +2130,25 @@ class Sketch(IAsset, IGeometryProvider):
                     )
                 )
 
-        for entity in self.registry.entities:
-            if entity.id in exclude_ids:
+        for eid in self.registry.entity_ids():
+            if eid in exclude_ids:
                 continue
-            if not entity.construction and isinstance(entity, TextBoxEntity):
-                resolved = self._resolve_text_content(entity)
-                text_geo = entity.to_geometry(
-                    self.registry, resolved_content=resolved
+            entity = self.registry.get_entity_object(eid)
+            if entity is None or entity.construction:
+                continue
+            if entity.type_name() != "text_box":
+                continue
+            resolved_box = self.resolved_text_box(entity)
+            text_geo = resolved_box.to_geometry(self.registry)
+            if text_geo:
+                color = self.flags.fill_color(eid) or DEFAULT_FILL_COLOR
+                render_data.append(
+                    FillRenderData(
+                        geometry=text_geo,
+                        style=FillStyle.SOLID,
+                        color=color,
+                    )
                 )
-                if text_geo:
-                    color = (
-                        entity.fill_color
-                        if isinstance(entity, TextBoxEntity)
-                        and entity.fill_color is not None
-                        else DEFAULT_FILL_COLOR
-                    )
-                    render_data.append(
-                        FillRenderData(
-                            geometry=text_geo,
-                            style=FillStyle.SOLID,
-                            color=color,
-                        )
-                    )
 
         return render_data
 
@@ -1914,33 +2160,31 @@ class Sketch(IAsset, IGeometryProvider):
             eid, _ = fill.boundary[0]
             if eid in exclude_ids:
                 return None
-            entity = self.registry.get_entity(eid)
-            if entity:
-                return entity.create_fill_geometry(self.registry)
+            if self.registry.get_entity_object(eid) is not None:
+                return self.registry.to_geometry(eid)
             return None
 
         try:
             first_eid, first_fwd = fill.boundary[0]
             if first_eid in exclude_ids:
                 return None
-            first_ent = self.registry.get_entity(first_eid)
-            if not first_ent:
+            p_ids = self.registry.entity_point_ids(first_eid)
+            if not p_ids:
                 return None
-
-            p_ids = first_ent.get_endpoint_ids()
             start_pid = p_ids[0] if first_fwd else p_ids[1]
             start_pt = self.registry.get_point(start_pid)
+            if start_pt is None:
+                return None
 
             geo = Geometry()
-            geo.move_to(start_pt.x, start_pt.y)
+            geo.move_to(start_pt[0], start_pt[1])
 
             for eid, fwd in fill.boundary:
                 if eid in exclude_ids:
                     return None
-                entity = self.registry.get_entity(eid)
-                if not entity:
+                if self.registry.get_entity_object(eid) is None:
                     return None
-                entity.append_to_geometry(geo, self.registry, fwd)
+                self.registry.append_to_geometry(geo, eid, fwd)
 
             return geo
 

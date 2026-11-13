@@ -2,13 +2,14 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING, Union
 
 from ...core.commands import SetWaypointTypeCommand
-from ...core.entities import Bezier, Entity, Line, Point
-from ...core.entities.point import WaypointType
+from raygeo.sketch.entities.bezier import Bezier
+from raygeo.sketch.entities.line import Line
+from ...core.entity_flags import WaypointType
 from ...core.types import EntityID
 from .base import SketchTool
 
 if TYPE_CHECKING:
-    from ...core.constraints import Constraint
+    from typing import Any
 
 
 class WaypointSmoothTool(SketchTool):
@@ -18,7 +19,7 @@ class WaypointSmoothTool(SketchTool):
 
     def is_available(
         self,
-        target: Union[Point, Entity, "Constraint"] | None,
+        target: Any | None,
         target_type: str | None,
     ) -> bool:
         pid = self._get_waypoint_pid()

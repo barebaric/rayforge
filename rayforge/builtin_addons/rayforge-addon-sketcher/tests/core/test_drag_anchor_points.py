@@ -1,12 +1,13 @@
 import math
 
 import pytest
-from sketcher.core.constraints import (
-    DistanceConstraint,
-    DragConstraint,
-    PerpendicularConstraint,
-)
-from sketcher.core.entities import Arc, Circle, Ellipse, Line
+from raygeo.sketch.constraints.distance import DistanceConstraint
+from raygeo.sketch.constraints.drag import DragConstraint
+from raygeo.sketch.constraints.perpendicular import PerpendicularConstraint
+from raygeo.sketch.entities.arc import Arc
+from raygeo.sketch.entities.circle import Circle
+from raygeo.sketch.entities.ellipse import Ellipse
+from raygeo.sketch.entities.line import Line
 from sketcher.core.params import ParameterContext
 from sketcher.core.registry import EntityRegistry
 from sketcher.core.solver import Solver
@@ -21,7 +22,7 @@ def build_ellipse(reg: EntityRegistry):
     l1 = reg.add_line(c, r1)
     l2 = reg.add_line(c, r2)
     ellipse_id = reg.add_ellipse(c, r1, r2)
-    ellipse = reg.get_entity(ellipse_id)
+    ellipse = reg.get_entity_object(ellipse_id)
     assert isinstance(ellipse, Ellipse)
     ellipse.helper_line_ids = [l1, l2]
     return c, r1, r2, l1, l2, ellipse
@@ -31,7 +32,7 @@ def test_line_has_no_drag_anchor_points():
     reg = EntityRegistry()
     p1 = reg.add_point(0, 0)
     p2 = reg.add_point(10, 0)
-    line = reg.get_entity(reg.add_line(p1, p2))
+    line = reg.get_entity_object(reg.add_line(p1, p2))
     assert isinstance(line, Line)
     assert line.get_drag_anchor_points(p1) == []
     assert line.get_drag_anchor_points(p2) == []
@@ -50,7 +51,7 @@ def test_circle_drag_anchor_points():
     reg = EntityRegistry()
     c = reg.add_point(0, 0)
     rim = reg.add_point(5, 0)
-    circle = reg.get_entity(reg.add_circle(c, rim))
+    circle = reg.get_entity_object(reg.add_circle(c, rim))
     assert isinstance(circle, Circle)
     assert circle.get_drag_anchor_points(rim) == [c]
     assert circle.get_drag_anchor_points(c) == []
@@ -62,7 +63,7 @@ def test_arc_drag_anchor_points():
     c = reg.add_point(0, 0)
     start = reg.add_point(5, 0)
     end = reg.add_point(0, 5)
-    arc = reg.get_entity(reg.add_arc(start, end, c))
+    arc = reg.get_entity_object(reg.add_arc(start, end, c))
     assert isinstance(arc, Arc)
     assert arc.get_drag_anchor_points(start) == [c]
     assert arc.get_drag_anchor_points(end) == [c]
@@ -99,7 +100,7 @@ def build_rotation_drag_constraints(
             DragConstraint(r1, 15.0, 0.0, weight=0.1),
         ]
     )
-    solver = Solver(reg, params, constraints)
+    solver = Solver(reg, constraints)
     solver.solve()
     return reg.get_point(c), reg.get_point(r1)
 

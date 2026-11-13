@@ -7,8 +7,7 @@ from rayforge.core.undo import HistoryManager
 from rayforge.ui_gtk.canvas.cursor import get_tool_cursor
 from rayforge.ui_gtk.shared.keyboard import is_primary_modifier
 
-from ..core.constraints import Constraint
-from ..core.entities import Entity, Point
+from typing import Any
 from .piemenu import SketchPieMenu
 from .tools import KEY_TO_TOOL, SelectTool, TextBoxTool
 from .tools.base import SketcherKey
@@ -179,7 +178,7 @@ class SketchEditor:
         # Use the element's canvas to convert from widget to world coordinates
         world_x, world_y = sketch_element.canvas._get_world_coords(x, y)
 
-        target: Point | Entity | Constraint | None = None
+        target: Any | None = None
         target_type: str | None = None
 
         # Before showing the menu, we deactivate the current tool to clean
@@ -220,7 +219,7 @@ class SketchEditor:
                 sketch_element.selection.select_junction(pid, is_multi=False)
 
         elif hit_type == "entity":
-            assert isinstance(hit_obj, Entity)
+            assert not isinstance(hit_obj, int)
             target = hit_obj
             if target.id not in sel.entity_ids:
                 sketch_element.selection.select_entity(target, is_multi=False)

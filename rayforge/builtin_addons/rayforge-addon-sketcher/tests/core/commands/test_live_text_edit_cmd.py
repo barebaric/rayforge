@@ -4,7 +4,7 @@ from unittest.mock import patch
 from sketcher.core import Sketch
 from sketcher.core.commands import TextBoxCommand
 from sketcher.core.commands.live_text_edit import LiveTextEditCommand
-from sketcher.core.entities import TextBoxEntity
+from raygeo.sketch.entities.text_box import TextBox
 
 from rayforge.core.undo.history import COALESCE_THRESHOLD
 
@@ -44,7 +44,7 @@ def test_live_text_edit_command_execute():
         assert box_cmd.text_box_id is not None
 
         text_box_id = box_cmd.text_box_id
-        text_box = cast(TextBoxEntity, sketch.registry.get_entity(text_box_id))
+        text_box = cast(TextBox, sketch.registry.get_entity_object(text_box_id))
         text_box.content = "initial"
 
         cmd = LiveTextEditCommand(sketch, text_box_id)
@@ -69,7 +69,7 @@ def test_live_text_edit_execute_preserves_session_history():
         cmd = LiveTextEditCommand(sketch, text_box_id)
         cmd.capture_state("before", 6)
 
-        text_box = cast(TextBoxEntity, sketch.registry.get_entity(text_box_id))
+        text_box = cast(TextBox, sketch.registry.get_entity_object(text_box_id))
         text_box.content = "before edited"
 
         cmd.execute()
@@ -158,7 +158,7 @@ def test_live_text_edit_undo():
         assert box_cmd.text_box_id is not None
 
         text_box_id = box_cmd.text_box_id
-        text_box = cast(TextBoxEntity, sketch.registry.get_entity(text_box_id))
+        text_box = cast(TextBox, sketch.registry.get_entity_object(text_box_id))
         text_box.content = "initial"
 
         cmd = LiveTextEditCommand(sketch, text_box_id)
@@ -188,7 +188,7 @@ def test_live_text_edit_redo():
         assert box_cmd.text_box_id is not None
 
         text_box_id = box_cmd.text_box_id
-        text_box = cast(TextBoxEntity, sketch.registry.get_entity(text_box_id))
+        text_box = cast(TextBox, sketch.registry.get_entity_object(text_box_id))
         text_box.content = "initial"
 
         cmd = LiveTextEditCommand(sketch, text_box_id)
@@ -282,7 +282,7 @@ def test_live_text_edit_first_keystroke_keeps_baseline_undoable():
         assert box_cmd.text_box_id is not None
 
         text_box_id = box_cmd.text_box_id
-        text_box = cast(TextBoxEntity, sketch.registry.get_entity(text_box_id))
+        text_box = cast(TextBox, sketch.registry.get_entity_object(text_box_id))
         text_box.content = "initial"
 
         cmd = LiveTextEditCommand(sketch, text_box_id)
@@ -309,7 +309,7 @@ def test_live_text_edit_coalesce_undo_through_coalesced():
         assert box_cmd.text_box_id is not None
 
         text_box_id = box_cmd.text_box_id
-        text_box = cast(TextBoxEntity, sketch.registry.get_entity(text_box_id))
+        text_box = cast(TextBox, sketch.registry.get_entity_object(text_box_id))
         text_box.content = "initial"
 
         cmd = LiveTextEditCommand(sketch, text_box_id)
@@ -347,7 +347,7 @@ def test_live_text_edit_coalesce_redo_through_coalesced():
         assert box_cmd.text_box_id is not None
 
         text_box_id = box_cmd.text_box_id
-        text_box = cast(TextBoxEntity, sketch.registry.get_entity(text_box_id))
+        text_box = cast(TextBox, sketch.registry.get_entity_object(text_box_id))
         text_box.content = "initial"
 
         cmd = LiveTextEditCommand(sketch, text_box_id)
@@ -382,7 +382,7 @@ def test_live_text_edit_restore_state():
         assert box_cmd.text_box_id is not None
 
         text_box_id = box_cmd.text_box_id
-        text_box = cast(TextBoxEntity, sketch.registry.get_entity(text_box_id))
+        text_box = cast(TextBox, sketch.registry.get_entity_object(text_box_id))
         text_box.content = "initial"
 
         cmd = LiveTextEditCommand(sketch, text_box_id)

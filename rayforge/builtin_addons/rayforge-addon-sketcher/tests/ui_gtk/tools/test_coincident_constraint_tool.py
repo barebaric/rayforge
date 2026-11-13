@@ -2,11 +2,9 @@ from unittest.mock import MagicMock
 
 import pytest
 from sketcher.core.commands import AddItemsCommand
-from sketcher.core.constraints import (
-    CoincidentConstraint,
-    PointOnCurveConstraint,
-    PointOnLineConstraint,
-)
+from raygeo.sketch.constraints.coincident import CoincidentConstraint
+from raygeo.sketch.constraints.point_on_curve import PointOnCurveConstraint
+from raygeo.sketch.constraints.point_on_line import PointOnLineConstraint
 from sketcher.core.params import ParameterContext
 from sketcher.core.selection import SketchSelection
 from sketcher.core.sketch import Sketch
@@ -18,8 +16,7 @@ def bezier_env():
     sketch = Sketch()
     start = sketch.add_point(0, 0, fixed=True)
     end = sketch.add_point(10, 0, fixed=True)
-    bezier_id = sketch.registry.add_bezier(
-        start_idx=start, end_idx=end, cp1=(0.0, 10.0), cp2=(0.0, 10.0)
+    bezier_id = sketch.registry.add_bezier(start=start, end=end, cp1=(0.0, 10.0), cp2=(0.0, 10.0)
     )
     return sketch, start, end, bezier_id
 
@@ -147,5 +144,5 @@ def test_end_to_end_point_moves_onto_curve(tool, mock_element, bezier_env):
 
     assert constr.error(sketch.registry, ParameterContext()) < 1e-4
     moved = sketch.registry.get_point(point)
-    assert moved.y == pytest.approx(7.5, abs=1e-2)
-    assert moved.x == pytest.approx(5.0, abs=1e-2)
+    assert moved[1] == pytest.approx(7.5, abs=1e-2)
+    assert moved[0] == pytest.approx(5.0, abs=1e-2)

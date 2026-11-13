@@ -3,11 +3,10 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING, ClassVar, Union
 
 from ...core.commands import ToggleConstructionCommand
-from ...core.entities import Entity, Point
 from .base import SketchTool
 
 if TYPE_CHECKING:
-    from ...core.constraints import Constraint
+    from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +18,7 @@ class ConstructionTool(SketchTool):
 
     def is_available(
         self,
-        target: Union[Point, Entity, "Constraint"] | None,
+        target: Any | None,
         target_type: str | None,
     ) -> bool:
         return len(self.element.selection.entity_ids) > 0

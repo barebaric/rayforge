@@ -5,19 +5,18 @@ from typing import TYPE_CHECKING, Any
 
 from raygeo.geo.types import Point as GeoPoint
 
-from ..constraints import (
-    DistanceConstraint,
-    PerpendicularConstraint,
-    SymmetryConstraint,
-)
-from ..entities import Line, Point
+from raygeo.sketch.constraints.distance import DistanceConstraint
+from raygeo.sketch.constraints.symmetry import SymmetryConstraint
+from raygeo.sketch.constraints.symmetry import SymmetryTarget
+
 from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData
 from .items import AddItemsCommand
 
 if TYPE_CHECKING:
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
+
     from ..sketch import Sketch
 
 
@@ -73,14 +72,13 @@ class RectanglePreviewState(PreviewState):
         if height is not None:
             self.locked_height = height
 
-        try:
-            start_p = registry.get_point(self.start_id)
-            end_p = registry.get_point(self.p_end_id)
-        except IndexError:
+        start_p = registry.get_point(self.start_id)
+        end_p = registry.get_point(self.p_end_id)
+        if start_p is None or end_p is None:
             return
 
-        dx = end_p.x - start_p.x
-        dy = end_p.y - start_p.y
+        dx = end_p[0] - start_p[0]
+        dy = end_p[1] - start_p[1]
 
         sign_x = 1.0 if dx >= 0 else -1.0
         sign_y = 1.0 if dy >= 0 else -1.0
@@ -98,8 +96,7 @@ class RectanglePreviewState(PreviewState):
                 if self.locked_height is not None
                 else abs(dy)
             )
-            end_p.x = start_p.x + sign_x * new_dx
-            end_p.y = start_p.y + sign_y * new_dy
+            end_p_new = (start_p[0] + sign_x * new_dx, start_p[1] + sign_y * new_dy)
         else:
             new_width = (
                 self.locked_width if self.locked_width is not None else abs(dx)
@@ -109,8 +106,8 @@ class RectanglePreviewState(PreviewState):
                 if self.locked_height is not None
                 else abs(dy)
             )
-            end_p.x = start_p.x + sign_x * new_width
-            end_p.y = start_p.y + sign_y * new_height
+            end_p_new = (start_p[0] + sign_x * new_width, start_p[1] + sign_y * new_height)
+        registry.set_point_position(self.p_end_id, *end_p_new)
 
         RectangleCommand.create_preview(
             registry,
@@ -130,25 +127,24 @@ class RectanglePreviewState(PreviewState):
         Returns:
             List containing DimensionData for width and height.
         """
-        try:
-            p1 = registry.get_point(self.start_id)
-            p2 = registry.get_point(self.p_end_id)
-        except IndexError:
+        p1 = registry.get_point(self.start_id)
+        p2 = registry.get_point(self.p_end_id)
+        if p1 is None or p2 is None:
             return []
         if self.center_on_start:
-            width = abs(p2.x - p1.x) * 2
-            height = abs(p2.y - p1.y) * 2
-            mid_x = p1.x
-            mid_y = p1.y
-            top_y = p1.y - abs(p2.y - p1.y)
-            right_x = p1.x + abs(p2.x - p1.x)
+            width = abs(p2[0] - p1[0]) * 2
+            height = abs(p2[1] - p1[1]) * 2
+            mid_x = p1[0]
+            mid_y = p1[1]
+            top_y = p1[1] - abs(p2[1] - p1[1])
+            right_x = p1[0] + abs(p2[0] - p1[0])
         else:
-            width = abs(p2.x - p1.x)
-            height = abs(p2.y - p1.y)
-            mid_x = (p1.x + p2.x) / 2
-            mid_y = (p1.y + p2.y) / 2
-            top_y = min(p1.y, p2.y)
-            right_x = max(p1.x, p2.x)
+            width = abs(p2[0] - p1[0])
+            height = abs(p2[1] - p1[1])
+            mid_x = (p1[0] + p2[0]) / 2
+            mid_y = (p1[1] + p2[1]) / 2
+            top_y = min(p1[1], p2[1])
+            right_x = max(p1[0], p2[0])
         return [
             DimensionData(
                 label=DimensionData.format_length(width),
@@ -208,15 +204,14 @@ class RectangleCommand(SketchChangeCommand):
 
         The smaller extent wins; the direction of each axis is kept.
         """
-        try:
-            start_p = registry.get_point(start_id)
-        except IndexError:
+        start_p = registry.get_point(start_id)
+        if start_p is None:
             return x, y
 
-        size = min(abs(x - start_p.x), abs(y - start_p.y))
-        sign_x = 1.0 if x >= start_p.x else -1.0
-        sign_y = 1.0 if y >= start_p.y else -1.0
-        return start_p.x + sign_x * size, start_p.y + sign_y * size
+        size = min(abs(x - start_p[0]), abs(y - start_p[1]))
+        sign_x = 1.0 if x >= start_p[0] else -1.0
+        sign_y = 1.0 if y >= start_p[1] else -1.0
+        return start_p[0] + sign_x * size, start_p[1] + sign_y * size
 
     @staticmethod
     def _calculate_rect_corners(
@@ -256,6 +251,8 @@ class RectangleCommand(SketchChangeCommand):
 
     @staticmethod
     def calculate_geometry(
+        sketch,
+        add_cmd,
         x1: float,
         y1: float,
         x2: float,
@@ -267,8 +264,9 @@ class RectangleCommand(SketchChangeCommand):
         center_on_start: bool = False,
         constrain_square: bool = False,
     ) -> dict[str, Any] | None:
-        """Calculates the points, entities, and constraints for a
-        rectangle, including its auto-created center point.
+        """Builds the rectangle geometry through ``add_cmd``,
+        including its auto-created center point. Returns the resolved
+        corner point ids, or None when the rectangle is degenerate.
 
         Square constraining is skipped when the end corner is a snapped
         point, since the coincidence then takes precedence."""
@@ -284,79 +282,80 @@ class RectangleCommand(SketchChangeCommand):
         if abs(ax2 - ax1) < 1e-6 or abs(ay2 - ay1) < 1e-6:
             return None
 
-        temp_id_counter = -1
-
-        def next_temp_id():
-            nonlocal temp_id_counter
-            temp_id_counter -= 1
-            return temp_id_counter
-
-        p3_id = end_pid if end_pid is not None else next_temp_id()
+        from raygeo.sketch.entities.line import Line
 
         if center_on_start:
             # The start point is the rectangle's center, so the first
             # corner is a new point and the start point itself acts as
             # the symmetry center.
-            p1 = Point(next_temp_id(), ax1, ay1)
-            p1_id = p1.id
+            p1_id = add_cmd.add_point(ax1, ay1)
             center_id = start_pid
-            center_point = None
         else:
-            p1 = None
             p1_id = start_pid
-            center_point = Point(
-                next_temp_id(), (ax1 + ax2) / 2.0, (ay1 + ay2) / 2.0
+            center_id = add_cmd.add_point(
+                (ax1 + ax2) / 2.0, (ay1 + ay2) / 2.0
             )
-            center_id = center_point.id
 
-        points = {
-            "p1_id": p1_id,
-            "p1": p1,
-            "p2": Point(next_temp_id(), ax2, ay1),
-            "p3": Point(p3_id, ax2, ay2),
-            "p4": Point(next_temp_id(), ax1, ay2),
-            "center": center_point,
-            "center_id": center_id,
-        }
+        p2_id = add_cmd.add_point(ax2, ay1)
+        p3_id = end_pid if end_pid is not None else add_cmd.add_point(
+            ax2, ay2
+        )
+        p4_id = add_cmd.add_point(ax1, ay2)
 
-        entities = [
-            Line(next_temp_id(), points["p1_id"], points["p2"].id),
-            Line(next_temp_id(), points["p2"].id, points["p3"].id),
-            Line(next_temp_id(), points["p3"].id, points["p4"].id),
-            Line(next_temp_id(), points["p4"].id, points["p1_id"]),
-        ]
+        line1 = add_cmd.add_entity(Line(p1_id, p2_id))
+        line2 = add_cmd.add_entity(Line(p2_id, p3_id))
+        line3 = add_cmd.add_entity(Line(p3_id, p4_id))
+        line4 = add_cmd.add_entity(Line(p4_id, p1_id))
 
         constraints: list[Any] = [
-            PerpendicularConstraint(entities[0].id, entities[1].id),
-            PerpendicularConstraint(entities[1].id, entities[2].id),
-            PerpendicularConstraint(entities[2].id, entities[3].id),
-            PerpendicularConstraint(entities[3].id, entities[0].id),
+            {
+                "type": "PerpendicularConstraint",
+                "e1_id": line1,
+                "e2_id": line2,
+            },
+            {
+                "type": "PerpendicularConstraint",
+                "e1_id": line2,
+                "e2_id": line3,
+            },
+            {
+                "type": "PerpendicularConstraint",
+                "e1_id": line3,
+                "e2_id": line4,
+            },
+            {
+                "type": "PerpendicularConstraint",
+                "e1_id": line4,
+                "e2_id": line1,
+            },
             SymmetryConstraint(
-                points["p1_id"],
-                points["p3"].id,
-                center=center_id,
+                p1_id,
+                p3_id,
+                SymmetryTarget.Point(center=center_id),
                 user_visible=False,
             ),
         ]
 
         if fixed_width is not None:
             constraints.append(
-                DistanceConstraint(
-                    points["p1_id"], points["p2"].id, fixed_width
-                )
+                DistanceConstraint(p1_id, p2_id, fixed_width)
             )
 
         if fixed_height is not None:
             constraints.append(
-                DistanceConstraint(
-                    points["p2"].id, points["p3"].id, fixed_height
-                )
+                DistanceConstraint(p2_id, p3_id, fixed_height)
             )
 
+        for constraint in constraints:
+            add_cmd.add_constraint(constraint)
+
         return {
-            "points": points,
-            "entities": entities,
-            "constraints": constraints,
+            "p1_id": p1_id,
+            "p2_id": p2_id,
+            "p3_id": p3_id,
+            "p4_id": p4_id,
+            "center_id": center_id,
+            "entities": [line1, line2, line3, line4],
         }
 
     @staticmethod
@@ -372,13 +371,15 @@ class RectangleCommand(SketchChangeCommand):
         """
         start_p = registry.get_point(start_pid)
         end_p = registry.get_point(end_pid)
+        if start_p is None or end_p is None:
+            return {}
 
         coords = {
-            "p2": (end_p.x, start_p.y),
-            "p4": (start_p.x, end_p.y),
+            "p2": (end_p[0], start_p[1]),
+            "p4": (start_p[0], end_p[1]),
             "center": (
-                (start_p.x + end_p.x) / 2.0,
-                (start_p.y + end_p.y) / 2.0,
+                (start_p[0] + end_p[0]) / 2.0,
+                (start_p[1] + end_p[1]) / 2.0,
             ),
         }
         preview_ids: dict[str, EntityID] = {}
@@ -401,17 +402,18 @@ class RectangleCommand(SketchChangeCommand):
         """Updates positions of existing corner-mode preview points."""
         start_p = registry.get_point(start_pid)
         end_p = registry.get_point(end_pid)
+        if start_p is None or end_p is None:
+            return
         coords = {
-            "p2": (end_p.x, start_p.y),
-            "p4": (start_p.x, end_p.y),
+            "p2": (end_p[0], start_p[1]),
+            "p4": (start_p[0], end_p[1]),
             "center": (
-                (start_p.x + end_p.x) / 2.0,
-                (start_p.y + end_p.y) / 2.0,
+                (start_p[0] + end_p[0]) / 2.0,
+                (start_p[1] + end_p[1]) / 2.0,
             ),
         }
         for name, (px, py) in coords.items():
-            p = registry.get_point(preview_ids[name])
-            p.x, p.y = px, py
+            registry.set_point_position(preview_ids[name], px, py)
 
     @staticmethod
     def _create_centered_preview(
@@ -427,15 +429,17 @@ class RectangleCommand(SketchChangeCommand):
         """
         start_p = registry.get_point(start_pid)
         end_p = registry.get_point(end_pid)
-        dx = abs(end_p.x - start_p.x)
-        dy = abs(end_p.y - start_p.y)
+        if start_p is None or end_p is None:
+            return {}
+        dx = abs(end_p[0] - start_p[0])
+        dy = abs(end_p[1] - start_p[1])
 
         coords = {
-            "c1": (start_p.x - dx, start_p.y - dy),
-            "p2": (start_p.x + dx, start_p.y - dy),
-            "c2": (start_p.x + dx, start_p.y + dy),
-            "p4": (start_p.x - dx, start_p.y + dy),
-            "center": (start_p.x, start_p.y),
+            "c1": (start_p[0] - dx, start_p[1] - dy),
+            "p2": (start_p[0] + dx, start_p[1] - dy),
+            "c2": (start_p[0] + dx, start_p[1] + dy),
+            "p4": (start_p[0] - dx, start_p[1] + dy),
+            "center": (start_p[0], start_p[1]),
         }
         preview_ids: dict[str, EntityID] = {}
         for name, (px, py) in coords.items():
@@ -459,19 +463,20 @@ class RectangleCommand(SketchChangeCommand):
         """Updates positions of existing center-on-start preview points."""
         start_p = registry.get_point(start_pid)
         end_p = registry.get_point(end_pid)
-        dx = abs(end_p.x - start_p.x)
-        dy = abs(end_p.y - start_p.y)
+        if start_p is None or end_p is None:
+            return
+        dx = abs(end_p[0] - start_p[0])
+        dy = abs(end_p[1] - start_p[1])
 
         coords = {
-            "c1": (start_p.x - dx, start_p.y - dy),
-            "p2": (start_p.x + dx, start_p.y - dy),
-            "c2": (start_p.x + dx, start_p.y + dy),
-            "p4": (start_p.x - dx, start_p.y + dy),
-            "center": (start_p.x, start_p.y),
+            "c1": (start_p[0] - dx, start_p[1] - dy),
+            "p2": (start_p[0] + dx, start_p[1] - dy),
+            "c2": (start_p[0] + dx, start_p[1] + dy),
+            "p4": (start_p[0] - dx, start_p[1] + dy),
+            "center": (start_p[0], start_p[1]),
         }
         for name, (px, py) in coords.items():
-            p = registry.get_point(preview_ids[name])
-            p.x, p.y = px, py
+            registry.set_point_position(preview_ids[name], px, py)
 
     @staticmethod
     def create_preview(
@@ -498,10 +503,10 @@ class RectangleCommand(SketchChangeCommand):
         Returns:
             Dict of preview IDs, or None if geometry is invalid.
         """
-        try:
-            registry.get_point(start_pid)
-            registry.get_point(end_pid)
-        except IndexError:
+        if (
+            registry.get_point(start_pid) is None
+            or registry.get_point(end_pid) is None
+        ):
             return None
 
         if center_on_start:
@@ -581,33 +586,32 @@ class RectangleCommand(SketchChangeCommand):
         Updates the end point and refreshes geometry in corner mode
         (start/end points are opposite corners).
         """
-        try:
-            p_end = registry.get_point(preview_state.p_end_id)
-            p_start = registry.get_point(preview_state.start_id)
-        except IndexError:
+        p_end = registry.get_point(preview_state.p_end_id)
+        p_start = registry.get_point(preview_state.start_id)
+        if p_end is None or p_start is None:
             return
 
         if (
             preview_state.locked_width is not None
             or preview_state.locked_height is not None
         ):
-            dx = p_end.x - p_start.x
-            dy = p_end.y - p_start.y
+            dx = p_end[0] - p_start[0]
+            dy = p_end[1] - p_start[1]
             sign_x = 1.0 if dx >= 0 else -1.0
             sign_y = 1.0 if dy >= 0 else -1.0
-            p_end.x = (
-                p_start.x + sign_x * preview_state.locked_width
+            end_x = (
+                p_start[0] + sign_x * preview_state.locked_width
                 if preview_state.locked_width is not None
                 else x
             )
-            p_end.y = (
-                p_start.y + sign_y * preview_state.locked_height
+            end_y = (
+                p_start[1] + sign_y * preview_state.locked_height
                 if preview_state.locked_height is not None
                 else y
             )
         else:
-            p_end.x = x
-            p_end.y = y
+            end_x, end_y = x, y
+        registry.set_point_position(preview_state.p_end_id, end_x, end_y)
 
         RectangleCommand._update_corner_preview(
             registry,
@@ -628,18 +632,17 @@ class RectangleCommand(SketchChangeCommand):
         mode (start point is the center; end point defines the
         half-extent).
         """
-        try:
-            p_end = registry.get_point(preview_state.p_end_id)
-            p_start = registry.get_point(preview_state.start_id)
-        except IndexError:
+        p_end = registry.get_point(preview_state.p_end_id)
+        p_start = registry.get_point(preview_state.start_id)
+        if p_end is None or p_start is None:
             return
 
         if (
             preview_state.locked_width is not None
             or preview_state.locked_height is not None
         ):
-            dx = p_end.x - p_start.x
-            dy = p_end.y - p_start.y
+            dx = p_end[0] - p_start[0]
+            dy = p_end[1] - p_start[1]
             sign_x = 1.0 if dx >= 0 else -1.0
             sign_y = 1.0 if dy >= 0 else -1.0
             new_dx = (
@@ -652,11 +655,11 @@ class RectangleCommand(SketchChangeCommand):
                 if preview_state.locked_height is not None
                 else abs(dy)
             )
-            p_end.x = p_start.x + sign_x * new_dx
-            p_end.y = p_start.y + sign_y * new_dy
+            end_x = p_start[0] + sign_x * new_dx
+            end_y = p_start[1] + sign_y * new_dy
         else:
-            p_end.x = x
-            p_end.y = y
+            end_x, end_y = x, y
+        registry.set_point_position(preview_state.p_end_id, end_x, end_y)
 
         RectangleCommand._update_centered_preview(
             registry,
@@ -733,14 +736,17 @@ class RectangleCommand(SketchChangeCommand):
 
         # Remove entities that reference the preview points
         entity_ids_to_remove = {
-            e.id
-            for e in registry.entities
-            if any(pid in point_ids for pid in e.get_point_ids())
+            eid
+            for eid in registry.entity_ids()
+            if any(
+                pid in point_ids
+                for pid in registry.entity_point_ids(eid) or []
+            )
         }
-        registry.remove_entities_by_id(list(entity_ids_to_remove))
+        registry.remove_entities(list(entity_ids_to_remove))
 
         # Remove only the preview-derived points (not start/end)
-        registry.remove_points(point_ids)
+        registry.remove_points(list(point_ids))
 
         preview_state.center_on_start = center_on_start
         preview_state.preview_ids = (
@@ -778,36 +784,39 @@ class RectangleCommand(SketchChangeCommand):
 
         # Find and remove entities that use these points
         entity_ids_to_remove = {
-            e.id
-            for e in registry.entities
-            if any(pid in point_ids for pid in e.get_point_ids())
+            eid
+            for eid in registry.entity_ids()
+            if any(
+                pid in point_ids
+                for pid in registry.entity_point_ids(eid) or []
+            )
         }
-        registry.remove_entities_by_id(list(entity_ids_to_remove))
+        registry.remove_entities(list(entity_ids_to_remove))
 
         # Remove points
-        registry.remove_points(point_ids)
+        registry.remove_points(list(point_ids))
 
     def _do_execute(self) -> None:
         if self.add_cmd:
-            return self.add_cmd._do_execute()
+            return self.add_cmd._redo()
 
         reg = self.sketch.registry
-        try:
-            start_p = reg.get_point(self.start_pid)
-        except IndexError:
+        start_p = reg.get_point(self.start_pid)
+        if start_p is None:
             return
 
         final_mx, final_my = self.end_pos
         if self.end_pid is not None:
-            try:
-                end_p = reg.get_point(self.end_pid)
-                final_mx, final_my = end_p.x, end_p.y
-            except IndexError:
-                pass  # Use mouse coords if pid is invalid
+            end_p = reg.get_point(self.end_pid)
+            if end_p is not None:
+                final_mx, final_my = end_p
 
+        add_cmd = AddItemsCommand(self.sketch, "")
         result = self.calculate_geometry(
-            start_p.x,
-            start_p.y,
+            self.sketch,
+            add_cmd,
+            start_p[0],
+            start_p[1],
             final_mx,
             final_my,
             self.start_pid,
@@ -822,38 +831,12 @@ class RectangleCommand(SketchChangeCommand):
                 self.sketch.remove_point_if_unused(self.start_pid)
             return
 
-        points_dict = result["points"]
-        points_to_add = []
-        # In center_on_start mode p1 is a new corner point; in corner
-        # mode p1 is the existing start point.
-        if points_dict["p1"] is not None:
-            points_to_add.append(points_dict["p1"])
-        # These points are always new
-        points_to_add.extend([points_dict["p2"], points_dict["p4"]])
+        # If the start point was temporary, it belongs to no command
+        # yet; adopt it so undo removes it with the rectangle.
+        if self.is_start_temp and reg.get_point(self.start_pid):
+            add_cmd.adopt_point(self.start_pid)
 
-        # Add p3 only if it wasn't an existing snapped point
-        if self.end_pid is None:
-            points_to_add.append(points_dict["p3"])
-
-        # In corner mode the center is a new point; in center_on_start
-        # mode the start point itself is the symmetry center.
-        if points_dict["center"] is not None:
-            points_to_add.append(points_dict["center"])
-
-        # If the start point was temporary, remove it from the registry
-        # and add its object to the command to be re-added properly.
-        if self.is_start_temp:
-            reg.remove_points([start_p.id])
-            points_to_add.append(start_p)
-
-        self.add_cmd = AddItemsCommand(
-            self.sketch,
-            "",
-            points=points_to_add,
-            entities=result["entities"],
-            constraints=result["constraints"],
-        )
-        self.add_cmd._do_execute()
+        self.add_cmd = add_cmd
         self._committed_end_id = self.end_pid
 
     def _do_undo(self) -> None:

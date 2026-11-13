@@ -7,7 +7,9 @@ from raygeo.geo.shape.polygon import (
 )
 from sketcher.core import Sketch
 from sketcher.core.commands import OffsetCommand
-from sketcher.core.entities import Circle, Ellipse, PolygonEntity
+from raygeo.sketch.entities.circle import Circle
+from raygeo.sketch.entities.ellipse import Ellipse
+from raygeo.sketch.entities.polygon import Polygon
 
 
 def _circle_sketch():
@@ -23,16 +25,16 @@ def test_circle_offset_updates_in_place():
     cmd = OffsetCommand(sketch, [circle_id], 5.0)
     cmd.execute()
 
-    circles = [e for e in sketch.registry.entities if isinstance(e, Circle)]
+    circles = [e for e in sketch.registry.entities() if isinstance(e, Circle)]
     assert len(circles) == 1
     assert circles[0].id == circle_id
     radius_pt = sketch.registry.get_point(circles[0].radius_pt_idx)
-    assert radius_pt.x == pytest.approx(15.0)
-    assert radius_pt.y == pytest.approx(0.0)
+    assert radius_pt[0] == pytest.approx(15.0)
+    assert radius_pt[1] == pytest.approx(0.0)
 
     cmd.undo()
     radius_pt = sketch.registry.get_point(circles[0].radius_pt_idx)
-    assert radius_pt.x == pytest.approx(10.0)
+    assert radius_pt[0] == pytest.approx(10.0)
 
 
 def test_circle_offset_shrinks():
@@ -40,20 +42,20 @@ def test_circle_offset_shrinks():
     cmd = OffsetCommand(sketch, [circle_id], -4.0)
     cmd.execute()
 
-    circle = sketch.registry.get_entity(circle_id)
+    circle = sketch.registry.get_entity_object(circle_id)
     assert isinstance(circle, Circle)
     radius_pt = sketch.registry.get_point(circle.radius_pt_idx)
-    assert radius_pt.x == pytest.approx(6.0)
+    assert radius_pt[0] == pytest.approx(6.0)
 
 
 def test_circle_offset_collapse_aborts():
     sketch, circle_id = _circle_sketch()
     cmd = OffsetCommand(sketch, [circle_id], -50.0)
     cmd.execute()
-    circle = sketch.registry.get_entity(circle_id)
+    circle = sketch.registry.get_entity_object(circle_id)
     assert isinstance(circle, Circle)
     radius_pt = sketch.registry.get_point(circle.radius_pt_idx)
-    assert radius_pt.x == pytest.approx(10.0)
+    assert radius_pt[0] == pytest.approx(10.0)
 
 
 def test_ellipse_offset_updates_in_place():
@@ -66,19 +68,19 @@ def test_ellipse_offset_updates_in_place():
     cmd = OffsetCommand(sketch, [ellipse_id], 2.0)
     cmd.execute()
 
-    ellipses = [e for e in sketch.registry.entities if isinstance(e, Ellipse)]
+    ellipses = [e for e in sketch.registry.entities() if isinstance(e, Ellipse)]
     assert len(ellipses) == 1
     assert ellipses[0].id == ellipse_id
     rx_pt = sketch.registry.get_point(ellipses[0].radius_x_pt_idx)
     ry_pt = sketch.registry.get_point(ellipses[0].radius_y_pt_idx)
-    assert rx_pt.x == pytest.approx(12.0)
-    assert ry_pt.y == pytest.approx(7.0)
+    assert rx_pt[0] == pytest.approx(12.0)
+    assert ry_pt[1] == pytest.approx(7.0)
 
     cmd.undo()
     rx_pt = sketch.registry.get_point(ellipses[0].radius_x_pt_idx)
     ry_pt = sketch.registry.get_point(ellipses[0].radius_y_pt_idx)
-    assert rx_pt.x == pytest.approx(10.0)
-    assert ry_pt.y == pytest.approx(5.0)
+    assert rx_pt[0] == pytest.approx(10.0)
+    assert ry_pt[1] == pytest.approx(5.0)
 
 
 def test_square_offset_replaces_lines_with_polygon():
@@ -100,10 +102,10 @@ def test_square_offset_replaces_lines_with_polygon():
     cmd.execute()
 
     for eid in entity_ids:
-        assert sketch.registry.get_entity(eid) is None
+        assert sketch.registry.get_entity_object(eid) is None
 
     polygons = [
-        e for e in sketch.registry.entities if isinstance(e, PolygonEntity)
+        e for e in sketch.registry.entities() if isinstance(e, Polygon)
     ]
     assert len(polygons) == 1
     assert polygons[0].closed is True
@@ -117,16 +119,16 @@ def test_square_offset_replaces_lines_with_polygon():
 
     center = sketch.registry.get_point(polygons[0].center_idx)
     handle = sketch.registry.get_point(polygons[0].handle_idx)
-    assert is_point_inside_polygon((center.x, center.y), vertices)
-    closest = get_polygon_closest_point(vertices, handle.x, handle.y)
+    assert is_point_inside_polygon((center[0], center[1]), vertices)
+    closest = get_polygon_closest_point(vertices, handle[0], handle[1])
     assert closest is not None
     assert closest[2] < 1e-6
 
     cmd.undo()
     for eid in entity_ids:
-        assert sketch.registry.get_entity(eid) is not None
+        assert sketch.registry.get_entity_object(eid) is not None
     assert not [
-        e for e in sketch.registry.entities if isinstance(e, PolygonEntity)
+        e for e in sketch.registry.entities() if isinstance(e, Polygon)
     ]
 
 
@@ -139,10 +141,10 @@ def test_line_offset_becomes_slot():
     cmd = OffsetCommand(sketch, [line_id], 5.0)
     cmd.execute()
 
-    assert sketch.registry.get_entity(line_id) is None
+    assert sketch.registry.get_entity_object(line_id) is None
 
     polygons = [
-        e for e in sketch.registry.entities if isinstance(e, PolygonEntity)
+        e for e in sketch.registry.entities() if isinstance(e, Polygon)
     ]
     assert len(polygons) == 1
     assert polygons[0].closed is True
@@ -172,9 +174,9 @@ def test_mixed_selection_all_or_nothing():
     cmd = OffsetCommand(sketch, [circle_id, line_id], -50.0)
     cmd.execute()
 
-    assert sketch.registry.get_entity(line_id) is not None
+    assert sketch.registry.get_entity_object(line_id) is not None
     assert not [
-        e for e in sketch.registry.entities if isinstance(e, PolygonEntity)
+        e for e in sketch.registry.entities() if isinstance(e, Polygon)
     ]
 
 
@@ -182,4 +184,4 @@ def test_empty_selection_aborts():
     sketch = Sketch()
     cmd = OffsetCommand(sketch, [], 2.0)
     cmd.execute()
-    assert not sketch.registry.entities
+    assert not sketch.registry.entities()

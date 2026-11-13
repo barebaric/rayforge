@@ -3,22 +3,21 @@ from typing import cast
 
 from raygeo.geo.shape.text import FontConfig
 from sketcher.core import Sketch
-from sketcher.core.entities.text_box import TextBoxEntity
+from raygeo.sketch.entities.text_box import TextBox
 
 from rayforge.core.varset import FloatVar, Var
 
 
 def _add_text_box(
     sketch: Sketch, content: str, x: float = 0, y: float = 0
-) -> TextBoxEntity:
+) -> TextBox:
     """Helper to add a text box to a sketch and return it."""
     origin = sketch.add_point(x, y)
     width_pt = sketch.add_point(x + 10, y)
     height_pt = sketch.add_point(x, y + 10)
     box_id = sketch.registry.add_text_box(
-        origin, width_pt, height_pt, content, FontConfig()
-    )
-    return cast(TextBoxEntity, sketch.registry.get_entity(box_id))
+        origin, width_pt, height_pt, content)
+    return cast(TextBox, sketch.registry.get_entity_object(box_id))
 
 
 def test_resolve_plain_text():
@@ -186,10 +185,10 @@ def test_uuid4_consistent_across_stroke_and_fill():
     s.solve()
 
     stroke_resolved = s._resolve_text_content(
-        next(e for e in s.registry.entities if isinstance(e, TextBoxEntity))
+        next(e for e in s.registry.entities() if isinstance(e, TextBox))
     )
     fill_resolved = s._resolve_text_content(
-        next(e for e in s.registry.entities if isinstance(e, TextBoxEntity))
+        next(e for e in s.registry.entities() if isinstance(e, TextBox))
     )
     assert stroke_resolved == fill_resolved
 

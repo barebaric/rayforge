@@ -5,7 +5,7 @@ import cairo
 import pytest
 from sketcher.core.arrays import CircularArray, CircularArrayStrategy
 from sketcher.core.commands import CreateArrayCommand, EditArrayCommand
-from sketcher.core.entities import Circle
+from raygeo.sketch.entities.circle import Circle
 from sketcher.core.sketch import Sketch
 from sketcher.ui_gtk.tools import CircularArrayTool
 from sketcher.ui_gtk.tools.base import SketcherKey
@@ -282,7 +282,7 @@ def test_full_edit_flow_through_tool_does_not_collapse(
 
     sketch.solve()
 
-    circle = next(e for e in sketch.registry.entities if isinstance(e, Circle))
+    circle = next(e for e in sketch.registry.entities() if isinstance(e, Circle))
     center = sketch.registry.get_point(circle.center_idx)
 
     living = array.living_entity_ids(sketch.registry)
@@ -290,13 +290,13 @@ def test_full_edit_flow_through_tool_does_not_collapse(
 
     angles = []
     for eid in living:
-        entity = sketch.registry.get_entity(eid)
+        entity = sketch.registry.get_entity_object(eid)
         assert entity is not None
         pid = entity.get_point_ids()[0]
         pt = sketch.registry.get_point(pid)
         angles.append(
             round(
-                math.degrees(math.atan2(pt.y - center.y, pt.x - center.x))
+                math.degrees(math.atan2(pt[1] - center[1], pt[0] - center[0]))
                 / 45.0
             )
             * 45.0
@@ -318,7 +318,7 @@ def test_full_edit_flow_through_tool_does_not_collapse(
     # moves them.
     copy_pids = set()
     for eid in living[1:]:
-        copy_entity = sketch.registry.get_entity(eid)
+        copy_entity = sketch.registry.get_entity_object(eid)
         assert copy_entity is not None
         copy_pids.update(copy_entity.get_point_ids())
     for c in sketch.constraints:

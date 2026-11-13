@@ -3,11 +3,9 @@ from typing import Any
 
 import pytest
 from sketcher.core.arrays import InstancePlacement, PlacementKind
-from sketcher.core.constraints import RadiusConstraint
 from sketcher.core.entity_group import (
     EntityGroup,
     points_bbox_center,
-    remap_point_refs,
 )
 from sketcher.core.registry import EntityRegistry
 
@@ -15,7 +13,7 @@ from sketcher.core.registry import EntityRegistry
 def get_entity(reg: EntityRegistry, eid: int) -> Any:
     """Returns the entity untyped so tests can assert concrete
     subclass attributes."""
-    return reg.get_entity(eid)
+    return reg.get_entity_object(eid)
 
 
 class _ScalePlacement:
@@ -138,8 +136,8 @@ def test_apply_placement_moves_shared_point_exactly_once():
     )
     group.apply_placement(placement)
     pt = reg.get_point(shared)
-    assert pt.x == pytest.approx(-10.0)
-    assert pt.y == pytest.approx(10.0)
+    assert pt[0] == pytest.approx(-10.0)
+    assert pt[1] == pytest.approx(10.0)
 
 
 def test_apply_placement_transforms_bezier_offsets():
@@ -155,8 +153,8 @@ def test_apply_placement_transforms_bezier_offsets():
     )
     group.apply_placement(placement)
     entity = get_entity(reg, bez)
-    assert entity.cp1 == pytest.approx((-2.0, 5.0))
-    assert entity.cp2 == pytest.approx((-3.0, -1.0))
+    assert entity.cp1_offset == pytest.approx((-2.0, 5.0))
+    assert entity.cp2_offset == pytest.approx((-3.0, -1.0))
 
 
 def test_apply_placement_accepts_any_placement_transform():
@@ -166,10 +164,10 @@ def test_apply_placement_accepts_any_placement_transform():
     line = reg.add_line(p1, p2)
     group = EntityGroup(reg, [line])
     group.apply_placement(_ScalePlacement(3.0))
-    assert reg.get_point(p1).x == pytest.approx(3.0)
-    assert reg.get_point(p1).y == pytest.approx(6.0)
-    assert reg.get_point(p2).x == pytest.approx(9.0)
-    assert reg.get_point(p2).y == pytest.approx(6.0)
+    assert reg.get_point(p1)[0] == pytest.approx(3.0)
+    assert reg.get_point(p1)[1] == pytest.approx(6.0)
+    assert reg.get_point(p2)[0] == pytest.approx(9.0)
+    assert reg.get_point(p2)[1] == pytest.approx(6.0)
 
 
 def test_apply_rigid_motion_maps_center_onto_target():
@@ -185,10 +183,10 @@ def test_apply_rigid_motion_maps_center_onto_target():
         target_center=(10.0, 0.0),
     )
     group.apply_rigid_motion(motion)
-    assert reg.get_point(a).x == pytest.approx(10.0)
-    assert reg.get_point(a).y == pytest.approx(0.0)
-    assert reg.get_point(b).x == pytest.approx(10.0)
-    assert reg.get_point(b).y == pytest.approx(2.0)
+    assert reg.get_point(a)[0] == pytest.approx(10.0)
+    assert reg.get_point(a)[1] == pytest.approx(0.0)
+    assert reg.get_point(b)[0] == pytest.approx(10.0)
+    assert reg.get_point(b)[1] == pytest.approx(2.0)
 
 
 def test_translate_moves_shared_point_once():
@@ -197,8 +195,8 @@ def test_translate_moves_shared_point_once():
     group = EntityGroup(reg, [top, right])
     group.translate(5.0, -2.0)
     pt = reg.get_point(shared)
-    assert pt.x == pytest.approx(15.0)
-    assert pt.y == pytest.approx(8.0)
+    assert pt[0] == pytest.approx(15.0)
+    assert pt[1] == pytest.approx(8.0)
 
 
 def test_radial_project_puts_center_on_circle():
@@ -210,8 +208,8 @@ def test_radial_project_puts_center_on_circle():
     group.radial_project((0.0, 0.0), 10.0)
     cpt = reg.get_point(c)
     rpt = reg.get_point(r)
-    assert math.hypot(cpt.x, cpt.y) == pytest.approx(10.0)
-    assert math.hypot(rpt.x - cpt.x, rpt.y - cpt.y) == pytest.approx(4.0)
+    assert math.hypot(cpt[0], cpt[1]) == pytest.approx(10.0)
+    assert math.hypot(rpt[0] - cpt[0], rpt[1] - cpt[1]) == pytest.approx(4.0)
 
 
 def test_radial_project_is_noop_when_center_already_on_circle():
@@ -221,9 +219,9 @@ def test_radial_project_is_noop_when_center_already_on_circle():
     circle = reg.add_circle(c, r)
     group = EntityGroup(reg, [circle])
     group.radial_project((0.0, 0.0), 5.0)
-    assert reg.get_point(c).x == pytest.approx(3.0)
-    assert reg.get_point(c).y == pytest.approx(4.0)
-    assert reg.get_point(r).x == pytest.approx(7.0)
+    assert reg.get_point(c)[0] == pytest.approx(3.0)
+    assert reg.get_point(c)[1] == pytest.approx(4.0)
+    assert reg.get_point(r)[0] == pytest.approx(7.0)
 
 
 # ----------------------------------------------------------------------
@@ -240,10 +238,10 @@ def test_snapshot_restore_round_trip():
     snapshot = group.snapshot_positions()
     group.translate(10.0, -3.0)
     EntityGroup.restore_positions(snapshot)
-    assert reg.get_point(p1).x == pytest.approx(1.0)
-    assert reg.get_point(p1).y == pytest.approx(1.0)
-    assert reg.get_point(p2).x == pytest.approx(2.0)
-    assert reg.get_point(p2).y == pytest.approx(5.0)
+    assert reg.get_point(p1)[0] == pytest.approx(1.0)
+    assert reg.get_point(p1)[1] == pytest.approx(1.0)
+    assert reg.get_point(p2)[0] == pytest.approx(2.0)
+    assert reg.get_point(p2)[1] == pytest.approx(5.0)
 
 
 # ----------------------------------------------------------------------
@@ -265,10 +263,10 @@ def test_rewrite_copy_from_pairs_positionally():
     updates = EntityGroup(reg, [template]).rewrite_copy_from(
         EntityGroup(reg, [copy]), placement
     )
-    assert reg.get_point(c1).x == pytest.approx(5.0)
-    assert reg.get_point(c1).y == pytest.approx(7.0)
-    assert reg.get_point(c2).x == pytest.approx(15.0)
-    assert reg.get_point(c2).y == pytest.approx(7.0)
+    assert reg.get_point(c1)[0] == pytest.approx(5.0)
+    assert reg.get_point(c1)[1] == pytest.approx(7.0)
+    assert reg.get_point(c2)[0] == pytest.approx(15.0)
+    assert reg.get_point(c2)[1] == pytest.approx(7.0)
     assert [(pt.id, x, y) for pt, x, y in updates] == [
         (c1, 5.0, 7.0),
         (c2, 15.0, 7.0),
@@ -290,8 +288,8 @@ def test_rewrite_copy_from_takes_bezier_offsets_from_template():
         EntityGroup(reg, [copy]), placement
     )
     copy_entity = get_entity(reg, copy)
-    assert copy_entity.cp1 == pytest.approx((-1.0, -2.0))
-    assert copy_entity.cp2 == pytest.approx((-3.0, -4.0))
+    assert copy_entity.cp1_offset == pytest.approx((-1.0, -2.0))
+    assert copy_entity.cp2_offset == pytest.approx((-3.0, -4.0))
 
 
 def test_rewrite_copy_from_keeps_copy_identity():
@@ -333,35 +331,15 @@ def test_helper_ids_collects_attached_construction_geometry():
     assert group.helper_ids() == [h1, h2]
 
 
-def test_remap_point_refs_rewrites_group_entities():
+def test_point_positions_survive_group_transforms():
     reg = EntityRegistry()
     p1 = reg.add_point(0.0, 0.0)
     p2 = reg.add_point(10.0, 0.0)
-    line = reg.add_line(p1, p2)
-    group = EntityGroup(reg, [line])
-    group.remap_point_refs({p1: 77, p2: 88})
-    entity = get_entity(reg, line)
-    assert entity.p1_idx == 77
-    assert entity.p2_idx == 88
-
-
-def test_remap_point_refs_ignores_boolean_flags():
-    reg = EntityRegistry()
-    p1 = reg.add_point(0.0, 0.0)
-    p2 = reg.add_point(10.0, 0.0)
-    line = reg.add_line(p1, p2)
-    entity = get_entity(reg, line)
-    entity.invisible = True
-    remap_point_refs(entity, {1: 99})
-    assert entity.invisible is True
-    assert entity.p2_idx == 99
-
-
-def test_remap_point_refs_works_on_constraints():
-    constr = RadiusConstraint(12, value=5.0)
-    remap_point_refs(constr, {12: 34})
-    assert constr.entity_id == 34
-    assert constr.value == 5.0
+    reg.add_line(p1, p2)
+    group = EntityGroup(reg, [p1, p2])
+    group.translate(5.0, 5.0)
+    assert reg.get_point(p1) == (5.0, 5.0)
+    assert reg.get_point(p2) == (15.0, 5.0)
 
 
 # ----------------------------------------------------------------------

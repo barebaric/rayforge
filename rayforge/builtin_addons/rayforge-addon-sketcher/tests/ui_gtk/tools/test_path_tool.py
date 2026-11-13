@@ -2,8 +2,9 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from sketcher.core.commands.bezier import BezierPreviewState
-from sketcher.core.constraints import HorizontalConstraint, VerticalConstraint
-from sketcher.core.entities import Point as SketchPoint
+from raygeo.sketch.constraints.horizontal import HorizontalConstraint
+from raygeo.sketch.constraints.vertical import VerticalConstraint
+
 from sketcher.core.snap.types import SnapLine, SnapLineType, SnapResult
 from sketcher.ui_gtk.tools.path_tool import PathTool
 
@@ -14,8 +15,8 @@ def mock_element():
     element = Mock()
     element.sketch = Mock()
     element.sketch.registry = Mock()
-    element.sketch.registry.points = []
-    element.sketch.registry.entities = []
+    element.sketch.registry.points = Mock(return_value=[])
+    element.sketch.registry.entities = Mock(return_value=[])
     element.sketch.registry._id_counter = 0
     element.sketch.registry._entity_map = {}
     element.sketch.registry.add_point = Mock(return_value=0)
@@ -610,7 +611,7 @@ def test_path_tool_near_miss_close_reuses_start_point():
     hover(35.0, 27.5)
     click(35.0, 27.5)
 
-    closing = [e for e in sketch.registry.entities if e.type == "line"][-1]
+    closing = [e for e in sketch.registry.entities() if e.type == "line"][-1]
     assert closing.get_point_ids()[1] == start_id
     assert tool._preview_state is None
     assert sketch.constraints == constraints_before
@@ -640,7 +641,7 @@ def test_path_tool_close_finishes_editing():
     tool.on_press(30.0, 30.0, 1)
 
     assert tool._preview_state is None
-    lines = [e for e in sketch.registry.entities if e.type == "line"]
+    lines = [e for e in sketch.registry.entities() if e.type == "line"]
     assert len(lines) == 3
     closing = lines[-1]
     assert closing.get_point_ids()[1] == start_id

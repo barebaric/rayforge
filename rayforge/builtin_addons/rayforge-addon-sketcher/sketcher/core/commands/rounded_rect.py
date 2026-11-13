@@ -5,23 +5,23 @@ from typing import TYPE_CHECKING, Any
 
 from raygeo.geo.types import Point as GeoPoint
 
-from ..constraints import (
-    DistanceConstraint,
+from raygeo.sketch.constraints.distance import DistanceConstraint
+from raygeo.sketch.constraints.equal_distance import (
     EqualDistanceConstraint,
-    EqualLengthConstraint,
-    HorizontalConstraint,
-    RadiusConstraint,
-    TangentConstraint,
-    VerticalConstraint,
 )
-from ..entities import Arc, Line, Point
+from raygeo.sketch.constraints.horizontal import HorizontalConstraint
+from raygeo.sketch.constraints.tangent import TangentConstraint
+from raygeo.sketch.constraints.vertical import VerticalConstraint
+from raygeo.sketch.entities.arc import Arc
+
 from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData
 from .items import AddItemsCommand
 
 if TYPE_CHECKING:
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
+
     from ..sketch import Sketch
 
 
@@ -85,21 +85,18 @@ class RoundedRectPreviewState(PreviewState):
             self.locked_radius = radius
             self.radius = radius
 
-        try:
-            start_p = registry.get_point(self.start_id)
-            end_p = registry.get_point(self.p_end_id)
-        except IndexError:
+        start_p = registry.get_point(self.start_id)
+        end_p = registry.get_point(self.p_end_id)
+        if start_p is None or end_p is None:
             return
 
-        dx = end_p.x - start_p.x
-        dy = end_p.y - start_p.y
+        dx = end_p[0] - start_p[0]
+        dy = end_p[1] - start_p[1]
 
         sign_x = 1.0 if dx >= 0 else -1.0
         sign_y = 1.0 if dy >= 0 else -1.0
 
         if self.center_on_start:
-            # locked width/height are the full dimensions; the end point
-            # defines a half-extent from the center.
             new_dx = (
                 self.locked_width / 2.0
                 if self.locked_width is not None
@@ -110,8 +107,10 @@ class RoundedRectPreviewState(PreviewState):
                 if self.locked_height is not None
                 else abs(dy)
             )
-            end_p.x = start_p.x + sign_x * new_dx
-            end_p.y = start_p.y + sign_y * new_dy
+            end_pos = (
+                start_p[0] + sign_x * new_dx,
+                start_p[1] + sign_y * new_dy,
+            )
         else:
             new_width = (
                 self.locked_width if self.locked_width is not None else abs(dx)
@@ -121,8 +120,11 @@ class RoundedRectPreviewState(PreviewState):
                 if self.locked_height is not None
                 else abs(dy)
             )
-            end_p.x = start_p.x + sign_x * new_width
-            end_p.y = start_p.y + sign_y * new_height
+            end_pos = (
+                start_p[0] + sign_x * new_width,
+                start_p[1] + sign_y * new_height,
+            )
+        registry.set_point_position(self.p_end_id, *end_pos)
 
         RoundedRectCommand.create_preview(
             registry,
@@ -143,33 +145,32 @@ class RoundedRectPreviewState(PreviewState):
         Returns:
             List containing DimensionData for width, height, and corner radius.
         """
-        try:
-            p1 = registry.get_point(self.start_id)
-            p2 = registry.get_point(self.p_end_id)
-        except IndexError:
+        p1 = registry.get_point(self.start_id)
+        p2 = registry.get_point(self.p_end_id)
+        if p1 is None or p2 is None:
             return []
         if self.center_on_start:
-            width = abs(p2.x - p1.x) * 2
-            height = abs(p2.y - p1.y) * 2
-            mid_x = p1.x
-            mid_y = p1.y
-            top_y = p1.y - abs(p2.y - p1.y)
-            right_x = p1.x + abs(p2.x - p1.x)
+            width = abs(p2[0] - p1[0]) * 2
+            height = abs(p2[1] - p1[1]) * 2
+            mid_x = p1[0]
+            mid_y = p1[1]
+            top_y = p1[1] - abs(p2[1] - p1[1])
+            right_x = p1[0] + abs(p2[0] - p1[0])
         else:
             width = (
                 self.locked_width
                 if self.locked_width is not None
-                else abs(p2.x - p1.x)
+                else abs(p2[0] - p1[0])
             )
             height = (
                 self.locked_height
                 if self.locked_height is not None
-                else abs(p2.y - p1.y)
+                else abs(p2[1] - p1[1])
             )
-            mid_x = (p1.x + p2.x) / 2
-            mid_y = (p1.y + p2.y) / 2
-            top_y = min(p1.y, p2.y)
-            right_x = max(p1.x, p2.x)
+            mid_x = (p1[0] + p2[0]) / 2
+            mid_y = (p1[1] + p2[1]) / 2
+            top_y = min(p1[1], p2[1])
+            right_x = max(p1[0], p2[0])
         dimensions = [
             DimensionData(
                 label=DimensionData.format_length(width),
@@ -184,7 +185,7 @@ class RoundedRectPreviewState(PreviewState):
             dimensions.append(
                 DimensionData(
                     label=f"R{DimensionData.format_length(self.radius)}",
-                    position=(p1.x + self.radius / 2, p1.y),
+                    position=(p1[0] + self.radius / 2, p1[1]),
                 )
             )
         return dimensions
@@ -239,18 +240,19 @@ class RoundedRectCommand(SketchChangeCommand):
 
         The smaller extent wins; the direction of each axis is kept.
         """
-        try:
-            start_p = registry.get_point(start_id)
-        except IndexError:
+        start_p = registry.get_point(start_id)
+        if start_p is None:
             return x, y
 
-        size = min(abs(x - start_p.x), abs(y - start_p.y))
-        sign_x = 1.0 if x >= start_p.x else -1.0
-        sign_y = 1.0 if y >= start_p.y else -1.0
-        return start_p.x + sign_x * size, start_p.y + sign_y * size
+        size = min(abs(x - start_p[0]), abs(y - start_p[1]))
+        sign_x = 1.0 if x >= start_p[0] else -1.0
+        sign_y = 1.0 if y >= start_p[1] else -1.0
+        return start_p[0] + sign_x * size, start_p[1] + sign_y * size
 
     @staticmethod
     def calculate_geometry(
+        sketch,
+        add_cmd,
         x1: float,
         y1: float,
         x2: float,
@@ -262,7 +264,7 @@ class RoundedRectCommand(SketchChangeCommand):
         center_on_start: bool = False,
         constrain_square: bool = False,
     ) -> dict[str, Any] | None:
-        """Calculates geometry for a rounded rectangle.
+        """Builds the rounded rectangle geometry through ``add_cmd``.
 
         When center_on_start is True the start point (x1, y1) is the
         shape's center and the mouse point defines the extent, so the
@@ -270,6 +272,11 @@ class RoundedRectCommand(SketchChangeCommand):
         When constrain_square is True the mouse point is adjusted so both
         extents are equal, keeping the start point fixed.
         """
+        from raygeo.sketch.constraints.equal_length import (
+            EqualLengthConstraint,
+        )
+        from raygeo.sketch.entities.line import Line
+
         if constrain_square:
             size = min(abs(x2 - x1), abs(y2 - y1))
             sign_x = 1.0 if x2 >= x1 else -1.0
@@ -287,101 +294,137 @@ class RoundedRectCommand(SketchChangeCommand):
         radius = min(radius, width / 2.0, height / 2.0)
         sx, sy = (1 if x2 > x1 else -1), (1 if y2 > y1 else -1)
 
-        temp_id_counter = -1
-
-        def next_temp_id():
-            nonlocal temp_id_counter
-            temp_id_counter -= 1
-            return temp_id_counter
-
+        coords = {
+            "t1": (x1 + sx * radius, y1),
+            "t2": (x2 - sx * radius, y1),
+            "t3": (x2, y1 + sy * radius),
+            "t4": (x2, y2 - sy * radius),
+            "t5": (x2 - sx * radius, y2),
+            "t6": (x1 + sx * radius, y2),
+            "t7": (x1, y2 - sy * radius),
+            "t8": (x1, y1 + sy * radius),
+            "c1": (x1 + sx * radius, y1 + sy * radius),
+            "c2": (x2 - sx * radius, y1 + sy * radius),
+            "c3": (x2 - sx * radius, y2 - sy * radius),
+            "c4": (x1 + sx * radius, y2 - sy * radius),
+        }
         points = {
-            "t1": Point(next_temp_id(), x1 + sx * radius, y1),
-            "t2": Point(next_temp_id(), x2 - sx * radius, y1),
-            "t3": Point(next_temp_id(), x2, y1 + sy * radius),
-            "t4": Point(next_temp_id(), x2, y2 - sy * radius),
-            "t5": Point(next_temp_id(), x2 - sx * radius, y2),
-            "t6": Point(next_temp_id(), x1 + sx * radius, y2),
-            "t7": Point(next_temp_id(), x1, y2 - sy * radius),
-            "t8": Point(next_temp_id(), x1, y1 + sy * radius),
-            "c1": Point(next_temp_id(), x1 + sx * radius, y1 + sy * radius),
-            "c2": Point(next_temp_id(), x2 - sx * radius, y1 + sy * radius),
-            "c3": Point(next_temp_id(), x2 - sx * radius, y2 - sy * radius),
-            "c4": Point(next_temp_id(), x1 + sx * radius, y2 - sy * radius),
+            name: add_cmd.add_point(px, py)
+            for name, (px, py) in coords.items()
         }
 
         is_cw = sx * sy < 0
         entities = [
-            Line(next_temp_id(), points["t1"].id, points["t2"].id),
-            Line(next_temp_id(), points["t3"].id, points["t4"].id),
-            Line(next_temp_id(), points["t5"].id, points["t6"].id),
-            Line(next_temp_id(), points["t7"].id, points["t8"].id),
-            Arc(
-                next_temp_id(),
-                points["t8"].id,
-                points["t1"].id,
-                points["c1"].id,
-                clockwise=is_cw,
+            add_cmd.add_entity(Line(points["t1"], points["t2"])),
+            add_cmd.add_entity(Line(points["t3"], points["t4"])),
+            add_cmd.add_entity(Line(points["t5"], points["t6"])),
+            add_cmd.add_entity(Line(points["t7"], points["t8"])),
+            add_cmd.add_entity(
+                Arc(
+                    points["t8"],
+                    points["t1"],
+                    points["c1"],
+                    clockwise=is_cw,
+                )
             ),
-            Arc(
-                next_temp_id(),
-                points["t2"].id,
-                points["t3"].id,
-                points["c2"].id,
-                clockwise=is_cw,
+            add_cmd.add_entity(
+                Arc(
+                    points["t2"],
+                    points["t3"],
+                    points["c2"],
+                    clockwise=is_cw,
+                )
             ),
-            Arc(
-                next_temp_id(),
-                points["t4"].id,
-                points["t5"].id,
-                points["c3"].id,
-                clockwise=is_cw,
+            add_cmd.add_entity(
+                Arc(
+                    points["t4"],
+                    points["t5"],
+                    points["c3"],
+                    clockwise=is_cw,
+                )
             ),
-            Arc(
-                next_temp_id(),
-                points["t6"].id,
-                points["t7"].id,
-                points["c4"].id,
-                clockwise=is_cw,
+            add_cmd.add_entity(
+                Arc(
+                    points["t6"],
+                    points["t7"],
+                    points["c4"],
+                    clockwise=is_cw,
+                )
             ),
         ]
 
         constraints = [
-            HorizontalConstraint(points["t1"].id, points["t2"].id),
-            VerticalConstraint(points["t3"].id, points["t4"].id),
-            HorizontalConstraint(points["t5"].id, points["t6"].id),
-            VerticalConstraint(points["t7"].id, points["t8"].id),
-            TangentConstraint(entities[0].id, entities[4].id),
-            TangentConstraint(entities[3].id, entities[4].id),
-            TangentConstraint(entities[0].id, entities[5].id),
-            TangentConstraint(entities[1].id, entities[5].id),
-            TangentConstraint(entities[1].id, entities[6].id),
-            TangentConstraint(entities[2].id, entities[6].id),
-            TangentConstraint(entities[2].id, entities[7].id),
-            TangentConstraint(entities[3].id, entities[7].id),
-            EqualLengthConstraint([e.id for e in entities[4:]]),
+            HorizontalConstraint(points["t1"], points["t2"]),
+            VerticalConstraint(points["t3"], points["t4"]),
+            HorizontalConstraint(points["t5"], points["t6"]),
+            VerticalConstraint(points["t7"], points["t8"]),
+            {
+                "type": "TangentConstraint",
+                "line_id": entities[0],
+                "shape_id": entities[4],
+            },
+            {
+                "type": "TangentConstraint",
+                "line_id": entities[3],
+                "shape_id": entities[4],
+            },
+            {
+                "type": "TangentConstraint",
+                "line_id": entities[0],
+                "shape_id": entities[5],
+            },
+            {
+                "type": "TangentConstraint",
+                "line_id": entities[1],
+                "shape_id": entities[5],
+            },
+            {
+                "type": "TangentConstraint",
+                "line_id": entities[1],
+                "shape_id": entities[6],
+            },
+            {
+                "type": "TangentConstraint",
+                "line_id": entities[2],
+                "shape_id": entities[6],
+            },
+            {
+                "type": "TangentConstraint",
+                "line_id": entities[2],
+                "shape_id": entities[7],
+            },
+            {
+                "type": "TangentConstraint",
+                "line_id": entities[3],
+                "shape_id": entities[7],
+            },
+            {
+                "type": "EqualLengthConstraint",
+                "entity_ids": entities[4:],
+            },
             EqualDistanceConstraint(
-                points["c1"].id,
-                points["t8"].id,
-                points["c1"].id,
-                points["t1"].id,
+                points["c1"],
+                points["t8"],
+                points["c1"],
+                points["t1"],
             ),
             EqualDistanceConstraint(
-                points["c2"].id,
-                points["t2"].id,
-                points["c2"].id,
-                points["t3"].id,
+                points["c2"],
+                points["t2"],
+                points["c2"],
+                points["t3"],
             ),
             EqualDistanceConstraint(
-                points["c3"].id,
-                points["t4"].id,
-                points["c3"].id,
-                points["t5"].id,
+                points["c3"],
+                points["t4"],
+                points["c3"],
+                points["t5"],
             ),
             EqualDistanceConstraint(
-                points["c4"].id,
-                points["t6"].id,
-                points["c4"].id,
-                points["t7"].id,
+                points["c4"],
+                points["t6"],
+                points["c4"],
+                points["t7"],
             ),
         ]
 
@@ -389,18 +432,18 @@ class RoundedRectCommand(SketchChangeCommand):
         right_edge_x = max(x1, x2)
 
         if top_edge_y == y1:
-            top_edge_p1 = points["t1"].id
-            top_edge_p2 = points["t2"].id
+            top_edge_p1 = points["t1"]
+            top_edge_p2 = points["t2"]
         else:
-            top_edge_p1 = points["t5"].id
-            top_edge_p2 = points["t6"].id
+            top_edge_p1 = points["t5"]
+            top_edge_p2 = points["t6"]
 
         if right_edge_x == x2:
-            right_edge_p1 = points["t3"].id
-            right_edge_p2 = points["t4"].id
+            right_edge_p1 = points["t3"]
+            right_edge_p2 = points["t4"]
         else:
-            right_edge_p1 = points["t7"].id
-            right_edge_p2 = points["t8"].id
+            right_edge_p1 = points["t7"]
+            right_edge_p2 = points["t8"]
 
         if fixed_width is not None:
             constraints.append(
@@ -413,12 +456,20 @@ class RoundedRectCommand(SketchChangeCommand):
             )
 
         if fixed_radius is not None:
-            constraints.append(RadiusConstraint(entities[4].id, fixed_radius))
+            constraints.append(
+                {
+                    "type": "RadiusConstraint",
+                    "entity_id": entities[4],
+                    "value": fixed_radius,
+                }
+            )
+
+        for constraint in constraints:
+            add_cmd.add_constraint(constraint)
 
         return {
-            "points": list(points.values()),
+            "point_ids": points,
             "entities": entities,
-            "constraints": constraints,
         }
 
     @staticmethod
@@ -446,18 +497,17 @@ class RoundedRectCommand(SketchChangeCommand):
         Returns:
             Dict of preview IDs, or None if geometry is invalid.
         """
-        try:
-            start_p = registry.get_point(start_pid)
-            end_p = registry.get_point(end_pid)
-        except IndexError:
+        start_p = registry.get_point(start_pid)
+        end_p = registry.get_point(end_pid)
+        if start_p is None or end_p is None:
             return None
 
         if center_on_start:
-            x1, y1 = 2.0 * start_p.x - end_p.x, 2.0 * start_p.y - end_p.y
-            x2, y2 = end_p.x, end_p.y
+            x1, y1 = 2.0 * start_p[0] - end_p[0], 2.0 * start_p[1] - end_p[1]
+            x2, y2 = end_p[0], end_p[1]
         else:
-            x1, y1 = start_p.x, start_p.y
-            x2, y2 = end_p.x, end_p.y
+            x1, y1 = start_p[0], start_p[1]
+            x2, y2 = end_p[0], end_p[1]
         width, height = abs(x2 - x1), abs(y2 - y1)
 
         if width > 1e-6 and height > 1e-6:
@@ -510,37 +560,38 @@ class RoundedRectCommand(SketchChangeCommand):
                 preview_ids["t8"],
                 preview_ids["t1"],
                 preview_ids["c1"],
-                cw=is_cw,
+                clockwise=is_cw,
             )
             preview_ids["arc2"] = registry.add_arc(
                 preview_ids["t2"],
                 preview_ids["t3"],
                 preview_ids["c2"],
-                cw=is_cw,
+                clockwise=is_cw,
             )
             preview_ids["arc3"] = registry.add_arc(
                 preview_ids["t4"],
                 preview_ids["t5"],
                 preview_ids["c3"],
-                cw=is_cw,
+                clockwise=is_cw,
             )
             preview_ids["arc4"] = registry.add_arc(
                 preview_ids["t6"],
                 preview_ids["t7"],
                 preview_ids["c4"],
-                cw=is_cw,
+                clockwise=is_cw,
             )
         else:
             # Update existing preview geometry
             for name, (px, py) in coords.items():
-                p = registry.get_point(preview_ids[name])
-                p.x, p.y = px, py
+                registry.set_point_position(preview_ids[name], px, py)
 
             # Update arc directions
             for key in ["arc1", "arc2", "arc3", "arc4"]:
-                arc_entity = registry.get_entity(preview_ids[key])
+                arc_entity = registry.get_entity_object(preview_ids[key])
                 if isinstance(arc_entity, Arc):
-                    arc_entity.clockwise = is_cw
+                    registry.set_state(
+                        preview_ids[key], {"clockwise": is_cw}
+                    )
 
         return preview_ids
 
@@ -626,37 +677,34 @@ class RoundedRectCommand(SketchChangeCommand):
         preview_state.constrain_square = constrain_square
         preview_state.center_on_start = center_on_start
 
-        try:
-            p_end = registry.get_point(preview_state.p_end_id)
-            p_start = registry.get_point(preview_state.start_id)
-        except IndexError:
+        p_end = registry.get_point(preview_state.p_end_id)
+        p_start = registry.get_point(preview_state.start_id)
+        if p_end is None or p_start is None:
             return
 
         if (
             preview_state.locked_width is not None
             or preview_state.locked_height is not None
         ):
-            dx = p_end.x - p_start.x
-            dy = p_end.y - p_start.y
+            dx = p_end[0] - p_start[0]
+            dy = p_end[1] - p_start[1]
             sign_x = 1.0 if dx >= 0 else -1.0
             sign_y = 1.0 if dy >= 0 else -1.0
 
             half = 2.0 if center_on_start else 1.0
-            new_x = (
-                p_start.x + sign_x * preview_state.locked_width / half
+            end_x = (
+                p_start[0] + sign_x * preview_state.locked_width / half
                 if preview_state.locked_width is not None
                 else x
             )
-            new_y = (
-                p_start.y + sign_y * preview_state.locked_height / half
+            end_y = (
+                p_start[1] + sign_y * preview_state.locked_height / half
                 if preview_state.locked_height is not None
                 else y
             )
-            p_end.x = new_x
-            p_end.y = new_y
         else:
-            p_end.x = x
-            p_end.y = y
+            end_x, end_y = x, y
+        registry.set_point_position(preview_state.p_end_id, end_x, end_y)
 
         RoundedRectCommand.create_preview(
             registry,
@@ -690,27 +738,32 @@ class RoundedRectCommand(SketchChangeCommand):
         point_ids.add(p_end_id)
 
         entity_ids_to_remove = {
-            e.id
-            for e in registry.entities
-            if any(pid in point_ids for pid in e.get_point_ids())
+            eid
+            for eid in registry.entity_ids()
+            if any(
+                pid in point_ids
+                for pid in registry.entity_point_ids(eid) or []
+            )
         }
-        registry.remove_entities_by_id(list(entity_ids_to_remove))
+        registry.remove_entities(list(entity_ids_to_remove))
 
-        registry.remove_points(point_ids)
+        registry.remove_points(list(point_ids))
 
     def _do_execute(self) -> None:
         if self.add_cmd:
-            return self.add_cmd._do_execute()
+            return self.add_cmd._redo()
 
         reg = self.sketch.registry
-        try:
-            start_p = reg.get_point(self.start_pid)
-        except IndexError:
+        start_p = reg.get_point(self.start_pid)
+        if start_p is None:
             return
 
+        add_cmd = AddItemsCommand(self.sketch, "")
         result = self.calculate_geometry(
-            start_p.x,
-            start_p.y,
+            self.sketch,
+            add_cmd,
+            start_p[0],
+            start_p[1],
             self.end_pos[0],
             self.end_pos[1],
             self.radius,
@@ -725,20 +778,12 @@ class RoundedRectCommand(SketchChangeCommand):
                 self.sketch.remove_point_if_unused(self.start_pid)
             return
 
-        points_to_add = result["points"]
+        # Unlike Rectangle, RoundedRect doesn't use the start_pid in
+        # its final geometry, so a temporary start point is removed.
         if self.is_start_temp:
-            reg.remove_points([start_p.id])
-            # Unlike Rectangle, RoundedRect doesn't use the start_pid in its
-            # final geometry, so we just remove it.
+            reg.remove_points([self.start_pid])
 
-        self.add_cmd = AddItemsCommand(
-            self.sketch,
-            "",
-            points=points_to_add,
-            entities=result["entities"],
-            constraints=result["constraints"],
-        )
-        self.add_cmd._do_execute()
+        self.add_cmd = add_cmd
         self._committed_end_id = None
 
     def _do_undo(self) -> None:

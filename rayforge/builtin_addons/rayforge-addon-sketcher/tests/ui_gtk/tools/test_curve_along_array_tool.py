@@ -295,10 +295,10 @@ def test_full_edit_flow_does_not_collapse(mock_show_dialog):
     # Each member sits at a distinct x along the 40-unit path.
     centers_x = []
     for eid in living:
-        entity = sketch.registry.get_entity(eid)
+        entity = sketch.registry.get_entity_object(eid)
         assert entity is not None
         pids = entity.get_point_ids()
-        xs = [sketch.registry.get_point(p).x for p in pids]
+        xs = [sketch.registry.get_point(p)[0] for p in pids]
         centers_x.append(round(sum(xs) / len(xs), 1))
     assert sorted(centers_x) == [0.0, 8.0, 16.0, 24.0, 32.0, 40.0]
 

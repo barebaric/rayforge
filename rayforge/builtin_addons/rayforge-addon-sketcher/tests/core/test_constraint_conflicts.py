@@ -4,11 +4,10 @@ Tests for constraint conflict detection in the sketcher.
 
 from sketcher.core.arrays import CurveAlongArrayStrategy
 from sketcher.core.commands import CreateArrayCommand
-from sketcher.core.constraints import (
-    ConstraintStatus,
-    DistanceConstraint,
-    HorizontalConstraint,
-)
+from sketcher.core import constraint_info
+from sketcher.core.constraint_info import ConstraintStatus
+from raygeo.sketch.constraints.distance import DistanceConstraint
+from raygeo.sketch.constraints.horizontal import HorizontalConstraint
 from sketcher.core.params import ParameterContext
 from sketcher.core.registry import EntityRegistry
 from sketcher.core.sketch import Sketch
@@ -31,7 +30,7 @@ class TestSolverConflictDetection:
             DistanceConstraint(p1, p2, 10.0),
         ]
 
-        solver = Solver(reg, params, constraints)
+        solver = Solver(reg, constraints)
         solver.solve()
 
         conflicting = solver.get_conflicting_constraints()
@@ -53,7 +52,7 @@ class TestSolverConflictDetection:
             DistanceConstraint(p1, p2, 20.0),
         ]
 
-        solver = Solver(reg, params, constraints)
+        solver = Solver(reg, constraints)
         solver.solve()
 
         conflicting = solver.get_conflicting_constraints()
@@ -78,7 +77,7 @@ class TestSolverConflictDetection:
             DistanceConstraint(p2, p3, 10.0),
         ]
 
-        solver = Solver(reg, params, constraints)
+        solver = Solver(reg, constraints)
         solver.solve()
 
         conflicting = solver.get_conflicting_constraints()
@@ -98,7 +97,7 @@ class TestSolverConflictDetection:
 
         constraints = [DistanceConstraint(p1, p2, 5.0)]
 
-        solver = Solver(reg, params, constraints)
+        solver = Solver(reg, constraints)
         solver.solve()
 
         conflicting = solver.get_conflicting_constraints()
@@ -117,7 +116,7 @@ class TestSolverConflictDetection:
 
         constraints = [DistanceConstraint(p1, p2, 10.0)]
 
-        solver = Solver(reg, params, constraints)
+        solver = Solver(reg, constraints)
         solver.solve()
 
         conflicting = solver.get_conflicting_constraints(
@@ -306,7 +305,7 @@ class TestConflictingWithArrayTemplate:
     def _template_point_ids(self, sketch):
         registry = sketch.registry
         _slot, eids = sketch.arrays[0].living_members(registry)[0]
-        line = registry.get_entity(eids[0])
+        line = registry.get_entity_object(eids[0])
         return line.p1_idx, line.p2_idx
 
     def test_orientation_constraint_conflicts_after_guide_edit(self):
@@ -322,7 +321,7 @@ class TestConflictingWithArrayTemplate:
         sketch.solve()
         assert horizontal.status == ConstraintStatus.VALID
 
-        sketch.registry.get_point(g1).y = 30.0
+        sketch.registry.get_point(g1)[1] = 30.0
         sketch.solve()
 
         assert horizontal.status == ConstraintStatus.CONFLICTING
@@ -340,11 +339,11 @@ class TestConflictingWithArrayTemplate:
         sketch.constrain_horizontal(p1, p2)
         horizontal = sketch.constraints[-1]
 
-        sketch.registry.get_point(g1).y = 30.0
+        sketch.registry.get_point(g1)[1] = 30.0
         sketch.solve()
         assert horizontal.status == ConstraintStatus.CONFLICTING
 
-        sketch.registry.get_point(g1).y = 0.0
+        sketch.registry.get_point(g1)[1] = 0.0
         sketch.solve()
         sketch.solve()
 
@@ -359,7 +358,7 @@ class TestConflictingWithArrayTemplate:
         p1, p2 = self._template_point_ids(sketch)
         distance = sketch.constrain_distance(p1, p2, 12.0)
 
-        sketch.registry.get_point(g1).y = 30.0
+        sketch.registry.get_point(g1)[1] = 30.0
         sketch.solve()
 
         assert distance.status == ConstraintStatus.VALID

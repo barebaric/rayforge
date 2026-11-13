@@ -16,11 +16,9 @@ from sketcher.core.commands import (
     EditArrayCommand,
     RemoveItemsCommand,
 )
-from sketcher.core.constraints import (
-    DragConstraint,
-    RadiusConstraint,
-)
-from sketcher.core.entities import Circle
+from raygeo.sketch.constraints.drag import DragConstraint
+from raygeo.sketch.constraints.radius import RadiusConstraint
+from raygeo.sketch.entities.circle import Circle
 from sketcher.core.entity_group import EntityGroup
 from sketcher.core.sketch import Sketch
 
@@ -81,7 +79,7 @@ def members_consistent(sketch, array):
     radius constraint.
     """
     registry = sketch.registry
-    circle = registry.get_entity(array.guide_circle_id)
+    circle = registry.get_entity_object(array.guide_circle_id)
     assert isinstance(circle, Circle)
     center = registry.get_point(circle.center_idx)
 
@@ -92,11 +90,11 @@ def members_consistent(sketch, array):
     def shape(eids):
         pts = []
         for eid in eids:
-            entity = registry.get_entity(eid)
+            entity = registry.get_entity_object(eid)
             assert entity is not None
             for pid in entity.get_point_ids():
                 pt = registry.get_point(pid)
-                pts.append((pt.x, pt.y))
+                pts.append((pt[0], pt[1]))
         return pts
 
     def pairwise(points):
@@ -114,7 +112,7 @@ def members_consistent(sketch, array):
         assert pairwise(copy_shape) == pytest.approx(pairwise(template_shape))
         angle = math.degrees(
             math.atan2(
-                copy_shape[0][1] - center.y, copy_shape[0][0] - center.x
+                copy_shape[0][1] - center[1], copy_shape[0][0] - center[0]
             )
         )
         first_angles.append(round(angle, 3))
@@ -141,19 +139,19 @@ def test_dragging_template_redistributes_copies(app_flow):
     sketch, array = app_flow
     template_id = array.living_entity_ids(sketch.registry)[0]
     pids = EntityGroup(sketch.registry, [template_id]).point_ids()
-    circle = sketch.registry.get_entity(array.guide_circle_id)
+    circle = sketch.registry.get_entity_object(array.guide_circle_id)
     center = sketch.registry.get_point(circle.center_idx)
     radius_pt = sketch.registry.get_point(circle.radius_pt_idx)
-    radius_before = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
+    radius_before = math.hypot(radius_pt[0] - center[0], radius_pt[1] - center[1])
 
     for _step in range(10):
         for pid in pids:
-            sketch.registry.get_point(pid).x += 2.0
+            sketch.registry.get_point(pid)[0] += 2.0
         sketch.solve()
 
     members_consistent(sketch, array)
     radius_pt = sketch.registry.get_point(circle.radius_pt_idx)
-    radius_after = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
+    radius_after = math.hypot(radius_pt[0] - center[0], radius_pt[1] - center[1])
     assert radius_after == pytest.approx(radius_before)
     assert len(array.living_entity_ids(sketch.registry)) == 6
     assert find_array_for_entity(sketch.arrays, array.guide_circle_id) is array
@@ -169,7 +167,7 @@ def test_radius_dimension_redistributes_members(app_flow):
     other way around.
     """
     sketch, array = app_flow
-    circle = sketch.registry.get_entity(array.guide_circle_id)
+    circle = sketch.registry.get_entity_object(array.guide_circle_id)
     rc = next(
         c
         for c in sketch.constraints
@@ -181,11 +179,11 @@ def test_radius_dimension_redistributes_members(app_flow):
         return {
             slot: [
                 (
-                    registry.get_point(pid).x,
-                    registry.get_point(pid).y,
+                    registry.get_point(pid)[0],
+                    registry.get_point(pid)[1],
                 )
                 for eid in eids
-                for pid in registry.get_entity(eid).get_point_ids()
+                for pid in registry.get_entity_object(eid).get_point_ids()
             ]
             for slot, eids in array.living_members(registry)
         }
@@ -206,7 +204,7 @@ def test_radius_dimension_redistributes_members(app_flow):
     center = registry.get_point(circle.center_idx)
     radius_pt = registry.get_point(circle.radius_pt_idx)
     assert math.hypot(
-        radius_pt.x - center.x, radius_pt.y - center.y
+        radius_pt[0] - center[0], radius_pt[1] - center[1]
     ) == pytest.approx(60.0, abs=1e-3)
     # Every member kept its shape and sits centered on the new radius.
     for slot, shape in member_shapes().items():
@@ -216,7 +214,7 @@ def test_radius_dimension_redistributes_members(app_flow):
         xs = [x for x, _y in shape]
         ys = [y for _x, y in shape]
         cx, cy = (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2
-        assert math.hypot(cx - center.x, cy - center.y) == pytest.approx(
+        assert math.hypot(cx - center[0], cy - center[1]) == pytest.approx(
             60.0, abs=1e-3
         )
     members_consistent(sketch, array)
@@ -250,7 +248,7 @@ def test_edit_after_deletion_recreates_members(app_flow):
     members_consistent(sketch, array)
 
     # Exactly one master, still found by double-click.
-    circles = [e for e in sketch.registry.entities if e.type == "circle"]
+    circles = [e for e in sketch.registry.entities() if e.type == "circle"]
     assert len(circles) == 1
     assert find_array_for_entity(sketch.arrays, array.guide_circle_id) is array
 
@@ -262,7 +260,7 @@ def test_repeated_edit_cycles_are_stable(app_flow):
         sketch.solve()
         assert len(array.living_entity_ids(sketch.registry)) == count
 
-    circles = [e for e in sketch.registry.entities if e.type == "circle"]
+    circles = [e for e in sketch.registry.entities() if e.type == "circle"]
     assert len(circles) == 1
     radius_constraints = [
         c for c in sketch.constraints if type(c).__name__ == "RadiusConstraint"
@@ -286,19 +284,19 @@ def test_gap_fill_places_members_at_their_slot_angles(app_flow):
 
     # All six members must sit at distinct slot angles on the circle.
     step = 60.0
-    circle = sketch.registry.get_entity(array.guide_circle_id)
+    circle = sketch.registry.get_entity_object(array.guide_circle_id)
     center = sketch.registry.get_point(circle.center_idx)
 
     angles = []
     for eid in array.living_entity_ids(sketch.registry):
-        entity = sketch.registry.get_entity(eid)
+        entity = sketch.registry.get_entity_object(eid)
         for pid in entity.get_point_ids():
             pt = sketch.registry.get_point(pid)
             # The template is radial: both of its points share a slot
             # angle, and so does every rotated copy.
             angles.append(
                 round(
-                    math.degrees(math.atan2(pt.y - center.y, pt.x - center.x))
+                    math.degrees(math.atan2(pt[1] - center[1], pt[0] - center[0]))
                     / step
                 )
                 * step
@@ -349,10 +347,10 @@ def test_radial_drag_does_not_distort_the_array(app_flow):
 
     members_consistent(sketch, array)
     assert len(array.living_entity_ids(sketch.registry)) == 6
-    circle = sketch.registry.get_entity(array.guide_circle_id)
+    circle = sketch.registry.get_entity_object(array.guide_circle_id)
     center = sketch.registry.get_point(circle.center_idx)
     radius_pt = sketch.registry.get_point(circle.radius_pt_idx)
-    new_radius = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
+    new_radius = math.hypot(radius_pt[0] - center[0], radius_pt[1] - center[1])
     assert new_radius == pytest.approx(40.0)  # circle unaffected
 
 

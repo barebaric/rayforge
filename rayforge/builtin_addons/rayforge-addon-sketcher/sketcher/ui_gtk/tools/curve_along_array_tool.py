@@ -17,7 +17,9 @@ from ...core.arrays import (
     sample_path,
 )
 from ...core.commands import CreateArrayCommand
-from ...core.entities import Arc, Bezier, Line
+from raygeo.sketch.entities.arc import Arc
+from raygeo.sketch.entities.bezier import Bezier
+from raygeo.sketch.entities.line import Line
 from ...core.entity_group import EntityGroup
 from .array_base import ArrayToolBase
 
@@ -117,7 +119,7 @@ class CurveAlongArrayTool(ArrayToolBase):
         selected = [
             eid
             for eid in self.element.selection.entity_ids
-            if registry.get_entity(eid) is not None
+            if registry.get_entity_object(eid) is not None
         ]
         if len(selected) < self.MIN_SELECTION:
             self.element.set_tool("select")
@@ -137,7 +139,7 @@ class CurveAlongArrayTool(ArrayToolBase):
         registry = self.element.sketch.registry
 
         # Guide path (read-only summary of the first selected entity).
-        path_entity = registry.get_entity(strategy.path_entity_id)
+        path_entity = registry.get_entity_object(strategy.path_entity_id)
         path_row = Adw.ActionRow()
         path_row.set_title(_("Guide path"))
         path_row.set_subtitle(
@@ -289,7 +291,7 @@ class CurveAlongArrayTool(ArrayToolBase):
         if self._strategy is None or self._strategy.path_entity_id < 0:
             return
         registry = self.element.sketch.registry
-        entity = registry.get_entity(self._strategy.path_entity_id)
+        entity = registry.get_entity_object(self._strategy.path_entity_id)
         if entity is None:
             return
         polyline = self._path_polyline(registry, entity)

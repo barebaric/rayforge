@@ -11,8 +11,8 @@ def mock_element():
     element = Mock()
     element.sketch = Mock()
     element.sketch.registry = Mock()
-    element.sketch.registry.points = []
-    element.sketch.registry.entities = []
+    element.sketch.registry.points = Mock(return_value=[])
+    element.sketch.registry.entities = Mock(return_value=[])
     element.sketch.registry._id_counter = 0
     element.sketch.registry._entity_map = {}
     element.sketch.add_point = Mock(return_value=0)

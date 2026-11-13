@@ -4,19 +4,19 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point as GeoPoint
-
-from ..constraints import (
-    Constraint,
+from raygeo.sketch.constraints.equal_distance import (
     EqualDistanceConstraint,
-    PerpendicularConstraint,
 )
-from ..entities import Ellipse, Line, Point
+from raygeo.sketch.entities.ellipse import Ellipse
+from raygeo.sketch.entities.line import Line
+
 from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .items import AddItemsCommand
 
 if TYPE_CHECKING:
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
+
     from ..sketch import Sketch
 
 
@@ -145,24 +145,21 @@ class EllipseCommand(SketchChangeCommand):
         if not isinstance(preview_state, EllipsePreviewState):
             raise TypeError("Expected EllipsePreviewState")
 
-        try:
-            start_p = registry.get_point(preview_state.start_id)
-            center_p = registry.get_point(preview_state.center_id)
-            radius_x_p = registry.get_point(preview_state.radius_x_id)
-            radius_y_p = registry.get_point(preview_state.radius_y_id)
-        except IndexError:
+        start_p = registry.get_point(preview_state.start_id)
+        if start_p is None:
             return
 
         cx, cy, rx, ry = EllipseCommand._calculate_ellipse_params(
-            start_p.x, start_p.y, x, y, center_on_start, constrain_circle
+            start_p[0], start_p[1], x, y, center_on_start, constrain_circle
         )
 
-        center_p.x = cx
-        center_p.y = cy
-        radius_x_p.x = cx + rx
-        radius_x_p.y = cy
-        radius_y_p.x = cx
-        radius_y_p.y = cy + ry
+        registry.set_point_position(preview_state.center_id, cx, cy)
+        registry.set_point_position(
+            preview_state.radius_x_id, cx + rx, cy
+        )
+        registry.set_point_position(
+            preview_state.radius_y_id, cx, cy + ry
+        )
 
     @staticmethod
     def cleanup_preview(
@@ -172,40 +169,34 @@ class EllipseCommand(SketchChangeCommand):
             raise TypeError("Expected EllipsePreviewState")
 
         if preview_state.entity_id is not None:
-            registry.entities = [
-                e for e in registry.entities if e.id != preview_state.entity_id
-            ]
-            registry._entity_map = {e.id: e for e in registry.entities}
+            registry.remove_entities([preview_state.entity_id])
 
         point_ids = {
             preview_state.center_id,
             preview_state.radius_x_id,
             preview_state.radius_y_id,
         }
-        registry.remove_points(point_ids)
+        registry.remove_points(list(point_ids))
 
     def _do_execute(self) -> None:
         if self.add_cmd:
-            return self.add_cmd._do_execute()
+            return self.add_cmd._redo()
 
         registry = self.sketch.registry
 
-        try:
-            start_p = registry.get_point(self.start_id)
-        except IndexError:
+        start_p = registry.get_point(self.start_id)
+        if start_p is None:
             return
 
         final_x, final_y = self.end_pos
         if self.end_pid is not None:
-            try:
-                end_p = registry.get_point(self.end_pid)
-                final_x, final_y = end_p.x, end_p.y
-            except IndexError:
-                pass
+            position = registry.get_point(self.end_pid)
+            if position is not None:
+                final_x, final_y = position
 
         cx, cy, rx, ry = self._calculate_ellipse_params(
-            start_p.x,
-            start_p.y,
+            start_p[0],
+            start_p[1],
             final_x,
             final_y,
             self.center_on_start,
@@ -217,83 +208,51 @@ class EllipseCommand(SketchChangeCommand):
                 self.sketch.remove_point_if_unused(self.start_id)
             return
 
-        temp_id_counter = -1
+        add_cmd = AddItemsCommand(self.sketch, "")
 
-        def next_temp_id():
-            nonlocal temp_id_counter
-            temp_id_counter -= 1
-            return temp_id_counter
+        center_id = add_cmd.add_point(cx, cy)
+        radius_x_id = add_cmd.add_point(cx + rx, cy)
+        radius_y_id = add_cmd.add_point(cx, cy + ry)
 
-        center_id = next_temp_id()
-        radius_x_id = next_temp_id()
-        radius_y_id = next_temp_id()
+        line_x_id = add_cmd.add_entity(Line(center_id, radius_x_id))
+        line_y_id = add_cmd.add_entity(Line(center_id, radius_y_id))
+        self.sketch.flags.set_invisible(line_x_id, True)
+        self.sketch.flags.set_invisible(line_y_id, True)
 
-        new_center = Point(center_id, cx, cy)
-        new_radius_x = Point(radius_x_id, cx + rx, cy)
-        new_radius_y = Point(radius_y_id, cx, cy + ry)
+        add_cmd.add_entity(Line(center_id, radius_x_id, construction=True))
+        add_cmd.add_entity(Line(center_id, radius_y_id, construction=True))
 
-        line_x_id = next_temp_id()
-        line_x = Line(line_x_id, center_id, radius_x_id)
-        line_x.invisible = True
+        ellipse_dict = {
+            "type": "ellipse",
+            "center_idx": center_id,
+            "radius_x_pt_idx": radius_x_id,
+            "radius_y_pt_idx": radius_y_id,
+            "helper_line_ids": [line_x_id, line_y_id],
+        }
+        add_cmd.add_entity_from_dict(ellipse_dict)
 
-        line_y_id = next_temp_id()
-        line_y = Line(line_y_id, center_id, radius_y_id)
-        line_y.invisible = True
-
-        visible_line_x_id = next_temp_id()
-        visible_line_x = Line(
-            visible_line_x_id, center_id, radius_x_id, construction=True
+        add_cmd.add_constraint(
+            {
+                "type": "PerpendicularConstraint",
+                "e1_id": line_x_id,
+                "e2_id": line_y_id,
+                "user_visible": False,
+            }
         )
-
-        visible_line_y_id = next_temp_id()
-        visible_line_y = Line(
-            visible_line_y_id, center_id, radius_y_id, construction=True
-        )
-
-        ellipse_id = next_temp_id()
-        new_ellipse = Ellipse(
-            ellipse_id,
-            center_id,
-            radius_x_id,
-            radius_y_id,
-            helper_line_ids=[line_x_id, line_y_id],
-        )
-
-        perp_constraint = PerpendicularConstraint(
-            line_x_id, line_y_id, user_visible=False
-        )
-
-        constraints: list[Constraint] = [perp_constraint]
         if self.constrain_circle:
-            constraints.append(
+            add_cmd.add_constraint(
                 EqualDistanceConstraint(
                     center_id,
                     radius_x_id,
                     center_id,
                     radius_y_id,
-                    user_visible=True,
                 )
             )
 
-        points_to_add = [new_center, new_radius_x, new_radius_y]
+        if self.is_start_temp and registry.get_point(self.start_id):
+            add_cmd.adopt_point(self.start_id)
 
-        if self.is_start_temp:
-            registry.remove_points([start_p.id])
-
-        self.add_cmd = AddItemsCommand(
-            self.sketch,
-            "",
-            points=points_to_add,
-            entities=[
-                new_ellipse,
-                line_x,
-                line_y,
-                visible_line_x,
-                visible_line_y,
-            ],
-            constraints=constraints,
-        )
-        self.add_cmd._do_execute()
+        self.add_cmd = add_cmd
 
     def _do_undo(self) -> None:
         if self.add_cmd:

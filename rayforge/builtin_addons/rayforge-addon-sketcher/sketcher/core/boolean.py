@@ -26,11 +26,8 @@ from raygeo.geo.shape.polygon import (
 )
 
 from .contour import chain_vertices, partition_components, walk_component
-from .entities.polygon import (
-    PolygonEntity,
-    group_rings_into_solids,
-    rings_to_geometry,
-)
+from .entity_ops import polygon_world_rings
+from .offset import group_rings_into_solids, rings_to_geometry
 
 if TYPE_CHECKING:
     from .sketch import Sketch
@@ -84,27 +81,30 @@ def build_boolean_regions(
     (open chains, branching junctions, or an insufficient selection).
     """
     registry = sketch.registry
-    z_of = {e.id: i for i, e in enumerate(registry.entities)}
+    z_of = {eid: i for i, eid in enumerate(registry.entity_ids())}
     regions: list[BooleanRegion] = []
     chainable: list = []
 
     for eid in entity_ids:
-        entity = registry.get_entity(eid)
-        if entity is None or entity.construction or entity.array_copy:
+        entity = registry.get_entity_object(eid)
+        if entity is None or entity.construction or (
+            sketch.flags.is_array_copy(eid)
+        ):
             continue
-        if entity.type == "text_box":
+        if entity.type_name() == "text_box":
             logger.warning(
                 "Text boxes cannot participate in boolean operations."
             )
             continue
-        if len(entity.get_endpoint_ids()) == 2:
+        endpoints = registry.entity_endpoint_ids(eid)
+        if endpoints and len(endpoints) == 2:
             chainable.append(entity)
             continue
-        rings = _standalone_rings(registry, entity)
+        rings = _standalone_rings(registry, sketch, entity)
         if not rings:
             logger.warning(
                 "Skipping %s: it does not bound a closed region.",
-                entity.type,
+                entity.type_name(),
             )
             continue
         regions.append(
@@ -146,16 +146,16 @@ def build_boolean_regions(
     return regions
 
 
-def _standalone_rings(registry, entity) -> list | None:
+def _standalone_rings(registry, sketch, entity) -> list | None:
     """Samples a standalone closed entity into normalized rings, or
     returns None when it does not bound a closed region."""
-    if isinstance(entity, PolygonEntity):
+    if entity.type_name() == "polygon":
         if not entity.closed:
             return None
-        return _ensure_winding(entity.get_world_rings(registry))
-    if not entity.is_closed_loop():
+        return _ensure_winding(polygon_world_rings(registry, entity))
+    if not registry.is_closed_loop(entity.id):
         return None
-    ring = entity.to_polyline(registry, _SAMPLE_TOLERANCE)
+    ring = registry.to_polyline(entity.id, _SAMPLE_TOLERANCE)
     if len(ring) < 3:
         return None
     return _ensure_winding([ring])

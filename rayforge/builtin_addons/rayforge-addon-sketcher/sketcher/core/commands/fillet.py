@@ -5,18 +5,21 @@ import math
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
-from ..constraints import (
-    CollinearConstraint,
+from raygeo.sketch.constraints.collinear import CollinearConstraint
+from raygeo.sketch.constraints.equal_distance import (
     EqualDistanceConstraint,
-    TangentConstraint,
 )
-from ..entities import Arc, Line, Point
+from raygeo.sketch.constraints.tangent import TangentConstraint
+from raygeo.sketch.entities.arc import Arc
+from raygeo.sketch.entities.line import Line
+
 from ..types import EntityID
 from .base import SketchChangeCommand
 from .items import AddItemsCommand, RemoveItemsCommand
 
 if TYPE_CHECKING:
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
+
     from ..sketch import Sketch
 
 logger = logging.getLogger(__name__)
@@ -51,31 +54,32 @@ class FilletCommand(SketchChangeCommand):
         line1_id: EntityID,
         line2_id: EntityID,
         radius: float,
+        add_point,
     ) -> dict[str, Any] | None:
         """
-        Calculates the points, entities, and constraints for a fillet.
-        This is a pure function for testability and reusability.
+        Calculates the fillet geometry and allocates its points
+        through ``add_point``. This is a pure function for
+        testability and reusability.
         """
-        line1 = reg.get_entity(line1_id)
-        line2 = reg.get_entity(line2_id)
+        line1 = reg.get_entity_object(line1_id)
+        line2 = reg.get_entity_object(line2_id)
         if not isinstance(line1, Line) or not isinstance(line2, Line):
             return None
 
-        try:
-            corner_point = reg.get_point(corner_pid)
-            other1_pid = (
-                line1.p2_idx if line1.p1_idx == corner_pid else line1.p1_idx
-            )
-            other2_pid = (
-                line2.p2_idx if line2.p1_idx == corner_pid else line2.p1_idx
-            )
-            other1_pt = reg.get_point(other1_pid)
-            other2_pt = reg.get_point(other2_pid)
-        except IndexError:
+        corner_point = reg.get_point(corner_pid)
+        other1_pid = (
+            line1.p2_idx if line1.p1_idx == corner_pid else line1.p1_idx
+        )
+        other2_pid = (
+            line2.p2_idx if line2.p1_idx == corner_pid else line2.p1_idx
+        )
+        other1_pt = reg.get_point(other1_pid)
+        other2_pt = reg.get_point(other2_pid)
+        if corner_point is None or other1_pt is None or other2_pt is None:
             return None
 
-        v1 = (other1_pt.x - corner_point.x, other1_pt.y - corner_point.y)
-        v2 = (other2_pt.x - corner_point.x, other2_pt.y - corner_point.y)
+        v1 = (other1_pt[0] - corner_point[0], other1_pt[1] - corner_point[1])
+        v2 = (other2_pt[0] - corner_point[0], other2_pt[1] - corner_point[1])
         len1, len2 = math.hypot(v1[0], v1[1]), math.hypot(v2[0], v2[1])
 
         if len1 < 1e-6 or len2 < 1e-6:
@@ -98,12 +102,12 @@ class FilletCommand(SketchChangeCommand):
             return None  # Fillet too large for lines
 
         p_tan1_pos = (
-            corner_point.x + dist_to_tangent * u1[0],
-            corner_point.y + dist_to_tangent * u1[1],
+            corner_point[0] + dist_to_tangent * u1[0],
+            corner_point[1] + dist_to_tangent * u1[1],
         )
         p_tan2_pos = (
-            corner_point.x + dist_to_tangent * u2[0],
-            corner_point.y + dist_to_tangent * u2[1],
+            corner_point[0] + dist_to_tangent * u2[0],
+            corner_point[1] + dist_to_tangent * u2[1],
         )
 
         bisector_len = math.hypot(u1[0] + u2[0], u1[1] + u2[1])
@@ -116,38 +120,39 @@ class FilletCommand(SketchChangeCommand):
         )
         dist_to_center = radius / math.sin(angle / 2.0)
         p_center_pos = (
-            corner_point.x + dist_to_center * u_bisector[0],
-            corner_point.y + dist_to_center * u_bisector[1],
+            corner_point[0] + dist_to_center * u_bisector[0],
+            corner_point[1] + dist_to_center * u_bisector[1],
         )
 
         cross = u1[0] * u2[1] - u1[1] * u2[0]
         is_cw = cross > 0
 
-        p_tan1 = Point(-1, p_tan1_pos[0], p_tan1_pos[1])
-        p_tan2 = Point(-2, p_tan2_pos[0], p_tan2_pos[1])
-        p_center = Point(-3, p_center_pos[0], p_center_pos[1])
+        p_tan1 = add_point(*p_tan1_pos)
+        p_tan2 = add_point(*p_tan2_pos)
+        p_center = add_point(*p_center_pos)
 
-        new_line1 = Line(-4, other1_pid, p_tan1.id)
-        new_line2 = Line(-5, other2_pid, p_tan2.id)
-        fillet_arc = Arc(
-            -6, p_tan1.id, p_tan2.id, p_center.id, clockwise=is_cw
-        )
+        new_line1 = Line(other1_pid, p_tan1)
+        new_line2 = Line(other2_pid, p_tan2)
+        fillet_arc = Arc(p_tan1, p_tan2, p_center, clockwise=is_cw)
 
         added_constraints = [
-            TangentConstraint(new_line1.id, fillet_arc.id),
-            TangentConstraint(new_line2.id, fillet_arc.id),
-            CollinearConstraint(other1_pid, corner_pid, p_tan1.id),
-            CollinearConstraint(other2_pid, corner_pid, p_tan2.id),
+            TangentConstraint(
+                other1_pid, p_tan1, p_center, p_tan1
+            ),
+            TangentConstraint(
+                other2_pid, p_tan2, p_center, p_tan1
+            ),
+            CollinearConstraint(other1_pid, corner_pid, p_tan1),
+            CollinearConstraint(other2_pid, corner_pid, p_tan2),
             EqualDistanceConstraint(
-                corner_pid, p_tan1.id, corner_pid, p_tan2.id
+                corner_pid, p_tan1, corner_pid, p_tan2
             ),
         ]
 
         return {
-            "points": [p_tan1, p_tan2, p_center],
             "entities": [new_line1, new_line2, fillet_arc],
             "constraints": added_constraints,
-            "removed_entities": [line1, line2],
+            "removed_entity_ids": [line1_id, line2_id],
         }
 
     def _prepare(self) -> bool:
@@ -155,27 +160,30 @@ class FilletCommand(SketchChangeCommand):
         if self._prepared:
             return True
 
+        add_cmd = AddItemsCommand(self.sketch, "")
         result = self.calculate_geometry(
             self.sketch.registry,
             self.corner_pid,
             self.line1_id,
             self.line2_id,
             self.radius,
+            add_cmd.add_point,
         )
 
         if result is None:
             return False
 
+        for entity in result["entities"]:
+            add_cmd.add_entity(entity)
+        for constraint in result["constraints"]:
+            add_cmd.add_constraint(constraint)
+
         self.remove_cmd = RemoveItemsCommand(
-            self.sketch, "", entities=result["removed_entities"]
-        )
-        self.add_cmd = AddItemsCommand(
             self.sketch,
             "",
-            points=result["points"],
-            entities=result["entities"],
-            constraints=result["constraints"],
+            entity_ids=result["removed_entity_ids"],
         )
+        self.add_cmd = add_cmd
         self._prepared = True
         return True
 
@@ -186,7 +194,7 @@ class FilletCommand(SketchChangeCommand):
         if self.remove_cmd:
             self.remove_cmd._do_execute()
         if self.add_cmd:
-            self.add_cmd._do_execute()
+            self.add_cmd._redo()
 
     def _do_undo(self) -> None:
         if not self.add_cmd or not self.remove_cmd:

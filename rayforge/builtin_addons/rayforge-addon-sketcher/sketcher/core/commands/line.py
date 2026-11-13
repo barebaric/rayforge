@@ -5,16 +5,17 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point as GeoPoint
+from raygeo.sketch.constraints.distance import DistanceConstraint
+from raygeo.sketch.entities.line import Line
 
-from ..constraints import DistanceConstraint
-from ..entities import Line, Point
 from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData
 from .items import AddItemsCommand
 
 if TYPE_CHECKING:
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
+
     from ..sketch import Sketch
 
 
@@ -52,23 +53,27 @@ class LinePreviewState(PreviewState):
         """
         self.locked_length = length
 
-        try:
-            start_p = registry.get_point(self.start_id)
-            end_p = registry.get_point(self.end_id)
-        except IndexError:
+        start_p = registry.get_point(self.start_id)
+        end_p = registry.get_point(self.end_id)
+        if start_p is None or end_p is None:
             return
 
-        dx = end_p.x - start_p.x
-        dy = end_p.y - start_p.y
+        dx = end_p[0] - start_p[0]
+        dy = end_p[1] - start_p[1]
         current_length = math.hypot(dx, dy)
 
         if current_length < 1e-9:
-            end_p.x = start_p.x + length
+            registry.set_point_position(
+                self.end_id, start_p[0] + length, start_p[1]
+            )
             return
 
         scale = length / current_length
-        end_p.x = start_p.x + dx * scale
-        end_p.y = start_p.y + dy * scale
+        registry.set_point_position(
+            self.end_id,
+            start_p[0] + dx * scale,
+            start_p[1] + dy * scale,
+        )
 
     def get_dimensions(self, registry: EntityRegistry) -> list[DimensionData]:
         """
@@ -80,14 +85,13 @@ class LinePreviewState(PreviewState):
         Returns:
             List containing a single DimensionData for the line length.
         """
-        try:
-            p1 = registry.get_point(self.start_id)
-            p2 = registry.get_point(self.end_id)
-        except IndexError:
+        p1 = registry.get_point(self.start_id)
+        p2 = registry.get_point(self.end_id)
+        if p1 is None or p2 is None:
             return []
-        length = math.hypot(p2.x - p1.x, p2.y - p1.y)
-        mid_x = (p1.x + p2.x) / 2
-        mid_y = (p1.y + p2.y) / 2
+        length = math.hypot(p2[0] - p1[0], p2[1] - p1[1])
+        mid_x = (p1[0] + p2[0]) / 2
+        mid_y = (p1[1] + p2[1]) / 2
         return [
             DimensionData(
                 label=DimensionData.format_length(length),
@@ -184,12 +188,7 @@ class LineCommand(SketchChangeCommand):
         if preview_state.locked_length is not None:
             return
 
-        try:
-            end_p = registry.get_point(preview_state.end_id)
-        except IndexError:
-            return
-        end_p.x = x
-        end_p.y = y
+        registry.set_point_position(preview_state.end_id, x, y)
 
     @staticmethod
     def cleanup_preview(
@@ -203,7 +202,6 @@ class LineCommand(SketchChangeCommand):
 
         Args:
             registry: The entity registry to modify.
-            preview_state: The preview state from start_preview.
 
         Raises:
             TypeError: If preview_state is not a LinePreviewState.
@@ -212,77 +210,50 @@ class LineCommand(SketchChangeCommand):
             raise TypeError("Expected LinePreviewState")
 
         if preview_state.entity_id is not None:
-            registry.entities = [
-                e for e in registry.entities if e.id != preview_state.entity_id
-            ]
-            registry._entity_map = {
-                k: v
-                for k, v in registry._entity_map.items()
-                if k != preview_state.entity_id
-            }
+            registry.remove_entities([preview_state.entity_id])
 
         if preview_state.end_id is not None:
             registry.remove_points([preview_state.end_id])
 
     def _do_execute(self) -> None:
         if self.add_cmd:
-            return self.add_cmd._do_execute()
+            return self.add_cmd._redo()
 
         registry = self.sketch.registry
 
-        try:
-            registry.get_point(self.start_id)
-        except IndexError:
+        if registry.get_point(self.start_id) is None:
             return
 
         final_x, final_y = self.end_pos
         if self.end_pid is not None:
-            try:
-                end_p = registry.get_point(self.end_pid)
-                final_x, final_y = end_p.x, end_p.y
-            except IndexError:
-                pass
+            position = registry.get_point(self.end_pid)
+            if position is not None:
+                final_x, final_y = position
 
-        new_point = None
         end_pid = self.end_pid
-
+        add_cmd = AddItemsCommand(self.sketch, "")
         if end_pid is None:
-            temp_id = registry._id_counter
-            end_pid = temp_id
-            new_point = Point(temp_id, final_x, final_y)
+            end_pid = add_cmd.add_point(final_x, final_y)
 
         if end_pid == self.start_id:
             if self.is_start_temp:
                 self.sketch.remove_point_if_unused(self.start_id)
             return
 
-        temp_line_id = registry._id_counter + (1 if new_point else 0)
-        new_line = Line(temp_line_id, self.start_id, end_pid)
-
-        points_to_add: list[Point] = [new_point] if new_point else []
-
         if self.is_start_temp:
-            try:
-                p = registry.get_point(self.start_id)
-                registry.remove_points([p.id])
-                points_to_add.append(p)
-            except (IndexError, ValueError):
-                pass
+            if registry.get_point(self.start_id) is not None:
+                # The preview start point exists but belongs to no
+                # command yet; adopt it so undo removes it with the
+                # line.
+                add_cmd.adopt_point(self.start_id)
 
-        constraints = []
+        add_cmd.add_entity(Line(self.start_id, end_pid))
         if self.fixed_length is not None:
-            constraints.append(
+            add_cmd.add_constraint(
                 DistanceConstraint(self.start_id, end_pid, self.fixed_length)
             )
 
-        self.add_cmd = AddItemsCommand(
-            self.sketch,
-            "",
-            points=points_to_add,
-            entities=[new_line],
-            constraints=constraints,
-        )
-        self.add_cmd._do_execute()
+        self.add_cmd = add_cmd
         self._committed_end_id = end_pid
 
     def _do_undo(self) -> None:
