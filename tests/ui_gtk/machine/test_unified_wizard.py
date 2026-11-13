@@ -1223,6 +1223,50 @@ def test_device_selected_with_match_skips_to_probe(ui_context_initializer):
 
 
 @pytest.mark.ui
+def test_remote_device_selected_skips_profile(ui_context_initializer):
+    """A discovered remote device is identified by daemon + device, so
+    the wizard goes to the connection page, not profile selection."""
+    wizard = _make_wizard(ui_context_initializer)
+    page = wizard._get_page("discover")
+    assert isinstance(page, DiscoverPage)
+    device = _discovered_device(
+        driver_name="RaydriverRemoteDriver",
+        params={
+            "remote_host": "127.0.0.1",
+            "remote_port": 8765,
+            "device": "/dev/ttyUSB0",
+            "_raydriver_protocol": "grbl",
+        },
+        label="GRBL",
+        detail="127.0.0.1:8765 via raydriver daemon",
+        identity=DeviceIdentity(banner="raydriver-daemon"),
+    )
+    with patch("rayforge.ui_gtk.machine.wizard_pages.probe_page.task_mgr"):
+        wizard._on_device_selected(page, device=device)
+    assert wizard.stack.get_visible_child_name() == "connect"
+    assert wizard.profile.machine_config.driver == "RaydriverRemoteDriver"
+
+
+@pytest.mark.ui
+def test_remote_probe_next_skips_profile(ui_context_initializer):
+    wizard = _make_wizard(ui_context_initializer)
+    wizard.profile.machine_config.driver = "RaydriverRemoteDriver"
+    wizard.profile.machine_config.driver_args = {
+        "remote_host": "127.0.0.1",
+        "device": "/dev/ttyUSB0",
+        "_raydriver_protocol": "grbl",
+    }
+    wizard.aux_state = {
+        "discovered": _discovered_device(
+            driver_name="RaydriverRemoteDriver",
+            params={"remote_host": "127.0.0.1"},
+        )
+    }
+    wizard._source = None
+    assert wizard._next_step_after("probe") != "profile"
+
+
+@pytest.mark.ui
 def test_probe_result_adopts_matched_profile(ui_context_initializer):
     """The probe's build info names the device, so the wizard re-runs
     profile matching: a unique match adopts the curated profile and
