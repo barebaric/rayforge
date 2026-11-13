@@ -1,0 +1,217 @@
+# Russian translations for print-and-cut.
+# Copyright (C) 2025 The Rayforge Project
+# This file is distributed under the same license as the Rayforge package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-29 21:46+0200\n"
+"PO-Revision-Date: 2026-11-13 00:00+0000\n"
+"Last-Translator: mushketer888\n"
+"Language-Team: Russian\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+#: print_and_cut/frontend.py
+msgid "Align to Physical Position"
+msgstr "Выровнять по физическому положению"
+
+#: print_and_cut/wizard.py
+msgid "Print & Cut"
+msgstr "Печать и рез"
+
+#: print_and_cut/wizard.py
+msgid "Back"
+msgstr "Назад"
+
+#: print_and_cut/wizard.py
+msgid "Reset"
+msgstr "Сброс"
+
+#: print_and_cut/wizard.py
+msgid "Cancel"
+msgstr "Отмена"
+
+#: print_and_cut/wizard.py
+msgid "Next"
+msgstr "Далее"
+
+#: print_and_cut/wizard.py
+msgid "Apply"
+msgstr "Применить"
+
+#: print_and_cut/wizard.py
+msgid "Instructions"
+msgstr "Инструкции"
+
+#: print_and_cut/wizard.py
+msgid ""
+"Click on two alignment points on the design. These will be matched to "
+"physical locations in the next step."
+msgstr ""
+"Нажмите на две точки выравнивания на дизайне. На следующем шаге они будут "
+"сопоставлены с физическими положениями."
+
+#: print_and_cut/wizard.py
+msgid "Picked Points"
+msgstr "Выбранные точки"
+
+#: print_and_cut/wizard.py
+msgid "Point 1"
+msgstr "Точка 1"
+
+#: print_and_cut/wizard.py
+msgid "No point picked"
+msgstr "Точка не выбрана"
+
+#: print_and_cut/wizard.py
+msgid "Point 2"
+msgstr "Точка 2"
+
+#: print_and_cut/wizard.py
+msgid "Status"
+msgstr "Состояние"
+
+#: print_and_cut/wizard.py
+msgid "Click on the first alignment point on the design."
+msgstr "Нажмите на первую точку выравнивания на дизайне."
+
+#: print_and_cut/wizard.py
+msgid ""
+"Jog the laser to the physical location of each point, then record the "
+"position."
+msgstr ""
+"Переместите лазер вручную к физическому положению каждой точки, затем "
+"запишите позицию."
+
+#: print_and_cut/wizard.py
+msgid "Jog Distance"
+msgstr "Шаг ручного перемещения"
+
+#: print_and_cut/wizard.py
+msgid "Distance"
+msgstr "Расстояние"
+
+#: print_and_cut/wizard.py
+msgid "Distance Presets"
+msgstr "Пресеты расстояния"
+
+#: print_and_cut/wizard.py
+msgid "Toggle focus laser"
+msgstr "Переключить лазер наведения"
+
+#: print_and_cut/wizard.py
+msgid "Focus Laser"
+msgstr "Лазер наведения"
+
+#: print_and_cut/wizard.py
+msgid "Pointer Alignment"
+msgstr "Выравнивание по указателю"
+
+#: print_and_cut/wizard.py
+msgid "Positions"
+msgstr "Позиции"
+
+#: print_and_cut/wizard.py
+msgid "Record"
+msgstr "Записать"
+
+#: print_and_cut/wizard.py
+msgid "Go to recorded position"
+msgstr "Перейти к записанной позиции"
+
+#: print_and_cut/wizard.py
+msgid "Position 1"
+msgstr "Позиция 1"
+
+#: print_and_cut/wizard.py
+msgid "Not recorded"
+msgstr "Не записана"
+
+#: print_and_cut/wizard.py
+msgid "Position 2"
+msgstr "Позиция 2"
+
+#: print_and_cut/wizard.py
+msgid "Laser Position"
+msgstr "Положение лазера"
+
+#: print_and_cut/wizard.py
+msgid "X: --- Y: ---"
+msgstr "X: --- Y: ---"
+
+#: print_and_cut/wizard.py
+msgid "Transform Preview"
+msgstr "Предпросмотр преобразования"
+
+#: print_and_cut/wizard.py
+msgid "Review the computed alignment transform before applying it."
+msgstr "Проверьте вычисленное преобразование выравнивания перед применением."
+
+#: print_and_cut/wizard.py
+msgid "Transform"
+msgstr "Преобразование"
+
+#: print_and_cut/wizard.py
+msgid "Translation"
+msgstr "Смещение"
+
+#: print_and_cut/wizard.py
+msgid "Rotation"
+msgstr "Поворот"
+
+#: print_and_cut/wizard.py
+msgid "Allow scaling"
+msgstr "Разрешить масштабирование"
+
+#: print_and_cut/wizard.py
+msgid "Scale"
+msgstr "Масштаб"
+
+#: print_and_cut/wizard.py
+msgid "Point picked"
+msgstr "Точка выбрана"
+
+#: print_and_cut/wizard.py
+msgid "Click on the second alignment point on the design."
+msgstr "Нажмите на вторую точку выравнивания на дизайне."
+
+#: print_and_cut/wizard.py
+msgid "Both points selected. Click Next to continue."
+msgstr "Обе точки выбраны. Нажмите «Далее», чтобы продолжить."
+
+#: print_and_cut/wizard.py
+msgid "Points are too close. Pick points further apart."
+msgstr "Точки слишком близко. Выберите точки дальше друг от друга."
+
+#: print_and_cut/wizard.py
+msgid "Turn on laser at focus power to locate position"
+msgstr "Включить лазер на мощности наведения для определения положения"
+
+#: print_and_cut/wizard.py
+msgid "Set a focus power in laser preferences to enable"
+msgstr "Задайте мощность наведения в настройках лазера, чтобы включить"
+
+#: print_and_cut/wizard.py
+msgid "Record positions at the pointer dot instead of the beam"
+msgstr "Записывать позиции по точке указателя вместо луча"
+
+#: print_and_cut/wizard.py
+msgid "Requires a pointer offset on the laser head"
+msgstr "Требуется смещение указателя на лазерной головке"
+
+#: print_and_cut/wizard.py
+msgid ""
+"Note: Scale is locked. Point 2 may not align exactly if the physical "
+"distance differs from the design distance."
+msgstr ""
+"Примечание: масштаб заблокирован. Точка 2 может не выровняться точно, если "
+"физическое расстояние отличается от расстояния в дизайне."
+
+#: print_and_cut/wizard.py
+msgid "Alignment applied"
+msgstr "Выравнивание применено"
