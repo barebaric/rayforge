@@ -12,44 +12,48 @@ description:
 ## 工作原理
 
 - **raydriver 守护进程**在硬件旁边托管机器连接。
-- Rayforge 保留您的机器配置，并通过局域网提交任务。
-- 每种 G-code 驱动（GRBL 串口、GRBL telnet、GRBL 简单、Smoothie、Marlin）都可本地或远程使用——
-  远程是一种连接设置，而不是单独的驱动。
+- Rayforge 连接到*守护进程上的设备*——它无需知道设备使用哪种协议。守护进程会解析协议，并告诉
+  Rayforge 该设备能做什么。
+- 远程机器使用单一的 **Remote machine (raydriver)** 驱动。特定协议的驱动（GRBL、Smoothie、Marlin）
+  用于直接连接到您计算机的硬件。
 
 ## 设置设备主机
 
 1. 在设备主机上安装 raydriver：`pip install raydriver`（添加 `[daemon]` 以启用网络发现）。
-2. 运行 `raydriver daemon --setup`。这会写入带有生成令牌的 `~/.config/raydriver/daemon.json`，
-   并打印证书命令。
-3. 如需局域网访问，请用打印出的 `openssl` 命令创建证书，并在配置中设置 `tls_cert` 和 `tls_key`。
-   绑定非回环地址的守护进程在没有令牌和 TLS 时拒绝启动。
-4. 运行 `raydriver daemon install`
-   安装并启动后台服务（Linux 上为 systemd，macOS 上为 launchd，Windows 上为登录任务），或在前台运行
-   `raydriver daemon`。
+2. 运行 `raydriver daemon add /dev/ttyUSB0`（使用您机器的串口；`raydriver scan` 会列出它们）。
+   这会创建带生成令牌的配置并注册设备。对于非默认固件，添加 `--protocol`/`--baudrate`。
+3. 运行 `raydriver daemon install` 安装并启动后台服务（Linux 上为 systemd，macOS 上为 launchd，
+   Windows 上为登录任务），或在前台运行 `raydriver daemon`。
+4. 若需局域网访问，使用 `raydriver daemon --setup` 打印的 `openssl` 单行命令创建证书，并在配置中
+   设置 `tls_cert` 和 `tls_key`。非回环地址上的守护进程在没有令牌和 TLS 时拒绝启动。
+
+完整参考请参阅
+[raydriver 守护进程指南](https://github.com/barebaric/raydriver/blob/main/docs/daemon.md)。
 
 ## 连接 Rayforge
 
-- 机器向导会在网络上发现守护进程并列出其设备。
-- 或者，在驱动的连接设置中启用**远程设备**，并输入守护进程的主机名、端口、令牌和 TLS 证书。
-- 探测通过远程连接进行，因此向导可以识别未连接到您计算机的硬件。
+- 机器向导会在网络中发现守护进程并列出其设备；选择一个即可添加。
+- 或使用 **Remote machine (raydriver)** 驱动手动添加机器：输入守护进程的主机名、端口和令牌，
+  然后从守护进程读取的列表中选择设备。
+- 探测可通过远程连接进行，因此向导能识别未连接到您计算机的硬件。
 
 ## 任务与重新连接
 
-- 已提交的任务会在设备主机上执行完成，即使 Rayforge 关闭或网络中断。
+- 已提交的任务会在设备主机上运行至完成，即使 Rayforge 关闭或网络中断。
 - 重新连接即可查看精确进度。同一时间只有一个客户端持有控制权；其他客户端可以观看。
 
 ## 设备主机上的摄像头
 
-视频不通过控制连接传输。使用 Rayforge 的[网络摄像头](camera.md)，配合设备主机上可访问的流：
+视频不通过控制连接传输。使用 Rayforge 的[网络摄像头](camera.md)，并配合设备主机上可访问的流：
 
 - **IP 摄像头**：直接添加其流 URL。
-- **设备主机上的 USB 摄像头**：运行 `ustreamer` 等标准流媒体工具，并将其 MJPEG URL 添加为
-  HTTP 流摄像头。
+- **设备主机上的 USB 摄像头**：运行标准流媒体程序（如 `ustreamer`），并将其 MJPEG URL 作为
+  HTTP 流摄像头添加。
 
-守护进程会通告已配置的摄像头端点，以便向导预先填写 URL。
+守护进程会通告已配置的摄像头端点，以便向导预填 URL。
 
 ## 安全说明
 
 - 仅限局域网（或隧道）——无云、无账户。
 - 任何非回环守护进程都必须使用令牌和 TLS。
-- 请将摄像头流限制在局域网内或置于防火墙之后；它们与 TLS 控制通道相互独立。
+- 将摄像头流限制在局域网内或置于防火墙之后；它们与 TLS 控制通道相互独立。

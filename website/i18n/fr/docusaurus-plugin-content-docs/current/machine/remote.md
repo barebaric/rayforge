@@ -15,37 +15,46 @@ reconnexion resynchronise la progression exactement.
 ## Fonctionnement
 
 - Le **démon raydriver** héberge la connexion de la machine près du matériel.
-- Rayforge conserve la configuration de votre machine et soumet les jobs via le LAN.
-- Chaque pilote G-code (GRBL série, GRBL telnet, GRBL simple, Smoothie, Marlin) fonctionne en local
-  ou à distance — le distant est un réglage de connexion, pas un pilote séparé.
+- Rayforge se connecte à un _appareil sur le démon_ — il n'a pas besoin de savoir quel protocole
+  parle l'appareil. Le démon le résout et indique à Rayforge ce que l'appareil peut faire.
+- Les machines distantes utilisent un unique pilote **Remote machine (raydriver)**. Les pilotes
+  spécifiques au protocole (GRBL, Smoothie, Marlin) sont destinés au matériel connecté directement à
+  votre ordinateur.
 
 ## Configurer l'hôte de l'appareil
 
 1. Installez raydriver sur l'hôte de l'appareil : `pip install raydriver` (ajoutez `[daemon]` pour
    la découverte réseau).
-2. Exécutez `raydriver daemon --setup`. Cela écrit `~/.config/raydriver/daemon.json` avec un jeton
-   généré et affiche la commande du certificat.
-3. Pour l'accès LAN, créez un certificat avec la commande `openssl` affichée et renseignez
-   `tls_cert` et `tls_key` dans la configuration. Un démon sur une adresse autre que loopback refuse
-   de démarrer sans jeton et TLS.
-4. Exécutez `raydriver daemon install` pour installer et démarrer le service d'arrière-plan (systemd
-   sous Linux, launchd sous macOS, une tâche de connexion sous Windows), ou lancez
+2. Exécutez `raydriver daemon add /dev/ttyUSB0` (utilisez le port série de votre machine ;
+   `raydriver scan` les liste). Cela crée la configuration avec un jeton généré et enregistre
+   l'appareil. Ajoutez `--protocol`/`--baudrate` pour un firmware non standard.
+3. Exécutez `raydriver daemon install` pour installer et démarrer le service d'arrière-plan (systemd
+   sous Linux, launchd sous macOS, une tâche de connexion sous Windows), ou exécutez
    `raydriver daemon` au premier plan.
+4. Pour l'accès LAN, créez un certificat avec la commande `openssl` sur une ligne affichée par
+   `raydriver daemon --setup` et définissez `tls_cert` et `tls_key` dans la configuration. Un démon
+   sur une adresse autre que loopback refuse de démarrer sans jeton et TLS.
+
+Consultez le
+[guide du démon raydriver](https://github.com/barebaric/raydriver/blob/main/docs/daemon.md) pour la
+référence complète.
 
 ## Connecter Rayforge
 
-- L'assistant de machine découvre les démons sur le réseau et liste leurs appareils.
-- Vous pouvez aussi activer **Appareil distant** dans les réglages de connexion du pilote et saisir
-  le nom d'hôte, le port, le jeton et le certificat TLS du démon.
-- La sonde fonctionne via la connexion distante : l'assistant peut donc identifier un matériel qui
-  n'est pas branché sur votre ordinateur.
+- L'assistant de machine découvre les démons sur le réseau et liste leurs appareils ; choisissez-en
+  un pour l'ajouter.
+- Ou ajoutez une machine manuellement avec le pilote **Remote machine (raydriver)** : saisissez le
+  nom d'hôte, le port et le jeton du démon, puis choisissez l'appareil dans la liste lue depuis le
+  démon.
+- Le sondage fonctionne via la connexion distante, l'assistant peut donc identifier du matériel qui
+  n'est pas connecté à votre ordinateur.
 
 ## Jobs et reconnexions
 
-- Un job soumis s'exécute jusqu'au bout sur l'hôte de l'appareil, même si Rayforge est fermé ou si
-  le réseau tombe.
-- Reconnectez-vous pour voir la progression exacte. Un seul client à la fois détient le contrôle ;
-  les autres peuvent observer.
+- Un job soumis s'exécute jusqu'au bout sur l'hôte de l'appareil même si Rayforge se ferme ou si le
+  réseau tombe.
+- Reconnectez-vous pour voir la progression exacte. Un client à la fois détient le contrôle ; les
+  autres peuvent observer.
 
 ## Caméras sur l'hôte de l'appareil
 
@@ -53,14 +62,15 @@ La vidéo ne transite pas par la connexion de contrôle. Utilisez les [caméras 
 Rayforge avec un flux accessible sur l'hôte de l'appareil :
 
 - **Caméra IP** : ajoutez directement son URL de flux.
-- **Caméra USB sur l'hôte de l'appareil** : lancez un streamer standard comme `ustreamer` et ajoutez
-  son URL MJPEG comme caméra de flux HTTP.
+- **Caméra USB sur l'hôte de l'appareil** : exécutez un streamer standard tel que `ustreamer` et
+  ajoutez son URL MJPEG comme caméra de flux HTTP.
 
-Le démon annonce les points de caméra configurés afin que l'assistant puisse préremplir l'URL.
+Le démon annonce les points de terminaison de caméra configurés afin que l'assistant puisse
+préremplir l'URL.
 
 ## Notes de sécurité
 
-- LAN (ou tunnel) uniquement — pas de cloud, pas de compte.
+- LAN (ou tunnel) uniquement — pas de cloud, pas de comptes.
 - Le jeton et TLS sont obligatoires pour tout démon non loopback.
 - Gardez les flux de caméra en LAN uniquement ou derrière un pare-feu ; ils sont séparés du canal de
   contrôle TLS.

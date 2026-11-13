@@ -15,32 +15,41 @@ Wiederverbinden wird der Fortschritt exakt synchronisiert.
 ## So funktioniert es
 
 - Der **raydriver-Daemon** hostet die Maschinenverbindung direkt neben der Hardware.
-- Rayforge behält Ihre Maschinenkonfiguration und übermittelt Jobs über das LAN.
-- Jeder G-Code-Treiber (GRBL seriell, GRBL Telnet, GRBL einfach, Smoothie, Marlin) funktioniert
-  lokal oder remote — Remote ist eine Verbindungseinstellung, kein eigener Treiber.
+- Rayforge verbindet sich mit einem _Gerät am Daemon_ — es muss nicht wissen, welches Protokoll das
+  Gerät spricht. Der Daemon ermittelt das und teilt Rayforge mit, was das Gerät kann.
+- Remote-Maschinen verwenden einen einzigen Treiber **Remote machine (raydriver)**. Die
+  protokollspezifischen Treiber (GRBL, Smoothie, Marlin) sind für Hardware gedacht, die direkt an
+  Ihrem Computer angeschlossen ist.
 
 ## Geräte-Host einrichten
 
 1. Installieren Sie raydriver auf dem Geräte-Host: `pip install raydriver` (mit `[daemon]` für die
    Netzwerk-Erkennung).
-2. Führen Sie `raydriver daemon --setup` aus. Das schreibt `~/.config/raydriver/daemon.json` mit
-   einem generierten Token und gibt den Befehl für das Zertifikat aus.
-3. Erstellen Sie für den LAN-Zugriff ein Zertifikat mit dem ausgegebenen `openssl`-Einzeiler und
-   setzen Sie `tls_cert` und `tls_key` in der Konfiguration. Ein Daemon auf einer
-   Nicht-Loopback-Adresse startet ohne Token und TLS nicht.
-4. Führen Sie `raydriver daemon install` aus, um den Hintergrunddienst zu installieren und zu
+2. Führen Sie `raydriver daemon add /dev/ttyUSB0` aus (verwenden Sie den seriellen Port Ihrer
+   Maschine; `raydriver scan` listet sie auf). Dies legt die Konfiguration mit einem generierten
+   Token an und registriert das Gerät. Für nicht standardmäßige Firmware `--protocol`/`--baudrate`
+   ergänzen.
+3. Führen Sie `raydriver daemon install` aus, um den Hintergrunddienst zu installieren und zu
    starten (systemd unter Linux, launchd unter macOS, eine Anmelde-Aufgabe unter Windows), oder
    starten Sie `raydriver daemon` im Vordergrund.
+4. Für den LAN-Zugriff erstellen Sie ein Zertifikat mit dem von `raydriver daemon --setup`
+   ausgegebenen `openssl`-Einzeiler und setzen `tls_cert` und `tls_key` in der Konfiguration. Ein
+   Daemon auf einer Nicht-Loopback-Adresse startet nicht ohne Token und TLS.
+
+Die vollständige Referenz finden Sie im
+[raydriver-Daemon-Handbuch](https://github.com/barebaric/raydriver/blob/main/docs/daemon.md).
 
 ## Rayforge verbinden
 
-- Der Maschinen-Assistent erkennt Daemons im Netzwerk und listet ihre Geräte auf.
-- Alternativ aktivieren Sie **Remote-Gerät** in den Verbindungseinstellungen des Treibers und geben
-  Hostname, Port, Token und TLS-Zertifikat des Daemons ein.
-- Das Sondieren funktioniert über die Remote-Verbindung, sodass der Assistent Hardware erkennen
+- Der Maschinen-Assistent erkennt Daemons im Netzwerk und listet ihre Geräte; wählen Sie eines aus,
+  um es hinzuzufügen.
+- Oder fügen Sie eine Maschine manuell mit dem Treiber **Remote machine (raydriver)** hinzu: Geben
+  Sie Daemon-Hostname, Port und Token ein und wählen Sie dann das Gerät aus der Liste, die vom
+  Daemon gelesen wird.
+- Das Probing funktioniert über die Remote-Verbindung, sodass der Assistent Hardware identifizieren
   kann, die nicht an Ihrem Computer angeschlossen ist.
 
-## Jobs und Wiederverbinden
+## Jobs und Wiederverbindungen
 
 - Ein übermittelter Job läuft auf dem Geräte-Host bis zum Ende, selbst wenn Rayforge geschlossen
   wird oder das Netzwerk abbricht.
@@ -54,7 +63,7 @@ Video wird nicht über die Steuerungsverbindung übertragen. Verwenden Sie Rayfo
 
 - **IP-Kamera**: Fügen Sie ihre Stream-URL direkt hinzu.
 - **USB-Kamera am Geräte-Host**: Betreiben Sie einen Standard-Streamer wie `ustreamer` und fügen Sie
-  dessen MJPEG-URL als HTTP-Stream-Kamera hinzu.
+  seine MJPEG-URL als HTTP-Stream-Kamera hinzu.
 
 Der Daemon bewirbt konfigurierte Kamera-Endpunkte, sodass der Assistent die URL vorausfüllen kann.
 
@@ -62,5 +71,5 @@ Der Daemon bewirbt konfigurierte Kamera-Endpunkte, sodass der Assistent die URL 
 
 - Nur LAN (oder Tunnel) — keine Cloud, keine Konten.
 - Token und TLS sind für jeden Nicht-Loopback-Daemon Pflicht.
-- Halten Sie Kamera-Streams im LAN oder hinter einer Firewall; sie sind vom TLS-Steuerkanal
+- Halten Sie Kamera-Streams im LAN oder hinter einer Firewall; sie sind vom TLS-Steuerungskanal
   getrennt.

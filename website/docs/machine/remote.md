@@ -13,27 +13,32 @@ even if Rayforge disconnects; reconnecting resyncs progress exactly.
 ## How it works
 
 - The **raydriver daemon** hosts the machine connection next to the hardware.
-- Rayforge keeps your machine configuration and submits jobs over the LAN.
-- Every G-code driver (GRBL serial, GRBL telnet, GRBL simple, Smoothie, Marlin) works locally or
-  remotely — remote is a connection setting, not a separate driver.
+- Rayforge connects to a _device on the daemon_ — it does not need to know which protocol the device
+  speaks. The daemon resolves that and tells Rayforge what the device can do.
+- Remote machines use a single **Remote machine (raydriver)** driver. The protocol-specific drivers
+  (GRBL, Smoothie, Marlin) are for hardware attached directly to your computer.
 
 ## Set up the device host
 
 1. Install raydriver on the device host: `pip install raydriver` (add `[daemon]` for network
    discovery).
-2. Run `raydriver daemon --setup`. This writes `~/.config/raydriver/daemon.json` with a generated
-   token and prints the certificate command.
-3. For LAN access, create a certificate with the printed `openssl` one-liner and set `tls_cert` and
-   `tls_key` in the config. A daemon on a non-loopback address refuses to start without both a token
-   and TLS.
-4. Run `raydriver daemon install` to install and start the background service (systemd on Linux,
+2. Run `raydriver daemon add /dev/ttyUSB0` (use your machine's serial port; `raydriver scan` lists
+   them). This creates the config with a generated token and registers the device. Add
+   `--protocol`/`--baudrate` for non-default firmware.
+3. Run `raydriver daemon install` to install and start the background service (systemd on Linux,
    launchd on macOS, a logon task on Windows), or run `raydriver daemon` in the foreground.
+4. For LAN access, create a certificate with the `openssl` one-liner printed by
+   `raydriver daemon --setup` and set `tls_cert` and `tls_key` in the config. A daemon on a
+   non-loopback address refuses to start without both a token and TLS.
+
+See the [raydriver daemon guide](https://github.com/barebaric/raydriver/blob/main/docs/daemon.md)
+for the full reference.
 
 ## Connect Rayforge
 
-- The machine wizard discovers daemons on the network and lists their devices.
-- Alternatively, enable **Remote device** in the driver's connection settings and enter the daemon
-  hostname, port, token and TLS certificate.
+- The machine wizard discovers daemons on the network and lists their devices; pick one to add it.
+- Or add a machine manually with the **Remote machine (raydriver)** driver: enter the daemon
+  hostname, port and token, then choose the device from the list read from the daemon.
 - Probing works over the remote connection, so the wizard can identify hardware that is not attached
   to your computer.
 
