@@ -2,18 +2,17 @@
 
 A daemon is an endpoint, not a firmware: the channel browses the
 service type, speaks the control protocol's welcome, and lists the
-daemon's open sessions. Each session becomes a
-:class:`DiscoveredDevice` with the driver class for its protocol
-and the remote endpoint in its params. Token-protected daemons
-cannot be enumerated without credentials; they surface as a single
-daemon row that seeds the remote setup vars, and the wizard probes
-once the user supplies the token.
+daemon's devices. Every device becomes a :class:`DiscoveredDevice`
+using the single generic remote driver; the protocol is carried as
+info (``_raydriver_protocol``), never used to pick a driver class.
+Token-protected daemons cannot be enumerated without credentials;
+they surface as a single daemon row that seeds the endpoint vars,
+and the wizard probes once the user supplies the token.
 """
 
 import asyncio
 import logging
 from gettext import gettext as _
-from typing import Any
 
 from raydriver.remote import protocol
 
@@ -26,26 +25,8 @@ SERVICE_TYPE = "_raydriver._tcp.local."
 _SCAN_TIMEOUT = 10.0
 _QUERY_TIMEOUT = 3.0
 
-_PROTOCOL_DRIVERS = {
-    "grbl_simple": "GrblSerialSimpleDriver",
-    "smoothie": "SmoothieDriver",
-    "marlin": "MarlinSerialDriver",
-}
-
-
-def _driver_name_for_session(
-    protocol_name: str, config: dict[str, Any]
-) -> str | None:
-    if protocol_name == "grbl":
-        return "GrblTelnetDriver" if config.get("host") else "GrblSerialDriver"
-    return _PROTOCOL_DRIVERS.get(protocol_name)
-
-
-def _driver_label(driver_name: str) -> str:
-    from ..driver import get_driver_cls
-
-    cls = get_driver_cls(driver_name)
-    return cls.label if cls is not None else driver_name
+#: The one driver used for every raydriver-hosted device.
+REMOTE_DRIVER = "RaydriverRemoteDriver"
 
 
 async def find_raydriver_devices() -> list[DiscoveredDevice]:
@@ -85,37 +66,33 @@ async def _query_daemon(service: MDNSService) -> list[DiscoveredDevice]:
         if welcome["payload"].get("auth_required"):
             return [_daemon_row(service, _("token required"))]
         await protocol.write_frame(
-            writer, protocol.request(1, protocol.SESSION_LIST)
+            writer, protocol.request(1, protocol.DEVICE_LIST)
         )
         reply = await _read_message(reader)
         if reply is None or not reply.get("ok"):
             return [_daemon_row(service, _("token required"))]
         rows: list[DiscoveredDevice] = []
-        for session in reply["payload"].get("sessions", []):
-            config = session.get("config") or {}
-            driver_name = _driver_name_for_session(
-                session.get("protocol", ""), config
-            )
-            if driver_name is None:
+        for device in reply["payload"].get("devices", []):
+            ref = device.get("device")
+            if not ref:
                 continue
-            params = {
-                "remote": True,
-                "remote_host": service.host,
-                "remote_port": service.port,
-                **config,
-            }
             rows.append(
                 DiscoveredDevice(
-                    driver_name=driver_name,
-                    params=params,
-                    label=_driver_label(driver_name),
+                    driver_name=REMOTE_DRIVER,
+                    params={
+                        "remote_host": service.host,
+                        "remote_port": service.port,
+                        "device": ref,
+                        "_raydriver_protocol": device.get("protocol", ""),
+                    },
+                    label=device.get("label") or ref,
                     detail=_("{host}:{port} via raydriver daemon").format(
                         host=service.host, port=service.port
                     ),
                     identity=DeviceIdentity(banner=service.name or None),
                 )
             )
-        return rows or [_daemon_row(service, _("no sessions"))]
+        return rows or [_daemon_row(service, _("no devices"))]
     except (
         ConnectionError,
         OSError,
@@ -140,13 +117,12 @@ async def _read_message(reader: asyncio.StreamReader) -> dict | None:
 
 def _daemon_row(service: MDNSService, note: str) -> DiscoveredDevice:
     """A daemon-level row for endpoints that cannot be enumerated
-    without credentials (or at all). Seeds the remote setup vars;
-    the driver defaults to GRBL serial and the wizard probes once
-    the connection is configured."""
+    without credentials (or at all). Seeds the endpoint vars; the
+    user picks a device and the wizard probes once the connection
+    is configured."""
     return DiscoveredDevice(
-        driver_name="GrblSerialDriver",
+        driver_name=REMOTE_DRIVER,
         params={
-            "remote": True,
             "remote_host": service.host,
             "remote_port": service.port,
         },

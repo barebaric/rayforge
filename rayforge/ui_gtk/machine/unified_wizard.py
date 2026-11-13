@@ -503,7 +503,9 @@ class UnifiedWizard(PatchedDialogWindow):
                 # export only"; there is nothing to probe with.
                 if driver_cls is NoDeviceDriver:
                     driver_cls = None
-            if driver_cls is not None and driver_cls.supports_probing:
+            if driver_cls is not None and driver_cls.supports_probing_for(
+                mc.driver_args or {}
+            ):
                 return "probe"
             return self._ai_entry_step()
 
@@ -624,7 +626,7 @@ class UnifiedWizard(PatchedDialogWindow):
         return (
             driver_cls is not None
             and driver_cls is not NoDeviceDriver
-            and driver_cls.supports_probing
+            and driver_cls.supports_probing_for(device.params)
         )
 
     def _probe_identity(self, device: DiscoveredDevice) -> DeviceIdentity:

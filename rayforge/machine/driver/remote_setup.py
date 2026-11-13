@@ -1,10 +1,10 @@
-"""Shared remote-endpoint setup vars and session-config mapping.
+"""Daemon-endpoint setup vars for the generic remote driver.
 
-Remote is a configuration choice on the migrated driver shells:
-the same driver class works against locally attached hardware or
-against a raydriver daemon next to the machine. The session
-factory in ``raydriver.remote.client`` routes on the keys added
-here; everything else in the shells stays unchanged.
+A remote machine is always remote: there is no local/remote toggle
+and no per-driver remote wiring. The endpoint vars here describe
+the daemon to connect to; the device itself is chosen with a device
+picker fed by the daemon. The protocol is the daemon's knowledge,
+resolved by raydriver and surfaced as info — never selected here.
 """
 
 from gettext import gettext as _
@@ -13,9 +13,8 @@ from typing import Any
 from ...core.varset import Var
 from ...core.varset.hostnamevar import hostname_validator
 
-#: Setup-var keys that describe the remote endpoint.
-REMOTE_KEYS = (
-    "remote",
+#: Endpoint keys consumed by raydriver.remote.client.
+ENDPOINT_KEYS = (
     "remote_host",
     "remote_port",
     "token",
@@ -24,29 +23,9 @@ REMOTE_KEYS = (
 )
 
 
-def is_remote(kwargs: dict[str, Any]) -> bool:
-    """True when the setup selects a remote daemon endpoint."""
-    return bool(kwargs.get("remote"))
-
-
-def _when_remote(values: dict[str, Any]) -> bool:
-    return bool(values.get("remote"))
-
-
-def remote_setup_vars() -> list[Var[Any]]:
-    """The optional remote-endpoint vars for a driver's VarSet."""
+def endpoint_vars() -> list[Var[Any]]:
+    """The daemon-endpoint vars for the generic remote driver."""
     return [
-        Var(
-            key="remote",
-            label=_("Remote device"),
-            description=_(
-                "Drive a machine attached to a raydriver daemon on "
-                "another computer instead of locally attached "
-                "hardware."
-            ),
-            var_type=bool,
-            default=False,
-        ),
         Var(
             key="remote_host",
             label=_("Daemon hostname"),
@@ -55,8 +34,6 @@ def remote_setup_vars() -> list[Var[Any]]:
             ),
             var_type=str,
             validator=hostname_validator,
-            visible_when=_when_remote,
-            required_when=_when_remote,
         ),
         Var(
             key="remote_port",
@@ -64,8 +41,6 @@ def remote_setup_vars() -> list[Var[Any]]:
             description=_("Control port of the raydriver daemon."),
             var_type=int,
             default=8765,
-            visible_when=_when_remote,
-            required_when=_when_remote,
         ),
         Var(
             key="token",
@@ -74,18 +49,17 @@ def remote_setup_vars() -> list[Var[Any]]:
             var_type=str,
             default="",
             optional=True,
-            visible_when=_when_remote,
         ),
         Var(
             key="tls_ca",
             label=_("TLS certificate (PEM path)"),
             description=_(
-                "Pin the daemon's certificate. Required when a token is used."
+                "Pin the daemon's certificate. Required for a non-loopback "
+                "daemon when a token is used."
             ),
             var_type=str,
             default="",
             optional=True,
-            visible_when=_when_remote,
         ),
         Var(
             key="tls_hostname",
@@ -97,15 +71,12 @@ def remote_setup_vars() -> list[Var[Any]]:
             var_type=str,
             default="",
             optional=True,
-            visible_when=_when_remote,
         ),
     ]
 
 
-def remote_config(kwargs: dict[str, Any]) -> dict[str, Any]:
-    """Remote session-config keys extracted from the setup vars."""
-    if not is_remote(kwargs):
-        return {}
+def endpoint_config(kwargs: dict[str, Any]) -> dict[str, Any]:
+    """The endpoint dict consumed by raydriver.remote.client."""
     config: dict[str, Any] = {
         "remote_host": kwargs.get("remote_host", ""),
         "remote_port": int(kwargs.get("remote_port", 8765) or 8765),

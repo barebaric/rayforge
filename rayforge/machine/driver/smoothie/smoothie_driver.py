@@ -9,7 +9,6 @@ from typing import (
 )
 
 from raydriver.core import SessionEvent
-from raydriver.remote.client import RemoteSession, create_session
 from raydriver.smoothie import SmoothieSession
 
 from ....context import RayforgeContext
@@ -27,7 +26,6 @@ from ..driver import (
     DriverSetupError,
     Pos,
 )
-from ..remote_setup import is_remote, remote_config, remote_setup_vars
 from ..session_state import from_session_state
 from .smoothie_util import SmoothieProbeResult, build_smoothie_profile
 
@@ -61,7 +59,7 @@ class SmoothieDriver(Driver):
 
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         super().__init__(context, machine)
-        self._session: SmoothieSession | RemoteSession | None = None
+        self._session: SmoothieSession | None = None
 
     @property
     def machine_space_wcs(self) -> str:
@@ -77,7 +75,7 @@ class SmoothieDriver(Driver):
             return None
         return self._session.resource_uri
 
-    def _require_session(self) -> SmoothieSession | RemoteSession:
+    def _require_session(self) -> SmoothieSession:
         """Returns the session, raising a descriptive error when the
         driver was never set up (e.g. no host configured)."""
         if self._session is None:
@@ -89,8 +87,6 @@ class SmoothieDriver(Driver):
     @classmethod
     def precheck(cls, **kwargs: Any) -> None:
         """Checks if the hostname is a valid format."""
-        if is_remote(kwargs):
-            return
         host = cast(str, kwargs.get("host", ""))
         if not is_valid_hostname_or_ip(host):
             raise DriverPrecheckError(
@@ -112,7 +108,6 @@ class SmoothieDriver(Driver):
                     description=_("The Telnet port number"),
                     default=23,
                 ),
-                *remote_setup_vars(),
             ]
         )
 
@@ -209,12 +204,10 @@ class SmoothieDriver(Driver):
             "host": host,
             "tcp_port": int(port),
         }
-        config.update(remote_config(kwargs))
-        self._session = create_session(
-            "smoothie",
-            config,
-            self._dialect_templates(),
-            self._on_session_event,
+        self._session = SmoothieSession(
+            config=config,
+            dialect=self._dialect_templates(),
+            event_callback=self._on_session_event,
         )
 
     def _on_session_event(self, event: SessionEvent) -> None:

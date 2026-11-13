@@ -16,7 +16,6 @@ from raydriver.grbl.parser import (
     extract_device_name_from_output,
     is_grbl_output,
 )
-from raydriver.remote.client import RemoteSession, create_session
 
 from ....context import RayforgeContext
 from ....core.varset import (
@@ -48,7 +47,6 @@ from ..driver import (
     DriverSetupError,
     Pos,
 )
-from ..remote_setup import is_remote, remote_config, remote_setup_vars
 from ..session_state import error_from_session_state, from_session_state
 from .grbl_probe import probe_grbl_device
 from .grbl_util import (
@@ -96,7 +94,7 @@ class GrblSerialDriver(Driver):
 
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         super().__init__(context, machine)
-        self._session: GrblSession | RemoteSession | None = None
+        self._session: GrblSession | None = None
         self._machine_wcs = "G53"
 
     @property
@@ -113,7 +111,7 @@ class GrblSerialDriver(Driver):
             return None
         return self._session.resource_uri
 
-    def _require_session(self) -> GrblSession | RemoteSession:
+    def _require_session(self) -> GrblSession:
         """Returns the session, raising a descriptive error when the
         driver was never set up (e.g. no port configured)."""
         if self._session is None:
@@ -125,8 +123,6 @@ class GrblSerialDriver(Driver):
     @classmethod
     def precheck(cls, **kwargs: Any) -> None:
         """Checks for systemic serial port issues before setup."""
-        if is_remote(kwargs):
-            return
         try:
             SerialTransport.check_serial_permissions_globally()
         except SerialPortPermissionError as e:
@@ -182,7 +178,6 @@ class GrblSerialDriver(Driver):
                     min_val=0,
                     max_val=1024,
                 ),
-                *remote_setup_vars(),
             ]
         )
 
@@ -239,19 +234,18 @@ class GrblSerialDriver(Driver):
         # exists, as a missing port is a common occurrence when e.g.
         # the USB cable is not plugged in, and not a sign of
         # misconfiguration.
-        if not is_remote(kwargs):
-            if port.startswith("/dev/ttyS"):
-                logger.warning(
-                    f"Port {port} is a hardware serial port, which is "
-                    f"unlikely for USB-based GRBL devices."
-                )
+        if port.startswith("/dev/ttyS"):
+            logger.warning(
+                f"Port {port} is a hardware serial port, which is "
+                f"unlikely for USB-based GRBL devices."
+            )
 
-            # The Rust session retries its fixed port internally, so a
-            # 'vid:pid' spec can only be resolved once, here at setup.
-            try:
-                port = resolve_serial_port(port)
-            except serial.SerialException as e:
-                raise DriverSetupError(str(e)) from e
+        # The Rust session retries its fixed port internally, so a
+        # 'vid:pid' spec can only be resolved once, here at setup.
+        try:
+            port = resolve_serial_port(port)
+        except serial.SerialException as e:
+            raise DriverSetupError(str(e)) from e
 
         config = {
             "port": port,
@@ -269,13 +263,11 @@ class GrblSerialDriver(Driver):
         cached_rx_buffer_size = self.config.get("rx_buffer_size")
         if cached_rx_buffer_size is not None:
             config["cached_rx_buffer_size"] = int(cached_rx_buffer_size)
-        config.update(remote_config(kwargs))
 
-        self._session = create_session(
-            "grbl",
-            config,
-            self._dialect_templates(),
-            self._on_session_event,
+        self._session = GrblSession(
+            config=config,
+            dialect=self._dialect_templates(),
+            event_callback=self._on_session_event,
         )
 
     def _on_session_event(self, event: SessionEvent) -> None:

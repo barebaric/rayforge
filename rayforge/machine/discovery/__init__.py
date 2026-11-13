@@ -18,6 +18,13 @@ transport-level scanner with one recognizer type:
   declares, and optionally fingerprints generic-type candidates to
   confirm their firmware.
 
+* **raydriver channel** (:mod:`~rayforge.machine.discovery.
+  raydriver_channel`) — browses ``_raydriver._tcp`` for device-host
+  daemons and lists the devices each one hosts. Every device uses
+  the single generic remote driver; the daemon resolves the
+  protocol and supplies it as info, so discovery never maps a
+  protocol to a driver class.
+
 A driver participates by declaring a single
 :class:`~rayforge.machine.discovery.spec.DiscoverySpec` as its
 ``DISCOVERY`` class attribute, composed only of the channels it

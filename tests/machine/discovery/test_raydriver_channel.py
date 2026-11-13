@@ -1,7 +1,9 @@
 """Tests for the raydriver daemon discovery channel.
 
-Drives the channel against real in-test daemons over loopback,
-with the mDNS browse stubbed to resolve to them.
+Every discovered device uses the single generic remote driver; the
+protocol is carried as info, never used to pick a driver class.
+Drives the channel against real in-test daemons over loopback, with
+the mDNS browse stubbed to resolve to them.
 """
 
 import pytest
@@ -15,6 +17,8 @@ from rayforge.machine.discovery import raydriver_channel  # noqa: E402
 from rayforge.machine.discovery.types import device_key  # noqa: E402
 from rayforge.machine.transport.mdns_scan import MDNSService  # noqa: E402
 
+REMOTE_DRIVER = "RaydriverRemoteDriver"
+
 
 def service_for(port: int) -> MDNSService:
     return MDNSService(
@@ -27,7 +31,7 @@ def service_for(port: int) -> MDNSService:
 
 @pytest_asyncio.fixture
 async def open_daemon():
-    """An unauthenticated daemon with one auto-open grbl session."""
+    """An unauthenticated daemon with one configured grbl device."""
     daemon = Daemon(
         DaemonConfig(
             port=0,
@@ -62,7 +66,7 @@ async def token_daemon():
 
 
 @pytest.mark.asyncio
-async def test_enumerates_open_sessions(open_daemon, monkeypatch):
+async def test_enumerates_devices(open_daemon, monkeypatch):
     async def fake_scan(service_types):
         return [service_for(open_daemon)]
 
@@ -70,17 +74,16 @@ async def test_enumerates_open_sessions(open_daemon, monkeypatch):
     devices = await raydriver_channel.find_raydriver_devices()
     assert len(devices) == 1
     device = devices[0]
-    assert device.driver_name == "GrblSerialDriver"
-    assert device.params["remote"] is True
+    assert device.driver_name == REMOTE_DRIVER
     assert device.params["remote_host"] == "127.0.0.1"
     assert device.params["remote_port"] == open_daemon
-    assert device.params["port"] == "/dev/ttyUSB0"
-    assert device.params["baudrate"] == 115200
+    assert device.params["device"] == "/dev/ttyUSB0"
+    assert device.params["_raydriver_protocol"] == "grbl"
     assert "raydriver://" in device.key
 
 
 @pytest.mark.asyncio
-async def test_telnet_session_maps_to_telnet_driver(monkeypatch):
+async def test_telnet_device_uses_generic_driver(monkeypatch):
     daemon = Daemon(
         DaemonConfig(
             port=0,
@@ -102,8 +105,8 @@ async def test_telnet_session_maps_to_telnet_driver(monkeypatch):
     try:
         devices = await raydriver_channel.find_raydriver_devices()
         assert len(devices) == 1
-        assert devices[0].driver_name == "GrblTelnetDriver"
-        assert devices[0].params["host"] == "device.local"
+        assert devices[0].driver_name == REMOTE_DRIVER
+        assert devices[0].params["device"] == "device.local"
     finally:
         await daemon.stop()
 
@@ -117,10 +120,10 @@ async def test_token_daemon_yields_daemon_row(token_daemon, monkeypatch):
     devices = await raydriver_channel.find_raydriver_devices()
     assert len(devices) == 1
     device = devices[0]
-    assert device.params["remote"] is True
+    assert device.driver_name == REMOTE_DRIVER
     assert device.params["remote_host"] == "127.0.0.1"
     assert device.params["remote_port"] == token_daemon
-    assert "port" not in device.params
+    assert "device" not in device.params
     assert "token required" in device.detail
 
 
@@ -147,20 +150,20 @@ async def test_unreachable_daemon_yields_row(monkeypatch):
 def test_device_key_remote_uniqueness():
     local = device_key("GrblSerialDriver", {"port": "/dev/ttyUSB0"})
     remote_a = device_key(
-        "GrblSerialDriver",
+        REMOTE_DRIVER,
         {
             "remote_host": "pi-a.local",
             "remote_port": 8765,
-            "port": "/dev/ttyUSB0",
+            "device": "/dev/ttyUSB0",
         },
     )
     remote_b = device_key(
-        "GrblSerialDriver",
+        REMOTE_DRIVER,
         {
             "remote_host": "pi-b.local",
             "remote_port": 8765,
-            "port": "/dev/ttyUSB0",
+            "device": "/dev/ttyUSB0",
         },
     )
     assert len({local, remote_a, remote_b}) == 3
-    assert remote_a.startswith("GrblSerialDriver:raydriver://pi-a.local:")
+    assert remote_a.startswith(f"{REMOTE_DRIVER}:raydriver://pi-a.local:")

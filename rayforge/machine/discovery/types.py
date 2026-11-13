@@ -43,7 +43,12 @@ def device_key(driver_name: str, params: dict) -> str:
     """
     remote_host = params.get("remote_host")
     if isinstance(remote_host, str) and remote_host:
-        resource = params.get("port") or params.get("host") or ""
+        resource = (
+            params.get("device")
+            or params.get("port")
+            or params.get("host")
+            or ""
+        )
         return (
             f"{driver_name}:raydriver://{remote_host}:"
             f"{params.get('remote_port')}:{resource}"
