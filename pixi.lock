@@ -238,7 +238,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/typing_extensions-4.16.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026e-h5d301ff_0.conda
       - pypi: ./
-      - pypi: https://files.pythonhosted.org/packages/01/dd/534ea11cc6c097a61b578f1986aa3b2c712f6a9f33bd0a26e8aa573cef60/raydriver-1.3.0.tar.gz
       - pypi: https://files.pythonhosted.org/packages/05/8e/961c0007c59b8dd7729d542c61a4d537767a59645b82a0b521206e1e25c2/pyyaml-6.0.3.tar.gz
       - pypi: https://files.pythonhosted.org/packages/07/6c/aa3f2f849e01cb6a001cd8554a88d4c77c5c1a31c95bdf1cf9301e6d9ef4/defusedxml-0.7.1-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/07/bc/587a445451b253b285629263eb51c2d8e9bcea4fc97826266d186f96f558/pyserial-3.5-py2.py3-none-any.whl
@@ -295,6 +294,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/cf/f5/2fcc5e30053a938286f17d0edf3f0850b8061b984256fa7c26850b9c8809/aiohttp-3.14.5-cp315-cp315-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/df/f3/90993aab504fa2e1f28fcc09aa16b6ea4f00e75a037d9136e737855833e2/pyvips-3.2.0.tar.gz
       - pypi: https://files.pythonhosted.org/packages/e4/62/c3c23511ebe3d76dc679db0bb045dfd20ed3452bec12dcbbe8d655498a7d/vtracer-0.6.15.tar.gz
+      - pypi: https://files.pythonhosted.org/packages/f0/cd/7ca4cda3e40f931a1f614aefb487d929c05099301317352a901f509ab4d8/raydriver-1.3.1.tar.gz
       - pypi: https://files.pythonhosted.org/packages/fb/76/641ae371508676492379f16e2fa48f4e2c11741bd63c48be4b12a6b09cba/aiosignal-1.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/fb/be/35261223d9416a0751cdff1c7b4a6f881387218a12d439fe22fefebc8c04/textual-8.2.8-py3-none-any.whl
       osx-arm64:
@@ -483,7 +483,6 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/19/15/8720e90dcece6cdd1ab68863c1fc3510785c3ca84cb1cc1e5067448b5703/raygeo-1.76.0-cp311-abi3-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/20/20/73bbebf1cafc276b93ce9144222c2691fe7f86b87223a82f2696c16023c5/ezdxf-1.4.5-cp315-cp315-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/21/1c/4ee858c56fd46cf0e619364c58d1df64b486b6c9abb2d09dac3b8462ef54/ruida_pa-0.24.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/21/67/9a27aecbbd74e149698cb4d0aab3a98aa581df3c97c985a2dd5b864f2acb/raydriver-1.3.0-cp311-abi3-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/24/af/dda3fbb1da1d3cf5bf8cd6a924ab799fd2a483382df7de6f9770b543ef4f/fonttools-4.68.0-cp315-cp315-macosx_10_15_universal2.whl
       - pypi: https://files.pythonhosted.org/packages/29/5c/969a1b72692055fd2a419590c41847ec9144fefb97b75ff1cde5b6372891/aiohttp-3.14.5-cp315-cp315-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/38/bb/d215ee7c73b61497b28a5503f9f53523f294fcc936762b7caf90e0c1c2b5/pyparsing-3.3.3-py3-none-any.whl
@@ -492,6 +491,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/51/14/78624d9c89bab76c2a2e1e839c7641fa686828c2c1c8fb64aedf3b371a5d/trimesh-5.2.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/57/1d/793b054cbd0a2e0b4694dacc22bad066d6635ce85dd6cdd1f98d95169e9b/semver-3.1.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/58/a2/bb081bab032533a855d44de1d56f8e8426114ff1ba5d1f07a438a0a654f8/idna-3.20-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/5b/ed/ba211fb374a5fc05016c5eb8e6551747751c28f5f1e4cc1ca65145050cca/raydriver-1.3.1-cp311-abi3-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/60/45/c7b5c3168458db837e8ceab06dc77824e18202679d0463f0e8f002143a97/tinycss2-1.5.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/62/a1/3d680cbfd5f4b8f15abc1d571870c5fc3e594bb582bc3b64ea099db13e56/jinja2-3.1.6-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/64/b4/17d4b0b2a2dc85a6df63d1157e028ed19f90d4cd97c36717afef2bc2f395/attrs-26.1.0-py3-none-any.whl
@@ -945,7 +945,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026e-h5d301ff_0.conda
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/00/05/76184fe08339723d643ab47887a8e4de8f2921ca4e008617ab7490af7857/filelock-4.2.9-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/01/dd/534ea11cc6c097a61b578f1986aa3b2c712f6a9f33bd0a26e8aa573cef60/raydriver-1.3.0.tar.gz
       - pypi: https://files.pythonhosted.org/packages/05/8e/961c0007c59b8dd7729d542c61a4d537767a59645b82a0b521206e1e25c2/pyyaml-6.0.3.tar.gz
       - pypi: https://files.pythonhosted.org/packages/07/6c/aa3f2f849e01cb6a001cd8554a88d4c77c5c1a31c95bdf1cf9301e6d9ef4/defusedxml-0.7.1-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/07/bc/587a445451b253b285629263eb51c2d8e9bcea4fc97826266d186f96f558/pyserial-3.5-py2.py3-none-any.whl
@@ -1017,6 +1016,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/e4/62/c3c23511ebe3d76dc679db0bb045dfd20ed3452bec12dcbbe8d655498a7d/vtracer-0.6.15.tar.gz
       - pypi: https://files.pythonhosted.org/packages/e8/ea/47fbdc8f37410956fd445720e927589b1e2a47772c5f28109f0ce2fa26d9/pytest_mock-3.17.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/eb/83/ce0a196e4f7b20b11ce3aa1fc72fb973f64b7628d51c1b8aebad37fb7f81/pre_commit-4.7.0-py2.py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/f0/cd/7ca4cda3e40f931a1f614aefb487d929c05099301317352a901f509ab4d8/raydriver-1.3.1.tar.gz
       - pypi: https://files.pythonhosted.org/packages/f5/c6/4f3931c3ff80a6f2608209181adb00527970a4b43b64c3aa323383c37d51/coverage-7.17.2-cp315-cp315-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/fa/70/fffc9613501877c0a10a1ef73a165e6ded3e53f6e7502227fef56d973933/identify-2.6.20-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/fb/76/641ae371508676492379f16e2fa48f4e2c11741bd63c48be4b12a6b09cba/aiosignal-1.4.0-py3-none-any.whl
@@ -1218,7 +1218,6 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/19/15/8720e90dcece6cdd1ab68863c1fc3510785c3ca84cb1cc1e5067448b5703/raygeo-1.76.0-cp311-abi3-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/20/20/73bbebf1cafc276b93ce9144222c2691fe7f86b87223a82f2696c16023c5/ezdxf-1.4.5-cp315-cp315-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/21/1c/4ee858c56fd46cf0e619364c58d1df64b486b6c9abb2d09dac3b8462ef54/ruida_pa-0.24.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/21/67/9a27aecbbd74e149698cb4d0aab3a98aa581df3c97c985a2dd5b864f2acb/raydriver-1.3.0-cp311-abi3-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/24/af/dda3fbb1da1d3cf5bf8cd6a924ab799fd2a483382df7de6f9770b543ef4f/fonttools-4.68.0-cp315-cp315-macosx_10_15_universal2.whl
       - pypi: https://files.pythonhosted.org/packages/27/1a/1f68f9ba0c207934b35b86a8ca3aad8395a3d6dd7921c0686e23853ff5a9/mccabe-0.7.0-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/28/32/89a94a8eb11fd505a381ae6f04e190d038d9958695209dc1786ce5cfcda3/ruff-0.17.4-py3-none-macosx_11_0_arm64.whl
@@ -1232,6 +1231,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/57/1d/793b054cbd0a2e0b4694dacc22bad066d6635ce85dd6cdd1f98d95169e9b/semver-3.1.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/58/a2/bb081bab032533a855d44de1d56f8e8426114ff1ba5d1f07a438a0a654f8/idna-3.20-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/5b/13/20718103f5e697c5b6b4d91fd32f0a4e3f4f6e3c4990ffe4d5c3bf5ec598/pygobject_stubs-2.20.0.tar.gz
+      - pypi: https://files.pythonhosted.org/packages/5b/ed/ba211fb374a5fc05016c5eb8e6551747751c28f5f1e4cc1ca65145050cca/raydriver-1.3.1-cp311-abi3-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/5d/57/a3adc5f380f50ef3d01014cb9d3b8c17b25de9b89def20d559def4fc3c4e/flake8-7.5.0-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/60/45/c7b5c3168458db837e8ceab06dc77824e18202679d0463f0e8f002143a97/tinycss2-1.5.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/62/a1/3d680cbfd5f4b8f15abc1d571870c5fc3e594bb582bc3b64ea099db13e56/jinja2-3.1.6-py3-none-any.whl
@@ -9681,7 +9681,7 @@ packages:
 - pypi: ./
   name: rayforge
   requires_dist:
-  - raydriver==1.3.0
+  - raydriver==1.3.1
   - raygeo==1.76.0
   - aiohttp==3.14.5
   - asyncudp==0.11.0
@@ -9721,16 +9721,6 @@ packages:
   version: 4.2.9
   sha256: a379c50a729e5b68c8519a4d26489f755d9769960a236ecd838190e2a78db2e9
   requires_python: '>=3.11'
-- pypi: https://files.pythonhosted.org/packages/01/dd/534ea11cc6c097a61b578f1986aa3b2c712f6a9f33bd0a26e8aa573cef60/raydriver-1.3.0.tar.gz
-  name: raydriver
-  version: 1.3.0
-  sha256: 6b9fa9f04b9080d122c5d48c345e959da9a0d60985a061434e4a13af5668e8cf
-  requires_dist:
-  - python-zeroconf ; extra == 'daemon'
-  - pytest ; extra == 'test'
-  - pytest-asyncio ; extra == 'test'
-  - pytest-timeout ; extra == 'test'
-  requires_python: '>=3.10'
 - pypi: https://files.pythonhosted.org/packages/05/8e/961c0007c59b8dd7729d542c61a4d537767a59645b82a0b521206e1e25c2/pyyaml-6.0.3.tar.gz
   name: pyyaml
   version: 6.0.3
@@ -9871,16 +9861,6 @@ packages:
   - pyserial>=3.5
   - textual>=8.2,<9
   - rpyc>=6.0
-  requires_python: '>=3.10'
-- pypi: https://files.pythonhosted.org/packages/21/67/9a27aecbbd74e149698cb4d0aab3a98aa581df3c97c985a2dd5b864f2acb/raydriver-1.3.0-cp311-abi3-macosx_11_0_arm64.whl
-  name: raydriver
-  version: 1.3.0
-  sha256: 0212c6fac5d826384b2728dc432e129dcf2b7336e507165d91e9e89ea7466dc4
-  requires_dist:
-  - python-zeroconf ; extra == 'daemon'
-  - pytest ; extra == 'test'
-  - pytest-asyncio ; extra == 'test'
-  - pytest-timeout ; extra == 'test'
   requires_python: '>=3.10'
 - pypi: https://files.pythonhosted.org/packages/24/af/dda3fbb1da1d3cf5bf8cd6a924ab799fd2a483382df7de6f9770b543ef4f/fonttools-4.68.0-cp315-cp315-macosx_10_15_universal2.whl
   name: fonttools
@@ -10074,6 +10054,16 @@ packages:
   requires_dist:
   - pygobject>=3.55.0
   - typing-extensions
+  requires_python: '>=3.10'
+- pypi: https://files.pythonhosted.org/packages/5b/ed/ba211fb374a5fc05016c5eb8e6551747751c28f5f1e4cc1ca65145050cca/raydriver-1.3.1-cp311-abi3-macosx_11_0_arm64.whl
+  name: raydriver
+  version: 1.3.1
+  sha256: 68b0cb080d3760cbc6db2f9da4ab8dd5602a261f57a84ae8c4de7bee26d3628d
+  requires_dist:
+  - zeroconf
+  - pytest ; extra == 'test'
+  - pytest-asyncio ; extra == 'test'
+  - pytest-timeout ; extra == 'test'
   requires_python: '>=3.10'
 - pypi: https://files.pythonhosted.org/packages/5d/57/a3adc5f380f50ef3d01014cb9d3b8c17b25de9b89def20d559def4fc3c4e/flake8-7.5.0-py2.py3-none-any.whl
   name: flake8
@@ -10743,6 +10733,16 @@ packages:
   - pyyaml>=5.1
   - virtualenv>=20.10.0
   requires_python: '>=3.11'
+- pypi: https://files.pythonhosted.org/packages/f0/cd/7ca4cda3e40f931a1f614aefb487d929c05099301317352a901f509ab4d8/raydriver-1.3.1.tar.gz
+  name: raydriver
+  version: 1.3.1
+  sha256: b69441121217b1ef1a8899bb94a35a7717801e1a405096f09744fdf92f3e5ac1
+  requires_dist:
+  - zeroconf
+  - pytest ; extra == 'test'
+  - pytest-asyncio ; extra == 'test'
+  - pytest-timeout ; extra == 'test'
+  requires_python: '>=3.10'
 - pypi: https://files.pythonhosted.org/packages/f5/c6/4f3931c3ff80a6f2608209181adb00527970a4b43b64c3aa323383c37d51/coverage-7.17.2-cp315-cp315-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl
   name: coverage
   version: 7.17.2
