@@ -17,6 +17,7 @@ from raydriver.marlin.parser import (
     is_boot_message,
     is_marlin_output,
 )
+from raydriver.remote.client import RemoteSession, create_session
 
 from ....context import RayforgeContext
 from ....core.varset import (
@@ -47,6 +48,7 @@ from ..driver import (
     DriverSetupError,
     Pos,
 )
+from ..remote_setup import is_remote, remote_config, remote_setup_vars
 from ..session_state import from_session_state
 from .marlin_probe import probe_marlin_device
 
@@ -90,7 +92,7 @@ class MarlinSerialDriver(Driver):
 
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         super().__init__(context, machine)
-        self._session: MarlinSession | None = None
+        self._session: MarlinSession | RemoteSession | None = None
         self._boot_lines: list[str] = []
 
     @property
@@ -115,6 +117,8 @@ class MarlinSerialDriver(Driver):
 
     @classmethod
     def precheck(cls, **kwargs: Any) -> None:
+        if is_remote(kwargs):
+            return
         try:
             SerialTransport.check_serial_permissions_globally()
         except SerialPortPermissionError as e:
@@ -135,6 +139,7 @@ class MarlinSerialDriver(Driver):
                     "baudrate",
                     choices=SerialTransport.list_baud_rates(),
                 ),
+                *remote_setup_vars(),
             ]
         )
 
@@ -192,19 +197,22 @@ class MarlinSerialDriver(Driver):
 
         # The Rust session retries its fixed port internally, so a
         # 'vid:pid' spec can only be resolved once, here at setup.
-        try:
-            port = resolve_serial_port(port)
-        except serial.SerialException as e:
-            raise DriverSetupError(str(e)) from e
+        if not is_remote(kwargs):
+            try:
+                port = resolve_serial_port(port)
+            except serial.SerialException as e:
+                raise DriverSetupError(str(e)) from e
 
         config = {
             "port": port,
             "baudrate": int(baudrate),
         }
-        self._session = MarlinSession(
-            config=config,
-            dialect=self._dialect_templates(),
-            event_callback=self._on_session_event,
+        config.update(remote_config(kwargs))
+        self._session = create_session(
+            "marlin",
+            config,
+            self._dialect_templates(),
+            self._on_session_event,
         )
 
     def _on_session_event(self, event: SessionEvent) -> None:
@@ -318,7 +326,7 @@ class MarlinSerialDriver(Driver):
         )
         return [line for line in lines if line != "ok"]
 
-    def _require_session(self) -> MarlinSession:
+    def _require_session(self) -> MarlinSession | RemoteSession:
         """Returns the session, raising a descriptive error when the
         driver was never set up (e.g. no port configured)."""
         if self._session is None:

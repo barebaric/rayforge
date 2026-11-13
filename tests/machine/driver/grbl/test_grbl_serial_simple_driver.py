@@ -198,7 +198,16 @@ class TestRegistry:
 
     def test_setup_vars(self):
         varset = GrblSerialSimpleDriver.get_setup_vars()
-        assert set(varset.keys()) == {"port", "baudrate"}
+        assert set(varset.keys()) == {
+            "port",
+            "baudrate",
+            "remote",
+            "remote_host",
+            "remote_port",
+            "token",
+            "tls_ca",
+            "tls_hostname",
+        }
 
     def test_create_encoder(self, context_initializer, machine):
         drv = GrblSerialSimpleDriver(context_initializer, machine)

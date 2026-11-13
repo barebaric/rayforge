@@ -2,11 +2,12 @@ import logging
 from gettext import gettext as _
 from typing import Any, cast
 
-from raydriver.grbl import GrblSession
+from raydriver.remote.client import create_session
 
 from ....core.varset import HostnameVar, PortVar, Var, VarSet
 from ....core.varset.hostnamevar import is_valid_hostname_or_ip
 from ..driver import DriverPrecheckError, DriverSetupError
+from ..remote_setup import is_remote, remote_config, remote_setup_vars
 from .grbl_serial import GrblSerialDriver
 
 logger = logging.getLogger(__name__)
@@ -32,6 +33,8 @@ class GrblTelnetDriver(GrblSerialDriver):
 
     @classmethod
     def precheck(cls, **kwargs: Any) -> None:
+        if is_remote(kwargs):
+            return
         host = cast(str, kwargs.get("host", ""))
         if not is_valid_hostname_or_ip(host):
             raise DriverPrecheckError(
@@ -77,6 +80,7 @@ class GrblTelnetDriver(GrblSerialDriver):
                     var_type=bool,
                     default=False,
                 ),
+                *remote_setup_vars(),
             ]
         )
 
@@ -102,9 +106,11 @@ class GrblTelnetDriver(GrblSerialDriver):
         cached_rx_buffer_size = self.config.get("rx_buffer_size")
         if cached_rx_buffer_size is not None:
             config["cached_rx_buffer_size"] = int(cached_rx_buffer_size)
+        config.update(remote_config(kwargs))
 
-        self._session = GrblSession(
-            config=config,
-            dialect=self._dialect_templates(),
-            event_callback=self._on_session_event,
+        self._session = create_session(
+            "grbl",
+            config,
+            self._dialect_templates(),
+            self._on_session_event,
         )
