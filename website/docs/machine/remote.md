@@ -26,8 +26,8 @@ even if Rayforge disconnects; reconnecting resyncs progress exactly.
 3. For LAN access, create a certificate with the printed `openssl` one-liner and set `tls_cert` and
    `tls_key` in the config. A daemon on a non-loopback address refuses to start without both a token
    and TLS.
-4. Start `raydriver daemon`, or run it as a systemd service (an example unit ships in the raydriver
-   documentation).
+4. Run `raydriver daemon install` to install and start the background service (systemd on Linux,
+   launchd on macOS, a logon task on Windows), or run `raydriver daemon` in the foreground.
 
 ## Connect Rayforge
 

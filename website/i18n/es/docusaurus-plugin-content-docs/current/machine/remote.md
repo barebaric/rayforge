@@ -28,8 +28,9 @@ sincroniza exactamente.
 3. Para el acceso LAN, cree un certificado con el comando `openssl` impreso y configure `tls_cert` y
    `tls_key` en la configuración. Un demonio en una dirección que no sea loopback no arranca sin
    token y TLS.
-4. Inicie `raydriver daemon`, o ejecútelo como servicio systemd (hay una unidad de ejemplo en la
-   documentación de raydriver).
+4. Ejecute `raydriver daemon install` para instalar e iniciar el servicio en segundo plano (systemd
+   en Linux, launchd en macOS, una tarea de inicio de sesión en Windows), o ejecute
+   `raydriver daemon` en primer plano.
 
 ## Conectar Rayforge
 

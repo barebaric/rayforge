@@ -28,8 +28,9 @@ Wiederverbinden wird der Fortschritt exakt synchronisiert.
 3. Erstellen Sie für den LAN-Zugriff ein Zertifikat mit dem ausgegebenen `openssl`-Einzeiler und
    setzen Sie `tls_cert` und `tls_key` in der Konfiguration. Ein Daemon auf einer
    Nicht-Loopback-Adresse startet ohne Token und TLS nicht.
-4. Starten Sie `raydriver daemon` oder betreiben Sie ihn als systemd-Dienst (eine Beispiel-Unit ist
-   in der raydriver-Dokumentation enthalten).
+4. Führen Sie `raydriver daemon install` aus, um den Hintergrunddienst zu installieren und zu
+   starten (systemd unter Linux, launchd unter macOS, eine Anmelde-Aufgabe unter Windows), oder
+   starten Sie `raydriver daemon` im Vordergrund.
 
 ## Rayforge verbinden
 

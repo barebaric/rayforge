@@ -27,8 +27,9 @@ exatamente.
 3. Para acesso LAN, crie um certificado com o comando `openssl` impresso e defina `tls_cert` e
    `tls_key` na configuração. Um daemon em um endereço que não seja loopback não inicia sem token e
    TLS.
-4. Inicie `raydriver daemon`, ou execute-o como serviço systemd (uma unidade de exemplo acompanha a
-   documentação do raydriver).
+4. Execute `raydriver daemon install` para instalar e iniciar o serviço em segundo plano (systemd no
+   Linux, launchd no macOS, uma tarefa de logon no Windows), ou execute `raydriver daemon` em
+   primeiro plano.
 
 ## Conectar o Rayforge
 

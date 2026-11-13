@@ -28,8 +28,9 @@ reconnexion resynchronise la progression exactement.
 3. Pour l'accès LAN, créez un certificat avec la commande `openssl` affichée et renseignez
    `tls_cert` et `tls_key` dans la configuration. Un démon sur une adresse autre que loopback refuse
    de démarrer sans jeton et TLS.
-4. Lancez `raydriver daemon`, ou exécutez-le comme service systemd (une unité d'exemple est fournie
-   dans la documentation de raydriver).
+4. Exécutez `raydriver daemon install` pour installer et démarrer le service d'arrière-plan (systemd
+   sous Linux, launchd sous macOS, une tâche de connexion sous Windows), ou lancez
+   `raydriver daemon` au premier plan.
 
 ## Connecter Rayforge
 

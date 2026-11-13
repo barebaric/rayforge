@@ -23,7 +23,9 @@ description:
    并打印证书命令。
 3. 如需局域网访问，请用打印出的 `openssl` 命令创建证书，并在配置中设置 `tls_cert` 和 `tls_key`。
    绑定非回环地址的守护进程在没有令牌和 TLS 时拒绝启动。
-4. 启动 `raydriver daemon`，或将其作为 systemd 服务运行（raydriver 文档中附有示例单元）。
+4. 运行 `raydriver daemon install`
+   安装并启动后台服务（Linux 上为 systemd，macOS 上为 launchd，Windows 上为登录任务），或在前台运行
+   `raydriver daemon`。
 
 ## 连接 Rayforge
 
