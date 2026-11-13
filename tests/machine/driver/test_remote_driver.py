@@ -100,6 +100,17 @@ def test_setup_vars_are_endpoint_plus_device():
     assert "port" not in keys
 
 
+def test_tls_vars_hidden_for_loopback():
+    varset = RaydriverRemoteDriver.get_setup_vars()
+    for key in ("tls_ca", "tls_hostname"):
+        var = next(v for v in varset.vars if v.key == key)
+        assert var.visible_when is not None
+        assert var.visible_when({"remote_host": "127.0.0.1"}) is False
+        assert var.visible_when({"remote_host": "localhost"}) is False
+        assert var.visible_when({"remote_host": ""}) is False
+        assert var.visible_when({"remote_host": "pi.local"}) is True
+
+
 def test_capabilities_come_from_metadata():
     assert RaydriverRemoteDriver.supports_probing_for(
         {"_raydriver_protocol": "grbl"}

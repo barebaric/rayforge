@@ -10,6 +10,8 @@ resolved by raydriver and surfaced as info — never selected here.
 from gettext import gettext as _
 from typing import Any
 
+from raydriver.analyzer.listener import is_loopback
+
 from ...core.varset import Var
 from ...core.varset.hostnamevar import hostname_validator
 
@@ -21,6 +23,16 @@ ENDPOINT_KEYS = (
     "tls_ca",
     "tls_hostname",
 )
+
+
+def _when_tls_needed(values: dict[str, Any]) -> bool:
+    """TLS settings only apply to a daemon reached over the network.
+
+    A loopback daemon needs no certificate (the token never leaves
+    the machine), so hide the TLS fields for it.
+    """
+    host = values.get("remote_host") or ""
+    return bool(host) and not is_loopback(host)
 
 
 def endpoint_vars() -> list[Var[Any]]:
@@ -45,7 +57,10 @@ def endpoint_vars() -> list[Var[Any]]:
         Var(
             key="token",
             label=_("Token"),
-            description=_("Shared secret configured on the daemon."),
+            description=_(
+                "The daemon's shared secret. Run 'raydriver daemon status' "
+                "on the computer running the daemon to print it."
+            ),
             var_type=str,
             default="",
             optional=True,
@@ -54,12 +69,13 @@ def endpoint_vars() -> list[Var[Any]]:
             key="tls_ca",
             label=_("TLS certificate (PEM path)"),
             description=_(
-                "Pin the daemon's certificate. Required for a non-loopback "
-                "daemon when a token is used."
+                "Pin the daemon's certificate. Only needed for a daemon "
+                "reached over the network with TLS."
             ),
             var_type=str,
             default="",
             optional=True,
+            visible_when=_when_tls_needed,
         ),
         Var(
             key="tls_hostname",
@@ -71,6 +87,7 @@ def endpoint_vars() -> list[Var[Any]]:
             var_type=str,
             default="",
             optional=True,
+            visible_when=_when_tls_needed,
         ),
     ]
 

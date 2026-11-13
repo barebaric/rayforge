@@ -7,6 +7,7 @@ capabilities from raydriver's metadata without naming a protocol.
 """
 
 import logging
+from gettext import gettext as _
 from typing import Any
 
 from gi.repository import Adw, Gtk
@@ -112,6 +113,7 @@ class RemoteDeviceAdapter(RowAdapter):
         endpoint = self._endpoint
         if not endpoint or not endpoint.get("remote_host"):
             return
+        self._row.set_subtitle(_("Searching for devices…"))
 
         async def _coroutine(exec_ctx: Any) -> Any:
             return await list_devices(dict(endpoint))
@@ -128,12 +130,24 @@ class RemoteDeviceAdapter(RowAdapter):
                 devices = task.result()
             except Exception:
                 logger.debug("Listing daemon devices failed", exc_info=True)
+                self._row.set_subtitle(
+                    _(
+                        "Could not list devices — check the hostname and "
+                        "token (the daemon may require a token)."
+                    )
+                )
                 return
             self._protocols = {
                 d["device"]: d.get("protocol", "") for d in devices
             }
             self._labels = {d["device"]: d.get("label", "") for d in devices}
             self._rebuild([d["device"] for d in devices])
+            if devices:
+                self._row.set_subtitle(self._var.description or "")
+            else:
+                self._row.set_subtitle(
+                    _("The daemon has no devices configured.")
+                )
 
         task_mgr.schedule_on_main_thread(_update)
 
