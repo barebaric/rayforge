@@ -54,13 +54,22 @@ class FilletCommand(SketchChangeCommand):
         line1_id: EntityID,
         line2_id: EntityID,
         radius: float,
-        add_point,
+        add_point=None,
     ) -> dict[str, Any] | None:
         """
         Calculates the fillet geometry and allocates its points
         through ``add_point``. This is a pure function for
         testability and reusability.
         """
+        temp_points: list = []
+        if add_point is None:
+            from raygeo.sketch.entities.point import SketchPoint
+
+            def add_point(x, y):
+                pid = len(temp_points)
+                temp_points.append(SketchPoint(pid, x, y))
+                return pid
+
         line1 = reg.get_entity_object(line1_id)
         line2 = reg.get_entity_object(line2_id)
         if not isinstance(line1, Line) or not isinstance(line2, Line):
@@ -150,9 +159,11 @@ class FilletCommand(SketchChangeCommand):
         ]
 
         return {
+            "points": temp_points,
             "entities": [new_line1, new_line2, fillet_arc],
             "constraints": added_constraints,
             "removed_entity_ids": [line1_id, line2_id],
+            "removed_entities": [line1_id, line2_id],
         }
 
     def _prepare(self) -> bool:
