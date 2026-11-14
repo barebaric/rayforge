@@ -45,9 +45,8 @@ def migrate_sketch_data(data: dict[str, Any]) -> dict[str, Any]:
 
     The input is not modified. Unknown constraint types (including
     the empty dictionaries legacy files wrote for drag constraints)
-    are dropped with a warning; the symmetry constraint's explicit
-    ``None`` ``center``/``axis`` keys are removed because raygeo
-    cannot resolve them.
+    are dropped with a warning. Known constraint dictionaries are
+    preserved verbatim so a save/reload round-trip is lossless.
     """
     migrated = copy.deepcopy(data)
     registry_data = dict(migrated.get("registry", {}))
@@ -74,9 +73,4 @@ def _migrate_constraint(
             type_name,
         )
         return None
-    migrated = {
-        key: value
-        for key, value in constraint_dict.items()
-        if value is not None or key not in ("center", "axis")
-    }
-    return migrated
+    return dict(constraint_dict)

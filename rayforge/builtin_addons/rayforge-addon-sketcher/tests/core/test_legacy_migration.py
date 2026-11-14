@@ -109,9 +109,10 @@ def test_migrate_merges_constraints_into_registry():
         "DistanceConstraint",
         "SymmetryConstraint",
     ]
-    # The symmetry constraint's explicit None keys are stripped.
+    # The symmetry constraint's explicit None center is preserved
+    # verbatim (raygeo resolves the axis and ignores a null center).
     symmetry = constraints[3]
-    assert "center" not in symmetry
+    assert symmetry["center"] is None
     assert symmetry["axis"] == 3
 
 

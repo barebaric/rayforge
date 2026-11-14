@@ -48,7 +48,7 @@ class EntityFlags:
         self.waypoints.clear()
         for pid in registry.point_ids():
             kind = registry.waypoint_type(pid)
-            if kind is not None:
+            if kind is not None and kind != WaypointType.SHARP.value:
                 self.waypoints[pid] = WaypointType(kind)
         for eid in registry.entity_ids():
             entity = registry.get_entity_object(eid)

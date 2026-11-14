@@ -545,6 +545,23 @@ class Sketch(IAsset, IGeometryProvider):
             for c in self._constraints
         )
 
+    def _constraint_to_dict(self, index: int, constraint: Any) -> dict:
+        """Serializes a constraint from its stored reference dictionary
+        (preserving entity references and registration order), overlaying
+        the constraint's current mutable state."""
+        stored = self.registry.constraint_dict(index)
+        data = dict(stored) if stored is not None else constraint.to_dict()
+        if hasattr(constraint, "value"):
+            data["value"] = constraint.value
+        if hasattr(constraint, "user_visible"):
+            data["user_visible"] = constraint.user_visible
+        expression = getattr(constraint, "expression", None)
+        if expression:
+            data["expression"] = expression
+        else:
+            data.pop("expression", None)
+        return data
+
     def to_dict(self, include_input_values: bool = False) -> dict[str, Any]:
         """Serializes the Sketch to a dictionary."""
         registry_dict = self.registry.to_dict()
@@ -560,7 +577,10 @@ class Sketch(IAsset, IGeometryProvider):
             ),
             "params": self.params.to_dict(),
             "registry": registry_dict,
-            "constraints": [c.to_dict() for c in self._constraints],
+            "constraints": [
+                self._constraint_to_dict(i, c)
+                for i, c in enumerate(self._constraints)
+            ],
             "fills": [f.to_dict() for f in self.fills],
             "arrays": [p.to_dict() for p in self.arrays],
             "origin_id": self.origin_id,
