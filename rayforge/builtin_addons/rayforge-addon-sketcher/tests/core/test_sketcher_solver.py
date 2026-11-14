@@ -282,10 +282,7 @@ def test_partition_constraints_separates_islands():
     p3 = reg.add_point(200, 0, fixed=True)
     p4 = reg.add_point(205, 0)
 
-    solver = Solver(
-        reg,
-        ParameterContext(),
-        [DistanceConstraint(p1, p2, 10.0), DistanceConstraint(p3, p4, 50.0)],
+    solver = Solver(reg, [DistanceConstraint(p1, p2, 10.0), DistanceConstraint(p3, p4, 50.0)],
     )
 
     assert solver.solve() is True
@@ -303,10 +300,7 @@ def test_partition_constraints_merges_bridged_islands():
     p3 = reg.add_point(200, 0, fixed=True)
     p4 = reg.add_point(205, 0)
 
-    solver = Solver(
-        reg,
-        ParameterContext(),
-        [
+    solver = Solver(reg, [
             DistanceConstraint(p1, p2, 10.0),
             DistanceConstraint(p3, p4, 50.0),
             DistanceConstraint(p1, p3, 200.0),

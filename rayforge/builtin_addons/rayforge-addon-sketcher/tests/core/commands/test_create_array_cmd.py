@@ -48,7 +48,7 @@ def test_creates_copies_and_master(sketch_with_template):
         c for c in sketch.constraints if isinstance(c, RadiusConstraint)
     ]
     assert len(radius_constraints) == 1
-    assert radius_constraints[0].entity_id == master.id
+    assert radius_constraints[0].constrains_radius(sketch.registry, master.id)
 
 
 def test_members_are_static_baked_copies(sketch_with_template):

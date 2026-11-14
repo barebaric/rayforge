@@ -199,7 +199,7 @@ def test_edit_moves_master_geometry(sketch_with_array):
     rc = next(
         c
         for c in sketch.constraints
-        if isinstance(c, RadiusConstraint) and c.entity_id == circle.id
+        if isinstance(c, RadiusConstraint) and c.constrains_radius(sketch.registry, circle.id)
     )
     assert rc.value == pytest.approx(30.0)
 

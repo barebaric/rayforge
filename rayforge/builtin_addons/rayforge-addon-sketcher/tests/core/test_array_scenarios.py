@@ -171,7 +171,7 @@ def test_radius_dimension_redistributes_members(app_flow):
     rc = next(
         c
         for c in sketch.constraints
-        if isinstance(c, RadiusConstraint) and c.entity_id == circle.id
+        if isinstance(c, RadiusConstraint) and c.constrains_radius(sketch.registry, circle.id)
     )
     registry = sketch.registry
 
