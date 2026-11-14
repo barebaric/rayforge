@@ -27,6 +27,7 @@ except (ValueError, ImportError):
 # can be imported from tests
 addon_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(addon_dir))
+sys.path.insert(0, str(Path(__file__).parent))
 
 
 def pytest_ignore_collect(collection_path, config):

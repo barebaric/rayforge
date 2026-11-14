@@ -1,5 +1,9 @@
 import pytest
 from sketcher.core import Sketch
+from core.constraint_builders import (
+    angle_from_lines,
+    tangent_from_entities,
+)
 from sketcher.core.commands import MirrorAxis, MirrorCommand, MirrorDirection
 from raygeo.sketch.constraints.angle import AngleConstraint
 from raygeo.sketch.constraints.distance import DistanceConstraint
@@ -71,7 +75,7 @@ class TestMirrorPrepare:
         cr = s.add_point(50, 40)
         circle_id = s.add_circle(cc, cr)
 
-        s.constraints.append(TangentConstraint(line_id, circle_id))
+        s.constraints.append(tangent_from_entities(s, line_id, circle_id))
 
         sel = SketchSelection()
         sel.entity_ids = [line_id]
@@ -108,7 +112,7 @@ class TestMirrorPrepare:
         l2 = s.add_line(p2, p3)
 
         s.constraints.append(
-            AngleConstraint(l1, l2, value=45.0, expression="45")
+            angle_from_lines(s, l1, l2, 45.0, "45")
         )
 
         sel = SketchSelection()
@@ -128,7 +132,7 @@ class TestMirrorPrepare:
         l1 = s.add_line(p1, p2)
         l2 = s.add_line(p2, p3)
 
-        s.constraints.append(AngleConstraint(l1, l2, value=45.0))
+        s.constraints.append(angle_from_lines(s, l1, l2, 45.0))
 
         sel = SketchSelection()
         sel.entity_ids = [l1, l2]
@@ -247,7 +251,7 @@ class TestMirrorExecute:
         cc = s.add_point(50, 0)
         cr = s.add_point(50, 40)
         circle_id = s.add_circle(cc, cr)
-        s.constraints.append(TangentConstraint(line_id, circle_id))
+        s.constraints.append(tangent_from_entities(s, line_id, circle_id))
 
         sel = SketchSelection()
         sel.entity_ids = [line_id]
@@ -282,7 +286,7 @@ class TestMirrorExecute:
         p3 = s.add_point(100, 100)
         l1 = s.add_line(p1, p2)
         l2 = s.add_line(p2, p3)
-        s.constraints.append(AngleConstraint(l1, l2, value=45.0))
+        s.constraints.append(angle_from_lines(s, l1, l2, 45.0))
 
         sel = SketchSelection()
         sel.entity_ids = [l1, l2]
@@ -379,7 +383,7 @@ class TestMirrorUndo:
         cc = s.add_point(50, 0)
         cr = s.add_point(50, 40)
         circle_id = s.add_circle(cc, cr)
-        s.constraints.append(TangentConstraint(line_id, circle_id))
+        s.constraints.append(tangent_from_entities(s, line_id, circle_id))
 
         sel = SketchSelection()
         sel.entity_ids = [line_id]
@@ -399,7 +403,7 @@ class TestMirrorUndo:
         p3 = s.add_point(100, 100)
         l1 = s.add_line(p1, p2)
         l2 = s.add_line(p2, p3)
-        s.constraints.append(AngleConstraint(l1, l2, value=45.0))
+        s.constraints.append(angle_from_lines(s, l1, l2, 45.0))
 
         sel = SketchSelection()
         sel.entity_ids = [l1, l2]

@@ -1,5 +1,9 @@
 import pytest
 from sketcher.core import Sketch
+from core.constraint_builders import (
+    angle_from_lines,
+    tangent_from_entities,
+)
 from sketcher.core.commands import DuplicateCommand
 from raygeo.sketch.constraints.distance import DistanceConstraint
 from raygeo.sketch.constraints.tangent import TangentConstraint
@@ -67,7 +71,7 @@ class TestDuplicatePrepare:
         cr = s.add_point(50, 40)
         circle_id = s.add_circle(cc, cr)
 
-        s.constraints.append(TangentConstraint(line_id, circle_id))
+        s.constraints.append(tangent_from_entities(s, line_id, circle_id))
 
         sel = SketchSelection()
         sel.entity_ids = [line_id]
@@ -168,7 +172,7 @@ class TestDuplicateExecute:
         cc = s.add_point(50, 0)
         cr = s.add_point(50, 40)
         circle_id = s.add_circle(cc, cr)
-        s.constraints.append(TangentConstraint(line_id, circle_id))
+        s.constraints.append(tangent_from_entities(s, line_id, circle_id))
 
         sel = SketchSelection()
         sel.entity_ids = [line_id]
