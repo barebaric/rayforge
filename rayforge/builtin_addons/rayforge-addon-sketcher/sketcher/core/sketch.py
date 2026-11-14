@@ -612,7 +612,7 @@ class Sketch(IAsset, IGeometryProvider):
             stored = new_sketch.registry.constraint_dict(index)
             expression = stored.get("expression")
             if expression and hasattr(constraint, "set_expression"):
-                constraint.set_expression(expression)
+                constraint.expression = expression
             if hasattr(constraint, "set_user_visible"):
                 constraint.set_user_visible(
                     stored.get("user_visible", True)
@@ -1488,7 +1488,7 @@ class Sketch(IAsset, IGeometryProvider):
     ) -> DistanceConstraint:
         if isinstance(dist, str):
             constr = DistanceConstraint(p1, p2, 0.0)
-            constr.set_expression(dist)
+            constr.expression = dist
         else:
             constr = DistanceConstraint(p1, p2, float(dist))
         self.add_constraint(constr)

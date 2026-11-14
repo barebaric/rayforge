@@ -169,7 +169,7 @@ def is_world_anchored(constraint: Any) -> bool:
 
 def is_mirror_compatible(constraint: Any) -> bool:
     """Whether the constraint survives mirroring of its geometry."""
-    if isinstance(constraint, AngleConstraint) and constraint.expression():
+    if isinstance(constraint, AngleConstraint) and constraint.expression:
         return False
     return True
 
@@ -184,7 +184,7 @@ def user_visible(constraint: Any) -> bool:
 
 def has_expression(constraint: Any) -> bool:
     """Whether the constraint carries an expression string."""
-    expression = constraint.expression() if hasattr(
+    expression = constraint.expression if hasattr(
         constraint, "expression"
     ) else None
     return bool(expression)
@@ -192,7 +192,7 @@ def has_expression(constraint: Any) -> bool:
 
 def get_expression(constraint: Any) -> str | None:
     """The constraint's expression string, if any."""
-    return constraint.expression() if hasattr(
+    return constraint.expression if hasattr(
         constraint, "expression"
     ) else None
 

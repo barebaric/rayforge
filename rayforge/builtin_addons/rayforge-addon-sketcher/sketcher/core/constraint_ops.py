@@ -248,7 +248,7 @@ def _restore_state(constraint: Any, mapped: Any) -> None:
     re-evaluated by the next solve)."""
     expression = get_expression(constraint)
     if expression and hasattr(mapped, "set_expression"):
-        mapped.set_expression(expression)
+        mapped.expression = expression
     if hasattr(mapped, "set_user_visible") and hasattr(
         constraint, "user_visible"
     ):

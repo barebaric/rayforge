@@ -35,11 +35,11 @@ class ModifyConstraintCommand(SketchChangeCommand):
         self.new_expression = new_expression
 
         self.old_value = float(constraint.value)
-        self.old_expression = constraint.expression()
+        self.old_expression = constraint.expression
 
     def _set(self, value: float, expression: str | None) -> None:
         self.constraint.set_value(value)
-        self.constraint.set_expression(expression)
+        self.constraint.expression = expression
 
     def _do_execute(self) -> None:
         self._set(self.new_value, self.new_expression)

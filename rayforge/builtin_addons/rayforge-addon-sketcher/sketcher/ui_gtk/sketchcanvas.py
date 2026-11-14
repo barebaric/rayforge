@@ -276,7 +276,7 @@ class SketchCanvas(WorldSurface):
             return
 
         # Get initial text: expression if present, else value
-        expression = constraint.expression()
+        expression = constraint.expression
         if expression is not None:
             initial_text = expression
         else:
