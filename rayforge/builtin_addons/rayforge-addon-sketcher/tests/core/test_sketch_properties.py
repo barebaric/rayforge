@@ -102,7 +102,7 @@ class TestConflictingConstraints:
 
         constr = DistanceConstraint(p1, p2, 10.0)
         constr.status = ConstraintStatus.CONFLICTING
-        sketch.constraints.append(constr)
+        sketch.add_constraint(constr)
 
         assert len(sketch.conflicting_constraints) == 1
         assert sketch.has_conflicts is True
@@ -116,11 +116,11 @@ class TestConflictingConstraints:
 
         constr1 = DistanceConstraint(p1, p2, 10.0)
         constr1.status = ConstraintStatus.VALID
-        sketch.constraints.append(constr1)
+        sketch.add_constraint(constr1)
 
         constr2 = DistanceConstraint(p1, p2, 20.0)
         constr2.status = ConstraintStatus.CONFLICTING
-        sketch.constraints.append(constr2)
+        sketch.add_constraint(constr2)
 
         assert len(sketch.conflicting_constraints) == 1
         assert sketch.conflicting_constraints[0] == constr2
@@ -137,11 +137,11 @@ class TestConflictingConstraints:
 
         constr1 = DistanceConstraint(p1, p2, 10.0)
         constr1.status = ConstraintStatus.CONFLICTING
-        sketch.constraints.append(constr1)
+        sketch.add_constraint(constr1)
 
         constr2 = DistanceConstraint(p2, p3, 10.0)
         constr2.status = ConstraintStatus.CONFLICTING
-        sketch.constraints.append(constr2)
+        sketch.add_constraint(constr2)
 
         assert len(sketch.conflicting_constraints) == 2
         assert sketch.has_conflicts is True

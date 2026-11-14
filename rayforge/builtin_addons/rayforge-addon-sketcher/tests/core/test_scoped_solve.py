@@ -6,6 +6,7 @@ from sketcher.core.components import (
 from typing import Any
 from raygeo.sketch.constraints.drag import DragConstraint
 from raygeo.sketch.constraints.tangent import TangentConstraint
+from core.constraint_builders import tangent_from_entities
 from sketcher.core.params import ParameterContext
 from sketcher.core.registry import EntityRegistry
 from sketcher.core.sketch import Sketch
@@ -94,7 +95,7 @@ def test_entity_level_constraint_couples_points():
     lp2 = registry.add_point(20, 10)
     circle = registry.add_circle(center, radius_pt)
     line = registry.add_line(lp1, lp2)
-    constraint = TangentConstraint(line, circle)
+    constraint = tangent_from_entities(registry, line, circle)
 
     assert get_referenced_points(registry, constraint) == {
         center,

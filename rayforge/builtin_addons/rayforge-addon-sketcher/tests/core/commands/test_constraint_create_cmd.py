@@ -1,5 +1,9 @@
 import pytest
 from sketcher.core import Sketch
+from core.constraint_builders import (
+    diameter_from_entity,
+    radius_from_entity,
+)
 from sketcher.core.commands import CreateOrEditConstraintCommand
 from raygeo.sketch.constraints.diameter import DiameterConstraint
 from raygeo.sketch.constraints.distance import DistanceConstraint
@@ -67,7 +71,7 @@ def test_returns_existing_constraint_for_line(sketch):
     line = sketch.registry.get_entity_object(line_id)
 
     existing = DistanceConstraint(p1_id, p2_id, 50.0)
-    sketch.constraints.append(existing)
+    sketch.add_constraint(existing)
 
     cmd = CreateOrEditConstraintCommand(sketch, line)
     cmd.execute()
@@ -83,8 +87,8 @@ def test_returns_existing_constraint_for_circle(sketch):
     circle_id = sketch.add_circle(center_id, radius_id)
     circle = sketch.registry.get_entity_object(circle_id)
 
-    existing = DiameterConstraint(circle_id, 20.0)
-    sketch.constraints.append(existing)
+    existing = diameter_from_entity(sketch, circle_id, 20.0)
+    sketch.add_constraint(existing)
 
     cmd = CreateOrEditConstraintCommand(sketch, circle)
     cmd.execute()
@@ -101,8 +105,8 @@ def test_returns_existing_constraint_for_arc(sketch):
     arc_id = sketch.add_arc(center_id, start_id, end_id)
     arc = sketch.registry.get_entity_object(arc_id)
 
-    existing = RadiusConstraint(arc_id, 10.0)
-    sketch.constraints.append(existing)
+    existing = radius_from_entity(sketch, arc_id, 10.0)
+    sketch.add_constraint(existing)
 
     cmd = CreateOrEditConstraintCommand(sketch, arc)
     cmd.execute()
@@ -135,7 +139,7 @@ def test_undo_does_not_affect_existing_constraint(sketch):
     line = sketch.registry.get_entity_object(line_id)
 
     existing = DistanceConstraint(p1_id, p2_id, 50.0)
-    sketch.constraints.append(existing)
+    sketch.add_constraint(existing)
 
     cmd = CreateOrEditConstraintCommand(sketch, line)
     cmd.execute()
@@ -180,7 +184,7 @@ def test_command_label_for_radius(sketch):
     arc = sketch.registry.get_entity_object(arc_id)
 
     cmd = CreateOrEditConstraintCommand(sketch, arc)
-    label = cmd._get_command_label(RadiusConstraint(arc_id, 10.0))
+    label = cmd._get_command_label(radius_from_entity(sketch, arc_id, 10.0))
 
     assert label == "Add Radius"
 
@@ -192,7 +196,7 @@ def test_command_label_for_diameter(sketch):
     circle = sketch.registry.get_entity_object(circle_id)
 
     cmd = CreateOrEditConstraintCommand(sketch, circle)
-    label = cmd._get_command_label(DiameterConstraint(circle_id, 20.0))
+    label = cmd._get_command_label(diameter_from_entity(sketch, circle_id, 20.0))
 
     assert label == "Add Diameter"
 
@@ -204,7 +208,7 @@ def test_get_constraint_for_entity_line(sketch):
     line = sketch.registry.get_entity_object(line_id)
 
     existing = DistanceConstraint(p1_id, p2_id, 50.0)
-    sketch.constraints.append(existing)
+    sketch.add_constraint(existing)
 
     result = CreateOrEditConstraintCommand.get_constraint_for_entity(
         sketch, line
@@ -219,8 +223,8 @@ def test_get_constraint_for_entity_circle(sketch):
     circle_id = sketch.add_circle(center_id, radius_id)
     circle = sketch.registry.get_entity_object(circle_id)
 
-    existing = DiameterConstraint(circle_id, 20.0)
-    sketch.constraints.append(existing)
+    existing = diameter_from_entity(sketch, circle_id, 20.0)
+    sketch.add_constraint(existing)
 
     result = CreateOrEditConstraintCommand.get_constraint_for_entity(
         sketch, circle
@@ -236,8 +240,8 @@ def test_get_constraint_for_entity_arc(sketch):
     arc_id = sketch.add_arc(center_id, start_id, end_id)
     arc = sketch.registry.get_entity_object(arc_id)
 
-    existing = RadiusConstraint(arc_id, 10.0)
-    sketch.constraints.append(existing)
+    existing = radius_from_entity(sketch, arc_id, 10.0)
+    sketch.add_constraint(existing)
 
     result = CreateOrEditConstraintCommand.get_constraint_for_entity(
         sketch, arc

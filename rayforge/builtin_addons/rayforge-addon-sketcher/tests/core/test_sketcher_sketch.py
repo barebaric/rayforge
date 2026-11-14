@@ -1252,7 +1252,7 @@ def test_get_coincident_points_single_pair():
     p1 = sketch.add_point(0, 0)
     p2 = sketch.add_point(10, 0)
 
-    sketch.constraints.append(CoincidentConstraint(p1, p2))
+    sketch.add_constraint(CoincidentConstraint(p1, p2))
 
     result = sketch.get_coincident_points(p1)
 
@@ -1265,8 +1265,8 @@ def test_get_coincident_points_transitive():
     p2 = sketch.add_point(10, 0)
     p3 = sketch.add_point(20, 0)
 
-    sketch.constraints.append(CoincidentConstraint(p1, p2))
-    sketch.constraints.append(CoincidentConstraint(p2, p3))
+    sketch.add_constraint(CoincidentConstraint(p1, p2))
+    sketch.add_constraint(CoincidentConstraint(p2, p3))
 
     result = sketch.get_coincident_points(p1)
 
@@ -1279,8 +1279,8 @@ def test_get_coincident_points_chain_from_middle():
     p2 = sketch.add_point(10, 0)
     p3 = sketch.add_point(20, 0)
 
-    sketch.constraints.append(CoincidentConstraint(p1, p2))
-    sketch.constraints.append(CoincidentConstraint(p2, p3))
+    sketch.add_constraint(CoincidentConstraint(p1, p2))
+    sketch.add_constraint(CoincidentConstraint(p2, p3))
 
     result = sketch.get_coincident_points(p2)
 
@@ -1294,8 +1294,8 @@ def test_get_coincident_points_separate_groups():
     p3 = sketch.add_point(20, 0)
     p4 = sketch.add_point(30, 0)
 
-    sketch.constraints.append(CoincidentConstraint(p1, p2))
-    sketch.constraints.append(CoincidentConstraint(p3, p4))
+    sketch.add_constraint(CoincidentConstraint(p1, p2))
+    sketch.add_constraint(CoincidentConstraint(p3, p4))
 
     result1 = sketch.get_coincident_points(p1)
     result3 = sketch.get_coincident_points(p3)

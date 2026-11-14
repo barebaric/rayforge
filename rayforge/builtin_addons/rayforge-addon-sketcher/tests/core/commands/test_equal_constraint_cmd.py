@@ -51,7 +51,7 @@ def test_find_and_merge_with_existing_constraint(sketch):
     line3_id = sketch.add_line(p5, p6)
 
     existing = EqualLengthConstraint([line1_id, line2_id])
-    sketch.constraints.append(existing)
+    sketch.add_constraint(existing)
 
     result = EqualConstraintCommand.find_and_merge_constraints(
         sketch, [line2_id, line3_id]
@@ -105,8 +105,8 @@ def test_find_and_merge_multiple_constraints(sketch):
 
     constr1 = EqualLengthConstraint([line1_id, line2_id])
     constr2 = EqualLengthConstraint([line3_id, line4_id])
-    sketch.constraints.append(constr1)
-    sketch.constraints.append(constr2)
+    sketch.add_constraint(constr1)
+    sketch.add_constraint(constr2)
 
     result = EqualConstraintCommand.find_and_merge_constraints(
         sketch, [line2_id, line3_id]
@@ -144,7 +144,7 @@ def test_find_and_merge_no_overlap_with_existing(sketch):
     line3_id = sketch.add_line(p5, p6)
 
     existing = EqualLengthConstraint([line1_id, line2_id])
-    sketch.constraints.append(existing)
+    sketch.add_constraint(existing)
 
     result = EqualConstraintCommand.find_and_merge_constraints(
         sketch, [line3_id]

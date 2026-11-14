@@ -549,8 +549,8 @@ def test_template_extraction_severs_guide_links(sketch_with_template_and_path):
     seed_p2 = registry.add_point(10.0, 5.0)
     seed = registry.add_line(shared_pid, seed_p2)
     foreign = registry.add_point(30.0, 20.0)
-    sketch.constraints.append(CoincidentConstraint(seed_p2, foreign))
-    sketch.constraints.append(DistanceConstraint(seed_p2, foreign, 12.0))
+    sketch.add_constraint(CoincidentConstraint(seed_p2, foreign))
+    sketch.add_constraint(DistanceConstraint(seed_p2, foreign, 12.0))
     n_constraints = len(sketch.constraints)
 
     CreateArrayCommand(
@@ -603,8 +603,8 @@ def test_template_internal_constraints_survive_extraction():
     line_a = sketch.registry.add_line(a0, a1)
     line_b = sketch.registry.add_line(b0, b1)
     foreign = sketch.registry.add_point(50.0, 50.0)
-    sketch.constraints.append(CoincidentConstraint(a1, b0))
-    sketch.constraints.append(CoincidentConstraint(b1, foreign))
+    sketch.add_constraint(CoincidentConstraint(a1, b0))
+    sketch.add_constraint(CoincidentConstraint(b1, foreign))
 
     CreateArrayCommand(
         sketch,
@@ -654,8 +654,8 @@ def test_world_anchored_constraints_erased_tangents_kept():
     a_end = sketch.registry.add_point(21.0, 3.0)
     a_center = sketch.registry.add_point(18.0, 3.0)
     arc = sketch.registry.add_arc(a_start, a_end, a_center)
-    sketch.constraints.append(HorizontalConstraint(a, b))
-    sketch.constraints.append(TangentConstraint(line, arc))
+    sketch.add_constraint(HorizontalConstraint(a, b))
+    sketch.add_constraint(tangent_from_entities(sketch, line, arc))
 
     CreateArrayCommand(
         sketch,

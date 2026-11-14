@@ -19,7 +19,7 @@ def build_coupled_triangle():
     sk.add_line(b, c)
     cd_id = sk.add_line(c, d)
     sk.add_line(d, a)
-    sk.constraints.append(CoincidentConstraint(d, a))
+    sk.add_constraint(CoincidentConstraint(d, a))
     ab = sk.registry.get_entity_object(ab_id)
     cd = sk.registry.get_entity_object(cd_id)
     assert ab is not None and cd is not None

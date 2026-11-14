@@ -13,6 +13,10 @@ from raygeo.sketch.constraints.radius import RadiusConstraint
 from raygeo.sketch.constraints.tangent import TangentConstraint
 
 
+def _reg(sketch):
+    return getattr(sketch, "registry", sketch)
+
+
 def _radius_point(shape):
     if shape.type_name() == "circle":
         return shape.radius_pt_idx
@@ -20,7 +24,7 @@ def _radius_point(shape):
 
 
 def tangent_from_entities(sketch, line_id, shape_id):
-    reg = sketch.registry
+    reg = _reg(sketch)
     line = reg.get_entity_object(line_id)
     shape = reg.get_entity_object(shape_id)
     return TangentConstraint(
@@ -29,7 +33,7 @@ def tangent_from_entities(sketch, line_id, shape_id):
 
 
 def angle_from_lines(sketch, l1, l2, value, expression=None):
-    reg = sketch.registry
+    reg = _reg(sketch)
     a = reg.get_entity_object(l1)
     b = reg.get_entity_object(l2)
     constraint = AngleConstraint(
@@ -41,13 +45,13 @@ def angle_from_lines(sketch, l1, l2, value, expression=None):
 
 
 def radius_from_entity(sketch, arc_id, value):
-    reg = sketch.registry
+    reg = _reg(sketch)
     arc = reg.get_entity_object(arc_id)
     return RadiusConstraint(arc.center_idx, _radius_point(arc), value)
 
 
 def diameter_from_entity(sketch, circle_id, value):
-    reg = sketch.registry
+    reg = _reg(sketch)
     circle = reg.get_entity_object(circle_id)
     return DiameterConstraint(
         circle.center_idx, circle.radius_pt_idx, value

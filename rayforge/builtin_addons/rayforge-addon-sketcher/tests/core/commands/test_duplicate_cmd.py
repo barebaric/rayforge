@@ -50,7 +50,7 @@ class TestDuplicatePrepare:
         p1 = s.add_point(0, 0)
         p2 = s.add_point(100, 0)
         line_id = s.add_line(p1, p2)
-        s.constraints.append(DistanceConstraint(p1, p2, 100.0))
+        s.add_constraint(DistanceConstraint(p1, p2, 100.0))
 
         sel = SketchSelection()
         sel.entity_ids = [line_id]
@@ -71,7 +71,7 @@ class TestDuplicatePrepare:
         cr = s.add_point(50, 40)
         circle_id = s.add_circle(cc, cr)
 
-        s.constraints.append(tangent_from_entities(s, line_id, circle_id))
+        s.add_constraint(tangent_from_entities(s, line_id, circle_id))
 
         sel = SketchSelection()
         sel.entity_ids = [line_id]
@@ -143,7 +143,7 @@ class TestDuplicateExecute:
         p1 = s.add_point(0, 0)
         p2 = s.add_point(100, 0)
         line_id = s.add_line(p1, p2)
-        s.constraints.append(DistanceConstraint(p1, p2, 100.0))
+        s.add_constraint(DistanceConstraint(p1, p2, 100.0))
 
         sel = SketchSelection()
         sel.entity_ids = [line_id]
@@ -172,7 +172,7 @@ class TestDuplicateExecute:
         cc = s.add_point(50, 0)
         cr = s.add_point(50, 40)
         circle_id = s.add_circle(cc, cr)
-        s.constraints.append(tangent_from_entities(s, line_id, circle_id))
+        s.add_constraint(tangent_from_entities(s, line_id, circle_id))
 
         sel = SketchSelection()
         sel.entity_ids = [line_id]
@@ -285,7 +285,7 @@ class TestDuplicateUndo:
         p1 = s.add_point(0, 0)
         p2 = s.add_point(100, 0)
         line_id = s.add_line(p1, p2)
-        s.constraints.append(DistanceConstraint(p1, p2, 100.0))
+        s.add_constraint(DistanceConstraint(p1, p2, 100.0))
 
         sel = SketchSelection()
         sel.entity_ids = [line_id]
