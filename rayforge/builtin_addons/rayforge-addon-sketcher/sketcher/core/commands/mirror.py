@@ -242,6 +242,9 @@ class MirrorCommand(SketchChangeCommand):
                     self._mirrored_constraint_states[id(constr)] = {
                         "expression": expression()
                     }
+                mirror_fn = getattr(constr, "mirror", None)
+                if callable(mirror_fn):
+                    mirror_fn()
 
         # Drop incompatible constraints
         self.sketch.remove_constraints(self._dropped_constraints)
