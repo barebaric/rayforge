@@ -87,9 +87,9 @@ class EntityGroup:
         y))`` pairs, in the same stable order as ``point_ids``."""
         points = []
         for pid in self.point_ids():
-            position = self.registry.get_point(pid)
-            if position is not None:
-                points.append((pid, position))
+            point = self.registry.get_point_object(pid)
+            if point is not None:
+                points.append(point)
         return points
 
     def point_position(self, pid: int) -> tuple[float, float] | None:
@@ -122,7 +122,7 @@ class EntityGroup:
             position = self.registry.get_point(shapes[0].center_idx)
             if position is not None:
                 return position
-        return points_bbox_center([p for _pid, p in self.points()])
+        return points_bbox_center([(p.x, p.y) for p in self.points()])
 
     def apply_placement(self, placement: PlacementTransform) -> None:
         """
@@ -136,8 +136,8 @@ class EntityGroup:
         written.
         """
         old: dict[int, tuple[float, float]] = {}
-        for pid, position in self.points():
-            old[pid] = position
+        for p in self.points():
+            old[p.id] = (p.x, p.y)
         for pid, (x, y) in old.items():
             nx, ny = placement.transform_point(x, y)
             self.registry.set_point_position(pid, nx, ny)
@@ -157,8 +157,8 @@ class EntityGroup:
     def translate(self, dx: float, dy: float) -> None:
         """Moves every point of the group by the given delta. Points
         shared between entities are moved exactly once."""
-        for pid, (x, y) in self.points():
-            self.registry.set_point_position(pid, x + dx, y + dy)
+        for p in self.points():
+            self.registry.set_point_position(p.id, p.x + dx, p.y + dy)
 
     def radial_project(
         self,
@@ -235,7 +235,7 @@ class EntityGroup:
 
     def snapshot_positions(self) -> list[tuple[int, float, float]]:
         """Captures the current position of every point of the group."""
-        return [(pid, x, y) for pid, (x, y) in self.points()]
+        return [(p.id, p.x, p.y) for p in self.points()]
 
     @staticmethod
     def restore_positions(

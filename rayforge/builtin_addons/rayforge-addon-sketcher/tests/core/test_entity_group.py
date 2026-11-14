@@ -237,7 +237,7 @@ def test_snapshot_restore_round_trip():
     group = EntityGroup(reg, [line])
     snapshot = group.snapshot_positions()
     group.translate(10.0, -3.0)
-    EntityGroup.restore_positions(snapshot)
+    EntityGroup.restore_positions(snapshot, reg)
     assert reg.get_point(p1)[0] == pytest.approx(1.0)
     assert reg.get_point(p1)[1] == pytest.approx(1.0)
     assert reg.get_point(p2)[0] == pytest.approx(2.0)

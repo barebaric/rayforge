@@ -26,6 +26,14 @@ class StraightenBezierCommand(SketchChangeCommand):
         self.bezier_id = bezier_id
         self._old_bezier_dict: dict[str, Any] | None = None
 
+    @property
+    def _old_bezier(self):
+        if self._old_bezier_dict is None:
+            return None
+        from ..entity_ops import entity_from_dict
+
+        return entity_from_dict(self._old_bezier_dict)
+
     def _do_execute(self) -> None:
         registry = self.sketch.registry
         bezier = registry.get_entity_object(self.bezier_id)
