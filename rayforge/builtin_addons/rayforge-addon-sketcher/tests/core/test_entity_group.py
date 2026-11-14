@@ -267,7 +267,7 @@ def test_rewrite_copy_from_pairs_positionally():
     assert reg.get_point(c1)[1] == pytest.approx(7.0)
     assert reg.get_point(c2)[0] == pytest.approx(15.0)
     assert reg.get_point(c2)[1] == pytest.approx(7.0)
-    assert [(pt.id, x, y) for pt, x, y in updates] == [
+    assert [(pt, x, y) for pt, x, y in updates] == [
         (c1, 5.0, 7.0),
         (c2, 15.0, 7.0),
     ]

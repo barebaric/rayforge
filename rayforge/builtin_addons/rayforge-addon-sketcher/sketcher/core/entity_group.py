@@ -80,6 +80,13 @@ class EntityGroup:
             for pid in entity.get_point_ids():
                 if pid not in pids:
                     pids.append(pid)
+        for eid in self.entity_ids:
+            if (
+                self.registry.get_entity_object(eid) is None
+                and self.registry.get_point(eid) is not None
+                and eid not in pids
+            ):
+                pids.append(eid)
         return pids
 
     def points(self) -> list[tuple[int, tuple[float, float]]]:

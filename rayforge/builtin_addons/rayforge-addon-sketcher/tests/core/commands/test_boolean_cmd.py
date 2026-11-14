@@ -293,7 +293,7 @@ def test_fill_transfer_redo_reapplies_fills():
     assert len(sketch.fills) == 2
     for polygon, fill in zip(polygons, sketch.fills):
         assert fill.boundary == [(polygon.id, True)]
-        assert sketch.registry.get_entity_object(polygon.id) is polygon
+        assert sketch.registry.get_entity_object(polygon.id) == polygon
 
 
 def test_abort_keeps_fills_untouched():

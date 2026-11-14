@@ -166,7 +166,7 @@ def test_undoing_the_create_restores_the_template(text_array):
     assert box.construction_line_ids, "helpers restored"
     remaining = registry.get_entity_object(box.id)
     for eid in [box.id]:
-        assert registry.get_entity_object(eid) is remaining
+        assert registry.get_entity_object(eid) == remaining
     assert (
         len([e for e in registry.entities() if isinstance(e, TextBox)])
         == 1

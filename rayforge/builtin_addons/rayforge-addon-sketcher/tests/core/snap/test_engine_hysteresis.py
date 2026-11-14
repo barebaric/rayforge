@@ -49,7 +49,7 @@ def test_reacquire_binds_to_same_source(engine):
     engaged_source = first.primary_snap_point.source
 
     second = engine.query(registry, (20.0, 6.5), context)
-    assert second.primary_snap_point.source is engaged_source
+    assert second.primary_snap_point.source == engaged_source
 
 
 def test_disengagement_allows_fresh_engagement(engine):

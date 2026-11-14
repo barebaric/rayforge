@@ -166,10 +166,13 @@ class BooleanCommand(SketchChangeCommand):
         )
 
     def _do_execute(self) -> None:
+        is_redo = self._prepared
         if not self._prepare():
             return
         for remove_cmd, add_cmd in self._ops:
             remove_cmd._do_execute()
+            if is_redo:
+                add_cmd._redo()
         self.new_entity_ids = list(self._new_entity_ids)
         self._transfer_fills()
 

@@ -43,6 +43,16 @@ class DuplicateCommand(SketchChangeCommand):
         self._entity_id_map: dict[EntityID, EntityID] = {}
         self._point_id_map: dict[EntityID, EntityID] = {}
 
+    @property
+    def created_points(self) -> list[EntityID]:
+        """The point ids created by the duplicate."""
+        return self.new_point_ids
+
+    @property
+    def created_entities(self) -> list[EntityID]:
+        """The entity ids created by the duplicate."""
+        return self.new_entity_ids
+
     @staticmethod
     def prepare(
         sketch: Sketch,
@@ -168,11 +178,7 @@ class DuplicateCommand(SketchChangeCommand):
         self.new_entity_ids = [
             entity_map[eid] for eid in entity_ids if eid in entity_map
         ]
-        self.new_point_ids = [
-            point_map[pid]
-            for pid in self._selection.point_ids
-            if pid in point_map
-        ]
+        self.new_point_ids = list(point_map.values())
 
     def _do_undo(self) -> None:
         if self.add_cmd:
