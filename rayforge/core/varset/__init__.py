@@ -11,6 +11,7 @@ from .labeledchoicevar import LabeledChoiceVar
 from .lengthvar import LengthVar
 from .oauthvar import OAuthFlowVar
 from .portvar import PortVar
+from .remotedevicevar import RemoteDeviceVar
 from .serialportvar import SerialPortVar, format_vidpid, parse_vidpid
 from .speedvar import SpeedVar
 from .textareavar import TextAreaVar
@@ -33,6 +34,7 @@ __all__ = [
     "LengthVar",
     "OAuthFlowVar",
     "PortVar",
+    "RemoteDeviceVar",
     "SerialPortVar",
     "SliderFloatVar",
     "SliderIntVar",

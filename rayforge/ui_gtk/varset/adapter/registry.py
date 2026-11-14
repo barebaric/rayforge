@@ -15,6 +15,7 @@ from .combo import BaudRateAdapter, ComboAdapter, SerialPortAdapter
 from .entry import EntryAdapter, HostnameAdapter
 from .length import LengthRowAdapter
 from .oauth import OAuthFlowAdapter
+from .remote_device import RemoteDeviceAdapter
 from .slider import SliderFloatAdapter, SliderIntAdapter
 from .speed import SpeedRowAdapter
 from .spin_row import SpinRowAdapter
@@ -31,6 +32,7 @@ _ALL_ADAPTERS = (
     HostnameAdapter,
     LengthRowAdapter,
     OAuthFlowAdapter,
+    RemoteDeviceAdapter,
     SliderFloatAdapter,
     SliderIntAdapter,
     SpeedRowAdapter,

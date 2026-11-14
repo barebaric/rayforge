@@ -32,6 +32,21 @@ from rayforge.machine.transport.mdns_scan import MDNSService
 from rayforge.machine.transport.serial import SerialPortInfo
 
 
+@pytest.fixture(autouse=True)
+def _no_raydriver_daemons(monkeypatch):
+    """Isolate from real raydriver daemons announcing on the network.
+
+    find_all_devices also browses for raydriver daemons; without this
+    a daemon running on the test machine would leak into the results.
+    """
+    from rayforge.machine.discovery import engine
+
+    async def _none():
+        return []
+
+    monkeypatch.setattr(engine, "find_raydriver_devices", _none)
+
+
 def _grbl_matcher(data: bytes) -> bool:
     # Mirrors the real is_grbl_output(): banner or realtime status
     # report. A bare "ok" ack must NOT match (Marlin acks alike).

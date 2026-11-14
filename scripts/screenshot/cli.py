@@ -53,6 +53,8 @@ TARGETS = {
     "config-wizard:rotary": "config_wizard",
     "import-dialog": "import_dialog",
     "source-changed-dialog": "source_changed_dialog",
+    "remote:wizard-connect": "remote_machine",
+    "remote:settings": "remote_machine",
     "main:item-properties": "item_properties",
     "machine-settings:general": "machine_settings_general",
     "machine-settings:hardware": "machine_settings_hardware",

@@ -307,6 +307,18 @@ class Driver(ABC):
     z_homing_modes: ClassVar[tuple[ZHomingMode, ...]] = (ZHomingMode.SWITCH,)
 
     @classmethod
+    def supports_probing_for(cls, driver_args: dict[str, Any]) -> bool:
+        """Whether probing is available for a specific configuration.
+
+        Defaults to the class-level ``supports_probing``. Drivers whose
+        capabilities depend on the configured device (e.g. a generic
+        remote driver whose protocol is resolved at runtime) override
+        this to inspect ``driver_args``. Callers that have the setup
+        arguments should prefer this over the class attribute.
+        """
+        return cls.supports_probing
+
+    @classmethod
     def resolve_z_homing_mode(cls, mode: ZHomingMode | None) -> ZHomingMode:
         """
         Returns the Z homing mode to use for a machine's chosen mode.

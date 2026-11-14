@@ -34,6 +34,7 @@ module.exports = {
         'machine/gcode',
         'machine/hooks-macros',
         'machine/device',
+        'machine/remote',
         'machine/laser',
         'machine/rotary',
         'machine/nogo-zones',
