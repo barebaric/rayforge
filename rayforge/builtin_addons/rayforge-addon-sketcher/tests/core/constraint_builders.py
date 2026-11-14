@@ -10,6 +10,10 @@ from __future__ import annotations
 from raygeo.sketch.constraints.angle import AngleConstraint
 from raygeo.sketch.constraints.diameter import DiameterConstraint
 from raygeo.sketch.constraints.radius import RadiusConstraint
+from raygeo.sketch.constraints.perpendicular import (
+    PerpendicularConstraint,
+    PerpendicularTarget,
+)
 from raygeo.sketch.constraints.tangent import TangentConstraint
 
 
@@ -55,4 +59,13 @@ def diameter_from_entity(sketch, circle_id, value):
     circle = reg.get_entity_object(circle_id)
     return DiameterConstraint(
         circle.center_idx, circle.radius_pt_idx, value
+    )
+
+
+def perpendicular_from_lines(sketch, l1, l2):
+    reg = _reg(sketch)
+    a = reg.get_entity_object(l1)
+    b = reg.get_entity_object(l2)
+    return PerpendicularConstraint(
+        PerpendicularTarget.LineLine(a.p1_idx, a.p2_idx, b.p1_idx, b.p2_idx)
     )

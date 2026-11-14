@@ -4,6 +4,7 @@ import pytest
 from raygeo.sketch.constraints.distance import DistanceConstraint
 from raygeo.sketch.constraints.drag import DragConstraint
 from raygeo.sketch.constraints.perpendicular import PerpendicularConstraint
+from core.constraint_builders import perpendicular_from_lines
 from raygeo.sketch.entities.arc import Arc
 from raygeo.sketch.entities.circle import Circle
 from raygeo.sketch.entities.ellipse import Ellipse
@@ -89,7 +90,7 @@ def build_rotation_drag_constraints(
     c, r1, r2, l1, l2, _ellipse = build_ellipse(reg)
     params = ParameterContext()
     constraints = [
-        PerpendicularConstraint(l1, l2),
+        perpendicular_from_lines(reg, l1, l2),
         DistanceConstraint(c, r1, 10.0),
     ]
     if center_weight is not None:
