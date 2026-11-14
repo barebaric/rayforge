@@ -83,6 +83,7 @@ class MirrorCommand(SketchChangeCommand):
         self._axis: MirrorAxis | None = None
         self._dropped_constraints: list[Any] = []
         self._mirrored_constraint_states: dict[int, dict] = {}
+        self._mirrored_constraints: list[Any] = []
 
     @staticmethod
     def prepare(
@@ -245,6 +246,7 @@ class MirrorCommand(SketchChangeCommand):
                 mirror_fn = getattr(constr, "mirror", None)
                 if callable(mirror_fn):
                     mirror_fn()
+                    self._mirrored_constraints.append(constr)
 
         # Drop incompatible constraints
         self.sketch.remove_constraints(self._dropped_constraints)
@@ -253,3 +255,10 @@ class MirrorCommand(SketchChangeCommand):
         # Restore constraint expressions that were dropped because
         # they do not survive mirroring.
         self.sketch.add_constraints(self._dropped_constraints)
+        # Mirroring is an involution: re-applying it restores the
+        # original constraint values (e.g. negated angles).
+        for constr in self._mirrored_constraints:
+            mirror_fn = getattr(constr, "mirror", None)
+            if callable(mirror_fn):
+                mirror_fn()
+        self._mirrored_constraints = []

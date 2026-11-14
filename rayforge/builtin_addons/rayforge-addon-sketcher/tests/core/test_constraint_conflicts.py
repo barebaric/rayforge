@@ -209,7 +209,7 @@ class TestSketchConflictTracking:
         sketch.solve()
         assert sketch.has_conflicts is True
 
-        sketch.constraints.remove(c1)
+        sketch.remove_constraint_object(c1)
         sketch.solve()
 
         assert sketch.has_conflicts is False

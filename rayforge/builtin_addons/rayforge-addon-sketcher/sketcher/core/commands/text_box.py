@@ -68,7 +68,9 @@ class TextBoxCommand(SketchChangeCommand):
             AspectRatioConstraint(
                 p_origin, p_width, p_origin, p_height, 1.0
             ),
-            ParallelogramConstraint(p_origin, p_width, p_height, p4),
+            ParallelogramConstraint(
+                p_origin, p_width, p_height, p4, user_visible=False
+            ),
             HorizontalConstraint(p_origin, p_width),
             PerpendicularConstraint(
                 PerpendicularTarget.LineLine(
