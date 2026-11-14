@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-03 01:36+0100\n"
+"POT-Creation-Date: 2026-11-14 09:06+0100\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -255,6 +255,15 @@ msgstr "Auswahl (Beschriftet)"
 msgid "Tuple"
 msgstr "Tupel"
 
+#: rayforge/core/varset/remotedevicevar.py
+#: rayforge/machine/driver/remote_driver.py
+msgid "Select a device on the daemon."
+msgstr "Wählen Sie ein Gerät am Daemon."
+
+#: rayforge/core/varset/remotedevicevar.py
+msgid "Remote Device"
+msgstr "Remote-Gerät"
+
 #: rayforge/core/varset/boolvar.py
 msgid "Boolean (Switch)"
 msgstr "Boolesch (Schalter)"
@@ -409,6 +418,123 @@ msgstr "Die URL enthält einen ungültigen Host oder Port."
 msgid "URL must include a valid hostname or IP address"
 msgstr ""
 "Die URL muss einen gültigen Hostnamen oder eine gültige IP-Adresse enthalten."
+
+#: rayforge/machine/driver/remote_setup.py
+msgid "Daemon hostname"
+msgstr "Daemon-Hostname"
+
+#: rayforge/machine/driver/remote_setup.py
+msgid "Hostname or IP of the computer running the raydriver daemon."
+msgstr "Hostname oder IP des Computers, auf dem der raydriver-Daemon läuft."
+
+#: rayforge/machine/driver/remote_setup.py
+msgid "Daemon port"
+msgstr "Daemon-Port"
+
+#: rayforge/machine/driver/remote_setup.py
+msgid "Control port of the raydriver daemon."
+msgstr "Steuerport des raydriver-Daemons."
+
+#: rayforge/machine/driver/remote_setup.py
+msgid "Token"
+msgstr "Token"
+
+#: rayforge/machine/driver/remote_setup.py
+msgid ""
+"The daemon's shared secret. Run 'raydriver daemon status' on the computer "
+"running the daemon to print it."
+msgstr ""
+"Das gemeinsame Geheimnis des Daemons. Führen Sie 'raydriver daemon status' "
+"auf dem Computer aus, auf dem der Daemon läuft, um es auszugeben."
+
+#: rayforge/machine/driver/remote_setup.py
+msgid "TLS certificate (PEM path)"
+msgstr "TLS-Zertifikat (PEM-Pfad)"
+
+#: rayforge/machine/driver/remote_setup.py
+msgid ""
+"Pin the daemon's certificate. Only needed for a daemon reached over the "
+"network with TLS."
+msgstr ""
+"Das Zertifikat des Daemons pinnen. Nur für einen Daemon erforderlich, der "
+"über das Netzwerk mit TLS erreicht wird."
+
+#: rayforge/machine/driver/remote_setup.py
+msgid "TLS hostname"
+msgstr "TLS-Hostname"
+
+#: rayforge/machine/driver/remote_setup.py
+msgid ""
+"Hostname to verify against the certificate (defaults to the daemon hostname)."
+msgstr ""
+"Hostname, der gegen das Zertifikat geprüft wird (standardmäßig der Daemon-"
+"Hostname)."
+
+#: rayforge/machine/driver/remote_driver.py
+msgid "Remote machine (raydriver)"
+msgstr "Remote-Maschine (raydriver)"
+
+#: rayforge/machine/driver/remote_driver.py
+msgid "A device attached to a raydriver daemon on another computer"
+msgstr ""
+"Ein Gerät, das an einem raydriver-Daemon auf einem anderen Computer "
+"angeschlossen ist"
+
+#: rayforge/machine/driver/remote_driver.py
+msgid "Daemon hostname must be configured."
+msgstr "Der Daemon-Hostname muss konfiguriert sein."
+
+#: rayforge/machine/driver/remote_driver.py
+#: rayforge/ui_gtk/camera/selection_dialog.py
+#: rayforge/ui_gtk/machine/device_settings_page.py
+#: rayforge/ui_gtk/machine/settings_dialog.py
+msgid "Device"
+msgstr "Gerät"
+
+#: rayforge/machine/driver/remote_driver.py
+msgid ""
+"The machine on the daemon. The list is read from the daemon once its "
+"hostname is set."
+msgstr ""
+
+#: rayforge/machine/driver/remote_driver.py
+msgid "Protocol"
+msgstr "Protokoll"
+
+#: rayforge/machine/driver/remote_driver.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
+#: rayforge/machine/driver/grbl/grbl_network.py
+msgid "Unknown Settings"
+msgstr "Unbekannte Einstellungen"
+
+#: rayforge/machine/driver/remote_driver.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
+#: rayforge/machine/driver/grbl/grbl_network.py
+msgid "Settings reported by the device not in the standard list."
+msgstr ""
+"Vom Gerät gemeldete Einstellungen, die nicht in der Standardliste enthalten "
+"sind."
+
+#: rayforge/machine/driver/remote_driver.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
+#: rayforge/machine/driver/grbl/grbl_network.py
+msgid "Unknown setting from device"
+msgstr "Unbekannte Einstellung vom Gerät"
+
+#: rayforge/machine/driver/remote_driver.py
+msgid "Remote machine"
+msgstr "Remote-Maschine"
+
+#: rayforge/machine/driver/remote_driver.py
+#: rayforge/machine/driver/octoprint/octoprint_util.py
+#: rayforge/machine/driver/marlin/marlin_probe.py
+#: rayforge/machine/driver/grbl/grbl_probe.py
+#: rayforge/machine/driver/smoothie/smoothie_util.py
+msgid "Auto-configured via probe wizard"
+msgstr "Automatisch über den Erkennungsassistenten konfiguriert"
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
 msgid "Ruida"
@@ -772,13 +898,6 @@ msgstr ""
 msgid "Could not read the OctoPrint server version."
 msgstr "OctoPrint-Serverversion konnte nicht gelesen werden."
 
-#: rayforge/machine/driver/octoprint/octoprint_util.py
-#: rayforge/machine/driver/marlin/marlin_probe.py
-#: rayforge/machine/driver/grbl/grbl_probe.py
-#: rayforge/machine/driver/smoothie/smoothie_util.py
-msgid "Auto-configured via probe wizard"
-msgstr "Automatisch über den Erkennungsassistenten konfiguriert"
-
 #: rayforge/machine/driver/octoprint/octoprint_driver.py
 msgid "OctoPrint"
 msgstr "OctoPrint"
@@ -788,6 +907,7 @@ msgid "Submit G-code to an OctoPrint server"
 msgstr "G-Code an einen OctoPrint-Server senden"
 
 #: rayforge/machine/driver/octoprint/octoprint_driver.py
+#: rayforge/machine/driver/session_driver.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
 #: rayforge/machine/driver/grbl/grbl_network.py
@@ -995,6 +1115,16 @@ msgstr "Port nicht konfiguriert."
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
 msgid "Driver is not set up. Check the port settings."
 msgstr "Treiber ist nicht eingerichtet. Überprüfen Sie die Port-Einstellungen."
+
+#: rayforge/machine/driver/session_driver.py
+#: rayforge/machine/driver/smoothie/smoothie_driver.py
+msgid "Driver is not set up. Check the connection settings."
+msgstr ""
+"Der Treiber ist nicht eingerichtet. Überprüfe die Verbindungseinstellungen."
+
+#: rayforge/machine/driver/session_driver.py
+msgid "Connection not configured"
+msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 msgid "GRBL (Telnet)"
@@ -1709,26 +1839,6 @@ msgstr ""
 "Erzwinge eine bestimmte RX-Puffergröße in Bytes. Setze auf 0 für "
 "automatische Erkennung vom Gerät."
 
-#: rayforge/machine/driver/grbl/grbl_serial.py
-#: rayforge/machine/driver/grbl/grbl_serial_simple.py
-#: rayforge/machine/driver/grbl/grbl_network.py
-msgid "Unknown Settings"
-msgstr "Unbekannte Einstellungen"
-
-#: rayforge/machine/driver/grbl/grbl_serial.py
-#: rayforge/machine/driver/grbl/grbl_serial_simple.py
-#: rayforge/machine/driver/grbl/grbl_network.py
-msgid "Settings reported by the device not in the standard list."
-msgstr ""
-"Vom Gerät gemeldete Einstellungen, die nicht in der Standardliste enthalten "
-"sind."
-
-#: rayforge/machine/driver/grbl/grbl_serial.py
-#: rayforge/machine/driver/grbl/grbl_serial_simple.py
-#: rayforge/machine/driver/grbl/grbl_network.py
-msgid "Unknown setting from device"
-msgstr "Unbekannte Einstellung vom Gerät"
-
 #: rayforge/machine/driver/grbl/grbl_probe.py
 msgid ""
 "Device is configured to report in inches ($13=1). All values shown are in "
@@ -1842,11 +1952,6 @@ msgid "Smoothieware via a Telnet connection"
 msgstr "Smoothieware über eine Telnet-Verbindung"
 
 #: rayforge/machine/driver/smoothie/smoothie_driver.py
-msgid "Driver is not set up. Check the connection settings."
-msgstr ""
-"Der Treiber ist nicht eingerichtet. Überprüfe die Verbindungseinstellungen."
-
-#: rayforge/machine/driver/smoothie/smoothie_driver.py
 msgid "The Telnet port number"
 msgstr "Die Telnet-Portnummer"
 
@@ -1858,6 +1963,27 @@ msgstr "Host nicht konfiguriert"
 #, python-brace-format
 msgid "{host}:{port}"
 msgstr "{host}:{port}"
+
+#: rayforge/machine/discovery/raydriver_channel.py
+msgid "unreachable"
+msgstr ""
+
+#: rayforge/machine/discovery/raydriver_channel.py
+msgid "token required"
+msgstr ""
+
+#: rayforge/machine/discovery/raydriver_channel.py
+#, python-brace-format
+msgid "{host}:{port} via raydriver daemon"
+msgstr ""
+
+#: rayforge/machine/discovery/raydriver_channel.py
+msgid "no devices"
+msgstr ""
+
+#: rayforge/machine/discovery/raydriver_channel.py
+msgid "raydriver daemon"
+msgstr ""
 
 #: rayforge/machine/discovery/serial_channel.py
 #, python-brace-format
@@ -3871,12 +3997,6 @@ msgstr "HTTP-Stream-URL"
 #: rayforge/ui_gtk/camera/selection_dialog.py
 msgid "RTSP stream"
 msgstr "RTSP-Stream"
-
-#: rayforge/ui_gtk/camera/selection_dialog.py
-#: rayforge/ui_gtk/machine/device_settings_page.py
-#: rayforge/ui_gtk/machine/settings_dialog.py
-msgid "Device"
-msgstr "Gerät"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
 msgid "Choose an attached local camera"
@@ -6451,6 +6571,7 @@ msgstr ""
 "Netzwerkverbindungen gefunden werden, erscheinen hier automatisch."
 
 #: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+#: rayforge/ui_gtk/varset/adapter/remote_device.py
 msgid "Searching for devices…"
 msgstr "Geräte werden gesucht…"
 
@@ -7348,6 +7469,18 @@ msgstr "Parameter hinzufügen"
 #: rayforge/ui_gtk/varset/varset_editor.py
 msgid "New Parameter"
 msgstr "Neuer Parameter"
+
+#: rayforge/ui_gtk/varset/adapter/remote_device.py
+msgid ""
+"Could not list devices — check the hostname and token (the daemon may "
+"require a token)."
+msgstr ""
+"Geräte konnten nicht aufgelistet werden — prüfen Sie Hostname und Token (der "
+"Daemon erfordert möglicherweise ein Token)."
+
+#: rayforge/ui_gtk/varset/adapter/remote_device.py
+msgid "The daemon has no devices configured."
+msgstr "Der Daemon hat keine Geräte konfiguriert."
 
 #: rayforge/ui_gtk/varset/adapter/combo.py
 msgid "Match by USB VID:PID…"

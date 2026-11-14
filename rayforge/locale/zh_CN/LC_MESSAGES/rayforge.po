@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-03 01:36+0100\n"
+"POT-Creation-Date: 2026-11-14 09:06+0100\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -249,6 +249,15 @@ msgstr "选择（带标签）"
 msgid "Tuple"
 msgstr "元组"
 
+#: rayforge/core/varset/remotedevicevar.py
+#: rayforge/machine/driver/remote_driver.py
+msgid "Select a device on the daemon."
+msgstr "选择守护进程上的设备。"
+
+#: rayforge/core/varset/remotedevicevar.py
+msgid "Remote Device"
+msgstr "远程设备"
+
 #: rayforge/core/varset/boolvar.py
 msgid "Boolean (Switch)"
 msgstr "布尔值 (开关)"
@@ -398,6 +407,115 @@ msgstr "URL 中的主机名或端口无效。"
 #: rayforge/camera/source/base.py
 msgid "URL must include a valid hostname or IP address"
 msgstr "URL 必须包含有效的主机名或 IP 地址。"
+
+#: rayforge/machine/driver/remote_setup.py
+msgid "Daemon hostname"
+msgstr "守护进程主机名"
+
+#: rayforge/machine/driver/remote_setup.py
+msgid "Hostname or IP of the computer running the raydriver daemon."
+msgstr "运行 raydriver 守护进程的计算机的主机名或 IP。"
+
+#: rayforge/machine/driver/remote_setup.py
+msgid "Daemon port"
+msgstr "守护进程端口"
+
+#: rayforge/machine/driver/remote_setup.py
+msgid "Control port of the raydriver daemon."
+msgstr "raydriver 守护进程的控制端口。"
+
+#: rayforge/machine/driver/remote_setup.py
+msgid "Token"
+msgstr "令牌"
+
+#: rayforge/machine/driver/remote_setup.py
+msgid ""
+"The daemon's shared secret. Run 'raydriver daemon status' on the computer "
+"running the daemon to print it."
+msgstr ""
+"守护进程的共享密钥。在运行守护进程的计算机上运行 'raydriver daemon status' 即"
+"可打印。"
+
+#: rayforge/machine/driver/remote_setup.py
+msgid "TLS certificate (PEM path)"
+msgstr "TLS 证书（PEM 路径）"
+
+#: rayforge/machine/driver/remote_setup.py
+msgid ""
+"Pin the daemon's certificate. Only needed for a daemon reached over the "
+"network with TLS."
+msgstr "固定守护进程的证书。仅对通过网络以 TLS 访问的守护进程需要。"
+
+#: rayforge/machine/driver/remote_setup.py
+msgid "TLS hostname"
+msgstr "TLS 主机名"
+
+#: rayforge/machine/driver/remote_setup.py
+msgid ""
+"Hostname to verify against the certificate (defaults to the daemon hostname)."
+msgstr "用于对照证书验证的主机名（默认为守护进程主机名）。"
+
+#: rayforge/machine/driver/remote_driver.py
+msgid "Remote machine (raydriver)"
+msgstr "远程机器（raydriver）"
+
+#: rayforge/machine/driver/remote_driver.py
+msgid "A device attached to a raydriver daemon on another computer"
+msgstr "连接到另一台计算机上 raydriver 守护进程的设备"
+
+#: rayforge/machine/driver/remote_driver.py
+msgid "Daemon hostname must be configured."
+msgstr "必须配置守护进程主机名。"
+
+#: rayforge/machine/driver/remote_driver.py
+#: rayforge/ui_gtk/camera/selection_dialog.py
+#: rayforge/ui_gtk/machine/device_settings_page.py
+#: rayforge/ui_gtk/machine/settings_dialog.py
+msgid "Device"
+msgstr "设备"
+
+#: rayforge/machine/driver/remote_driver.py
+msgid ""
+"The machine on the daemon. The list is read from the daemon once its "
+"hostname is set."
+msgstr ""
+
+#: rayforge/machine/driver/remote_driver.py
+msgid "Protocol"
+msgstr "协议"
+
+#: rayforge/machine/driver/remote_driver.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
+#: rayforge/machine/driver/grbl/grbl_network.py
+msgid "Unknown Settings"
+msgstr "未知设置"
+
+#: rayforge/machine/driver/remote_driver.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
+#: rayforge/machine/driver/grbl/grbl_network.py
+msgid "Settings reported by the device not in the standard list."
+msgstr "设备报告的设置不在标准列表中。"
+
+#: rayforge/machine/driver/remote_driver.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
+#: rayforge/machine/driver/grbl/grbl_network.py
+msgid "Unknown setting from device"
+msgstr "来自设备的未知设置"
+
+#: rayforge/machine/driver/remote_driver.py
+msgid "Remote machine"
+msgstr "远程机器"
+
+#: rayforge/machine/driver/remote_driver.py
+#: rayforge/machine/driver/octoprint/octoprint_util.py
+#: rayforge/machine/driver/marlin/marlin_probe.py
+#: rayforge/machine/driver/grbl/grbl_probe.py
+#: rayforge/machine/driver/smoothie/smoothie_util.py
+msgid "Auto-configured via probe wizard"
+msgstr "通过探测向导自动配置"
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
 msgid "Ruida"
@@ -735,13 +853,6 @@ msgstr "设置时发生意外错误。您可能需要编辑设备设置。"
 msgid "Could not read the OctoPrint server version."
 msgstr "无法读取OctoPrint服务器版本。"
 
-#: rayforge/machine/driver/octoprint/octoprint_util.py
-#: rayforge/machine/driver/marlin/marlin_probe.py
-#: rayforge/machine/driver/grbl/grbl_probe.py
-#: rayforge/machine/driver/smoothie/smoothie_util.py
-msgid "Auto-configured via probe wizard"
-msgstr "通过探测向导自动配置"
-
 #: rayforge/machine/driver/octoprint/octoprint_driver.py
 msgid "OctoPrint"
 msgstr "OctoPrint"
@@ -751,6 +862,7 @@ msgid "Submit G-code to an OctoPrint server"
 msgstr "将G代码提交到OctoPrint服务器"
 
 #: rayforge/machine/driver/octoprint/octoprint_driver.py
+#: rayforge/machine/driver/session_driver.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
 #: rayforge/machine/driver/grbl/grbl_network.py
@@ -936,6 +1048,15 @@ msgstr "端口未配置"
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
 msgid "Driver is not set up. Check the port settings."
 msgstr "驱动未设置。请检查端口设置。"
+
+#: rayforge/machine/driver/session_driver.py
+#: rayforge/machine/driver/smoothie/smoothie_driver.py
+msgid "Driver is not set up. Check the connection settings."
+msgstr "驱动未设置。请检查连接设置。"
+
+#: rayforge/machine/driver/session_driver.py
+msgid "Connection not configured"
+msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 msgid "GRBL (Telnet)"
@@ -1546,24 +1667,6 @@ msgid ""
 "device."
 msgstr "强制指定RX缓冲区大小（字节）。设置为0以从设备自动检测。"
 
-#: rayforge/machine/driver/grbl/grbl_serial.py
-#: rayforge/machine/driver/grbl/grbl_serial_simple.py
-#: rayforge/machine/driver/grbl/grbl_network.py
-msgid "Unknown Settings"
-msgstr "未知设置"
-
-#: rayforge/machine/driver/grbl/grbl_serial.py
-#: rayforge/machine/driver/grbl/grbl_serial_simple.py
-#: rayforge/machine/driver/grbl/grbl_network.py
-msgid "Settings reported by the device not in the standard list."
-msgstr "设备报告的设置不在标准列表中。"
-
-#: rayforge/machine/driver/grbl/grbl_serial.py
-#: rayforge/machine/driver/grbl/grbl_serial_simple.py
-#: rayforge/machine/driver/grbl/grbl_network.py
-msgid "Unknown setting from device"
-msgstr "来自设备的未知设置"
-
 #: rayforge/machine/driver/grbl/grbl_probe.py
 msgid ""
 "Device is configured to report in inches ($13=1). All values shown are in "
@@ -1666,10 +1769,6 @@ msgid "Smoothieware via a Telnet connection"
 msgstr "通过Telnet连接的Smoothieware"
 
 #: rayforge/machine/driver/smoothie/smoothie_driver.py
-msgid "Driver is not set up. Check the connection settings."
-msgstr "驱动未设置。请检查连接设置。"
-
-#: rayforge/machine/driver/smoothie/smoothie_driver.py
 msgid "The Telnet port number"
 msgstr "Telnet端口号"
 
@@ -1681,6 +1780,27 @@ msgstr "未配置主机"
 #, python-brace-format
 msgid "{host}:{port}"
 msgstr "{host}:{port}"
+
+#: rayforge/machine/discovery/raydriver_channel.py
+msgid "unreachable"
+msgstr ""
+
+#: rayforge/machine/discovery/raydriver_channel.py
+msgid "token required"
+msgstr ""
+
+#: rayforge/machine/discovery/raydriver_channel.py
+#, python-brace-format
+msgid "{host}:{port} via raydriver daemon"
+msgstr ""
+
+#: rayforge/machine/discovery/raydriver_channel.py
+msgid "no devices"
+msgstr ""
+
+#: rayforge/machine/discovery/raydriver_channel.py
+msgid "raydriver daemon"
+msgstr ""
 
 #: rayforge/machine/discovery/serial_channel.py
 #, python-brace-format
@@ -3622,12 +3742,6 @@ msgstr "HTTP 流 URL"
 #: rayforge/ui_gtk/camera/selection_dialog.py
 msgid "RTSP stream"
 msgstr "RTSP 流"
-
-#: rayforge/ui_gtk/camera/selection_dialog.py
-#: rayforge/ui_gtk/machine/device_settings_page.py
-#: rayforge/ui_gtk/machine/settings_dialog.py
-msgid "Device"
-msgstr "设备"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
 msgid "Choose an attached local camera"
@@ -6071,6 +6185,7 @@ msgid ""
 msgstr "插入并打开您的机器电源。通过USB或网络连接找到的设备将自动显示在此处。"
 
 #: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+#: rayforge/ui_gtk/varset/adapter/remote_device.py
 msgid "Searching for devices…"
 msgstr "正在搜索设备…"
 
@@ -6925,6 +7040,16 @@ msgstr "添加参数"
 #: rayforge/ui_gtk/varset/varset_editor.py
 msgid "New Parameter"
 msgstr "新参数"
+
+#: rayforge/ui_gtk/varset/adapter/remote_device.py
+msgid ""
+"Could not list devices — check the hostname and token (the daemon may "
+"require a token)."
+msgstr "无法列出设备——请检查主机名和令牌（守护进程可能需要令牌）。"
+
+#: rayforge/ui_gtk/varset/adapter/remote_device.py
+msgid "The daemon has no devices configured."
+msgstr "守护进程未配置任何设备。"
 
 #: rayforge/ui_gtk/varset/adapter/combo.py
 msgid "Match by USB VID:PID…"
