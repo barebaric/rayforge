@@ -147,6 +147,7 @@ class Sketch(IAsset, IGeometryProvider):
         self.registry = EntityRegistry()
         self._constraints: list[Any] = []
         self.flags = EntityFlags()
+        self.flags._registry = self.registry
         self.fills: list[Fill] = []
         self.arrays: list[Array] = []
         self.input_parameters = VarSet(
@@ -1052,6 +1053,7 @@ class Sketch(IAsset, IGeometryProvider):
             if entity_dict.get("id") not in known_entities:
                 entities.append(entity_dict)
         self.registry = EntityRegistry.from_dict(data)
+        self.flags._registry = self.registry
         for constraint in self._constraints:
             self.registry.add_constraint(constraint)
 
@@ -1097,6 +1099,7 @@ class Sketch(IAsset, IGeometryProvider):
                 if value in pid_map:
                     entity_dict[key] = pid_map[value]
         self.registry = EntityRegistry.from_dict(registry_dict)
+        self.flags._registry = self.registry
         for constraint in self._constraints:
             self.registry.add_constraint(constraint)
 

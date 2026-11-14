@@ -36,9 +36,11 @@ class EntityFlags:
         self.waypoints: dict[int, WaypointType] = {}
         self.fill_colors: dict[int, tuple] = {}
         self.text: dict[int, dict[str, Any]] = {}
+        self._registry: Any = None
 
     def absorb(self, registry: Any) -> None:
         """Seeds the overlay from the raygeo registry's storage."""
+        self._registry = registry
         self.invisible.clear()
         self.array_copy.clear()
         self.fill_colors.clear()
@@ -67,6 +69,20 @@ class EntityFlags:
                     "italic": entity.italic,
                 }
 
+    def _entity(self, eid: int) -> Any:
+        if self._registry is None:
+            return None
+        return self._registry.get_entity_object(eid)
+
+    def __deepcopy__(self, memo: dict) -> "EntityFlags":
+        clone = EntityFlags()
+        clone.invisible = dict(self.invisible)
+        clone.array_copy = dict(self.array_copy)
+        clone.waypoints = dict(self.waypoints)
+        clone.fill_colors = dict(self.fill_colors)
+        clone.text = copy.deepcopy(self.text, memo)
+        return clone
+
     def drop_ids(self, entity_ids: set[int], point_ids: set[int]) -> None:
         """Forgets the flags of removed entities and points."""
         for eid in entity_ids:
@@ -85,6 +101,9 @@ class EntityFlags:
             self.invisible[eid] = True
         else:
             self.invisible.pop(eid, None)
+        entity = self._entity(eid)
+        if entity is not None:
+            entity.invisible = value
 
     def is_array_copy(self, eid: int) -> bool:
         return self.array_copy.get(eid, False)
@@ -94,6 +113,9 @@ class EntityFlags:
             self.array_copy[eid] = True
         else:
             self.array_copy.pop(eid, None)
+        entity = self._entity(eid)
+        if entity is not None:
+            entity.array_copy = value
 
     def waypoint_type(self, pid: int) -> WaypointType:
         return self.waypoints.get(pid, WaypointType.SHARP)
@@ -112,6 +134,9 @@ class EntityFlags:
             self.fill_colors.pop(eid, None)
         else:
             self.fill_colors[eid] = tuple(color)
+        entity = self._entity(eid)
+        if entity is not None:
+            entity.set_fill_color(color)
 
     def text_properties(self, eid: int) -> dict[str, Any]:
         """The text box's content and font properties, overlay first."""
@@ -121,6 +146,29 @@ class EntityFlags:
         if key not in _TEXT_FIELDS:
             raise ValueError(f"Unknown text property: {key}")
         self.text.setdefault(eid, {})[key] = value
+        entity = self._entity(eid)
+        if entity is None or entity.type_name() != "text_box":
+            return
+        if key == "content":
+            entity.content = value
+            return
+        from raygeo.geo.shape.text import FontConfig
+
+        fc = entity.font_config
+        kwargs = {
+            "family": fc.family,
+            "size": fc.size,
+            "bold": fc.bold,
+            "italic": fc.italic,
+        }
+        field = {
+            "font_family": "family",
+            "font_size": "size",
+            "bold": "bold",
+            "italic": "italic",
+        }[key]
+        kwargs[field] = value
+        entity.font_config = FontConfig(**kwargs)
 
     def text_content(self, eid: int, default: str = "") -> str:
         return self.text.get(eid, {}).get("content", default)
