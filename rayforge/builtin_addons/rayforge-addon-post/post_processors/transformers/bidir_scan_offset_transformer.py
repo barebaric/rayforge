@@ -26,15 +26,17 @@ class BidirScanOffsetTransformer(OpsTransformer):
     passes are left untouched. Running after overscan means any lead-in/
     lead-out already baked into the pass is shifted along with it.
 
-    The step's own ``bidir_x_offset_mm`` wins when it is non-zero;
-    otherwise the offset comes from the machine's speed table
+    An explicit ``offset_mm`` on the transformer wins when set; otherwise
+    the step's own ``bidir_x_offset_mm`` wins when it is non-zero, and
+    failing that the offset comes from the machine's speed table
     (``bidir_offset_table``), looked up at the step's ``cut_speed``.
     """
 
     SPEC_NAME = "bidir_scan_offset"
 
-    def __init__(self, enabled: bool = True):
+    def __init__(self, enabled: bool = True, offset_mm: float = 0.0):
         super().__init__(enabled=enabled)
+        self.offset_mm = float(offset_mm)
 
     @property
     def label(self) -> str:
@@ -51,16 +53,22 @@ class BidirScanOffsetTransformer(OpsTransformer):
         self,
         workpiece: WorkPiece | None,
         stock_geometries: list[Geometry] | None,
-        settings: dict[str, Any] | None,
+        machine=None,
+        settings: dict[str, Any] | None = None,
     ) -> BidirScanOffsetSpec:
+        if self.offset_mm:
+            return BidirScanOffsetSpec(offset_mm=self.offset_mm)
         return BidirScanOffsetSpec(offset_mm=_resolve_offset(settings))
 
     def to_dict(self) -> dict[str, Any]:
-        return {**super().to_dict()}
+        return {**super().to_dict(), "offset_mm": self.offset_mm}
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> BidirScanOffsetTransformer:
-        return cls(enabled=data.get("enabled", True))
+        return cls(
+            enabled=data.get("enabled", True),
+            offset_mm=data.get("offset_mm", 0.0),
+        )
 
 
 def _resolve_offset(settings: dict[str, Any] | None) -> float:
