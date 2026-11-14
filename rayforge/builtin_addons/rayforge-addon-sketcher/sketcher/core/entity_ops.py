@@ -369,24 +369,4 @@ def polygon_world_rings(
     registry: EntityRegistry, entity: Polygon
 ) -> list[list[tuple[float, float]]]:
     """Every ring in world coordinates (outer first)."""
-    center = registry.get_point(entity.center_idx)
-    handle = registry.get_point(entity.handle_idx)
-    if center is None or handle is None:
-        return []
-    dx, dy = handle[0] - center[0], handle[1] - center[1]
-    scale = math.hypot(dx, dy)
-    if scale < 1e-9:
-        ux, uy = 1.0, 0.0
-        scale = 0.0
-    else:
-        ux, uy = dx / scale, dy / scale
-    return [
-        [
-            (
-                center[0] + scale * (u * ux - v * uy),
-                center[1] + scale * (u * uy + v * ux),
-            )
-            for u, v in ring
-        ]
-        for ring in entity.rings
-    ]
+    return [list(ring) for ring in entity.get_world_rings(registry)]

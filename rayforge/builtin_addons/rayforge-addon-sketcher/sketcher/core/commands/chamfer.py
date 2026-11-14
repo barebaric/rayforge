@@ -161,12 +161,13 @@ class ChamferCommand(SketchChangeCommand):
         return True
 
     def _do_execute(self) -> None:
+        is_redo = self._prepared
         if not self._prepare():
             return
 
         if self.remove_cmd:
             self.remove_cmd._do_execute()
-        if self.add_cmd:
+        if is_redo and self.add_cmd:
             self.add_cmd._redo()
 
     def _do_undo(self) -> None:

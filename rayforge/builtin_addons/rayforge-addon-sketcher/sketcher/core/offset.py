@@ -148,7 +148,7 @@ def outline_item(
     local = _normalize_vertices(center, handle, vertices)
     rings: list[list[tuple[float, float]]] | None = None
     if holes:
-        rings = [local] + [
+        rings = [
             _normalize_vertices(center, handle, hole) for hole in holes
         ]
     return Polygon(
