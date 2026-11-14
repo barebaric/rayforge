@@ -7,7 +7,10 @@ from raygeo.geo.types import Point as GeoPoint
 
 from raygeo.sketch.constraints.coincident import CoincidentConstraint
 from raygeo.sketch.constraints.horizontal import HorizontalConstraint
-from raygeo.sketch.constraints.point_on_line import PointOnLineConstraint
+from raygeo.sketch.constraints.point_on_line import (
+    PointOnLineConstraint,
+    PointOnTarget,
+)
 from raygeo.sketch.constraints.symmetry import SymmetryConstraint
 from raygeo.sketch.constraints.symmetry import SymmetryTarget
 from raygeo.sketch.constraints.vertical import VerticalConstraint
@@ -255,14 +258,20 @@ class SnapMixin:
         return [CoincidentConstraint(p1=pid, p2=sp.source.id)]
 
     def _build_on_entity_constraint(self, sp, pid):
-        if not isinstance(sp.source, (Line, Arc, Circle)):
-            return []
-        return [
-            PointOnLineConstraint(
-                point_id=pid,
-                shape_id=sp.source.id,
+        source = sp.source
+        if isinstance(source, Line):
+            target = PointOnTarget.Line(source.p1_idx, source.p2_idx)
+        elif isinstance(source, Circle):
+            target = PointOnTarget.RadiusCurve(
+                source.center_idx, source.radius_pt_idx
             )
-        ]
+        elif isinstance(source, Arc):
+            target = PointOnTarget.RadiusCurve(
+                source.center_idx, source.start_idx
+            )
+        else:
+            return []
+        return [PointOnLineConstraint(pid, target)]
 
     def _build_axis_constraints(self, result, end_pid, existing):
         constraints: list[Any] = []

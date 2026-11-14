@@ -126,7 +126,7 @@ def test_endpoint_snap_onto_segment_creates_coincident_not_trio():
     coincidence — not a point-on-line with a horizontal and a
     vertical constraint stacked on top."""
     harness = Harness()
-    line = Line(31, 27, 30)
+    line = Line(27, 30)
     result = SnapResult(
         snapped=True,
         position=(0.0, 0.0),
@@ -146,7 +146,8 @@ def test_endpoint_snap_onto_segment_creates_coincident_not_trio():
     on_line = [c for c in constraints if isinstance(c, PointOnLineConstraint)]
     assert len(on_line) == 1
     assert on_line[0].point_id == 3
-    assert on_line[0].shape_id == 31
+    target = on_line[0].target
+    assert {target.l1, target.l2} == {line.p1_idx, line.p2_idx}
     assert point_pairs(constraints, CoincidentConstraint) == [{3, 27}]
     assert point_pairs(constraints, HorizontalConstraint) == []
     assert point_pairs(constraints, VerticalConstraint) == []
