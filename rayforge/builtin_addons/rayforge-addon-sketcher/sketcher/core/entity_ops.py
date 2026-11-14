@@ -126,53 +126,53 @@ def clone_entity(
 
 
 def entity_from_dict(entity_dict: dict) -> Any:
-    """Builds an unattached entity from its reference dictionary.
-    The registry assigns the final id on insertion; point ids are
-    taken from the dictionary."""
+    """Builds an unattached entity from its reference dictionary,
+    preserving its id and point ids. The registry assigns a fresh id
+    on insertion."""
     kind = entity_dict.get("type")
     construction = entity_dict.get("construction", False)
     if kind == "line":
-        return Line(
+        entity = Line(
             entity_dict["p1_idx"], entity_dict["p2_idx"], construction
         )
-    if kind == "arc":
-        return Arc(
+    elif kind == "arc":
+        entity = Arc(
             entity_dict["start_idx"],
             entity_dict["end_idx"],
             entity_dict["center_idx"],
             entity_dict.get("clockwise", False),
             construction,
         )
-    if kind == "circle":
-        return Circle(
+    elif kind == "circle":
+        entity = Circle(
             entity_dict["center_idx"],
             entity_dict["radius_pt_idx"],
             construction,
         )
-    if kind == "ellipse":
-        return Ellipse(
+    elif kind == "ellipse":
+        entity = Ellipse(
             entity_dict["center_idx"],
             entity_dict["radius_x_pt_idx"],
             entity_dict["radius_y_pt_idx"],
             construction,
         )
-    if kind == "bezier":
+    elif kind == "bezier":
         cp1 = None
         if "cp1_dx" in entity_dict and "cp1_dy" in entity_dict:
             cp1 = (entity_dict["cp1_dx"], entity_dict["cp1_dy"])
         cp2 = None
         if "cp2_dx" in entity_dict and "cp2_dy" in entity_dict:
             cp2 = (entity_dict["cp2_dx"], entity_dict["cp2_dy"])
-        return Bezier(
+        entity = Bezier(
             entity_dict["start_idx"],
             entity_dict["end_idx"],
             construction,
             cp1=cp1,
             cp2=cp2,
         )
-    if kind == "polygon":
+    elif kind == "polygon":
         rings = entity_dict.get("rings")
-        return Polygon(
+        entity = Polygon(
             entity_dict["center_idx"],
             entity_dict["handle_idx"],
             [tuple(vertex) for vertex in entity_dict["vertices"]],
@@ -180,9 +180,9 @@ def entity_from_dict(entity_dict: dict) -> Any:
             construction,
             rings=rings,
         )
-    if kind == "text_box":
+    elif kind == "text_box":
         font = entity_dict.get("font_config", {})
-        return TextBox(
+        entity = TextBox(
             entity_dict["origin_id"],
             entity_dict["width_id"],
             entity_dict["height_id"],
@@ -192,7 +192,11 @@ def entity_from_dict(entity_dict: dict) -> Any:
             font.get("bold", False),
             font.get("italic", False),
         )
-    raise ValueError(f"Unsupported entity type: {kind}")
+    else:
+        raise ValueError(f"Unsupported entity type: {kind}")
+    if "id" in entity_dict:
+        entity.id = entity_dict["id"]
+    return entity
 
 
 def _transformed_offset(
