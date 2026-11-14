@@ -116,7 +116,12 @@ class RemoteDeviceAdapter(RowAdapter):
         self._row.set_subtitle(_("Searching for devices…"))
 
         async def _coroutine(exec_ctx: Any) -> Any:
-            return await list_devices(dict(endpoint))
+            # Return errors instead of raising so the task manager does
+            # not log them as unhandled; the picker shows them inline.
+            try:
+                return await list_devices(dict(endpoint))
+            except (ConnectionError, OSError) as err:
+                return err
 
         task_mgr.add_coroutine(
             _coroutine,
@@ -126,10 +131,9 @@ class RemoteDeviceAdapter(RowAdapter):
 
     def _on_devices(self, task: Any) -> None:
         def _update() -> None:
-            try:
-                devices = task.result()
-            except Exception:
-                logger.debug("Listing daemon devices failed", exc_info=True)
+            result = task.result()
+            if isinstance(result, Exception):
+                logger.debug("Listing daemon devices failed: %s", result)
                 self._row.set_subtitle(
                     _(
                         "Could not list devices — check the hostname and "
@@ -137,6 +141,7 @@ class RemoteDeviceAdapter(RowAdapter):
                     )
                 )
                 return
+            devices = result
             self._protocols = {
                 d["device"]: d.get("protocol", "") for d in devices
             }
