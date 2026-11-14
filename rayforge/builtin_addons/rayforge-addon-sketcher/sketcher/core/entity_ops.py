@@ -270,6 +270,14 @@ def rewrite_state_from(
         if len(rings) > 1:
             state["rings"] = [list(ring) for ring in rings[1:]]
         registry.set_state(copy_eid, state)
+    elif kind == "text_box":
+        registry.set_state(
+            copy_eid,
+            {
+                "content": template.content,
+                "font_config": template.font_config.to_dict(),
+            },
+        )
 
 
 def _flip_polygon_rings(

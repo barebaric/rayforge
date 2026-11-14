@@ -502,7 +502,7 @@ class EditArrayCommand(SketchChangeCommand):
         if self.remove_cmd is not None:
             self._reexecute_remove()
         if self.add_cmd is not None:
-            self.add_cmd._do_execute()
+            self.add_cmd._redo()
         if self._old_array_state is None:
             return
         registry = self.sketch.registry

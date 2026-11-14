@@ -149,7 +149,7 @@ def test_deleting_a_copy_and_editing_regenerates_it(text_array):
     for eid in cmd.array.living_entity_ids(registry):
         entity = registry.get_entity_object(eid)
         assert entity.content == "AB"
-        if entity is not box:
+        if entity.id != box.id:
             assert entity.construction_line_ids == []
 
 
