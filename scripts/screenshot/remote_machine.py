@@ -1,11 +1,11 @@
 """Screenshot: remote machine (raydriver) setup.
 
-Targets (``remote:<leaf>``):
+Targets:
 
-* ``wizard-connect`` — the wizard connection page for a remote
-  machine (daemon endpoint + device picker).
-* ``settings``       — machine settings (General) for a remote
-  machine.
+* ``config-wizard:remote``    — the wizard connection page for a
+  remote machine (daemon endpoint + device picker).
+* ``machine-settings:remote`` — machine settings (General) for a
+  remote machine.
 """
 
 import logging
@@ -57,11 +57,11 @@ REMOTE_PROFILE = DeviceProfile(
 
 @restore_config
 def main():
-    target = get_target("remote:wizard-connect")
+    target = get_target("config-wizard:remote")
     set_window_size(win, 1400, 1000)
     time.sleep(0.25)
 
-    if target == "remote:settings":
+    if target == "machine-settings:remote":
         from rayforge.context import get_context
 
         def setup_machine():

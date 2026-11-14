@@ -50,7 +50,7 @@ raydriver daemon status
 **Remote machine (raydriver)** ड्राइवर के साथ मैन्युअल रूप से मशीन जोड़ें और डेमन का होस्टनेम, पोर्ट और टोकन दर्ज
 करें; फिर डेमन से पढ़ी गई सूची से डिवाइस चुनें:
 
-![विज़ार्ड — रिमोट कनेक्शन](/screenshots/remote-wizard-connect.webp)
+![विज़ार्ड — रिमोट कनेक्शन](/screenshots/config-wizard-remote.webp)
 
 - **डेमन होस्टनेम / पोर्ट** — वह कंप्यूटर जिस पर डेमन चलता है (डिफ़ॉल्ट पोर्ट `8765`)।
 - **टोकन** — डिवाइस होस्ट पर `raydriver daemon status` से प्राप्त मान।
@@ -65,7 +65,7 @@ raydriver daemon status
 
 रिमोट मशीन की सेटिंग्स स्थानीय सीरियल पोर्ट के बजाय डेमन एंडपॉइंट और डिवाइस दिखाती हैं:
 
-![मशीन सेटिंग्स — रिमोट मशीन](/screenshots/remote-settings.webp)
+![मशीन सेटिंग्स — रिमोट मशीन](/screenshots/machine-settings-remote.webp)
 
 ## जॉब और रीकनेक्ट
 

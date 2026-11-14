@@ -58,7 +58,7 @@ pour l'ajouter. Sinon, ajoutez une machine manuellement avec le pilote **Remote 
 (raydriver)** et saisissez le nom d'hôte, le port et le jeton du démon ; puis choisissez l'appareil
 dans la liste lue depuis le démon :
 
-![Assistant — connexion distante](/screenshots/remote-wizard-connect.webp)
+![Assistant — connexion distante](/screenshots/config-wizard-remote.webp)
 
 - **Nom d'hôte / port du démon** — l'ordinateur qui exécute le démon (port par défaut `8765`).
 - **Jeton** — la valeur de `raydriver daemon status` sur l'hôte de l'appareil.
@@ -75,7 +75,7 @@ n'est pas connecté à votre ordinateur.
 Les paramètres d'une machine distante affichent le point de terminaison du démon et l'appareil au
 lieu d'un port série local :
 
-![Paramètres de la machine — machine distante](/screenshots/remote-settings.webp)
+![Paramètres de la machine — machine distante](/screenshots/machine-settings-remote.webp)
 
 ## Jobs et reconnexions
 

@@ -50,7 +50,7 @@ The machine wizard discovers daemons on the network and lists their devices; pic
 Alternatively, add a machine manually with the **Remote machine (raydriver)** driver and enter the
 daemon hostname, port and token, then choose the device from the list read from the daemon:
 
-![Wizard — remote connection](/screenshots/remote-wizard-connect.webp)
+![Wizard — remote connection](/screenshots/config-wizard-remote.webp)
 
 - **Daemon hostname / port** — the computer running the daemon (default port `8765`).
 - **Token** — the value from `raydriver daemon status` on the device host.
@@ -66,7 +66,7 @@ to your computer.
 
 A remote machine's settings show the daemon endpoint and device instead of a local serial port:
 
-![Machine settings — remote machine](/screenshots/remote-settings.webp)
+![Machine settings — remote machine](/screenshots/machine-settings-remote.webp)
 
 ## Jobs and reconnects
 

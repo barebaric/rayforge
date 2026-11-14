@@ -58,7 +58,7 @@ es hinzuzufügen. Alternativ fügen Sie eine Maschine manuell mit dem Treiber **
 (raydriver)** hinzu und geben Daemon-Hostname, Port und Token ein; wählen Sie dann das Gerät aus der
 Liste, die vom Daemon gelesen wird:
 
-![Assistent — Remote-Verbindung](/screenshots/remote-wizard-connect.webp)
+![Assistent — Remote-Verbindung](/screenshots/config-wizard-remote.webp)
 
 - **Daemon-Hostname / Port** — der Computer, auf dem der Daemon läuft (Standardport `8765`).
 - **Token** — der Wert aus `raydriver daemon status` auf dem Geräte-Host.
@@ -75,7 +75,7 @@ kann, die nicht an Ihrem Computer angeschlossen ist.
 Die Einstellungen einer Remote-Maschine zeigen den Daemon-Endpunkt und das Gerät statt eines lokalen
 seriellen Ports:
 
-![Maschinen-Einstellungen — Remote-Maschine](/screenshots/remote-settings.webp)
+![Maschinen-Einstellungen — Remote-Maschine](/screenshots/machine-settings-remote.webp)
 
 ## Jobs und Wiederverbindungen
 
