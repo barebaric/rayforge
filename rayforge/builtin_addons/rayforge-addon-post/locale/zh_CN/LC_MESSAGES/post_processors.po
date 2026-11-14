@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-18 02:42+0200\n"
+"POT-Creation-Date: 2026-11-11 13:48+0100\n"
 "PO-Revision-Date: 2026-03-18 23:38+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -73,6 +73,19 @@ msgid ""
 msgstr "以零功率桥接的最大间隙；0 表示根据机器加速度自动决定"
 
 #: post_processors/widgets/optimize_group.py
+msgid "Reorder Scan Lines"
+msgstr "重新排序扫描线"
+
+#: post_processors/widgets/optimize_group.py
+msgid ""
+"Reorder raster scan lines for shorter travel. Raster rows normally keep "
+"their order: reordering makes the machine hop its Y axis between rows, which "
+"can cause banding."
+msgstr ""
+"重新排序光栅扫描线以缩短空行程。光栅行通常保持原有顺序：重新排序会使机器在行"
+"之间跳动 Y 轴，可能导致条纹。"
+
+#: post_processors/widgets/optimize_group.py
 msgid "Toggle Flipping"
 msgstr "切换翻转"
 
@@ -91,6 +104,10 @@ msgstr "切换优先选择拐角"
 #: post_processors/widgets/optimize_group.py
 msgid "Change maximum bridged gap"
 msgstr "更改最大桥接间隙"
+
+#: post_processors/widgets/optimize_group.py
+msgid "Toggle Reorder Scan Lines"
+msgstr "切换重新排序扫描线"
 
 #: post_processors/widgets/overscan_group.py
 msgid "This machine adds overscan automatically; the setting has no effect."

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-18 02:42+0200\n"
+"POT-Creation-Date: 2026-11-11 13:48+0100\n"
 "PO-Revision-Date: 2026-03-18 23:38+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -74,6 +74,17 @@ msgid ""
 msgstr ""
 
 #: post_processors/widgets/optimize_group.py
+msgid "Reorder Scan Lines"
+msgstr ""
+
+#: post_processors/widgets/optimize_group.py
+msgid ""
+"Reorder raster scan lines for shorter travel. Raster rows normally keep "
+"their order: reordering makes the machine hop its Y axis between rows, which "
+"can cause banding."
+msgstr ""
+
+#: post_processors/widgets/optimize_group.py
 msgid "Toggle Flipping"
 msgstr "Toggle Flipping"
 
@@ -91,6 +102,10 @@ msgstr ""
 
 #: post_processors/widgets/optimize_group.py
 msgid "Change maximum bridged gap"
+msgstr ""
+
+#: post_processors/widgets/optimize_group.py
+msgid "Toggle Reorder Scan Lines"
 msgstr ""
 
 #: post_processors/widgets/overscan_group.py

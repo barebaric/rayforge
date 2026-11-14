@@ -485,6 +485,8 @@ msgid ""
 "The machine on the daemon. The list is read from the daemon once its "
 "hostname is set."
 msgstr ""
+"Машина на демоні. Список зчитується з демона, щойно встановлено ім'я його "
+"хоста."
 
 #: rayforge/machine/driver/remote_driver.py
 msgid "Protocol"
@@ -1101,7 +1103,7 @@ msgstr "Драйвер не налаштовано. Перевірте нала�
 
 #: rayforge/machine/driver/session_driver.py
 msgid "Connection not configured"
-msgstr ""
+msgstr "З'єднання не налаштовано"
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 msgid "GRBL (Telnet)"
@@ -1928,24 +1930,24 @@ msgstr "{host}:{port}"
 
 #: rayforge/machine/discovery/raydriver_channel.py
 msgid "unreachable"
-msgstr ""
+msgstr "недоступний"
 
 #: rayforge/machine/discovery/raydriver_channel.py
 msgid "token required"
-msgstr ""
+msgstr "потрібен токен"
 
 #: rayforge/machine/discovery/raydriver_channel.py
 #, python-brace-format
 msgid "{host}:{port} via raydriver daemon"
-msgstr ""
+msgstr "{host}:{port} через демон raydriver"
 
 #: rayforge/machine/discovery/raydriver_channel.py
 msgid "no devices"
-msgstr ""
+msgstr "немає пристроїв"
 
 #: rayforge/machine/discovery/raydriver_channel.py
 msgid "raydriver daemon"
-msgstr ""
+msgstr "демон raydriver"
 
 #: rayforge/machine/discovery/serial_channel.py
 #, python-brace-format

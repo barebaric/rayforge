@@ -480,7 +480,7 @@ msgstr "डिवाइस"
 msgid ""
 "The machine on the daemon. The list is read from the daemon once its "
 "hostname is set."
-msgstr ""
+msgstr "डेमन पर मौजूद मशीन। होस्टनेम सेट होते ही सूची डेमन से पढ़ी जाती है।"
 
 #: rayforge/machine/driver/remote_driver.py
 msgid "Protocol"
@@ -1082,7 +1082,7 @@ msgstr "ड्राइवर सेट अप नहीं है। कने�
 
 #: rayforge/machine/driver/session_driver.py
 msgid "Connection not configured"
-msgstr ""
+msgstr "कनेक्शन कॉन्फ़िगर नहीं है"
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 msgid "GRBL (Telnet)"
@@ -1859,24 +1859,24 @@ msgstr "{host}:{port}"
 
 #: rayforge/machine/discovery/raydriver_channel.py
 msgid "unreachable"
-msgstr ""
+msgstr "पहुँच से बाहर"
 
 #: rayforge/machine/discovery/raydriver_channel.py
 msgid "token required"
-msgstr ""
+msgstr "टोकन आवश्यक"
 
 #: rayforge/machine/discovery/raydriver_channel.py
 #, python-brace-format
 msgid "{host}:{port} via raydriver daemon"
-msgstr ""
+msgstr "raydriver डेमन के माध्यम से {host}:{port}"
 
 #: rayforge/machine/discovery/raydriver_channel.py
 msgid "no devices"
-msgstr ""
+msgstr "कोई डिवाइस नहीं"
 
 #: rayforge/machine/discovery/raydriver_channel.py
 msgid "raydriver daemon"
-msgstr ""
+msgstr "raydriver डेमन"
 
 #: rayforge/machine/discovery/serial_channel.py
 #, python-brace-format

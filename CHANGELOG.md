@@ -5,6 +5,80 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.14.0
+
+### Added
+
+- Machine: remote machines. Rayforge can now drive a machine that is
+  attached to another computer on the network: a raydriver daemon
+  running next to the hardware hosts the connection, and the new
+  "Remote machine (raydriver)" driver connects to a device on that
+  daemon. The daemon resolves the device's protocol and capabilities,
+  so one driver covers GRBL, Smoothie and Marlin devices alike. The
+  machine wizard discovers daemons and their devices on the network;
+  alternatively the daemon is entered manually with hostname, port
+  and token, and the device list is read live from the daemon.
+  Probing works over the remote connection. Jobs run on the device
+  host and keep going if Rayforge disconnects; reconnecting resyncs
+  progress exactly (raydriver 1.3.2)
+- Import: the import dialog's Layer Source combo starts from the
+  choice made in the previous import. The auto-switch to color
+  grouping only applies until a source has been picked manually; a
+  remembered choice always wins
+
+### Changed
+
+- Optimize: raster scan lines stay in emission order by default.
+  Reordering them makes the machine reverse and hop its Y axis
+  between rows, and the mechanical play taken up on every reversal
+  displaces the rows enough to show up as irregular horizontal
+  banding. A new Reorder Scan Lines toggle (off by default) restores
+  the old travel-optimizing behavior for machines with calibrated
+  axes (raygeo 1.76.0, discussion #686)
+- Engrave: the Sample Interval row is shown in every raster mode,
+  and its auto value is mode-aware. In dithering the sample pitch is
+  the length of each dot, not just a power-sampling distance; dither
+  and constant-power modes now default it to the line spacing for
+  square cells, while power-modulated modes keep half the spot
+  width, where finer sampling smooths the power ramp (discussion
+  #686)
+- Dependencies: raygeo upgraded to 1.76.0, raydriver to 1.3.2
+
+### Fixed
+
+- Windows: the app launches again on machines with Windows Security.
+  The installer shipped MSYS2's python-opencv, whose unsigned
+  face-recognition DLL (libopencv_face-500.dll) Windows Security
+  blocks; since the app imports cv2 at startup, the main window never
+  appeared. The build now uses the same pinned contrib-free
+  opencv-python wheel as macOS, provides python3.dll so the
+  MSVC-built wheel loads under MSYS2's mingw Python, and a build-time
+  guard fails the build if an OpenCV contrib DLL ever re-enters the
+  bundle (#697)
+- Machine: remote machines keep the generic remote driver when a
+  probe matches a curated device profile; previously the machine was
+  adopted as that local profile (e.g. GRBL serial) and appeared as a
+  standard local device in machine settings. The wizard also skips
+  profile selection for remote devices, which are identified by
+  daemon and device instead of a local hardware profile
+- Machine: the remote device picker reports problems inline instead
+  of as a traceback: a failed device list (e.g. a wrong token) shows
+  a "check the hostname and token" hint, and the picker shows its
+  status (searching, no devices) instead of a silent empty dropdown.
+  The token field explains how to get it ("raydriver daemon status"
+  on the device host), and TLS fields are hidden for loopback
+  daemons, which need no certificate
+
+### Documentation
+
+- A new Remote Devices page describes setting up a raydriver daemon
+  on the device host, getting the token, and connecting from
+  Rayforge, with screenshots of the wizard and machine settings, in
+  all languages
+- The engrave docs describe the Sample Interval setting and its
+  mode-aware defaults, and the optimize docs describe the Reorder
+  Scan Lines toggle, in all languages
+
 ## 1.14.0-beta2
 
 ### Added

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-18 02:42+0200\n"
+"POT-Creation-Date: 2026-11-11 13:48+0100\n"
 "PO-Revision-Date: 2026-03-18 23:38+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -84,6 +84,21 @@ msgstr ""
 "d'après l'accélération de la machine"
 
 #: post_processors/widgets/optimize_group.py
+msgid "Reorder Scan Lines"
+msgstr "Réordonner les lignes de balayage"
+
+#: post_processors/widgets/optimize_group.py
+msgid ""
+"Reorder raster scan lines for shorter travel. Raster rows normally keep "
+"their order: reordering makes the machine hop its Y axis between rows, which "
+"can cause banding."
+msgstr ""
+"Réordonne les lignes de balayage raster pour raccourcir les déplacements. "
+"Les lignes raster conservent normalement leur ordre : la réorganisation fait "
+"sauter l'axe Y de la machine entre les lignes, ce qui peut provoquer des "
+"bandes."
+
+#: post_processors/widgets/optimize_group.py
 msgid "Toggle Flipping"
 msgstr "Activer/désactiver l'inversion"
 
@@ -102,6 +117,10 @@ msgstr "Activer/désactiver la préférence pour les angles"
 #: post_processors/widgets/optimize_group.py
 msgid "Change maximum bridged gap"
 msgstr "Modifier l'écart maximal franchi"
+
+#: post_processors/widgets/optimize_group.py
+msgid "Toggle Reorder Scan Lines"
+msgstr "Activer/désactiver la réorganisation des lignes de balayage"
 
 #: post_processors/widgets/overscan_group.py
 msgid "This machine adds overscan automatically; the setting has no effect."

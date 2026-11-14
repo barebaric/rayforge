@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-09 13:59+0100\n"
+"POT-Creation-Date: 2026-11-11 17:23+0100\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -522,9 +522,9 @@ msgstr "采样间隔"
 
 #: laser_essentials/steps/raster_step.py
 msgid ""
-"Distance between power samples along scan line. Lower values improve "
-"accuracy, but increase output size"
-msgstr "扫描线上功率采样点之间的距离。值越小精度越高，但输出文件会更大"
+"Distance between samples along scan line. Lower values improve accuracy, but "
+"increase output size"
+msgstr "沿扫描线的采样间距。较小的值可提高精度，但会增大输出大小"
 
 #: laser_essentials/steps/raster_step.py
 msgid "Dot Width Correction"
