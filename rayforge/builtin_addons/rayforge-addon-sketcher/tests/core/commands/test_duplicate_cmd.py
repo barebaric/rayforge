@@ -183,11 +183,12 @@ class TestDuplicateExecute:
 
         assert len(s.constraints) == 1
         assert isinstance(s.constraints[0], TangentConstraint)
-        _target = s.constraints[0].target
-    assert {_target.center, _target.radius_point} == {
-        sketch.registry.get_entity_object(circle_id).center_idx,
-        sketch.registry.get_entity_object(circle_id).radius_pt_idx,
-    }
+        _tangent = s.constraints[0]
+        _circle = sketch.registry.get_entity_object(circle_id)
+        assert {_tangent.center, _tangent.radius_point} == {
+            _circle.center_idx,
+            _circle.radius_pt_idx,
+        }
 
     def test_arc_state_copied(self):
         s = Sketch()
