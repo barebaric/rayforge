@@ -7,6 +7,7 @@ from sketcher.core.arrays import (
     find_array_for_entity,
 )
 from sketcher.core.commands import CreateArrayCommand, EditArrayCommand
+from core.constraint_builders import tangent_from_entities
 from raygeo.sketch.constraints.coincident import CoincidentConstraint
 from raygeo.sketch.constraints.horizontal import HorizontalConstraint
 from raygeo.sketch.constraints.tangent import TangentConstraint

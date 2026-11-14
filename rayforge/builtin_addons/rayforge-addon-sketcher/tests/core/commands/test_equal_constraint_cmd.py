@@ -1,5 +1,6 @@
 import pytest
 from sketcher.core import Sketch
+from core.constraint_builders import equal_length_from_entities
 from sketcher.core.commands import (
     EqualConstraintCommand,
     EqualConstraintMergeResult,
@@ -50,7 +51,7 @@ def test_find_and_merge_with_existing_constraint(sketch):
     line2_id = sketch.add_line(p3, p4)
     line3_id = sketch.add_line(p5, p6)
 
-    existing = EqualLengthConstraint([line1_id, line2_id])
+    existing = equal_length_from_entities(sketch, [line1_id, line2_id])
     sketch.add_constraint(existing)
 
     result = EqualConstraintCommand.find_and_merge_constraints(
@@ -103,8 +104,8 @@ def test_find_and_merge_multiple_constraints(sketch):
     line3_id = sketch.add_line(p5, p6)
     line4_id = sketch.add_line(p7, p8)
 
-    constr1 = EqualLengthConstraint([line1_id, line2_id])
-    constr2 = EqualLengthConstraint([line3_id, line4_id])
+    constr1 = equal_length_from_entities(sketch, [line1_id, line2_id])
+    constr2 = equal_length_from_entities(sketch, [line3_id, line4_id])
     sketch.add_constraint(constr1)
     sketch.add_constraint(constr2)
 
@@ -143,7 +144,7 @@ def test_find_and_merge_no_overlap_with_existing(sketch):
     line2_id = sketch.add_line(p3, p4)
     line3_id = sketch.add_line(p5, p6)
 
-    existing = EqualLengthConstraint([line1_id, line2_id])
+    existing = equal_length_from_entities(sketch, [line1_id, line2_id])
     sketch.add_constraint(existing)
 
     result = EqualConstraintCommand.find_and_merge_constraints(

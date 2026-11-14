@@ -8,6 +8,7 @@ can express constraints the way the sketcher UI does.
 from __future__ import annotations
 
 from raygeo.sketch.constraints.angle import AngleConstraint
+from raygeo.sketch.constraints.equal_length import EqualLengthConstraint
 from raygeo.sketch.constraints.diameter import DiameterConstraint
 from raygeo.sketch.constraints.radius import RadiusConstraint
 from raygeo.sketch.constraints.perpendicular import (
@@ -69,3 +70,14 @@ def perpendicular_from_lines(sketch, l1, l2):
     return PerpendicularConstraint(
         PerpendicularTarget.LineLine(a.p1_idx, a.p2_idx, b.p1_idx, b.p2_idx)
     )
+
+
+def equal_length_from_entities(sketch, entity_ids):
+    reg = _reg(sketch)
+    entities = [reg.get_entity_object(eid) for eid in entity_ids]
+    base = entities[0]
+    pairs = [
+        (base.p1_idx, base.p2_idx, e.p1_idx, e.p2_idx)
+        for e in entities[1:]
+    ]
+    return EqualLengthConstraint(pairs)
