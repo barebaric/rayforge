@@ -355,7 +355,9 @@ class PolygonCommand(SketchChangeCommand):
                 self.sketch.remove_point_if_unused(self.center_id)
             return
         add_cmd = AddItemsCommand(self.sketch, "")
-        self._shape(center, first, add_cmd)
+        _ids, _entities, constraints = self._shape(center, first, add_cmd)
+        for constraint in constraints:
+            add_cmd.add_constraint(constraint)
         if self.is_center_temp:
             add_cmd.adopt_point(self.center_id)
         self.add_cmd = add_cmd

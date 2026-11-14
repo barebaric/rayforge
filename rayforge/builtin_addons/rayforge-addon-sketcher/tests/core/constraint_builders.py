@@ -105,7 +105,7 @@ def add_arc_by_angle(sketch, center_pid, radius_pid, start_deg, end_deg):
 def point_on_curve_from_entity(sketch, point_pid, bezier_id):
     reg = _reg(sketch)
     b = reg.get_entity_object(bezier_id)
-    return PointOnCurveConstraint(
+    constraint = PointOnCurveConstraint(
         point_pid,
         b.start_idx,
         b.end_idx,
@@ -113,3 +113,5 @@ def point_on_curve_from_entity(sketch, point_pid, bezier_id):
         b.cp2_offset or (0.0, 0.0),
         b.is_line,
     )
+    constraint.shape_id = bezier_id
+    return constraint

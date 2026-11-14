@@ -123,6 +123,7 @@ class CoincidentConstraintTool(SketchTool):
                 curve.cp2_offset or (0.0, 0.0),
                 curve.is_line,
             )
+            constr.shape_id = sel_entity_id
             cmd = AddItemsCommand(
                 sketch, _("Add Point On Curve"), constraints=[constr]
             )
@@ -142,6 +143,7 @@ class CoincidentConstraintTool(SketchTool):
                     shape.center_idx, shape.start_idx
                 )
             constr = PointOnLineConstraint(target_pid, target)
+            constr.shape_id = sel_entity_id
             cmd = AddItemsCommand(
                 sketch, _("Add Point On Shape"), constraints=[constr]
             )
