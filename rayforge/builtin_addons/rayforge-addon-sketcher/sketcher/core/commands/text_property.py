@@ -67,6 +67,16 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
         self._removed_entity_dicts: list[dict[str, Any]] = []
         self._removed_constraints: list[Any] = []
 
+    @property
+    def _removed_points(self) -> list:
+        from raygeo.sketch.entities.point import SketchPoint
+
+        return [
+            SketchPoint(
+                d["id"], d["x"], d["y"], d.get("fixed", False)
+            )
+            for d in self._removed_point_dicts
+        ]
 
     def _shed_size_constraints(self, registry: EntityRegistry) -> None:
         """

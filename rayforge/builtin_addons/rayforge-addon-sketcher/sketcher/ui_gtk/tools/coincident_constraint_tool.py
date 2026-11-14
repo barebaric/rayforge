@@ -5,7 +5,10 @@ from typing import TYPE_CHECKING, ClassVar, Union
 from ...core.commands import AddItemsCommand
 from raygeo.sketch.constraints.coincident import CoincidentConstraint
 from raygeo.sketch.constraints.point_on_curve import PointOnCurveConstraint
-from raygeo.sketch.constraints.point_on_line import PointOnLineConstraint
+from raygeo.sketch.constraints.point_on_line import (
+    PointOnLineConstraint,
+    PointOnTarget,
+)
 from ...core import constraint_info
 from .base import SketchTool
 
@@ -111,7 +114,15 @@ class CoincidentConstraintTool(SketchTool):
         elif constraint_info.can_apply(PointOnCurveConstraint, sel, sketch):
             target_pid = sel.point_ids[0]
             sel_entity_id = sel.entity_ids[0]
-            constr = PointOnCurveConstraint(target_pid, sel_entity_id)
+            curve = sketch.registry.get_entity_object(sel_entity_id)
+            constr = PointOnCurveConstraint(
+                target_pid,
+                curve.start_idx,
+                curve.end_idx,
+                curve.cp1_offset or (0.0, 0.0),
+                curve.cp2_offset or (0.0, 0.0),
+                curve.is_line,
+            )
             cmd = AddItemsCommand(
                 sketch, _("Add Point On Curve"), constraints=[constr]
             )
@@ -119,7 +130,18 @@ class CoincidentConstraintTool(SketchTool):
         elif constraint_info.can_apply(PointOnLineConstraint, sel, sketch):
             sel_entity_id = sel.entity_ids[0]
             target_pid = sel.point_ids[0]
-            constr = PointOnLineConstraint(target_pid, sel_entity_id)
+            shape = sketch.registry.get_entity_object(sel_entity_id)
+            if shape.type_name() == "line":
+                target = PointOnTarget.Line(shape.p1_idx, shape.p2_idx)
+            elif shape.type_name() == "circle":
+                target = PointOnTarget.RadiusCurve(
+                    shape.center_idx, shape.radius_pt_idx
+                )
+            else:
+                target = PointOnTarget.RadiusCurve(
+                    shape.center_idx, shape.start_idx
+                )
+            constr = PointOnLineConstraint(target_pid, target)
             cmd = AddItemsCommand(
                 sketch, _("Add Point On Shape"), constraints=[constr]
             )

@@ -33,91 +33,93 @@ class TextBoxCommand(SketchChangeCommand):
         self.text_box_id: int | None = None
 
     @staticmethod
+    @staticmethod
     def calculate_geometry(
-        sketch,
-        add_cmd: AddItemsCommand,
         origin: GeoPoint,
         width: float,
         height: float,
-    ) -> int:
-        """Builds the text box and its construction lines through
-        ``add_cmd`` and returns the text box entity id."""
+    ) -> dict[str, Any] | None:
+        """Pure geometry of the text box frame: points, construction
+        lines, the text box entity and its constraints, with temporary
+        sequential point ids."""
+        from raygeo.sketch.constraints.perpendicular import (
+            PerpendicularConstraint,
+            PerpendicularTarget,
+        )
         from raygeo.sketch.entities.line import Line
+        from raygeo.sketch.entities.point import SketchPoint
+        from raygeo.sketch.entities.text_box import TextBox
 
         mx, my = origin
-
-        p_origin = add_cmd.add_point(mx, my)
-        p_width = add_cmd.add_point(mx + width, my)
-        p_height = add_cmd.add_point(mx, my + height)
-        p4 = add_cmd.add_point(mx + width, my + height)
-
-        # Construction lines
-        bottom_line = add_cmd.add_entity(
-            Line(p_origin, p_width, construction=True)
-        )
-        right_line = add_cmd.add_entity(
-            Line(p_width, p4, construction=True)
-        )
-        top_line = add_cmd.add_entity(Line(p4, p_height, construction=True))
-        left_line = add_cmd.add_entity(
-            Line(p_height, p_origin, construction=True)
-        )
-
-        text_box_dict = {
-            "type": "text_box",
-            "origin_id": p_origin,
-            "width_id": p_width,
-            "height_id": p_height,
-            "content": "",
-            "construction_line_ids": [
-                bottom_line,
-                right_line,
-                top_line,
-                left_line,
-            ],
-        }
-        text_box_id = add_cmd.add_entity_from_dict(text_box_dict)
-
-        constraints: list[Any] = [
-            # Aspect ratio constraint for live text resizing
-            AspectRatioConstraint(
-                p_origin,
-                p_width,
-                p_origin,
-                p_height,
-                1.0,
-            ),
-            # Structural integrity constraint (hidden)
-            ParallelogramConstraint(
-                p_origin,
-                p_width,
-                p_height,
-                p4,
-            ),
-            # Default constraints for user interaction (visible)
-            HorizontalConstraint(p_origin, p_width),
-            {
-                "type": "PerpendicularConstraint",
-                "e1_id": bottom_line,
-                "e2_id": left_line,
-            },
+        p_origin, p_width, p_height, p4 = 0, 1, 2, 3
+        points = [
+            SketchPoint(p_origin, mx, my),
+            SketchPoint(p_width, mx + width, my),
+            SketchPoint(p_height, mx, my + height),
+            SketchPoint(p4, mx + width, my + height),
         ]
-        for constraint in constraints:
-            add_cmd.add_constraint(constraint)
-        return text_box_id
+        bottom_line = Line(p_origin, p_width, construction=True)
+        right_line = Line(p_width, p4, construction=True)
+        top_line = Line(p4, p_height, construction=True)
+        left_line = Line(p_height, p_origin, construction=True)
+        text_box = TextBox(p_origin, p_width, p_height)
+        entities = [bottom_line, right_line, top_line, left_line, text_box]
+        constraints: list[Any] = [
+            AspectRatioConstraint(
+                p_origin, p_width, p_origin, p_height, 1.0
+            ),
+            ParallelogramConstraint(p_origin, p_width, p_height, p4),
+            HorizontalConstraint(p_origin, p_width),
+            PerpendicularConstraint(
+                PerpendicularTarget.LineLine(
+                    p_origin, p_width, p_height, p_origin
+                )
+            ),
+        ]
+        return {
+            "points": points,
+            "entities": entities,
+            "constraints": constraints,
+            "text_box_id": -9,
+        }
 
     def _do_execute(self) -> None:
         if self.add_cmd:
             return self.add_cmd._redo()
 
-        add_cmd = AddItemsCommand(self.sketch, "")
-        self.text_box_id = self.calculate_geometry(
-            self.sketch,
-            add_cmd,
-            self.origin,
-            self.width,
-            self.height,
+        result = self.calculate_geometry(
+            self.origin, self.width, self.height
         )
+        if result is None:
+            return
+
+        from .. import constraint_ops
+        from ..entity_ops import clone_entity
+
+        add_cmd = AddItemsCommand(self.sketch, "")
+        registry = self.sketch.registry
+        pid_map = {
+            point.id: add_cmd.add_point(point.x, point.y)
+            for point in result["points"]
+        }
+        line_ids = []
+        for entity in result["entities"][:4]:
+            line_ids.append(
+                add_cmd.add_entity(clone_entity(registry, entity, pid_map))
+            )
+        text_box_dict = {
+            "type": "text_box",
+            "origin_id": pid_map[0],
+            "width_id": pid_map[1],
+            "height_id": pid_map[2],
+            "content": "",
+            "construction_line_ids": line_ids,
+        }
+        self.text_box_id = add_cmd.add_entity_from_dict(text_box_dict)
+        for constraint in result["constraints"]:
+            add_cmd.add_constraint(
+                constraint_ops.rebuild(constraint, pid_map)
+            )
         self.add_cmd = add_cmd
 
     def _do_undo(self) -> None:
