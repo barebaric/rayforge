@@ -384,7 +384,9 @@ class CreateArrayCommand(SketchChangeCommand):
                     clone_pid = registry.add_point(*position)
                     self._clone_pid_map[pid] = clone_pid
         if self._clone_pid_map:
-            self.sketch.remap_entity_point_refs(self._clone_pid_map)
+            self.sketch.remap_entity_point_refs(
+                self._clone_pid_map, entity_ids=template
+            )
             self.sketch.rebuild_constraints(internal, self._clone_pid_map)
 
     def _rollback_extraction(self) -> None:

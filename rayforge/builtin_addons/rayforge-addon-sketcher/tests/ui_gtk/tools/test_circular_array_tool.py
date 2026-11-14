@@ -185,7 +185,7 @@ def test_apply_executes_command_and_selects_copies(
         patch.object(tool, "_collect_command", return_value=fake_cmd),
         patch.object(tool, "_close_dialog"),
         patch.object(
-            sketch.registry,
+            sketch,
             "get_entity",
             side_effect=lambda eid: created if eid == 42 else None,
         ),

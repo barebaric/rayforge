@@ -245,11 +245,11 @@ class ArrayToolBase(SketchTool):
         return self._make_create_command()
 
     def _select_entities(self, entity_ids: list[int]):
-        registry = self.element.sketch.registry
+        sketch = self.element.sketch
         selection = self.element.selection
         selection.clear()
         for eid in entity_ids:
-            entity = registry.get_entity_object(eid)
+            entity = sketch.get_entity(eid)
             if entity is not None:
                 selection.select_entity(entity, False)
 

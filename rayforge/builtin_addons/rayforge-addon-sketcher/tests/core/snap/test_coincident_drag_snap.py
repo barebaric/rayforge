@@ -70,7 +70,7 @@ def test_nearby_point_still_produces_snap_lines(registry):
 
     snap_lines = list(producer.produce(registry, (10.0, 5.0), context, 5.0))
 
-    assert any(sl.source is neighbour for sl in snap_lines)
+    assert any(sl.source == neighbour for sl in snap_lines)
 
 
 def test_drag_near_coincident_guide_point_does_not_snap(registry, engine):

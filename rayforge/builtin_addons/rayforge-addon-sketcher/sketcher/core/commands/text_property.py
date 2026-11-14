@@ -160,9 +160,9 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
         p_height = registry.get_point(entity.height_id)
         self.old_point_positions = {}
         if p_width is not None:
-            self.old_point_positions[entity.width_id] = p_width
+            self.old_point_positions[entity.width_id] = tuple(p_width)
         if p_height is not None:
-            self.old_point_positions[entity.height_id] = p_height
+            self.old_point_positions[entity.height_id] = tuple(p_height)
         # Find and store the old aspect ratio constraint
         for idx, constr in enumerate(self.sketch.constraints):
             if (

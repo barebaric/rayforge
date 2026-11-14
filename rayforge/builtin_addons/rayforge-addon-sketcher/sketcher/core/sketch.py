@@ -1072,7 +1072,7 @@ class Sketch(IAsset, IGeometryProvider):
         for entity_dict in entity_dicts:
             if entity_dict.get("id") not in known_entities:
                 entities.append(entity_dict)
-        self.registry = EntityRegistry.from_dict(data)
+        self.registry.load_from_dict(data)
         self.flags._registry = self.registry
         for constraint in self._constraints:
             self.registry.add_constraint(constraint)
@@ -1118,7 +1118,7 @@ class Sketch(IAsset, IGeometryProvider):
                 value = entity_dict.get(key)
                 if value in pid_map:
                     entity_dict[key] = pid_map[value]
-        self.registry = EntityRegistry.from_dict(registry_dict)
+        self.registry.load_from_dict(registry_dict)
         self.flags._registry = self.registry
         for constraint in self._constraints:
             self.registry.add_constraint(constraint)
@@ -1261,7 +1261,7 @@ class Sketch(IAsset, IGeometryProvider):
                 )
 
         points = []
-        first_ent = self.registry.entity_point_ids(loop[0][0])
+        first_ent = self.registry.entity_endpoint_ids(loop[0][0])
         if not first_ent:
             return 0.0
         first_fwd = loop[0][1]
@@ -1273,7 +1273,7 @@ class Sketch(IAsset, IGeometryProvider):
             if pt is None:
                 return 0.0
             points.append(pt)
-            p_ids = self.registry.entity_point_ids(eid)
+            p_ids = self.registry.entity_endpoint_ids(eid)
             if not p_ids or len(p_ids) != 2:
                 return 0.0
             curr_p_id = p_ids[1] if curr_p_id == p_ids[0] else p_ids[0]
