@@ -187,8 +187,8 @@ class CreateArrayCommand(SketchChangeCommand):
             master_points, master_entities, master_constraints = (
                 strategy.create_master_geometry(center_pid, radius_pt_pid)
             )
-            for _pid, x, y, fixed in master_points:
-                add_cmd.add_point(x, y, fixed)
+            for point in master_points:
+                add_cmd.add_point(point.x, point.y, point.fixed)
             for entity in master_entities:
                 eid = add_cmd.add_entity(entity)
                 if isinstance(entity, Circle):

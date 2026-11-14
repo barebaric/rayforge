@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any
 
 from raygeo.sketch.constraints.radius import RadiusConstraint
 from raygeo.sketch.entities.circle import Circle
+from raygeo.sketch.entities.point import SketchPoint
 
 from ..entity_group import EntityGroup
 from .base import (
@@ -137,8 +138,14 @@ class CircularArrayStrategy(ArrayStrategy):
             }
         ]
 
-        point_specs = [(radius_pt_pid, self.center[0] + self.radius,
-                        self.center[1], False)]
+        point_specs = [
+            SketchPoint(
+                radius_pt_pid,
+                self.center[0] + self.radius,
+                self.center[1],
+                False,
+            )
+        ]
         return point_specs, [guide_circle], constraint_dicts
 
     def capture_master_frame(

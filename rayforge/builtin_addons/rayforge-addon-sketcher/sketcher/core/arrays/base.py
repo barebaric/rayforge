@@ -172,8 +172,8 @@ class ArrayStrategy(ABC):
     ) -> tuple[list[Any], list[Any], list[Any]]:
         """
         Returns the master construction geometry as
-        ``(point_specs, entity_objects, constraint_dicts)``: point
-        specs are ``(pid, x, y, fixed)`` tuples, entity objects are
+        ``(points, entity_objects, constraint_dicts)``: points are
+        unattached ``SketchPoint`` objects, entity objects are
         unattached raygeo entities, constraint dicts are reference
         dictionaries for ``Sketch.add_constraint_from_dict``.
         Instances are equal static copies; only the master is special.
@@ -470,7 +470,7 @@ class Array(ABC):
             sig = registry.geometry_signature(eid)
             if sig is not None:
                 signatures.append(sig)
-        return signatures
+        return tuple(signatures)
 
     def signatures_changed(
         self, guide_sig: Any, template_sig: Any

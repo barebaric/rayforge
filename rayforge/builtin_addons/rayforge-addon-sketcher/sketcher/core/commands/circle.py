@@ -237,10 +237,13 @@ class CircleCommand(SketchChangeCommand):
                 self.sketch.remove_point_if_unused(self.center_id)
             return
 
+        center_id = self.center_id
         if self.is_center_temp and registry.get_point(self.center_id):
-            add_cmd.adopt_point(self.center_id)
+            position = registry.get_point(self.center_id)
+            self.sketch.remove_point_if_unused(self.center_id)
+            center_id = add_cmd.add_point(position[0], position[1])
 
-        circle_id = add_cmd.add_entity(Circle(self.center_id, end_pid))
+        circle_id = add_cmd.add_entity(Circle(center_id, end_pid))
         if self.fixed_diameter is not None:
             add_cmd.add_constraint(
                 {

@@ -137,6 +137,8 @@ def test_living_members_filters_deleted_and_keeps_groups():
         def get_entity(self, eid):
             return eid if eid in (1, 2, 5) else None
 
+        get_entity_object = get_entity
+
     # Member at slot 1 lost one of its two entities but survives.
     array = CircularArray(
         "x",
@@ -297,6 +299,8 @@ class _FakeRegistry:
     def get_entity(self, eid):
         return self._entities.get(eid)
 
+    get_entity_object = get_entity
+
     def get_point(self, pid):
         return self._points.get(pid)
 
@@ -340,6 +344,8 @@ def test_prune_drops_dead_entities_and_reports_dead_master():
         def get_entity(self, eid):
             return eid if eid in self.alive else None
 
+        get_entity_object = get_entity
+
     array = CircularArray("a", 99, members=[(0, [1, 2]), (1, [3]), (2, [4])])
     # Master (99) alive; member 1's only entity died.
     assert array.prune(cast(Any, Registry(alive=[99, 1, 2, 4]))) is True
@@ -357,7 +363,9 @@ def test_is_guide_radius_point_only_for_circle_guides():
         def get_entity(self, eid):
             return self.entity
 
-    circle = Circle(11, center_idx=1, radius_pt_idx=42)
+        get_entity_object = get_entity
+
+    circle = Circle(1, 42)
     array = CircularArray("a", 11, [(0, [1])])
     reg = cast(Any, Registry(circle))
     assert array.is_guide_radius_point(reg, 42) is True
