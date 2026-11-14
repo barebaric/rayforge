@@ -1,5 +1,6 @@
 import pytest
 from sketcher.core import Sketch
+from core.constraint_builders import add_arc_by_angle
 from sketcher.core.commands import (
     AngleConstraintCommand,
     AngleConstraintParams,
@@ -75,7 +76,7 @@ def test_calculate_constraint_params_non_line_entity(sketch):
 
     center = sketch.add_point(50, 50)
     radius_p = sketch.add_point(60, 50)
-    arc_id = sketch.add_arc(center, radius_p, 0, 90)
+    arc_id = add_arc_by_angle(sketch, center, radius_p, 0, 90)
 
     result = AngleConstraintCommand.calculate_constraint_params(
         sketch.registry, line_id, arc_id
@@ -87,11 +88,11 @@ def test_calculate_constraint_params_non_line_entity(sketch):
 def test_calculate_constraint_params_two_non_lines(sketch):
     center1 = sketch.add_point(0, 0)
     r1 = sketch.add_point(10, 0)
-    arc1_id = sketch.add_arc(center1, r1, 0, 90)
+    arc1_id = add_arc_by_angle(sketch, center1, r1, 0, 90)
 
     center2 = sketch.add_point(50, 0)
     r2 = sketch.add_point(60, 0)
-    arc2_id = sketch.add_arc(center2, r2, 0, 90)
+    arc2_id = add_arc_by_angle(sketch, center2, r2, 0, 90)
 
     result = AngleConstraintCommand.calculate_constraint_params(
         sketch.registry, arc1_id, arc2_id

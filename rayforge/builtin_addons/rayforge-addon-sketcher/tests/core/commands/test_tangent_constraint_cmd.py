@@ -1,5 +1,6 @@
 import pytest
 from sketcher.core import Sketch
+from core.constraint_builders import add_arc_by_angle
 from sketcher.core.commands import (
     TangentConstraintCommand,
     TangentConstraintParams,
@@ -19,7 +20,7 @@ def line_and_arc(sketch):
 
     center = sketch.add_point(50, 50)
     radius = sketch.add_point(60, 50)
-    arc_id = sketch.add_arc(center, radius, 0, 180)
+    arc_id = add_arc_by_angle(sketch, center, radius, 0, 180)
 
     return sketch, line_id, arc_id
 
@@ -148,7 +149,7 @@ def test_identify_entities_multiple_shapes_uses_first(sketch):
 
     center2 = sketch.add_point(150, 50)
     radius2 = sketch.add_point(160, 50)
-    arc_id = sketch.add_arc(center2, radius2, 0, 90)
+    arc_id = add_arc_by_angle(sketch, center2, radius2, 0, 90)
 
     result = TangentConstraintCommand.identify_entities(
         sketch.registry, [line_id, circle_id, arc_id]

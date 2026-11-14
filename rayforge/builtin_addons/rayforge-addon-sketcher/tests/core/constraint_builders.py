@@ -7,6 +7,8 @@ can express constraints the way the sketcher UI does.
 
 from __future__ import annotations
 
+import math
+
 from raygeo.sketch.constraints.angle import AngleConstraint
 from raygeo.sketch.constraints.equal_length import EqualLengthConstraint
 from raygeo.sketch.constraints.diameter import DiameterConstraint
@@ -81,3 +83,19 @@ def equal_length_from_entities(sketch, entity_ids):
         for e in entities[1:]
     ]
     return EqualLengthConstraint(pairs)
+
+
+def add_arc_by_angle(sketch, center_pid, radius_pid, start_deg, end_deg):
+    reg = _reg(sketch)
+    c = reg.get_point(center_pid)
+    r = reg.get_point(radius_pid)
+    radius = math.hypot(r[0] - c[0], r[1] - c[1])
+    a0 = math.radians(start_deg)
+    a1 = math.radians(end_deg)
+    start = sketch.add_point(
+        c[0] + radius * math.cos(a0), c[1] + radius * math.sin(a0)
+    )
+    end = sketch.add_point(
+        c[0] + radius * math.cos(a1), c[1] + radius * math.sin(a1)
+    )
+    return sketch.add_arc(start, end, center_pid)
