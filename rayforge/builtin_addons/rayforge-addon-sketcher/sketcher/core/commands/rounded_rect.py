@@ -4,7 +4,6 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
 from raygeo.geo.types import Point as GeoPoint
-
 from raygeo.sketch.constraints.distance import DistanceConstraint
 from raygeo.sketch.constraints.equal_distance import (
     EqualDistanceConstraint,
@@ -14,8 +13,8 @@ from raygeo.sketch.constraints.tangent import TangentConstraint
 from raygeo.sketch.constraints.vertical import VerticalConstraint
 from raygeo.sketch.entities.arc import Arc
 
-from ..entity_ops import clone_entity
 from .. import constraint_ops
+from ..entity_ops import clone_entity
 from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData
@@ -334,8 +333,14 @@ class RoundedRectCommand(SketchChangeCommand):
             VerticalConstraint(pid["t7"], pid["t8"]),
         ]
         for li, ai in [
-            (0, 0), (3, 0), (0, 1), (1, 1),
-            (1, 2), (2, 2), (2, 3), (3, 3),
+            (0, 0),
+            (3, 0),
+            (0, 1),
+            (1, 1),
+            (1, 2),
+            (2, 2),
+            (2, 3),
+            (3, 3),
         ]:
             ln, arc = lines[li], arcs[ai]
             constraints.append(
@@ -513,9 +518,7 @@ class RoundedRectCommand(SketchChangeCommand):
             for key in ["arc1", "arc2", "arc3", "arc4"]:
                 arc_entity = registry.get_entity_object(preview_ids[key])
                 if isinstance(arc_entity, Arc):
-                    registry.set_state(
-                        preview_ids[key], {"clockwise": is_cw}
-                    )
+                    registry.set_state(preview_ids[key], {"clockwise": is_cw})
 
         return preview_ids
 
@@ -707,9 +710,7 @@ class RoundedRectCommand(SketchChangeCommand):
         for entity in result["entities"]:
             add_cmd.add_entity(clone_entity(reg, entity, pid_map))
         for constraint in result["constraints"]:
-            add_cmd.add_constraint(
-                constraint_ops.rebuild(constraint, pid_map)
-            )
+            add_cmd.add_constraint(constraint_ops.rebuild(constraint, pid_map))
 
         # Unlike Rectangle, RoundedRect doesn't use the start_pid in
         # its final geometry, so a temporary start point is removed.

@@ -7,10 +7,8 @@ from .. import constraint_info
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
-    from raygeo.sketch.registry import EntityRegistry
-
-    from ..sketch import Sketch
     from ..selection import SketchSelection
+    from ..sketch import Sketch
 
 logger = logging.getLogger(__name__)
 
@@ -54,17 +52,13 @@ class AddItemsCommand(SketchChangeCommand):
     def add_point(self, x: float, y: float, fixed: bool = False) -> int:
         pid = self.sketch.add_point(x, y, fixed)
         self.point_ids.append(pid)
-        self._point_dicts.append(
-            {"id": pid, "x": x, "y": y, "fixed": fixed}
-        )
+        self._point_dicts.append({"id": pid, "x": x, "y": y, "fixed": fixed})
         return pid
 
     def add_entity(self, entity: Any) -> int:
         eid = self.sketch.registry.add_entity(entity)
         self.entity_ids.append(eid)
-        self._entity_dicts.append(
-            self.sketch.registry.entity_to_dict(eid)
-        )
+        self._entity_dicts.append(self.sketch.registry.entity_to_dict(eid))
         return eid
 
     def add_entity_from_dict(self, entity_dict: dict[str, Any]) -> int:
@@ -148,9 +142,7 @@ class AddItemsCommand(SketchChangeCommand):
         sketch.flags.drop_ids(set(), set(self.point_ids))
 
     def _redo(self) -> None:
-        self.sketch.restore_structure(
-            self._point_dicts, self._entity_dicts
-        )
+        self.sketch.restore_structure(self._point_dicts, self._entity_dicts)
         for constraint in self.constraints:
             self.sketch.add_constraint(constraint)
 
@@ -249,9 +241,7 @@ class RemoveItemsCommand(SketchChangeCommand):
                     else:
                         used_points_by_remaining.update(p_ids)
 
-                orphans = (
-                    points_of_deleted_entities - used_points_by_remaining
-                )
+                orphans = points_of_deleted_entities - used_points_by_remaining
                 to_delete_point_ids.update(orphans)
 
             if (
@@ -294,9 +284,7 @@ class RemoveItemsCommand(SketchChangeCommand):
             if constr in to_delete_constraints:
                 continue
             if (
-                constraint_info.depends_on_points(
-                    constr, to_delete_point_ids
-                )
+                constraint_info.depends_on_points(constr, to_delete_point_ids)
                 or constraint_info.depends_on_entities(
                     sketch.registry, constr, to_delete_entity_ids
                 )
@@ -370,9 +358,7 @@ class RemoveItemsCommand(SketchChangeCommand):
         registry.remove_entities(self.entity_ids)
         sketch.flags.drop_ids(set(self.entity_ids), set())
         registry.remove_points([d["id"] for d in self.point_dicts])
-        sketch.flags.drop_ids(
-            set(), {d["id"] for d in self.point_dicts}
-        )
+        sketch.flags.drop_ids(set(), {d["id"] for d in self.point_dicts})
 
     def _do_execute(self) -> None:
         self.apply_direct()
@@ -408,5 +394,3 @@ class RemoveItemsCommand(SketchChangeCommand):
             if selected not in constraints:
                 constraints.append(selected)
         return point_dicts, entity_ids, constraints
-
-

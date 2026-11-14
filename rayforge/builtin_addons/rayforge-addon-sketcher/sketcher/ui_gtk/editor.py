@@ -1,5 +1,5 @@
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from gi.repository import Gdk, GLib, Gtk
 
@@ -7,7 +7,6 @@ from rayforge.core.undo import HistoryManager
 from rayforge.ui_gtk.canvas.cursor import get_tool_cursor
 from rayforge.ui_gtk.shared.keyboard import is_primary_modifier
 
-from typing import Any
 from .piemenu import SketchPieMenu
 from .tools import KEY_TO_TOOL, SelectTool, TextBoxTool
 from .tools.base import SketcherKey

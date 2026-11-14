@@ -7,6 +7,9 @@ edit/regenerate, undo/redo, and solver stability.
 import math
 
 import pytest
+from raygeo.sketch.constraints.drag import DragConstraint
+from raygeo.sketch.constraints.radius import RadiusConstraint
+from raygeo.sketch.entities.circle import Circle
 from sketcher.core.arrays import (
     CircularArrayStrategy,
     find_array_for_entity,
@@ -16,9 +19,6 @@ from sketcher.core.commands import (
     EditArrayCommand,
     RemoveItemsCommand,
 )
-from raygeo.sketch.constraints.drag import DragConstraint
-from raygeo.sketch.constraints.radius import RadiusConstraint
-from raygeo.sketch.entities.circle import Circle
 from sketcher.core.entity_group import EntityGroup
 from sketcher.core.sketch import Sketch
 
@@ -142,7 +142,9 @@ def test_dragging_template_redistributes_copies(app_flow):
     circle = sketch.registry.get_entity_object(array.guide_circle_id)
     center = sketch.registry.get_point(circle.center_idx)
     radius_pt = sketch.registry.get_point(circle.radius_pt_idx)
-    radius_before = math.hypot(radius_pt[0] - center[0], radius_pt[1] - center[1])
+    radius_before = math.hypot(
+        radius_pt[0] - center[0], radius_pt[1] - center[1]
+    )
 
     for _step in range(10):
         for pid in pids:
@@ -151,7 +153,9 @@ def test_dragging_template_redistributes_copies(app_flow):
 
     members_consistent(sketch, array)
     radius_pt = sketch.registry.get_point(circle.radius_pt_idx)
-    radius_after = math.hypot(radius_pt[0] - center[0], radius_pt[1] - center[1])
+    radius_after = math.hypot(
+        radius_pt[0] - center[0], radius_pt[1] - center[1]
+    )
     assert radius_after == pytest.approx(radius_before)
     assert len(array.living_entity_ids(sketch.registry)) == 6
     assert find_array_for_entity(sketch.arrays, array.guide_circle_id) is array
@@ -171,7 +175,8 @@ def test_radius_dimension_redistributes_members(app_flow):
     rc = next(
         c
         for c in sketch.constraints
-        if isinstance(c, RadiusConstraint) and c.constrains_radius(sketch.registry, circle.id)
+        if isinstance(c, RadiusConstraint)
+        and c.constrains_radius(sketch.registry, circle.id)
     )
     registry = sketch.registry
 
@@ -296,7 +301,9 @@ def test_gap_fill_places_members_at_their_slot_angles(app_flow):
             # angle, and so does every rotated copy.
             angles.append(
                 round(
-                    math.degrees(math.atan2(pt[1] - center[1], pt[0] - center[0]))
+                    math.degrees(
+                        math.atan2(pt[1] - center[1], pt[0] - center[0])
+                    )
                     / step
                 )
                 * step

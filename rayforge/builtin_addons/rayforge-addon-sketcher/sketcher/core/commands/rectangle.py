@@ -4,10 +4,11 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
 from raygeo.geo.types import Point as GeoPoint
-
 from raygeo.sketch.constraints.distance import DistanceConstraint
-from raygeo.sketch.constraints.symmetry import SymmetryConstraint
-from raygeo.sketch.constraints.symmetry import SymmetryTarget
+from raygeo.sketch.constraints.symmetry import (
+    SymmetryConstraint,
+    SymmetryTarget,
+)
 
 from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
@@ -96,7 +97,10 @@ class RectanglePreviewState(PreviewState):
                 if self.locked_height is not None
                 else abs(dy)
             )
-            end_p_new = (start_p[0] + sign_x * new_dx, start_p[1] + sign_y * new_dy)
+            end_p_new = (
+                start_p[0] + sign_x * new_dx,
+                start_p[1] + sign_y * new_dy,
+            )
         else:
             new_width = (
                 self.locked_width if self.locked_width is not None else abs(dx)
@@ -106,7 +110,10 @@ class RectanglePreviewState(PreviewState):
                 if self.locked_height is not None
                 else abs(dy)
             )
-            end_p_new = (start_p[0] + sign_x * new_width, start_p[1] + sign_y * new_height)
+            end_p_new = (
+                start_p[0] + sign_x * new_width,
+                start_p[1] + sign_y * new_height,
+            )
         registry.set_point_position(self.p_end_id, *end_p_new)
 
         RectangleCommand.create_preview(
@@ -292,14 +299,10 @@ class RectangleCommand(SketchChangeCommand):
             center_id = start_pid
         else:
             p1_id = start_pid
-            center_id = add_cmd.add_point(
-                (ax1 + ax2) / 2.0, (ay1 + ay2) / 2.0
-            )
+            center_id = add_cmd.add_point((ax1 + ax2) / 2.0, (ay1 + ay2) / 2.0)
 
         p2_id = add_cmd.add_point(ax2, ay1)
-        p3_id = end_pid if end_pid is not None else add_cmd.add_point(
-            ax2, ay2
-        )
+        p3_id = end_pid if end_pid is not None else add_cmd.add_point(ax2, ay2)
         p4_id = add_cmd.add_point(ax1, ay2)
 
         line1 = add_cmd.add_entity(Line(p1_id, p2_id))
@@ -337,14 +340,10 @@ class RectangleCommand(SketchChangeCommand):
         ]
 
         if fixed_width is not None:
-            constraints.append(
-                DistanceConstraint(p1_id, p2_id, fixed_width)
-            )
+            constraints.append(DistanceConstraint(p1_id, p2_id, fixed_width))
 
         if fixed_height is not None:
-            constraints.append(
-                DistanceConstraint(p2_id, p3_id, fixed_height)
-            )
+            constraints.append(DistanceConstraint(p2_id, p3_id, fixed_height))
 
         for constraint in constraints:
             add_cmd.add_constraint(constraint)

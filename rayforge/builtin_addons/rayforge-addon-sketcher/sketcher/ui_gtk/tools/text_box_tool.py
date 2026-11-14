@@ -9,13 +9,12 @@ from blinker import Signal
 from gi.repository import Gdk, GLib
 from raygeo.geo.shape.polygon import is_point_inside_polygon
 from raygeo.geo.shape.text import FontConfig, text_to_geometry
-
-from rayforge.image.geo_renderer import geometry_to_cairo
-
 from raygeo.sketch.constraints.aspect_ratio import AspectRatioConstraint
 from raygeo.sketch.constraints.horizontal import HorizontalConstraint
 from raygeo.sketch.constraints.vertical import VerticalConstraint
 from raygeo.sketch.entities.text_box import TextBox
+
+from rayforge.image.geo_renderer import geometry_to_cairo
 
 from ...core.commands import TextBoxCommand
 from ...core.commands.live_text_edit import LiveTextEditCommand
@@ -944,9 +943,7 @@ class TextBoxTool(SketchTool):
             return
 
         font = self._font_config(entity)
-        natural_geo = text_to_geometry(
-            self.text_buffer, font_config=font
-        )
+        natural_geo = text_to_geometry(self.text_buffer, font_config=font)
 
         _, nat_min_y, _, nat_max_y = natural_geo.rect()
 
@@ -956,9 +953,7 @@ class TextBoxTool(SketchTool):
             nat_max_y = font.size
 
         advance_width = (
-            font.get_text_width(self.text_buffer)
-            if self.text_buffer
-            else 10.0
+            font.get_text_width(self.text_buffer) if self.text_buffer else 10.0
         )
 
         transformed_geo = natural_geo.map_to_frame(
@@ -1054,9 +1049,7 @@ class TextBoxTool(SketchTool):
 
         ctx.restore()
 
-    def _set_text_color(
-        self, ctx: cairo.Context, entity: TextBox
-    ) -> None:
+    def _set_text_color(self, ctx: cairo.Context, entity: TextBox) -> None:
         is_sketch_fully_constrained = self.element.sketch.is_fully_constrained
         if entity.constrained:
             if is_sketch_fully_constrained:

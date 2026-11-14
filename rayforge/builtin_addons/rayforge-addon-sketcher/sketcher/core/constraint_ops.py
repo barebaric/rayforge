@@ -36,8 +36,10 @@ from raygeo.sketch.constraints.point_on_line import (
 )
 from raygeo.sketch.constraints.radius import RadiusConstraint
 from raygeo.sketch.constraints.rotational import RotationalConstraint
-from raygeo.sketch.constraints.symmetry import SymmetryConstraint
-from raygeo.sketch.constraints.symmetry import SymmetryTarget
+from raygeo.sketch.constraints.symmetry import (
+    SymmetryConstraint,
+    SymmetryTarget,
+)
 from raygeo.sketch.constraints.tangent import TangentConstraint
 from raygeo.sketch.constraints.vertical import VerticalConstraint
 
@@ -195,9 +197,7 @@ def _map(constraint: Any, pid_map: dict[int, int]) -> Any:
     raise ValueError(f"Unsupported constraint type: {type(constraint)}")
 
 
-def _map_point_on_target(
-    target: Any, pid_map: dict[int, int]
-) -> Any:
+def _map_point_on_target(target: Any, pid_map: dict[int, int]) -> Any:
     if isinstance(target, PointOnTarget.Line):
         return PointOnTarget.Line(
             l1=_pid(target.l1, pid_map), l2=_pid(target.l2, pid_map)
@@ -208,9 +208,7 @@ def _map_point_on_target(
     )
 
 
-def _map_symmetry_target(
-    target: Any, pid_map: dict[int, int]
-) -> Any:
+def _map_symmetry_target(target: Any, pid_map: dict[int, int]) -> Any:
     if isinstance(target, SymmetryTarget.Point):
         return SymmetryTarget.Point(center=_pid(target.center, pid_map))
     return SymmetryTarget.Line(
@@ -218,9 +216,7 @@ def _map_symmetry_target(
     )
 
 
-def _map_perpendicular_target(
-    target: Any, pid_map: dict[int, int]
-) -> Any:
+def _map_perpendicular_target(target: Any, pid_map: dict[int, int]) -> Any:
     if isinstance(target, PerpendicularTarget.LineLine):
         return PerpendicularTarget.LineLine(
             a1=_pid(target.a1, pid_map),

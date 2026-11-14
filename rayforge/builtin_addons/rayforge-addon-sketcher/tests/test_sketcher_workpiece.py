@@ -3,9 +3,8 @@ from typing import cast
 
 import pytest
 from raygeo.geo import Geometry, Matrix
-from raygeo.geo.shape.text import FontConfig
-from sketcher.core import Sketch
 from raygeo.sketch.entities.text_box import TextBox
+from sketcher.core import Sketch
 
 from rayforge.core.doc import Doc
 from rayforge.core.source_asset_segment import SourceAssetSegment
@@ -253,14 +252,12 @@ class TestWorkPieceWithSketch:
         Two workpiece instances from the same sketch each get their own
         uuid4 value, and it stays stable across boundary accesses.
         """
-        from raygeo.geo.shape.text import FontConfig
 
         sketch = Sketch(name="UUID Sketch")
         origin = sketch.add_point(0, 0)
         w_pt = sketch.add_point(10, 0)
         h_pt = sketch.add_point(0, 10)
-        sketch.registry.add_text_box(
-            origin, w_pt, h_pt, "{uuid4()}")
+        sketch.registry.add_text_box(origin, w_pt, h_pt, "{uuid4()}")
         sketch.solve()
         doc.add_asset(sketch)
 
@@ -281,14 +278,12 @@ class TestWorkPieceWithSketch:
         A workpiece instance returns the same uuid4 on repeated
         boundary accesses (cache survives).
         """
-        from raygeo.geo.shape.text import FontConfig
 
         sketch = Sketch(name="UUID Sketch")
         origin = sketch.add_point(0, 0)
         w_pt = sketch.add_point(10, 0)
         h_pt = sketch.add_point(0, 10)
-        sketch.registry.add_text_box(
-            origin, w_pt, h_pt, "{uuid4()}")
+        sketch.registry.add_text_box(origin, w_pt, h_pt, "{uuid4()}")
         sketch.solve()
         doc.add_asset(sketch)
 
@@ -307,14 +302,12 @@ class TestWorkPieceWithSketch:
         in_world carries the resolved_text_cache so the subprocess
         uses the same uuid4.
         """
-        from raygeo.geo.shape.text import FontConfig
 
         sketch = Sketch(name="UUID Sketch")
         origin = sketch.add_point(0, 0)
         w_pt = sketch.add_point(10, 0)
         h_pt = sketch.add_point(0, 10)
-        sketch.registry.add_text_box(
-            origin, w_pt, h_pt, "{uuid4()}")
+        sketch.registry.add_text_box(origin, w_pt, h_pt, "{uuid4()}")
         sketch.solve()
         doc.add_asset(sketch)
 
@@ -330,14 +323,12 @@ class TestWorkPieceWithSketch:
         The resolved_text_cache round-trips through
         to_dict / from_dict.
         """
-        from raygeo.geo.shape.text import FontConfig
 
         sketch = Sketch(name="UUID Sketch")
         origin = sketch.add_point(0, 0)
         w_pt = sketch.add_point(10, 0)
         h_pt = sketch.add_point(0, 10)
-        sketch.registry.add_text_box(
-            origin, w_pt, h_pt, "{uuid4()}")
+        sketch.registry.add_text_box(origin, w_pt, h_pt, "{uuid4()}")
         sketch.solve()
         doc.add_asset(sketch)
 
@@ -354,14 +345,12 @@ class TestWorkPieceWithSketch:
         When the sketch is edited, the workpiece's cache is cleared
         and a new uuid4 is generated.
         """
-        from raygeo.geo.shape.text import FontConfig
 
         sketch = Sketch(name="UUID Sketch")
         origin = sketch.add_point(0, 0)
         w_pt = sketch.add_point(10, 0)
         h_pt = sketch.add_point(0, 10)
-        sketch.registry.add_text_box(
-            origin, w_pt, h_pt, "{uuid4()}")
+        sketch.registry.add_text_box(origin, w_pt, h_pt, "{uuid4()}")
         sketch.solve()
         doc.add_asset(sketch)
 
@@ -390,8 +379,7 @@ def test_undo_reverts_rendered_text_not_just_size(doc):
     origin = sketch.add_point(0, 0)
     w_pt = sketch.add_point(30, 0)
     h_pt = sketch.add_point(0, 10)
-    box_id = sketch.registry.add_text_box(
-        origin, w_pt, h_pt, "ab")
+    box_id = sketch.registry.add_text_box(origin, w_pt, h_pt, "ab")
     sketch.solve()
     doc.add_asset(sketch)
 

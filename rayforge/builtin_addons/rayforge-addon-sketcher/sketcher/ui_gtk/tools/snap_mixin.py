@@ -4,19 +4,21 @@ from typing import TYPE_CHECKING, Any
 
 import cairo
 from raygeo.geo.types import Point as GeoPoint
-
 from raygeo.sketch.constraints.coincident import CoincidentConstraint
 from raygeo.sketch.constraints.horizontal import HorizontalConstraint
 from raygeo.sketch.constraints.point_on_line import (
     PointOnLineConstraint,
     PointOnTarget,
 )
-from raygeo.sketch.constraints.symmetry import SymmetryConstraint
-from raygeo.sketch.constraints.symmetry import SymmetryTarget
+from raygeo.sketch.constraints.symmetry import (
+    SymmetryConstraint,
+    SymmetryTarget,
+)
 from raygeo.sketch.constraints.vertical import VerticalConstraint
 from raygeo.sketch.entities.arc import Arc
 from raygeo.sketch.entities.circle import Circle
 from raygeo.sketch.entities.line import Line
+from raygeo.sketch.entities.point import SketchPoint
 
 from ...core.snap import (
     SNAP_LINE_STYLES,
@@ -352,7 +354,7 @@ class SnapMixin:
         ):
             sp = self.current_snap_result.primary_snap_point
             if sp.line_type == SnapLineType.ENTITY_POINT and isinstance(
-                sp.source, Point
+                sp.source, SketchPoint
             ):
                 return sp.source.id
         return None

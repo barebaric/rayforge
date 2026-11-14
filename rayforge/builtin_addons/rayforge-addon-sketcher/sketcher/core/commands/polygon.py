@@ -6,7 +6,6 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point as GeoPoint
-
 from raygeo.sketch.entities.circle import Circle
 from raygeo.sketch.entities.line import Line
 
@@ -285,9 +284,7 @@ class PolygonCommand(SketchChangeCommand):
     def _shape(
         self, center, first: GeoPoint, add_cmd: AddItemsCommand
     ) -> tuple[list[int], list[int], list]:
-        vertices = polygon_vertices(
-            center, first, self.sides, self.star_ratio
-        )
+        vertices = polygon_vertices(center, first, self.sides, self.star_ratio)
         ids = []
         for index, (x, y) in enumerate(vertices):
             if index == 0 and self.end_pid is not None:

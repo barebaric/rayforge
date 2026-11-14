@@ -4,8 +4,7 @@ import math
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
-from raygeo.geo.shape.arc import get_arc_direction
-from raygeo.geo.shape.arc import get_arc_sweep
+from raygeo.geo.shape.arc import get_arc_direction, get_arc_sweep
 from raygeo.geo.shape.circle import project_point_onto_circle
 from raygeo.geo.types import Point as GeoPoint
 from raygeo.sketch.constraints.equal_distance import (
@@ -80,9 +79,7 @@ class ArcPreviewState(PreviewState):
         if center is None or start is None or end is None:
             return
 
-        start_angle = math.atan2(
-            start[1] - center[1], start[0] - center[0]
-        )
+        start_angle = math.atan2(start[1] - center[1], start[0] - center[0])
         end_angle = math.atan2(end[1] - center[1], end[0] - center[0])
 
         registry.set_point_position(
@@ -114,9 +111,7 @@ class ArcPreviewState(PreviewState):
         if center is None or start is None or end is None:
             return []
         radius = math.hypot(start[0] - center[0], start[1] - center[1])
-        start_angle = math.atan2(
-            start[1] - center[1], start[0] - center[0]
-        )
+        start_angle = math.atan2(start[1] - center[1], start[0] - center[0])
         end_angle = math.atan2(end[1] - center[1], end[0] - center[0])
         sweep = get_arc_sweep(start_angle, end_angle, self.clockwise)
         mid_angle = start_angle + sweep / 2
@@ -303,9 +298,7 @@ class ArcCommand(SketchChangeCommand):
         else:
             cursor_radius = math.hypot(x - center[0], y - center[1])
 
-        start_angle = math.atan2(
-            start[1] - center[1], start[0] - center[0]
-        )
+        start_angle = math.atan2(start[1] - center[1], start[0] - center[0])
         registry.set_point_position(
             preview_state.start_id,
             center[0] + cursor_radius * math.cos(start_angle),

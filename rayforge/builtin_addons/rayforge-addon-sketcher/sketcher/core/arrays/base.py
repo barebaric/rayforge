@@ -472,9 +472,7 @@ class Array(ABC):
                 signatures.append(sig)
         return tuple(signatures)
 
-    def signatures_changed(
-        self, guide_sig: Any, template_sig: Any
-    ) -> bool:
+    def signatures_changed(self, guide_sig: Any, template_sig: Any) -> bool:
         """True if the stored sync caches disagree with the given
         signatures, i.e. the guide or the template was edited since
         the last sync. Missing caches (fresh arrays, clones) never

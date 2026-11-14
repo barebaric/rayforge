@@ -241,14 +241,15 @@ class LineCommand(SketchChangeCommand):
             return
 
         start_id = self.start_id
-        if self.is_start_temp:
-            if registry.get_point(self.start_id) is not None:
-                # The preview start point belongs to no command yet;
-                # replace it with a freshly allocated point so undo
-                # removes it with the line.
-                position = registry.get_point(self.start_id)
-                self.sketch.remove_point_if_unused(self.start_id)
-                start_id = add_cmd.add_point(position[0], position[1])
+        if self.is_start_temp and (
+            registry.get_point(self.start_id) is not None
+        ):
+            # The preview start point belongs to no command yet;
+            # replace it with a freshly allocated point so undo
+            # removes it with the line.
+            position = registry.get_point(self.start_id)
+            self.sketch.remove_point_if_unused(self.start_id)
+            start_id = add_cmd.add_point(position[0], position[1])
 
         add_cmd.add_entity(Line(start_id, end_pid))
         if self.fixed_length is not None:

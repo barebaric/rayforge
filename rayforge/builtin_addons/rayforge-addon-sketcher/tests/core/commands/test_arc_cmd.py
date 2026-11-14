@@ -1,9 +1,9 @@
 import math
 
 from raygeo.geo.shape.arc import get_arc_direction
+from raygeo.sketch.entities.arc import Arc
 from sketcher.core import Sketch
 from sketcher.core.commands import ArcCommand, ArcPreviewState
-from raygeo.sketch.entities.arc import Arc
 
 
 def test_arc_start_preview():

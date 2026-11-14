@@ -1,12 +1,12 @@
+from typing import Any
+
 import pytest
+from core.constraint_builders import tangent_from_entities
+from raygeo.sketch.constraints.drag import DragConstraint
 from sketcher.core.components import (
     compute_constraint_components,
     get_referenced_points,
 )
-from typing import Any
-from raygeo.sketch.constraints.drag import DragConstraint
-from raygeo.sketch.constraints.tangent import TangentConstraint
-from core.constraint_builders import tangent_from_entities
 from sketcher.core.registry import EntityRegistry
 from sketcher.core.sketch import Sketch
 from sketcher.core.solver import Solver
@@ -135,7 +135,7 @@ def test_scoped_solve_moves_dragged_island_only():
     before_b = positions(sketch, rect_b)
 
     delta = 5.0
-    drag_constraints: list[Constraint] = [
+    drag_constraints: list[Any] = [
         DragConstraint(pid, x + delta, y, weight=1.0)
         for pid, (x, y) in before_a.items()
     ]
@@ -165,7 +165,7 @@ def test_scoped_solve_matches_global_solve():
     sketch_s, rect_a_s, rect_b_s = build()
 
     start_a = positions(sketch_g, rect_a_g)
-    global_constraints: list[Constraint] = [
+    global_constraints: list[Any] = [
         DragConstraint(pid, x + delta[0], y + delta[1], weight=1.0)
         for pid, (x, y) in start_a.items()
     ]
@@ -181,7 +181,7 @@ def test_scoped_solve_matches_global_solve():
 
     scope = drag_scope(sketch_s, rect_a_s)
     assert scope == set(rect_a_s)
-    scoped_constraints: list[Constraint] = [
+    scoped_constraints: list[Any] = [
         DragConstraint(pid, x + delta[0], y + delta[1], weight=1.0)
         for pid, (x, y) in positions(sketch_s, rect_a_s).items()
     ]
@@ -208,7 +208,7 @@ def test_scoped_solve_falls_back_on_stale_scope():
     add_rect(sketch, 0, 0, 10, 5, anchored=False)
     p_far = sketch.add_point(200, 200)
 
-    drag_constraints: list[Constraint] = [
+    drag_constraints: list[Any] = [
         DragConstraint(p_far, 300.0, 200.0, weight=1.0)
     ]
     sketch.solve(
@@ -238,7 +238,7 @@ def test_tool_style_drag_keeps_other_islands_frozen():
     start_a = positions(sketch, dragged)
 
     for step in range(1, 11):
-        drag_constraints: list[Constraint] = [
+        drag_constraints: list[Any] = [
             DragConstraint(pid, x + step, y, weight=1.0)
             for pid, (x, y) in start_a.items()
         ]

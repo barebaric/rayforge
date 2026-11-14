@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, ClassVar, Union
+from typing import Any, ClassVar
 
 import cairo
 from gi.repository import Adw, Gtk
@@ -10,9 +10,6 @@ from rayforge.ui_gtk.shared.pref_rows import SpinRow
 from ...core.commands import OffsetCommand
 from ...core.contour import build_offset_items
 from .base import SketchTool
-
-if TYPE_CHECKING:
-    from typing import Any
 
 logger = logging.getLogger(__name__)
 

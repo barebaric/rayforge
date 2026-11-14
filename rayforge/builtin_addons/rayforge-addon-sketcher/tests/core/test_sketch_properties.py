@@ -1,6 +1,5 @@
 import pytest
 from sketcher.core import Sketch
-from sketcher.core import constraint_info
 from sketcher.core.constraint_info import ConstraintStatus
 
 

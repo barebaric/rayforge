@@ -9,10 +9,8 @@ can express (same type keys, same fields).
 import pytest
 from raygeo.sketch.constraints.horizontal import HorizontalConstraint
 from raygeo.sketch.constraints.radius import RadiusConstraint
-
 from sketcher.core.legacy import migrate_sketch_data
 from sketcher.core.sketch import Sketch
-
 
 LEGACY_REGISTRY = {
     "points": [

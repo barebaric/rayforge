@@ -53,9 +53,7 @@ class LiveTextEditCommand(Command):
         self._last_capture_time = time.time()
 
     def _is_text_box(self) -> bool:
-        entity = self._sketch.registry.get_entity_object(
-            self.text_entity_id
-        )
+        entity = self._sketch.registry.get_entity_object(self.text_entity_id)
         return entity is not None and entity.type_name() == "text_box"
 
     def _content(self) -> str:

@@ -19,17 +19,18 @@ from raygeo.geo import Line as GeoLine
 from raygeo.geo import Move as GeoMove
 from raygeo.geo.shape.polygon import is_point_inside_polygon
 from raygeo.sketch.constraints.coincident import CoincidentConstraint
+from raygeo.sketch.constraints.diameter import DiameterConstraint
 from raygeo.sketch.constraints.distance import DistanceConstraint
 from raygeo.sketch.constraints.drag import DragConstraint
 from raygeo.sketch.constraints.equal_distance import (
     EqualDistanceConstraint,
 )
 from raygeo.sketch.constraints.horizontal import HorizontalConstraint
-from raygeo.sketch.constraints.point_on_line import PointOnLineConstraint
 from raygeo.sketch.constraints.radius import RadiusConstraint
-from raygeo.sketch.constraints.diameter import DiameterConstraint
-from raygeo.sketch.constraints.symmetry import SymmetryConstraint
-from raygeo.sketch.constraints.symmetry import SymmetryTarget
+from raygeo.sketch.constraints.symmetry import (
+    SymmetryConstraint,
+    SymmetryTarget,
+)
 from raygeo.sketch.constraints.vertical import VerticalConstraint
 from raygeo.sketch.entities.text_box import TextBox
 from raygeo.sketch.registry import EntityRegistry
@@ -221,7 +222,7 @@ class Sketch(IAsset, IGeometryProvider):
     def remove_constraints(self, constraints: Sequence[Any]) -> list[Any]:
         """Removes the given constraints (matched by identity) and
         returns the removed subset, in registration order."""
-        targets = set(id(c) for c in constraints)
+        targets = {id(c) for c in constraints}
         removed = [c for c in self._constraints if id(c) in targets]
         for constraint in removed:
             self.remove_constraint_object(constraint)
@@ -250,8 +251,7 @@ class Sketch(IAsset, IGeometryProvider):
         opaque — callers store and pass it back via
         ``apply_undo_state``."""
         points = {
-            point.id: (point.x, point.y)
-            for point in self.registry.points()
+            point.id: (point.x, point.y) for point in self.registry.points()
         }
         entities: dict[int, Any] = {}
         for eid in self.registry.entity_ids():
@@ -635,9 +635,7 @@ class Sketch(IAsset, IGeometryProvider):
             if expression and hasattr(constraint, "expression"):
                 constraint.expression = expression
             if hasattr(constraint, "set_user_visible"):
-                constraint.set_user_visible(
-                    stored.get("user_visible", True)
-                )
+                constraint.set_user_visible(stored.get("user_visible", True))
 
         new_sketch.flags.absorb(new_sketch.registry)
 
@@ -815,13 +813,12 @@ class Sketch(IAsset, IGeometryProvider):
             pids = constraint_info.referenced_point_ids(constr)
             if pids & {self.origin_id}:
                 continue
-            if constraint_info.is_world_anchored(
-                constr
-            ) and id(constr) not in paired_axes:
+            if (
+                constraint_info.is_world_anchored(constr)
+                and id(constr) not in paired_axes
+            ):
                 continue
-            eids = constraint_info.referenced_entity_ids(
-                self.registry, constr
-            )
+            eids = constraint_info.referenced_entity_ids(self.registry, constr)
             if not (pids & group_pids or eids & wanted):
                 continue
             if pids <= group_pids and eids <= wanted:
@@ -929,9 +926,7 @@ class Sketch(IAsset, IGeometryProvider):
                 )
 
                 end_pid = get_or_add_point(end_x, end_y)
-                sketch.flags.set_waypoint_type(
-                    end_pid, WaypointType.SMOOTH
-                )
+                sketch.flags.set_waypoint_type(end_pid, WaypointType.SMOOTH)
 
                 start_pt = sketch.registry.get_point(current_pid)
                 end_pt = sketch.registry.get_point(end_pid)
@@ -997,9 +992,7 @@ class Sketch(IAsset, IGeometryProvider):
         """The point's coordinates, or None when it does not exist."""
         return self.registry.get_point(pid)
 
-    def set_point_position(
-        self, pid: EntityID, x: float, y: float
-    ) -> None:
+    def set_point_position(self, pid: EntityID, x: float, y: float) -> None:
         """Moves a point to the given coordinates."""
         self.registry.set_point_position(pid, x, y)
 
@@ -1013,8 +1006,7 @@ class Sketch(IAsset, IGeometryProvider):
         dependent fills.
         """
         ids_to_remove = [
-            e.id if hasattr(e, "id") else e
-            for e in entities_to_remove
+            e.id if hasattr(e, "id") else e for e in entities_to_remove
         ]
         if not ids_to_remove:
             return
@@ -1256,9 +1248,7 @@ class Sketch(IAsset, IGeometryProvider):
         if len(loop) == 1:
             eid = loop[0][0]
             if self.registry.is_closed_loop(eid):
-                return (
-                    self.registry.enclosed_signed_area(eid) or 0.0
-                )
+                return self.registry.enclosed_signed_area(eid) or 0.0
 
         points = []
         first_ent = self.registry.entity_endpoint_ids(loop[0][0])
@@ -1610,9 +1600,7 @@ class Sketch(IAsset, IGeometryProvider):
             p1 = point_ids[1]
             p2 = point_ids[2]
             self.add_constraint(
-                SymmetryConstraint(
-                    p1, p2, SymmetryTarget.Point(center=center)
-                )
+                SymmetryConstraint(p1, p2, SymmetryTarget.Point(center=center))
             )
 
         elif len(point_ids) == 2 and len(entity_ids) == 1:
@@ -1870,9 +1858,7 @@ class Sketch(IAsset, IGeometryProvider):
             current = constraint_info.status_of(constraint)
             if idx in conflicting_indices:
                 if current is not status.ERROR:
-                    constraint_info.set_status(
-                        constraint, status.CONFLICTING
-                    )
+                    constraint_info.set_status(constraint, status.CONFLICTING)
             elif current is status.CONFLICTING:
                 constraint_info.set_status(constraint, status.VALID)
 
@@ -1889,9 +1875,7 @@ class Sketch(IAsset, IGeometryProvider):
         longer matches the entity's current content is re-resolved,
         otherwise reverting an edit would keep rendering stale text.
         """
-        source_content = self.flags.text_content(
-            entity.id, entity.content
-        )
+        source_content = self.flags.text_content(entity.id, entity.content)
         cached = self._resolved_text_cache.get(entity.id)
         if isinstance(cached, (tuple, list)):
             cached_source, resolved = cached

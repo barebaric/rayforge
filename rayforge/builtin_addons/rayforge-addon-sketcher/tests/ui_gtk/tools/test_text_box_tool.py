@@ -3,11 +3,11 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from raygeo.geo.shape.text import FontConfig
+from raygeo.sketch.entities.text_box import TextBox
 from sketcher.core import Sketch
 from sketcher.core.commands import TextBoxCommand
 from sketcher.core.commands.live_text_edit import LiveTextEditCommand
 from sketcher.core.commands.text_property import ModifyTextPropertyCommand
-from raygeo.sketch.entities.text_box import TextBox
 from sketcher.ui_gtk.tools import TextBoxTool
 from sketcher.ui_gtk.tools.base import SketcherKey
 from sketcher.ui_gtk.tools.text_box_tool import TextBoxState
@@ -56,9 +56,7 @@ def test_text_box_tool_on_press_creates_box(text_box_tool, mock_element):
     mock_element.hittester.screen_to_model.return_value = (10, 20)
     mock_element.sketch.registry.entities = Mock(return_value=[])
 
-    mock_entity = TextBox(
-        5, 0, 1, 2, content="", construction_line_ids=[]
-    )
+    mock_entity = TextBox(5, 0, 1, 2, content="", construction_line_ids=[])
 
     def mock_execute(cmd):
         cmd.text_box_id = 5
@@ -104,9 +102,7 @@ def test_text_box_tool_on_press_outside_box_creates_new(
     mock_entity.content = "Test Text"
     mock_entity.font_config = FontConfig(family="sans-serif", size=10.0)
 
-    new_entity = TextBox(
-        6, 0, 1, 2, content="", construction_line_ids=[]
-    )
+    new_entity = TextBox(6, 0, 1, 2, content="", construction_line_ids=[])
 
     def get_entity_side_effect(eid):
         if eid == 5:
@@ -237,9 +233,7 @@ def test_text_box_tool_handle_key_event_arrow_right(
 @pytest.mark.ui
 def test_text_box_tool_handle_key_event_return(text_box_tool, mock_element):
     """Test that return key finalizes edit."""
-    mock_entity = TextBox(
-        5, 0, 1, 2, content="Test", construction_line_ids=[]
-    )
+    mock_entity = TextBox(5, 0, 1, 2, content="Test", construction_line_ids=[])
     mock_entity.font_config = FontConfig(family="sans-serif", size=10.0)
     mock_element.sketch.registry.get_entity = Mock(return_value=mock_entity)
 
@@ -577,9 +571,7 @@ def test_text_box_tool_is_click_outside_box(text_box_tool, mock_element):
     """Test checking if click is outside box bounds."""
     text_box_tool.editing_entity_id = 5
 
-    mock_entity = TextBox(
-        5, 0, 1, 2, content="", construction_line_ids=[]
-    )
+    mock_entity = TextBox(5, 0, 1, 2, content="", construction_line_ids=[])
     mock_entity.font_config = FontConfig(family="sans-serif", size=10.0)
 
     mock_element.sketch.registry.get_entity = Mock(return_value=mock_entity)
@@ -604,9 +596,7 @@ def test_text_box_tool_is_click_inside_box(text_box_tool, mock_element):
     """Test checking if click is inside box bounds."""
     text_box_tool.editing_entity_id = 5
 
-    mock_entity = TextBox(
-        5, 0, 1, 2, content="", construction_line_ids=[]
-    )
+    mock_entity = TextBox(5, 0, 1, 2, content="", construction_line_ids=[])
     mock_entity.font_config = FontConfig(family="sans-serif", size=10.0)
 
     mock_element.sketch.registry.get_entity = Mock(return_value=mock_entity)

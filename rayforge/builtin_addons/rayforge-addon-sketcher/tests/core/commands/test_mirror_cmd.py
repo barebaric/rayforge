@@ -1,15 +1,15 @@
 import pytest
-from sketcher.core import Sketch
 from core.constraint_builders import (
     angle_from_lines,
     tangent_from_entities,
 )
-from sketcher.core.commands import MirrorAxis, MirrorCommand, MirrorDirection
 from raygeo.sketch.constraints.angle import AngleConstraint
 from raygeo.sketch.constraints.distance import DistanceConstraint
 from raygeo.sketch.constraints.tangent import TangentConstraint
 from raygeo.sketch.entities.arc import Arc
 from raygeo.sketch.entities.bezier import Bezier
+from sketcher.core import Sketch
+from sketcher.core.commands import MirrorAxis, MirrorCommand, MirrorDirection
 from sketcher.core.selection import SketchSelection
 
 
@@ -111,9 +111,7 @@ class TestMirrorPrepare:
         l1 = s.add_line(p1, p2)
         l2 = s.add_line(p2, p3)
 
-        s.add_constraint(
-            angle_from_lines(s, l1, l2, 45.0, "45")
-        )
+        s.add_constraint(angle_from_lines(s, l1, l2, 45.0, "45"))
 
         sel = SketchSelection()
         sel.entity_ids = [l1, l2]

@@ -1,9 +1,8 @@
 from datetime import datetime, timezone
 from typing import cast
 
-from raygeo.geo.shape.text import FontConfig
-from sketcher.core import Sketch
 from raygeo.sketch.entities.text_box import TextBox
+from sketcher.core import Sketch
 
 from rayforge.core.varset import FloatVar, Var
 
@@ -15,8 +14,7 @@ def _add_text_box(
     origin = sketch.add_point(x, y)
     width_pt = sketch.add_point(x + 10, y)
     height_pt = sketch.add_point(x, y + 10)
-    box_id = sketch.registry.add_text_box(
-        origin, width_pt, height_pt, content)
+    box_id = sketch.registry.add_text_box(origin, width_pt, height_pt, content)
     return cast(TextBox, sketch.registry.get_entity_object(box_id))
 
 

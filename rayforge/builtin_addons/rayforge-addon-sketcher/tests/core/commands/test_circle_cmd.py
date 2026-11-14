@@ -1,10 +1,9 @@
 import math
-from raygeo.sketch.entities.point import SketchPoint
 
+from raygeo.sketch.entities.circle import Circle
+from raygeo.sketch.entities.point import SketchPoint
 from sketcher.core import Sketch
 from sketcher.core.commands import CircleCommand, CirclePreviewState
-from raygeo.sketch.entities.circle import Circle
-from typing import Any
 
 
 def test_circle_command_execute_no_snap():

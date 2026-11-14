@@ -109,8 +109,7 @@ class CreateArrayCommand(SketchChangeCommand):
             return None
 
         template_points = {
-            point.id: (point.x, point.y)
-            for point in registry.points()
+            point.id: (point.x, point.y) for point in registry.points()
         }
         # For circles and ellipses, the template center is the shape's
         # explicit center point, not the bbox midpoint of all defining
@@ -239,9 +238,7 @@ class CreateArrayCommand(SketchChangeCommand):
         # points) is attached in _register_array.
         self._standalone_pids = {
             slot: list(pids)
-            for slot, pids in enumerate(
-                result["instance_extra_pids"], start=1
-            )
+            for slot, pids in enumerate(result["instance_extra_pids"], start=1)
         }
         self.created_entity_ids = [
             eid for group in self.created_member_groups for eid in group
@@ -497,9 +494,7 @@ class CreateArrayCommand(SketchChangeCommand):
                 state["cp2"] = [cp2[0], cp2[1]]
             if state:
                 registry.set_state(entity_id, state)
-        EntityGroup.restore_positions(
-            self._pre_place_snapshot, registry
-        )
+        EntityGroup.restore_positions(self._pre_place_snapshot, registry)
         self._rollback_extraction()
 
     def _redo(self) -> None:

@@ -1,13 +1,13 @@
 import pytest
-from sketcher.core import Sketch
 from core.constraint_builders import (
     diameter_from_entity,
     radius_from_entity,
 )
-from sketcher.core.commands import CreateOrEditConstraintCommand
 from raygeo.sketch.constraints.diameter import DiameterConstraint
 from raygeo.sketch.constraints.distance import DistanceConstraint
 from raygeo.sketch.constraints.radius import RadiusConstraint
+from sketcher.core import Sketch
+from sketcher.core.commands import CreateOrEditConstraintCommand
 
 
 @pytest.fixture
@@ -196,7 +196,9 @@ def test_command_label_for_diameter(sketch):
     circle = sketch.registry.get_entity_object(circle_id)
 
     cmd = CreateOrEditConstraintCommand(sketch, circle)
-    label = cmd._get_command_label(diameter_from_entity(sketch, circle_id, 20.0))
+    label = cmd._get_command_label(
+        diameter_from_entity(sketch, circle_id, 20.0)
+    )
 
     assert label == "Add Diameter"
 

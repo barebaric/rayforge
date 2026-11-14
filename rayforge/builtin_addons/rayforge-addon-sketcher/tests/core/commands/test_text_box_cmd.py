@@ -1,11 +1,11 @@
-from sketcher.core import Sketch
-from sketcher.core.commands import TextBoxCommand
 from raygeo.sketch.constraints.aspect_ratio import AspectRatioConstraint
 from raygeo.sketch.constraints.horizontal import HorizontalConstraint
 from raygeo.sketch.constraints.parallelogram import ParallelogramConstraint
 from raygeo.sketch.constraints.perpendicular import PerpendicularConstraint
 from raygeo.sketch.entities.line import Line
 from raygeo.sketch.entities.text_box import TextBox
+from sketcher.core import Sketch
+from sketcher.core.commands import TextBoxCommand
 
 
 def test_text_box_calculate_geometry_default():

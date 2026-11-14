@@ -80,7 +80,7 @@ def enforce_waypoint_constraint(
 
         sum_dx = 0.0
         sum_dy = 0.0
-        for _, attr, cp in cp_data:
+        for _pid, attr, cp in cp_data:
             sign = 1.0 if attr == "cp1" else -1.0
             sum_dx += sign * cp[0]
             sum_dy += sign * cp[1]
@@ -89,7 +89,7 @@ def enforce_waypoint_constraint(
             return
         direction = (sum_dx / length, sum_dy / length)
 
-        for bezier, attr, _ in cp_data:
+        for bezier, attr, _cp in cp_data:
             sign = 1.0 if attr == "cp1" else -1.0
             _set_cp_offset(
                 registry,
@@ -360,17 +360,9 @@ class SetWaypointTypeCommand(SketchChangeCommand):
             )
 
             for bezier in connected_beziers:
-                if (
-                    bezier.start_idx in point_ids
-                    and bezier.cp1_offset is None
-                ):
-                    _set_cp_offset(
-                        registry, bezier.id, "cp1", cp_out
-                    )
-                if (
-                    bezier.end_idx in point_ids
-                    and bezier.cp2_offset is None
-                ):
+                if bezier.start_idx in point_ids and bezier.cp1_offset is None:
+                    _set_cp_offset(registry, bezier.id, "cp1", cp_out)
+                if bezier.end_idx in point_ids and bezier.cp2_offset is None:
                     _set_cp_offset(registry, bezier.id, "cp2", cp_in)
 
         self.sketch.flags.set_waypoint_type(self.waypoint_id, self.new_type)

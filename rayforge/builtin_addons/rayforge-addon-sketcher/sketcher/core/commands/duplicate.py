@@ -4,8 +4,6 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
-from raygeo.sketch.registry import EntityRegistry
-
 from .. import constraint_info
 from ..constraint_ops import rebuild
 from ..entity_group import EntityGroup
@@ -15,8 +13,8 @@ from .base import SketchChangeCommand
 from .items import AddItemsCommand
 
 if TYPE_CHECKING:
-    from ..sketch import Sketch
     from ..selection import SketchSelection
+    from ..sketch import Sketch
 
 logger = logging.getLogger(__name__)
 
@@ -148,16 +146,12 @@ class DuplicateCommand(SketchChangeCommand):
             if entity is None:
                 continue
             clone = clone_entity(registry, entity, point_map)
-            clone_dict = registry.entity_to_dict(
-                registry.add_entity(clone)
-            )
+            clone_dict = registry.entity_to_dict(registry.add_entity(clone))
             registry.remove_entities([clone_dict["id"]])
             helper_ids = registry.helper_ids(eid)
             if helper_ids:
                 mapped_helpers = [
-                    entity_map[hid]
-                    for hid in helper_ids
-                    if hid in entity_map
+                    entity_map[hid] for hid in helper_ids if hid in entity_map
                 ]
                 if clone_dict.get("type") == "ellipse":
                     clone_dict["helper_line_ids"] = mapped_helpers
@@ -167,9 +161,7 @@ class DuplicateCommand(SketchChangeCommand):
             self.sketch.copy_entity_flags(eid, entity_map[eid])
 
         for constr in constraints:
-            self.created_constraints.append(
-                rebuild(constr, point_map)
-            )
+            self.created_constraints.append(rebuild(constr, point_map))
             add_cmd.add_constraint(self.created_constraints[-1])
 
         self.add_cmd = add_cmd

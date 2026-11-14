@@ -1,8 +1,8 @@
 import pytest
 from raygeo.geo.shape.text import FontConfig
+from raygeo.sketch.entities.text_box import TextBox
 from sketcher.core import Sketch
 from sketcher.core.commands import ModifyTextPropertyCommand, TextBoxCommand
-from raygeo.sketch.entities.text_box import TextBox
 
 from rayforge.core.undo import HistoryManager
 
@@ -21,7 +21,10 @@ def sketch_with_text_box():
         p_width,
         p_height,
         content="Original Text",
-        font_family="sans-serif", font_size=10.0, bold=False, italic=False,
+        font_family="sans-serif",
+        font_size=10.0,
+        bold=False,
+        italic=False,
     )
 
     return sketch, tb_id
@@ -241,7 +244,10 @@ def test_text_property_command_undo_with_history_manager():
         p_width,
         p_height,
         content="Original Text",
-        font_family="sans-serif", font_size=10.0, bold=False, italic=False,
+        font_family="sans-serif",
+        font_size=10.0,
+        bold=False,
+        italic=False,
     )
 
     history = HistoryManager()
@@ -305,7 +311,8 @@ def test_text_property_command_redo_after_undo():
         p_width,
         p_height,
         content="Original",
-        font_family="sans-serif", font_size=10.0,
+        font_family="sans-serif",
+        font_size=10.0,
     )
 
     history = HistoryManager()
@@ -343,7 +350,8 @@ def test_text_property_command_multiple_edits_with_history():
         p_width,
         p_height,
         content="Initial",
-        font_family="sans-serif", font_size=10.0,
+        font_family="sans-serif",
+        font_size=10.0,
     )
 
     history = HistoryManager()
@@ -407,7 +415,8 @@ def test_should_skip_undo_both_empty():
         p_width,
         p_height,
         content="",
-        font_family="sans-serif", font_size=10.0,
+        font_family="sans-serif",
+        font_size=10.0,
     )
 
     cmd = ModifyTextPropertyCommand(sketch, tb_id, "", FontConfig())
@@ -428,7 +437,8 @@ def test_should_skip_undo_old_empty_new_not_empty():
         p_width,
         p_height,
         content="",
-        font_family="sans-serif", font_size=10.0,
+        font_family="sans-serif",
+        font_size=10.0,
     )
 
     cmd = ModifyTextPropertyCommand(sketch, tb_id, "New Text", FontConfig())
@@ -449,7 +459,8 @@ def test_should_skip_undo_old_not_empty_new_empty():
         p_width,
         p_height,
         content="Original",
-        font_family="sans-serif", font_size=10.0,
+        font_family="sans-serif",
+        font_size=10.0,
     )
 
     cmd = ModifyTextPropertyCommand(sketch, tb_id, "", FontConfig())
@@ -471,7 +482,8 @@ def test_should_skip_undo_both_not_empty():
         p_width,
         p_height,
         content="Original",
-        font_family="sans-serif", font_size=10.0,
+        font_family="sans-serif",
+        font_size=10.0,
     )
 
     cmd = ModifyTextPropertyCommand(sketch, tb_id, "New Text", FontConfig())
@@ -492,7 +504,8 @@ def test_empty_text_box_removed_on_execute():
         p_width,
         p_height,
         content="Original Text",
-        font_family="sans-serif", font_size=10.0,
+        font_family="sans-serif",
+        font_size=10.0,
     )
 
     cmd = ModifyTextPropertyCommand(sketch, tb_id, "", FontConfig())
@@ -520,7 +533,8 @@ def test_empty_text_box_points_removed():
         p_width,
         p_height,
         content="Original Text",
-        font_family="sans-serif", font_size=10.0,
+        font_family="sans-serif",
+        font_size=10.0,
     )
 
     cmd = ModifyTextPropertyCommand(sketch, tb_id, "", FontConfig())
@@ -547,7 +561,8 @@ def test_empty_text_box_constraints_removed():
         p_width,
         p_height,
         content="Original Text",
-        font_family="sans-serif", font_size=10.0,
+        font_family="sans-serif",
+        font_size=10.0,
     )
 
     cmd = ModifyTextPropertyCommand(sketch, tb_id, "", FontConfig())
@@ -573,7 +588,8 @@ def test_empty_text_box_undo_restores_entity():
         p_width,
         p_height,
         content="Original Text",
-        font_family="sans-serif", font_size=10.0,
+        font_family="sans-serif",
+        font_size=10.0,
     )
 
     cmd = ModifyTextPropertyCommand(sketch, tb_id, "", FontConfig())
@@ -602,7 +618,8 @@ def test_empty_text_box_undo_restores_points():
         p_width,
         p_height,
         content="Original Text",
-        font_family="sans-serif", font_size=10.0,
+        font_family="sans-serif",
+        font_size=10.0,
     )
 
     cmd = ModifyTextPropertyCommand(sketch, tb_id, "", FontConfig())
@@ -634,7 +651,8 @@ def test_empty_text_box_with_history_manager():
         p_width,
         p_height,
         content="Original Text",
-        font_family="sans-serif", font_size=10.0,
+        font_family="sans-serif",
+        font_size=10.0,
     )
 
     history = HistoryManager()
@@ -667,7 +685,8 @@ def test_empty_text_box_undo_restores_constraints():
         p_width,
         p_height,
         content="Original Text",
-        font_family="sans-serif", font_size=10.0,
+        font_family="sans-serif",
+        font_size=10.0,
     )
 
     cmd = ModifyTextPropertyCommand(sketch, tb_id, "", FontConfig())
@@ -706,7 +725,8 @@ def test_undo_removes_text_box_when_reverting_to_empty():
         p_width,
         p_height,
         content="",
-        font_family="sans-serif", font_size=10.0,
+        font_family="sans-serif",
+        font_size=10.0,
     )
 
     cmd = ModifyTextPropertyCommand(
@@ -744,7 +764,8 @@ def test_redo_restores_text_box_after_undo_to_empty():
         p_width,
         p_height,
         content="",
-        font_family="sans-serif", font_size=10.0,
+        font_family="sans-serif",
+        font_size=10.0,
     )
 
     history = HistoryManager()

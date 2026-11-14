@@ -1,5 +1,5 @@
 import logging
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import cairo
 from blinker import Signal
@@ -14,7 +14,6 @@ from ..core.commands import (
     DuplicateCommand,
     MoveEntitiesCommand,
 )
-from typing import Any
 from ..core.selection import SketchSelection
 from ..core.sketch import Sketch
 from ..core.snap import SnapEngine
@@ -414,7 +413,7 @@ class SketchElement(CanvasElement):
             if entity:
                 point_ids.update(entity.get_point_ids())
 
-        movable: dict[EntityID, Point] = {}
+        movable: dict[EntityID, Any] = {}
         for pid in point_ids:
             try:
                 p = registry.get_point(pid)
@@ -498,9 +497,7 @@ class SketchElement(CanvasElement):
             target = self.sketch.registry.get_point(sel.point_ids[0])
             target_type = "point"
         elif sel.entity_ids:
-            target = self.sketch.registry.get_entity_object(
-                sel.entity_ids[0]
-            )
+            target = self.sketch.registry.get_entity_object(sel.entity_ids[0])
             target_type = "entity"
         elif sel.constraint_idx is not None:
             if 0 <= sel.constraint_idx < len(self.sketch.constraints):

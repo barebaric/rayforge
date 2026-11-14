@@ -3,10 +3,10 @@ from collections.abc import Iterator
 from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point as GeoPoint
-
 from raygeo.sketch.entities.arc import Arc
 from raygeo.sketch.entities.circle import Circle
 from raygeo.sketch.entities.line import Line
+
 from ..engine import SnapLineProducer
 from ..types import DragContext, SnapLine, SnapLineType, SnapPoint
 
@@ -146,9 +146,7 @@ class OnEntityProducer(SnapLineProducer):
         if not center or not radius_pt:
             return None
 
-        radius = math.hypot(
-            radius_pt[0] - center[0], radius_pt[1] - center[1]
-        )
+        radius = math.hypot(radius_pt[0] - center[0], radius_pt[1] - center[1])
         if radius < 1e-10:
             return None
 

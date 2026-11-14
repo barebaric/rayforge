@@ -10,6 +10,10 @@ import math
 
 import pytest
 from raygeo.geo.shape.text import FontConfig
+from raygeo.sketch.constraints.parallelogram import ParallelogramConstraint
+from raygeo.sketch.entities.circle import Circle
+from raygeo.sketch.entities.line import Line
+from raygeo.sketch.entities.text_box import TextBox
 from sketcher.core.arrays import CircularArrayStrategy, CurveAlongArrayStrategy
 from sketcher.core.commands import (
     CreateArrayCommand,
@@ -18,10 +22,6 @@ from sketcher.core.commands import (
     TextBoxCommand,
 )
 from sketcher.core.commands.duplicate import DuplicateCommand
-from raygeo.sketch.constraints.parallelogram import ParallelogramConstraint
-from raygeo.sketch.entities.circle import Circle
-from raygeo.sketch.entities.line import Line
-from raygeo.sketch.entities.text_box import TextBox
 from sketcher.core.params import ParameterContext
 from sketcher.core.selection import SketchSelection
 from sketcher.core.sketch import Sketch
@@ -94,7 +94,9 @@ def test_copies_are_clean_text_boxes(text_array):
     references into the template's helper geometry."""
     sketch, cmd, _box = text_array
     registry = sketch.registry
-    copies = [registry.get_entity_object(eid) for eid in cmd.created_entity_ids]
+    copies = [
+        registry.get_entity_object(eid) for eid in cmd.created_entity_ids
+    ]
     assert len(copies) == 3
     for clone in copies:
         assert isinstance(clone, TextBox)
@@ -167,10 +169,7 @@ def test_undoing_the_create_restores_the_template(text_array):
     remaining = registry.get_entity_object(box.id)
     for eid in [box.id]:
         assert registry.get_entity_object(eid) == remaining
-    assert (
-        len([e for e in registry.entities() if isinstance(e, TextBox)])
-        == 1
-    )
+    assert len([e for e in registry.entities() if isinstance(e, TextBox)]) == 1
     assert copies_before == 3
 
 
@@ -226,7 +225,9 @@ def corner_residual(sketch, box):
     w = registry.get_point(box.width_id)
     h = registry.get_point(box.height_id)
     p4 = registry.get_point(box.get_fourth_corner_id(registry))
-    return math.hypot(p4[0] - (w[0] + h[0] - o[0]), p4[1] - (w[1] + h[1] - o[1]))
+    return math.hypot(
+        p4[0] - (w[0] + h[0] - o[0]), p4[1] - (w[1] + h[1] - o[1])
+    )
 
 
 def parallelogram_residual(sketch):

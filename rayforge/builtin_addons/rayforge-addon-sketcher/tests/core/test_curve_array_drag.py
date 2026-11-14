@@ -9,12 +9,12 @@ satisfied after every frame.
 import math
 
 import pytest
+from raygeo.sketch.constraints.coincident import CoincidentConstraint
 from sketcher.core.arrays import (
     CurveAlongArrayStrategy,
     resolve_template_center,
 )
 from sketcher.core.commands import CreateArrayCommand
-from raygeo.sketch.constraints.coincident import CoincidentConstraint
 from sketcher.core.params import ParameterContext
 from sketcher.core.sketch import Sketch
 
@@ -191,7 +191,10 @@ def test_user_repro_drag_template_away_and_back_then_guide(array_flow):
 
     # Now drag the guide control point over several frames.
     for frame in range(4):
-        bezier.cp1_offset = (bezier.cp1_offset[0] + 3.0, bezier.cp1_offset[1] - 3.0)
+        bezier.cp1_offset = (
+            bezier.cp1_offset[0] + 3.0,
+            bezier.cp1_offset[1] - 3.0,
+        )
         sketch.solve()
         residual = _coincident_residual(sketch)
         assert residual < 1e-6, f"frame {frame}: residual {residual}"
@@ -231,7 +234,10 @@ def test_dragging_guide_cp_keeps_members_rigid(array_flow):
     bezier = sketch.registry.get_entity_object(guide)
 
     for frame in range(4):
-        bezier.cp1_offset = (bezier.cp1_offset[0] + 3.0, bezier.cp1_offset[1] - 3.0)
+        bezier.cp1_offset = (
+            bezier.cp1_offset[0] + 3.0,
+            bezier.cp1_offset[1] - 3.0,
+        )
         sketch.solve()
 
         residual = _coincident_residual(sketch)

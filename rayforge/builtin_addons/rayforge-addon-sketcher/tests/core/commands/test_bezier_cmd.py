@@ -1,8 +1,8 @@
 from unittest.mock import Mock
 
+from raygeo.sketch.entities.bezier import Bezier
 from sketcher.core import Sketch
 from sketcher.core.commands import BezierCommand, BezierPreviewState
-from raygeo.sketch.entities.bezier import Bezier
 
 
 def test_bezier_command_preserves_control_points():
@@ -21,7 +21,9 @@ def test_bezier_command_preserves_control_points():
     )
     cmd.execute()
 
-    bezier = next(e for e in sketch.registry.entities() if isinstance(e, Bezier))
+    bezier = next(
+        e for e in sketch.registry.entities() if isinstance(e, Bezier)
+    )
     assert bezier.cp1_offset == (30.0, 40.0)
     assert bezier.cp2_offset == (-30.0, -40.0)
 

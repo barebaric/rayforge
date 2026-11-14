@@ -1,11 +1,10 @@
 import pytest
-from raygeo.sketch.entities.point import SketchPoint
 from raygeo.sketch.constraints.coincident import CoincidentConstraint
 from raygeo.sketch.constraints.horizontal import HorizontalConstraint
 from raygeo.sketch.constraints.point_on_line import PointOnLineConstraint
 from raygeo.sketch.constraints.vertical import VerticalConstraint
 from raygeo.sketch.entities.line import Line
-from typing import Any
+from raygeo.sketch.entities.point import SketchPoint
 from sketcher.core.snap import SnapLineType
 from sketcher.core.snap.types import SnapLine, SnapPoint, SnapResult
 from sketcher.ui_gtk.tools.snap_mixin import SnapMixin

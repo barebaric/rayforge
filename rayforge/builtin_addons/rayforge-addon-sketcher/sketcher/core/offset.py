@@ -31,7 +31,6 @@ from raygeo.geo.shape.polygon import (
     get_polygon_area,
     get_polygon_closest_point,
     get_polygon_convex_hull,
-    get_polygon_signed_area,
     is_point_inside_polygon,
     offset_polyline,
 )
@@ -148,9 +147,7 @@ def outline_item(
     local = _normalize_vertices(center, handle, vertices)
     rings: list[list[tuple[float, float]]] | None = None
     if holes:
-        rings = [
-            _normalize_vertices(center, handle, hole) for hole in holes
-        ]
+        rings = [_normalize_vertices(center, handle, hole) for hole in holes]
     return Polygon(
         center_pid,
         handle_pid,
@@ -368,9 +365,7 @@ def preview_polylines_for_item(
     if kind == "circle":
         center = registry.get_point(item.center_idx)
         radius_pt = registry.get_point(item.radius_pt_idx)
-        radius = math.hypot(
-            radius_pt[0] - center[0], radius_pt[1] - center[1]
-        )
+        radius = math.hypot(radius_pt[0] - center[0], radius_pt[1] - center[1])
         if radius + offset <= _MIN_OFFSET_RADIUS:
             return []
         ring = get_circle_polygon(center, radius + offset)
@@ -384,15 +379,11 @@ def preview_polylines_for_item(
         )
         if radius <= _MIN_OFFSET_RADIUS:
             return []
-        start_angle = math.atan2(
-            start[1] - center[1], start[0] - center[0]
-        )
+        start_angle = math.atan2(start[1] - center[1], start[0] - center[0])
         end_angle = math.atan2(end[1] - center[1], end[0] - center[0])
         sweep = get_arc_sweep(start_angle, end_angle, item.clockwise)
         segments = max(8, int(abs(sweep) / math.pi * 32))
-        return [
-            get_arc_samples(center, radius, start_angle, sweep, segments)
-        ]
+        return [get_arc_samples(center, radius, start_angle, sweep, segments)]
     if kind == "ellipse":
         center = registry.get_point(item.center_idx)
         rx = math.hypot(
@@ -528,9 +519,9 @@ def _polygon_offset_solids(
     result into (outer, holes) solids."""
     from .entity_ops import polygon_world_rings
 
-    grown = rings_to_geometry(
-        polygon_world_rings(registry, polygon)
-    ).grow(offset)
+    grown = rings_to_geometry(polygon_world_rings(registry, polygon)).grow(
+        offset
+    )
     return group_rings_into_solids(grown.to_polygons(0.02))
 
 

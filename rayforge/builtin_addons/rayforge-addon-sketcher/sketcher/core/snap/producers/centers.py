@@ -2,10 +2,10 @@ from collections.abc import Iterator
 from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point as GeoPoint
-
 from raygeo.sketch.entities.arc import Arc
 from raygeo.sketch.entities.circle import Circle
 from raygeo.sketch.entities.ellipse import Ellipse
+
 from ..engine import SnapLineProducer
 from ..types import DragContext, SnapLine, SnapLineType, SnapPoint
 

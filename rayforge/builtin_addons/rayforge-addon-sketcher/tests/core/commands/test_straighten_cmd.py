@@ -1,8 +1,8 @@
 import pytest
-from sketcher.core import Sketch
-from sketcher.core.commands import StraightenBezierCommand
 from raygeo.sketch.entities.bezier import Bezier
 from raygeo.sketch.entities.line import Line
+from sketcher.core import Sketch
+from sketcher.core.commands import StraightenBezierCommand
 
 
 @pytest.fixture

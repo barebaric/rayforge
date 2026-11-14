@@ -2,15 +2,14 @@ import logging
 from typing import Any
 
 import cairo
-
-from rayforge.ui_gtk.canvas.worldsurface import WorldSurface
-
 from raygeo.sketch.constraints.coincident import CoincidentConstraint
 from raygeo.sketch.constraints.point_on_curve import (
     PointOnCurveConstraint,
 )
 from raygeo.sketch.constraints.point_on_line import PointOnLineConstraint
 from raygeo.sketch.entities.bezier import Bezier
+
+from rayforge.ui_gtk.canvas.worldsurface import WorldSurface
 
 from ..core import constraint_info
 from ..core.entity_ops import text_box_fourth_corner
@@ -120,10 +119,7 @@ class SketchHitTester:
         # 1. Check Points
         for p in registry.points():
             x, y = p.x, p.y
-            if (
-                rect[0] <= x <= rect[2]
-                and rect[1] <= y <= rect[3]
-            ):
+            if rect[0] <= x <= rect[2] and rect[1] <= y <= rect[3]:
                 points_inside.append(p.id)
 
         # 2. Check Entities
@@ -199,9 +195,7 @@ class SketchHitTester:
             if entity.type_name() != "text_box":
                 continue
             text_box_point_ids.update(entity.get_point_ids())
-            fourth = text_box_fourth_corner(
-                element.sketch.registry, entity
-            )
+            fourth = text_box_fourth_corner(element.sketch.registry, entity)
             if fourth is not None:
                 text_box_point_ids.add(fourth)
         for entity in element.sketch.registry.entities():
@@ -222,7 +216,9 @@ class SketchHitTester:
                 dist_sq = dx * dx + dy * dy
                 if dist_sq < OVERLAY_HIT_THRESHOLD**2:
                     return "control_point_out", (
-                        start_pt.id if hasattr(start_pt, "id") else entity.start_idx,
+                        start_pt.id
+                        if hasattr(start_pt, "id")
+                        else entity.start_idx,
                         entity.id,
                         1,
                     )

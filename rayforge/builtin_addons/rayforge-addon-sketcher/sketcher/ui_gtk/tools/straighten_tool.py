@@ -1,8 +1,7 @@
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Union
+from typing import Any
 
 from raygeo.sketch.entities.bezier import Bezier
-from typing import Any, Union
 
 from ...core.commands import StraightenBezierCommand
 from .base import SketchTool

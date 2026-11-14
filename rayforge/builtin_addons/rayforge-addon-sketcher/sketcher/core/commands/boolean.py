@@ -118,10 +118,7 @@ class BooleanCommand(SketchChangeCommand):
         template: the bottom-most affected fill (registry stacking
         order)."""
         z_of = {
-            eid: i
-            for i, eid in enumerate(
-                self.sketch.registry.entity_ids()
-            )
+            eid: i for i, eid in enumerate(self.sketch.registry.entity_ids())
         }
         affected = [
             (index, fill)
@@ -149,8 +146,7 @@ class BooleanCommand(SketchChangeCommand):
             return
         if not self._added_fills:
             self._added_fills = [
-                self._new_fill(eid, template)
-                for eid in self._new_entity_ids
+                self._new_fill(eid, template) for eid in self._new_entity_ids
             ]
         self.sketch.fills.extend(self._added_fills)
 

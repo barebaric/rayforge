@@ -1,6 +1,6 @@
 import pytest
-from sketcher.core import Sketch
 from core.constraint_builders import add_arc_by_angle
+from sketcher.core import Sketch
 from sketcher.core.commands import (
     TangentConstraintCommand,
     TangentConstraintParams,

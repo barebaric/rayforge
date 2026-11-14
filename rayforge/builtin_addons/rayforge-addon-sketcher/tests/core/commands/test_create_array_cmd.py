@@ -1,11 +1,11 @@
 import math
 
 import pytest
-from sketcher.core.arrays import CircularArrayStrategy
-from sketcher.core.commands import CreateArrayCommand
 from raygeo.sketch.constraints.horizontal import HorizontalConstraint
 from raygeo.sketch.constraints.radius import RadiusConstraint
 from raygeo.sketch.constraints.vertical import VerticalConstraint
+from sketcher.core.arrays import CircularArrayStrategy
+from sketcher.core.commands import CreateArrayCommand
 from sketcher.core.entity_group import EntityGroup
 from sketcher.core.sketch import Sketch
 
@@ -111,7 +111,8 @@ def test_registers_array_definition(sketch_with_template):
 
 def registry_has_all(sketch, entity_ids):
     return all(
-        sketch.registry.get_entity_object(eid) is not None for eid in entity_ids
+        sketch.registry.get_entity_object(eid) is not None
+        for eid in entity_ids
     )
 
 

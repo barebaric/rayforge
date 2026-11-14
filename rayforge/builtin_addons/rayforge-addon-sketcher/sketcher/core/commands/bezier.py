@@ -42,12 +42,16 @@ def _mirror_cp(
     for other_b in _registry_connected_beziers(registry, sketch, pid):
         if self_bezier_id is not None and other_b.id == self_bezier_id:
             continue
-        if from_end and other_b.end_idx == pid and (
-            other_b.cp2_offset is not None
+        if (
+            from_end
+            and other_b.end_idx == pid
+            and (other_b.cp2_offset is not None)
         ):
             return (-other_b.cp2_offset[0], -other_b.cp2_offset[1])
-        if not from_end and other_b.start_idx == pid and (
-            other_b.cp1_offset is not None
+        if (
+            not from_end
+            and other_b.start_idx == pid
+            and (other_b.cp1_offset is not None)
         ):
             return (-other_b.cp1_offset[0], -other_b.cp1_offset[1])
     return None
@@ -217,7 +221,7 @@ class BezierCommand(SketchChangeCommand):
         drag_x: float,
         drag_y: float,
         mirror_cp_offset: GeoPoint | None = None,
-        sketch: "Sketch | None" = None,
+        sketch: Sketch | None = None,
     ) -> None:
         """
         Converts a line preview to a bezier preview.

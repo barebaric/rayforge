@@ -1,10 +1,10 @@
 import math
 
 import pytest
-from sketcher.core.arrays import CircularArrayStrategy
-from sketcher.core.commands import CreateArrayCommand, EditArrayCommand
 from raygeo.sketch.constraints.radius import RadiusConstraint
 from raygeo.sketch.constraints.rotational import RotationalConstraint
+from sketcher.core.arrays import CircularArrayStrategy
+from sketcher.core.commands import CreateArrayCommand, EditArrayCommand
 from sketcher.core.params import ParameterContext
 from sketcher.core.sketch import Sketch
 
@@ -199,7 +199,8 @@ def test_edit_moves_master_geometry(sketch_with_array):
     rc = next(
         c
         for c in sketch.constraints
-        if isinstance(c, RadiusConstraint) and c.constrains_radius(sketch.registry, circle.id)
+        if isinstance(c, RadiusConstraint)
+        and c.constrains_radius(sketch.registry, circle.id)
     )
     assert rc.value == pytest.approx(30.0)
 

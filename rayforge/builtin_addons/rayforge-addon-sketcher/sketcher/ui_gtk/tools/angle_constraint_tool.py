@@ -1,17 +1,15 @@
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, ClassVar, Union
+from typing import Any, ClassVar
 
+from raygeo.sketch.constraints.angle import AngleConstraint
+
+from ...core import constraint_info
 from ...core.commands import (
     AddItemsCommand,
     AngleConstraintCommand,
 )
-from raygeo.sketch.constraints.angle import AngleConstraint
-from ...core import constraint_info
 from .base import SketchTool
-
-if TYPE_CHECKING:
-    from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +25,8 @@ class AngleConstraintTool(SketchTool):
         target: Any | None,
         target_type: str | None,
     ) -> bool:
-        return constraint_info.can_apply(AngleConstraint, 
-            self.element.selection, self.element.sketch
+        return constraint_info.can_apply(
+            AngleConstraint, self.element.selection, self.element.sketch
         )
 
     def on_press(self, world_x: float, world_y: float, n_press: int) -> bool:

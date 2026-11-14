@@ -1,13 +1,10 @@
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Union
+from typing import Any
 
 from ...core.commands import UnstickJunctionCommand
 from ...core.commands.items import RemoveItemsCommand
 from .base import SketchTool
-
-if TYPE_CHECKING:
-    from typing import Any
 
 logger = logging.getLogger(__name__)
 

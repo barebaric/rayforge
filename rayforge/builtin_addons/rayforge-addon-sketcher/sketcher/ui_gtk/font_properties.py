@@ -12,7 +12,6 @@ from ..core.commands.text_property import (
     ModifyTextPropertyCommand,
 )
 
-
 if TYPE_CHECKING:
     from .editor import SketchEditor
 
@@ -107,7 +106,9 @@ class FontPropertiesWidget(Adw.PreferencesGroup):
             return
 
         self.set_visible(True)
-        self._update_ui_from_model(self._font_config(sketch_element, entity_id))
+        self._update_ui_from_model(
+            self._font_config(sketch_element, entity_id)
+        )
 
     def _font_config(self, sketch_element, entity_id: int) -> FontConfig:
         """The text box's effective font properties, overlay first."""

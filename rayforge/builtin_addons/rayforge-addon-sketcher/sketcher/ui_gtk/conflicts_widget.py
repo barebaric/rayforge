@@ -6,6 +6,7 @@ from gi.repository import Adw, Gtk
 
 from rayforge.ui_gtk.icons import get_icon
 
+from ..core import constraint_info
 from ..core.commands.items import RemoveItemsCommand
 
 if TYPE_CHECKING:

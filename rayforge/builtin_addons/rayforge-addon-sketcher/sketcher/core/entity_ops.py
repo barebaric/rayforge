@@ -10,7 +10,6 @@ re-derive entities without reaching into serialization dicts.
 
 from __future__ import annotations
 
-import math
 from typing import TYPE_CHECKING, Any, Protocol
 
 from raygeo.geo.shape.polygon import get_polygon_signed_area
@@ -99,7 +98,7 @@ def clone_entity(
             cp2=cp2,
         )
     if kind == "polygon":
-        vertices = [tuple(vertex) for vertex in entity.vertices]
+        [tuple(vertex) for vertex in entity.vertices]
         rings = [list(ring) for ring in entity.rings]
         if placement is not None and flips_chirality(placement):
             rings = [[(u, -v) for u, v in ring] for ring in rings]
@@ -230,9 +229,8 @@ def apply_placement_to_state(
             state["cp2"] = [cp2[0], cp2[1]]
         if state:
             registry.set_state(eid, state)
-    elif kind == "polygon":
-        if flips_chirality(placement):
-            _flip_polygon_rings(registry, eid, entity)
+    elif kind == "polygon" and flips_chirality(placement):
+        _flip_polygon_rings(registry, eid, entity)
 
 
 def rewrite_state_from(

@@ -197,9 +197,7 @@ class MirrorCommand(SketchChangeCommand):
         self._dropped_constraints = list(dropped)
 
         registry = self.sketch.registry
-        group = EntityGroup(
-            registry, entity_ids, flags=self.sketch.flags
-        )
+        group = EntityGroup(registry, entity_ids, flags=self.sketch.flags)
         direction = (
             "vertical"
             if self._direction is MirrorDirection.VERTICAL

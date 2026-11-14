@@ -1,12 +1,11 @@
 from unittest.mock import MagicMock, patch
-from raygeo.sketch.entities.point import SketchPoint
 
 import pytest
+from raygeo.sketch.entities.point import SketchPoint
 from sketcher.core.commands import (
     RoundedRectCommand,
     RoundedRectPreviewState,
 )
-from typing import Any
 from sketcher.ui_gtk.tools import RoundedRectTool
 
 
@@ -156,7 +155,9 @@ def test_degenerate_rounded_rectangle_aborts_creation(tool, mock_element):
         preview_ids={"t2": 2, "line1": 10},
         radius=10.0,
     )
-    mock_element.sketch.registry.get_point.return_value = SketchPoint(0, 10, 20)
+    mock_element.sketch.registry.get_point.return_value = SketchPoint(
+        0, 10, 20
+    )
     mock_element.sketch.remove_point_if_unused = MagicMock()
 
     # --- Simulate second click at nearly same spot ---

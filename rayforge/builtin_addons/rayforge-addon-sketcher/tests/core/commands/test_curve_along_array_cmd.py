@@ -1,14 +1,7 @@
 import math
 
 import pytest
-from sketcher.core.arrays import (
-    CurveAlongArray,
-    CurveAlongArrayStrategy,
-    find_array_for_entity,
-)
-from sketcher.core.commands import CreateArrayCommand, EditArrayCommand
 from core.constraint_builders import tangent_from_entities
-from sketcher.core import constraint_info
 from raygeo.sketch.constraints.coincident import CoincidentConstraint
 from raygeo.sketch.constraints.horizontal import HorizontalConstraint
 from raygeo.sketch.constraints.tangent import TangentConstraint
@@ -16,6 +9,13 @@ from raygeo.sketch.constraints.vertical import VerticalConstraint
 from raygeo.sketch.entities.bezier import Bezier
 from raygeo.sketch.entities.ellipse import Ellipse
 from raygeo.sketch.entities.line import Line
+from sketcher.core import constraint_info
+from sketcher.core.arrays import (
+    CurveAlongArray,
+    CurveAlongArrayStrategy,
+    find_array_for_entity,
+)
+from sketcher.core.commands import CreateArrayCommand, EditArrayCommand
 from sketcher.core.sketch import Sketch
 
 
@@ -155,7 +155,7 @@ def test_template_points_remain_editable(sketch_with_template_and_path):
     entity = sketch.registry.get_entity_object(template_eid)
     assert entity is not None
     for pid in entity.get_point_ids():
-        pt = sketch.registry.get_point(pid)
+        sketch.registry.get_point(pid)
         assert sketch.registry.point_is_fixed(pid) is False
 
 
@@ -572,7 +572,10 @@ def test_template_extraction_severs_guide_links(sketch_with_template_and_path):
     # shares the guide's point.
     tpl_entity = registry.get_entity_object(seed)
     assert tpl_entity.p1_idx != shared_pid
-    assert (registry.get_point(foreign)[0], registry.get_point(foreign)[1]) == (
+    assert (
+        registry.get_point(foreign)[0],
+        registry.get_point(foreign)[1],
+    ) == (
         30.0,
         20.0,
     )
@@ -630,7 +633,10 @@ def test_template_internal_constraints_survive_extraction():
             (joined_b[0], joined_b[1])
         )
     # The external tie is gone: the foreign point is untouched.
-    assert (registry.get_point(foreign)[0], registry.get_point(foreign)[1]) == (
+    assert (
+        registry.get_point(foreign)[0],
+        registry.get_point(foreign)[1],
+    ) == (
         50.0,
         50.0,
     )
@@ -681,9 +687,8 @@ def test_world_anchored_constraints_erased_tangents_kept():
         c
         for c in sketch.constraints
         if isinstance(c, TangentConstraint)
-        and set(
-            constraint_info.referenced_entity_ids(registry, c)
-        ) <= set(template_eids)
+        and set(constraint_info.referenced_entity_ids(registry, c))
+        <= set(template_eids)
     ]
 
     def member_shape(eids):
@@ -759,7 +764,9 @@ def test_reapply_does_not_leak_fixed_copy_points():
 
     # Drag the template and re-apply via the solver sync several
     # times: geometry must stay bounded.
-    tpl_entity = registry.get_entity_object(array.living_members(registry)[0][1][0])
+    tpl_entity = registry.get_entity_object(
+        array.living_members(registry)[0][1][0]
+    )
     assert isinstance(tpl_entity, Line)
     dragged = registry.get_point(tpl_entity.p1_idx)
     for _ in range(10):
@@ -801,7 +808,9 @@ def test_ellipse_helper_lines_follow_the_template():
 
     registry = sketch.registry
     array = sketch.arrays[0]
-    template = registry.get_entity_object(array.living_members(registry)[0][1][0])
+    template = registry.get_entity_object(
+        array.living_members(registry)[0][1][0]
+    )
     assert isinstance(template, Ellipse)
     assert sorted(template.helper_line_ids) == sorted([h1, h2])
     for hid in template.helper_line_ids:

@@ -74,7 +74,7 @@ class EntityFlags:
             return None
         return self._registry.get_entity_object(eid)
 
-    def __deepcopy__(self, memo: dict) -> "EntityFlags":
+    def __deepcopy__(self, memo: dict) -> EntityFlags:
         clone = EntityFlags()
         clone.invisible = dict(self.invisible)
         clone.array_copy = dict(self.array_copy)
@@ -178,9 +178,7 @@ class EntityFlags:
         return {
             "invisible": dict(self.invisible),
             "array_copy": dict(self.array_copy),
-            "waypoints": {
-                pid: wt.value for pid, wt in self.waypoints.items()
-            },
+            "waypoints": {pid: wt.value for pid, wt in self.waypoints.items()},
             "fill_colors": dict(self.fill_colors),
             "text": copy.deepcopy(self.text),
         }

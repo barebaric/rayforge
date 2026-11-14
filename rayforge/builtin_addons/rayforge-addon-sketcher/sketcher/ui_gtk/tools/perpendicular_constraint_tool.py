@@ -1,14 +1,12 @@
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, ClassVar, Union
+from typing import Any, ClassVar
 
-from ...core.commands import AddItemsCommand
 from raygeo.sketch.constraints.perpendicular import PerpendicularConstraint
-from ...core import constraint_info
-from .base import SketchTool
 
-if TYPE_CHECKING:
-    from typing import Any
+from ...core import constraint_info
+from ...core.commands import AddItemsCommand
+from .base import SketchTool
 
 logger = logging.getLogger(__name__)
 
@@ -24,8 +22,10 @@ class PerpendicularConstraintTool(SketchTool):
         target: Any | None,
         target_type: str | None,
     ) -> bool:
-        return constraint_info.can_apply(PerpendicularConstraint, 
-            self.element.selection, self.element.sketch
+        return constraint_info.can_apply(
+            PerpendicularConstraint,
+            self.element.selection,
+            self.element.sketch,
         )
 
     def on_press(self, world_x: float, world_y: float, n_press: int) -> bool:

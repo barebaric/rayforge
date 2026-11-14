@@ -241,15 +241,16 @@ class CircularArrayStrategy(ArrayStrategy):
                 circle.center_idx, self.center[0], self.center[1]
             )
             registry.set_point_position(
-                circle.radius_pt_idx, self.center[0] + self.radius,
+                circle.radius_pt_idx,
+                self.center[0] + self.radius,
                 self.center[1],
             )
 
         for constr in constraints:
-            if (
-                isinstance(constr, RadiusConstraint)
-                and constr.constrains_radius(registry, 
-                    array_def.guide_circle_id)
+            if isinstance(
+                constr, RadiusConstraint
+            ) and constr.constrains_radius(
+                registry, array_def.guide_circle_id
             ):
                 radius_constraint = constr
                 if frame_state is not None:

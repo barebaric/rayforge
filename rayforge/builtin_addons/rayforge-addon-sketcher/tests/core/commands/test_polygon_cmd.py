@@ -1,18 +1,18 @@
 import math
 
 import pytest
-from sketcher.core import Sketch
-from sketcher.core.commands import (
-    PolygonCommand,
-    PolygonPreviewState,
-    polygon_vertices,
-)
 from raygeo.sketch.constraints.aspect_ratio import AspectRatioConstraint
 from raygeo.sketch.constraints.equal_length import EqualLengthConstraint
 from raygeo.sketch.constraints.point_on_line import PointOnLineConstraint
 from raygeo.sketch.constraints.radius import RadiusConstraint
 from raygeo.sketch.entities.circle import Circle
 from raygeo.sketch.entities.line import Line
+from sketcher.core import Sketch
+from sketcher.core.commands import (
+    PolygonCommand,
+    PolygonPreviewState,
+    polygon_vertices,
+)
 
 
 def _lines(sketch):
@@ -30,7 +30,10 @@ def _circles(sketch):
 def _corner_positions(sketch):
     registry = sketch.registry
     return [
-        (registry.get_point(line.p1_idx)[0], registry.get_point(line.p1_idx)[1])
+        (
+            registry.get_point(line.p1_idx)[0],
+            registry.get_point(line.p1_idx)[1],
+        )
         for line in _lines(sketch)
     ]
 
@@ -146,7 +149,8 @@ class TestPolygonCommand:
         sketch.solve()
         c = sketch.registry.get_point(center)
         radii = [
-            math.hypot(x - c[0], y - c[1]) for x, y in _corner_positions(sketch)
+            math.hypot(x - c[0], y - c[1])
+            for x, y in _corner_positions(sketch)
         ]
         assert radii == pytest.approx([radii[0]] * 6, rel=1e-4)
 

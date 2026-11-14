@@ -5,11 +5,11 @@ from gettext import gettext as _
 from typing import ClassVar
 
 import cairo
+from raygeo.sketch.entities.bezier import Bezier
 
 from rayforge.ui_gtk.shared.keyboard import PRIMARY_KEY_NAME
 
 from ...core.commands import BezierCommand, BezierPreviewState
-from raygeo.sketch.entities.bezier import Bezier
 from .base import SketcherKey, SketchTool
 from .snap_mixin import SnapMixin
 
@@ -385,9 +385,7 @@ class PathTool(SnapMixin, SketchTool):
         threshold = getattr(self.element.snap_engine, "threshold", None)
         if not isinstance(threshold, (int, float)):
             return None
-        start_pt = self.element.sketch.registry.get_point(
-            self._path_start_id
-        )
+        start_pt = self.element.sketch.registry.get_point(self._path_start_id)
         if start_pt is None:
             return None
         if math.hypot(x - start_pt[0], y - start_pt[1]) <= threshold:

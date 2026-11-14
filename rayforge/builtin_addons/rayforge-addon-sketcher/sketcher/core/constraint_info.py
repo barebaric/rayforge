@@ -37,6 +37,7 @@ from raygeo.sketch.constraints.rotational import RotationalConstraint
 from raygeo.sketch.constraints.symmetry import SymmetryConstraint
 from raygeo.sketch.constraints.tangent import TangentConstraint
 from raygeo.sketch.constraints.vertical import VerticalConstraint
+
 from rayforge.core.expression import safe_evaluate
 
 from .types import EntityID
@@ -169,9 +170,9 @@ def is_world_anchored(constraint: Any) -> bool:
 
 def is_mirror_compatible(constraint: Any) -> bool:
     """Whether the constraint survives mirroring of its geometry."""
-    if isinstance(constraint, AngleConstraint) and constraint.expression:
-        return False
-    return True
+    return not (
+        isinstance(constraint, AngleConstraint) and constraint.expression
+    )
 
 
 def user_visible(constraint: Any) -> bool:
@@ -186,17 +187,15 @@ def user_visible(constraint: Any) -> bool:
 
 def has_expression(constraint: Any) -> bool:
     """Whether the constraint carries an expression string."""
-    expression = constraint.expression if hasattr(
-        constraint, "expression"
-    ) else None
+    expression = (
+        constraint.expression if hasattr(constraint, "expression") else None
+    )
     return bool(expression)
 
 
 def get_expression(constraint: Any) -> str | None:
     """The constraint's expression string, if any."""
-    return constraint.expression if hasattr(
-        constraint, "expression"
-    ) else None
+    return constraint.expression if hasattr(constraint, "expression") else None
 
 
 def get_title(constraint: Any) -> str:
@@ -218,6 +217,7 @@ def get_title(constraint: Any) -> str:
 
 def get_subtitle(registry: Any, constraint: Any) -> str:
     """A human-readable subtitle describing the constrained geometry."""
+
     def pt(pid: EntityID):
         return registry.get_point(pid)
 
@@ -273,9 +273,7 @@ def get_subtitle(registry: Any, constraint: Any) -> str:
         if center:
             return _("Line to circle at {}").format(coord(center))
         return ""
-    if isinstance(
-        constraint, (PointOnLineConstraint, PointOnCurveConstraint)
-    ):
+    if isinstance(constraint, (PointOnLineConstraint, PointOnCurveConstraint)):
         position = pt(constraint.point)
         if position:
             return _("Point at {}").format(coord(position))
@@ -326,8 +324,8 @@ def _has_characteristic_length(entity: Any) -> bool:
 
 def can_apply(
     constraint_type: type,
-    selection: "SketchSelection",
-    sketch: "Sketch | None" = None,
+    selection: SketchSelection,
+    sketch: Sketch | None = None,
 ) -> bool:
     """Whether the constraint type can be created from the selection."""
     registry = sketch.registry if sketch is not None else None
@@ -395,9 +393,7 @@ def _applies_to_entities(constraint_type: type, entities: list) -> bool:
     if constraint_type is RadiusConstraint:
         return len(entities) == 1 and _is_radius_entity(entities[0])
     if constraint_type is DiameterConstraint:
-        return len(entities) == 1 and (
-            entities[0].type_name() == "circle"
-        )
+        return len(entities) == 1 and (entities[0].type_name() == "circle")
     if constraint_type is AspectRatioConstraint:
         return len(entities) == 2 and all(_is_line(e) for e in entities)
     if constraint_type is PointOnLineConstraint:
@@ -405,9 +401,7 @@ def _applies_to_entities(constraint_type: type, entities: list) -> bool:
             _is_line(entities[0]) or _is_radius_entity(entities[0])
         )
     if constraint_type is PointOnCurveConstraint:
-        return len(entities) == 1 and (
-            entities[0].type_name() == "bezier"
-        )
+        return len(entities) == 1 and (entities[0].type_name() == "bezier")
     if constraint_type is TangentConstraint:
         if len(entities) != 2:
             return False
@@ -450,9 +444,7 @@ def referenced_entity_ids(registry: Any, constraint: Any) -> set[EntityID]:
             and constraint.targets_segment(
                 endpoints[0], endpoints[1], eid, registry
             )
-        ):
-            eids.add(eid)
-        elif (
+        ) or (
             supports_radius
             and registry.is_radius_entity(eid)
             and constraint.constrains_radius(registry, eid)
@@ -465,9 +457,7 @@ def referenced_entity_ids(registry: Any, constraint: Any) -> set[EntityID]:
             _entities_with_points(registry, (constraint.start, constraint.end))
         )
     elif isinstance(constraint, SymmetryConstraint):
-        eids.update(
-            _target_entity_ids(registry, constraint.target)
-        )
+        eids.update(_target_entity_ids(registry, constraint.target))
     elif isinstance(constraint, AngleConstraint):
         eids.update(
             _entities_with_points(registry, (constraint.p1, constraint.p2))
@@ -499,9 +489,7 @@ def _target_entity_ids(registry: Any, target: Any) -> set[EntityID]:
     return set()
 
 
-def _perpendicular_entity_ids(
-    registry: Any, target: Any
-) -> set[EntityID]:
+def _perpendicular_entity_ids(registry: Any, target: Any) -> set[EntityID]:
     if hasattr(target, "a1"):
         return _entities_with_points(
             registry, (target.a1, target.a2, target.b1, target.b2)

@@ -4,11 +4,11 @@ import math
 
 import pytest
 from raygeo.geo.shape.polygon import get_polygon_signed_area
+from raygeo.sketch.entities.circle import Circle
+from raygeo.sketch.entities.polygon import Polygon
 from sketcher.core import Sketch
 from sketcher.core.boolean import BooleanOp
 from sketcher.core.commands import BooleanCommand
-from raygeo.sketch.entities.circle import Circle
-from raygeo.sketch.entities.polygon import Polygon
 from sketcher.core.sketch import Fill
 
 from rayforge.image.structures import FillStyle
@@ -47,9 +47,7 @@ def _fill(sketch, entity_id, color=(0.1, 0.2, 0.3, 0.9)):
 
 
 def _polygons(sketch):
-    return [
-        e for e in sketch.registry.entities() if isinstance(e, Polygon)
-    ]
+    return [e for e in sketch.registry.entities() if isinstance(e, Polygon)]
 
 
 def test_union_replaces_sources_with_polygon():

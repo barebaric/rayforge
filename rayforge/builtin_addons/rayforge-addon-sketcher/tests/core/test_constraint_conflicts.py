@@ -2,12 +2,11 @@
 Tests for constraint conflict detection in the sketcher.
 """
 
-from sketcher.core.arrays import CurveAlongArrayStrategy
-from sketcher.core.commands import CreateArrayCommand
-from sketcher.core import constraint_info
-from sketcher.core.constraint_info import ConstraintStatus
 from raygeo.sketch.constraints.distance import DistanceConstraint
 from raygeo.sketch.constraints.horizontal import HorizontalConstraint
+from sketcher.core.arrays import CurveAlongArrayStrategy
+from sketcher.core.commands import CreateArrayCommand
+from sketcher.core.constraint_info import ConstraintStatus
 from sketcher.core.params import ParameterContext
 from sketcher.core.registry import EntityRegistry
 from sketcher.core.sketch import Sketch
@@ -20,7 +19,7 @@ class TestSolverConflictDetection:
     def test_no_conflicts_satisfied_constraints(self):
         """When constraints are satisfied, no conflicts should be reported."""
         reg = EntityRegistry()
-        params = ParameterContext()
+        ParameterContext()
 
         p1 = reg.add_point(0, 0, fixed=True)
         p2 = reg.add_point(10, 0, fixed=False)
@@ -42,7 +41,7 @@ class TestSolverConflictDetection:
         should both be detected as conflicting.
         """
         reg = EntityRegistry()
-        params = ParameterContext()
+        ParameterContext()
 
         p1 = reg.add_point(0, 0, fixed=True)
         p2 = reg.add_point(15, 0, fixed=False)
@@ -65,7 +64,7 @@ class TestSolverConflictDetection:
         only the unsatisfied ones should be marked as conflicting.
         """
         reg = EntityRegistry()
-        params = ParameterContext()
+        ParameterContext()
 
         p1 = reg.add_point(0, 0, fixed=True)
         p2 = reg.add_point(10, 0, fixed=True)
@@ -90,7 +89,7 @@ class TestSolverConflictDetection:
         An impossible constraint between two fixed points should be detected.
         """
         reg = EntityRegistry()
-        params = ParameterContext()
+        ParameterContext()
 
         p1 = reg.add_point(0, 0, fixed=True)
         p2 = reg.add_point(10, 0, fixed=True)
@@ -109,7 +108,7 @@ class TestSolverConflictDetection:
         Constraints with error just below threshold should not be reported.
         """
         reg = EntityRegistry()
-        params = ParameterContext()
+        ParameterContext()
 
         p1 = reg.add_point(0, 0, fixed=True)
         p2 = reg.add_point(10.0001, 0, fixed=True)

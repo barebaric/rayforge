@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from ..contour import build_offset_items
 from ..offset import (
@@ -49,7 +49,7 @@ class OffsetCommand(SketchChangeCommand):
     @staticmethod
     def prepare_items(
         sketch: Sketch, entity_ids: list[int]
-    ) -> list[OffsetItem] | None:
+    ) -> list[Any] | None:
         """
         Pure function that partitions the selection into offsettable
         items. Returns None when the selection cannot be offset.

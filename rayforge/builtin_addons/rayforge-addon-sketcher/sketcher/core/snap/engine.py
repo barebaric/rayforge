@@ -1,6 +1,6 @@
-from typing import Any
 import logging
 from collections.abc import Iterator
+from typing import Any
 
 from raygeo.geo.types import Point as GeoPoint
 

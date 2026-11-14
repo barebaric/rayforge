@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 
 from raygeo.geo.shape.arc import normalize_angle
 from raygeo.geo.shape.line import get_line_line_intersection
-
 from raygeo.sketch.entities.line import Line
 
 from ..types import EntityID
@@ -49,9 +48,7 @@ class AngleConstraintCommand:
         if not (p1 and p2 and p3 and p4):
             return None
 
-        intersection = get_line_line_intersection(
-            p1, p2, p3, p4
-        )
+        intersection = get_line_line_intersection(p1, p2, p3, p4)
 
         if intersection is None:
             logger.warning(

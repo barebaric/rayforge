@@ -1,11 +1,11 @@
 import pytest
-from sketcher.core import Sketch
-from sketcher.core.commands import FilletCommand
 from raygeo.sketch.constraints.collinear import CollinearConstraint
 from raygeo.sketch.constraints.equal_distance import EqualDistanceConstraint
 from raygeo.sketch.constraints.tangent import TangentConstraint
 from raygeo.sketch.entities.arc import Arc
 from raygeo.sketch.entities.line import Line
+from sketcher.core import Sketch
+from sketcher.core.commands import FilletCommand
 
 # Constant for consistency
 DEFAULT_FILLET_RADIUS = 10.0

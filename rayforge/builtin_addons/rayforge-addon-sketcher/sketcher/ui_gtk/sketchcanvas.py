@@ -1,7 +1,7 @@
 import logging
 import math
 from gettext import gettext as _
-from typing import cast
+from typing import Any, cast
 
 from gi.repository import Adw, Gdk, Gtk
 from raygeo.geo import Matrix
@@ -9,15 +9,13 @@ from raygeo.geo import Matrix
 from rayforge.camera.controller import CameraController
 from rayforge.context import get_context
 from rayforge.core.expression import ExpressionContext, safe_evaluate
-
-from ..core import constraint_info
 from rayforge.shared.units.formatter import get_preferred_unit_factor
 from rayforge.ui_gtk.canvas import WorldSurface
 from rayforge.ui_gtk.canvas2d.elements.camera_image import CameraImageElement
 from rayforge.ui_gtk.shared.expression_entry import ExpressionEntry
 
+from ..core import constraint_info
 from ..core.commands import ModifyConstraintCommand
-from typing import Any
 from ..core.sketch import Sketch
 from .editor import SketchEditor
 from .sketchelement import SketchElement

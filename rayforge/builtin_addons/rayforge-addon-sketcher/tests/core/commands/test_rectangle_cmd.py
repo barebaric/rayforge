@@ -1,12 +1,11 @@
-from sketcher.core import Sketch
+from raygeo.sketch.constraints.perpendicular import PerpendicularConstraint
+from raygeo.sketch.constraints.symmetry import SymmetryConstraint
+from sketcher.core import Sketch, constraint_info
 from sketcher.core.commands import (
     RectangleCommand,
     RectanglePreviewState,
 )
 from sketcher.core.commands.items import AddItemsCommand
-from sketcher.core import constraint_info
-from raygeo.sketch.constraints.perpendicular import PerpendicularConstraint
-from raygeo.sketch.constraints.symmetry import SymmetryConstraint
 
 
 def _run_calculate_geometry(
@@ -37,9 +36,7 @@ def test_rectangle_calculate_geometry_no_snap():
     """The builder places the corners and center at the frame."""
     sketch = Sketch()
     start_pid = sketch.add_point(0, 0)
-    result = _run_calculate_geometry(
-        sketch, 0, 0, 100, 50, start_pid, None
-    )
+    result = _run_calculate_geometry(sketch, 0, 0, 100, 50, start_pid, None)
     assert result is not None
     assert len(result["entities"]) == 4
 
@@ -55,9 +52,7 @@ def test_rectangle_calculate_geometry_with_snap():
     sketch = Sketch()
     start_pid = sketch.add_point(0, 0)
     end_pid = sketch.add_point(100, 50)
-    result = _run_calculate_geometry(
-        sketch, 0, 0, 100, 50, start_pid, end_pid
-    )
+    result = _run_calculate_geometry(sketch, 0, 0, 100, 50, start_pid, end_pid)
     assert result is not None
     assert result["p3_id"] == end_pid
 
@@ -67,12 +62,10 @@ def test_rectangle_calculate_geometry_degenerate():
     sketch = Sketch()
     start_pid = sketch.add_point(0, 0)
     assert (
-        _run_calculate_geometry(sketch, 0, 0, 0, 50, start_pid, None)
-        is None
+        _run_calculate_geometry(sketch, 0, 0, 0, 50, start_pid, None) is None
     )
     assert (
-        _run_calculate_geometry(sketch, 0, 0, 100, 0, start_pid, None)
-        is None
+        _run_calculate_geometry(sketch, 0, 0, 100, 0, start_pid, None) is None
     )
 
 
@@ -171,15 +164,9 @@ def test_rectangle_calculate_geometry_has_symmetry_constraint():
     """The builder adds a center symmetry constraint."""
     sketch = Sketch()
     start_pid = sketch.add_point(0, 0)
-    result = _run_calculate_geometry(
-        sketch, 0, 0, 100, 50, start_pid, None
-    )
+    result = _run_calculate_geometry(sketch, 0, 0, 100, 50, start_pid, None)
     assert result is not None
-    sym = [
-        c
-        for c in sketch.constraints
-        if isinstance(c, SymmetryConstraint)
-    ]
+    sym = [c for c in sketch.constraints if isinstance(c, SymmetryConstraint)]
     assert len(sym) == 1
     assert sym[0].target.center == result["center_id"]
     assert constraint_info.user_visible(sym[0]) is False

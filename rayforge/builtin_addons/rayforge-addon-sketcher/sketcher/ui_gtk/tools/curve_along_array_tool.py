@@ -7,6 +7,9 @@ from typing import ClassVar
 
 import cairo
 from gi.repository import Adw, Gtk
+from raygeo.sketch.entities.arc import Arc
+from raygeo.sketch.entities.bezier import Bezier
+from raygeo.sketch.entities.line import Line
 
 from rayforge.ui_gtk.shared.pref_rows import LengthSpinRow, SpinRow
 
@@ -17,9 +20,6 @@ from ...core.arrays import (
     sample_path,
 )
 from ...core.commands import CreateArrayCommand
-from raygeo.sketch.entities.arc import Arc
-from raygeo.sketch.entities.bezier import Bezier
-from raygeo.sketch.entities.line import Line
 from ...core.entity_group import EntityGroup
 from .array_base import ArrayToolBase
 

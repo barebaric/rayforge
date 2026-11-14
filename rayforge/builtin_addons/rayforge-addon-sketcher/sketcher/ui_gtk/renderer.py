@@ -9,11 +9,6 @@ from gi.repository import PangoCairo
 from raygeo.geo import Geometry, Matrix
 from raygeo.geo.shape.text import text_to_geometry
 from raygeo.geo.types import Point as GeoPoint
-
-from rayforge.image.geo_renderer import geometry_to_cairo
-from rayforge.ui_gtk.canvas import WorldSurface
-from rayforge.ui_gtk.shared.text import create_text_layout
-
 from raygeo.sketch.constraints.coincident import CoincidentConstraint
 from raygeo.sketch.constraints.point_on_curve import (
     PointOnCurveConstraint,
@@ -26,6 +21,10 @@ from raygeo.sketch.entities.ellipse import Ellipse
 from raygeo.sketch.entities.line import Line
 from raygeo.sketch.entities.polygon import Polygon
 from raygeo.sketch.entities.text_box import TextBox
+
+from rayforge.image.geo_renderer import geometry_to_cairo
+from rayforge.ui_gtk.canvas import WorldSurface
+from rayforge.ui_gtk.shared.text import create_text_layout
 
 from ..core import constraint_info
 from ..core.commands import BezierPreviewState
@@ -514,9 +513,7 @@ class SketchRenderer:
             return False
 
         radius = math.hypot(start[0] - center[0], start[1] - center[1])
-        start_a = math.atan2(
-            start[1] - center[1], start[0] - center[0]
-        )
+        start_a = math.atan2(start[1] - center[1], start[0] - center[0])
         end_a = math.atan2(end[1] - center[1], end[0] - center[0])
 
         ctx.new_sub_path()
@@ -533,9 +530,7 @@ class SketchRenderer:
         if not (center and radius_pt):
             return False
 
-        radius = math.hypot(
-            radius_pt[0] - center[0], radius_pt[1] - center[1]
-        )
+        radius = math.hypot(radius_pt[0] - center[0], radius_pt[1] - center[1])
         ctx.new_sub_path()
         ctx.arc(center[0], center[1], radius, 0, 2 * math.pi)
         return True
@@ -550,12 +545,8 @@ class SketchRenderer:
         if not (center and radius_x_pt and radius_y_pt):
             return False
 
-        rx = math.hypot(
-            radius_x_pt[0] - center[0], radius_x_pt[1] - center[1]
-        )
-        ry = math.hypot(
-            radius_y_pt[0] - center[0], radius_y_pt[1] - center[1]
-        )
+        rx = math.hypot(radius_x_pt[0] - center[0], radius_x_pt[1] - center[1])
+        ry = math.hypot(radius_y_pt[0] - center[0], radius_y_pt[1] - center[1])
         if rx < 1e-9 or ry < 1e-9:
             return False
 
@@ -1056,9 +1047,7 @@ class SketchRenderer:
                 self.element.sketch.registry, self.element.sketch, pid
             )
             if connected:
-                self._draw_waypoint_handles(
-                    ctx, to_screen, waypoint, pid
-                )
+                self._draw_waypoint_handles(ctx, to_screen, waypoint, pid)
 
     def _draw_bezier_preview_handles(
         self, ctx: cairo.Context, to_screen, preview_state: BezierPreviewState
@@ -1070,9 +1059,7 @@ class SketchRenderer:
         start_pt = self.element.sketch.registry.get_point(
             preview_state.start_id
         )
-        end_pt = self.element.sketch.registry.get_point(
-            preview_state.end_id
-        )
+        end_pt = self.element.sketch.registry.get_point(preview_state.end_id)
         if not (start_pt and end_pt):
             return
 
@@ -1175,10 +1162,7 @@ class SketchRenderer:
         ctx.set_source_rgba(0.2, 0.6, 1.0, 0.8)
 
         for bezier in connected_beziers:
-            if (
-                bezier.start_idx in point_ids
-                and bezier.cp1_offset is not None
-            ):
+            if bezier.start_idx in point_ids and bezier.cp1_offset is not None:
                 cp_abs = (
                     waypoint[0] + bezier.cp1_offset[0],
                     waypoint[1] + bezier.cp1_offset[1],
@@ -1192,10 +1176,7 @@ class SketchRenderer:
                 ctx.fill()
                 ctx.set_source_rgba(0.2, 0.6, 1.0, 0.8)
 
-            if (
-                bezier.end_idx in point_ids
-                and bezier.cp2_offset is not None
-            ):
+            if bezier.end_idx in point_ids and bezier.cp2_offset is not None:
                 cp_abs = (
                     waypoint[0] + bezier.cp2_offset[0],
                     waypoint[1] + bezier.cp2_offset[1],

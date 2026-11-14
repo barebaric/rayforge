@@ -1,11 +1,10 @@
 import pytest
-from sketcher.core import Sketch
 from core.constraint_builders import equal_length_from_entities
+from sketcher.core import Sketch
 from sketcher.core.commands import (
     EqualConstraintCommand,
     EqualConstraintMergeResult,
 )
-from raygeo.sketch.constraints.equal_length import EqualLengthConstraint
 
 
 @pytest.fixture

@@ -7,7 +7,6 @@ from raygeo.geo.types import Point as GeoPoint
 from raygeo.sketch.constraints.equal_distance import (
     EqualDistanceConstraint,
 )
-from raygeo.sketch.entities.ellipse import Ellipse
 from raygeo.sketch.entities.line import Line
 
 from ..types import EntityID
@@ -154,12 +153,8 @@ class EllipseCommand(SketchChangeCommand):
         )
 
         registry.set_point_position(preview_state.center_id, cx, cy)
-        registry.set_point_position(
-            preview_state.radius_x_id, cx + rx, cy
-        )
-        registry.set_point_position(
-            preview_state.radius_y_id, cx, cy + ry
-        )
+        registry.set_point_position(preview_state.radius_x_id, cx + rx, cy)
+        registry.set_point_position(preview_state.radius_y_id, cx, cy + ry)
 
     @staticmethod
     def cleanup_preview(

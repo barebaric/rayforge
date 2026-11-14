@@ -1,14 +1,13 @@
 import pytest
-from sketcher.core import Sketch
 from core.constraint_builders import (
-    angle_from_lines,
     tangent_from_entities,
 )
-from sketcher.core.commands import DuplicateCommand
 from raygeo.sketch.constraints.distance import DistanceConstraint
 from raygeo.sketch.constraints.tangent import TangentConstraint
 from raygeo.sketch.entities.arc import Arc
 from raygeo.sketch.entities.line import Line
+from sketcher.core import Sketch
+from sketcher.core.commands import DuplicateCommand
 from sketcher.core.selection import SketchSelection
 
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from raygeo.sketch.entities.arc import Arc
 from raygeo.sketch.entities.circle import Circle

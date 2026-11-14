@@ -291,9 +291,7 @@ class EntityGroup:
             entity = self.registry.get_entity_object(eid)
             if entity is None:
                 continue
-            invisible = (
-                self.flags.is_invisible(eid) if self.flags else False
-            )
+            invisible = self.flags.is_invisible(eid) if self.flags else False
             if not (entity.construction or invisible):
                 continue
             point_ids = entity.get_point_ids()

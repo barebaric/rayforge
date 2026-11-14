@@ -14,7 +14,6 @@ from ..arrays import (
     resolve_template_center,
 )
 from ..entity_group import EntityGroup
-from ..params import ParameterContext
 from .base import SketchChangeCommand
 from .create_array import CreateArrayCommand
 from .items import AddItemsCommand, RemoveItemsCommand
@@ -430,9 +429,7 @@ class EditArrayCommand(SketchChangeCommand):
             i = slot - 1
             if i < 0 or i >= len(result["instance_maps"]):
                 continue
-            created_groups.append(
-                (slot, result["instance_entity_groups"][i])
-            )
+            created_groups.append((slot, result["instance_entity_groups"][i]))
         self.created_groups = created_groups
         self.created_entity_ids = [
             eid for _slot, eids in created_groups for eid in eids
@@ -442,9 +439,9 @@ class EditArrayCommand(SketchChangeCommand):
         for slot in slots:
             i = slot - 1
             if 0 <= i < len(result["instance_extra_pids"]):
-                self._created_standalone[slot] = result[
-                    "instance_extra_pids"
-                ][i]
+                self._created_standalone[slot] = result["instance_extra_pids"][
+                    i
+                ]
         self.array.standalone_pids.update(self._created_standalone)
         logger.info(
             "ArrayEdit[%s]: created %d instances (%d entities)",

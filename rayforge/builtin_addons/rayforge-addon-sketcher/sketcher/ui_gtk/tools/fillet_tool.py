@@ -1,16 +1,13 @@
 import logging
 import math
 from gettext import gettext as _
-from typing import TYPE_CHECKING, ClassVar, Union
+from typing import Any, ClassVar
 
 from raygeo.sketch.entities.line import Line
 
 from ...core.commands import FilletCommand
 from ...core.types import EntityID
 from .base import SketchTool
-
-if TYPE_CHECKING:
-    from typing import Any
 
 logger = logging.getLogger(__name__)
 

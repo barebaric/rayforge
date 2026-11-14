@@ -10,14 +10,14 @@ from __future__ import annotations
 import math
 
 from raygeo.sketch.constraints.angle import AngleConstraint
-from raygeo.sketch.constraints.equal_length import EqualLengthConstraint
-from raygeo.sketch.constraints.point_on_curve import PointOnCurveConstraint
 from raygeo.sketch.constraints.diameter import DiameterConstraint
-from raygeo.sketch.constraints.radius import RadiusConstraint
+from raygeo.sketch.constraints.equal_length import EqualLengthConstraint
 from raygeo.sketch.constraints.perpendicular import (
     PerpendicularConstraint,
     PerpendicularTarget,
 )
+from raygeo.sketch.constraints.point_on_curve import PointOnCurveConstraint
+from raygeo.sketch.constraints.radius import RadiusConstraint
 from raygeo.sketch.constraints.tangent import TangentConstraint
 
 
@@ -44,9 +44,7 @@ def angle_from_lines(sketch, l1, l2, value, expression=None):
     reg = _reg(sketch)
     a = reg.get_entity_object(l1)
     b = reg.get_entity_object(l2)
-    constraint = AngleConstraint(
-        a.p1_idx, a.p2_idx, b.p1_idx, b.p2_idx, value
-    )
+    constraint = AngleConstraint(a.p1_idx, a.p2_idx, b.p1_idx, b.p2_idx, value)
     if expression is not None:
         constraint.expression = expression
     return constraint
@@ -61,9 +59,7 @@ def radius_from_entity(sketch, arc_id, value):
 def diameter_from_entity(sketch, circle_id, value):
     reg = _reg(sketch)
     circle = reg.get_entity_object(circle_id)
-    return DiameterConstraint(
-        circle.center_idx, circle.radius_pt_idx, value
-    )
+    return DiameterConstraint(circle.center_idx, circle.radius_pt_idx, value)
 
 
 def perpendicular_from_lines(sketch, l1, l2):
@@ -80,8 +76,7 @@ def equal_length_from_entities(sketch, entity_ids):
     entities = [reg.get_entity_object(eid) for eid in entity_ids]
     base = entities[0]
     pairs = [
-        (base.p1_idx, base.p2_idx, e.p1_idx, e.p2_idx)
-        for e in entities[1:]
+        (base.p1_idx, base.p2_idx, e.p1_idx, e.p2_idx) for e in entities[1:]
     ]
     return EqualLengthConstraint(pairs)
 

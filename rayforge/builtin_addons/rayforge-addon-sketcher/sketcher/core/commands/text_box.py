@@ -65,9 +65,7 @@ class TextBoxCommand(SketchChangeCommand):
         text_box = TextBox(p_origin, p_width, p_height)
         entities = [bottom_line, right_line, top_line, left_line, text_box]
         constraints: list[Any] = [
-            AspectRatioConstraint(
-                p_origin, p_width, p_origin, p_height, 1.0
-            ),
+            AspectRatioConstraint(p_origin, p_width, p_origin, p_height, 1.0),
             ParallelogramConstraint(
                 p_origin, p_width, p_height, p4, user_visible=False
             ),
@@ -89,9 +87,7 @@ class TextBoxCommand(SketchChangeCommand):
         if self.add_cmd:
             return self.add_cmd._redo()
 
-        result = self.calculate_geometry(
-            self.origin, self.width, self.height
-        )
+        result = self.calculate_geometry(self.origin, self.width, self.height)
         if result is None:
             return
 
@@ -119,9 +115,7 @@ class TextBoxCommand(SketchChangeCommand):
         }
         self.text_box_id = add_cmd.add_entity_from_dict(text_box_dict)
         for constraint in result["constraints"]:
-            add_cmd.add_constraint(
-                constraint_ops.rebuild(constraint, pid_map)
-            )
+            add_cmd.add_constraint(constraint_ops.rebuild(constraint, pid_map))
         self.add_cmd = add_cmd
 
     def _do_undo(self) -> None:

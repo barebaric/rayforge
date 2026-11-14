@@ -10,6 +10,7 @@ from raygeo.sketch.constraints.radius import RadiusConstraint
 from raygeo.sketch.entities.arc import Arc
 from raygeo.sketch.entities.circle import Circle
 from raygeo.sketch.entities.line import Line
+
 from rayforge.core.undo.command import Command
 
 from .base import SketchChangeCommand
@@ -34,12 +35,12 @@ class CreateOrEditConstraintCommand(SketchChangeCommand):
         self,
         sketch: Sketch,
         entity: Any,
-        name: str = _("Add Constraint"),
+        name: str = _("Add Any"),
     ):
         super().__init__(sketch, name)
         self.entity = entity
-        self._existing_constraint: Constraint | None = None
-        self._created_constraint: Constraint | None = None
+        self._existing_constraint: Any | None = None
+        self._created_constraint: Any | None = None
         self._add_cmd: AddItemsCommand | None = None
 
     def _get_command_label(self, constraint: Any) -> str:
@@ -49,7 +50,7 @@ class CreateOrEditConstraintCommand(SketchChangeCommand):
             return _("Add Radius")
         if isinstance(constraint, DiameterConstraint):
             return _("Add Diameter")
-        return _("Add Constraint")
+        return _("Add Any")
 
     @staticmethod
     def get_constraint_for_entity(
@@ -119,9 +120,7 @@ class CreateOrEditConstraintCommand(SketchChangeCommand):
             start = registry.get_point(entity.start_idx)
             center = registry.get_point(entity.center_idx)
             if start and center:
-                radius = math.hypot(
-                    start[0] - center[0], start[1] - center[1]
-                )
+                radius = math.hypot(start[0] - center[0], start[1] - center[1])
                 value = initial_value if initial_value is not None else radius
                 return RadiusConstraint(
                     entity.center_idx, entity.start_idx, value
@@ -216,5 +215,3 @@ class CreateOrEditConstraintCommand(SketchChangeCommand):
         # rather than reverting to the initial default value.
         self.timestamp = next_command.timestamp
         return True
-
-

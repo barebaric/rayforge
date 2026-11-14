@@ -5,11 +5,11 @@ from raygeo.geo.shape.polygon import (
     get_polygon_closest_point,
     is_point_inside_polygon,
 )
-from sketcher.core import Sketch
-from sketcher.core.commands import OffsetCommand
 from raygeo.sketch.entities.circle import Circle
 from raygeo.sketch.entities.ellipse import Ellipse
 from raygeo.sketch.entities.polygon import Polygon
+from sketcher.core import Sketch
+from sketcher.core.commands import OffsetCommand
 
 
 def _circle_sketch():
@@ -68,7 +68,9 @@ def test_ellipse_offset_updates_in_place():
     cmd = OffsetCommand(sketch, [ellipse_id], 2.0)
     cmd.execute()
 
-    ellipses = [e for e in sketch.registry.entities() if isinstance(e, Ellipse)]
+    ellipses = [
+        e for e in sketch.registry.entities() if isinstance(e, Ellipse)
+    ]
     assert len(ellipses) == 1
     assert ellipses[0].id == ellipse_id
     rx_pt = sketch.registry.get_point(ellipses[0].radius_x_pt_idx)

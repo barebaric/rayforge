@@ -1,9 +1,9 @@
 import pytest
-from sketcher.core import Sketch
-from sketcher.core.commands import ChamferCommand
 from raygeo.sketch.constraints.collinear import CollinearConstraint
 from raygeo.sketch.constraints.equal_distance import EqualDistanceConstraint
 from raygeo.sketch.entities.line import Line
+from sketcher.core import Sketch
+from sketcher.core.commands import ChamferCommand
 
 # This is a constant from the implementation, let's use it for consistency
 DEFAULT_CHAMFER_DISTANCE = 10.0

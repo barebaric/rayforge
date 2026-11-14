@@ -3,9 +3,9 @@ from unittest.mock import MagicMock, patch
 
 import cairo
 import pytest
+from raygeo.sketch.entities.circle import Circle
 from sketcher.core.arrays import CircularArray, CircularArrayStrategy
 from sketcher.core.commands import CreateArrayCommand, EditArrayCommand
-from raygeo.sketch.entities.circle import Circle
 from sketcher.core.sketch import Sketch
 from sketcher.ui_gtk.tools import CircularArrayTool
 from sketcher.ui_gtk.tools.base import SketcherKey
@@ -282,7 +282,9 @@ def test_full_edit_flow_through_tool_does_not_collapse(
 
     sketch.solve()
 
-    circle = next(e for e in sketch.registry.entities() if isinstance(e, Circle))
+    circle = next(
+        e for e in sketch.registry.entities() if isinstance(e, Circle)
+    )
     center = sketch.registry.get_point(circle.center_idx)
 
     living = array.living_entity_ids(sketch.registry)

@@ -1,7 +1,6 @@
 import pytest
 from raygeo.sketch.constraints.distance import DistanceConstraint
 from raygeo.sketch.entities.line import Line
-
 from sketcher.core import Sketch
 from sketcher.core.commands import AddItemsCommand
 from sketcher.core.commands.items import RemoveItemsCommand

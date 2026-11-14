@@ -12,6 +12,16 @@ from typing import (
 import cairo
 from raygeo.geo import Matrix
 from raygeo.geo.types import Point as GeoPoint
+from raygeo.sketch.constraints.angle import AngleConstraint
+from raygeo.sketch.constraints.diameter import DiameterConstraint
+from raygeo.sketch.constraints.distance import DistanceConstraint
+from raygeo.sketch.constraints.drag import DragConstraint
+from raygeo.sketch.constraints.radius import RadiusConstraint
+from raygeo.sketch.entities.arc import Arc
+from raygeo.sketch.entities.bezier import Bezier
+from raygeo.sketch.entities.circle import Circle
+from raygeo.sketch.entities.line import Line
+from raygeo.sketch.entities.text_box import TextBox
 
 from ...core.commands import (
     CreateOrEditConstraintCommand,
@@ -19,12 +29,6 @@ from ...core.commands import (
     MoveEntitiesCommand,
     MovePointCommand,
 )
-from raygeo.sketch.constraints.drag import DragConstraint
-from raygeo.sketch.entities.arc import Arc
-from raygeo.sketch.entities.bezier import Bezier
-from raygeo.sketch.entities.circle import Circle
-from raygeo.sketch.entities.line import Line
-
 from ...core.commands.waypoint import enforce_waypoint_constraint
 from ...core.components import compute_constraint_components
 from ...core.entity_flags import WaypointType
@@ -74,7 +78,7 @@ class SelectTool(SnapMixin, SketchTool):
         self.drag_point_start_pos: GeoPoint | None = None
 
         # For dragging entities (lines/arcs)
-        self.dragged_entity: Entity | None = None
+        self.dragged_entity: Any | None = None
         self.drag_start_model_pos: GeoPoint | None = None
 
         # For dragging control points
@@ -163,7 +167,7 @@ class SelectTool(SnapMixin, SketchTool):
         # Shift+double click on entity to select all connected geometry
         if n_press == 2 and hit_type == "entity" and is_shift_pressed:
             logger.debug("Shift+double-click on entity detected.")
-            entity = cast(Entity, hit_obj)
+            entity = cast(Any, hit_obj)
             self.element.selection.select_connected_entities(
                 entity.id, self.element.sketch.registry
             )
@@ -193,7 +197,7 @@ class SelectTool(SnapMixin, SketchTool):
         # action, so returning True is correct.
         if n_press == 2 and hit_type == "entity":
             logger.debug("Double-click on entity detected.")
-            entity = cast(Entity, hit_obj)
+            entity = cast(Any, hit_obj)
             if self.element.request_array_edit(entity):
                 return True
             if isinstance(entity, (Arc, Line, Circle)):
@@ -207,7 +211,7 @@ class SelectTool(SnapMixin, SketchTool):
                         self.element, constraint=cmd.constraint
                     )
                 return True
-            elif isinstance(entity, TextBoxEntity):
+            elif isinstance(entity, TextBox):
                 text_tool = self.element.tools.get("text_box")
                 if isinstance(text_tool, TextBoxTool):
                     self.element.set_tool("text_box")
@@ -292,7 +296,7 @@ class SelectTool(SnapMixin, SketchTool):
             return False
 
         elif hit_type == "entity":
-            entity = cast(Entity, hit_obj)
+            entity = cast(Any, hit_obj)
             self.element.selection.select_entity(entity, is_multi)
             mx, my = self.element.hittester.screen_to_model(
                 world_x, world_y, self.element
@@ -364,9 +368,7 @@ class SelectTool(SnapMixin, SketchTool):
             if isinstance(bezier, Bezier):
                 start_offset = self.drag_cp_start_offset
                 end_offset = (
-                    bezier.cp1_offset
-                    if cp_index == 1
-                    else bezier.cp2_offset
+                    bezier.cp1_offset if cp_index == 1 else bezier.cp2_offset
                 )
                 if start_offset != end_offset:
                     # Pass the full snapshot (points + entities)
@@ -991,7 +993,7 @@ class SelectTool(SnapMixin, SketchTool):
         self._calculate_geometric_hops(pid)
 
     def _prepare_entity_drag(
-        self, entity: Entity, model_x: float, model_y: float
+        self, entity: Any, model_x: float, model_y: float
     ):
         """Sets up state for dragging an entity (or group of entities)."""
         self.dragged_entity = entity
@@ -1079,12 +1081,11 @@ class SelectTool(SnapMixin, SketchTool):
 
         # Capture Points
         self.drag_initial_positions = {
-            pt.id: (pt.x, pt.y)
-            for pt in self.element.sketch.registry.points()
+            pt.id: (pt.x, pt.y) for pt in self.element.sketch.registry.points()
         }
         self.drag_hold_positions = dict(self.drag_initial_positions)
 
-        # Capture Entity States
+        # Capture Any States
         self.drag_initial_entity_states = {}
         registry = self.element.sketch.registry
         for eid in registry.entity_ids():

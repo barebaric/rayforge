@@ -35,7 +35,9 @@ def _font_properties(sketch: Sketch, text_entity_id: EntityID) -> dict:
         "font_size": props.get(
             "font_size", entity.font_size if entity is not None else 10.0
         ),
-        "bold": props.get("bold", entity.bold if entity is not None else False),
+        "bold": props.get(
+            "bold", entity.bold if entity is not None else False
+        ),
         "italic": props.get(
             "italic", entity.italic if entity is not None else False
         ),
@@ -80,9 +82,7 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
         from raygeo.sketch.entities.point import SketchPoint
 
         return [
-            SketchPoint(
-                d["id"], d["x"], d["y"], d.get("fixed", False)
-            )
+            SketchPoint(d["id"], d["x"], d["y"], d.get("fixed", False))
             for d in self._removed_point_dicts
         ]
 
@@ -109,9 +109,7 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
 
                 is_target = False
                 if isinstance(constr, EqualLengthConstraint):
-                    member_ids = {
-                        pid for pair in constr.pairs for pid in pair
-                    }
+                    member_ids = {pid for pair in constr.pairs for pid in pair}
                     if endpoints[0] in member_ids and (
                         endpoints[1] in member_ids
                     ):
@@ -302,22 +300,21 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
         self._removed_entity_dict = registry.entity_to_dict(entity.id)
 
         if self.aspect_ratio_constraint_idx is not None:
-            constr = self.sketch.constraints[
-                self.aspect_ratio_constraint_idx
-            ]
+            constr = self.sketch.constraints[self.aspect_ratio_constraint_idx]
             if constr not in self._removed_constraints:
                 self._removed_constraints.append(constr)
 
         for constr in self.sketch.constraints:
             if constr in self._removed_constraints:
                 continue
-            if not constr.get_referenced_point_ids().isdisjoint(removed_point_ids):
+            if not constr.get_referenced_point_ids().isdisjoint(
+                removed_point_ids
+            ):
                 self._removed_constraints.append(constr)
 
         self.sketch.remove_constraints(self._removed_constraints)
         registry.remove_entities(
-            [entity.id]
-            + [d["id"] for d in self._removed_entity_dicts]
+            [entity.id] + [d["id"] for d in self._removed_entity_dicts]
         )
         registry.remove_points(list(removed_point_ids))
 

@@ -87,8 +87,10 @@ def build_boolean_regions(
 
     for eid in entity_ids:
         entity = registry.get_entity_object(eid)
-        if entity is None or entity.construction or (
-            sketch.flags.is_array_copy(eid)
+        if (
+            entity is None
+            or entity.construction
+            or (sketch.flags.is_array_copy(eid))
         ):
             continue
         if entity.type_name() == "text_box":

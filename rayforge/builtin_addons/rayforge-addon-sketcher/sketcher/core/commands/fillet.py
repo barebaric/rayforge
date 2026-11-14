@@ -145,17 +145,11 @@ class FilletCommand(SketchChangeCommand):
         fillet_arc = Arc(p_tan1, p_tan2, p_center, clockwise=is_cw)
 
         added_constraints = [
-            TangentConstraint(
-                other1_pid, p_tan1, p_center, p_tan1
-            ),
-            TangentConstraint(
-                other2_pid, p_tan2, p_center, p_tan1
-            ),
+            TangentConstraint(other1_pid, p_tan1, p_center, p_tan1),
+            TangentConstraint(other2_pid, p_tan2, p_center, p_tan1),
             CollinearConstraint(other1_pid, corner_pid, p_tan1),
             CollinearConstraint(other2_pid, corner_pid, p_tan2),
-            EqualDistanceConstraint(
-                corner_pid, p_tan1, corner_pid, p_tan2
-            ),
+            EqualDistanceConstraint(corner_pid, p_tan1, corner_pid, p_tan2),
         ]
 
         return {

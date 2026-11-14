@@ -1,13 +1,11 @@
 from unittest.mock import MagicMock, patch
-from raygeo.sketch.entities.point import SketchPoint
 
 import pytest
+from raygeo.sketch.entities.point import SketchPoint
 from sketcher.core.commands import (
     RectangleCommand,
     RectanglePreviewState,
 )
-from typing import Any
-
 from sketcher.core.snap import SnapLineType
 from sketcher.ui_gtk.tools import RectangleTool
 
@@ -229,7 +227,9 @@ def test_degenerate_rectangle_aborts_creation(rect_tool, mock_element):
         p_end_id=1,
         preview_ids={"p2": 2, "line1": 10},
     )
-    mock_element.sketch.registry.get_point.return_value = SketchPoint(0, 10, 20)
+    mock_element.sketch.registry.get_point.return_value = SketchPoint(
+        0, 10, 20
+    )
     mock_element.sketch.remove_point_if_unused = MagicMock()
 
     # --- Simulate second click at nearly same spot ---

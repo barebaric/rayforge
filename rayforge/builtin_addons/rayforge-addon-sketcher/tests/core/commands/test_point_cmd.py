@@ -116,7 +116,7 @@ def test_move_point_command_coalesce_with_invalid(sketch):
 def test_move_point_command_position_lookup(sketch):
     """The command reads the point position from the registry."""
     p_id = sketch.add_point(10.0, 20.0)
-    cmd = MovePointCommand(sketch, p_id, (10.0, 20.0), (30.0, 40.0))
+    MovePointCommand(sketch, p_id, (10.0, 20.0), (30.0, 40.0))
 
     position = sketch.registry.get_point(p_id)
 
@@ -126,7 +126,7 @@ def test_move_point_command_position_lookup(sketch):
 
 def test_move_point_command_get_point_missing(sketch):
     """A missing point yields no position."""
-    cmd = MovePointCommand(sketch, 9999, (0.0, 0.0), (10.0, 10.0))
+    MovePointCommand(sketch, 9999, (0.0, 0.0), (10.0, 10.0))
 
     position = sketch.registry.get_point(9999)
 

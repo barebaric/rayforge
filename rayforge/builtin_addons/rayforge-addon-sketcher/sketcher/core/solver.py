@@ -106,9 +106,7 @@ class Solver:
                 continue
             for constraint in self.constraints:
                 constrains = getattr(constraint, "constrains_radius", None)
-                if constrains is not None and constrains(
-                    self.registry, eid
-                ):
+                if constrains is not None and constrains(self.registry, eid):
                     constrained.append(eid)
                     break
         return constrained
