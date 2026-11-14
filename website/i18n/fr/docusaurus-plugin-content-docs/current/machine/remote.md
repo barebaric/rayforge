@@ -23,10 +23,10 @@ reconnexion resynchronise la progression exactement.
 
 ## Configurer l'hôte de l'appareil
 
-1. Installez raydriver sur l'hôte de l'appareil : `pip install raydriver` (ajoutez `[daemon]` pour
-   la découverte réseau).
+1. Installez raydriver sur l'hôte de l'appareil : `pip install raydriver`. La découverte réseau est
+   incluse.
 2. Exécutez `raydriver daemon add /dev/ttyUSB0` (utilisez le port série de votre machine ;
-   `raydriver scan` les liste). Cela crée la configuration avec un jeton généré et enregistre
+   `raydriver scan` les liste). Cela crée la configuration avec un **jeton** généré et enregistre
    l'appareil. Ajoutez `--protocol`/`--baudrate` pour un firmware non standard.
 3. Exécutez `raydriver daemon install` pour installer et démarrer le service d'arrière-plan (systemd
    sous Linux, launchd sous macOS, une tâche de connexion sous Windows), ou exécutez
@@ -39,15 +39,43 @@ Consultez le
 [guide du démon raydriver](https://github.com/barebaric/raydriver/blob/main/docs/daemon.md) pour la
 référence complète.
 
+### Obtenir le jeton
+
+Le jeton est le secret partagé que Rayforge utilise pour se connecter. Il est généré lors de l'ajout
+du premier appareil et affiché une seule fois à ce moment. Pour l'afficher à nouveau, exécutez ceci
+**sur l'hôte de l'appareil** :
+
+```bash
+raydriver daemon status
+```
+
+Copiez la valeur de `token:` — vous la collerez dans Rayforge ci-dessous.
+
 ## Connecter Rayforge
 
-- L'assistant de machine découvre les démons sur le réseau et liste leurs appareils ; choisissez-en
-  un pour l'ajouter.
-- Ou ajoutez une machine manuellement avec le pilote **Remote machine (raydriver)** : saisissez le
-  nom d'hôte, le port et le jeton du démon, puis choisissez l'appareil dans la liste lue depuis le
-  démon.
-- Le sondage fonctionne via la connexion distante, l'assistant peut donc identifier du matériel qui
-  n'est pas connecté à votre ordinateur.
+L'assistant de machine découvre les démons sur le réseau et liste leurs appareils ; choisissez-en un
+pour l'ajouter. Sinon, ajoutez une machine manuellement avec le pilote **Remote machine
+(raydriver)** et saisissez le nom d'hôte, le port et le jeton du démon ; puis choisissez l'appareil
+dans la liste lue depuis le démon :
+
+![Assistant — connexion distante](/screenshots/remote-wizard-connect.webp)
+
+- **Nom d'hôte / port du démon** — l'ordinateur qui exécute le démon (port par défaut `8765`).
+- **Jeton** — la valeur de `raydriver daemon status` sur l'hôte de l'appareil.
+- **Appareil** — la machine sur le démon, lue depuis sa liste d'appareils une fois le nom d'hôte et
+  le jeton renseignés.
+- Les champs TLS n'apparaissent que pour un démon atteint via le réseau ; un démon sur le même
+  ordinateur (`127.0.0.1`) ne nécessite pas de certificat.
+
+Le sondage fonctionne via la connexion distante, l'assistant peut donc identifier du matériel qui
+n'est pas connecté à votre ordinateur.
+
+## Paramètres de la machine
+
+Les paramètres d'une machine distante affichent le point de terminaison du démon et l'appareil au
+lieu d'un port série local :
+
+![Paramètres de la machine — machine distante](/screenshots/remote-settings.webp)
 
 ## Jobs et reconnexions
 

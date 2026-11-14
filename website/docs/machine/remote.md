@@ -20,10 +20,9 @@ even if Rayforge disconnects; reconnecting resyncs progress exactly.
 
 ## Set up the device host
 
-1. Install raydriver on the device host: `pip install raydriver` (add `[daemon]` for network
-   discovery).
+1. Install raydriver on the device host: `pip install raydriver`. Network discovery is included.
 2. Run `raydriver daemon add /dev/ttyUSB0` (use your machine's serial port; `raydriver scan` lists
-   them). This creates the config with a generated token and registers the device. Add
+   them). This creates the config with a generated **token** and registers the device. Add
    `--protocol`/`--baudrate` for non-default firmware.
 3. Run `raydriver daemon install` to install and start the background service (systemd on Linux,
    launchd on macOS, a logon task on Windows), or run `raydriver daemon` in the foreground.
@@ -34,13 +33,40 @@ even if Rayforge disconnects; reconnecting resyncs progress exactly.
 See the [raydriver daemon guide](https://github.com/barebaric/raydriver/blob/main/docs/daemon.md)
 for the full reference.
 
+### Get the token
+
+The token is the shared secret Rayforge uses to connect. It is generated when you add the first
+device and printed once at that point. To print it again, run this **on the device host**:
+
+```bash
+raydriver daemon status
+```
+
+Copy the `token:` value — you will paste it into Rayforge below.
+
 ## Connect Rayforge
 
-- The machine wizard discovers daemons on the network and lists their devices; pick one to add it.
-- Or add a machine manually with the **Remote machine (raydriver)** driver: enter the daemon
-  hostname, port and token, then choose the device from the list read from the daemon.
-- Probing works over the remote connection, so the wizard can identify hardware that is not attached
-  to your computer.
+The machine wizard discovers daemons on the network and lists their devices; pick one to add it.
+Alternatively, add a machine manually with the **Remote machine (raydriver)** driver and enter the
+daemon hostname, port and token, then choose the device from the list read from the daemon:
+
+![Wizard — remote connection](/screenshots/remote-wizard-connect.webp)
+
+- **Daemon hostname / port** — the computer running the daemon (default port `8765`).
+- **Token** — the value from `raydriver daemon status` on the device host.
+- **Device** — the machine on the daemon, read from its device list once the hostname and token are
+  set.
+- The TLS fields only appear for a daemon reached over the network; a daemon on the same computer
+  (`127.0.0.1`) needs no certificate.
+
+Probing works over the remote connection, so the wizard can identify hardware that is not attached
+to your computer.
+
+## Machine settings
+
+A remote machine's settings show the daemon endpoint and device instead of a local serial port:
+
+![Machine settings — remote machine](/screenshots/remote-settings.webp)
 
 ## Jobs and reconnects
 

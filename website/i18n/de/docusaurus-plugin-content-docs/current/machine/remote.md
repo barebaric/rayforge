@@ -23,12 +23,12 @@ Wiederverbinden wird der Fortschritt exakt synchronisiert.
 
 ## Geräte-Host einrichten
 
-1. Installieren Sie raydriver auf dem Geräte-Host: `pip install raydriver` (mit `[daemon]` für die
-   Netzwerk-Erkennung).
+1. Installieren Sie raydriver auf dem Geräte-Host: `pip install raydriver`. Die Netzwerk-Erkennung
+   ist enthalten.
 2. Führen Sie `raydriver daemon add /dev/ttyUSB0` aus (verwenden Sie den seriellen Port Ihrer
    Maschine; `raydriver scan` listet sie auf). Dies legt die Konfiguration mit einem generierten
-   Token an und registriert das Gerät. Für nicht standardmäßige Firmware `--protocol`/`--baudrate`
-   ergänzen.
+   **Token** an und registriert das Gerät. Für nicht standardmäßige Firmware
+   `--protocol`/`--baudrate` ergänzen.
 3. Führen Sie `raydriver daemon install` aus, um den Hintergrunddienst zu installieren und zu
    starten (systemd unter Linux, launchd unter macOS, eine Anmelde-Aufgabe unter Windows), oder
    starten Sie `raydriver daemon` im Vordergrund.
@@ -39,15 +39,43 @@ Wiederverbinden wird der Fortschritt exakt synchronisiert.
 Die vollständige Referenz finden Sie im
 [raydriver-Daemon-Handbuch](https://github.com/barebaric/raydriver/blob/main/docs/daemon.md).
 
+### Token abrufen
+
+Das Token ist das gemeinsame Geheimnis, mit dem sich Rayforge verbindet. Es wird beim Hinzufügen des
+ersten Geräts generiert und einmalig ausgegeben. Um es erneut auszugeben, führen Sie dies **auf dem
+Geräte-Host** aus:
+
+```bash
+raydriver daemon status
+```
+
+Kopieren Sie den Wert hinter `token:` — Sie fügen ihn unten in Rayforge ein.
+
 ## Rayforge verbinden
 
-- Der Maschinen-Assistent erkennt Daemons im Netzwerk und listet ihre Geräte; wählen Sie eines aus,
-  um es hinzuzufügen.
-- Oder fügen Sie eine Maschine manuell mit dem Treiber **Remote machine (raydriver)** hinzu: Geben
-  Sie Daemon-Hostname, Port und Token ein und wählen Sie dann das Gerät aus der Liste, die vom
-  Daemon gelesen wird.
-- Das Probing funktioniert über die Remote-Verbindung, sodass der Assistent Hardware identifizieren
-  kann, die nicht an Ihrem Computer angeschlossen ist.
+Der Maschinen-Assistent erkennt Daemons im Netzwerk und listet ihre Geräte; wählen Sie eines aus, um
+es hinzuzufügen. Alternativ fügen Sie eine Maschine manuell mit dem Treiber **Remote machine
+(raydriver)** hinzu und geben Daemon-Hostname, Port und Token ein; wählen Sie dann das Gerät aus der
+Liste, die vom Daemon gelesen wird:
+
+![Assistent — Remote-Verbindung](/screenshots/remote-wizard-connect.webp)
+
+- **Daemon-Hostname / Port** — der Computer, auf dem der Daemon läuft (Standardport `8765`).
+- **Token** — der Wert aus `raydriver daemon status` auf dem Geräte-Host.
+- **Gerät** — die Maschine am Daemon, aus dessen Geräteliste gelesen, sobald Hostname und Token
+  gesetzt sind.
+- Die TLS-Felder erscheinen nur für einen Daemon im Netzwerk; ein Daemon auf demselben Computer
+  (`127.0.0.1`) benötigt kein Zertifikat.
+
+Das Probing funktioniert über die Remote-Verbindung, sodass der Assistent Hardware identifizieren
+kann, die nicht an Ihrem Computer angeschlossen ist.
+
+## Maschinen-Einstellungen
+
+Die Einstellungen einer Remote-Maschine zeigen den Daemon-Endpunkt und das Gerät statt eines lokalen
+seriellen Ports:
+
+![Maschinen-Einstellungen — Remote-Maschine](/screenshots/remote-settings.webp)
 
 ## Jobs und Wiederverbindungen
 

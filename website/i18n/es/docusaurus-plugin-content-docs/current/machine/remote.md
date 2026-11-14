@@ -23,10 +23,10 @@ sincroniza exactamente.
 
 ## Configurar el host del dispositivo
 
-1. Instale raydriver en el host del dispositivo: `pip install raydriver` (añada `[daemon]` para el
-   descubrimiento en red).
+1. Instale raydriver en el host del dispositivo: `pip install raydriver`. El descubrimiento en red
+   está incluido.
 2. Ejecute `raydriver daemon add /dev/ttyUSB0` (use el puerto serie de su máquina; `raydriver scan`
-   los lista). Esto crea la configuración con un token generado y registra el dispositivo. Añada
+   los lista). Esto crea la configuración con un **token** generado y registra el dispositivo. Añada
    `--protocol`/`--baudrate` para firmware no predeterminado.
 3. Ejecute `raydriver daemon install` para instalar e iniciar el servicio en segundo plano (systemd
    en Linux, launchd en macOS, una tarea de inicio de sesión en Windows), o ejecute
@@ -39,15 +39,44 @@ Consulte la
 [guía del demonio de raydriver](https://github.com/barebaric/raydriver/blob/main/docs/daemon.md)
 para la referencia completa.
 
+### Obtener el token
+
+El token es el secreto compartido que Rayforge usa para conectarse. Se genera al añadir el primer
+dispositivo y se imprime una vez en ese momento. Para volver a imprimirlo, ejecute esto **en el host
+del dispositivo**:
+
+```bash
+raydriver daemon status
+```
+
+Copie el valor de `token:` — lo pegará en Rayforge más abajo.
+
 ## Conectar Rayforge
 
-- El asistente de máquinas descubre los demonios en la red y lista sus dispositivos; elija uno para
-  añadirlo.
-- O añada una máquina manualmente con el controlador **Remote machine (raydriver)**: introduzca el
-  nombre de host, el puerto y el token del demonio, y luego elija el dispositivo de la lista que se
-  lee del demonio.
-- El sondeo funciona a través de la conexión remota, por lo que el asistente puede identificar
-  hardware que no está conectado a su ordenador.
+El asistente de máquinas descubre los demonios en la red y lista sus dispositivos; elija uno para
+añadirlo. Alternativamente, añada una máquina manualmente con el controlador **Remote machine
+(raydriver)** e introduzca el nombre de host, el puerto y el token del demonio; luego elija el
+dispositivo de la lista que se lee del demonio:
+
+![Asistente — conexión remota](/screenshots/remote-wizard-connect.webp)
+
+- **Nombre de host / puerto del demonio** — el ordenador que ejecuta el demonio (puerto por defecto
+  `8765`).
+- **Token** — el valor de `raydriver daemon status` en el host del dispositivo.
+- **Dispositivo** — la máquina en el demonio, leída de su lista de dispositivos una vez configurados
+  el nombre de host y el token.
+- Los campos TLS solo aparecen para un demonio alcanzado por la red; un demonio en el mismo
+  ordenador (`127.0.0.1`) no necesita certificado.
+
+El sondeo funciona a través de la conexión remota, por lo que el asistente puede identificar
+hardware que no está conectado a su ordenador.
+
+## Ajustes de la máquina
+
+Los ajustes de una máquina remota muestran el endpoint del demonio y el dispositivo en lugar de un
+puerto serie local:
+
+![Ajustes de la máquina — máquina remota](/screenshots/remote-settings.webp)
 
 ## Trabajos y reconexiones
 
