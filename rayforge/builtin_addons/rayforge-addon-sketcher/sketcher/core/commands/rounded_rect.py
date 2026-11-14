@@ -14,6 +14,8 @@ from raygeo.sketch.constraints.tangent import TangentConstraint
 from raygeo.sketch.constraints.vertical import VerticalConstraint
 from raygeo.sketch.entities.arc import Arc
 
+from ..entity_ops import clone_entity
+from .. import constraint_ops
 from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData
@@ -250,9 +252,8 @@ class RoundedRectCommand(SketchChangeCommand):
         return start_p[0] + sign_x * size, start_p[1] + sign_y * size
 
     @staticmethod
+    @staticmethod
     def calculate_geometry(
-        sketch,
-        add_cmd,
         x1: float,
         y1: float,
         x2: float,
@@ -264,18 +265,15 @@ class RoundedRectCommand(SketchChangeCommand):
         center_on_start: bool = False,
         constrain_square: bool = False,
     ) -> dict[str, Any] | None:
-        """Builds the rounded rectangle geometry through ``add_cmd``.
-
-        When center_on_start is True the start point (x1, y1) is the
-        shape's center and the mouse point defines the extent, so the
-        rounded rectangle is drawn symmetrically around the start point.
-        When constrain_square is True the mouse point is adjusted so both
-        extents are equal, keeping the start point fixed.
-        """
+        """Pure geometry of the rounded rectangle: points, line/arc
+        entities and constraints with temporary sequential point ids.
+        Returns None for a degenerate rectangle."""
         from raygeo.sketch.constraints.equal_length import (
             EqualLengthConstraint,
         )
+        from raygeo.sketch.constraints.radius import RadiusConstraint
         from raygeo.sketch.entities.line import Line
+        from raygeo.sketch.entities.point import SketchPoint
 
         if constrain_square:
             size = min(abs(x2 - x1), abs(y2 - y1))
@@ -308,168 +306,94 @@ class RoundedRectCommand(SketchChangeCommand):
             "c3": (x2 - sx * radius, y2 - sy * radius),
             "c4": (x1 + sx * radius, y2 - sy * radius),
         }
-        points = {
-            name: add_cmd.add_point(px, py)
-            for name, (px, py) in coords.items()
-        }
-
-        is_cw = sx * sy < 0
-        entities = [
-            add_cmd.add_entity(Line(points["t1"], points["t2"])),
-            add_cmd.add_entity(Line(points["t3"], points["t4"])),
-            add_cmd.add_entity(Line(points["t5"], points["t6"])),
-            add_cmd.add_entity(Line(points["t7"], points["t8"])),
-            add_cmd.add_entity(
-                Arc(
-                    points["t8"],
-                    points["t1"],
-                    points["c1"],
-                    clockwise=is_cw,
-                )
-            ),
-            add_cmd.add_entity(
-                Arc(
-                    points["t2"],
-                    points["t3"],
-                    points["c2"],
-                    clockwise=is_cw,
-                )
-            ),
-            add_cmd.add_entity(
-                Arc(
-                    points["t4"],
-                    points["t5"],
-                    points["c3"],
-                    clockwise=is_cw,
-                )
-            ),
-            add_cmd.add_entity(
-                Arc(
-                    points["t6"],
-                    points["t7"],
-                    points["c4"],
-                    clockwise=is_cw,
-                )
-            ),
+        names = list(coords)
+        pid = {name: i for i, name in enumerate(names)}
+        points = [
+            SketchPoint(pid[n], coords[n][0], coords[n][1]) for n in names
         ]
 
-        constraints = [
-            HorizontalConstraint(points["t1"], points["t2"]),
-            VerticalConstraint(points["t3"], points["t4"]),
-            HorizontalConstraint(points["t5"], points["t6"]),
-            VerticalConstraint(points["t7"], points["t8"]),
-            {
-                "type": "TangentConstraint",
-                "line_id": entities[0],
-                "shape_id": entities[4],
-            },
-            {
-                "type": "TangentConstraint",
-                "line_id": entities[3],
-                "shape_id": entities[4],
-            },
-            {
-                "type": "TangentConstraint",
-                "line_id": entities[0],
-                "shape_id": entities[5],
-            },
-            {
-                "type": "TangentConstraint",
-                "line_id": entities[1],
-                "shape_id": entities[5],
-            },
-            {
-                "type": "TangentConstraint",
-                "line_id": entities[1],
-                "shape_id": entities[6],
-            },
-            {
-                "type": "TangentConstraint",
-                "line_id": entities[2],
-                "shape_id": entities[6],
-            },
-            {
-                "type": "TangentConstraint",
-                "line_id": entities[2],
-                "shape_id": entities[7],
-            },
-            {
-                "type": "TangentConstraint",
-                "line_id": entities[3],
-                "shape_id": entities[7],
-            },
-            {
-                "type": "EqualLengthConstraint",
-                "entity_ids": entities[4:],
-            },
+        is_cw = sx * sy < 0
+        lines = [
+            Line(pid["t1"], pid["t2"]),
+            Line(pid["t3"], pid["t4"]),
+            Line(pid["t5"], pid["t6"]),
+            Line(pid["t7"], pid["t8"]),
+        ]
+        arcs = [
+            Arc(pid["t8"], pid["t1"], pid["c1"], clockwise=is_cw),
+            Arc(pid["t2"], pid["t3"], pid["c2"], clockwise=is_cw),
+            Arc(pid["t4"], pid["t5"], pid["c3"], clockwise=is_cw),
+            Arc(pid["t6"], pid["t7"], pid["c4"], clockwise=is_cw),
+        ]
+        entities = lines + arcs
+
+        constraints: list[Any] = [
+            HorizontalConstraint(pid["t1"], pid["t2"]),
+            VerticalConstraint(pid["t3"], pid["t4"]),
+            HorizontalConstraint(pid["t5"], pid["t6"]),
+            VerticalConstraint(pid["t7"], pid["t8"]),
+        ]
+        for li, ai in [
+            (0, 0), (3, 0), (0, 1), (1, 1),
+            (1, 2), (2, 2), (2, 3), (3, 3),
+        ]:
+            ln, arc = lines[li], arcs[ai]
+            constraints.append(
+                TangentConstraint(
+                    ln.p1_idx, ln.p2_idx, arc.center_idx, arc.start_idx
+                )
+            )
+        constraints.append(
+            EqualLengthConstraint(
+                [
+                    (pid["c1"], pid["t8"], pid["c2"], pid["t2"]),
+                    (pid["c1"], pid["t8"], pid["c3"], pid["t4"]),
+                    (pid["c1"], pid["t8"], pid["c4"], pid["t6"]),
+                ]
+            )
+        )
+        constraints += [
             EqualDistanceConstraint(
-                points["c1"],
-                points["t8"],
-                points["c1"],
-                points["t1"],
+                pid["c1"], pid["t8"], pid["c1"], pid["t1"]
             ),
             EqualDistanceConstraint(
-                points["c2"],
-                points["t2"],
-                points["c2"],
-                points["t3"],
+                pid["c2"], pid["t2"], pid["c2"], pid["t3"]
             ),
             EqualDistanceConstraint(
-                points["c3"],
-                points["t4"],
-                points["c3"],
-                points["t5"],
+                pid["c3"], pid["t4"], pid["c3"], pid["t5"]
             ),
             EqualDistanceConstraint(
-                points["c4"],
-                points["t6"],
-                points["c4"],
-                points["t7"],
+                pid["c4"], pid["t6"], pid["c4"], pid["t7"]
             ),
         ]
 
         top_edge_y = min(y1, y2)
         right_edge_x = max(x1, x2)
-
         if top_edge_y == y1:
-            top_edge_p1 = points["t1"]
-            top_edge_p2 = points["t2"]
+            top_edge_p1, top_edge_p2 = pid["t1"], pid["t2"]
         else:
-            top_edge_p1 = points["t5"]
-            top_edge_p2 = points["t6"]
-
+            top_edge_p1, top_edge_p2 = pid["t5"], pid["t6"]
         if right_edge_x == x2:
-            right_edge_p1 = points["t3"]
-            right_edge_p2 = points["t4"]
+            right_edge_p1, right_edge_p2 = pid["t3"], pid["t4"]
         else:
-            right_edge_p1 = points["t7"]
-            right_edge_p2 = points["t8"]
-
+            right_edge_p1, right_edge_p2 = pid["t7"], pid["t8"]
         if fixed_width is not None:
             constraints.append(
                 DistanceConstraint(top_edge_p1, top_edge_p2, fixed_width)
             )
-
         if fixed_height is not None:
             constraints.append(
                 DistanceConstraint(right_edge_p1, right_edge_p2, fixed_height)
             )
-
         if fixed_radius is not None:
             constraints.append(
-                {
-                    "type": "RadiusConstraint",
-                    "entity_id": entities[4],
-                    "value": fixed_radius,
-                }
+                RadiusConstraint(pid["c1"], pid["t8"], fixed_radius)
             )
 
-        for constraint in constraints:
-            add_cmd.add_constraint(constraint)
-
         return {
-            "point_ids": points,
+            "points": points,
             "entities": entities,
+            "constraints": constraints,
         }
 
     @staticmethod
@@ -758,10 +682,7 @@ class RoundedRectCommand(SketchChangeCommand):
         if start_p is None:
             return
 
-        add_cmd = AddItemsCommand(self.sketch, "")
         result = self.calculate_geometry(
-            self.sketch,
-            add_cmd,
             start_p[0],
             start_p[1],
             self.end_pos[0],
@@ -777,6 +698,18 @@ class RoundedRectCommand(SketchChangeCommand):
             if self.is_start_temp:
                 self.sketch.remove_point_if_unused(self.start_pid)
             return
+
+        add_cmd = AddItemsCommand(self.sketch, "")
+        pid_map = {
+            point.id: add_cmd.add_point(point.x, point.y)
+            for point in result["points"]
+        }
+        for entity in result["entities"]:
+            add_cmd.add_entity(clone_entity(reg, entity, pid_map))
+        for constraint in result["constraints"]:
+            add_cmd.add_constraint(
+                constraint_ops.rebuild(constraint, pid_map)
+            )
 
         # Unlike Rectangle, RoundedRect doesn't use the start_pid in
         # its final geometry, so a temporary start point is removed.

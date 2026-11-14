@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 from raygeo.sketch.constraints.horizontal import HorizontalConstraint
 from raygeo.sketch.constraints.vertical import VerticalConstraint
 from raygeo.sketch.entities.line import Line
+from raygeo.sketch.entities.point import SketchPoint
 
 from .base import SketchChangeCommand
 from .items import AddItemsCommand
@@ -66,48 +67,101 @@ class GridCommand(SketchChangeCommand):
                 point_ids.append(add_point(x, y))
         return point_ids
 
+    @staticmethod
+    def calculate_geometry(
+        rows: int,
+        cols: int,
+        origin: tuple[float, float],
+        cell_width: float,
+        cell_height: float,
+        construction: bool = False,
+    ) -> dict | None:
+        """Pure geometry of the grid: points, line entities and
+        axis constraints, with temporary sequential point ids. Returns
+        None for invalid parameters."""
+        if rows < 1 or cols < 1:
+            return None
+        if cell_width <= 0 or cell_height <= 0:
+            return None
+
+        nrows, ncols = rows + 1, cols + 1
+        ox, oy = origin
+        points: list[SketchPoint] = []
+        for row in range(nrows):
+            for col in range(ncols):
+                points.append(
+                    SketchPoint(
+                        row * ncols + col,
+                        ox + col * cell_width,
+                        oy + row * cell_height,
+                    )
+                )
+
+        def pid(row: int, col: int) -> int:
+            return row * ncols + col
+
+        entities: list[Line] = []
+        constraints: list = []
+        for row in range(nrows):
+            for col in range(ncols - 1):
+                a, b = pid(row, col), pid(row, col + 1)
+                entities.append(Line(a, b, construction=construction))
+                constraints.append(HorizontalConstraint(a, b))
+        for col in range(ncols):
+            for row in range(nrows - 1):
+                a, b = pid(row, col), pid(row + 1, col)
+                entities.append(Line(a, b, construction=construction))
+                constraints.append(VerticalConstraint(a, b))
+
+        return {
+            "points": points,
+            "entities": entities,
+            "constraints": constraints,
+        }
+
     def _do_execute(self) -> None:
         if self.add_cmd:
             return self.add_cmd._redo()
 
-        add_cmd = AddItemsCommand(self.sketch, "")
-        point_ids = self.grid_point_ids(
+        geometry = self.calculate_geometry(
             self.rows,
             self.cols,
             self.origin,
             self.cell_width,
             self.cell_height,
-            add_cmd.add_point,
+            self.construction,
         )
-        if point_ids is None:
+        if geometry is None:
             return
 
-        rows = self.rows + 1
-        cols = self.cols + 1
-
-        def get_point_id(row: int, col: int) -> int:
-            return point_ids[row * cols + col]
-
-        for row in range(rows):
-            for col in range(cols - 1):
-                p1_id = get_point_id(row, col)
-                p2_id = get_point_id(row, col + 1)
-                add_cmd.add_entity(
-                    Line(p1_id, p2_id, construction=self.construction)
+        add_cmd = AddItemsCommand(self.sketch, "")
+        id_map: dict[int, int] = {}
+        for point in geometry["points"]:
+            id_map[point.id] = add_cmd.add_point(point.x, point.y)
+        for entity in geometry["entities"]:
+            add_cmd.add_entity(
+                Line(
+                    id_map[entity.p1_idx],
+                    id_map[entity.p2_idx],
+                    construction=entity.construction,
                 )
-                add_cmd.add_constraint(HorizontalConstraint(p1_id, p2_id))
-
-        for col in range(cols):
-            for row in range(rows - 1):
-                p1_id = get_point_id(row, col)
-                p2_id = get_point_id(row + 1, col)
-                add_cmd.add_entity(
-                    Line(p1_id, p2_id, construction=self.construction)
+            )
+        for constraint in geometry["constraints"]:
+            if isinstance(constraint, HorizontalConstraint):
+                add_cmd.add_constraint(
+                    HorizontalConstraint(
+                        id_map[constraint.p1], id_map[constraint.p2]
+                    )
                 )
-                add_cmd.add_constraint(VerticalConstraint(p1_id, p2_id))
+            else:
+                add_cmd.add_constraint(
+                    VerticalConstraint(
+                        id_map[constraint.p1], id_map[constraint.p2]
+                    )
+                )
 
         self.add_cmd = add_cmd
-        self._grid_pids = point_ids
+        self._grid_pids = list(id_map.values())
 
     def _do_undo(self) -> None:
         if self.add_cmd:
