@@ -39,6 +39,12 @@ class AddItemsCommand(SketchChangeCommand):
         for constraint in constraints or []:
             self.add_constraint(constraint)
 
+    def points(self) -> list:
+        return [
+            self.sketch.registry.get_point_object(pid)
+            for pid in self.point_ids
+        ]
+
     def entities(self) -> list:
         return [
             self.sketch.registry.get_entity_object(eid)
