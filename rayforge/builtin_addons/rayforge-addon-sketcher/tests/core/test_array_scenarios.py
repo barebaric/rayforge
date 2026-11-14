@@ -197,7 +197,7 @@ def test_radius_dimension_redistributes_members(app_flow):
 
     before = member_shapes()
 
-    rc.value = 60.0
+    rc.set_value(60.0)
     sketch.solve()
 
     # The circle now has the new radius.

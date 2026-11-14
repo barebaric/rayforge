@@ -62,27 +62,27 @@ def _map(constraint: Any, pid_map: dict[int, int]) -> Any:
         return type(constraint)(
             _pid(constraint.p1, pid_map),
             _pid(constraint.p2, pid_map),
-            constraint.user_visible(),
+            constraint.user_visible,
         )
     if isinstance(constraint, CoincidentConstraint):
         return CoincidentConstraint(
             _pid(constraint.p1, pid_map),
             _pid(constraint.p2, pid_map),
-            constraint.user_visible(),
+            constraint.user_visible,
         )
     if isinstance(constraint, CollinearConstraint):
         return CollinearConstraint(
             _pid(constraint.p1, pid_map),
             _pid(constraint.p2, pid_map),
             _pid(constraint.p3, pid_map),
-            constraint.user_visible(),
+            constraint.user_visible,
         )
     if isinstance(constraint, DistanceConstraint):
         return DistanceConstraint(
             _pid(constraint.p1, pid_map),
             _pid(constraint.p2, pid_map),
             constraint.value,
-            constraint.user_visible(),
+            constraint.user_visible,
         )
     if isinstance(constraint, AngleConstraint):
         return AngleConstraint(
@@ -93,7 +93,7 @@ def _map(constraint: Any, pid_map: dict[int, int]) -> Any:
             constraint.value,
             constraint.e1_far,
             constraint.e2_far,
-            constraint.user_visible(),
+            constraint.user_visible,
         )
     if isinstance(constraint, AspectRatioConstraint):
         return AspectRatioConstraint(
@@ -102,21 +102,21 @@ def _map(constraint: Any, pid_map: dict[int, int]) -> Any:
             _pid(constraint.p3, pid_map),
             _pid(constraint.p4, pid_map),
             constraint.ratio,
-            constraint.user_visible(),
+            constraint.user_visible,
         )
     if isinstance(constraint, RadiusConstraint):
         return RadiusConstraint(
             _pid(constraint.center, pid_map),
             _pid(constraint.radius_point, pid_map),
             constraint.value,
-            constraint.user_visible(),
+            constraint.user_visible,
         )
     if isinstance(constraint, DiameterConstraint):
         return DiameterConstraint(
             _pid(constraint.center, pid_map),
             _pid(constraint.radius_point, pid_map),
             constraint.value,
-            constraint.user_visible(),
+            constraint.user_visible,
         )
     if isinstance(constraint, TangentConstraint):
         return TangentConstraint(
@@ -124,7 +124,7 @@ def _map(constraint: Any, pid_map: dict[int, int]) -> Any:
             _pid(constraint.l2, pid_map),
             _pid(constraint.center, pid_map),
             _pid(constraint.radius_point, pid_map),
-            constraint.user_visible(),
+            constraint.user_visible,
         )
     if isinstance(constraint, EqualLengthConstraint):
         return EqualLengthConstraint(
@@ -132,7 +132,7 @@ def _map(constraint: Any, pid_map: dict[int, int]) -> Any:
                 [_pid(pid, pid_map) for pid in pair]
                 for pair in constraint.pairs
             ],
-            constraint.user_visible(),
+            constraint.user_visible,
         )
     if isinstance(constraint, EqualDistanceConstraint):
         return EqualDistanceConstraint(
@@ -140,13 +140,13 @@ def _map(constraint: Any, pid_map: dict[int, int]) -> Any:
             _pid(constraint.p2, pid_map),
             _pid(constraint.p3, pid_map),
             _pid(constraint.p4, pid_map),
-            constraint.user_visible(),
+            constraint.user_visible,
         )
     if isinstance(constraint, PointOnLineConstraint):
         return PointOnLineConstraint(
             _pid(constraint.point, pid_map),
             _map_point_on_target(constraint.target, pid_map),
-            constraint.user_visible(),
+            constraint.user_visible,
         )
     if isinstance(constraint, PointOnCurveConstraint):
         return PointOnCurveConstraint(
@@ -156,19 +156,19 @@ def _map(constraint: Any, pid_map: dict[int, int]) -> Any:
             tuple(constraint.cp1_offset),
             tuple(constraint.cp2_offset),
             constraint.is_line,
-            constraint.user_visible(),
+            constraint.user_visible,
         )
     if isinstance(constraint, SymmetryConstraint):
         return SymmetryConstraint(
             _pid(constraint.p1, pid_map),
             _pid(constraint.p2, pid_map),
             _map_symmetry_target(constraint.target, pid_map),
-            constraint.user_visible(),
+            constraint.user_visible,
         )
     if isinstance(constraint, PerpendicularConstraint):
         return PerpendicularConstraint(
             _map_perpendicular_target(constraint.target, pid_map),
-            constraint.user_visible(),
+            constraint.user_visible,
         )
     if isinstance(constraint, ParallelogramConstraint):
         return ParallelogramConstraint(
@@ -183,7 +183,7 @@ def _map(constraint: Any, pid_map: dict[int, int]) -> Any:
             _pid(constraint.p1, pid_map),
             _pid(constraint.p2, pid_map),
             constraint.angle_rad,
-            constraint.user_visible(),
+            constraint.user_visible,
         )
     if isinstance(constraint, DragConstraint):
         return DragConstraint(
@@ -252,4 +252,4 @@ def _restore_state(constraint: Any, mapped: Any) -> None:
     if hasattr(mapped, "set_user_visible") and hasattr(
         constraint, "user_visible"
     ):
-        mapped.set_user_visible(constraint.user_visible())
+        mapped.set_user_visible(constraint.user_visible)

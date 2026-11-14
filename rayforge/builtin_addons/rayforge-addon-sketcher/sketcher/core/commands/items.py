@@ -112,8 +112,34 @@ class AddItemsCommand(SketchChangeCommand):
         # Items were registered through the builder methods.
         pass
 
+    def _snapshot_items(self) -> None:
+        """Refreshes the stored reference dictionaries from the live
+        registry so redo restores the items' final state, including
+        flags set after they were added (e.g. array-copy markers)."""
+        registry = self.sketch.registry
+        self._entity_dicts = [
+            registry.entity_to_dict(eid)
+            for eid in self.entity_ids
+            if registry.get_entity_object(eid) is not None
+        ]
+        point_dicts = []
+        for pid in self.point_ids:
+            point = registry.get_point_object(pid)
+            if point is None:
+                continue
+            point_dicts.append(
+                {
+                    "id": pid,
+                    "x": point.x,
+                    "y": point.y,
+                    "fixed": point.fixed,
+                }
+            )
+        self._point_dicts = point_dicts
+
     def _do_undo(self) -> None:
         sketch = self.sketch
+        self._snapshot_items()
         for constraint in reversed(self.constraints):
             sketch.remove_constraint_object(constraint)
         sketch.registry.remove_entities(self.entity_ids)
@@ -125,6 +151,8 @@ class AddItemsCommand(SketchChangeCommand):
         self.sketch.restore_structure(
             self._point_dicts, self._entity_dicts
         )
+        for constraint in self.constraints:
+            self.sketch.add_constraint(constraint)
 
 
 class RemoveItemsCommand(SketchChangeCommand):

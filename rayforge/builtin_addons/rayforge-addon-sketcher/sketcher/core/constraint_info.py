@@ -177,9 +177,11 @@ def is_mirror_compatible(constraint: Any) -> bool:
 def user_visible(constraint: Any) -> bool:
     """Whether the constraint is surfaced in lists and hit testing."""
     getter = getattr(constraint, "user_visible", None)
+    if getter is None:
+        return True
     if callable(getter):
         return bool(getter())
-    return True
+    return bool(getter)
 
 
 def has_expression(constraint: Any) -> bool:
