@@ -262,7 +262,7 @@ def test_unstick_junction_command_with_arc(sketch):
 
     assert cmd.new_pid is not None
     arc = sketch.registry.get_entity_object(arc_id)
-    assert arc.start_idx == cmd.new_pid.id
+    assert arc.start_idx == cmd.new_pid
 
 
 def test_unstick_junction_command_with_circle(sketch):
@@ -280,4 +280,4 @@ def test_unstick_junction_command_with_circle(sketch):
 
     assert cmd.new_pid is not None
     circle = sketch.registry.get_entity_object(circle_id)
-    assert circle.center_idx == cmd.new_pid.id
+    assert circle.center_idx == cmd.new_pid
