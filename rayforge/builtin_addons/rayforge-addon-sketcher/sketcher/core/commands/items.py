@@ -24,13 +24,20 @@ class AddItemsCommand(SketchChangeCommand):
     sketch immediately and record them, so undo removes them and redo
     restores them with their original ids."""
 
-    def __init__(self, sketch: Sketch, name: str):
+    def __init__(
+        self,
+        sketch: Sketch,
+        name: str,
+        constraints: list[Any] | None = None,
+    ):
         super().__init__(sketch, name)
         self.point_ids: list[int] = []
         self.entity_ids: list[int] = []
         self.constraints: list[Any] = []
         self._point_dicts: list[dict[str, Any]] = []
         self._entity_dicts: list[dict[str, Any]] = []
+        for constraint in constraints or []:
+            self.add_constraint(constraint)
 
     def add_point(self, x: float, y: float, fixed: bool = False) -> int:
         pid = self.sketch.add_point(x, y, fixed)
