@@ -364,7 +364,7 @@ class CreateArrayCommand(SketchChangeCommand):
         for constr in list(self.sketch.constraints):
             if id(constr) in internal_ids:
                 continue
-            pids = constr.referenced_points()
+            pids = constr.get_referenced_point_ids()
             if pids & template_pids:
                 self.sketch.remove_constraint_object(constr)
                 self._erased_constraints.append(constr)

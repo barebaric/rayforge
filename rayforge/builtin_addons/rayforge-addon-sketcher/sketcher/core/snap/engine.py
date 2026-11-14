@@ -1,3 +1,4 @@
+from typing import Any
 import logging
 from collections.abc import Iterator
 
@@ -14,6 +15,21 @@ from .types import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _same_source(a: Any, b: Any) -> bool:
+    """Whether two snap sources refer to the same model object,
+    compared by id rather than object identity (raygeo hands out
+    fresh view objects)."""
+    if a is b:
+        return True
+    if a is None or b is None:
+        return False
+    aid = getattr(a, "id", None)
+    bid = getattr(b, "id", None)
+    if aid is None or bid is None:
+        return False
+    return aid == bid and type(a) is type(b)
 
 
 class SnapLineProducer:
@@ -327,7 +343,7 @@ class SnapEngine:
         for sp in snap_points:
             if sp.line_type != last.line_type:
                 continue
-            if sp.source is not last.source:
+            if not _same_source(sp.source, last.source):
                 continue
             dx = x - sp.x
             dy = y - sp.y
