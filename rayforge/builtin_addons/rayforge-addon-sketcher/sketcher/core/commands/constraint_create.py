@@ -48,6 +48,15 @@ class CreateOrEditConstraintCommand(SketchChangeCommand):
         self._created_constraint: Constraint | None = None
         self._add_cmd: AddItemsCommand | None = None
 
+    def _get_command_label(self, constraint: Any) -> str:
+        if isinstance(constraint, DistanceConstraint):
+            return _("Add Distance")
+        if isinstance(constraint, RadiusConstraint):
+            return _("Add Radius")
+        if isinstance(constraint, DiameterConstraint):
+            return _("Add Diameter")
+        return _("Add Constraint")
+
     @staticmethod
     def get_constraint_for_entity(
         sketch: Sketch,
