@@ -7,7 +7,6 @@ from typing import Any
 from raygeo.sketch.constraints.drag import DragConstraint
 from raygeo.sketch.constraints.tangent import TangentConstraint
 from core.constraint_builders import tangent_from_entities
-from sketcher.core.params import ParameterContext
 from sketcher.core.registry import EntityRegistry
 from sketcher.core.sketch import Sketch
 from sketcher.core.solver import Solver
@@ -109,7 +108,6 @@ def test_entity_level_constraint_couples_points():
 
 def test_solver_point_filter_ignores_other_points():
     registry = EntityRegistry()
-    params = ParameterContext()
     p1 = registry.add_point(0, 0)
     p2 = registry.add_point(10, 0)
 
@@ -121,7 +119,7 @@ def test_solver_point_filter_ignores_other_points():
     assert registry.get_point(p2)[0] == 10.0
 
     solver = Solver(
-        registry, params, [DragConstraint(p1, 5.0, 5.0)], point_filter={p1}
+        registry, [DragConstraint(p1, 5.0, 5.0)], point_filter={p1}
     )
     assert solver.solve(update_dof=False) is True
 
