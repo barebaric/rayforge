@@ -106,15 +106,15 @@ def test_point_at_arclength_interpolates():
     poly = [(0.0, 0.0), (10.0, 0.0)]
     cum = _cumulative_lengths(poly)
     point, tan = _point_at_arclength(poly, cum, 4.0)
-    assert point == pytest.approx((4.0, 0.0))
-    assert tan == pytest.approx((1.0, 0.0))
+    assert (point[0], point[1]) == pytest.approx((4.0, 0.0))
+    assert (tan[0], tan[1]) == pytest.approx((1.0, 0.0))
 
 
 def test_point_at_arclength_clamps_to_end():
     poly = [(0.0, 0.0), (10.0, 0.0)]
     cum = _cumulative_lengths(poly)
     point, _tan = _point_at_arclength(poly, cum, 100.0)
-    assert point == pytest.approx((10.0, 0.0))
+    assert (point[0], point[1]) == pytest.approx((10.0, 0.0))
 
 
 # ----------------------------------------------------------------------
