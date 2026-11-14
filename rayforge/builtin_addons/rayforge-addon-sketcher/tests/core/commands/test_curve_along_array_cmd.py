@@ -8,6 +8,7 @@ from sketcher.core.arrays import (
 )
 from sketcher.core.commands import CreateArrayCommand, EditArrayCommand
 from core.constraint_builders import tangent_from_entities
+from sketcher.core import constraint_info
 from raygeo.sketch.constraints.coincident import CoincidentConstraint
 from raygeo.sketch.constraints.horizontal import HorizontalConstraint
 from raygeo.sketch.constraints.tangent import TangentConstraint
@@ -680,8 +681,9 @@ def test_world_anchored_constraints_erased_tangents_kept():
         c
         for c in sketch.constraints
         if isinstance(c, TangentConstraint)
-        and c.line_id in template_eids
-        and c.shape_id in template_eids
+        and set(
+            constraint_info.referenced_entity_ids(registry, c)
+        ) <= set(template_eids)
     ]
 
     def member_shape(eids):
