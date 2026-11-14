@@ -56,7 +56,7 @@ adicioná-lo. Alternativamente, adicione uma máquina manualmente com o driver *
 (raydriver)** e insira o nome do host, a porta e o token do daemon; depois escolha o dispositivo na
 lista lida do daemon:
 
-![Assistente — conexão remota](/screenshots/remote-wizard-connect.webp)
+![Assistente — conexão remota](/screenshots/config-wizard-remote.webp)
 
 - **Nome do host / porta do daemon** — o computador que executa o daemon (porta padrão `8765`).
 - **Token** — o valor de `raydriver daemon status` no host do dispositivo.
@@ -73,7 +73,7 @@ conectado ao seu computador.
 As configurações de uma máquina remota mostram o endpoint do daemon e o dispositivo em vez de uma
 porta serial local:
 
-![Configurações da máquina — máquina remota](/screenshots/remote-settings.webp)
+![Configurações da máquina — máquina remota](/screenshots/machine-settings-remote.webp)
 
 ## Jobs e reconexões
 

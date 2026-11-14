@@ -47,7 +47,7 @@ raydriver daemon status
 (raydriver)** 驱动手动添加机器，输入守护进程的主机名、端口和令牌；然后从守护进程读取的列表中
 选择设备：
 
-![向导 — 远程连接](/screenshots/remote-wizard-connect.webp)
+![向导 — 远程连接](/screenshots/config-wizard-remote.webp)
 
 - **守护进程主机名 / 端口**——运行守护进程的计算机（默认端口 `8765`）。
 - **令牌**——设备主机上 `raydriver daemon status` 显示的值。
@@ -60,7 +60,7 @@ raydriver daemon status
 
 远程机器的设置显示守护进程端点和设备，而非本地串口：
 
-![机器设置 — 远程机器](/screenshots/remote-settings.webp)
+![机器设置 — 远程机器](/screenshots/machine-settings-remote.webp)
 
 ## 任务与重新连接
 

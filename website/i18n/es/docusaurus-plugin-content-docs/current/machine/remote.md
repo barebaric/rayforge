@@ -58,7 +58,7 @@ añadirlo. Alternativamente, añada una máquina manualmente con el controlador 
 (raydriver)** e introduzca el nombre de host, el puerto y el token del demonio; luego elija el
 dispositivo de la lista que se lee del demonio:
 
-![Asistente — conexión remota](/screenshots/remote-wizard-connect.webp)
+![Asistente — conexión remota](/screenshots/config-wizard-remote.webp)
 
 - **Nombre de host / puerto del demonio** — el ordenador que ejecuta el demonio (puerto por defecto
   `8765`).
@@ -76,7 +76,7 @@ hardware que no está conectado a su ordenador.
 Los ajustes de una máquina remota muestran el endpoint del demonio y el dispositivo en lugar de un
 puerto serie local:
 
-![Ajustes de la máquina — máquina remota](/screenshots/remote-settings.webp)
+![Ajustes de la máquina — máquina remota](/screenshots/machine-settings-remote.webp)
 
 ## Trabajos y reconexiones
 
