@@ -160,7 +160,7 @@ class MirrorCommand(SketchChangeCommand):
         #      based AngleConstraint) with all refs inside.
         constraints_to_drop: list[Any] = []
         for constr in sketch.constraints:
-            ref_points = constr.referenced_points()
+            ref_points = constr.get_referenced_point_ids()
             ref_entities = constraint_info.referenced_entity_ids(
                 registry, constr
             )
@@ -226,7 +226,7 @@ class MirrorCommand(SketchChangeCommand):
         for constr in self.sketch.constraints:
             if id(constr) in dropped_set:
                 continue
-            ref_points = constr.referenced_points()
+            ref_points = constr.get_referenced_point_ids()
             ref_entities = constraint_info.referenced_entity_ids(
                 registry, constr
             )

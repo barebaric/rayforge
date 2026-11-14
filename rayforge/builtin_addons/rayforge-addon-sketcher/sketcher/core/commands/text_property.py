@@ -303,7 +303,7 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
         for constr in self.sketch.constraints:
             if constr in self._removed_constraints:
                 continue
-            if not constr.referenced_points().isdisjoint(removed_point_ids):
+            if not constr.get_referenced_point_ids().isdisjoint(removed_point_ids):
                 self._removed_constraints.append(constr)
 
         self.sketch.remove_constraints(self._removed_constraints)

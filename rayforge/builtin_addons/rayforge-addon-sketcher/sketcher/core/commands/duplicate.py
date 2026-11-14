@@ -98,7 +98,7 @@ class DuplicateCommand(SketchChangeCommand):
         #    reference geometry outside the selection are not copied.
         constraints_to_duplicate: list[Any] = []
         for constr in sketch.constraints:
-            ref_points = constr.referenced_points()
+            ref_points = constr.get_referenced_point_ids()
             ref_entities = constraint_info.referenced_entity_ids(
                 registry, constr
             )
