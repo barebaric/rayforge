@@ -120,10 +120,11 @@ class RemoveItemsCommand(SketchChangeCommand):
         points: list[dict[str, Any]] | None = None,
         entity_ids: list[int] | None = None,
         constraints: list[Any] | None = None,
+        entities: list[int] | None = None,
     ):
         super().__init__(sketch, name)
         self.point_dicts: list[dict[str, Any]] = points or []
-        self.entity_ids: list[int] = entity_ids or []
+        self.entity_ids: list[int] = entity_ids or entities or []
         self.constraints: list[Any] = constraints or []
         self._entity_dicts: list[dict[str, Any]] = []
         self._point_dicts: list[dict[str, Any]] = []
