@@ -54,7 +54,7 @@ def test_solver_fixed_point():
     assert pt2[0] == 10.0  # Should not have moved
 
     # Check if constraints are actually satisfied
-    err = constraints[0].error(reg)
+    err = constraints[0].error(reg)[0]
     assert abs(err) > 1.0  # Constraint definitely failed
 
 

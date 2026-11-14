@@ -329,7 +329,7 @@ def test_edit_leaves_zero_residual_before_any_solve(sketch_with_array):
         c for c in sketch.constraints if isinstance(c, RadiusConstraint)
     ]
     for rc in radius_constraints:
-        assert abs(rc.error(sketch.registry, ctx)) < 1e-6
+        assert abs(rc.error(sketch.registry, ctx)[0]) < 1e-6
 
 
 def test_empty_selection_creates_nothing():

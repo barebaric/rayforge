@@ -144,7 +144,7 @@ def test_end_to_end_point_moves_onto_curve(tool, mock_element, bezier_env):
 
     sketch.solve()
 
-    assert constr.error(sketch.registry, ParameterContext()) < 1e-4
+    assert abs(constr.error(sketch.registry, ParameterContext())[0]) < 1e-4
     moved = sketch.registry.get_point(point)
     assert moved[1] == pytest.approx(7.5, abs=1e-2)
     assert moved[0] == pytest.approx(5.0, abs=1e-2)
