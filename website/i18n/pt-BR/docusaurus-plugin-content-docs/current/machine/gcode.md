@@ -38,6 +38,11 @@ G-code de saída.
 :::
 <!-- prettier-ignore-end -->
 
+### Limpeza de Dialetos não Utilizados
+
+O botão de vassoura no cabeçalho da lista de dialetos remove todos os dialetos personalizados que
+nenhuma máquina utiliza. Um diálogo de confirmação lista os dialetos antes de removê-los.
+
 ## Preâmbulo e Postscript do Dialeto
 
 Cada dialeto inclui preâmbulo e postscript G-code personalizáveis que executam no início e no fim

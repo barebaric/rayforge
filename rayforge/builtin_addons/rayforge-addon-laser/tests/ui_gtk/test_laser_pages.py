@@ -273,11 +273,15 @@ def test_raster_page_mode_visibility(editor, laser_machine, ui_context):
     step.depth_mode = "CONSTANT_POWER"
     step.updated.send(step)
     assert threshold.get_visible() is True
-    assert sample_interval.get_visible() is False
+    assert sample_interval.get_visible() is True
 
     step.depth_mode = "POWER_MODULATION"
     step.updated.send(step)
     assert threshold.get_visible() is False
+    assert sample_interval.get_visible() is True
+
+    step.depth_mode = "DITHER"
+    step.updated.send(step)
     assert sample_interval.get_visible() is True
 
 
@@ -285,8 +289,8 @@ def test_raster_page_mode_visibility(editor, laser_machine, ui_context):
 def test_raster_page_dither_option_visibility(
     editor, laser_machine, ui_context
 ):
-    """Serpentine follows the error-diffusion algorithms, the halftone
-    rows only show for Halftone."""
+    """Serpentine and the new dither rows follow the error-diffusion
+    algorithms, the halftone rows only show for Halftone."""
     step_cls = step_registry.get("EngraveStep")
     assert step_cls is not None
     step = cast(EngraveStep, step_cls.create(ui_context))
@@ -294,22 +298,30 @@ def test_raster_page_dither_option_visibility(
     page = RasterSettingsPage(editor, step)
 
     serpentine = _row(page, "dither_serpentine")
+    min_feature = _row(page, "dither_min_feature_px")
+    linear = _row(page, "dither_linear")
     cell = _row(page, "halftone_cell_mm")
     angle = _row(page, "halftone_angle")
 
     step.set_dither_algorithm("STUCKI")
     assert serpentine.get_visible() is True
+    assert min_feature.get_visible() is True
+    assert linear.get_visible() is True
     assert cell.get_visible() is False
     assert angle.get_visible() is False
 
     step.set_dither_algorithm("HALFTONE")
     assert serpentine.get_visible() is False
+    assert min_feature.get_visible() is False
+    assert linear.get_visible() is False
     assert cell.get_visible() is True
     assert angle.get_visible() is True
 
     step.depth_mode = "POWER_MODULATION"
     step.updated.send(step)
     assert serpentine.get_visible() is False
+    assert min_feature.get_visible() is False
+    assert linear.get_visible() is False
     assert cell.get_visible() is False
 
 

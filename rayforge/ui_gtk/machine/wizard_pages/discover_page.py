@@ -306,7 +306,9 @@ class DiscoverPage(WizardPage):
         wizard to match a device profile automatically.
         """
         driver_cls = get_driver_cls(device.driver_name)
-        if driver_cls is None or not driver_cls.supports_probing:
+        if driver_cls is None or not driver_cls.supports_probing_for(
+            device.params
+        ):
             return
         context = get_context()
         params = dict(device.params)

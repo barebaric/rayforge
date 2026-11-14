@@ -45,6 +45,14 @@ les Coins** (3) :
 ![Points de départ d'un parcours fermé : tel que dessiné, au sommet le plus proche, à l'angle le
 plus proche](/images/path-optimization-start-point.webp)
 
+### Réordonner les Lignes de Balayage
+
+Contrôle si les lignes de balayage de trame participent à l'optimisation des déplacements. Désactivé
+par défaut : les lignes de trame conservent leur ordre de gravure, car les réordonner fait sauter
+l'axe Y de la machine entre les lignes, et le jeu mécanique repris à chaque saut peut apparaître
+sous forme de bandes. Active-le seulement si les axes de ta machine sont calibrés et que tu veux
+gagner du temps de déplacement sur de grands travaux de trame.
+
 ## Quand Utiliser l'Optimisation
 
 **Activer pour :**

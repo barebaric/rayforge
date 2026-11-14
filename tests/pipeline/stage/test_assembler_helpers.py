@@ -313,6 +313,47 @@ class TestPreprocessRasterImage:
         assert plain is not None and serpentine is not None
         assert not np.array_equal(plain, serpentine)
 
+    def test_dither_min_feature_defaults_to_the_spot_size(self):
+        surface = self._gradient_surface()
+        kwargs = {
+            "mode": DepthMode.DITHER,
+            "auto_levels": False,
+            "dither_algorithm": DitherAlgorithm.STUCKI,
+            "laser_spot_x_mm": 0.1,
+            "pixels_per_mm_x": 20.0,
+        }
+        auto, _ = preprocess_raster_image(surface, **kwargs)
+        spot_sized, _ = preprocess_raster_image(
+            surface, dither_min_feature_px=2, **kwargs
+        )
+        single_px, _ = preprocess_raster_image(
+            surface, dither_min_feature_px=1, **kwargs
+        )
+
+        assert auto is not None
+        assert spot_sized is not None
+        assert single_px is not None
+        np.testing.assert_array_equal(auto, spot_sized)
+        assert not np.array_equal(auto, single_px)
+
+    def test_dither_forwards_linear(self):
+        surface = self._gradient_surface()
+        kwargs = {
+            "mode": DepthMode.DITHER,
+            "auto_levels": False,
+            "dither_algorithm": DitherAlgorithm.STUCKI,
+            "laser_spot_x_mm": 0.1,
+            "pixels_per_mm_x": 10.0,
+        }
+        srgb, _ = preprocess_raster_image(surface, **kwargs)
+        linear, _ = preprocess_raster_image(
+            surface, dither_linear=True, **kwargs
+        )
+
+        assert srgb is not None and linear is not None
+        assert not np.array_equal(srgb, linear)
+        assert linear.mean() > srgb.mean()
+
     def test_dither_forwards_halftone_settings(self):
         surface = self._gradient_surface()
         kwargs = {

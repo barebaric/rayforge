@@ -9,6 +9,7 @@ from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
 from ...core.material import SUPPORTED_TEXTURE_SUFFIXES, Material
 from ..icons import get_icon
+from ..shared.gtk import report_dialog_error
 from ..shared.pref_rows.length_spin_row import LengthSpinRow
 from ..shared.slider import create_slider_row
 
@@ -218,7 +219,11 @@ class AddMaterialDialog(Adw.AlertDialog):
         """Handle the file chooser result."""
         try:
             file = dialog.open_finish(result)
-        except GLib.Error:
+        except GLib.Error as e:
+            if report_dialog_error("Choosing texture image", e):
+                self._show_error(
+                    _("Error choosing file: {msg}").format(msg=e.message)
+                )
             return
         if file is None:
             return

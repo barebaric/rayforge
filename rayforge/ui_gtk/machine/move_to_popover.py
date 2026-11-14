@@ -6,7 +6,6 @@ from gi.repository import Adw, Gtk
 from raygeo.ops.axis import Axis
 
 from ...machine.cmd import MachineCmd
-from ...machine.driver.dummy import NoDeviceDriver
 from ...machine.models.machine import Machine
 from ..icons import get_icon
 from ..shared.pref_rows.length_spin_row import LengthSpinRow
@@ -203,7 +202,7 @@ class MoveToPopover(Gtk.Popover):
     def _is_machine_active(self) -> bool:
         if not self.machine:
             return False
-        is_dummy = isinstance(self.machine.driver, NoDeviceDriver)
+        is_dummy = self.machine.is_driverless
         return self.machine.is_connected() or is_dummy
 
     def update_sensitivity(self):

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-18 02:42+0200\n"
+"POT-Creation-Date: 2026-11-11 13:48+0100\n"
 "PO-Revision-Date: 2026-09-27 22:58\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -78,6 +78,20 @@ msgid ""
 msgstr "शून्य शक्ति पर पाटने का अधिकतम अंतर; 0 मशीन के त्वरण से स्वचालित रूप से तय करता है"
 
 #: post_processors/widgets/optimize_group.py
+msgid "Reorder Scan Lines"
+msgstr "स्कैनलाइनों का क्रम बदलें"
+
+#: post_processors/widgets/optimize_group.py
+msgid ""
+"Reorder raster scan lines for shorter travel. Raster rows normally keep "
+"their order: reordering makes the machine hop its Y axis between rows, which "
+"can cause banding."
+msgstr ""
+"छोटे ट्रैवल के लिए रास्टर स्कैनलाइनों का क्रम बदलता है। रास्टर पंक्तियाँ सामान्यतः अपना क्रम "
+"बनाए रखती हैं: क्रम बदलने से मशीन पंक्तियों के बीच अपने Y अक्ष पर कूदती है, जिससे बैंडिंग हो "
+"सकती है।"
+
+#: post_processors/widgets/optimize_group.py
 msgid "Toggle Flipping"
 msgstr "पलटना टॉगल करें"
 
@@ -96,6 +110,10 @@ msgstr "कोनों को प्राथमिकता देना ट�
 #: post_processors/widgets/optimize_group.py
 msgid "Change maximum bridged gap"
 msgstr "अधिकतम पाटे गए अंतर को बदलें"
+
+#: post_processors/widgets/optimize_group.py
+msgid "Toggle Reorder Scan Lines"
+msgstr "स्कैनलाइनों का क्रम बदलना टॉगल करें"
 
 #: post_processors/widgets/overscan_group.py
 msgid "This machine adds overscan automatically; the setting has no effect."

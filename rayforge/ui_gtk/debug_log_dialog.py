@@ -4,10 +4,11 @@ from gettext import gettext as _
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
-from gi.repository import Adw, Gio, GLib, Gtk
+from gi.repository import Adw, GLib, Gtk
 
 from ..context import get_context
 from ..debug import DebugDumpManager
+from .shared.gtk import report_dialog_error
 
 if TYPE_CHECKING:
     from ..doceditor.editor import DocEditor
@@ -101,10 +102,7 @@ class DebugLogDialog(Adw.MessageDialog):
                     return
             except GLib.Error as e:
                 if (
-                    not e.matches(
-                        Gio.io_error_quark(),
-                        Gio.IOErrorEnum.CANCELLED,
-                    )
+                    report_dialog_error("Saving debug log", e)
                     and self._on_error
                 ):
                     self._on_error(

@@ -505,6 +505,43 @@ def test_board_name_matches_creality_falcon_a1_pro_profile():
     assert certain_match(matches) is None
 
 
+def test_falcon_a1_usb_identity_stays_ambiguous():
+    """The Espressif CDC bridge (303a:4001) is shared between Creality
+    laser models, so the Falcon A1 and the Falcon 2 Pro 22W both match
+    with certainty and the wizard must ask instead of guessing
+    (issue #619)."""
+    devices_dir = Path(rayforge.__file__).parent / "resources" / "devices"
+    mgr = DeviceProfileManager(source_dirs=[devices_dir])
+    mgr.discover()
+
+    matches = mgr.match_device(_usb_identity(0x303A, 0x4001))
+
+    assert {
+        match.profile.name
+        for match in matches
+        if match.confidence == CONFIDENCE_CERTAIN
+    } == {
+        "Creality Falcon A1",
+        "Creality Falcon 2 Pro 22W",
+    }
+    assert certain_match(matches) is None
+
+
+def test_falcon_a1_profile_declares_reversed_axes():
+    """The Falcon A1's switches sit in its head park corner and both
+    axes count negative into the bed, so the profile must ship with
+    axis reversal enabled (issue #619)."""
+    devices_dir = Path(rayforge.__file__).parent / "resources" / "devices"
+    mgr = DeviceProfileManager(source_dirs=[devices_dir])
+    mgr.discover()
+
+    profile = mgr.get("Creality Falcon A1")
+    assert profile is not None
+    assert profile.machine_config.reverse_x_axis is True
+    assert profile.machine_config.reverse_y_axis is True
+    assert profile.machine_config.park_position_after_homing == (0.0, 0.0)
+
+
 def test_creality_falcon_a1_pro_heads():
     devices_dir = Path(rayforge.__file__).parent / "resources" / "devices"
     mgr = DeviceProfileManager(source_dirs=[devices_dir])

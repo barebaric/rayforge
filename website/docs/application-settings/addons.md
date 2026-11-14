@@ -20,6 +20,12 @@ Addons are extensions that add functionality to Rayforge. They can provide:
 - UI enhancements
 - Material libraries
 
+## Online Services
+
+The **Enable external addon services** setting controls access to the online registry, remote
+installation, and Gumroad and Patreon license services. When disabled, built-in and already
+installed local addons remain available, but Rayforge makes no external addon-service requests.
+
 ## Installed Addons
 
 The addon list shows all installed addons with:
@@ -35,7 +41,7 @@ The addon list shows all installed addons with:
 
 1. Click the **Install** button
 2. Select an addon file (`.zip` or addon repository)
-3. Confirm the installation
+3. Confirm the installation (community addons require confirming a trust warning)
 4. Wait for the installation to complete
 
 ### Updating Addons
@@ -52,6 +58,22 @@ install available updates.
 <!-- prettier-ignore-start -->
 :::warning
 Removing an addon may affect documents that use its features.
+:::
+<!-- prettier-ignore-end -->
+
+## Community Addons
+
+Addons that were not created by the Rayforge team are marked as community addons with a dedicated
+icon in the addon lists.
+
+When you install a community addon, a confirmation dialog explains that the addon is not provided by
+Rayforge itself and shows a link to the addon's repository. Open the link in your browser to review
+the code and its author before continuing.
+
+<!-- prettier-ignore-start -->
+:::warning
+Addons run with the same access to your computer and your files as Rayforge itself. Only install
+community addons if you trust their authors.
 :::
 <!-- prettier-ignore-end -->
 

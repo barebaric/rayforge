@@ -290,6 +290,22 @@ O Rayforge suporta formatos DXF padrão:
 
 **Dica:** Exporte como DXF R12/LT2 para compatibilidade máxima.
 
+### Aplanamento das coordenadas Z
+
+Alguns exportadores CAD gravam arquivos DXF com geometria em diferentes alturas de Z — por exemplo,
+um modelo 3D exportado com os contornos das faces superior e inferior de uma peça. O Rayforge é um
+programa 2D: em uma máquina com eixo Z, esses valores de Z se tornam movimentos reais de Z no
+trabalho, e a cabeça pode mergulhar abaixo da superfície do material e colidir.
+
+Quando um arquivo DXF contém geometria em mais de uma altura de Z, o diálogo de importação oferece
+por isso uma opção **Aplanar coordenadas Z** (em "Modo de importação"). Ela vem ativada por padrão e
+projeta toda a geometria importada no plano Z=0. Você pode desativá-la para manter as alturas Z
+originais — o diálogo então avisa que o caminho da ferramenta vai se mover em Z, o que só é seguro
+se você souber que seu arquivo precisa disso (por exemplo, para recriar uma altura de foco
+específica por forma).
+
+Em desenhos planos a opção não é mostrada; não há nada a aplanar.
+
 ### Dicas para importação DXF
 
 **Antes de exportar do CAD:**

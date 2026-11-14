@@ -77,6 +77,105 @@ def main_window_ready(main_window):
     main_window.add_page("my-page", MyCustomPage())
 ```
 
+## Job Monitoring Hooks
+
+These hooks report the lifecycle and progress of jobs running on a machine, so addons can react when
+a job starts, progresses, pauses, resumes, or finishes—for example, to run external commands or
+update a smart-home system.
+
+All of them receive a `JobStatus` snapshot (`rayforge.machine.job_status.JobStatus`), an immutable
+object with these fields:
+
+- `machine_id` and `machine_name`: identify the machine running the job
+- `kind`: `JobKind.SEND` for burn jobs, `JobKind.FRAME` for outline traces
+- `phase`: `JobPhase.RUNNING` or `JobPhase.PAUSED`
+- `started_at`: wall-clock time (seconds since the epoch) when the job started
+- `elapsed_seconds`: seconds elapsed since the job started
+- `total_distance` and `traveled_distance`: total and completed path length in millimeters
+- `progress_fraction`: completed fraction of the job, from `0.0` to `1.0`
+- `eta_seconds`: estimated remaining seconds, or `None` when unknown
+- `estimated_seconds`: total modeled job duration in seconds, or `None` when unknown
+
+Handlers run on the main thread and must return quickly; hand longer work (such as launching
+subprocesses or network calls) to a background thread.
+
+### `on_job_started(status)`
+
+Called when a job starts executing on a machine.
+
+```python
+@hookimpl
+def on_job_started(status):
+    logger.info(f"Job on {status.machine_name} started")
+```
+
+### `on_job_updated(status)`
+
+Called with progress updates while a job runs, at most about once per second.
+
+```python
+@hookimpl
+def on_job_updated(status):
+    print(
+        f"Progress: {status.progress_fraction:.0%}, "
+        f"ETA {status.eta_seconds}s"
+    )
+```
+
+### `on_job_paused(status)` / `on_job_resumed(status)`
+
+Called when the running job enters or leaves a feed hold (pause).
+
+### `on_job_finished(status, outcome, message="")`
+
+Called when a job finishes, regardless of how it ended. The `outcome` argument is a `JobOutcome`
+member—`COMPLETED`, `CANCELLED`, or `FAILED`—and `message` carries error details when the outcome is
+`FAILED`. For completed jobs, the snapshot's `progress_fraction` is `1.0`.
+
+```python
+@hookimpl
+def on_job_finished(status, outcome, message=""):
+    if outcome == JobOutcome.FAILED:
+        notify(f"Job failed: {message}")
+    else:
+        notify(f"Job {outcome.name.lower()} on {status.machine_name}")
+```
+
+The latest snapshot can also be polled between events: while a job runs, `machine.current_job`
+returns its `JobStatus`, or `None` when no job is running.
+
+Here is a complete addon that runs a shell command on every job state change:
+
+```python
+import subprocess
+
+import pluggy
+
+from rayforge.machine.job_status import JobOutcome
+
+hookimpl = pluggy.HookimplMarker("rayforge")
+
+
+@hookimpl
+def on_job_started(status):
+    subprocess.Popen(["/usr/local/bin/notify-ha", "started"])
+
+
+@hookimpl
+def on_job_paused(status):
+    subprocess.Popen(["/usr/local/bin/notify-ha", "paused"])
+
+
+@hookimpl
+def on_job_resumed(status):
+    subprocess.Popen(["/usr/local/bin/notify-ha", "resumed"])
+
+
+@hookimpl
+def on_job_finished(status, outcome, message=""):
+    subprocess.Popen(["/usr/local/bin/notify-ha", outcome.name.lower()])
+```
+
 ## Registration Hooks
 
 These hooks let you register custom components with Rayforge's various registries.
@@ -284,7 +383,10 @@ Hooks are versioned to maintain backwards compatibility. When new hooks are adde
 change, the API version is incremented. Your addon's `api_version` field must be at least the
 minimum supported version.
 
-The current API version is 9. Here's what changed in recent versions:
+The current API version is 24. Here's what changed in recent versions:
+
+**Version 24** added the job monitoring hooks `on_job_started`, `on_job_updated`, `on_job_paused`,
+`on_job_resumed`, and `on_job_finished`, plus the `Machine.current_job` pull API.
 
 **Version 9** added `main_window_ready`, `register_exporters`, `register_importers`, and
 `register_renderers`.

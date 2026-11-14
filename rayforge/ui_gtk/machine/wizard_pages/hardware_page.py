@@ -102,12 +102,12 @@ class HardwarePage(WizardPage):
         # Direction reversals.
         self.reverse_x_row = Adw.SwitchRow(
             title=_("Reverse X-Axis Direction"),
-            subtitle=_("Makes coordinate values negative"),
+            subtitle=_("Machine coordinates count down from the origin"),
         )
         axes_group.add(self.reverse_x_row)
         self.reverse_y_row = Adw.SwitchRow(
             title=_("Reverse Y-Axis Direction"),
-            subtitle=_("Makes coordinate values negative"),
+            subtitle=_("Machine coordinates count down from the origin"),
         )
         axes_group.add(self.reverse_y_row)
         self.has_z_row = Adw.SwitchRow(
@@ -180,16 +180,36 @@ class HardwarePage(WizardPage):
         self.soft_limits_group.add(self.soft_limits_enabled_row)
 
         self.soft_x_min_row = self._build_soft_limit_row(
-            _("X Min"), _("Minimum X coordinate")
+            _("X Min Distance from Origin"),
+            _(
+                "Distance from the origin corner into the bed "
+                "(not a coordinate). Fixed to the physical bed, "
+                "independent of the WCS."
+            ),
         )
         self.soft_y_min_row = self._build_soft_limit_row(
-            _("Y Min"), _("Minimum Y coordinate")
+            _("Y Min Distance from Origin"),
+            _(
+                "Distance from the origin corner into the bed "
+                "(not a coordinate). Fixed to the physical bed, "
+                "independent of the WCS."
+            ),
         )
         self.soft_x_max_row = self._build_soft_limit_row(
-            _("X Max"), _("Maximum X coordinate")
+            _("X Max Distance from Origin"),
+            _(
+                "Distance from the origin corner into the bed "
+                "(not a coordinate). Fixed to the physical bed, "
+                "independent of the WCS."
+            ),
         )
         self.soft_y_max_row = self._build_soft_limit_row(
-            _("Y Max"), _("Maximum Y coordinate")
+            _("Y Max Distance from Origin"),
+            _(
+                "Distance from the origin corner into the bed "
+                "(not a coordinate). Fixed to the physical bed, "
+                "independent of the WCS."
+            ),
         )
 
         # Speeds / accel.

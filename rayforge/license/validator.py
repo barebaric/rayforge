@@ -20,10 +20,18 @@ logger = logging.getLogger(__name__)
 class LicenseValidator:
     CACHE_DURATION = timedelta(hours=24)
 
-    def __init__(self, config_dir: Path, patreon_client_id: str | None = None):
+    def __init__(
+        self,
+        config_dir: Path,
+        patreon_client_id: str | None = None,
+        external_services_enabled: Callable[[], bool] | None = None,
+    ):
         self._gumroad: GumroadProvider = GumroadProvider(config_dir)
         self._patreon: PatreonProvider | None = None
         self._cache: dict[str, tuple] = {}
+        self._external_services_enabled = external_services_enabled or (
+            lambda: True
+        )
         self.changed = Signal()
 
         if patreon_client_id:
@@ -31,12 +39,20 @@ class LicenseValidator:
 
     @property
     def providers(self) -> dict[str, LicenseProvider]:
+        if not self._external_services_enabled():
+            return {}
         result: dict[str, LicenseProvider] = {"gumroad": self._gumroad}
         if self._patreon:
             result["patreon"] = self._patreon
         return result
 
     def validate(self, addon_id: str, license_config: dict) -> LicenseResult:
+        if not self._external_services_enabled():
+            return LicenseResult(
+                status=LicenseStatus.NOT_FOUND,
+                message="External addon services are disabled.",
+            )
+
         cached = self._cache.get(addon_id)
         if cached:
             result, timestamp = cached
@@ -106,6 +122,8 @@ class LicenseValidator:
             self._cache.clear()
 
     def get_provider(self, name: str) -> LicenseProvider | None:
+        if not self._external_services_enabled():
+            return None
         if name == "gumroad":
             return self._gumroad
         if name == "patreon":
@@ -129,6 +147,8 @@ class LicenseValidator:
         return self._gumroad.get_licenses()
 
     def is_patreon_linked(self) -> bool:
+        if not self._external_services_enabled():
+            return False
         return self._patreon is not None and self._patreon.is_configured()
 
     def unlink_patreon(self) -> None:
@@ -139,11 +159,15 @@ class LicenseValidator:
     def start_patreon_oauth(
         self, on_complete: Callable[[bool, str | None], None]
     ) -> tuple[int, Thread] | None:
+        if not self._external_services_enabled():
+            return None
         if not self._patreon:
             return None
         return self._patreon.start_oauth_flow(on_complete)
 
     def get_patreon_oauth_url(self) -> str | None:
+        if not self._external_services_enabled():
+            return None
         if not self._patreon:
             return None
         return self._patreon.get_oauth_url()

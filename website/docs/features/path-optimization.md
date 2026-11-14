@@ -48,6 +48,13 @@ The same closed path entered where it was drawn (1), at the vertex nearest the l
 
 ![Entry points of a closed path: as drawn, at the nearest vertex, at the nearest corner](/images/path-optimization-start-point.webp)
 
+### Reorder Scan Lines
+
+Controls whether raster scan lines participate in travel optimization. Off by default: raster lines
+keep their burn order, because reordering makes the machine hop its Y axis between lines, and the
+mechanical play taken up on every hop can show up as banding. Enable it only if your machine has
+calibrated axes and you want to shave travel time on large raster jobs.
+
 ## When to Use Optimization
 
 **Enable for:**

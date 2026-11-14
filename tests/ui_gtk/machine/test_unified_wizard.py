@@ -630,6 +630,21 @@ def test_connection_page_ruida_usb_mode(ui_context_initializer):
 
 
 @pytest.mark.ui
+def test_connection_page_prefills_zero_driver_arg(ui_context_initializer):
+    wizard = _make_wizard(ui_context_initializer)
+    wizard.profile = _profile(driver="RuidaRPAAdapter")
+    wizard.profile.machine_config.driver_args = {"image_power_bias": 0.0}
+    wizard._navigate_to("connect")
+    page = wizard._get_page("connect")
+    assert isinstance(page, ConnectionPage)
+    assert page.connect_widget.get_values()["image_power_bias"] == 0.0
+
+    assert page.apply_to_profile(wizard.profile)
+    args = wizard.profile.machine_config.driver_args
+    assert args["image_power_bias"] == 0.0
+
+
+@pytest.mark.ui
 def test_connection_args_complete_ruida_hostname_only(
     ui_context_initializer,
 ):
@@ -1205,6 +1220,84 @@ def test_device_selected_with_match_skips_to_probe(ui_context_initializer):
     mc = wizard.profile.machine_config
     assert mc.driver == "GrblSerialDriver"
     assert mc.driver_args == {"port": "/dev/ttyUSB0", "baudrate": 115200}
+
+
+@pytest.mark.ui
+def test_remote_device_selected_skips_profile(ui_context_initializer):
+    """A discovered remote device is identified by daemon + device, so
+    the wizard goes to the connection page, not profile selection."""
+    wizard = _make_wizard(ui_context_initializer)
+    page = wizard._get_page("discover")
+    assert isinstance(page, DiscoverPage)
+    device = _discovered_device(
+        driver_name="RaydriverRemoteDriver",
+        params={
+            "remote_host": "127.0.0.1",
+            "remote_port": 8765,
+            "device": "/dev/ttyUSB0",
+            "_raydriver_protocol": "grbl",
+        },
+        label="GRBL",
+        detail="127.0.0.1:8765 via raydriver daemon",
+        identity=DeviceIdentity(banner="raydriver-daemon"),
+    )
+    with patch("rayforge.ui_gtk.machine.wizard_pages.probe_page.task_mgr"):
+        wizard._on_device_selected(page, device=device)
+    assert wizard.stack.get_visible_child_name() == "connect"
+    assert wizard.profile.machine_config.driver == "RaydriverRemoteDriver"
+
+
+@pytest.mark.ui
+def test_remote_probe_next_skips_profile(ui_context_initializer):
+    wizard = _make_wizard(ui_context_initializer)
+    wizard.profile.machine_config.driver = "RaydriverRemoteDriver"
+    wizard.profile.machine_config.driver_args = {
+        "remote_host": "127.0.0.1",
+        "device": "/dev/ttyUSB0",
+        "_raydriver_protocol": "grbl",
+    }
+    wizard.aux_state = {
+        "discovered": _discovered_device(
+            driver_name="RaydriverRemoteDriver",
+            params={"remote_host": "127.0.0.1"},
+        )
+    }
+    wizard._source = None
+    assert wizard._next_step_after("probe") != "profile"
+
+
+@pytest.mark.ui
+def test_remote_probe_keeps_remote_driver(ui_context_initializer):
+    """A remote machine must not be turned into a local device when its
+    probe matches a curated profile."""
+    wizard = _make_wizard(ui_context_initializer)
+    wizard.profile.machine_config.driver = "RaydriverRemoteDriver"
+    wizard.profile.machine_config.driver_args = {
+        "remote_host": "127.0.0.1",
+        "device": "/dev/ttyUSB0",
+        "_raydriver_protocol": "grbl",
+    }
+    wizard._source = None
+    wizard.aux_state = {
+        "discovered": _discovered_device(
+            driver_name="RaydriverRemoteDriver",
+            params={"remote_host": "127.0.0.1"},
+        )
+    }
+    curated = DeviceProfile(
+        meta=DeviceMeta(name="Sculpfun iCube"),
+        machine_config=MachineConfig(driver="GrblSerialDriver"),
+        dialect_config={},
+    )
+    with patch.object(
+        type(ui_context_initializer.device_profile_mgr),
+        "match_device",
+        return_value=_match_result(curated),
+    ):
+        wizard._on_probe_succeeded(
+            wizard._get_page("probe"), profile=curated, warnings=[]
+        )
+    assert wizard.profile.machine_config.driver == "RaydriverRemoteDriver"
 
 
 @pytest.mark.ui

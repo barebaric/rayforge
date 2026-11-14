@@ -62,7 +62,7 @@ from .machine.unified_wizard import UnifiedWizard
 from .main_menu import MainMenu
 from .project_cmd import ProjectCmd
 from .settings.settings_dialog import SettingsWindow
-from .shared.gtk import get_monitor_geometry
+from .shared.gtk import get_monitor_geometry, report_dialog_error
 from .shared.pointer_alignment_dialog import PointerAlignmentDialog
 from .shared.progress_bar import ProgressBar
 from .shared.sanity_check_dialog import SanityCheckDialog
@@ -2447,7 +2447,11 @@ class MainWindow(Adw.ApplicationWindow):
             self.doc_editor.file.export_object_to_path(file_path, selected[0])
 
         except GLib.Error as e:
-            logger.error(f"Error exporting object: {e.message}")
+            if report_dialog_error("Exporting object", e):
+                self._on_editor_notification(
+                    self,
+                    _("Error exporting object: {msg}").format(msg=e.message),
+                )
 
     def _on_export_document_response(self, dialog, result, user_data):
         try:
@@ -2456,7 +2460,11 @@ class MainWindow(Adw.ApplicationWindow):
                 return
             file_path = Path(file.get_path())
         except GLib.Error as e:
-            logger.error(f"Error exporting document: {e.message}")
+            if report_dialog_error("Exporting document", e):
+                self._on_editor_notification(
+                    self,
+                    _("Error exporting document: {msg}").format(msg=e.message),
+                )
             return
 
         self.doc_editor.file.export_document_to_path(file_path)
@@ -2468,7 +2476,11 @@ class MainWindow(Adw.ApplicationWindow):
                 return
             file_path = Path(file.get_path())
         except GLib.Error as e:
-            logger.error(f"Error saving file: {e.message}")
+            if report_dialog_error("Saving G-code", e):
+                self._on_editor_notification(
+                    self,
+                    _("Error saving file: {msg}").format(msg=e.message),
+                )
             return
 
         # This is now a non-blocking call.

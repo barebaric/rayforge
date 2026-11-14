@@ -152,8 +152,9 @@ Choisis d'abord un **Pattern Type** :
    Frame** pour chaque position. Vise au moins 8 captures couvrant tout le cadre, y compris les
    coins et les bords. La barre de progression et les indicateurs d'état montrent la qualité de la
    capture.
-4. Une fois suffisamment d'images capturées, l'assistant calcule le modèle de distorsion et
-   l'applique — la superposition caméra affiche maintenant une image corrigée et droite.
+4. Une fois suffisamment d'images capturées, clique sur **Calibrate**. L'assistant affiche le
+   résultat — confirme avec **Save Calibration** pour l'appliquer (seul **Discard** jette le
+   résultat) — et la superposition caméra affiche maintenant une image corrigée et droite.
 
 #### Utiliser un motif déjà imprimé
 
@@ -217,7 +218,8 @@ manuellement les coefficients de distorsion — ajuste finement les paramètres 
 L'alignement d'image est l'étape finale de l'assistant de caméra. L'alignement de la caméra calibre
 la relation entre les pixels de la caméra et les coordonnées du monde réel, permettant un
 positionnement précis. L'assistant utilise la même procédure décrite ici, et appliquer l'alignement
-termine l'assistant.
+termine l'assistant. Terminer sans alignement appliqué déclenche d'abord un avertissement, car la
+vue caméra ne peut alors pas être projetée avec précision sur la zone de travail.
 
 #### Pourquoi l'Alignement est Nécessaire
 
@@ -252,8 +254,10 @@ machine.
    - Répète pour chaque point de référence
 
 4. **Entre les coordonnées monde :**
-   - Pour chaque point d'image, entre les coordonnées X/Y réelles en mm
-   - Ce sont les coordonnées machine réelles où chaque point est situé
+   - Pour chaque point d'image, entre les coordonnées X/Y réelles dans ton unité d'affichage
+     (définie dans les réglages de l'application)
+   - Ce sont les coordonnées machine réelles où chaque point est situé, mesurées depuis l'origine de
+     la zone de travail
    - Mesure avec précision avec une règle ou utilise des positions machine connues
 
 5. **Applique l'alignement :**

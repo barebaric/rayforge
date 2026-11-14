@@ -58,6 +58,16 @@ class TestMachineManager:
         found = manager.get_machine_by_id("non-existent-id")
         assert found is None
 
+    def test_removed_machine_is_driverless_is_false(
+        self, lite_context, tmp_path
+    ):
+        """Querying a removed machine must not raise (issue #662)."""
+        manager = MachineManager(tmp_path)
+        machine = Machine(lite_context)
+        manager.add_machine(machine)
+        manager.remove_machine(machine.id)
+        assert machine.is_driverless is False
+
     def test_manager_signals_exist(self, tmp_path):
         """Test that manager has all required signals."""
         manager = MachineManager(tmp_path)

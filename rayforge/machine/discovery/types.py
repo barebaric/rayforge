@@ -34,11 +34,25 @@ def device_key(driver_name: str, params: dict) -> str:
 
     Serial devices are identified by their port path, network devices
     by host and TCP port (so two servers that both listen on 80 stay
-    distinguishable). This is shared by
+    distinguishable), and remote devices by daemon endpoint plus the
+    device resource (so the same port path on two daemons, or local
+    and remote, stay distinguishable). This is shared by
     :attr:`DiscoveredDevice.key` and the discovery UI, which needs to
     compute the same key from a configured machine's stored connection
     arguments.
     """
+    remote_host = params.get("remote_host")
+    if isinstance(remote_host, str) and remote_host:
+        resource = (
+            params.get("device")
+            or params.get("port")
+            or params.get("host")
+            or ""
+        )
+        return (
+            f"{driver_name}:raydriver://{remote_host}:"
+            f"{params.get('remote_port')}:{resource}"
+        )
     serial_port = params.get("port")
     if isinstance(serial_port, str) and serial_port:
         return f"{driver_name}:{serial_port}"

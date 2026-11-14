@@ -12,6 +12,7 @@ import asyncio
 from collections.abc import Iterable
 
 from .mdns_channel import find_network_devices
+from .raydriver_channel import find_raydriver_devices
 from .serial_channel import find_serial_devices
 from .types import DiscoveredDevice
 
@@ -36,11 +37,12 @@ async def find_all_devices(
 
         driver_classes = drivers
 
-    serial_devices, network_devices = await asyncio.gather(
+    serial_devices, network_devices, raydriver_devices = await asyncio.gather(
         find_serial_devices(driver_classes, ports, baud_rates, exclude_ports),
         find_network_devices(driver_classes),
+        find_raydriver_devices(),
     )
-    return _dedupe(serial_devices + network_devices)
+    return _dedupe(serial_devices + network_devices + raydriver_devices)
 
 
 def _dedupe(devices: list[DiscoveredDevice]) -> list[DiscoveredDevice]:

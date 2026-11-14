@@ -32,6 +32,7 @@ from ..driver.driver import (
     ZHomingMode,
     pwm_varset,
 )
+from ..driver.dummy import NoDeviceDriver
 from ..kinematics import HeadSpec, Kinematics, build_assembly
 from ..models.axis import AxisConfig, AxisDirection, AxisSet, AxisType
 from ..transport import TransportStatus
@@ -49,6 +50,8 @@ from .zone import Zone
 if TYPE_CHECKING:
     from ...core.varset import VarSet
     from ..driver.driver import Driver
+    from ..job_monitor import JobMonitor
+    from ..job_status import JobStatus
     from .controller import MachineController
 from .coordinate_system import CoordinateSystem
 
@@ -106,13 +109,6 @@ def _clamp_jog_distance(
     return target - pos
 
 
-def _shift_pos(pos: float | None, offset: float) -> float | None:
-    """Convert a machine position into work coordinates."""
-    if pos is None:
-        return None
-    return pos - offset
-
-
 def _raise_error(*args, **kwargs):
     raise RuntimeError("Cannot schedule from worker process")
 
@@ -166,6 +162,7 @@ class Machine:
 
         self.connection_status: TransportStatus = TransportStatus.DISCONNECTED
         self.device_state: DeviceState = DeviceState()
+        self._current_job_monitor = None
 
         self.driver_name: str | None = None
         self.driver_args: dict[str, Any] = {}
@@ -175,6 +172,9 @@ class Machine:
         self.auto_connect: bool = True
         self.home_on_start: bool = False
         self.clear_alarm_on_connect: bool = False
+        #: Machine-space (x, y) the head is driven to after homing all
+        #: axes, or None to not move.
+        self.park_position_after_homing: tuple[float, float] | None = None
         # True while this machine is the auto-created placeholder that
         # keeps the app usable before the user sets up a real machine.
         self.placeholder: bool = False
@@ -197,6 +197,7 @@ class Machine:
         self.max_travel_speed: int = 3000  # in mm/min
         self.max_cut_speed: int = 1000  # in mm/min
         self.acceleration: int = 1000  # in mm/s²
+        self.jog_speed: int = 1000  # in mm/min
         #: (speed mm/min, offset mm) rows, sorted by speed. Engrave
         #: steps without their own bidirectional scan offset use it.
         self.bidir_offset_table: list[tuple[float, float]] = []
@@ -294,6 +295,19 @@ class Machine:
         MachineManager. This enables lazy instantiation.
         """
         return self.context.machine_mgr.get_controller(self.id)
+
+    @property
+    def is_driverless(self) -> bool:
+        """
+        Whether the machine's active driver is the placeholder
+        NoDeviceDriver. Machines that have been removed from the
+        manager report False instead of raising or lazily creating a
+        controller, so stale UI references can query this safely.
+        """
+        manager = self.context.machine_mgr
+        if manager.get_machine_by_id(self.id) is not self:
+            return False
+        return isinstance(self.controller.driver, NoDeviceDriver)
 
     @property
     def has_controller(self) -> bool:
@@ -413,6 +427,27 @@ class Machine:
 
     def set_precheck_error(self, error: str | None):
         self.precheck_error = error
+
+    def set_current_job(self, monitor: "JobMonitor") -> None:
+        """Registers the monitor of the job now running on this
+        machine."""
+        self._current_job_monitor = monitor
+
+    def clear_current_job(self, monitor: "JobMonitor") -> None:
+        """Unregisters the job monitor if it is still the active one."""
+        if self._current_job_monitor is monitor:
+            self._current_job_monitor = None
+
+    @property
+    def current_job(self) -> Optional["JobStatus"]:
+        """
+        Returns a snapshot of the job currently running on this
+        machine, or None when no monitored job is active.
+        """
+        monitor = self._current_job_monitor
+        if monitor is None:
+            return None
+        return monitor.status
 
     def set_unit_system(self, unit_system: UnitSystem) -> None:
         """
@@ -767,6 +802,16 @@ class Machine:
         self.home_on_start = home_on_start
         self.changed.send(self)
 
+    def set_park_position_after_homing(
+        self, position: tuple[float, float] | None
+    ):
+        if position is not None:
+            position = (float(position[0]), float(position[1]))
+        if self.park_position_after_homing == position:
+            return
+        self.park_position_after_homing = position
+        self.changed.send(self)
+
     def set_clear_alarm_on_connect(self, clear_alarm: bool = True):
         if self.clear_alarm_on_connect == clear_alarm:
             return
@@ -801,6 +846,12 @@ class Machine:
         if self.acceleration == acceleration:
             return
         self.acceleration = acceleration
+        self.changed.send(self)
+
+    def set_jog_speed(self, speed: int):
+        if self.jog_speed == speed:
+            return
+        self.jog_speed = speed
         self.changed.send(self)
 
     def set_bidir_offset_table(self, table) -> None:
@@ -1186,7 +1237,13 @@ class Machine:
         return m_pos[0], m_pos[1]
 
     def get_soft_limits(self) -> Rect:
-        """Get the soft limits as (x_min, y_min, x_max, y_max)."""
+        """
+        Get the soft limits as (x_min, y_min, x_max, y_max).
+
+        The rect is in machine coordinates: it is anchored to the
+        physical bed and does not move with the work origin. Configured
+        values are entered as distances from the origin corner.
+        """
         if self._soft_limits is not None:
             x_min, y_min, x_max, y_max = self._soft_limits
             if self.reverse_x_axis:
@@ -1222,15 +1279,19 @@ class Machine:
     def _adjust_jog_distance_for_limits(
         self, axis: Axis, distance: float
     ) -> float:
-        """Adjust jog distance to stay within soft limits."""
+        """Adjust jog distance to stay within soft limits.
+
+        The limits describe the physical bed in machine coordinates and
+        are compared against the machine position, so they hold
+        regardless of where the work origin (WCS) is zeroed.
+        """
         if not self.soft_limits_enabled:
             return distance
 
         current_pos = self.device_state.machine_pos
-        off_x, off_y, _ = self.get_active_wcs_offset()
-        x_pos = _shift_pos(current_pos[0], off_x)
-        y_pos = _shift_pos(current_pos[1], off_y)
         x_min, y_min, x_max, y_max = self.get_soft_limits()
+        x_pos = current_pos[0]
+        y_pos = current_pos[1]
         adjusted_distance = distance
 
         # Check X axis
@@ -1812,6 +1873,11 @@ class Machine:
                 "clear_alarm_on_connect": self.clear_alarm_on_connect,
                 "placeholder": self.placeholder,
                 "home_on_start": self.home_on_start,
+                "park_position_after_homing": (
+                    list(self.park_position_after_homing)
+                    if self.park_position_after_homing is not None
+                    else None
+                ),
                 "single_axis_homing_enabled": self.single_axis_homing_enabled,
                 "z_homing_mode": (
                     self.z_homing_mode.value if self.z_homing_mode else None
@@ -1830,6 +1896,7 @@ class Machine:
                 "soft_limits": list(self._soft_limits)
                 if self._soft_limits
                 else None,
+                "soft_limits_enabled": self.soft_limits_enabled,
                 "origin": self.origin.value,
                 "panel_orientation": self.panel.orientation.value,
                 "reverse_x_axis": self.reverse_x_axis,
@@ -1874,6 +1941,7 @@ class Machine:
                     "max_cut_speed": self.max_cut_speed,
                     "max_travel_speed": self.max_travel_speed,
                     "acceleration": self.acceleration,
+                    "jog_speed": self.jog_speed,
                 },
                 "bidir_offset_table": [
                     [speed, offset]
@@ -2001,6 +2069,12 @@ class Machine:
         )
         ma.placeholder = ma_data.pop("placeholder", ma.placeholder)
         ma.home_on_start = ma_data.pop("home_on_start", ma.home_on_start)
+        park_position = ma_data.pop("park_position_after_homing", None)
+        if park_position is not None:
+            ma.park_position_after_homing = (
+                float(park_position[0]),
+                float(park_position[1]),
+            )
         ma.single_axis_homing_enabled = ma_data.pop(
             "single_axis_homing_enabled",
             ma.single_axis_homing_enabled,
@@ -2178,6 +2252,7 @@ class Machine:
             "max_travel_speed", ma.max_travel_speed
         )
         ma.acceleration = speeds.get("acceleration", ma.acceleration)
+        ma.jog_speed = speeds.get("jog_speed", ma.jog_speed)
         ma.bidir_offset_table = sorted(
             (float(speed), float(offset))
             for speed, offset in ma_data.pop("bidir_offset_table", None) or []

@@ -4,6 +4,7 @@ from typing import Any
 from raygeo.geo import Geometry
 from raygeo.geo.types import Rect
 
+from ..core.color import pick_unused_color
 from ..core.item import DocItem
 from ..core.layer import Layer
 from ..core.source_asset import SourceAsset
@@ -112,6 +113,7 @@ class ItemAssembler:
         # If we have multiple items, we generally wrap them in Layers (if
         # requested by spec) or return a list of WorkPieces.
         items: list[DocItem] = []
+        used_colors = {item.color for item in layout_plan if item.color}
 
         logger.debug(f"ItemAssembler: document_bounds={document_bounds}")
 
@@ -185,8 +187,8 @@ class ItemAssembler:
                 and spec.layer_import_mode != LayerImportMode.FLATTEN
             ):
                 layer = Layer(name=name)
-                if item.color:
-                    layer.set_color(item.color)
+                layer.set_color(item.color or pick_unused_color(used_colors))
+                used_colors.add(layer.color)
                 layer.add_child(wp)
                 # If the importer provided settings, pre-populate a step
                 # on the layer's workflow so that add_default_steps_for_layers

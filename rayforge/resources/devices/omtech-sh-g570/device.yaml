@@ -1,0 +1,47 @@
+api_version: 1
+device:
+  name: OMTech SH-G570 80W CO2
+  vendor: OMTech
+  model: SH-G570
+  description: 80W CO2 laser cutter with 700x500mm work area and Ruida
+    RDC6442G controller
+  notes: |
+    Machine zero is the top-right corner. Home All moves the head to 0/0
+    without running the controller's homing cycle; if the position is
+    lost, re-home with Reset on the controller panel.
+
+    Raster engraving below about 15 % does not fire reliably on this
+    tube. Raise Min Power in the Engrave step to keep light tones above
+    that threshold.
+machine:
+  driver: RuidaRPAAdapter
+  gcode_precision: 3
+  axis_extents:
+  - 700.0
+  - 500.0
+  origin: top_right
+  max_travel_speed: 12000
+  max_cut_speed: 18000
+  acceleration: 3000
+  home_on_start: false
+  driver_args:
+    udp_host: ''
+    usb_device: ''
+    image_power_bias: 0.0
+  heads:
+  - max_power: 1000
+    wavelength_nm: 10600
+    max_power_watts: 80
+    frame_power_percent: 0.0
+    focus_power_percent: 0.0
+    frame_speed: 3000
+    frame_repeat_count: 1
+    spot_size_mm:
+    - 0.1
+    - 0.1
+    laser_type: co2
+    pwm_frequency: 20000
+    max_pwm_frequency: 20000
+    pulse_width: 50
+    min_pulse_width: 5
+    max_pulse_width: 500

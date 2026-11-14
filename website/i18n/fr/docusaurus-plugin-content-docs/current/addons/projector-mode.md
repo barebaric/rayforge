@@ -45,7 +45,7 @@ seront envoyés au laser. Les images de base de vos workpieces ne sont pas affic
 l'affichage concentré sur les trajectoires de coupe.
 
 Le cadre d'étendue de la machine apparaît comme une bordure représentant toute la zone de
-déplacement des axes de votre machine. Le réticule de l'origine de travail indique où se trouve
+déplacement des axes de votre machine. Les flèches de l'origine de travail indiquent où se trouve
 l'origine du système de coordonnées dans cette zone. Les deux se mettent à jour automatiquement si
 vous modifiez le décalage du système de coordonnées de travail sur votre machine.
 

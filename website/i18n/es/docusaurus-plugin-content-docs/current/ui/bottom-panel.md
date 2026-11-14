@@ -108,6 +108,7 @@ Configura el comportamiento de las operaciones de desplazamiento:
 - **Rango**: 1-60,000 mm/min
 - **Por defecto**: 1,000 mm/min
 - **Propósito**: Controla qué tan rápido se mueve la cabeza del láser
+- **Persistencia**: La última velocidad utilizada se guarda por máquina
 
 <!-- prettier-ignore-start -->
 :::tip[Selección de Velocidad]

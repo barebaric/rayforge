@@ -1,7 +1,7 @@
 # Pestañas de Sujeción
 
-Las pestañas de sujeción (también llamadas puentes o tabs) son pequeñas secciones sin cortar que se
-dejan a lo largo de las trayectorias de corte para mantener las piezas adjuntas al material
+Las pestañas de sujeción (también llamadas puentes o tabs) son pequeñas secciones a lo largo de las
+trayectorias de corte que no se cortan por completo, manteniendo las piezas adjuntas al material
 circundante. Esto previene que las piezas cortadas se muevan durante el trabajo, lo que podría
 causar desalineación, daño o riesgos de incendio.
 
@@ -22,12 +22,16 @@ listo para removerla.
 
 ## Cómo Funcionan las Pestañas de Sujeción
 
-Rayforge implementa pestañas creando **pequeños huecos en la trayectoria de corte**:
+Rayforge implementa pestañas **debilitando la trayectoria de corte** en cada pestaña. El ajuste
+**Potencia de pestañas** del paso selecciona entre dos modos:
 
 1. Marcas posiciones a lo largo de la trayectoria de corte donde deberían estar las pestañas
-2. Durante la generación del G-code, Rayforge interrumpe el corte en cada pestaña
-3. El láser se levanta (o se apaga), salta el ancho de la pestaña, luego reanuda el corte
-4. Después de completar el trabajo, manualmente rompes o cortas las pestañas para liberar la pieza
+2. Durante la generación del G-code, Rayforge maneja cada pestaña según el modo:
+   - **Modo de hueco (Potencia de pestañas 0%):** el láser se apaga, salta el ancho de la pestaña y
+     luego reanuda el corte
+   - **Modo de potencia (Potencia de pestañas por encima de 0%):** el láser sigue cortando a través
+     de la pestaña a potencia reducida, dejando un puente fino de material
+3. Después de completar el trabajo, manualmente rompes o cortas las pestañas para liberar la pieza
 
 ---
 
@@ -56,7 +60,7 @@ Para más control:
      trayectoria
 3. **Configura los ajustes de pestañas:**
    - **Número de pestañas:** Cuántas pestañas crear (para equidistante)
-   - **Ancho de pestaña:** Longitud de cada sección sin cortar (típicamente 2-5mm)
+   - **Ancho de pestaña:** Longitud de cada pestaña a lo largo de la trayectoria (típicamente 2-5mm)
 4. **Haz clic en Aplicar**
 
 ---
@@ -65,7 +69,7 @@ Para más control:
 
 ### Ancho de Pestaña
 
-El **ancho** es la longitud de la sección sin cortar a lo largo de la trayectoria.
+El **ancho** es la longitud de la pestaña a lo largo de la trayectoria.
 
 **Anchos recomendados:**
 
@@ -93,6 +97,19 @@ para soportar la pieza pero lo suficientemente pequeñas para removerse limpiame
 la pieza puede liberarse; muy ancha = difícil de remover o daña la pieza.
 :::
 <!-- prettier-ignore-end -->
+
+### Potencia de pestañas
+
+El deslizador de **Potencia de pestañas** en los ajustes de _Láser_ del paso controla cómo se cortan
+las pestañas:
+
+- **0% (predeterminado):** el láser se apaga a lo largo de la pestaña, dejando un hueco a través del
+  material
+- **Por encima de 0%:** el láser permanece encendido y corta a través de la pestaña al porcentaje
+  indicado de la potencia del paso, dejando un puente fino debilitado
+
+El modo potencia produce un borde más limpio que un hueco y evita que el material se flexione hacia
+el corte, a costa de un puente ligeramente más alto que habrá que remover después.
 
 ### Posición de Pestaña
 

@@ -587,15 +587,14 @@ def collect_members(body: list[ast.stmt]) -> dict:
                 }
             )
 
-        elif isinstance(item, ast.ImportFrom):
-            if item.module:
-                names = [a.name for a in item.names]
-                members["re_exports"].append(
-                    {
-                        "module": item.module,
-                        "names": names,
-                    }
-                )
+        elif isinstance(item, ast.ImportFrom) and item.module:
+            names = [a.name for a in item.names]
+            members["re_exports"].append(
+                {
+                    "module": item.module,
+                    "names": names,
+                }
+            )
 
     return members
 

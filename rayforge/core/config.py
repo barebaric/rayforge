@@ -12,6 +12,7 @@ from blinker import Signal
 
 from ..machine.models.machine import Machine
 from ..shared.util.atomic import atomic_write_yaml, load_yaml_with_backup
+from .vectorization_spec import LayerSource
 
 logger = logging.getLogger(__name__)
 
@@ -101,6 +102,8 @@ class Config:
         self.auto_pipeline: bool = True
         self.ops_color_mode: OpsColorMode = OpsColorMode.LASER
         self.check_for_app_updates: bool = True
+        self.check_for_addon_updates: bool = True
+        self.external_addon_services_enabled: bool = True
         # Whether to watch imported files and offer to reload them when
         # they change on disk.
         self.watch_source_files: bool = True
@@ -109,6 +112,10 @@ class Config:
         self.usage_consent_date: str | None = None
         # Default DPI for unitless SVG imports
         self.import_dpi: float = 96.0
+        # Last-used layer source in the import dialog (a LayerSource
+        # value). None until the user picks one; while None, the
+        # dialog falls back to its file-based heuristics.
+        self.import_layer_source: LayerSource | None = None
         # Cache budget for the raygeo pipeline (default 2 GiB)
         self.cache_budget_bytes: int = 2 * 1024 * 1024 * 1024
         # Language preference: None = system default, or a code like "de"
@@ -203,6 +210,13 @@ class Config:
         self.import_dpi = dpi
         self.changed.send(self)
 
+    def set_import_layer_source(self, source: LayerSource):
+        """Remembers the last-used layer source for vector imports."""
+        if self.import_layer_source == source:
+            return
+        self.import_layer_source = source
+        self.changed.send(self)
+
     def set_cache_budget_bytes(self, budget: int):
         """Sets the pipeline cache budget in bytes."""
         if self.cache_budget_bytes == budget:
@@ -222,6 +236,20 @@ class Config:
         if self.check_for_app_updates == enabled:
             return
         self.check_for_app_updates = enabled
+        self.changed.send(self)
+
+    def set_check_for_addon_updates(self, enabled: bool):
+        """Sets whether to check for addon updates on startup."""
+        if self.check_for_addon_updates == enabled:
+            return
+        self.check_for_addon_updates = enabled
+        self.changed.send(self)
+
+    def set_external_addon_services_enabled(self, enabled: bool):
+        """Sets whether external addon services may be used."""
+        if self.external_addon_services_enabled == enabled:
+            return
+        self.external_addon_services_enabled = enabled
         self.changed.send(self)
 
     def set_watch_source_files(self, enabled: bool):
@@ -352,10 +380,19 @@ class Config:
             "canvas_view": self.canvas_view.to_dict(),
             "auto_pipeline": self.auto_pipeline,
             "check_for_app_updates": self.check_for_app_updates,
+            "check_for_addon_updates": self.check_for_addon_updates,
+            "external_addon_services_enabled": (
+                self.external_addon_services_enabled
+            ),
             "watch_source_files": self.watch_source_files,
             "ops_color_mode": self.ops_color_mode.value,
             "usage_consent_date": self.usage_consent_date,
             "import_dpi": self.import_dpi,
+            "import_layer_source": (
+                self.import_layer_source.value
+                if self.import_layer_source
+                else None
+            ),
             "cache_budget_bytes": self.cache_budget_bytes,
             "language": self.language,
             "default_stock_material_uid": self.default_stock_material_uid,
@@ -417,6 +454,12 @@ class Config:
         )
         config.auto_pipeline = data.get("auto_pipeline", True)
         config.check_for_app_updates = data.get("check_for_app_updates", True)
+        config.check_for_addon_updates = data.get(
+            "check_for_addon_updates", True
+        )
+        config.external_addon_services_enabled = data.get(
+            "external_addon_services_enabled", True
+        )
         config.watch_source_files = data.get("watch_source_files", True)
 
         ops_color_mode_str = data.get(
@@ -432,6 +475,17 @@ class Config:
 
         # Load import DPI
         config.import_dpi = data.get("import_dpi", 96.0)
+
+        # Load remembered import layer source (None = not chosen yet)
+        layer_source_str = data.get("import_layer_source")
+        if layer_source_str:
+            try:
+                config.import_layer_source = LayerSource(layer_source_str)
+            except ValueError:
+                logger.warning(
+                    f"Invalid import layer source in config: "
+                    f"{layer_source_str}. Ignoring."
+                )
 
         # Load cache budget
         config.cache_budget_bytes = data.get(

@@ -9,7 +9,6 @@ from raygeo.ops.axis import Axis
 
 from ...logging_setup import ui_log_event_received
 from ...machine.cmd import MachineCmd
-from ...machine.driver.dummy import NoDeviceDriver
 from ...machine.models.machine import Machine
 from ...shared.gcodeedit.viewer import GcodeViewer
 from ...shared.tasker import task_mgr
@@ -456,11 +455,11 @@ class BottomPanel(Gtk.Box):
             _("Speed"),
             lower=1,
             upper=60000,
-            value_in_base=1000,
         )
         self.speed_row.value_changed.connect(self._on_speed_changed)
         self.wcs_group.add(self.speed_row)
         self.move_to_popover.set_speed_getter(self._get_jog_speed)
+        self._sync_jog_speed()
 
         self.distance_row = LengthSpinRow(
             _("Jog Distance"),
@@ -483,9 +482,20 @@ class BottomPanel(Gtk.Box):
         """The current jog speed in mm/min, shared with move commands."""
         return self._get_jog_speed()
 
+    def _sync_jog_speed(self):
+        """Shows the machine's stored jog speed on the row and widget."""
+        if not self.machine:
+            return
+        speed_mm_min = int(self.machine.jog_speed)
+        self.speed_row.set_value_in_base_units(speed_mm_min)
+        self.jog_widget.jog_speed = speed_mm_min
+
     def _on_speed_changed(self, row):
+        if not self.machine:
+            return
         speed_mm_min = int(self.speed_row.get_value_in_base_units())
         self.jog_widget.jog_speed = speed_mm_min
+        self.machine.set_jog_speed(speed_mm_min)
 
     def _on_distance_changed(self, row):
         self.jog_widget.jog_distance = (
@@ -526,6 +536,7 @@ class BottomPanel(Gtk.Box):
 
         if self.machine:
             self._connect_machine_signals()
+            self._sync_jog_speed()
             self._update_wcs_ui()
 
         if self.machine and self.machine_cmd:
@@ -593,7 +604,7 @@ class BottomPanel(Gtk.Box):
     def update_position_menu_sensitivity(self):
         if not self.machine:
             return
-        is_dummy = isinstance(self.machine.driver, NoDeviceDriver)
+        is_dummy = self.machine.is_driverless
         is_connected = self.machine.is_connected()
         is_active = is_connected or is_dummy
 
@@ -730,7 +741,7 @@ class BottomPanel(Gtk.Box):
             offset_parts.append(f"Z: {off_z:.2f}")
         self.wcs_row.set_subtitle("   ".join(offset_parts))
 
-        is_dummy = isinstance(self.machine.driver, NoDeviceDriver)
+        is_dummy = self.machine.is_driverless
         is_connected = self.machine.is_connected()
         is_active = is_connected or is_dummy
 

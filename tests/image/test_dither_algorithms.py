@@ -5,9 +5,9 @@ from typing import cast
 import numpy as np
 import pytest
 from raygeo.image.dither import (
+    apply_error_diffusion_dither,
     apply_floyd_steinberg_dither,
     apply_halftone_dither,
-    apply_minimum_run_length,
 )
 from raygeo.image.srgb import srgb_to_linear
 from scipy import ndimage
@@ -101,13 +101,39 @@ class TestGrayscaleToDitheredArray:
         [a for a in ERROR_DIFFUSION if a is not DitherAlgorithm.ATKINSON],
     )
     @pytest.mark.parametrize("gray", [40, 128, 200])
-    def test_error_diffusion_preserves_linear_tone(self, algo, gray):
+    def test_error_diffusion_preserves_srgb_tone(self, algo, gray):
         img = np.full((64, 96), gray, dtype=np.uint8)
         result = grayscale_to_dithered_array(img, algo)
+        expected = 1.0 - gray / 255.0
+        assert result.mean() == pytest.approx(expected, abs=0.02)
+
+    @pytest.mark.parametrize(
+        "algo",
+        [a for a in ERROR_DIFFUSION if a is not DitherAlgorithm.ATKINSON],
+    )
+    @pytest.mark.parametrize("gray", [40, 128, 200])
+    def test_error_diffusion_preserves_linear_tone(self, algo, gray):
+        img = np.full((64, 96), gray, dtype=np.uint8)
+        result = grayscale_to_dithered_array(img, algo, linear=True)
         expected = 1.0 - float(
             srgb_to_linear(np.array([gray], dtype=np.uint8))[0]
         )
         assert result.mean() == pytest.approx(expected, abs=0.02)
+
+    def test_error_diffusion_forwards_options_to_raygeo(self):
+        rng = np.random.default_rng(13)
+        img = rng.integers(0, 256, (24, 40)).astype(np.uint8)
+        result = grayscale_to_dithered_array(
+            img, DitherAlgorithm.STUCKI, min_feature_px=2, linear=True
+        )
+        expected = apply_error_diffusion_dither(
+            img,
+            "stucki",
+            serpentine=False,
+            min_feature_px=2,
+            linear=True,
+        )
+        np.testing.assert_array_equal(result, expected)
 
     def test_atkinson_loses_a_quarter_of_the_error(self):
         """Atkinson only diffuses 6/8 of the error, which clips dark
@@ -123,9 +149,7 @@ class TestGrayscaleToDitheredArray:
         result = grayscale_to_dithered_array(
             img, DitherAlgorithm.FLOYD_STEINBERG, min_feature_px=2
         )
-        expected = apply_minimum_run_length(
-            apply_floyd_steinberg_dither(img, False), 2
-        )
+        expected = apply_floyd_steinberg_dither(img, False, 2)
         np.testing.assert_array_equal(result, expected)
 
     def test_floyd_steinberg_serpentine_differs_from_raygeo(self):
@@ -147,7 +171,7 @@ class TestGrayscaleToDitheredArray:
             assert grayscale_to_dithered_array(img, algo).shape == (16, 16)
 
     @pytest.mark.parametrize("algo", ERROR_DIFFUSION[1:])
-    def test_minimum_feature_size_removes_short_runs(self, algo):
+    def test_minimum_feature_size_cells_keep_run_length(self, algo):
         img = np.full((32, 64), 200, dtype=np.uint8)
         result = grayscale_to_dithered_array(img, algo, min_feature_px=3)
         for row in result:

@@ -249,8 +249,16 @@ traditionellem Halbton-Druck ähneln.
 **Stucki, Jarvis, Sierra, Burkes und Atkinson** sind wie Floyd-Steinberg Fehler-Diffusionsverfahren,
 verteilen den Fehler aber über eine größere Umgebung. Das ergibt eine ruhigere Körnung in
 gleichmäßigen Flächen wie Hauttönen. Atkinson verteilt nur einen Teil des Fehlers und erhöht so den
-Kontrast. Schalte **Serpentinenmodus** ein, um die Abtastrichtung in jeder Zeile zu wechseln und
-richtungsabhängige Streifen zu vermeiden.
+Kontrast. **Serpentinenmodus** (standardmäßig aktiviert) wechselt die Abtastrichtung in jeder Zeile
+und vermeidet so richtungsabhängige Streifen.
+
+**Minimale Merkgröße** fasst jede Scanzeile vor der Diffusion in Zellen zusammen, damit kein Punkt
+kleiner als die angegebene Pixelanzahl ist. Der Auto-Wert entspricht der Laserpunktgröße und hält
+jeden Punkt bei voller Stärke; kleinere Werte erlauben feinere, aber schwächere Punkte.
+
+**Lineares Licht** diffundiert im linearen Licht statt auf den rohen sRGB-Werten. Die Diffusion auf
+sRGB-Werten hält die Punktabdeckung auf dem Ton, den das Bild auf dem Bildschirm zeigt; lineares
+Licht graviert Mitteltöne deutlich dunkler.
 
 **Zeitungsdruck** und **Halbton** fassen Pixel zu Punkten zusammen. Halbton setzt runde Punkte auf
 ein Raster, das du mit **Halbton-Zellgröße** (Abstand zwischen den Punktmittelpunkten) und
@@ -309,6 +317,20 @@ Für Bilder sollte der Linienabstand der Bildauflösung entsprechen oder diese �
 dein Bild 10 Pixel/mm (254 DPI) hat, verwende 0.1mm Linienabstand oder kleiner.
 :::
 <!-- prettier-ignore-end -->
+
+#### Abtastintervall
+
+**Abtastintervall (mm):**
+
+- Abstand zwischen den Abtastpunkten entlang jeder Scanzeile, in jedem Rastermodus
+- Beim Dithering legt er die Länge jedes Punkts fest; bei leistungsgeregelter Gravur, wie oft sich
+  die Leistung entlang der Linie ändert
+- Kleiner = feinere Details, größere Ausgabedateien
+- Der Auto-Wert ergibt beim Dithering quadratische Punkte (er folgt dem Linienabstand) und
+  entspricht in leistungsgesteuerten Modi der halben Laserpunktgröße
+
+**Empfohlen:** behalte den Auto-Wert bei. Ein viel größerer Abtastintervall macht jeden Punkt zu
+einem langen Strich, der als sichtbare Textur in Verläufen auffällt.
 
 #### Scan-Richtung
 

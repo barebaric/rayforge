@@ -56,6 +56,7 @@ class DeviceSettingsPage(TrackedPreferencesPage):
         self.spinner = Gtk.Spinner()
         self.read_button = Gtk.Button(child=get_icon("refresh-symbolic"))
         self.read_button.set_tooltip_text(_("Read from Device"))
+        self.read_button.set_valign(Gtk.Align.CENTER)
         self.read_button.connect("clicked", self._on_read_clicked)
         self.header_box = Gtk.Box(spacing=6)
         self.header_box.append(self.spinner)

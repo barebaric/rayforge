@@ -32,6 +32,9 @@ Symbolleisten-Schaltfläche auslösen.
 Rayforge kann beim Start **automatisch nach Updates suchen**. Wenn aktiviert, wirst du
 benachrichtigt, wenn eine neue Version verfügbar ist.
 
+Rayforge kann beim Start außerdem **automatisch nach Addon-Updates suchen**. Das Deaktivieren
+verhindert keine manuellen Prüfungen auf der Addons-Seite.
+
 Ist **Importierte Dateien beobachten** aktiviert, überwacht Rayforge die Dateien hinter importierten
 Werkstücken und bietet an, sie neu zu laden, wenn sie sich auf der Festplatte ändern. Details
 findest du unter

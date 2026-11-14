@@ -1,113 +1,636 @@
+"""Tests for the Rust-backed GrblSerialSimpleDriver."""
+
 import asyncio
+import logging
+import time
 from dataclasses import replace
-from unittest.mock import AsyncMock, PropertyMock
+from unittest.mock import PropertyMock
 
 import pytest
+import pytest_asyncio
+from raydriver.core.transport import MockTransport
+from raydriver.grbl.emulator import GrblEmulator
+from raydriver.grbl.simple import GrblSimpleSession
+from raygeo.ops import Ops
+from raygeo.ops.axis import Axis
 
-from rayforge.machine.driver.grbl.grbl_serial_simple import (
-    GrblSerialSimpleDriver,
+from rayforge.core.doc import Doc
+from rayforge.machine.driver import get_driver_cls
+from rayforge.machine.driver.driver import (
+    DeviceStatus,
+    DriverMaturity,
 )
-from rayforge.machine.transport import SerialTransport
+from rayforge.machine.driver.grbl import GrblSerialSimpleDriver
+from rayforge.machine.driver.session_state import from_session_state
+from rayforge.pipeline.encoder.gcode import GcodeEncoder
+
+FAST_CONFIG = {
+    "handshake_timeout": 2.0,
+    "handshake_poll_interval": 0.02,
+    "status_poll_interval": 0.05,
+    "reconnect_delay": 0.2,
+    "command_timeout": 2.0,
+    "safety_shutdown_delay": 0.02,
+}
 
 
-@pytest.fixture
-def simple_driver(context_initializer, machine, mocker):
-    """A GrblSerialSimpleDriver with a mocked, connected transport."""
-    transport = mocker.create_autospec(SerialTransport, instance=True)
-    transport.send = AsyncMock()
-    transport.disconnect = AsyncMock()
-    transport.received = mocker.MagicMock()
-    mocker.patch.object(
-        transport,
-        "is_connected",
-        new_callable=PropertyMock,
-        return_value=True,
+def _parser_module():
+    """The raydriver.grbl.parser module, resolved through the runtime
+    package so pyright sees the Rust stubs."""
+    import raydriver.grbl.parser
+
+    return raydriver.grbl.parser
+
+
+async def wait_until(predicate, timeout: float = 5.0, interval=0.01):
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if predicate():
+            return True
+        await asyncio.sleep(interval)
+    raise AssertionError("condition not met")
+
+
+class SignalRecorder:
+    """Collects blinker signal emissions from a driver.
+
+    Handlers are held by strong references: blinker drops weak
+    receiver references as soon as they are garbage-collected.
+    """
+
+    def __init__(self, driver: GrblSerialSimpleDriver):
+        self.events: list[tuple[str, dict]] = []
+        self._keepalive: list = []
+        driver.state_changed.connect(self._keep(self._send_state))
+        driver.connection_status_changed.connect(
+            self._keep(self._send_connection_status)
+        )
+        driver.job_finished.connect(self._keep(self._send_job_finished))
+        driver.command_status_changed.connect(
+            self._keep(self._send_command_status)
+        )
+        driver.probe_status_changed.connect(
+            self._keep(self._send_probe_status)
+        )
+        driver.wcs_updated.connect(self._keep(self._send_wcs_updated))
+
+    def _keep(self, fn):
+        self._keepalive.append(fn)
+        return fn
+
+    def _send_state(self, sender, state=None, **kwargs):
+        self.events.append(("state_changed", {"state": state}))
+
+    def _send_wcs_updated(self, sender, offsets=None):
+        self.events.append(("wcs_updated", {"offsets": offsets}))
+
+    def _send_connection_status(self, sender, status=None, message=None):
+        self.events.append(("connection_status_changed", {"status": status}))
+
+    def _send_job_finished(self, sender):
+        self.events.append(("job_finished", {}))
+
+    def _send_command_status(self, sender, status=None, message=None):
+        self.events.append(("command_status_changed", {"status": status}))
+
+    def _send_probe_status(self, sender, message=None):
+        self.events.append(("probe_status_changed", {"message": message}))
+
+    def names(self):
+        return [name for name, _ in self.events]
+
+    async def wait_for(self, name: str, pred=None, timeout: float = 5.0):
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            for event_name, payload in self.events:
+                if event_name != name:
+                    continue
+                if pred is None or pred(payload):
+                    return payload
+            await asyncio.sleep(0.01)
+        raise AssertionError(
+            f"event {name!r} not observed; got {self.names()}"
+        )
+
+    async def wait_connected(self, timeout: float = 5.0):
+        return await self.wait_for(
+            "connection_status_changed",
+            pred=lambda p: p["status"].name == "CONNECTED",
+            timeout=timeout,
+        )
+
+
+def sent_text(mock) -> bytes:
+    return b"".join(mock.sent())
+
+
+def command_sends(mock) -> list[bytes]:
+    """Lines written by the session (status polls excluded)."""
+    return [chunk for chunk in mock.sent() if chunk != b"?"]
+
+
+def make_driver(
+    context, machine
+) -> tuple[GrblSerialSimpleDriver, MockTransport]:
+    """Build a GrblSerialSimpleDriver around an emulator-backed
+    session, mirroring what ``_setup_implementation`` does for a
+    real serial port."""
+    drv = GrblSerialSimpleDriver(context, machine)
+    drv.did_setup = True
+    mock = MockTransport()
+    session = GrblSimpleSession.with_transport(
+        mock,
+        config=FAST_CONFIG,
+        dialect=drv._dialect_templates(),
+        event_callback=drv._on_session_event,
     )
+    drv._session = session
+    return drv, mock
 
-    driver = GrblSerialSimpleDriver(context_initializer, machine)
-    driver.did_setup = True
-    driver._transport = transport
-    yield driver
+
+async def connect_scripted(drv, mock, recorder):
+    """Connect the driver to a mute device: the handshake completes
+    on the boot banner, and nothing is answered afterwards, so the
+    tests script every response and ordering is deterministic."""
+    await drv.connect()
+    await wait_until(lambda: mock.sent())
+    mock.push(b"Grbl 1.1h ['$' for help]\r\n")
+    await recorder.wait_connected()
+    mock.clear_sent()
+    recorder.events.clear()
+    return drv
+
+
+@pytest_asyncio.fixture
+async def connected_driver(context_initializer, machine):
+    """A driver connected to a responsive Grbl emulator.
+
+    Yields (driver, mock, emulator, recorder).
+    """
+    drv, mock = make_driver(context_initializer, machine)
+    emulator = GrblEmulator(mock)
+    emulator_task = asyncio.ensure_future(emulator.run())
+    recorder = SignalRecorder(drv)
+    try:
+        await drv.connect()
+        await recorder.wait_connected()
+        mock.clear_sent()
+        yield drv, mock, emulator, recorder
+    finally:
+        await drv.cleanup()
+        emulator_task.cancel()
+        try:
+            await emulator_task
+        except asyncio.CancelledError:
+            pass
+
+
+class TestRegistry:
+    def test_driver_registered(self):
+        assert (
+            get_driver_cls("GrblSerialSimpleDriver") is GrblSerialSimpleDriver
+        )
+
+    def test_metadata(self):
+        assert GrblSerialSimpleDriver.machine_space_wcs
+        assert GrblSerialSimpleDriver.supports_settings
+        assert GrblSerialSimpleDriver.maturity == DriverMaturity.EXPERIMENTAL
+
+    def test_setup_vars(self):
+        varset = GrblSerialSimpleDriver.get_setup_vars()
+        assert set(varset.keys()) == {"port", "baudrate"}
+
+    def test_create_encoder(self, context_initializer, machine):
+        drv = GrblSerialSimpleDriver(context_initializer, machine)
+        encoder = drv.get_encoder()
+        assert isinstance(encoder, GcodeEncoder)
+        assert encoder.dialect.uid == machine.dialect.uid
+
+    def test_convert_state(self):
+        from raydriver.core.types import DeviceState as RDState
+
+        state = _parser_module().parse_state(
+            "<Alarm:1|FS:500,0>", RDState(), False
+        )
+        converted = from_session_state(state)
+        assert converted.status == DeviceStatus.ALARM
+        assert converted.feed_rate == 500
+        assert converted.error is not None
+        assert converted.error.code == 1
+
+    def test_get_error(self):
+        drv = GrblSerialSimpleDriver.__new__(GrblSerialSimpleDriver)
+        error = drv.get_error("20")
+        assert error is not None
+        assert error.code == 20
+
+    def test_setup(self, context_initializer, machine):
+        drv = GrblSerialSimpleDriver(context_initializer, machine)
+        drv.setup(port="/dev/ttyUSB0", baudrate=115200)
+        assert drv.did_setup
+        assert drv.state.error is None
+        assert drv._session is not None
+
+    @pytest.mark.asyncio
+    async def test_commands_without_session_raise(
+        self, context_initializer, machine
+    ):
+        from rayforge.machine.driver.driver import DeviceConnectionError
+
+        drv = GrblSerialSimpleDriver(context_initializer, machine)
+        with pytest.raises(DeviceConnectionError):
+            await drv.home(None)
 
 
 @pytest.mark.asyncio
-async def test_cancel_wakes_inflight_ping_pong(simple_driver):
-    """Cancel must not leave an in-flight command waiting for timeout."""
-    driver = simple_driver
+class TestConnection:
+    async def test_connect_reports_connected(
+        self, context_initializer, machine
+    ):
+        drv, mock = make_driver(context_initializer, machine)
+        recorder = SignalRecorder(drv)
+        emulator = GrblEmulator(mock)
+        task = asyncio.ensure_future(emulator.run())
+        try:
+            await drv.connect()
+            await recorder.wait_connected()
+            # CONNECTED fires when the transport opens; the first
+            # handshake poll lands right after it, asynchronously.
+            await wait_until(lambda: b"?" in sent_text(mock))
+            assert b"?" in sent_text(mock)
+        finally:
+            await drv.cleanup()
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
 
-    ping_task = asyncio.create_task(driver._ping_pong("M5", timeout=30.0))
-    await asyncio.sleep(0)
-    assert driver._pending is not None
-
-    await asyncio.wait_for(driver.cancel(), timeout=1.0)
-
-    lines = await asyncio.wait_for(ping_task, timeout=1.0)
-    assert lines == []
-    assert driver._pending is None
-
-
-@pytest.mark.asyncio
-async def test_cancel_interrupts_streaming_job_promptly(simple_driver):
-    """Cancelling mid-job stops streaming immediately, without errors."""
-    driver = simple_driver
-    driver._start_job()
-
-    lines = ["M4 S20", "G1 X10", "G1 Y10", "M5"]
-    stream_task = asyncio.create_task(driver._stream_gcode_ping_pong(lines))
-    await asyncio.sleep(0)
-
-    await asyncio.wait_for(driver.cancel(), timeout=1.0)
-    await asyncio.wait_for(stream_task, timeout=1.0)
-
-    assert driver._job_running is False
-
-
-@pytest.mark.asyncio
-async def test_run_raw_sends_realtime_commands_directly(simple_driver):
-    """Realtime characters must bypass the ping-pong protocol: the
-    firmware never acknowledges them, and they must not start a job
-    that would then wedge the driver."""
-    driver = simple_driver
-
-    await driver.run_raw("~")
-
-    driver._transport.send.assert_called_once_with(b"~")
-    assert driver._job_running is False
-
-
-def _sent_lines(driver) -> list[bytes]:
-    return [call.args[0] for call in driver._transport.send.await_args_list]
+    async def test_resource_uri_none_when_disconnected(
+        self, context_initializer, machine
+    ):
+        drv, _mock = make_driver(context_initializer, machine)
+        assert drv.resource_uri is None
 
 
 @pytest.mark.asyncio
-async def test_cancel_sends_laser_off_after_reset(simple_driver):
-    """Cancel must turn persistent PWM outputs off, not just reset."""
-    driver = simple_driver
-    driver._start_job()
+class TestDeviceOperations:
+    async def test_move_to_uses_dialect_template(self, connected_driver):
+        drv, mock, _emulator, _recorder = connected_driver
+        await drv.move_to(10, -20.5)
+        expected = (
+            drv.dialect.format_move_to(x=10.0, y=-20.5, speed=1500, z=None)
+            + "\n"
+        ).encode()
+        assert expected in sent_text(mock)
 
-    await asyncio.wait_for(driver.cancel(), timeout=1.0)
+    async def test_home_sequence(self, connected_driver):
+        drv, mock, _emulator, _recorder = connected_driver
+        await drv.home(None)
+        text = sent_text(mock)
+        assert b"$H\n" in text
+        assert b"G4 P0.01\n" in text
+        assert text.index(b"$H\n") < text.index(b"G55\n")
+        assert text.index(b"G55\n") < text.index(b"G54\n")
 
-    sent = _sent_lines(driver)
-    assert b"\x18" in sent
-    assert b"M5\n" in sent
+    async def test_home_does_not_park_by_default(self, connected_driver):
+        drv, mock, _emulator, _recorder = connected_driver
+        await drv.home(None)
+        assert b"G53" not in sent_text(mock)
+
+    async def test_home_parks_when_position_set(self, connected_driver):
+        drv, mock, _emulator, _recorder = connected_driver
+        drv._machine.set_park_position_after_homing((12.5, 0.0))
+        mock.clear_sent()
+        await drv.home(None)
+        text = sent_text(mock)
+        assert b"G53 G0 X12.5 Y0.0\n" in text
+        assert text.index(b"$H\n") < text.index(b"G53 G0 X12.5 Y0.0\n")
+
+    async def test_home_skips_park_when_template_empty(self, connected_driver):
+        drv, mock, _emulator, _recorder = connected_driver
+        drv._machine.set_park_position_after_homing((10.0, 10.0))
+        drv._machine._hydrated_dialect = replace(drv.dialect, move_to_park="")
+        mock.clear_sent()
+        await drv.home(None)
+        assert b"G53" not in sent_text(mock)
+
+    async def test_home_single_axis_skips_park(self, connected_driver):
+        drv, mock, _emulator, _recorder = connected_driver
+        drv._machine.set_park_position_after_homing((10.0, 10.0))
+        mock.clear_sent()
+        await drv.home([Axis.X])
+        assert b"G53" not in sent_text(mock)
+
+    async def test_set_power(self, connected_driver):
+        drv, mock, _emulator, _recorder = connected_driver
+
+        class Head:
+            max_power = 1000
+
+        mock.clear_sent()
+        await drv.set_power(Head(), 0.5)
+        cmd = drv.dialect.laser_on.format(power=500)
+        assert (cmd + "\n").encode() in sent_text(mock)
+        await drv.set_power(Head(), 0)
+        assert (drv.dialect.laser_off + "\n").encode() in sent_text(mock)
+
+    async def test_jog(self, connected_driver):
+        drv, mock, _emulator, _recorder = connected_driver
+        mock.clear_sent()
+        await drv.jog(1000, x=10.0)
+        sent = sent_text(mock)
+        template = drv.dialect.jog.format(speed=1000)
+        assert (template + " X10.0\n").encode() in sent
+
+    async def test_write_setting(self, connected_driver):
+        drv, mock, _emulator, _recorder = connected_driver
+        mock.clear_sent()
+        await drv.write_setting("110", 750.000)
+        assert b"$110=750.0\n" in sent_text(mock)
+
+    async def test_set_wcs_offset_and_read(self, connected_driver):
+        drv, mock, _emulator, recorder = connected_driver
+        mock.clear_sent()
+        await drv.set_wcs_offset("G55", 10, 20, None)
+        assert b"G10 L2 P2 X10.0 Y20.0\n" in sent_text(mock)
+        offsets = await drv.read_wcs_offsets()
+        assert offsets["G55"] == (10.0, 20.0, 0.0)
+        await recorder.wait_for("wcs_updated")
+
+    async def test_read_settings_emits_varsets(self, connected_driver):
+        drv, _mock, _emulator, _recorder = connected_driver
+
+        class SettingsReceiver:
+            def __init__(self, drv):
+                self.collected: list = []
+                drv.settings_read.connect(self._on_settings_read)
+
+            def _on_settings_read(self, sender, settings=None):
+                self.collected.append(settings)
+
+        receiver = SettingsReceiver(drv)
+        await drv.read_settings()
+        assert receiver.collected
+        values: dict[str, float] = {}
+        for varset in receiver.collected[0]:
+            for key in varset.keys():  # noqa: SIM118
+                value = varset[key].value
+                if isinstance(value, (int, float)):
+                    values[varset[key].label] = float(value)
+        assert "$110" in values
+        assert values["$110"] != 0.0
+
+    async def test_detect_unit_system(self, connected_driver):
+        drv, _mock, _emulator, _recorder = connected_driver
+        result = await drv.detect_unit_system()
+        assert result is not None
+
+    async def test_probe_cycle_success(self, connected_driver):
+        drv, _mock, emulator, recorder = connected_driver
+        emulator.probe_touch = (0.0, 0.0, -5.0)
+        pos = await drv.run_probe_cycle(Axis.Z, 10.0, 100)
+        assert pos is not None
+        assert -10.0 < pos[2] <= 0.0
+        await recorder.wait_for("probe_status_changed")
 
 
 @pytest.mark.asyncio
-async def test_emergency_cancel_sends_failsafe_command(simple_driver, mocker):
-    """An emergency cancel must also send the dialect's failsafe."""
-    driver = simple_driver
-    dialect = replace(driver.dialect, emergency_stop="M112")
-    mocker.patch.object(
-        GrblSerialSimpleDriver,
-        "dialect",
-        new_callable=PropertyMock,
-        return_value=dialect,
-    )
-    driver._start_job()
+class TestStreaming:
+    async def test_run_raw_completes(self, connected_driver):
+        drv, _mock, _emulator, recorder = connected_driver
+        await drv.run_raw("G1 X5 F1000\nG1 X0 F1000\n")
+        await recorder.wait_for("job_finished")
 
-    await asyncio.wait_for(driver.cancel(emergency=True), timeout=1.0)
+    async def test_error_halts_job(self, connected_driver):
+        drv, _mock, _emulator, recorder = connected_driver
+        await drv.run_raw("G999\nG1 X1 F1000\n")
+        await recorder.wait_for("job_finished")
+        await asyncio.sleep(0.05)
+        states = [
+            payload["state"]
+            for name, payload in recorder.events
+            if name == "state_changed"
+        ]
+        assert any(
+            state is not None and state.error is not None for state in states
+        )
 
-    sent = _sent_lines(driver)
-    assert b"\x18" in sent
-    assert b"M5\n" in sent
-    assert b"M112\n" in sent
+    async def test_run_with_encoded_output_and_progress(
+        self, connected_driver
+    ):
+        drv, _mock, _emulator, recorder = connected_driver
+        encoder = drv.get_encoder()
+        ops = Ops()
+        ops.set_power(1.0)
+        ops.move_to(0, 0, 0)
+        ops.line_to(10, 0, 0)
+        encoded = encoder.encode(ops, drv._machine, Doc())
+        done: list[int] = []
+
+        def progress(op_index: int):
+            done.append(op_index)
+
+        await drv.run(encoded, Doc(), ops, progress)
+        await recorder.wait_for("job_finished")
+        assert done, "on_command_done was never called"
+
+    async def test_cancel_within_job(self, connected_driver):
+        drv, mock, emulator, _recorder = connected_driver
+        emulator.speed_factor = 2
+
+        async def job():
+            await drv.run_raw(_slow_job(40))
+
+        task = asyncio.ensure_future(job())
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline:
+            if drv._session.job_running:
+                break
+            await asyncio.sleep(0.05)
+        else:
+            pytest.fail("job never started")
+        mock.clear_sent()
+        await drv.cancel()
+        await asyncio.sleep(0.3)
+        assert task.done()
+        sent = sent_text(mock)
+        assert b"\x18" in sent
+        assert b"M5\n" in sent
+
+
+@pytest.mark.asyncio
+class TestCancelRegression:
+    """The ported cancel/realtime regression suite of the Python
+    implementation, driven through the Rust session: cancel must
+    wake an in-flight command, stop streaming promptly, turn
+    persistent PWM outputs off after the soft reset, and send the
+    dialect's failsafe on emergency cancel; realtime characters
+    bypass the ping-pong protocol."""
+
+    async def mute_driver(
+        self,
+        context_initializer,
+        machine,
+        mocker=None,
+        emergency_stop=None,
+    ):
+        drv, mock = make_driver(context_initializer, machine)
+        if emergency_stop is not None:
+            assert mocker is not None
+            dialect = replace(drv.dialect, emergency_stop=emergency_stop)
+            mocker.patch.object(
+                GrblSerialSimpleDriver,
+                "dialect",
+                new_callable=PropertyMock,
+                return_value=dialect,
+            )
+            session = GrblSimpleSession.with_transport(
+                mock,
+                config=FAST_CONFIG,
+                dialect=drv._dialect_templates(),
+                event_callback=drv._on_session_event,
+            )
+            drv._session = session
+        recorder = SignalRecorder(drv)
+        await connect_scripted(drv, mock, recorder)
+        return drv, mock, recorder
+
+    def _safety_chunks(self, drv) -> set[bytes]:
+        """The chunks cancel is expected to write for safety: the
+        soft reset plus the dialect's tool-off commands."""
+        return {b"\x18"} | {
+            (command + "\n").encode()
+            for command in drv.dialect.get_safety_off_commands()
+        }
+
+    async def test_cancel_wakes_inflight_ping_pong(
+        self, context_initializer, machine
+    ):
+        """Cancel must not leave an in-flight command waiting for
+        its full timeout."""
+        drv, mock, _recorder = await self.mute_driver(
+            context_initializer, machine
+        )
+        command = asyncio.ensure_future(drv.execute_interactive_command("M5"))
+        await wait_until(lambda: b"M5\n" in sent_text(mock))
+
+        await asyncio.wait_for(drv.cancel(), timeout=1.0)
+        lines = await asyncio.wait_for(command, timeout=1.0)
+        assert lines == []
+
+    async def test_cancel_interrupts_streaming_job_promptly(
+        self, context_initializer, machine
+    ):
+        """Cancelling mid-job stops streaming immediately, without
+        errors and without sending further job lines."""
+        drv, mock, _recorder = await self.mute_driver(
+            context_initializer, machine
+        )
+        stream = asyncio.ensure_future(drv.run_raw(GCODE))
+        await wait_until(lambda: len(command_sends(mock)) >= 1)
+
+        await asyncio.wait_for(drv.cancel(), timeout=1.0)
+        await asyncio.wait_for(stream, timeout=1.0)
+        await asyncio.sleep(0.2)
+
+        assert drv._session is not None
+        assert not drv._session.job_running
+        # Only the first job line went out before the cancel; the
+        # remainder must not have been streamed.
+        safety = self._safety_chunks(drv)
+        job_lines = [
+            chunk for chunk in command_sends(mock) if chunk not in safety
+        ]
+        assert job_lines == [b"M4 S20\n"]
+
+    async def test_run_raw_sends_realtime_commands_directly(
+        self, context_initializer, machine
+    ):
+        """Realtime characters must bypass the ping-pong protocol:
+        the firmware never acknowledges them, and they must not
+        start a job that would then wedge the driver."""
+        drv, mock, _recorder = await self.mute_driver(
+            context_initializer, machine
+        )
+        await asyncio.wait_for(drv.run_raw("~"), timeout=1.0)
+        assert b"~" in sent_text(mock)
+        assert drv._session is not None
+        assert not drv._session.job_running
+
+    async def test_cancel_sends_laser_off_after_reset(
+        self, context_initializer, machine
+    ):
+        """Cancel must turn persistent PWM outputs off, not just
+        reset."""
+        drv, mock, _recorder = await self.mute_driver(
+            context_initializer, machine
+        )
+        stream = asyncio.ensure_future(drv.run_raw(GCODE))
+        await wait_until(lambda: len(command_sends(mock)) >= 1)
+
+        await asyncio.wait_for(drv.cancel(), timeout=1.0)
+        await asyncio.wait_for(stream, timeout=1.0)
+        await asyncio.sleep(0.2)
+
+        sent = sent_text(mock)
+        assert b"\x18" in sent
+        assert b"M5\n" in sent
+
+    async def test_emergency_cancel_sends_failsafe_command(
+        self, context_initializer, machine, mocker
+    ):
+        """An emergency cancel must also send the dialect's
+        failsafe."""
+        drv, mock, _recorder = await self.mute_driver(
+            context_initializer,
+            machine,
+            mocker,
+            emergency_stop="M112",
+        )
+        stream = asyncio.ensure_future(drv.run_raw(GCODE))
+        await wait_until(lambda: len(command_sends(mock)) >= 1)
+
+        await asyncio.wait_for(drv.cancel(emergency=True), timeout=1.0)
+        await asyncio.wait_for(stream, timeout=1.0)
+        await asyncio.sleep(0.2)
+
+        sent = sent_text(mock)
+        assert b"\x18" in sent
+        assert b"M5\n" in sent
+        assert b"M112\n" in sent
+
+
+@pytest.mark.asyncio
+class TestRawLogging:
+    async def test_settings_reply_is_logged(self, connected_driver, caplog):
+        drv, _mock, _emulator, _recorder = connected_driver
+        with caplog.at_level(
+            logging.INFO,
+            logger="rayforge.machine.driver.grbl.grbl_serial_simple",
+        ):
+            await drv._require_session().execute_interactive_command("$$")
+        messages = [record.getMessage() for record in caplog.records]
+        assert any(message.startswith("$") for message in messages)
+        assert "ok" in messages
+
+    async def test_outgoing_command_is_logged(self, connected_driver, caplog):
+        drv, _mock, _emulator, _recorder = connected_driver
+        with caplog.at_level(
+            logging.INFO,
+            logger="rayforge.machine.driver.grbl.grbl_serial_simple",
+        ):
+            await drv._require_session().execute_interactive_command("$$")
+        assert any(
+            record.getMessage() == "$$"
+            and record.__dict__.get("log_category") == "RAW_IO"
+            for record in caplog.records
+        )
+
+
+GCODE = "M4 S20\nG1 X10\nG1 Y10\nM5\n"
+
+
+def _slow_job(n_lines: int) -> str:
+    """Long alternating moves that keep the machine busy."""
+    return "\n".join(f"G1 X{50 if i % 2 else 0} F600" for i in range(n_lines))

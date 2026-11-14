@@ -87,10 +87,10 @@ class ConnectionPage(WizardPage):
         # If the working profile carries saved driver_args (e.g. via
         # import), prefill the var set before rendering.
         saved_args = profile.machine_config.driver_args or {}
-        if saved_args:
-            for var in var_set:
-                if saved_args.get(var.key):
-                    var.value = saved_args[var.key]
+        for var in var_set:
+            value = saved_args.get(var.key)
+            if value not in (None, ""):
+                var.value = value
         self.connect_widget.populate(var_set)
         self._refresh_ready()
 

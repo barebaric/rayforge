@@ -14,6 +14,7 @@ from rayforge.addon_mgr.addon import (
     AddonMetadata,
     AddonProvides,
     AddonValidationError,
+    is_official_addon_url,
     parse_maturity,
 )
 from rayforge.shared.util.versioning import UnknownVersion, get_git_tag_version
@@ -71,6 +72,79 @@ class TestAddonMetadata:
         assert meta.description == ""
         assert meta.author.name == ""
         assert meta.author.email == ""
+
+    def test_from_registry_entry_official_flag(self):
+        """The registry can mark an addon as official."""
+        data = {
+            "depends": [],
+            "author": {"name": "Test User", "email": "test@example.com"},
+            "official": True,
+        }
+        meta = AddonMetadata.from_registry_entry("my_addon", data)
+        assert meta.official is True
+        assert meta.is_official is True
+
+    def test_from_registry_entry_official_defaults_to_false(self):
+        """Addons are community addons unless marked official."""
+        data = {
+            "depends": [],
+            "author": {"name": "Test User", "email": "test@example.com"},
+        }
+        meta = AddonMetadata.from_registry_entry("my_addon", data)
+        assert meta.official is False
+        assert meta.is_official is False
+
+    def test_is_official_via_repository_url(self):
+        """Addons hosted by the Rayforge team are official."""
+        data = {
+            "depends": [],
+            "author": {"name": "Test User", "email": "test@example.com"},
+            "repository": "https://github.com/barebaric/rayforge-addon-x",
+        }
+        meta = AddonMetadata.from_registry_entry("my_addon", data)
+        assert meta.official is False
+        assert meta.is_official is True
+
+    def test_is_not_official_via_community_repository_url(self):
+        """Addons hosted elsewhere remain community addons."""
+        data = {
+            "depends": [],
+            "author": {"name": "Test User", "email": "test@example.com"},
+            "repository": "https://github.com/someone/rayforge-addon-x",
+        }
+        meta = AddonMetadata.from_registry_entry("my_addon", data)
+        assert meta.is_official is False
+
+
+class TestIsOfficialAddonUrl:
+    def test_team_repository_is_official(self):
+        assert is_official_addon_url(
+            "https://github.com/barebaric/rayforge-addon-deepnest"
+        )
+
+    def test_team_repository_with_git_suffix(self):
+        assert is_official_addon_url(
+            "https://github.com/barebaric/rayforge-addon-deepnest.git"
+        )
+
+    def test_team_repository_with_trailing_slash(self):
+        assert is_official_addon_url(
+            "https://github.com/barebaric/rayforge-addon-deepnest/"
+        )
+
+    def test_other_owner_is_not_official(self):
+        assert not is_official_addon_url(
+            "https://github.com/someone/rayforge-addon-x"
+        )
+
+    def test_similar_owner_prefix_is_not_official(self):
+        assert not is_official_addon_url(
+            "https://github.com/barebaric-evil/rayforge-addon-x"
+        )
+
+    def test_empty_url_is_not_official(self):
+        assert not is_official_addon_url("")
+        assert not is_official_addon_url(None)
 
     def test_to_dict(self):
         """Test converting metadata to dictionary."""

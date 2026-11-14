@@ -75,13 +75,16 @@ class TestOAuthFlowGetAuthorizeUrl:
 
 class TestOAuthFlowStart:
     def test_port_in_use_calls_on_error(self):
+        # Bind an ephemeral port so the test does not collide with a
+        # service already listening on a fixed port (e.g. a raydriver
+        # daemon on 8765).
+        blocker = HTTPServer(("127.0.0.1", 0), _OAuthCallbackHandler)
         config = OAuthFlowConfig(
             authorize_url="https://example.com/authorize",
             token_url="https://example.com/token",
             client_id="test-app",
-            redirect_port=8765,
+            redirect_port=blocker.server_address[1],
         )
-        blocker = HTTPServer(("127.0.0.1", 8765), _OAuthCallbackHandler)
 
         try:
             flow = OAuthFlow(config)

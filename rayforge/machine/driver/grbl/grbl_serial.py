@@ -9,7 +9,8 @@ from typing import (
 )
 
 import serial
-from raydriver.grbl import GrblSession, SessionEvent
+from raydriver.core import SessionEvent
+from raydriver.grbl import GrblSession
 from raydriver.grbl.parser import (
     error_code_to_device_error,
     extract_device_name_from_output,
@@ -54,7 +55,7 @@ from .grbl_util import (
 )
 
 if TYPE_CHECKING:
-    from raydriver.grbl.types import DeviceState as SessionDeviceState
+    from raydriver.core.types import DeviceState as SessionDeviceState
     from raygeo.ops import Ops
 
     from ....core.doc import Doc
@@ -461,6 +462,13 @@ class GrblSerialDriver(Driver):
         if axes is not None:
             names = [axis.name for axis in axes]
         await session.home(names, self._machine.active_wcs)
+        park = self._machine.park_position_after_homing
+        if axes is None and park is not None:
+            template = self.dialect.move_to_park
+            if template:
+                await session.execute_command(
+                    template.format(x=park[0], y=park[1])
+                )
 
     async def move_to(
         self,

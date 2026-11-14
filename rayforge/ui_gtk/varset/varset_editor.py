@@ -54,11 +54,10 @@ def adjust_value(
             if max_val is not None and min_val > max_val:
                 max_val = min_val
             value = max(value, min_val)
-    elif keep == "max":
-        if max_val is not None:
-            if min_val is not None and max_val < min_val:
-                min_val = max_val
-            value = min(value, max_val)
+    elif keep == "max" and max_val is not None:
+        if min_val is not None and max_val < min_val:
+            min_val = max_val
+        value = min(value, max_val)
     return min_val, max_val, value
 
 

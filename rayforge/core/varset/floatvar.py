@@ -21,6 +21,7 @@ class FloatVar(Var[float]):
         max_val: float | None = None,
         extra_validator: Callable[[float], None] | None = None,
         digits: int | None = None,
+        step: float | None = None,
         *,
         visible_when: "Callable[[dict[str, Any]], bool] | None" = None,
         sensitive_when: "Callable[[dict[str, Any]], bool] | None" = None,
@@ -28,6 +29,7 @@ class FloatVar(Var[float]):
         self.min_val = min_val
         self.max_val = max_val
         self.digits = digits
+        self.step = step
 
         def validator(v: float | None):
             # A None value is valid for an unset optional field.
@@ -66,6 +68,8 @@ class FloatVar(Var[float]):
         data.update({"min_val": self.min_val, "max_val": self.max_val})
         if self.digits is not None:
             data["digits"] = self.digits
+        if self.step is not None:
+            data["step"] = self.step
         return data
 
 

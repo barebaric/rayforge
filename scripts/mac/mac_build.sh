@@ -254,6 +254,7 @@ PY
         if [ ! -f "rayforge.icns" ] || \
            [ "rayforge/resources/icons/org.rayforge.rayforge.svg" -nt "rayforge.icns" ]; then
             echo "Generating macOS icon..."
+            "$VENV_PY" -m pip install cairosvg
             "$VENV_PY" scripts/create_icon.py
         else
             echo "Icon is up to date, skipping generation."
@@ -367,10 +368,30 @@ SH
         "$BREW_PREFIX/opt/fontconfig/lib" \
         "/usr/local/opt/fontconfig/lib" \
         "/opt/homebrew/opt/fontconfig/lib"
-    copy_keg_lib libfreetype.6.dylib \
+    # Always replace the bundled freetype with the HVF-free build from
+    # mac_setup.sh; PyInstaller may already have collected the Homebrew
+    # keg copy (which links /usr/lib/libhvf.dylib) into the bundle.
+    freetype_src=""
+    for lib_dir in "$HOME/.rayforge-macos-deps/freetype/lib" \
         "$BREW_PREFIX/opt/freetype/lib" \
         "/usr/local/opt/freetype/lib" \
         "/opt/homebrew/opt/freetype/lib"
+    do
+        if [ -f "$lib_dir/libfreetype.6.dylib" ]; then
+            freetype_src="$lib_dir/libfreetype.6.dylib"
+            break
+        fi
+    done
+    if [ -n "$freetype_src" ]; then
+        rm -f "$FW_DIR/libfreetype.6.dylib"
+        cp "$freetype_src" "$FW_DIR/"
+        install_name_tool -id "@rpath/libfreetype.6.dylib" \
+            "$FW_DIR/libfreetype.6.dylib"
+        if [ -f "$RES_DIR/libfreetype.6.dylib" ]; then
+            rm -f "$RES_DIR/libfreetype.6.dylib"
+            cp "$freetype_src" "$RES_DIR/"
+        fi
+    fi
     copy_keg_lib libsharpyuv.0.dylib \
         "$BREW_PREFIX/opt/webp/lib" \
         "/usr/local/opt/webp/lib" \
@@ -429,6 +450,21 @@ SH
             fi
         done
     fi
+
+    # Homebrew's freetype 2.15+ links the system HarfBuzz at
+    # /usr/lib/libhvf.dylib, which does not exist on macOS 14 and older
+    # and makes the app fail to launch there. Homebrew source builds do
+    # not pick up that dependency, so never use the bottled freetype.
+    for freetype_lib in "$FW_DIR/libfreetype.6.dylib" \
+        "$RES_DIR/libfreetype.6.dylib"
+    do
+        [ -f "$freetype_lib" ] || continue
+        if otool -L "$freetype_lib" | grep -q "/usr/lib/libhvf.dylib"; then
+            echo "ERROR: $freetype_lib links /usr/lib/libhvf.dylib," \
+                "which is missing on macOS 14 and older." >&2
+            exit 1
+        fi
+    done
 
     copy_missing_deps() {
         local changed=0

@@ -108,6 +108,7 @@ Configure the behavior of jog operations:
 - **Range**: 1-60,000 mm/min
 - **Default**: 1,000 mm/min
 - **Purpose**: Controls how fast the laser head moves
+- **Persistence**: The last used speed is stored per machine
 
 <!-- prettier-ignore-start -->
 :::tip[Speed Selection]

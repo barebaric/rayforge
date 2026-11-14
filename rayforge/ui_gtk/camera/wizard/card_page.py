@@ -30,6 +30,7 @@ from ....camera.calibration.target import (
 )
 from ....context import get_context
 from ....shared.units.formatter import format_value
+from ...shared.gtk import report_dialog_error
 from ...shared.pref_rows.base import SpinRow
 from ...shared.pref_rows.length_spin_row import LengthSpinRow
 from ..capture_surface import numpy_to_pixbuf
@@ -602,8 +603,11 @@ class CardPage(CameraWizardPage):
             file = dialog.save_finish(result)
             if file:
                 self._save_pdf(file.get_path())
-        except GLib.Error:
-            pass
+        except GLib.Error as e:
+            if report_dialog_error("Saving calibration card", e):
+                self.wizard.show_toast(
+                    _("Error saving file: {msg}").format(msg=e.message)
+                )
 
     def _save_pdf(self, filepath: str) -> None:
         if self._target is None:

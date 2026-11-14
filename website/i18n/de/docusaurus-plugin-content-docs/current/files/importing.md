@@ -296,6 +296,22 @@ Rayforge unterstützt Standard-DXF-Formate:
 
 **Tipp:** Exportiere als R12/LT2 DXF für maximale Kompatibilität.
 
+### Abflachen der Z-Koordinaten
+
+Manche CAD-Exporteure schreiben DXF-Dateien mit Geometrie auf unterschiedlichen Z-Höhen – zum
+Beispiel ein 3D-Modell, das mit den Konturen der Ober- und der Unterseite eines Teils exportiert
+wurde. Rayforge ist ein 2D-Programm: Auf einer Maschine mit Z-Achse werden solche Z-Werte zu echten
+Z-Bewegungen im Job, und der Kopf kann unter die Materialoberfläche eintauchen und abstürzen.
+
+Enthält eine DXF-Datei Geometrie auf mehr als einer Z-Höhe, bietet der Import-Dialog daher eine
+Option **Z-Koordinaten abflachen** (unter „Import-Modus“) an. Sie ist standardmäßig aktiviert und
+projiziert die gesamte importierte Geometrie auf die Z=0-Ebene. Du kannst sie deaktivieren, um die
+ursprünglichen Z-Höhen beizubehalten – der Dialog warnt dich dann, dass sich der Werkzeugpfad in Z
+bewegt, was nur sicher ist, wenn du weißt, dass deine Datei dies benötigt (zum Beispiel, um eine
+bestimmte Fokushöhe pro Form nachzubilden).
+
+Bei flachen Zeichnungen wird die Option nicht angezeigt; es gibt nichts abzuflachen.
+
 ### DXF-Import-Tipps
 
 **Vor dem Export aus CAD:**

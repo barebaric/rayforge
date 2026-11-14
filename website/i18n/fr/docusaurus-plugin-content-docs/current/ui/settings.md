@@ -32,6 +32,9 @@ la barre d'outils.
 Rayforge peut **Vérifier les mises à jour** automatiquement au démarrage. Lorsqu'activé, tu seras
 informé lorsqu'une nouvelle version est disponible.
 
+Rayforge peut aussi **Vérifier les mises à jour des extensions** automatiquement au démarrage.
+Désactiver cette option n'empêche pas les vérifications manuelles depuis la page Extensions.
+
 Lorsque **Surveiller les fichiers importés** est activé, Rayforge surveille les fichiers derrière
 les pièces importées et propose de les recharger lorsqu'ils changent sur le disque. Voir
 [Garder les fichiers importés synchronisés](../files/importing.md#garder-les-fichiers-importés-synchronisés)

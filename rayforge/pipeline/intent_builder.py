@@ -999,8 +999,10 @@ class IntentBuilder:
         kinematics so acceleration-aware transformers (e.g. the
         scanline merging inside :class:`Optimize`) can build their
         specs from them, and the machine's bidirectional scan offset
-        table. With a ``step`` it adds the step's speed and its own
-        bidirectional scan offset for :class:`BidirScanOffsetTransformer`.
+        table. With a ``step`` it adds the step's speed, its own
+        bidirectional scan offset for :class:`BidirScanOffsetTransformer`,
+        and the laser power settings :class:`TabOpsTransformer` needs to
+        apply reduced-power tabs.
         """
         settings: dict[str, Any] = {}
         if self._machine is not None:
@@ -1023,6 +1025,8 @@ class IntentBuilder:
             )
         if step is not None:
             settings["cut_speed"] = step.cut_speed
+            settings["power"] = getattr(step, "power", 1.0)
+            settings["tab_power"] = getattr(step, "tab_power", 0.0)
             settings["bidir_x_offset_mm"] = getattr(
                 step, "bidir_x_offset_mm", 0.0
             )

@@ -23,6 +23,7 @@ class GroupRow(Gtk.Box):
         self._on_rename = on_rename
         self._rename_entry = None
         self._rename_click_controller = None
+        self._closing_rename = False
         self.set_margin_start(6)
         self.set_margin_end(6)
         self.set_margin_top(4)
@@ -145,29 +146,40 @@ class GroupRow(Gtk.Box):
         self._finish_rename(entry)
 
     def _on_rename_focus_out(self, *args):
+        if self._closing_rename:
+            return
         self._finish_rename(self._rename_entry)
 
     def _cancel_rename(self):
-        if self._rename_entry is None:
+        if self._rename_entry is None or self._closing_rename:
             return
-        self._replace_name_widget()
-        self._update_ui()
+        self._closing_rename = True
+        try:
+            self._replace_name_widget()
+            self._update_ui()
+        finally:
+            self._closing_rename = False
 
     def _finish_rename(self, entry):
-        if self._rename_entry is None:
+        if self._rename_entry is None or self._closing_rename:
             return
-        new_name = entry.get_text().strip()
-        self._replace_name_widget()
-        if new_name and new_name != self.group.name:
-            if self._on_rename:
-                self._on_rename(self.group, new_name)
-            else:
-                self._update_ui()
+        self._closing_rename = True
+        try:
+            new_name = entry.get_text().strip()
+            self._replace_name_widget()
+            if new_name and new_name != self.group.name:
+                if self._on_rename:
+                    self._on_rename(self.group, new_name)
+                else:
+                    self._update_ui()
+        finally:
+            self._closing_rename = False
 
     def _replace_name_widget(self):
-        if self._rename_entry is None:
+        entry = self._rename_entry
+        if entry is None:
             return
-        self._remove_rename_click_controller()
-        self.remove(self._rename_entry)
         self._rename_entry = None
+        self._remove_rename_click_controller()
+        self.remove(entry)
         self.append(self.name_label)

@@ -1,5 +1,6 @@
 from rayforge.machine.models.dialect import (
     GRBL_DIALECT,
+    GRBL_DYNAMIC_DIALECT,
     GRBL_RASTER_DIALECT,
     LINUXCNC_DIALECT,
     MARLIN_DIALECT,
@@ -419,6 +420,31 @@ def test_emergency_stop_defaults():
     assert GRBL_DIALECT.emergency_stop == ""
     assert MARLIN_DIALECT.emergency_stop == "M112"
     assert SMOOTHIEWARE_DIALECT.emergency_stop == "M112"
+
+
+def test_move_to_park_defaults():
+    """Grbl dialects ship a machine-space park move; dialects whose
+    drivers do not send one leave it empty."""
+    assert GRBL_DIALECT.move_to_park == "G53 G0 X{x} Y{y}"
+    assert GRBL_DYNAMIC_DIALECT.move_to_park == "G53 G0 X{x} Y{y}"
+    assert GRBL_RASTER_DIALECT.move_to_park == "G53 G0 X{x} Y{y}"
+    assert MARLIN_DIALECT.move_to_park == ""
+    assert SMOOTHIEWARE_DIALECT.move_to_park == ""
+
+
+def test_move_to_park_survives_serialization_round_trip():
+    data = GRBL_DIALECT.to_dict()
+    restored = GcodeDialect.from_dict(data)
+    assert restored.move_to_park == "G53 G0 X{x} Y{y}"
+
+
+def test_move_to_park_missing_key_inherits_grbl_default():
+    """Persisted dialects from before the field existed pick up the
+    grbl default when deserialized."""
+    data = GRBL_DIALECT.to_dict()
+    del data["move_to_park"]
+    restored = GcodeDialect.from_dict(data)
+    assert restored.move_to_park == "G53 G0 X{x} Y{y}"
 
 
 def test_get_safety_off_commands_deduplicates():

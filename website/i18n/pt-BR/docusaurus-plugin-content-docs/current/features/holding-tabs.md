@@ -1,9 +1,9 @@
 # Abas de Fixação
 
-Abas de fixação (também chamadas de pontes ou abas) são pequenas seções não cortadas deixadas ao
-longo dos caminhos de corte que mantêm as peças anexadas ao material circundante. Isso previne que
-peças cortadas se movam durante o trabalho, o que poderia causar desalinhamento, dano ou riscos de
-incêndio.
+Abas de fixação (também chamadas de pontes ou abas) são pequenas seções ao longo dos caminhos de
+corte que não são cortadas até o fim, mantendo as peças anexadas ao material circundante. Isso
+previne que peças cortadas se movam durante o trabalho, o que poderia causar desalinhamento, dano ou
+riscos de incêndio.
 
 ## Por Que Usar Abas de Fixação?
 
@@ -22,12 +22,16 @@ removê-la.
 
 ## Como Abas de Fixação Funcionam
 
-O Rayforge implementa abas criando **pequenas lacunas no caminho de corte**:
+O Rayforge implementa abas **enfraquecendo o caminho de corte** em cada aba. A configuração
+**Potência das Abas** da etapa seleciona entre dois modos:
 
 1. Você marca posições ao longo do caminho de corte onde abas devem estar
-2. Durante geração de G-code, o Rayforge interrompe o corte em cada aba
-3. O laser levanta (ou desliga), pula a largura da aba, então retoma o corte
-4. Após o trabalho completar, você manualmente quebra ou corta as abas para libertar a peça
+2. Durante geração de G-code, o Rayforge lida com cada aba de acordo com o modo:
+   - **Modo de lacuna (Potência das Abas 0%):** o laser desliga, pula a largura da aba, então retoma
+     o corte
+   - **Modo de potência (Potência das Abas acima de 0%):** o laser continua cortando através da aba
+     com potência reduzida, deixando uma ponte fina de material
+3. Após o trabalho completar, você manualmente quebra ou corta as abas para libertar a peça
 
 ---
 
@@ -53,7 +57,7 @@ Para mais controle:
    - **Equidistante:** Espaça abas automaticamente de forma uniforme ao redor do caminho
 3. **Configure configurações de aba:**
    - **Número de abas:** Quantas abas criar (para equidistante)
-   - **Largura da aba:** Comprimento de cada seção não cortada (tipicamente 2-5mm)
+   - **Largura da aba:** Comprimento de cada aba ao longo do caminho (tipicamente 2-5mm)
 4. **Clique em Aplicar**
 
 ---
@@ -62,7 +66,7 @@ Para mais controle:
 
 ### Largura da Aba
 
-A **largura** é o comprimento da seção não cortada ao longo do caminho.
+A **largura** é o comprimento da aba ao longo do caminho.
 
 **Larguras recomendadas:**
 
@@ -90,6 +94,18 @@ a peça mas pequenas o suficiente para remover limpo. Muito estreita = peça pod
 larga = difícil de remover ou dana a peça.
 :::
 <!-- prettier-ignore-end -->
+
+### Potência das Abas
+
+O controle deslizante **Potência das Abas** nas configurações de _Laser_ da etapa controla como as
+abas são cortadas:
+
+- **0% (padrão):** o laser é desligado ao longo da aba, deixando uma lacuna através do material
+- **Acima de 0%:** o laser permanece ligado e corta através da aba na porcentagem definida da
+  potência da etapa, deixando uma ponte fina enfraquecida
+
+O modo de potência produz uma borda mais limpa que uma lacuna e evita que o material flexione para
+dentro do corte, ao custo de uma ponte ligeiramente mais alta para remover depois.
 
 ### Posição da Aba
 

@@ -43,6 +43,13 @@ def _format_bool(value) -> str:
     return _("Yes") if value else _("No")
 
 
+def _format_park_position(position) -> str:
+    """Park position rendered as Yes/No plus the machine coordinates."""
+    if position is None:
+        return _("No")
+    return _("Yes, at ({x}, {y})").format(x=position[0], y=position[1])
+
+
 _ORIGIN_LABELS = {
     Origin.BOTTOM_LEFT: _("Bottom Left"),
     Origin.TOP_LEFT: _("Top Left"),
@@ -191,6 +198,10 @@ class ReviewPage(WizardPage):
             (_("Max Cut Speed"), _format(mc.max_cut_speed)),
             (_("Acceleration"), _format(mc.acceleration)),
             (_("Home on Start"), _format_bool(mc.home_on_start)),
+            (
+                _("Park After Homing"),
+                _format_park_position(mc.park_position_after_homing),
+            ),
             (_("Heads"), str(len(mc.heads or []))),
             (_("Rotary Modules"), str(len(mc.rotary_modules or []))),
             (_("Cameras"), str(len(mc.cameras or []))),

@@ -105,36 +105,6 @@ def _preset_labels() -> dict[str, str]:
     }
 
 
-def _dimension_labels() -> dict[str, RowLabels]:
-    return {
-        GridMode.POWER_VS_SPEED.value: (
-            (_("Columns (Power Steps)"), _("Rows (Speed Steps)")),
-            (_("Number of power variations"), _("Number of speed variations")),
-        ),
-        GridMode.POWER_VS_PASSES.value: (
-            (_("Columns (Power Steps)"), _("Rows (Passes Steps)")),
-            (
-                _("Number of power variations"),
-                _("Number of passes variations"),
-            ),
-        ),
-        GridMode.SPEED_VS_PASSES.value: (
-            (_("Columns (Speed Steps)"), _("Rows (Passes Steps)")),
-            (
-                _("Number of speed variations"),
-                _("Number of passes variations"),
-            ),
-        ),
-        GridMode.SPEED_VS_OFFSET.value: (
-            (_("Columns (Speed Steps)"), _("Rows (Offset Steps)")),
-            (
-                _("Number of speed variations"),
-                _("Number of offset variations"),
-            ),
-        ),
-    }
-
-
 def params_from_step(step: Step) -> dict[str, Any]:
     """The test parameters stored on a Material Test step."""
     params = {key: getattr(step, key, None) for key in PARAM_KEYS}
@@ -207,13 +177,8 @@ class MaterialTestGridGenerator(CalibrationGenerator):
         return result
 
     def row_labels(self, params: dict[str, Any]) -> dict[str, RowLabels]:
-        labels = _dimension_labels()
-        mode = params.get("grid_mode", GridMode.POWER_VS_SPEED.value)
-        return {
-            "grid_dimensions": labels.get(
-                mode, labels[GridMode.POWER_VS_SPEED.value]
-            )
-        }
+        mode = GridMode.coerce(params.get("grid_mode"))
+        return {"grid_dimensions": mode.dimension_labels}
 
     def help_text(self, params: dict[str, Any]) -> str:
         return _(

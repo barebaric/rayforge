@@ -27,8 +27,10 @@ canvas_view:
   show_workpiece_image: false
   show_workpieces: true
 check_for_app_updates: true
+check_for_addon_updates: true
 default_stock_material_uid: null
 default_stock_thickness_mm: 18.0
+external_addon_services_enabled: true
 import_dpi: 96.0
 language: null
 last_opened_project: tests/assets/rotary.ryp
