@@ -184,7 +184,7 @@ class TestDuplicateExecute:
         assert len(s.constraints) == 1
         assert isinstance(s.constraints[0], TangentConstraint)
         _tangent = s.constraints[0]
-        _circle = sketch.registry.get_entity_object(circle_id)
+        _circle = s.registry.get_entity_object(circle_id)
         assert {_tangent.center, _tangent.radius_point} == {
             _circle.center_idx,
             _circle.radius_pt_idx,

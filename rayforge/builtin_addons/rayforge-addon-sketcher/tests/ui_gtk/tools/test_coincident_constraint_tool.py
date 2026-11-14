@@ -1,3 +1,4 @@
+from core.constraint_builders import point_on_curve_from_entity
 from unittest.mock import MagicMock
 
 import pytest
@@ -65,7 +66,7 @@ def test_is_available_false_when_already_constrained(
 ):
     sketch, _start, _end, bezier_id = bezier_env
     point = sketch.add_point(5, 3)
-    sketch.add_constraint(PointOnCurveConstraint(point, bezier_id))
+    sketch.add_constraint(point_on_curve_from_entity(sketch, point, bezier_id))
     select_point_and_entity(mock_element, point, bezier_id)
     assert tool.is_available(None, None) is False
 

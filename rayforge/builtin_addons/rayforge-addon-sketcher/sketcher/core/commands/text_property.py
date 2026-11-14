@@ -68,6 +68,14 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
         self._removed_constraints: list[Any] = []
 
     @property
+    def _removed_entity(self):
+        if self._removed_entity_dict is None:
+            return None
+        from ..entity_ops import entity_from_dict
+
+        return entity_from_dict(self._removed_entity_dict)
+
+    @property
     def _removed_points(self) -> list:
         from raygeo.sketch.entities.point import SketchPoint
 

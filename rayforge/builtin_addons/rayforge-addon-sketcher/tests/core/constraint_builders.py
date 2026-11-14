@@ -11,6 +11,7 @@ import math
 
 from raygeo.sketch.constraints.angle import AngleConstraint
 from raygeo.sketch.constraints.equal_length import EqualLengthConstraint
+from raygeo.sketch.constraints.point_on_curve import PointOnCurveConstraint
 from raygeo.sketch.constraints.diameter import DiameterConstraint
 from raygeo.sketch.constraints.radius import RadiusConstraint
 from raygeo.sketch.constraints.perpendicular import (
@@ -99,3 +100,16 @@ def add_arc_by_angle(sketch, center_pid, radius_pid, start_deg, end_deg):
         c[0] + radius * math.cos(a1), c[1] + radius * math.sin(a1)
     )
     return sketch.add_arc(start, end, center_pid)
+
+
+def point_on_curve_from_entity(sketch, point_pid, bezier_id):
+    reg = _reg(sketch)
+    b = reg.get_entity_object(bezier_id)
+    return PointOnCurveConstraint(
+        point_pid,
+        b.start_idx,
+        b.end_idx,
+        b.cp1_offset or (0.0, 0.0),
+        b.cp2_offset or (0.0, 0.0),
+        b.is_line,
+    )
