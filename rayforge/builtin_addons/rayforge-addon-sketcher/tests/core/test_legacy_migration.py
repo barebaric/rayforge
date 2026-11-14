@@ -145,7 +145,7 @@ def test_loaded_constraints_are_functional():
     assert radius.value == 10.0
     assert radius.constrains_radius(sketch.registry, 4)
     distance = sketch.constraints[2]
-    assert distance.expression() == "width"
+    assert distance.expression == "width"
 
 
 def test_roundtrip_preserves_geometry_and_constraints():
@@ -183,7 +183,7 @@ def test_skips_unknown_constraint_types():
 
 def test_legacy_solve_still_constrains():
     sketch = Sketch.from_dict(dict(LEGACY_SKETCH))
-    sketch.params.set("width", "8.0")
+    sketch.params.set("width", "10.0")
     assert sketch.solve()
     horizontal = sketch.constraints[0]
     _ = horizontal

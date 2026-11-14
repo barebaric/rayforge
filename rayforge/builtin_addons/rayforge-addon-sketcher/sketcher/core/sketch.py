@@ -612,7 +612,7 @@ class Sketch(IAsset, IGeometryProvider):
         for index, constraint in enumerate(new_sketch._constraints):
             stored = new_sketch.registry.constraint_dict(index)
             expression = stored.get("expression")
-            if expression and hasattr(constraint, "set_expression"):
+            if expression and hasattr(constraint, "expression"):
                 constraint.expression = expression
             if hasattr(constraint, "set_user_visible"):
                 constraint.set_user_visible(
