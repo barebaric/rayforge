@@ -8,12 +8,17 @@ description:
 
 Junto a la [cuadrícula de prueba de material](material-test-grid.md), el menú Herramientas ofrece
 dos trabajos de calibración más. Los tres funcionan igual: **Herramientas → Crear …** añade la
-prueba con los ajustes predeterminados en una capa nueva y la selecciona, y sus ajustes aparecen en
-**Test Settings** en el panel de propiedades a la derecha. Cada cambio allí reconstruye la prueba al
-instante, como un solo paso que puedes deshacer, así que ves el resultado mientras la ajustas. La
-prueba es contenido normal: puedes moverla, encuadrarla y previsualizarla como cualquier otra cosa.
-Cada celda o línea tiene su propia operación, que también puedes afinar a mano, pero un cambio
-posterior en Test Settings reconstruye esas operaciones.
+prueba con los ajustes predeterminados en una capa nueva y abre los ajustes de esa capa, donde los
+ajustes de la prueba aparecen en **Test Settings**. Para volver a ellos más tarde, selecciona una
+parte de la prueba y pulsa **Open Layer Settings** en la tarjeta de Test Settings del panel de
+propiedades, o usa el botón de engranaje de la capa de la prueba en el panel de capas. Cada cambio
+allí reconstruye la prueba al instante, como un solo paso que puedes deshacer, así que ves el
+resultado mientras la ajustas. La prueba es contenido normal: puedes moverla, encuadrarla y
+previsualizarla como cualquier otra cosa. Cada celda o línea tiene su propia operación, que también
+puedes afinar a mano, pero un cambio posterior en Test Settings reconstruye esas operaciones.
+
+La prueba es dueña de su capa: pegar, importar y arrastrar otras piezas de trabajo dentro de ella se
+rechaza. Mover una celda fuera de la prueba o borrar una sigue siendo posible.
 
 ## Prueba de intervalo
 

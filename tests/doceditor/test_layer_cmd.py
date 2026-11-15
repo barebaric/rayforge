@@ -1,7 +1,18 @@
 import pytest
 
 from rayforge.core.layer import Layer
-from rayforge.doceditor.layer_cmd import AddLayerAndSetActiveCommand, LayerCmd
+from rayforge.core.layer_types import (
+    LayerType,
+    layer_type_registry,
+    locked_layer_notice,
+)
+from rayforge.core.workpiece import WorkPiece
+from rayforge.doceditor.layer_cmd import (
+    AddLayerAndSetActiveCommand,
+    LayerCmd,
+)
+
+LOCKED_LAYER_TEST_ADDON = "layer_cmd_test_addon"
 
 
 @pytest.fixture
@@ -143,3 +154,68 @@ def test_layer_cmd_set_layer_stock_material_no_change(layer_cmd, sample_layer):
     layer_cmd.set_layer_stock_material(sample_layer, None)
 
     assert len(hm.undo_stack) == 0
+
+
+@pytest.fixture
+def locked_layer(doc_editor):
+    """Provides a layer whose type refuses other workpieces."""
+    layer_type_registry.register(
+        LayerType(id="locked_test_kind", title="Test Kind", locked=True),
+        LOCKED_LAYER_TEST_ADDON,
+    )
+    layer = Layer(name="Test Kind Layer")
+    layer.layer_type = "locked_test_kind"
+    doc_editor.doc.add_child(layer)
+    yield layer
+    layer_type_registry.unregister_all_from_addon(LOCKED_LAYER_TEST_ADDON)
+
+
+def _track_notifications(editor) -> list:
+    messages = []
+    editor.notification_requested.connect(
+        lambda sender, **kwargs: messages.append(kwargs.get("message")),
+        weak=False,
+    )
+    return messages
+
+
+def test_move_items_to_locked_layer_is_refused(layer_cmd, locked_layer):
+    """Test that a locked layer does not take workpieces from others."""
+    editor = layer_cmd._editor
+    source = editor.doc.active_layer
+    wp = WorkPiece(name="wp")
+    source.add_child(wp)
+    hm = editor.history_manager
+    initial_history_len = len(hm.undo_stack)
+
+    layer_cmd.move_items_to_layer([wp], locked_layer)
+
+    assert wp.parent is source
+    assert len(hm.undo_stack) == initial_history_len
+
+
+def test_move_items_to_locked_layer_notifies(layer_cmd, locked_layer):
+    """Test that the refusal is explained to the user."""
+    editor = layer_cmd._editor
+    source = editor.doc.active_layer
+    wp = WorkPiece(name="wp")
+    source.add_child(wp)
+    messages = _track_notifications(editor)
+
+    layer_cmd.move_items_to_layer([wp], locked_layer)
+
+    assert messages == [locked_layer_notice(locked_layer)]
+
+
+def test_move_items_to_unlocked_layer_still_works(layer_cmd, locked_layer):
+    """Test that ordinary layers keep accepting workpieces."""
+    editor = layer_cmd._editor
+    source = editor.doc.active_layer
+    wp = WorkPiece(name="wp")
+    source.add_child(wp)
+
+    other = Layer(name="Other Layer")
+    editor.doc.add_child(other)
+    layer_cmd.move_items_to_layer([wp], other)
+
+    assert wp.parent is other

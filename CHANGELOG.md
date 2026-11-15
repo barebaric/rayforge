@@ -5,6 +5,22 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- Calibration tests: the Test Settings now live in the settings dialog
+  of the test's layer, together with the other layer settings. Creating
+  a test from the Tools menu opens that dialog right away, and the Test
+  Settings card in the item properties panel points to it
+
+### Changed
+
+- Calibration tests: a test now owns its layer. Paste, import and
+  drag-and-drop of other workpieces into a test's layer are refused;
+  moving a cell out of the test or deleting one stays possible.
+  Projects from older versions open unchanged
+
 ## 1.14.0
 
 ### Added

@@ -8,13 +8,18 @@ description:
 
 Neben dem [Materialtest-Raster](material-test-grid.md) bietet das Menü Werkzeuge zwei weitere
 Kalibrierungsjobs. Alle drei funktionieren gleich: **Werkzeuge → … erstellen** fügt den Test mit
-Standardeinstellungen auf einer neuen Ebene hinzu und wählt ihn aus, und seine Einstellungen
-erscheinen unter **Test Settings** im Eigenschaften-Panel rechts. Jede Änderung dort baut den Test
-sofort neu auf, als ein Schritt, den du rückgängig machen kannst, sodass du das Ergebnis siehst,
-während du ihn anpasst. Der Test ist normaler Inhalt: Du kannst ihn verschieben, umranden und in der
-Vorschau ansehen wie alles andere. Jedes Feld und jede Linie hat eine eigene Operation, die du auch
-von Hand feinjustieren kannst, aber eine spätere Änderung in den Test Settings baut diese
-Operationen neu auf.
+Standardeinstellungen auf einer neuen Ebene hinzu und öffnet die Einstellungen dieser Ebene, wo die
+Einstellungen des Tests unter **Test Settings** erscheinen. Um sie später wieder zu erreichen, wähle
+einen Teil des Tests aus und klicke im Test-Settings-Kartenabschnitt des Eigenschaften-Panels auf
+**Open Layer Settings**, oder benutze den Zahnrad-Knopf auf der Ebene des Tests im Ebenen-Panel.
+Jede Änderung dort baut den Test sofort neu auf, als ein Schritt, den du rückgängig machen kannst,
+sodass du das Ergebnis siehst, während du ihn anpasst. Der Test ist normaler Inhalt: Du kannst ihn
+verschieben, umranden und in der Vorschau ansehen wie alles andere. Jedes Feld und jede Linie hat
+eine eigene Operation, die du auch von Hand feinjustieren kannst, aber eine spätere Änderung in den
+Test Settings baut diese Operationen neu auf.
+
+Ein Test besitzt seine Ebene: Einfügen, Importieren und das Ziehen anderer Werkstücke hinein werden
+abgelehnt. Ein Feld aus dem Test zu verschieben oder zu löschen bleibt möglich.
 
 ## Intervalltest
 

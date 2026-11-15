@@ -13,12 +13,16 @@ cortada com uma configuração ligeiramente diferente, tudo em um único trabalh
 execução, você pode ver de relance qual combinação produz o resultado desejado.
 
 Crie uma via **Ferramentas → Criar Grade de Teste de Material**. O Rayforge adiciona a grade em uma
-nova camada com o nome do teste, com uma peça e uma operação correspondente, e a seleciona. As
-configurações da grade aparecem em **Test Settings** no painel de propriedades à direita, de modo
-que a tela e a grade continuam visíveis enquanto você as altera. Cada alteração reconstrói a grade
-na hora, como um único passo que você pode desfazer. Selecione a grade novamente mais tarde para
-trazer as configurações dela de volta. Os [testes de intervalo e de
-foco](interval-and-focus-tests.md) funcionam da mesma forma.
+nova camada com o nome do teste, com uma peça e uma operação correspondente, e abre as configurações
+dessa camada, onde as configurações da grade aparecem em **Test Settings**. Para voltar a elas mais
+tarde, selecione a grade e escolha **Open Layer Settings** no cartão de Test Settings do painel de
+propriedades, ou use o botão de engrenagem da camada do teste no painel de camadas. Cada alteração
+reconstrói a grade na hora, como um único passo que você pode desfazer. Os
+[testes de intervalo e de foco](interval-and-focus-tests.md) funcionam da mesma forma, e as
+configurações deles também vivem nas configurações da camada deles.
+
+O teste é dono da sua camada: colar, importar e arrastar outras peças de trabalho para dentro dela é
+recusado. Mover uma célula para fora do teste ou excluir uma continua possível.
 
 ![Configurações da Grade de Teste de Material](/screenshots/material-test.webp)
 
@@ -81,8 +85,7 @@ velocidade em Potência vs Passagens) permitem definir essa constante aqui tamb�
 Normalmente uma operação processa todas as peças de trabalho da sua camada, e a aba **Peças de
 trabalho** do seu diálogo de configurações as lista todas como incluídas. A Grade de Teste de
 Material é a exceção: a operação dela está vinculada à peça de trabalho que ela gerou e processa
-somente essa. Na aba Peças de trabalho, a grade gerada aparece como a única peça incluída, e tudo o
-que você adicionar depois à camada do teste é marcado como excluído.
+somente essa. Na aba Peças de trabalho, a grade gerada aparece como a única peça incluída.
 
 ![Aba Peças de trabalho da Grade de Teste de Material](/screenshots/step-settings-material-test-grid-workpieces.webp)
 

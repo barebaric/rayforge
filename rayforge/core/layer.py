@@ -60,6 +60,7 @@ class Layer(DocItem):
         self.stock_material_uid: str | None = None
         self.color: str = self.DEFAULT_COLOR
         self.wcs: str | None = None
+        self.layer_type: str = ""
 
         # Signals for notifying other parts of the application of changes.
         # This one is special and is bubbled manually.
@@ -86,6 +87,7 @@ class Layer(DocItem):
             "stock_material_uid": self.stock_material_uid,
             "color": self.color,
             "wcs": self.wcs,
+            "layer_type": self.layer_type,
             "children": [child.to_dict() for child in self.children],
         }
         result.update(self.extra)
@@ -106,6 +108,7 @@ class Layer(DocItem):
             "stock_material_uid",
             "color",
             "wcs",
+            "layer_type",
             "children",
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
@@ -120,6 +123,7 @@ class Layer(DocItem):
         layer.stock_material_uid = data.get("stock_material_uid")
         layer.color = data.get("color", cls.DEFAULT_COLOR)
         layer.wcs = data.get("wcs")
+        layer.layer_type = data.get("layer_type", "")
         layer.extra = extra
 
         children = []

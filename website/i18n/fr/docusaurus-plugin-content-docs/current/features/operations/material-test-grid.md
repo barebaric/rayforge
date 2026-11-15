@@ -14,12 +14,16 @@ en un seul travail. Après une seule exécution, tu vois d'un coup d'œil quelle
 résultat souhaité.
 
 Crée-en une via **Outils → Créer une Grille de Test de Matériau**. Rayforge ajoute la grille sur un
-nouveau calque portant le nom du test, avec une pièce et une opération correspondante, et la
-sélectionne. Les paramètres de la grille apparaissent sous **Test Settings** dans le panneau de
-propriétés à droite, si bien que le canevas et la grille restent visibles pendant que tu les
-modifies. Chaque modification reconstruit immédiatement la grille, en une seule étape que tu peux
-annuler. Sélectionne à nouveau la grille plus tard pour retrouver ses paramètres. Les [tests
-d'intervalle et de mise au point](interval-and-focus-tests.md) fonctionnent de la même façon.
+nouveau calque portant le nom du test, avec une pièce et une opération correspondante, et ouvre les
+réglages de ce calque, où les paramètres de la grille apparaissent sous **Test Settings**. Pour les
+retrouver plus tard, sélectionne la grille et choisis **Open Layer Settings** dans la carte Test
+Settings du panneau de propriétés, ou utilise le bouton d'engrenage du calque du test dans le
+panneau des calques. Chaque modification reconstruit immédiatement la grille, en une seule étape que
+tu peux annuler. Les [tests d'intervalle et de mise au point](interval-and-focus-tests.md)
+fonctionnent de la même façon, et leurs réglages vivent aussi dans les réglages de leur calque.
+
+Le test possède son calque : coller, importer et glisser d'autres pièces dedans sont refusés.
+Déplacer une cellule hors du test ou en supprimer une reste possible.
 
 ![Paramètres de la Grille de Test de Matériau](/screenshots/material-test.webp)
 
@@ -84,8 +88,7 @@ dans Puissance vs Passes) te permettent également de définir cette constante i
 Normalement, une opération traite toutes les pièces de son calque, et l'onglet **Pièces** de sa
 boîte de dialogue de paramètres les liste toutes comme incluses. La Grille de Test de Matériau fait
 exception : son opération est liée à la pièce qu'elle a générée et ne traite que celle-ci. Dans
-l'onglet Pièces, la grille générée apparaît comme la seule pièce incluse, et tout ce que tu ajoutes
-ensuite au calque du test est marqué comme exclu.
+l'onglet Pièces, la grille générée apparaît comme la seule pièce incluse.
 
 ![Onglet Pièces des paramètres de la Grille de Test de Matériau](/screenshots/step-settings-material-test-grid-workpieces.webp)
 

@@ -13,18 +13,22 @@ slightly different setting, all in a single job. After one run you can see at a 
 combination produces the result you want.
 
 Create one via **Tools → Create Material Test Grid**. Rayforge adds the grid on a new layer named
-after the test, with one workpiece and a matching operation, and selects it. The grid's settings
-appear under **Test Settings** in the item properties panel on the right, so the canvas and the
-grid stay in view while you change them. Every change rebuilds the grid right away, as one step you
-can undo. Select the grid again later to bring its settings back. The
-[Interval and Focus Tests](interval-and-focus-tests.md) work the same way.
+after the test, with one workpiece and a matching operation, and opens that layer's settings, where
+the grid's settings appear under **Test Settings**. To get back to them later, select the grid and
+choose **Open Layer Settings** in the Test Settings card of the item properties panel, or use the
+gear button on the test's layer in the layers panel. Every change rebuilds the grid right away, as
+one step you can undo. The [Interval and Focus Tests](interval-and-focus-tests.md) work the same
+way, and their settings live in their layer settings too.
+
+The test owns its layer: paste, import and drag-and-drop of other workpieces into it are refused.
+Moving a cell out of the test or deleting one stays possible.
 
 ![Material Test Grid Settings](/screenshots/material-test.webp)
 
 ## Presets
 
-The Test Settings offer presets for common laser types. They fill in a sensible speed range,
-power range, and test type so you can start with a reasonable baseline:
+The Test Settings offer presets for common laser types. They fill in a sensible speed range, power
+range, and test type so you can start with a reasonable baseline:
 
 | Preset            | Speed Range       | Power Range | Test Type |
 | ----------------- | ----------------- | ----------- | --------- |
@@ -68,17 +72,16 @@ and are engraved first, so the test pattern cannot obscure them. They get their 
 default) and speed (1000 mm/min by default), and speed values are shown in your preferred display
 unit.
 
-The **parameter ranges** are what the grid varies — speed, power, passes, or offset,
-depending on the selected mode. Modes that keep a parameter fixed (for example the speed in Power vs
-Passes) let you set that constant here as well.
+The **parameter ranges** are what the grid varies — speed, power, passes, or offset, depending on
+the selected mode. Modes that keep a parameter fixed (for example the speed in Power vs Passes) let
+you set that constant here as well.
 
 ## The Linked Workpiece
 
 Every operation normally processes all workpieces on its layer, and the **Workpieces** tab of its
 settings dialog lists them all as included. The Material Test Grid is the exception: its operation
 is linked to the workpiece it generated and processes that workpiece only. On the Workpieces tab the
-generated grid appears as the only included workpiece, and anything you add to the test's layer
-later is marked as excluded.
+generated grid appears as the only included workpiece.
 
 ![Workpieces tab of the Material Test Grid settings](/screenshots/step-settings-material-test-grid-workpieces.webp)
 

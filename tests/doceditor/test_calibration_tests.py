@@ -15,6 +15,7 @@ import pytest_asyncio
 
 from rayforge.context import get_context
 from rayforge.core.group import Group
+from rayforge.core.layer import Layer
 from rayforge.core.undo import ChangePropertyCommand
 from rayforge.core.vectorization_spec import ProceduralSpec
 from rayforge.core.workpiece import WorkPiece
@@ -542,6 +543,52 @@ async def test_record_for_items(doc_editor, machine):
     assert cmd.record_for_items(interval_wps + focus_wps) is None
     assert cmd.record_for_items([]) is None
     assert cmd.record_for_items([_layer(doc_editor, focus)]) is None
+
+
+@pytest.mark.asyncio
+async def test_created_layer_has_the_test_layer_type(doc_editor, machine):
+    cmd = CalibrationCmd(doc_editor)
+    record = cmd.create("interval_test")
+
+    layer = _layer(doc_editor, record)
+
+    assert layer.layer_type == _calibration.LAYER_TYPE_ID
+
+
+@pytest.mark.asyncio
+async def test_record_for_layer(doc_editor, machine):
+    lookup = importlib.import_module("laser_essentials.calibration.lookup")
+    cmd = CalibrationCmd(doc_editor)
+    interval = cmd.create("interval_test")
+    focus = cmd.create("focus_test")
+    other = Layer(name="Other")
+    doc_editor.doc.add_child(other)
+
+    assert (
+        lookup.record_for_layer(doc_editor.doc, _layer(doc_editor, interval))
+        is interval
+    )
+    assert (
+        lookup.record_for_layer(doc_editor.doc, _layer(doc_editor, focus))
+        is focus
+    )
+    assert lookup.record_for_layer(doc_editor.doc, other) is None
+
+
+@pytest.mark.asyncio
+async def test_record_for_legacy_grid_layer(doc_editor, machine):
+    """A grid from an older version has no record; one is derived from
+    its step without touching the document."""
+    lookup = importlib.import_module("laser_essentials.calibration.lookup")
+    cmd = CalibrationCmd(doc_editor)
+    record = cmd.create("material_test_grid")
+    layer = _layer(doc_editor, record)
+    doc_editor.doc.remove_asset(record)
+
+    legacy = lookup.record_for_layer(doc_editor.doc, layer)
+
+    assert legacy is not None
+    assert legacy not in _records(doc_editor)
 
 
 # ----------------------------------------------------------------------

@@ -1,6 +1,6 @@
 """
 Screenshot: a calibration test right after Tools → Create …, with its
-Test Settings in the item properties panel.
+Test Settings in the settings dialog of its layer.
 
 Usage: pixi run screenshot material-test
        pixi run screenshot interval-test

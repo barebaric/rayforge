@@ -8,13 +8,18 @@ description:
 
 À côté de la [grille de test de matériau](material-test-grid.md), le menu Outils propose deux autres
 tâches de calibrage. Les trois fonctionnent de la même façon : **Outils → Créer …** ajoute le test
-avec les réglages par défaut sur un nouveau calque et le sélectionne, et ses réglages apparaissent
-sous **Test Settings** dans le panneau de propriétés à droite. Chaque modification y reconstruit
-immédiatement le test, en une seule étape que vous pouvez annuler, si bien que vous voyez le
-résultat pendant que vous l'ajustez. Le test est un contenu ordinaire : vous pouvez le déplacer, le
-cadrer et le prévisualiser comme n'importe quel autre contenu. Chaque cellule ou ligne a sa propre
-opération, que vous pouvez aussi affiner à la main, mais une modification ultérieure dans les Test
-Settings reconstruit ces opérations.
+avec les réglages par défaut sur un nouveau calque et ouvre les réglages de ce calque, où les
+réglages du test apparaissent sous **Test Settings**. Pour les retrouver plus tard, sélectionne une
+partie du test et choisis **Open Layer Settings** dans la carte Test Settings du panneau de
+propriétés, ou utilise le bouton d'engrenage du calque du test dans le panneau des calques. Chaque
+modification y reconstruit immédiatement le test, en une seule étape que vous pouvez annuler, si
+bien que vous voyez le résultat pendant que vous l'ajustez. Le test est un contenu ordinaire : vous
+pouvez le déplacer, le cadrer et le prévisualiser comme n'importe quel autre contenu. Chaque cellule
+ou ligne a sa propre opération, que vous pouvez aussi affiner à la main, mais une modification
+ultérieure dans les Test Settings reconstruit ces opérations.
+
+Le test possède son calque : coller, importer et glisser d'autres pièces dedans sont refusés.
+Déplacer une cellule hors du test ou en supprimer une reste possible.
 
 ## Test d'intervalle
 

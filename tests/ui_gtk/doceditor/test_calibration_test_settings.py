@@ -1,9 +1,10 @@
 # flake8: noqa: E402
 """
 The calibration tests in the real main window: Tools → Create … adds
-the test on its own layer, selects it and shows its Test Settings in
-the item properties panel without opening a window; a change there
-rebuilds the test and keeps it selected.
+the test on its own layer, selects it and opens the settings dialog of
+that layer, where its Test Settings appear; a change there rebuilds the
+test and keeps it selected. The item properties panel shows a card that
+points to the dialog.
 """
 
 import os
@@ -24,10 +25,15 @@ import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 gi.require_version("Gdk", "4.0")
-from gi.repository import Adw, GLib
+from gi.repository import Adw, GLib, Gtk
 
 from rayforge.core.workpiece import WorkPiece
+from rayforge.ui_gtk.doceditor.layer_settings_dialog import (
+    LayerSettingsDialog,
+)
 from rayforge.ui_gtk.mainwindow import MainWindow
+from rayforge.ui_gtk.shared.pref_rows import SpinRow
+from rayforge.ui_gtk.varset.varsetwidget import VarSetWidget
 
 ACTIONS = ["material_test", "interval_test", "focus_test"]
 
@@ -91,14 +97,36 @@ def _selected(win) -> list[WorkPiece]:
     ]
 
 
-def _windows(app, win):
-    return [w for w in app.get_windows() if w is not win and w.get_visible()]
+def _dialog(win):
+    """The layer settings dialog of the main window, once it is open."""
+    found = [
+        w
+        for w in Gtk.Window.list_toplevels()
+        if isinstance(w, LayerSettingsDialog)
+        and w.get_visible()
+        and w.get_transient_for() is win
+    ]
+    assert len(found) <= 1
+    return found[0] if found else None
+
+
+def _varset_in(widget):
+    """The VarSetWidget in the widget tree, for the Test Settings rows."""
+    if isinstance(widget, VarSetWidget):
+        return widget
+    child = widget.get_first_child()
+    while child is not None:
+        found = _varset_in(child)
+        if found is not None:
+            return found
+        child = child.get_next_sibling()
+    return None
 
 
 @pytest.mark.ui
 @pytest.mark.parametrize("action", ACTIONS)
-def test_create_shows_settings_in_the_panel(app_and_window, action):
-    app, win = app_and_window
+def test_create_opens_the_layer_settings(app_and_window, action):
+    _app, win = app_and_window
     layers_before = len(win.doc_editor.doc.layers)
 
     win.lookup_action(action).activate(None)
@@ -108,31 +136,34 @@ def test_create_shows_settings_in_the_panel(app_and_window, action):
     assert len(doc.layers) == layers_before + 1
     layer = doc.active_layer
     assert set(_selected(win)) == set(layer.all_workpieces)
-    assert win.item_revealer.get_reveal_child()
     provider, expander = _provider(win)
     assert expander.get_visible()
-    assert provider.varset_widget.keys()
-    assert _windows(app, win) == []
-    scrolled = provider._scrolled_window()
-    offset = provider._card_offset(scrolled)
-    adjustment = scrolled.get_vadjustment()
-    top = adjustment.get_upper() - adjustment.get_page_size()
-    assert adjustment.get_value() == pytest.approx(min(offset, top), abs=1)
+    assert provider.help_row.get_visible()
+    assert win.item_revealer.get_reveal_child()
 
-    assert provider._scroll_handlers
-    provider.stop_following()
-    assert provider._scroll_handlers == []
+    dialog = _dialog(win)
+    assert dialog is not None
+    varset = _varset_in(dialog)
+    assert varset is not None
+    assert varset.get_title() == "Test Settings"
+    assert varset.keys()
 
 
 @pytest.mark.ui
-def test_change_rebuilds_and_keeps_the_selection(app_and_window):
+def test_change_in_the_dialog_rebuilds_and_keeps_the_selection(
+    app_and_window,
+):
     _app, win = app_and_window
     win.lookup_action("interval_test").activate(None)
     process_events_for_duration(1.5)
-    provider, expander = _provider(win)
+    dialog = _dialog(win)
+    assert dialog is not None
+    varset = _varset_in(dialog)
+    assert varset is not None
     old = set(_selected(win))
 
-    row = provider.varset_widget.row_for("count")
+    row = varset.row_for("count")
+    assert isinstance(row, SpinRow)
     row.get_spin_button().set_value(3)
     process_events_for_duration(1.5)
 
@@ -141,8 +172,6 @@ def test_change_rebuilds_and_keeps_the_selection(app_and_window):
     assert len(layer.all_workpieces) == 4
     assert new == set(layer.all_workpieces)
     assert new.isdisjoint(old)
-    assert expander.get_visible()
-    assert win.item_revealer.get_reveal_child()
 
     win.doc_editor.history_manager.undo()
     process_events_for_duration(0.5)

@@ -3,9 +3,16 @@ import pytest
 from rayforge.core.group import Group
 from rayforge.core.item import DocItem
 from rayforge.core.layer import Layer
+from rayforge.core.layer_types import (
+    LayerType,
+    layer_type_registry,
+    locked_layer_notice,
+)
 from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.edit_cmd import EditCmd
 from rayforge.doceditor.editor import DocEditor
+
+LOCKED_LAYER_TEST_ADDON = "edit_cmd_test_addon"
 
 
 @pytest.fixture
@@ -353,3 +360,94 @@ def test_rename_item_ignores_empty_and_unchanged(
     edit_cmd.rename_item(wp, "front panel")
     assert wp.name == "front panel"
     assert len(doc_editor.history_manager.undo_stack) == 1
+
+
+@pytest.fixture
+def locked_layer(doc_editor):
+    """Provides a layer whose type refuses other workpieces."""
+    layer_type_registry.register(
+        LayerType(id="locked_test_kind", title="Test Kind", locked=True),
+        LOCKED_LAYER_TEST_ADDON,
+    )
+    layer = Layer(name="Test Kind Layer")
+    layer.layer_type = "locked_test_kind"
+    doc_editor.doc.add_child(layer)
+    yield layer
+    layer_type_registry.unregister_all_from_addon(LOCKED_LAYER_TEST_ADDON)
+
+
+@pytest.fixture
+def notifications(doc_editor):
+    """Collects the user-facing notifications the editor sends."""
+    messages = []
+    doc_editor.notification_requested.connect(
+        lambda sender, **kwargs: messages.append(kwargs.get("message")),
+        weak=False,
+    )
+    return messages
+
+
+def test_paste_into_locked_layer_is_refused(
+    edit_cmd, doc_editor, locked_layer, notifications
+):
+    """Test that nothing is pasted into a locked layer."""
+    layer = doc_editor.doc.active_layer
+    wp = WorkPiece(name="wp")
+    layer.add_child(wp)
+    edit_cmd.copy_items([wp])
+    doc_editor.doc.active_layer = locked_layer
+
+    pasted = edit_cmd.paste_items()
+
+    assert pasted == []
+    assert locked_layer.workpieces == []
+
+
+def test_duplicate_into_locked_layer_is_refused(
+    edit_cmd, doc_editor, locked_layer, notifications
+):
+    """Test that a locked layer does not receive duplicates."""
+    layer = doc_editor.doc.active_layer
+    wp = WorkPiece(name="wp")
+    layer.add_child(wp)
+    doc_editor.doc.active_layer = locked_layer
+
+    duplicates = edit_cmd.duplicate_items([wp])
+
+    assert duplicates == []
+    assert locked_layer.workpieces == []
+
+
+def test_add_items_into_locked_layer_is_refused(
+    edit_cmd, doc_editor, locked_layer, notifications
+):
+    """Test that a locked layer does not receive imported items."""
+    wp = WorkPiece(name="wp")
+    doc_editor.doc.active_layer = locked_layer
+
+    added = edit_cmd.add_items([wp])
+
+    assert added == []
+    assert locked_layer.workpieces == []
+
+
+def test_locked_layer_refusal_notifies(
+    edit_cmd, doc_editor, locked_layer, notifications
+):
+    """Test that the refusal is explained to the user."""
+    wp = WorkPiece(name="wp")
+    doc_editor.doc.active_layer = locked_layer
+
+    edit_cmd.add_items([wp])
+
+    assert notifications == [locked_layer_notice(locked_layer)]
+
+
+def test_add_items_into_unlocked_layer_still_works(edit_cmd, doc_editor):
+    """Test that ordinary layers keep accepting items."""
+    wp = WorkPiece(name="wp")
+
+    added = edit_cmd.add_items([wp])
+
+    assert added == [wp]
+    assert doc_editor.doc.active_layer.workpieces == [wp]

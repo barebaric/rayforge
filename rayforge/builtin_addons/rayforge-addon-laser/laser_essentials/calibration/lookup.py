@@ -1,6 +1,6 @@
 """Finds the calibration test that selected workpieces belong to."""
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from typing import TYPE_CHECKING, cast
 
 from rayforge.core.item import DocItem
@@ -17,9 +17,12 @@ from .record import CalibrationRecord, CalibrationState
 if TYPE_CHECKING:
     from rayforge.core.asset import IAsset
     from rayforge.core.doc import Doc
+    from rayforge.core.layer import Layer
 
 
-def record_for_items(items: list[DocItem]) -> CalibrationRecord | None:
+def record_for_items(
+    items: Sequence[DocItem],
+) -> CalibrationRecord | None:
     """
     The record of the test all *items* belong to, or None.
 
@@ -51,6 +54,27 @@ def find_record(doc: "Doc", workpiece_uid: str) -> CalibrationRecord | None:
             continue
         record = cast(CalibrationRecord, asset)
         if record.owns(workpiece_uid):
+            return record
+    return None
+
+
+def record_for_layer(doc: "Doc", layer: "Layer") -> CalibrationRecord | None:
+    """
+    The record of the test that lives on *layer*, or None.
+
+    Records are matched by their layer uid. A Material Test Grid made
+    by an older version has no record; for it a record is made from its
+    step, without adding it to the document.
+    """
+    for asset in doc.get_all_assets():
+        if asset.asset_type_name != CalibrationRecord.asset_type_name:
+            continue
+        record = cast(CalibrationRecord, asset)
+        if record.layer_uid == layer.uid:
+            return record
+    for wp in layer.workpieces:
+        record = find_record(doc, wp.uid) or _legacy_record(wp)
+        if record is not None:
             return record
     return None
 
