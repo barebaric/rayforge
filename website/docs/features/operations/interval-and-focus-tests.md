@@ -8,13 +8,13 @@ description:
 
 Next to the [Material Test Grid](material-test-grid.md), the Tools menu offers two more calibration
 jobs. All three work the same way: **Tools → Create …** adds the test with default settings on a new
-layer and opens that layer's settings, where the test's settings appear under **Test Settings**. To
-get back to them later, select a part of the test and choose **Open Layer Settings** in the Test
-Settings card of the item properties panel, or use the gear button on the test's layer in the layers
-panel. Every change there rebuilds the test right away, as one step you can undo, so you see the
-result while you adjust it. The test is ordinary content: you can move it, frame it and preview it
-like anything else. Each cell or line has its own operation, which you can also fine-tune by hand,
-but a later change in the Test Settings rebuilds those operations.
+layer and selects it. Its settings appear under **Test Settings** in the settings dialog of its
+layer: select a part of the test and choose **Open Layer Settings** in the item properties panel, or
+use the gear button on the test's layer in the layers panel. Every change there rebuilds the test
+right away, as one step you can undo, so you see the result while you adjust it. The test is
+ordinary content: you can move it, frame it and preview it like anything else. Each cell or line has
+its own operation, which you can also fine-tune by hand, but a later change in the Test Settings
+rebuilds those operations.
 
 A test owns its layer: paste, import and drag-and-drop of other workpieces into it are refused.
 Moving a cell out of the test or deleting one stays possible.

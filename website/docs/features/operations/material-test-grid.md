@@ -13,12 +13,12 @@ slightly different setting, all in a single job. After one run you can see at a 
 combination produces the result you want.
 
 Create one via **Tools → Create Material Test Grid**. Rayforge adds the grid on a new layer named
-after the test, with one workpiece and a matching operation, and opens that layer's settings, where
-the grid's settings appear under **Test Settings**. To get back to them later, select the grid and
-choose **Open Layer Settings** in the Test Settings card of the item properties panel, or use the
-gear button on the test's layer in the layers panel. Every change rebuilds the grid right away, as
-one step you can undo. The [Interval and Focus Tests](interval-and-focus-tests.md) work the same
-way, and their settings live in their layer settings too.
+after the test, with one workpiece and a matching operation, and selects it. The grid's settings
+appear under **Test Settings** in the settings dialog of that layer: select the grid and choose
+**Open Layer Settings** in the item properties panel, or use the gear button on the test's layer in
+the layers panel. Every change rebuilds the grid right away, as one step you can undo. The
+[Interval and Focus Tests](interval-and-focus-tests.md) work the same way, and their settings live
+in their layer settings too.
 
 The test owns its layer: paste, import and drag-and-drop of other workpieces into it are refused.
 Moving a cell out of the test or deleting one stays possible.

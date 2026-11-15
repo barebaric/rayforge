@@ -1,15 +1,16 @@
 # flake8: noqa: E402
 """
 The calibration tests in the real main window: Tools → Create … adds
-the test on its own layer, selects it and opens the settings dialog of
-that layer, where its Test Settings appear; a change there rebuilds the
-test and keeps it selected. The item properties panel shows a card that
-points to the dialog.
+the test on its own layer and selects it, and the item properties panel
+shows a pointer to its settings. Opening that pointer presents the
+settings dialog of the test's layer, where a change rebuilds the test
+and keeps it selected.
 """
 
 import os
 import sys
 import time
+from typing import Any
 
 import pytest
 
@@ -82,10 +83,10 @@ def app_and_window(ui_context_initializer, request):
     process_events_for_duration(0.2)
 
 
-def _provider(win):
-    for provider, _widgets, expander in win.item_props_widget._separate_groups:
+def _provider(win) -> Any:
+    for provider, _widgets in win.item_props_widget._provider_widget_map:
         if type(provider).__name__ == "CalibrationPropertyProvider":
-            return provider, expander
+            return provider
     raise AssertionError("Test Settings provider not registered")
 
 
@@ -97,7 +98,7 @@ def _selected(win) -> list[WorkPiece]:
     ]
 
 
-def _dialog(win):
+def _dialog(win) -> LayerSettingsDialog | None:
     """The layer settings dialog of the main window, once it is open."""
     found = [
         w
@@ -123,23 +124,39 @@ def _varset_in(widget):
     return None
 
 
+def _create_test(win, action):
+    win.lookup_action(action).activate(None)
+    process_events_for_duration(1.5)
+
+
 @pytest.mark.ui
 @pytest.mark.parametrize("action", ACTIONS)
-def test_create_opens_the_layer_settings(app_and_window, action):
+def test_create_points_to_the_layer_settings(app_and_window, action):
     _app, win = app_and_window
     layers_before = len(win.doc_editor.doc.layers)
 
-    win.lookup_action(action).activate(None)
-    process_events_for_duration(1.5)
+    _create_test(win, action)
 
     doc = win.doc_editor.doc
     assert len(doc.layers) == layers_before + 1
     layer = doc.active_layer
     assert set(_selected(win)) == set(layer.all_workpieces)
-    provider, expander = _provider(win)
-    assert expander.get_visible()
-    assert provider.help_row.get_visible()
+    provider = _provider(win)
+    assert provider.settings_row.get_visible()
+    assert provider.settings_row.get_title() == "Open Layer Settings"
     assert win.item_revealer.get_reveal_child()
+    assert _dialog(win) is None
+
+
+@pytest.mark.ui
+@pytest.mark.parametrize("action", ACTIONS)
+def test_card_button_opens_the_layer_settings(app_and_window, action):
+    _app, win = app_and_window
+    _create_test(win, action)
+    provider = _provider(win)
+
+    provider.settings_row.emit("activated")
+    process_events_for_duration(1.0)
 
     dialog = _dialog(win)
     assert dialog is not None
@@ -154,8 +171,10 @@ def test_change_in_the_dialog_rebuilds_and_keeps_the_selection(
     app_and_window,
 ):
     _app, win = app_and_window
-    win.lookup_action("interval_test").activate(None)
-    process_events_for_duration(1.5)
+    _create_test(win, "interval_test")
+    provider = _provider(win)
+    provider.settings_row.emit("activated")
+    process_events_for_duration(1.0)
     dialog = _dialog(win)
     assert dialog is not None
     varset = _varset_in(dialog)
@@ -182,9 +201,8 @@ def test_change_in_the_dialog_rebuilds_and_keeps_the_selection(
 @pytest.mark.parametrize("deselect", ["nothing", "other"])
 def test_scrolling_stops_when_the_test_is_deselected(app_and_window, deselect):
     _app, win = app_and_window
-    win.lookup_action("interval_test").activate(None)
-    process_events_for_duration(1.5)
-    provider, _expander = _provider(win)
+    _create_test(win, "interval_test")
+    provider = _provider(win)
     assert provider._scroll_handlers
 
     if deselect == "nothing":

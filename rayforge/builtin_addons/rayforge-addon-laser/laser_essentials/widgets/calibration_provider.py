@@ -1,5 +1,5 @@
 """
-A card in the item properties panel that points to the settings of a
+A row in the item properties panel that points to the settings of a
 calibration test. It shows whenever the selection is (part of) one
 calibration test. The settings themselves live in the settings of the
 test's layer, like every other layer setting.
@@ -9,7 +9,7 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
-from gi.repository import Adw, GObject, Graphene, Gtk
+from gi.repository import Adw, GLib, GObject, Graphene, Gtk
 
 from rayforge.core.item import DocItem
 from rayforge.core.layer import Layer
@@ -21,13 +21,13 @@ from rayforge.ui_gtk.doceditor.property_providers.base import (
     PropertyProvider,
     property_provider_registry,
 )
+from rayforge.ui_gtk.icons import get_icon
 from rayforge.ui_gtk.mainwindow import MainWindow
 from rayforge.ui_gtk.shared.expander import Expander
 
 from ..calibration import GENERATORS, CalibrationGenerator
 from ..calibration.lookup import record_for_items
 from ..calibration.record import CalibrationRecord
-from .calibration_settings import _show_text, _text_row
 
 if TYPE_CHECKING:
     from rayforge.doceditor.editor import DocEditor
@@ -38,23 +38,20 @@ logger = logging.getLogger(__name__)
 class CalibrationPropertyProvider(PropertyProvider):
     """Points to the settings of a calibration test."""
 
-    priority = 90
-    separate_group = True
-    group_title = _("Test Settings")
+    priority = 5
 
     def can_handle(self, items: list[DocItem]) -> bool:
         return record_for_items(items) is not None
 
     def create_widgets(self) -> list[Gtk.Widget]:
-        self.help_row = _text_row("dim-label")
-        self.open_button = Gtk.Button(label=_("Open Layer Settings"))
-        self.open_button.connect("clicked", self._on_open_settings)
-        self.button_row = Adw.ActionRow(activatable=False)
-        self.button_row.add_suffix(self.open_button)
+        self.settings_row = Adw.ActionRow(title=_("Open Layer Settings"))
+        self.settings_row.set_activatable(True)
+        self.settings_row.connect("activated", self._on_open_settings)
+        self.settings_row.add_suffix(get_icon("go-next-symbolic"))
         self._record: CalibrationRecord | None = None
         self._layer: Layer | None = None
         self._scroll_handlers: list[tuple[GObject.Object, int]] = []
-        return [self.help_row, self.button_row]
+        return [self.settings_row]
 
     @property
     def generator(self) -> CalibrationGenerator | None:
@@ -71,23 +68,24 @@ class CalibrationPropertyProvider(PropertyProvider):
             self.stop_following()
         generator = self.generator
         if self._record is None or generator is None:
+            self.settings_row.set_visible(False)
             return
-        self.group_subtitle = self._record.name or generator.title
-        _show_text(self.help_row, _settings_note(generator))
+        self.settings_row.set_visible(True)
+        self.settings_row.set_subtitle(
+            GLib.markup_escape_text(_settings_note(generator))
+        )
         layer = editor.doc.find_descendant_by_uid(self._record.layer_uid)
         self._layer = layer if isinstance(layer, Layer) else None
 
     def scroll_into_view(self):
         """
-        Scrolls the panel so the Test Settings card starts at its top.
-        The card comes after the workflows and the item properties, so
-        it is often below the visible part of the panel. While the panel
-        is still being laid out, the card is followed each time the
-        panel's size changes, until another test is selected or the
-        card is hidden.
+        Scrolls the panel so the pointer to the test settings is in
+        view. While the panel is still being laid out, it is followed
+        each time the panel's size changes, until another test is
+        selected or it is hidden.
         """
         scrolled = self._scrolled_window()
-        card = self.help_row.get_ancestor(Expander)
+        card = self.settings_row.get_ancestor(Expander)
         if scrolled is None or card is None:
             return
         self._follow_card(scrolled.get_vadjustment())
@@ -95,7 +93,12 @@ class CalibrationPropertyProvider(PropertyProvider):
             adjustment = scrolled.get_vadjustment()
             self._scroll_handlers = [
                 (adjustment, adjustment.connect("changed", self._follow_card)),
-                (card, card.connect("notify::visible", self._on_card_shown)),
+                (
+                    self.settings_row,
+                    self.settings_row.connect(
+                        "notify::visible", self._on_card_shown
+                    ),
+                ),
             ]
 
     def _follow_card(self, adjustment):
@@ -104,8 +107,8 @@ class CalibrationPropertyProvider(PropertyProvider):
         if offset is not None:
             self._scroll_to(offset)
 
-    def _on_card_shown(self, card: Gtk.Widget, _pspec):
-        if not card.get_visible():
+    def _on_card_shown(self, row: Gtk.Widget, _pspec):
+        if not row.get_visible():
             self.stop_following()
 
     def stop_following(self):
@@ -116,7 +119,7 @@ class CalibrationPropertyProvider(PropertyProvider):
 
     def _card_offset(self, scrolled: Gtk.ScrolledWindow) -> float | None:
         """Where the card starts in the panel, once it is laid out."""
-        card = self.help_row.get_ancestor(Expander)
+        card = self.settings_row.get_ancestor(Expander)
         content = scrolled.get_child()
         if isinstance(content, Gtk.Viewport):
             content = content.get_child()
@@ -127,7 +130,7 @@ class CalibrationPropertyProvider(PropertyProvider):
 
     def _scrolled_window(self) -> Gtk.ScrolledWindow | None:
         """The scrolled right panel the settings are shown in."""
-        scrolled = self.help_row.get_ancestor(Gtk.ScrolledWindow)
+        scrolled = self.settings_row.get_ancestor(Gtk.ScrolledWindow)
         return scrolled if isinstance(scrolled, Gtk.ScrolledWindow) else None
 
     def _scroll_to(self, offset: float):
@@ -137,10 +140,10 @@ class CalibrationPropertyProvider(PropertyProvider):
             top = adjustment.get_upper() - adjustment.get_page_size()
             adjustment.set_value(max(0.0, min(offset, top)))
 
-    def _on_open_settings(self, button):
+    def _on_open_settings(self, row):
         if self._layer is None or self.editor is None:
             return
-        root = self.help_row.get_root()
+        root = self.settings_row.get_root()
         if not isinstance(root, Gtk.Window):
             return
         open_layer_settings(root, self._layer, self.editor)
@@ -157,17 +160,11 @@ def open_layer_settings(
 
 
 def show_new_test(window: MainWindow, items: list[WorkPiece]):
-    """Selects a new test and opens the settings of its layer."""
+    """Selects a new test and scrolls its settings pointer into view."""
     window.surface.select_items(items)
     for provider in window.item_props_widget.providers:
         if isinstance(provider, CalibrationPropertyProvider):
             provider.scroll_into_view()
-    record = record_for_items(items)
-    if record is None:
-        return
-    layer = window.doc_editor.doc.find_descendant_by_uid(record.layer_uid)
-    if isinstance(layer, Layer):
-        open_layer_settings(window, layer, window.doc_editor)
 
 
 def register_test_settings(addon_name: str):

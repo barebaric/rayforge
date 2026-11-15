@@ -14,13 +14,13 @@ en un seul travail. Après une seule exécution, tu vois d'un coup d'œil quelle
 résultat souhaité.
 
 Crée-en une via **Outils → Créer une Grille de Test de Matériau**. Rayforge ajoute la grille sur un
-nouveau calque portant le nom du test, avec une pièce et une opération correspondante, et ouvre les
-réglages de ce calque, où les paramètres de la grille apparaissent sous **Test Settings**. Pour les
-retrouver plus tard, sélectionne la grille et choisis **Open Layer Settings** dans la carte Test
-Settings du panneau de propriétés, ou utilise le bouton d'engrenage du calque du test dans le
-panneau des calques. Chaque modification reconstruit immédiatement la grille, en une seule étape que
-tu peux annuler. Les [tests d'intervalle et de mise au point](interval-and-focus-tests.md)
-fonctionnent de la même façon, et leurs réglages vivent aussi dans les réglages de leur calque.
+nouveau calque portant le nom du test, avec une pièce et une opération correspondante, et le
+sélectionne. Les paramètres de la grille apparaissent sous **Test Settings** dans le dialogue de
+réglages de ce calque : sélectionne la grille et choisis **Open Layer Settings** dans le panneau de
+propriétés, ou utilise le bouton d'engrenage du calque du test dans le panneau des calques. Chaque
+modification reconstruit immédiatement la grille, en une seule étape que tu peux annuler. Les
+[tests d'intervalle et de mise au point](interval-and-focus-tests.md) fonctionnent de la même façon,
+et leurs réglages vivent aussi dans les réglages de leur calque.
 
 Le test possède son calque : coller, importer et glisser d'autres pièces dedans sont refusés.
 Déplacer une cellule hors du test ou en supprimer une reste possible.

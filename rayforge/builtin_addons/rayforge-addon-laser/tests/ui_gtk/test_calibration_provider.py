@@ -111,27 +111,17 @@ def test_card_points_to_the_layer_settings(provider, editor, cmd):
     assert provider.can_handle(workpieces)
     provider.update_widgets(editor, workpieces)
 
-    assert provider.help_row.get_visible()
-    assert "Interval Test" in provider.help_row.get_title()
-    assert "layer" in provider.help_row.get_title()
-    assert provider.open_button.get_label() == "Open Layer Settings"
-
-
-@pytest.mark.ui
-def test_card_shows_the_name_of_the_test(provider, editor, cmd):
-    record = cmd.create("interval_test")
-    provider.update_widgets(editor, cmd.workpieces(record))
-
-    assert provider.group_subtitle == record.name
+    assert provider.settings_row.get_visible()
+    assert provider.settings_row.get_title() == "Open Layer Settings"
+    assert "Interval Test" in provider.settings_row.get_subtitle()
+    assert "layer" in provider.settings_row.get_subtitle()
 
 
 @pytest.mark.ui
 def test_controller_shows_the_parameters_of_the_test(editor, cmd):
-    record, controller = _controller(
-        editor, cmd, "interval_test", {"count": 7}
-    )
+    _, controller = _controller(editor, cmd, "interval_test", {"count": 7})
     assert controller.group.get_values()["count"] == 7
-    assert controller.group.get_description() == record.name
+    assert controller.group.get_description() == ""
     assert controller.help_row.get_visible()
     assert not controller.error_row.get_visible()
 
@@ -464,7 +454,7 @@ def test_section_handles_test_layers(editor, cmd):
         (group,) = groups
         assert isinstance(group, VarSetWidget)
         assert group.get_title() == "Test Settings"
-        assert group.get_description() == record.name
+        assert group.get_description() == ""
         assert group.get_values()["count"] == 5
     finally:
         section.close()

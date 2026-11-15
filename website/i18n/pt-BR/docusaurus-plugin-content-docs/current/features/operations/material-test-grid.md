@@ -13,11 +13,11 @@ cortada com uma configuração ligeiramente diferente, tudo em um único trabalh
 execução, você pode ver de relance qual combinação produz o resultado desejado.
 
 Crie uma via **Ferramentas → Criar Grade de Teste de Material**. O Rayforge adiciona a grade em uma
-nova camada com o nome do teste, com uma peça e uma operação correspondente, e abre as configurações
-dessa camada, onde as configurações da grade aparecem em **Test Settings**. Para voltar a elas mais
-tarde, selecione a grade e escolha **Open Layer Settings** no cartão de Test Settings do painel de
-propriedades, ou use o botão de engrenagem da camada do teste no painel de camadas. Cada alteração
-reconstrói a grade na hora, como um único passo que você pode desfazer. Os
+nova camada com o nome do teste, com uma peça e uma operação correspondente, e a seleciona. As
+configurações da grade aparecem em **Test Settings** no diálogo de configurações dessa camada:
+selecione a grade e escolha **Open Layer Settings** no painel de propriedades, ou use o botão de
+engrenagem da camada do teste no painel de camadas. Cada alteração reconstrói a grade na hora, como
+um único passo que você pode desfazer. Os
 [testes de intervalo e de foco](interval-and-focus-tests.md) funcionam da mesma forma, e as
 configurações deles também vivem nas configurações da camada deles.
 

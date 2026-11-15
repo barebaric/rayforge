@@ -14,11 +14,10 @@ ver de un vistazo qué combinación produce el resultado que deseas.
 
 Crea una mediante **Herramientas → Crear Cuadrícula de Prueba de Material**. Rayforge añade la
 cuadrícula en una capa nueva con el nombre de la prueba, con una pieza de trabajo y una operación
-correspondiente, y abre los ajustes de esa capa, donde los ajustes de la cuadrícula aparecen en
-**Test Settings**. Para volver a ellos más tarde, selecciona la cuadrícula y pulsa **Open Layer
-Settings** en la tarjeta de Test Settings del panel de propiedades, o usa el botón de engranaje de
-la capa de la prueba en el panel de capas. Cada cambio reconstruye la cuadrícula al instante, como
-un solo paso que puedes deshacer. Las
+correspondiente, y la selecciona. Los ajustes de la cuadrícula aparecen en **Test Settings** en el
+diálogo de ajustes de esa capa: selecciona la cuadrícula y pulsa **Open Layer Settings** en el panel
+de propiedades, o usa el botón de engranaje de la capa de la prueba en el panel de capas. Cada
+cambio reconstruye la cuadrícula al instante, como un solo paso que puedes deshacer. Las
 [pruebas de intervalo y de enfoque](interval-and-focus-tests.md) funcionan igual, y sus ajustes
 viven también en los ajustes de su capa.
 

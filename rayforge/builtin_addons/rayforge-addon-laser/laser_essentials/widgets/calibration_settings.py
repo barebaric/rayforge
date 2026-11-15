@@ -48,7 +48,6 @@ class CalibrationSettingsController:
 
         self.group = VarSetWidget()
         self.group.set_title(_("Test Settings"))
-        self.group.set_description(self._description())
         for row in (self.help_row, self.warning_row, self.error_row):
             self.group.add(row)
         generator = self.generator
@@ -107,12 +106,6 @@ class CalibrationSettingsController:
             _show_text(self.note_row, _rebuild_note(generator))
         finally:
             self._in_update = False
-
-    def _description(self) -> str:
-        generator = self.generator
-        if generator is None:
-            return self.record.name
-        return self.record.name or generator.title
 
     def _on_data_changed(self, sender: VarSetWidget, key: str):
         if self._in_update:

@@ -10,9 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Calibration tests: the Test Settings now live in the settings dialog
-  of the test's layer, together with the other layer settings. Creating
-  a test from the Tools menu opens that dialog right away, and the Test
-  Settings card in the item properties panel points to it
+  of the test's layer, together with the other layer settings. The item
+  properties panel shows a card with an Open Layer Settings button that
+  opens that dialog for the selected test
 
 ### Changed
 

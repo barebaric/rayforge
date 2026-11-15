@@ -14,11 +14,10 @@ Durchlauf siehst du auf einen Blick, welche Kombination das gewünschte Ergebnis
 
 Erstelle eines über **Werkzeuge → Materialtest-Raster erstellen**. Rayforge fügt das Raster auf
 einer neuen Ebene hinzu, die nach dem Test benannt ist, mit einem Werkstück und einer passenden
-Operation, und öffnet die Einstellungen dieser Ebene, wo die Einstellungen des Rasters unter **Test
-Settings** erscheinen. Um sie später wieder zu erreichen, wähle das Raster aus und klicke im
-Test-Settings-Kartenabschnitt des Eigenschaften-Panels auf **Open Layer Settings**, oder benutze den
-Zahnrad-Knopf auf der Ebene des Tests im Ebenen-Panel. Jede Änderung baut das Raster sofort neu auf,
-als ein Schritt, den du rückgängig machen kannst. Die
+Operation, und wählt es aus. Die Einstellungen des Rasters erscheinen unter **Test Settings** im
+Einstellungsdialog dieser Ebene: Wähle das Raster aus und klicke im Eigenschaften-Panel auf **Open
+Layer Settings**, oder benutze den Zahnrad-Knopf auf der Ebene des Tests im Ebenen-Panel. Jede
+Änderung baut das Raster sofort neu auf, als ein Schritt, den du rückgängig machen kannst. Die
 [Intervall- und Fokustests](interval-and-focus-tests.md) funktionieren genauso, und ihre
 Einstellungen leben ebenfalls in den Einstellungen ihrer Ebene.
 
