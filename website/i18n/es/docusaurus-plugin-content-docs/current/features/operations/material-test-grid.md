@@ -12,16 +12,21 @@ buscar la combinación adecuada: genera un patrón de celdas de prueba en el que
 corta con un ajuste ligeramente diferente, todo en un solo trabajo. Después de una ejecución podrás
 ver de un vistazo qué combinación produce el resultado que deseas.
 
-Crea una mediante **Herramientas → Crear Cuadrícula de Prueba de Material**. Rayforge añade una
-pieza de trabajo especial al lienzo junto con una operación correspondiente, y configuras la
-cuadrícula en su diálogo de ajustes.
+Crea una mediante **Herramientas → Crear Cuadrícula de Prueba de Material**. Rayforge añade la
+cuadrícula en una capa nueva con el nombre de la prueba, con una pieza de trabajo y una operación
+correspondiente, y la selecciona. Los ajustes de la cuadrícula aparecen en **Test Settings** en el
+panel de propiedades a la derecha, de modo que el lienzo y la cuadrícula siguen a la vista mientras
+los cambias. Cada cambio reconstruye la cuadrícula al instante, como un solo paso que puedes
+deshacer. Vuelve a seleccionar la cuadrícula más tarde para recuperar sus ajustes. Las [pruebas de
+intervalo y de enfoque](interval-and-focus-tests.md) funcionan igual.
 
 ![Ajustes de Cuadrícula de Prueba de Material](/screenshots/material-test.webp)
 
 ## Preajustes
 
-El diálogo de ajustes ofrece preajustes para tipos comunes de láser. Rellenan un rango de velocidad
-sensato, un rango de potencia y el tipo de prueba para que puedas empezar con una base razonable:
+La sección Test Settings ofrece preajustes para tipos comunes de láser. Rellenan un rango de
+velocidad sensato, un rango de potencia y el tipo de prueba para que puedas empezar con una base
+razonable:
 
 | Preajuste         | Rango de Velocidad | Rango de Potencia | Tipo de Prueba |
 | ----------------- | ------------------ | ----------------- | -------------- |
@@ -49,10 +54,12 @@ modo que todas las celdas permanezcan visualmente comparables.
 
 ## Configurar la Cuadrícula
 
-El diálogo de ajustes agrupa los parámetros en tres secciones.
+La sección Test Settings muestra primero los ajustes de la cuadrícula, luego las etiquetas y
+después los rangos de parámetros. El cabezal láser y el posprocesado se quedan en los ajustes de la
+operación.
 
-La sección **Cuadrícula** controla la prueba en sí. El tipo de prueba determina si cada celda corta
-el contorno de un cuadrado o lo rellena con líneas raster. Las dimensiones de la cuadrícula
+Los ajustes de **cuadrícula** controlan la prueba en sí. El tipo de prueba determina si cada celda
+corta el contorno de un cuadrado o lo rellena con líneas raster. Las dimensiones de la cuadrícula
 establecen cuántas columnas y filas probar — cada columna representa un paso del primer parámetro
 del modo y cada fila un paso del segundo, desde el mínimo hasta el máximo del rango que introduzcas.
 Se permiten entre 2 y 20 pasos por eje; 5×5 es un buen valor predeterminado. El tamaño de forma (10
@@ -61,13 +68,13 @@ Para el tipo de prueba Grabar, el intervalo de línea controla la distancia entr
 escaneo — los valores más pequeños rellenan de forma más densa pero tardan más. Déjalo en cero para
 usar el tamaño del punto de tu láser, que es una buena opción para la mayoría de los grabados.
 
-La sección **Etiquetas** controla las anotaciones grabadas junto a la cuadrícula. Las etiquetas
+Los ajustes de **etiquetas** controlan las anotaciones grabadas junto a la cuadrícula. Las etiquetas
 están activadas por defecto y se graban primero, de modo que el patrón de prueba no pueda
 ocultarlas. Tienen su propia potencia (10% por defecto) y velocidad (1000 mm/min por defecto), y los
 valores de velocidad se muestran en tu unidad de visualización preferida.
 
-La sección **Parámetros** contiene los rangos que varía la cuadrícula — velocidad, potencia, pasadas
-o desfase, según el modo seleccionado. Los modos que mantienen un parámetro fijo (por ejemplo la
+Los **rangos de parámetros** son lo que varía la cuadrícula — velocidad, potencia, pasadas o
+desfase, según el modo seleccionado. Los modos que mantienen un parámetro fijo (por ejemplo la
 velocidad en Potencia vs Pasadas) también te permiten establecer esa constante aquí.
 
 ## La Pieza de Trabajo Vinculada
@@ -76,7 +83,7 @@ Normalmente una operación procesa todas las piezas de trabajo de su capa, y la 
 trabajo** de su diálogo de ajustes las lista todas como incluidas. La Cuadrícula de Prueba de
 Material es la excepción: su operación está vinculada a la pieza de trabajo que generó y procesa
 solamente esa. En la pestaña Piezas de trabajo, la cuadrícula generada aparece como la única pieza
-incluida, mientras que el resto de la capa aparece marcado como excluido.
+incluida, y todo lo que añadas después a la capa de la prueba aparece marcado como excluido.
 
 ![Pestaña Piezas de trabajo de la Cuadrícula de Prueba de Material](/screenshots/step-settings-material-test-grid-workpieces.webp)
 
@@ -136,7 +143,8 @@ sugerirá exactamente esos ajustes la próxima vez que cortes el mismo material.
 
 Las cuadrículas de prueba de material son piezas de trabajo normales, por lo que se combinan
 libremente con otras operaciones. Un patrón común es añadir una operación de contorno alrededor de
-la cuadrícula terminada y cortar la pieza de prueba del material base cuando el grabado termina.
+la cuadrícula terminada y cortar la pieza de prueba del material base cuando el grabado termina. Las
+operaciones que añadas a la capa de la prueba se conservan cuando se reconstruye la cuadrícula.
 
 Ejecutar la misma configuración de cuadrícula en diferentes materiales es una forma rápida de
 construir una biblioteca de ajustes confiables — y las recetas hacen que esa biblioteca se pueda

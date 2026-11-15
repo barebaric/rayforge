@@ -196,7 +196,7 @@ class Doc(DocItem):
         if not silent:
             self.updated.send(self)
 
-    def remove_asset_by_uid(self, uid: str):
+    def remove_asset_by_uid(self, uid: str, silent: bool = False):
         """Removes an asset from the document by its UID."""
         if self.assets.pop(uid, None):
             try:
@@ -205,7 +205,8 @@ class Doc(DocItem):
                 logger.warning(
                     f"Asset UID {uid} was in asset dict but not in order list."
                 )
-            self.updated.send(self)
+            if not silent:
+                self.updated.send(self)
 
     def remove_asset(self, asset: "IAsset"):
         """Removes an asset from the document."""
