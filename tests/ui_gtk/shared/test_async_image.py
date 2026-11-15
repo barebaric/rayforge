@@ -106,3 +106,23 @@ def test_async_image_keeps_placeholder_on_failure():
         widget = AsyncImage(URL)
     assert _pump_until(lambda: not widget._spinner.get_spinning())
     assert widget.get_first_child() is widget._spinner
+
+
+def test_async_image_click_calls_callback_with_texture():
+    callback = MagicMock()
+    with patch.object(
+        async_image, "fetch_image_bytes", return_value=_png_bytes()
+    ):
+        widget = AsyncImage(URL, on_click=callback)
+        assert _pump_until(lambda: widget._texture is not None)
+        widget._on_clicked(None, 1, 0, 0)
+    callback.assert_called_once_with(widget._texture)
+
+
+def test_async_image_click_without_callback_is_noop():
+    with patch.object(
+        async_image, "fetch_image_bytes", return_value=_png_bytes()
+    ):
+        widget = AsyncImage(URL)
+        assert _pump_until(lambda: widget._texture is not None)
+        widget._on_clicked(None, 1, 0, 0)

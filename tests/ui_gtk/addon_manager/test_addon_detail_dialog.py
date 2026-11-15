@@ -2,6 +2,7 @@
 """UI tests for the addon detail dialog and row activation."""
 
 import time
+from contextlib import contextmanager
 from typing import cast
 from unittest.mock import MagicMock, patch
 
@@ -11,7 +12,8 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
 import pytest
-from gi.repository import GLib, Gtk
+import pyvips
+from gi.repository import Gdk, GLib, Gtk
 
 from rayforge.addon_mgr.addon import (
     AddonAuthor,
@@ -23,6 +25,7 @@ from rayforge.ui_gtk.addon_manager.addon_detail_dialog import (
     AddonDetailDialog,
     resolve_screenshots,
 )
+from rayforge.ui_gtk.shared.async_image import AsyncImage
 
 pytestmark = pytest.mark.ui
 
@@ -268,3 +271,91 @@ def test_dialog_shows_local_screenshots(ui_context_initializer):
         assert dialog._carousel_box.get_visible() is True
     finally:
         dialog.destroy()
+
+
+@contextmanager
+def _dialog_with_screenshots(context, screenshots, image_data=None):
+    meta = _meta(url="", screenshots=screenshots)
+    with (
+        patch.object(
+            context.addon_mgr, "fetch_registry_cached", return_value=[]
+        ),
+        patch(
+            "rayforge.ui_gtk.shared.async_image.fetch_image_bytes",
+            return_value=image_data,
+        ),
+    ):
+        dialog = AddonDetailDialog(None, meta)
+        try:
+            yield dialog
+        finally:
+            dialog.destroy()
+
+
+SHOTS = [
+    "website/static/screenshots/a.webp",
+    "website/static/screenshots/b.webp",
+]
+
+
+def test_carousel_shows_nav_buttons_for_multiple_screenshots(
+    ui_context_initializer,
+):
+    with _dialog_with_screenshots(ui_context_initializer, SHOTS) as dialog:
+        assert dialog._prev_btn.get_visible() is True
+        assert dialog._next_btn.get_visible() is True
+        assert dialog._prev_btn.get_sensitive() is False
+        assert dialog._next_btn.get_sensitive() is True
+
+
+def test_carousel_hides_nav_buttons_for_single_screenshot(
+    ui_context_initializer,
+):
+    with _dialog_with_screenshots(ui_context_initializer, SHOTS[:1]) as dialog:
+        assert dialog._prev_btn.get_visible() is False
+        assert dialog._next_btn.get_visible() is False
+
+
+def test_carousel_next_button_scrolls_to_next_page(ui_context_initializer):
+    with _dialog_with_screenshots(ui_context_initializer, SHOTS) as dialog:
+        carousel = dialog._carousel
+        assert carousel is not None
+        with patch.object(carousel, "scroll_to") as scroll:
+            dialog._next_btn.emit("clicked")
+        scroll.assert_called_once()
+        assert scroll.call_args.args[0] is carousel.get_nth_page(1)
+
+
+def test_carousel_arrow_key_scrolls(ui_context_initializer):
+    with _dialog_with_screenshots(ui_context_initializer, SHOTS) as dialog:
+        carousel = dialog._carousel
+        assert carousel is not None
+        with patch.object(carousel, "scroll_to") as scroll:
+            handled = dialog._on_carousel_key(None, Gdk.KEY_Right, 0, 0)
+        assert handled is True
+        assert scroll.call_args.args[0] is carousel.get_nth_page(1)
+
+
+def test_carousel_buttons_disable_at_last_page(ui_context_initializer):
+    with _dialog_with_screenshots(ui_context_initializer, SHOTS) as dialog:
+        with patch.object(dialog._carousel, "get_position", return_value=1.0):
+            dialog._update_carousel_buttons()
+        assert dialog._prev_btn.get_sensitive() is True
+        assert dialog._next_btn.get_sensitive() is False
+
+
+def test_clicking_screenshot_opens_lightbox(ui_context_initializer):
+    from rayforge.ui_gtk.addon_manager import addon_detail_dialog as mod
+
+    png = pyvips.Image.black(8, 8).write_to_buffer(".png")
+    with _dialog_with_screenshots(
+        ui_context_initializer, SHOTS[:1], image_data=png
+    ) as dialog:
+        carousel = dialog._carousel
+        assert carousel is not None
+        slide = cast(AsyncImage, carousel.get_nth_page(0))
+        assert _pump_until(lambda: slide._texture is not None)
+        with patch.object(mod, "ScreenshotViewDialog") as lightbox:
+            slide._on_clicked(None, 1, 0, 0)
+        lightbox.assert_called_once()
+        assert lightbox.call_args.args[0] is dialog

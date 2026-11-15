@@ -9,6 +9,7 @@ import hashlib
 import logging
 import threading
 import urllib.request
+from collections.abc import Callable
 from pathlib import Path
 
 import pyvips
@@ -122,12 +123,21 @@ class AsyncImage(Gtk.Box):
         url: str,
         min_height: int = 200,
         fallback_url: str | None = None,
+        on_click: Callable[[Gdk.Texture], None] | None = None,
     ):
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
         self._url = url
         self._fallback_url = fallback_url
+        self._on_click = on_click
+        self._texture: Gdk.Texture | None = None
         self._destroyed = False
         self.set_size_request(-1, min_height)
+
+        if on_click is not None:
+            self.set_cursor(Gdk.Cursor.new_from_name("pointer"))
+            click = Gtk.GestureClick()
+            click.connect("released", self._on_clicked)
+            self.add_controller(click)
 
         self._spinner = Gtk.Spinner()
         self._spinner.set_size_request(32, 32)
@@ -149,6 +159,10 @@ class AsyncImage(Gtk.Box):
     def _on_destroy(self, _widget):
         self._destroyed = True
 
+    def _on_clicked(self, _gesture, _n_press, _x, _y):
+        if self._texture is not None and self._on_click is not None:
+            self._on_click(self._texture)
+
     def _worker(self):
         data = fetch_image_bytes(self._url, self._fallback_url)
         texture = texture_from_bytes(data) if data else None
@@ -159,6 +173,7 @@ class AsyncImage(Gtk.Box):
             return GLib.SOURCE_REMOVE
         self._spinner.stop()
         if texture is not None:
+            self._texture = texture
             self.remove(self._spinner)
             self._picture.set_paintable(texture)
             self.append(self._picture)

@@ -8,17 +8,19 @@ from gettext import gettext as _
 from urllib.parse import urlparse
 
 import semver
-from gi.repository import Adw, GLib, Gtk, Pango
+from gi.repository import Adw, Gdk, GLib, Gtk, Pango
 
 from ... import __version__
 from ...addon_mgr.addon import AddonMetadata
 from ...const import GITHUB_URL
 from ...context import get_context
 from ...shared.util.versioning import UnknownVersion
+from ..icons import get_icon
 from ..shared.async_image import AsyncImage
 from ..shared.markdown import MarkdownView
 from ..shared.patched_dialog_window import PatchedDialogWindow
 from .action_button import build_action_button
+from .screenshot_dialog import ScreenshotViewDialog
 
 logger = logging.getLogger(__name__)
 
@@ -102,8 +104,13 @@ class AddonDetailDialog(PatchedDialogWindow):
         self._addon = addon
         self._on_install = on_install
         self._on_unlock = on_unlock
+        self._carousel: Adw.Carousel | None = None
         self._destroyed = False
         self.connect("destroy", self._on_destroy)
+
+        key_controller = Gtk.EventControllerKey()
+        key_controller.connect("key-pressed", self._on_carousel_key)
+        self.add_controller(key_controller)
 
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.set_content(box)
@@ -253,6 +260,7 @@ class AddonDetailDialog(PatchedDialogWindow):
     def _build_carousel(self, screenshots: list[tuple[str, str | None]]):
         while child := self._carousel_box.get_first_child():
             self._carousel_box.remove(child)
+        self._carousel = None
         if not screenshots:
             self._carousel_box.set_visible(False)
             return
@@ -266,14 +274,82 @@ class AddonDetailDialog(PatchedDialogWindow):
                     url,
                     min_height=CAROUSEL_HEIGHT,
                     fallback_url=fallback_url,
+                    on_click=self._open_screenshot,
                 )
             )
-        self._carousel_box.append(carousel)
+        self._carousel = carousel
+        carousel.connect("page-changed", self._on_carousel_page_changed)
+
+        overlay = Gtk.Overlay()
+        overlay.set_child(carousel)
+        self._prev_btn = self._make_nav_button(
+            "go-previous-symbolic", _("Previous screenshot")
+        )
+        self._next_btn = self._make_nav_button(
+            "go-next-symbolic", _("Next screenshot")
+        )
+        self._prev_btn.set_halign(Gtk.Align.START)
+        self._prev_btn.set_margin_start(6)
+        self._next_btn.set_halign(Gtk.Align.END)
+        self._next_btn.set_margin_end(6)
+        for btn in (self._prev_btn, self._next_btn):
+            btn.set_valign(Gtk.Align.CENTER)
+            overlay.add_overlay(btn)
+        self._prev_btn.connect("clicked", lambda _b: self._scroll_carousel(-1))
+        self._next_btn.connect("clicked", lambda _b: self._scroll_carousel(1))
+        self._carousel_box.append(overlay)
 
         dots = Adw.CarouselIndicatorDots()
         dots.set_carousel(carousel)
         self._carousel_box.append(dots)
         self._carousel_box.set_visible(True)
+
+        multiple = carousel.get_n_pages() > 1
+        self._prev_btn.set_visible(multiple)
+        self._next_btn.set_visible(multiple)
+        self._update_carousel_buttons()
+
+    def _make_nav_button(self, icon_name: str, tooltip: str) -> Gtk.Button:
+        btn = Gtk.Button(child=get_icon(icon_name))
+        btn.add_css_class("osd")
+        btn.add_css_class("circular")
+        btn.set_tooltip_text(tooltip)
+        return btn
+
+    def _scroll_carousel(self, delta: int):
+        if self._carousel is None:
+            return
+        target = round(self._carousel.get_position()) + delta
+        target = max(0, min(target, self._carousel.get_n_pages() - 1))
+        page = self._carousel.get_nth_page(target)
+        self._carousel.scroll_to(page, True)
+
+    def _on_carousel_page_changed(self, _carousel, _position):
+        self._update_carousel_buttons()
+
+    def _update_carousel_buttons(self):
+        if self._carousel is None:
+            return
+        position = round(self._carousel.get_position())
+        self._prev_btn.set_sensitive(position > 0)
+        self._next_btn.set_sensitive(
+            position < self._carousel.get_n_pages() - 1
+        )
+
+    def _on_carousel_key(self, _controller, keyval, _keycode, _state):
+        if self._carousel is None:
+            return False
+        if keyval == Gdk.KEY_Left:
+            self._scroll_carousel(-1)
+            return True
+        if keyval == Gdk.KEY_Right:
+            self._scroll_carousel(1)
+            return True
+        return False
+
+    def _open_screenshot(self, texture: Gdk.Texture):
+        dialog = ScreenshotViewDialog(self, texture)
+        dialog.present()
 
     def _fetch_registry_entry(self):
         """Looks up the addon in the registry to enrich local data."""
