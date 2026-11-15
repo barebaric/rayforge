@@ -141,14 +141,17 @@ maturity: experimental
 
 ### `long_description`
 
-A longer, plain-text description of your addon (at most 2000 characters). It is shown in the addon
-detail view that opens when a user clicks your addon in the addon manager. The short `description`
-is used as a fallback when this field is omitted.
+A longer description of your addon (at most 2000 characters), written in Markdown. It is shown in
+the addon detail view that opens when a user clicks your addon in the addon manager. Headings,
+lists, emphasis, links, and code blocks are supported. The short `description` is used as a
+plain-text fallback when this field is omitted.
 
 ```yaml
 long_description: |
-  A longer description of what the addon does, how to use it,
-  and anything else users should know before installing.
+  A longer description of what the addon does.
+
+  - **Easy to use**: works out of the box
+  - See the [documentation](https://example.com/docs) for details
 ```
 
 ### `screenshots`

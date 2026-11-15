@@ -60,6 +60,8 @@ def test_dialog_shows_local_metadata(ui_context_initializer):
     try:
         assert dialog.get_title() == "Test Addon"
         assert dialog._description_label.get_label() == "Short description"
+        assert dialog._description_label.get_visible() is True
+        assert dialog._markdown_view.get_visible() is False
         assert "Test Author" in dialog._meta_label.get_label()
         assert "1.0.0" in dialog._meta_label.get_label()
     finally:
@@ -86,11 +88,31 @@ def test_dialog_backfills_screenshots_and_description(
         dialog = AddonDetailDialog(None, _meta())
         try:
             assert _pump_until(dialog._carousel_box.get_visible)
-            assert dialog._description_label.get_label() == (
+            assert dialog._markdown_view.get_visible() is True
+            assert dialog._markdown_view._text == (
                 "A much longer description."
             )
+            assert dialog._description_label.get_visible() is False
         finally:
             dialog.destroy()
+
+
+def test_dialog_renders_long_description_as_markdown(
+    ui_context_initializer,
+):
+    context = ui_context_initializer
+    meta = _meta(long_description="**Bold** text")
+    with patch.object(
+        context.addon_mgr, "fetch_registry_cached", return_value=[]
+    ):
+        dialog = AddonDetailDialog(None, meta)
+    try:
+        assert dialog._markdown_view.get_visible() is True
+        assert dialog._description_label.get_visible() is False
+        label = cast(Gtk.Label, dialog._markdown_view.get_first_child())
+        assert "<b>Bold</b>" in label.get_label()
+    finally:
+        dialog.destroy()
 
 
 def test_dialog_without_screenshots_hides_carousel(ui_context_initializer):

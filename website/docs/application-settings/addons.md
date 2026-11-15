@@ -43,7 +43,7 @@ Click an addon row — in the installed addons list or in the Addon Registry dia
 detail view. The detail view shows:
 
 - **Screenshots**: A swipeable gallery, when the addon's author provides screenshots
-- **Description**: A longer description of what the addon does
+- **Description**: A longer description of what the addon does, with Markdown formatting
 - **Author, version, and license**
 - A link to the addon's repository
 - The **Install**, **Update**, or **Unlock** action, depending on the addon's state

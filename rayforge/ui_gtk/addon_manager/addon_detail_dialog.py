@@ -12,6 +12,7 @@ from ...addon_mgr.addon import AddonMetadata
 from ...context import get_context
 from ...shared.util.versioning import UnknownVersion
 from ..shared.async_image import AsyncImage
+from ..shared.markdown import MarkdownView
 from ..shared.patched_dialog_window import PatchedDialogWindow
 from .action_button import build_action_button
 
@@ -97,13 +98,17 @@ class AddonDetailDialog(PatchedDialogWindow):
         content.append(self._meta_label)
 
         self._description_label = Gtk.Label(
-            label=addon.long_description or addon.description,
+            label=addon.description,
             halign=Gtk.Align.START,
             xalign=0,
             wrap=True,
             wrap_mode=Pango.WrapMode.WORD_CHAR,
         )
         content.append(self._description_label)
+
+        self._markdown_view = MarkdownView()
+        content.append(self._markdown_view)
+        self._set_description(addon.long_description)
 
         if addon.url:
             content.append(self._build_repository_link(addon.url))
@@ -135,6 +140,16 @@ class AddonDetailDialog(PatchedDialogWindow):
         if addon.license_name:
             parts.append(addon.license_name)
         return " · ".join(parts)
+
+    def _set_description(self, long_description: str):
+        """Shows the long description as Markdown, or the short one."""
+        if long_description:
+            self._markdown_view.set_text(long_description)
+            self._markdown_view.set_visible(True)
+            self._description_label.set_visible(False)
+        else:
+            self._markdown_view.set_visible(False)
+            self._description_label.set_visible(True)
 
     def _build_repository_link(self, repository_url: str) -> Gtk.Label:
         """Create a clickable link to the addon's repository."""
@@ -220,7 +235,7 @@ class AddonDetailDialog(PatchedDialogWindow):
                 self._build_carousel(entry.screenshots)
             if entry.long_description:
                 self._addon.long_description = entry.long_description
-                self._description_label.set_label(entry.long_description)
+                self._set_description(entry.long_description)
             self._set_action(entry)
 
         def _thread_target():
