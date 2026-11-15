@@ -6,6 +6,7 @@ import os
 import shutil
 import sys
 import tempfile
+import time
 import urllib.request
 import zipfile
 from collections.abc import Callable
@@ -168,6 +169,8 @@ class AddonManager:
         self._load_errors: dict[str, str] = {}
         self._load_error_addons: dict[str, Addon] = {}
         self._last_install_error: str | None = None
+        self._registry_cache: list[AddonMetadata] | None = None
+        self._registry_cache_time: float = 0.0
         self._task_mgr = task_mgr
         self.license_validator = license_validator
         self._external_services_enabled = external_services_enabled or (
@@ -324,6 +327,28 @@ class AddonManager:
             "Registry format is not a recognized list or dictionary."
         )
         return []
+
+    def fetch_registry_cached(
+        self, max_age_s: float = 300.0
+    ) -> list[AddonMetadata]:
+        """
+        Returns the registry, reusing a recent successful fetch.
+
+        Addon detail views call this for every addon the user inspects;
+        the cache avoids re-downloading the registry each time. Failed
+        fetches are not cached, so the next call retries.
+        """
+        now = time.monotonic()
+        if (
+            self._registry_cache is not None
+            and now - self._registry_cache_time < max_age_s
+        ):
+            return self._registry_cache
+        result = self.fetch_registry()
+        if result:
+            self._registry_cache = result
+            self._registry_cache_time = now
+        return result
 
     def get_installed_addon(self, addon_id: str) -> Addon | None:
         """

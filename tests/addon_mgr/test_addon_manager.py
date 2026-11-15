@@ -895,6 +895,32 @@ class TestAddonManagerUpdates:
         assert result == []
         urlopen.assert_not_called()
 
+    def test_fetch_registry_cached_reuses_recent_fetch(self, manager):
+        remote_meta = [AddonMetadata("pkg", "", "1.0.0", [], Mock(), Mock())]
+        with patch.object(
+            manager, "fetch_registry", return_value=remote_meta
+        ) as fetch:
+            first = manager.fetch_registry_cached()
+            second = manager.fetch_registry_cached()
+        assert first == remote_meta
+        assert second is first
+        fetch.assert_called_once()
+
+    def test_fetch_registry_cached_refetches_after_expiry(self, manager):
+        remote_meta = [AddonMetadata("pkg", "", "1.0.0", [], Mock(), Mock())]
+        with patch.object(
+            manager, "fetch_registry", return_value=remote_meta
+        ) as fetch:
+            manager.fetch_registry_cached(max_age_s=0.0)
+            manager.fetch_registry_cached(max_age_s=0.0)
+        assert fetch.call_count == 2
+
+    def test_fetch_registry_cached_does_not_cache_failure(self, manager):
+        with patch.object(manager, "fetch_registry", return_value=[]) as fetch:
+            assert manager.fetch_registry_cached() == []
+            assert manager.fetch_registry_cached() == []
+        assert fetch.call_count == 2
+
 
 class TestAddonManagerHelpers:
     @pytest.mark.parametrize(

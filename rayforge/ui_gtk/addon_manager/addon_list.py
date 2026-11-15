@@ -14,6 +14,7 @@ from ...context import get_context
 from ...shared.util.versioning import UnknownVersion
 from ..icons import get_icon
 from ..shared.preferences_group import PreferencesGroupWithButton
+from .addon_detail_dialog import AddonDetailDialog
 from .addon_dialog import AddonRegistryDialog
 from .experimental_dialog import ExperimentalAddonDialog
 from .license_dialog import LicenseRequiredDialog
@@ -213,6 +214,7 @@ class AddonListWidget(PreferencesGroupWithButton):
         placeholder.add_css_class("dim-label")
         self.list_box.set_placeholder(placeholder)
         self.list_box.set_show_separators(True)
+        self.list_box.connect("row-activated", self._on_row_activated)
 
         self.populate_addons()
 
@@ -288,6 +290,19 @@ class AddonListWidget(PreferencesGroupWithButton):
             error_message,
             is_builtin,
         )
+
+    def _on_row_activated(self, _list_box, row):
+        """Opens the detail view when the user clicks an addon row."""
+        addon = getattr(row.get_child(), "addon", None)
+        if addon is None:
+            return
+        dialog = AddonDetailDialog(
+            cast(Gtk.Window, self.get_root()),
+            addon.metadata,
+            on_install=lambda meta, _update: self._install_addon(meta),
+            on_unlock=lambda _meta: self._on_unlock_addon(addon),
+        )
+        dialog.present()
 
     def _on_add_clicked(self, button):
         """Opens the registry dialog."""

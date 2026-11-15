@@ -37,6 +37,7 @@ TARGETS = {
     "app-settings:color-rules:add": "color_rule_dialog",
     "app-settings:ai": "app_settings_ai",
     "app-settings:addons": "app_settings_addons",
+    "app-settings:addons:detail": "addon_detail_dialog",
     "bottom-panel:console": "bottom_panel",
     "bottom-panel:layers": "bottom_panel",
     "config-wizard:ai-lookup": "config_wizard",

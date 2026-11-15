@@ -139,6 +139,30 @@ The default is `stable`; omit the field for stable addons.
 maturity: experimental
 ```
 
+### `long_description`
+
+A longer, plain-text description of your addon (at most 2000 characters). It is shown in the addon
+detail view that opens when a user clicks your addon in the addon manager. The short `description`
+is used as a fallback when this field is omitted.
+
+```yaml
+long_description: |
+  A longer description of what the addon does, how to use it,
+  and anything else users should know before installing.
+```
+
+### `screenshots`
+
+Up to 5 repo-relative paths to PNG, JPEG, or WebP images (at most 3 MB each). They are shown as a
+gallery in the addon detail view. The images must be committed to your repository; when a release is
+published, the registry pins each path to the release tag and verifies that it can be downloaded.
+
+```yaml
+screenshots:
+  - docs/screenshots/overview.png
+  - docs/screenshots/settings.png
+```
+
 ## Entry Points
 
 The `provides` section defines what your addon contributes to Rayforge.
