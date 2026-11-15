@@ -1,6 +1,18 @@
 name: tool_library
 display_name: "Tool Library"
 description: "Cutting-tool library for CNC machining"
+long_description: |
+  A library of cutting tools for CNC machining.
+
+  - Define tools with category, substrate, coating, and geometry
+  - Categories include end mills, ball nose, bull nose, chamfer,
+    drills, V-bits, and more
+  - CNC steps pick tools from the library and clamp spindle speed to
+    each tool's limit
+
+  Manage the library in **Settings - Tools**.
+screenshots:
+  - website/static/screenshots/app-settings-tools.webp
 api_version: 18
 author:
   name: "Rayforge Team"

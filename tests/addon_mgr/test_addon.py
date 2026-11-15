@@ -358,6 +358,28 @@ class TestAddon:
                 "Details about the addon."
             )
 
+    def test_load_from_directory_parses_screenshots(self):
+        """Local manifests list repo-relative screenshot paths."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp)
+            data = {
+                "name": "test_pkg",
+                "author": {"name": "Me", "email": "me@me.com"},
+                "provides": {"worker": "main.py"},
+                "screenshots": [
+                    "docs/screenshots/one.png",
+                    "../escape.png",
+                    "/absolute.png",
+                    "https://example.com/x.png",
+                    42,
+                ],
+            }
+            with open(path / "rayforge-addon.yaml", "w") as f:
+                yaml.dump(data, f)
+
+            addon = Addon.load_from_directory(path, version=TEST_VERSION)
+            assert addon.metadata.screenshots == ["docs/screenshots/one.png"]
+
     def test_load_missing_metadata(self):
         """Test error when metadata file is missing."""
         with (

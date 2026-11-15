@@ -74,6 +74,22 @@ def test_fetch_image_bytes_rejects_oversized(tmp_path, monkeypatch):
     assert not cache_path_for_url(URL).exists()
 
 
+def test_fetch_image_bytes_falls_back(tmp_path, monkeypatch):
+    monkeypatch.setattr(async_image, "IMAGE_CACHE_DIR", tmp_path)
+    response = MagicMock()
+    response.read.return_value = b"fallback-data"
+    context = MagicMock()
+    context.__enter__.return_value = response
+    fallback = "https://example.com/fallback.png"
+    with patch.object(
+        async_image.urllib.request,
+        "urlopen",
+        side_effect=[OSError("not found"), context],
+    ):
+        assert fetch_image_bytes(URL, fallback) == b"fallback-data"
+    assert cache_path_for_url(fallback).read_bytes() == b"fallback-data"
+
+
 def test_texture_from_bytes_decodes_png():
     texture = texture_from_bytes(_png_bytes())
     assert texture is not None

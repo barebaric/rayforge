@@ -1,6 +1,19 @@
 name: cnc_essentials
 display_name: "CNC Essentials"
 description: "CNC machining operations: adaptive clearing, profiling, slotting"
+long_description: |
+  CNC machining operations for machines with a spindle.
+
+  - **Adaptive Clearing**: rough out pockets with constant tool
+    engagement
+  - **Profiling**: cut inner and outer contours to depth
+  - **Slotting**: cut slots along open or closed paths
+  - **Entry moves**: helix plunge and ramp entry for safe tool
+    engagement
+
+  Requires the Tool Library addon for cutting-tool definitions.
+screenshots:
+  - website/static/screenshots/addon-cnc-adaptive-clearing.webp
 api_version: 20
 requires:
   - post_processors

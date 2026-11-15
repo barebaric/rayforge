@@ -32,7 +32,22 @@ def cache_path_for_url(url: str) -> Path:
     return IMAGE_CACHE_DIR / digest
 
 
-def fetch_image_bytes(url: str) -> bytes | None:
+def fetch_image_bytes(
+    url: str, fallback_url: str | None = None
+) -> bytes | None:
+    """
+    Downloads an image, trying a fallback URL when the first fails.
+
+    The fallback covers screenshots pinned to a version tag that does
+    not exist yet (for example development builds).
+    """
+    data = _fetch_image_bytes(url)
+    if data is None and fallback_url:
+        data = _fetch_image_bytes(fallback_url)
+    return data
+
+
+def _fetch_image_bytes(url: str) -> bytes | None:
     """
     Downloads an image, using and populating the disk cache.
 
@@ -102,9 +117,15 @@ class AsyncImage(Gtk.Box):
     the placeholder when the download or decoding fails.
     """
 
-    def __init__(self, url: str, min_height: int = 200):
+    def __init__(
+        self,
+        url: str,
+        min_height: int = 200,
+        fallback_url: str | None = None,
+    ):
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
         self._url = url
+        self._fallback_url = fallback_url
         self._destroyed = False
         self.set_size_request(-1, min_height)
 
@@ -129,7 +150,7 @@ class AsyncImage(Gtk.Box):
         self._destroyed = True
 
     def _worker(self):
-        data = fetch_image_bytes(self._url)
+        data = fetch_image_bytes(self._url, self._fallback_url)
         texture = texture_from_bytes(data) if data else None
         GLib.idle_add(self._apply, texture)
 

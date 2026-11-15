@@ -166,6 +166,9 @@ screenshots:
   - docs/screenshots/settings.png
 ```
 
+For built-in addons that ship with Rayforge, the paths are resolved against the Rayforge repository
+at the app's version tag, falling back to the default branch for development builds.
+
 ## Entry Points
 
 The `provides` section defines what your addon contributes to Rayforge.

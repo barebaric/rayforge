@@ -1,6 +1,16 @@
 name: core_materials
 display_name: "Core Materials"
 description: "Built-in material library with common laser cutting materials"
+long_description: |
+  A built-in library of common laser cutting materials, from plywood
+  and acrylic to aluminum and marble.
+
+  - Each material carries appearance and preset settings
+  - Apply material presets to your operations instead of tuning
+    parameters by hand
+  - Extend the library with your own materials or material addons
+screenshots:
+  - website/static/screenshots/app-settings-materials.webp
 api_version: 18
 author:
   name: "Rayforge Team"

@@ -1,6 +1,17 @@
 name: post_processors
 display_name: "Post Processors"
 description: "Core Post-processing transformers for toolpath optimization"
+long_description: |
+  Post-processing transformers that refine toolpaths before they
+  reach the machine:
+
+  - **Path optimization**: reorder paths to cut travel time
+  - **Overscan**: extend engraving moves for clean edges at speed
+  - **Lead-in/out**: add approach and exit moves to contours
+  - **Multi-pass**, **perforation**, **smoothing**, **merge lines**,
+    and **crop to stock**
+screenshots:
+  - website/static/screenshots/recipe-editor-post-processing.webp
 api_version: 19
 author:
   name: "Rayforge Team"

@@ -5,10 +5,14 @@ import threading
 import webbrowser
 from collections.abc import Callable
 from gettext import gettext as _
+from urllib.parse import urlparse
 
+import semver
 from gi.repository import Adw, GLib, Gtk, Pango
 
+from ... import __version__
 from ...addon_mgr.addon import AddonMetadata
+from ...const import GITHUB_URL
 from ...context import get_context
 from ...shared.util.versioning import UnknownVersion
 from ..shared.async_image import AsyncImage
@@ -19,6 +23,57 @@ from .action_button import build_action_button
 logger = logging.getLogger(__name__)
 
 CAROUSEL_HEIGHT = 360
+
+
+def _github_raw_base(repo_url: str) -> str | None:
+    """Returns the raw download base URL for a GitHub repository."""
+    parsed = urlparse(repo_url)
+    if parsed.netloc.lower() != "github.com":
+        return None
+    parts = [part for part in parsed.path.split("/") if part]
+    if len(parts) < 2:
+        return None
+    repo = parts[1].removesuffix(".git")
+    return f"https://raw.githubusercontent.com/{parts[0]}/{repo}"
+
+
+def _screenshot_ref(addon: AddonMetadata) -> str:
+    """The git ref to fetch screenshots at: a version tag, or main."""
+    version = addon.version
+    if not version or version is UnknownVersion:
+        version = __version__
+    text = str(version)
+    for candidate in (text, text.lstrip("v")):
+        try:
+            semver.VersionInfo.parse(candidate)
+            return text
+        except ValueError:
+            continue
+    return "main"
+
+
+def resolve_screenshots(
+    addon: AddonMetadata,
+) -> list[tuple[str, str | None]]:
+    """
+    Resolves an addon's screenshots to (url, fallback_url) pairs.
+
+    Registry entries are absolute URLs and pass through unchanged.
+    Relative paths from local manifests are resolved against the
+    addon's repository (the Rayforge repository for built-ins),
+    pinned to the version tag when it is a release version, with the
+    default branch as fallback.
+    """
+    base = _github_raw_base(addon.url or GITHUB_URL)
+    ref = _screenshot_ref(addon)
+    result = []
+    for shot in addon.screenshots:
+        if shot.startswith(("https://", "http://")):
+            result.append((shot, None))
+        elif base:
+            fallback = f"{base}/main/{shot}" if ref != "main" else None
+            result.append((f"{base}/{ref}/{shot}", fallback))
+    return result
 
 
 class AddonDetailDialog(PatchedDialogWindow):
@@ -76,6 +131,7 @@ class AddonDetailDialog(PatchedDialogWindow):
         )
         self._carousel_box.set_visible(False)
         content.append(self._carousel_box)
+        self._build_carousel(resolve_screenshots(addon))
 
         title = Gtk.Label(
             label=addon.display_name or addon.name,
@@ -194,18 +250,24 @@ class AddonDetailDialog(PatchedDialogWindow):
         )
         self._action_box.append(btn)
 
-    def _build_carousel(self, urls: list[str]):
+    def _build_carousel(self, screenshots: list[tuple[str, str | None]]):
         while child := self._carousel_box.get_first_child():
             self._carousel_box.remove(child)
-        if not urls:
+        if not screenshots:
             self._carousel_box.set_visible(False)
             return
 
         carousel = Adw.Carousel()
         carousel.set_spacing(12)
         carousel.set_size_request(-1, CAROUSEL_HEIGHT)
-        for url in urls:
-            carousel.append(AsyncImage(url, min_height=CAROUSEL_HEIGHT))
+        for url, fallback_url in screenshots:
+            carousel.append(
+                AsyncImage(
+                    url,
+                    min_height=CAROUSEL_HEIGHT,
+                    fallback_url=fallback_url,
+                )
+            )
         self._carousel_box.append(carousel)
 
         dots = Adw.CarouselIndicatorDots()
@@ -232,7 +294,7 @@ class AddonDetailDialog(PatchedDialogWindow):
                 return
             if entry.screenshots:
                 self._addon.screenshots = entry.screenshots
-                self._build_carousel(entry.screenshots)
+                self._build_carousel(resolve_screenshots(entry))
             if entry.long_description:
                 self._addon.long_description = entry.long_description
                 self._set_description(entry.long_description)

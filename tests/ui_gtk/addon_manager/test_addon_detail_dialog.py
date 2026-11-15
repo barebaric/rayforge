@@ -18,8 +18,10 @@ from rayforge.addon_mgr.addon import (
     AddonMetadata,
     AddonProvides,
 )
+from rayforge.shared.util.versioning import UnknownVersion
 from rayforge.ui_gtk.addon_manager.addon_detail_dialog import (
     AddonDetailDialog,
+    resolve_screenshots,
 )
 
 pytestmark = pytest.mark.ui
@@ -187,3 +189,82 @@ def test_installed_row_activation_opens_detail(ui_context_initializer):
     with patch.object(addon_list, "AddonDetailDialog") as detail:
         widget._on_row_activated(widget.list_box, row)
     detail.assert_called_once()
+
+
+def test_resolve_screenshots_passes_urls_through():
+    meta = _meta(screenshots=["https://example.com/a.png"])
+    assert resolve_screenshots(meta) == [("https://example.com/a.png", None)]
+
+
+def test_resolve_screenshots_pins_release_version():
+    meta = _meta(
+        version="1.2.3",
+        screenshots=["docs/shot.png"],
+    )
+    base = "https://raw.githubusercontent.com/example/rayforge-test-addon"
+    assert resolve_screenshots(meta) == [
+        (f"{base}/1.2.3/docs/shot.png", f"{base}/main/docs/shot.png")
+    ]
+
+
+def test_resolve_screenshots_keeps_v_prefix():
+    meta = _meta(version="v1.5.1", screenshots=["docs/shot.png"])
+    url, _fallback = resolve_screenshots(meta)[0]
+    assert "/v1.5.1/docs/shot.png" in url
+
+
+def test_resolve_screenshots_builtin_uses_app_repo():
+    meta = _meta(
+        url="",
+        version=UnknownVersion,
+        screenshots=["website/static/screenshots/x.webp"],
+    )
+    with patch(
+        "rayforge.ui_gtk.addon_manager.addon_detail_dialog.__version__",
+        "1.2.3",
+    ):
+        url, fallback = resolve_screenshots(meta)[0]
+    assert url == (
+        "https://raw.githubusercontent.com/barebaric/rayforge/1.2.3/"
+        "website/static/screenshots/x.webp"
+    )
+    assert fallback == (
+        "https://raw.githubusercontent.com/barebaric/rayforge/main/"
+        "website/static/screenshots/x.webp"
+    )
+
+
+def test_resolve_screenshots_dev_version_uses_main():
+    meta = _meta(
+        version="1.2.3.post4+git.abc123",
+        screenshots=["docs/shot.png"],
+    )
+    base = "https://raw.githubusercontent.com/example/rayforge-test-addon"
+    assert resolve_screenshots(meta) == [(f"{base}/main/docs/shot.png", None)]
+
+
+def test_resolve_screenshots_skips_non_github_repos():
+    meta = _meta(
+        url="https://gitlab.com/example/addon",
+        screenshots=["docs/shot.png"],
+    )
+    assert resolve_screenshots(meta) == []
+
+
+def test_dialog_shows_local_screenshots(ui_context_initializer):
+    context = ui_context_initializer
+    meta = _meta(url="", screenshots=["website/static/screenshots/x.webp"])
+    with (
+        patch.object(
+            context.addon_mgr, "fetch_registry_cached", return_value=[]
+        ),
+        patch(
+            "rayforge.ui_gtk.shared.async_image.fetch_image_bytes",
+            return_value=None,
+        ),
+    ):
+        dialog = AddonDetailDialog(None, meta)
+    try:
+        assert dialog._carousel_box.get_visible() is True
+    finally:
+        dialog.destroy()

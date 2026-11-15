@@ -291,6 +291,27 @@ def _parse_screenshots(raw: Any) -> list[str]:
     ]
 
 
+def _parse_local_screenshots(raw: Any) -> list[str]:
+    """Parse repo-relative screenshot paths from a local manifest.
+
+    Unlike registry entries, local manifests list paths relative to
+    the repository root; the UI resolves them to raw download URLs.
+    """
+    if not isinstance(raw, list):
+        return []
+    paths = []
+    for item in raw:
+        if not isinstance(item, str) or not item:
+            continue
+        if item.startswith("/") or "://" in item:
+            continue
+        parts = item.split("/")
+        if ".." in parts or "." in parts or "" in parts:
+            continue
+        paths.append(item)
+    return paths
+
+
 def _parse_version_entries(
     raw: list,
 ) -> list[dict[str, Any]]:
@@ -436,6 +457,7 @@ class Addon:
                 default_state=default_state,
                 maturity=parse_maturity(data.get("maturity")),
                 long_description=data.get("long_description", ""),
+                screenshots=_parse_local_screenshots(data.get("screenshots")),
             )
 
             return cls(path=addon_dir, metadata=metadata)
