@@ -376,6 +376,10 @@ class GrblNetworkDriver(Driver):
             )
             return
 
+        if self._connection_task and not self._connection_task.done():
+            logger.debug("Connection loop is already running.")
+            return
+
         self.keep_running = True
         self._connection_task = asyncio.create_task(self._connection_loop())
 
