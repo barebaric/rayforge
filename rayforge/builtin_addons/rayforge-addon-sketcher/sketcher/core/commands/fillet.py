@@ -12,6 +12,7 @@ from raygeo.sketch.constraints.equal_distance import (
 from raygeo.sketch.constraints.tangent import TangentConstraint
 from raygeo.sketch.entities.arc import Arc
 from raygeo.sketch.entities.line import Line
+from raygeo.sketch.entities.point import SketchPoint
 
 from ..types import EntityID
 from .base import SketchChangeCommand
@@ -63,7 +64,6 @@ class FilletCommand(SketchChangeCommand):
         """
         temp_points: list = []
         if add_point is None:
-            from raygeo.sketch.entities.point import SketchPoint
 
             def add_point(x, y):
                 pid = len(temp_points)

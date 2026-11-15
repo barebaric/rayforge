@@ -9,6 +9,7 @@ from raygeo.sketch.constraints.symmetry import (
     SymmetryConstraint,
     SymmetryTarget,
 )
+from raygeo.sketch.entities.line import Line
 
 from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
@@ -289,8 +290,6 @@ class RectangleCommand(SketchChangeCommand):
 
         if abs(ax2 - ax1) < 1e-6 or abs(ay2 - ay1) < 1e-6:
             return None
-
-        from raygeo.sketch.entities.line import Line
 
         if center_on_start:
             # The start point is the rectangle's center, so the first

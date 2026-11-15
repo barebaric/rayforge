@@ -37,6 +37,7 @@ from raygeo.geo.shape.polygon import (
 from raygeo.geo.types import Rect
 from raygeo.sketch.entities.polygon import Polygon
 
+from .entity_ops import polygon_world_rings, polygon_world_vertices
 from .types import EntityID
 
 _MIN_OFFSET_RADIUS = 1e-6
@@ -404,8 +405,6 @@ def preview_polylines_for_item(
             get_ellipse_samples(center, rx + offset, ry + offset, rotation, 64)
         ]
     if kind == "polygon":
-        from .entity_ops import polygon_world_vertices
-
         if not item.closed:
             outline = PolygonOutline(
                 polygon_world_vertices(registry, item), False
@@ -517,7 +516,6 @@ def _polygon_offset_solids(
 ) -> list[tuple[list, list]]:
     """Grows the multi-ring shape by the offset and regroups the
     result into (outer, holes) solids."""
-    from .entity_ops import polygon_world_rings
 
     grown = rings_to_geometry(polygon_world_rings(registry, polygon)).grow(
         offset
@@ -532,7 +530,6 @@ def _plan_polygon_offset(
     multi-ring geometry is grown via raygeo (holes shrink and may
     vanish) and regrouped into one polygon per result solid. Open
     polygons fall back to outline sampling."""
-    from .entity_ops import polygon_world_vertices
 
     if not polygon.closed:
         outline = PolygonOutline(

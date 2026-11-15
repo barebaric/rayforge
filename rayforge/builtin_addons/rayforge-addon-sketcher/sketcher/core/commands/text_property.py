@@ -8,6 +8,7 @@ from raygeo.geo.types import Point as GeoPoint
 from raygeo.sketch.constraints.aspect_ratio import AspectRatioConstraint
 from raygeo.sketch.constraints.distance import DistanceConstraint
 from raygeo.sketch.constraints.equal_length import EqualLengthConstraint
+from raygeo.sketch.entities.point import SketchPoint
 
 from ..entity_ops import text_box_fourth_corner, text_box_natural_size
 from ..types import EntityID
@@ -80,7 +81,6 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
 
     @property
     def _removed_points(self) -> list:
-        from raygeo.sketch.entities.point import SketchPoint
 
         return [
             SketchPoint(d["id"], d["x"], d["y"], d.get("fixed", False))

@@ -10,6 +10,7 @@ from raygeo.sketch.constraints.equal_distance import (
     EqualDistanceConstraint,
 )
 from raygeo.sketch.entities.line import Line
+from raygeo.sketch.entities.point import SketchPoint
 
 from ..types import EntityID
 from .base import SketchChangeCommand
@@ -61,7 +62,6 @@ class ChamferCommand(SketchChangeCommand):
         """
         temp_points: list = []
         if add_point is None:
-            from raygeo.sketch.entities.point import SketchPoint
 
             def add_point(x, y):
                 pid = len(temp_points)

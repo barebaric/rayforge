@@ -3,7 +3,12 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
+from raygeo.sketch.constraints.equal_distance import (
+    EqualDistanceConstraint,
+)
+
 from .. import constraint_info
+from ..entity_ops import entity_from_dict
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
@@ -69,7 +74,6 @@ class AddItemsCommand(SketchChangeCommand):
         its helper references and dictionary-only state (e.g. an
         ellipse's helper line ids, which plain entity construction
         cannot carry)."""
-        from ..entity_ops import entity_from_dict
 
         registry = self.sketch.registry
         temp_id = registry.add_entity(entity_from_dict(entity_dict))
@@ -265,9 +269,6 @@ class RemoveItemsCommand(SketchChangeCommand):
                 entity.center_idx,
                 entity.start_idx,
                 entity.end_idx,
-            )
-            from raygeo.sketch.constraints.equal_distance import (
-                EqualDistanceConstraint,
             )
 
             for constr in sketch.constraints:
