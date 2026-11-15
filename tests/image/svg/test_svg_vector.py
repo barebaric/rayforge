@@ -12,6 +12,7 @@ from rayforge.core.vectorization_spec import (
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image.svg.importer import SvgImporter
 from rayforge.image.svg.svg_vector import SvgVectorImporter
+from rayforge.image.svg.svgutil import NO_LAYER_KEY
 
 SVG_BASIC = b"""
 <svg width="100mm" height="100mm" viewBox="0 0 100 100"
@@ -50,6 +51,17 @@ SVG_TRANSFORM = b"""
      xmlns="http://www.w3.org/2000/svg">
     <g transform="translate(10, 10)">
         <rect x="10" y="10" width="20" height="20" />
+    </g>
+</svg>
+"""
+
+SVG_ORPHANS = b"""
+<svg width="100mm" height="100mm" viewBox="0 0 100 100"
+     xmlns="http://www.w3.org/2000/svg">
+    <g id="g1"><rect x="0" y="0" width="10" height="10"/></g>
+    <rect x="20" y="20" width="30" height="5" stroke="#0000ff"/>
+    <g transform="translate(10, 0)">
+        <rect x="50" y="20" width="30" height="5" stroke="#0000ff"/>
     </g>
 </svg>
 """
@@ -360,3 +372,66 @@ def test_any_mode_uses_stroke_color_by_default():
     assert payload is not None
     by_name = {item.name: item for item in payload.items}
     assert set(by_name) == {"Color #0000ff", "Color #00ff00"}
+
+
+def test_scan_lists_orphan_geometry_as_layer():
+    """Root-level geometry outside named layers is selectable."""
+    importer = SvgVectorImporter(SVG_ORPHANS, Path("orphans.svg"))
+    manifest = importer.scan()
+    by_id = {layer.id: layer for layer in manifest.layers}
+    assert set(by_id) == {"g1", NO_LAYER_KEY}
+    assert by_id[NO_LAYER_KEY].feature_count == 2
+    assert by_id[NO_LAYER_KEY].name == "Ungrouped"
+
+
+def test_vectorize_extracts_orphan_geometry():
+    """The pseudo-layer carries the transformed orphan geometry."""
+    importer = SvgVectorImporter(SVG_ORPHANS, Path("orphans.svg"))
+    parse_res = importer.parse()
+    assert parse_res is not None
+    spec = PassthroughSpec(active_layer_ids=["g1", NO_LAYER_KEY])
+    result = importer.vectorize(parse_res, spec)
+    assert set(result.geometries_by_layer) == {"g1", NO_LAYER_KEY}
+    assert result.geometries_by_layer["g1"].rect() == pytest.approx(
+        (0, 0, 10, 10)
+    )
+    assert result.geometries_by_layer[NO_LAYER_KEY].rect() == pytest.approx(
+        (20, 20, 90, 25)
+    )
+
+
+def test_orphan_geometry_imported_as_own_layer():
+    """Orphan geometry becomes a workpiece instead of being dropped."""
+    importer = SvgVectorImporter(SVG_ORPHANS, Path("orphans.svg"))
+    spec = PassthroughSpec(
+        active_layer_ids=["g1", NO_LAYER_KEY],
+        layer_import_mode=LayerImportMode.NEW_LAYERS,
+    )
+    import_result = importer.get_doc_items(vectorization_spec=spec)
+    assert import_result is not None
+    payload = import_result.payload
+    assert payload is not None
+    by_name = {item.name: item for item in payload.items}
+    assert set(by_name) == {"g1", "Ungrouped"}
+    orphan_layer = by_name["Ungrouped"]
+    assert isinstance(orphan_layer, Layer)
+    wp = next(c for c in orphan_layer.children if isinstance(c, WorkPiece))
+    assert wp.source_segment is not None
+    assert wp.source_segment.layer_id == NO_LAYER_KEY
+    geometry = wp.source_segment.pristine_geometry
+    assert geometry is not None
+    assert geometry.rect() == pytest.approx((20, 20, 90, 25))
+
+
+def test_orphan_geometry_deselected_stays_out():
+    """Deselecting the pseudo-layer imports only the named layers."""
+    importer = SvgVectorImporter(SVG_ORPHANS, Path("orphans.svg"))
+    spec = PassthroughSpec(
+        active_layer_ids=["g1"],
+        layer_import_mode=LayerImportMode.NEW_LAYERS,
+    )
+    import_result = importer.get_doc_items(vectorization_spec=spec)
+    assert import_result is not None
+    payload = import_result.payload
+    assert payload is not None
+    assert [item.name for item in payload.items] == ["g1"]

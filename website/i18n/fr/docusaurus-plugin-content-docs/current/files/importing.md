@@ -238,6 +238,14 @@ Désactive « Utiliser les vecteurs originaux » pour utiliser cette méthode.
 - SVG avec effets, filtres, dégradés
 - Quand l'importation directe produit des erreurs
 
+### Sélection des calques et géométrie non groupée
+
+Avec **Utiliser les vecteurs d'origine**, la liste **Sélectionner les calques** affiche une entrée
+par calque SVG nommé (ou par couleur en regroupant par couleurs). Les formes situées hors de tout
+calque nommé sont proposées comme calque supplémentaire **Non groupé**, activé par défaut, afin
+d'être importées et découpées comme n'importe quel autre calque. Décocher un calque exclut sa
+géométrie à la fois de l'aperçu et des trajectoires d'outil générées.
+
 ### Aperçu en direct
 
 La boîte de dialogue d'importation affiche un aperçu en direct de l'importation de ton SVG :

@@ -231,6 +231,13 @@ Disable "Use Original Vectors" to use this method.
 - SVGs with effects, filters, gradients
 - When direct import produces errors
 
+### Selecting Layers and Ungrouped Geometry
+
+With **Use Original Vectors**, the **Select Layers** list shows one entry per named SVG layer (or
+per color when grouping by color). Shapes that lie outside any named layer are offered as an extra
+**Ungrouped** layer, enabled by default, so they are imported and cut like any other layer.
+Deselecting a layer excludes its geometry from both the preview and the generated toolpaths.
+
 ### Live Preview
 
 The import dialog shows a live preview of how your SVG will be imported:

@@ -232,6 +232,14 @@ Desactiva "Usar vectores originales" para utilizar este método.
 - SVG con efectos, filtros, degradados
 - Cuando la importación directa produce errores
 
+### Selección de capas y geometría sin agrupar
+
+Con **Usar vectores originales**, la lista **Seleccionar capas** muestra una entrada por cada capa
+SVG con nombre (o por color al agrupar por colores). Las formas que quedan fuera de cualquier capa
+con nombre se ofrecen como una capa adicional **Sin agrupar**, activada de forma predeterminada,
+para que se importen y corten como cualquier otra capa. Desmarcar una capa excluye su geometría
+tanto de la vista previa como de las trayectorias de herramienta generadas.
+
 ### Vista previa en tiempo real
 
 El diálogo de importación muestra una vista previa en tiempo real de cómo se importará tu SVG:
