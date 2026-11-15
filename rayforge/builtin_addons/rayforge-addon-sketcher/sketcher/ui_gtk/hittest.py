@@ -1,7 +1,14 @@
 import logging
-from typing import Any
+from typing import TYPE_CHECKING
 
 import cairo
+from raygeo.geo import Matrix
+
+from ..core.types import HitTarget
+
+if TYPE_CHECKING:
+    from .sketchelement import SketchElement
+
 from raygeo.sketch.constraints.coincident import CoincidentConstraint
 from raygeo.sketch.constraints.point_on_curve import (
     PointOnCurveConstraint,
@@ -26,7 +33,7 @@ class SketchHitTester:
         self.snap_distance = snap_distance
 
     def screen_to_model(
-        self, wx: float, wy: float, element: Any
+        self, wx: float, wy: float, element: "SketchElement"
     ) -> tuple[float, float]:
         """
         Converts world coordinates to Model coordinates
@@ -46,7 +53,9 @@ class SketchHitTester:
         except ValueError:
             return 0.0, 0.0
 
-    def get_model_to_screen_transform(self, element: Any) -> Any:
+    def get_model_to_screen_transform(
+        self, element: "SketchElement"
+    ) -> Matrix:
         """
         Returns Matrix: Model -> Screen.
         """
@@ -61,8 +70,8 @@ class SketchHitTester:
         return local_to_screen @ model_to_local
 
     def get_hit_data(
-        self, wx: float, wy: float, element: Any
-    ) -> tuple[str | None, Any]:
+        self, wx: float, wy: float, element: "SketchElement"
+    ) -> tuple[str | None, HitTarget]:
         """
         Determines what was clicked using Model coordinates.
         Returns (type_string, object_id_or_index).
@@ -94,7 +103,7 @@ class SketchHitTester:
         min_y: float,
         max_x: float,
         max_y: float,
-        element: Any,
+        element: "SketchElement",
         strict_containment: bool = False,
     ) -> tuple[list[int], list[int]]:
         """
@@ -182,7 +191,9 @@ class SketchHitTester:
             return hit
         return closest(lambda pid: pid in derived)
 
-    def _hit_test_overlays(self, wx, wy, element) -> tuple[str | None, Any]:
+    def _hit_test_overlays(
+        self, wx, wy, element
+    ) -> tuple[str | None, HitTarget]:
         if not element.canvas:
             return None, None
         to_screen = self.get_model_to_screen_transform(element)
@@ -264,7 +275,9 @@ class SketchHitTester:
                 return "constraint", idx
         return None, None
 
-    def _hit_test_entities(self, wx, wy, element) -> Any | None:
+    def _hit_test_entities(
+        self, wx: float, wy: float, element: "SketchElement"
+    ) -> HitTarget:
         mx, my = self.screen_to_model(wx, wy, element)
         scale = 1.0
         if isinstance(element.canvas, WorldSurface):

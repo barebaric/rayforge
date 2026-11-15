@@ -6,6 +6,7 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
 from raygeo.geo.types import Point as GeoPoint
+from raygeo.sketch.entities.bezier import Bezier
 
 from ..entity_flags import WaypointType
 from ..types import EntityID
@@ -25,7 +26,7 @@ def get_connected_beziers(
     registry: EntityRegistry,
     sketch: Sketch,
     waypoint_id: EntityID,
-) -> list[Any]:
+) -> list[Bezier]:
     """Bezier entities connected to the waypoint or any point in its
     coincident group."""
     point_ids = {waypoint_id}

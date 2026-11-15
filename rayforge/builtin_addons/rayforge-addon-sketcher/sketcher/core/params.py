@@ -65,7 +65,7 @@ class ParameterContext:
         self._expressions[name] = str(value)
         self._dirty = True
 
-    def get(self, name: str, default: Any = 0.0) -> Any:
+    def get(self, name: str, default: float | str = 0.0) -> float | str:
         """Gets the evaluated value of a parameter."""
         if self._dirty:
             self.evaluate_all()
@@ -77,7 +77,7 @@ class ParameterContext:
             self.evaluate_all()
         return self._cache.copy()
 
-    def evaluate(self, expression: str | float) -> Any:
+    def evaluate(self, expression: str | float) -> float | str:
         """Evaluates an arbitrary expression string using current context.
 
         Raises:

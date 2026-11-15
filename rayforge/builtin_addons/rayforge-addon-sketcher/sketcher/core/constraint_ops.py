@@ -8,7 +8,10 @@ commands that duplicate or re-own geometry.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .types import Constraint
 
 from raygeo.sketch.constraints.angle import AngleConstraint
 from raygeo.sketch.constraints.aspect_ratio import AspectRatioConstraint
@@ -46,7 +49,7 @@ from raygeo.sketch.constraints.vertical import VerticalConstraint
 from .constraint_info import get_expression
 
 
-def rebuild(constraint: Any, pid_map: dict[int, int]) -> Any:
+def rebuild(constraint: Constraint, pid_map: dict[int, int]) -> Constraint:
     """Returns a new constraint of the same type with its referenced
     point ids remapped through ``pid_map``. Value, expression, ratio
     and user-visibility are carried over."""
@@ -59,7 +62,7 @@ def _pid(pid: int, pid_map: dict[int, int]) -> int:
     return pid_map.get(pid, pid)
 
 
-def _map(constraint: Any, pid_map: dict[int, int]) -> Any:
+def _map(constraint: Constraint, pid_map: dict[int, int]) -> Constraint:
     if isinstance(constraint, (HorizontalConstraint, VerticalConstraint)):
         return type(constraint)(
             _pid(constraint.p1, pid_map),
@@ -197,7 +200,9 @@ def _map(constraint: Any, pid_map: dict[int, int]) -> Any:
     raise ValueError(f"Unsupported constraint type: {type(constraint)}")
 
 
-def _map_point_on_target(target: Any, pid_map: dict[int, int]) -> Any:
+def _map_point_on_target(
+    target: PointOnTarget, pid_map: dict[int, int]
+) -> PointOnTarget:
     if isinstance(target, PointOnTarget.Line):
         return PointOnTarget.Line(
             l1=_pid(target.l1, pid_map), l2=_pid(target.l2, pid_map)
@@ -208,7 +213,9 @@ def _map_point_on_target(target: Any, pid_map: dict[int, int]) -> Any:
     )
 
 
-def _map_symmetry_target(target: Any, pid_map: dict[int, int]) -> Any:
+def _map_symmetry_target(
+    target: SymmetryTarget, pid_map: dict[int, int]
+) -> SymmetryTarget:
     if isinstance(target, SymmetryTarget.Point):
         return SymmetryTarget.Point(center=_pid(target.center, pid_map))
     return SymmetryTarget.Line(
@@ -216,7 +223,9 @@ def _map_symmetry_target(target: Any, pid_map: dict[int, int]) -> Any:
     )
 
 
-def _map_perpendicular_target(target: Any, pid_map: dict[int, int]) -> Any:
+def _map_perpendicular_target(
+    target: PerpendicularTarget, pid_map: dict[int, int]
+) -> PerpendicularTarget:
     if isinstance(target, PerpendicularTarget.LineLine):
         return PerpendicularTarget.LineLine(
             a1=_pid(target.a1, pid_map),
@@ -238,7 +247,7 @@ def _map_perpendicular_target(target: Any, pid_map: dict[int, int]) -> Any:
     )
 
 
-def _restore_state(constraint: Any, mapped: Any) -> None:
+def _restore_state(constraint: Constraint, mapped: Constraint) -> None:
     """Carries expression and user-visibility onto the rebuilt
     constraint; status resets to its default (constraints are
     re-evaluated by the next solve)."""

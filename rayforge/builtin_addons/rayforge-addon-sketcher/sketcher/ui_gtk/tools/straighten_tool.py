@@ -1,9 +1,9 @@
 from gettext import gettext as _
-from typing import Any
 
 from raygeo.sketch.entities.bezier import Bezier
 
 from ...core.commands import StraightenBezierCommand
+from ...core.types import HitTarget
 from .base import SketchTool
 
 
@@ -13,7 +13,7 @@ class StraightenTool(SketchTool):
 
     def is_available(
         self,
-        target: Any | None,
+        target: HitTarget | None,
         target_type: str | None,
     ) -> bool:
         if not isinstance(target, Bezier):

@@ -9,7 +9,7 @@ the solve to the component containing the dragged geometry.
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from . import constraint_info
 from .types import EntityID
@@ -17,9 +17,11 @@ from .types import EntityID
 if TYPE_CHECKING:
     from raygeo.sketch.registry import EntityRegistry
 
+    from .types import Constraint
+
 
 def get_referenced_points(
-    registry: EntityRegistry, constraint: Any
+    registry: EntityRegistry, constraint: Constraint
 ) -> set[EntityID]:
     """
     Returns all point IDs a constraint couples: the points it
@@ -38,7 +40,7 @@ def get_referenced_points(
 
 def compute_constraint_components(
     registry: EntityRegistry,
-    constraints: Sequence[Any],
+    constraints: Sequence[Constraint],
 ) -> list[set[EntityID]]:
     """
     Partitions all points referenced by constraints into connected

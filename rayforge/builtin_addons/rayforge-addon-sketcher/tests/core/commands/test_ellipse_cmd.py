@@ -47,6 +47,7 @@ def test_ellipse_command_execute_temp_start():
 
     assert len(sketch.registry.entities()) == 5
     assert cmd.add_cmd is not None
+    assert sketch.registry.get_point(start_pid) is None
 
 
 def test_ellipse_command_execute_center_on_start():

@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from .entity_flags import EntityFlags
 from .entity_ops import (
@@ -23,6 +23,8 @@ from .entity_ops import (
 
 if TYPE_CHECKING:
     from raygeo.sketch.registry import EntityRegistry
+
+    from ..types import Entity
 
 
 def points_bbox_center(
@@ -61,10 +63,10 @@ class EntityGroup:
     # Identity
     # ------------------------------------------------------------------
 
-    def entities(self) -> list[Any]:
+    def entities(self) -> list[Entity]:
         """Returns the group's surviving entities, in group order.
         References to deleted entities are skipped."""
-        entities: list[Any] = []
+        entities: list[Entity] = []
         for eid in self.entity_ids:
             entity = self.registry.get_entity_object(eid)
             if entity is not None:

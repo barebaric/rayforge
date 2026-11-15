@@ -1,9 +1,9 @@
 import logging
 from gettext import gettext as _
-from typing import Any
 
 from ...core.commands import UnstickJunctionCommand
 from ...core.commands.items import RemoveItemsCommand
+from ...core.types import HitTarget
 from .base import SketchTool
 
 logger = logging.getLogger(__name__)
@@ -15,7 +15,7 @@ class DeleteTool(SketchTool):
 
     def is_available(
         self,
-        target: Any | None,
+        target: HitTarget | None,
         target_type: str | None,
     ) -> bool:
         sel = self.element.selection

@@ -1,5 +1,5 @@
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from gi.repository import Gdk, GLib, Gtk
 
@@ -13,6 +13,7 @@ from .tools.base import SketcherKey
 from .tools.text_box_tool import TextBoxState
 
 if TYPE_CHECKING:
+    from ..core.types import HitTarget
     from .sketchelement import SketchElement
 
 
@@ -177,7 +178,7 @@ class SketchEditor:
         # Use the element's canvas to convert from widget to world coordinates
         world_x, world_y = sketch_element.canvas._get_world_coords(x, y)
 
-        target: Any | None = None
+        target: HitTarget | None = None
         target_type: str | None = None
 
         # Before showing the menu, we deactivate the current tool to clean

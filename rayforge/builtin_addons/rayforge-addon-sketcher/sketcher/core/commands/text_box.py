@@ -13,6 +13,7 @@ from .items import AddItemsCommand
 
 if TYPE_CHECKING:
     from ..sketch import Sketch
+    from ..types import Constraint
 
 
 class TextBoxCommand(SketchChangeCommand):
@@ -64,7 +65,7 @@ class TextBoxCommand(SketchChangeCommand):
         left_line = Line(p_height, p_origin, construction=True)
         text_box = TextBox(p_origin, p_width, p_height)
         entities = [bottom_line, right_line, top_line, left_line, text_box]
-        constraints: list[Any] = [
+        constraints: list[Constraint] = [
             AspectRatioConstraint(p_origin, p_width, p_origin, p_height, 1.0),
             ParallelogramConstraint(
                 p_origin, p_width, p_height, p4, user_visible=False

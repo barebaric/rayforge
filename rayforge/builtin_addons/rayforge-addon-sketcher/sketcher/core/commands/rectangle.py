@@ -19,6 +19,7 @@ if TYPE_CHECKING:
     from raygeo.sketch.registry import EntityRegistry
 
     from ..sketch import Sketch
+    from ..types import Constraint
 
 
 class RectanglePreviewState(PreviewState):
@@ -310,7 +311,7 @@ class RectangleCommand(SketchChangeCommand):
         line3 = add_cmd.add_entity(Line(p3_id, p4_id))
         line4 = add_cmd.add_entity(Line(p4_id, p1_id))
 
-        constraints: list[Any] = [
+        constraints: list[Constraint] = [
             {
                 "type": "PerpendicularConstraint",
                 "e1_id": line1,

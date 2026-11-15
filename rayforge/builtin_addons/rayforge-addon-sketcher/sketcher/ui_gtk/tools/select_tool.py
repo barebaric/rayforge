@@ -33,7 +33,7 @@ from ...core.commands.waypoint import enforce_waypoint_constraint
 from ...core.components import compute_constraint_components
 from ...core.entity_flags import WaypointType
 from ...core.snap import DragContext
-from ...core.types import EntityID
+from ...core.types import Entity, EntityID
 from .base import SketcherKey, SketchTool
 from .snap_mixin import SnapMixin
 from .text_box_tool import TextBoxTool
@@ -78,7 +78,7 @@ class SelectTool(SnapMixin, SketchTool):
         self.drag_point_start_pos: GeoPoint | None = None
 
         # For dragging entities (lines/arcs)
-        self.dragged_entity: Any | None = None
+        self.dragged_entity: Entity | None = None
         self.drag_start_model_pos: GeoPoint | None = None
 
         # For dragging control points
@@ -99,7 +99,7 @@ class SelectTool(SnapMixin, SketchTool):
         # instead of fighting it back toward stale drag-start
         # positions.
         self.drag_hold_positions: dict[EntityID, GeoPoint] = {}
-        self.drag_initial_entity_states: dict[EntityID, Any] = {}
+        self.drag_initial_entity_states: dict[EntityID, dict[str, Any]] = {}
         self._drag_undo_state: dict | None = None
 
         self.drag_point_distances: dict[EntityID, int] = {}
@@ -167,7 +167,7 @@ class SelectTool(SnapMixin, SketchTool):
         # Shift+double click on entity to select all connected geometry
         if n_press == 2 and hit_type == "entity" and is_shift_pressed:
             logger.debug("Shift+double-click on entity detected.")
-            entity = cast(Any, hit_obj)
+            entity = cast(Entity, hit_obj)
             self.element.selection.select_connected_entities(
                 entity.id, self.element.sketch.registry
             )
@@ -197,7 +197,7 @@ class SelectTool(SnapMixin, SketchTool):
         # action, so returning True is correct.
         if n_press == 2 and hit_type == "entity":
             logger.debug("Double-click on entity detected.")
-            entity = cast(Any, hit_obj)
+            entity = cast(Entity, hit_obj)
             if self.element.request_array_edit(entity):
                 return True
             if isinstance(entity, (Arc, Line, Circle)):
@@ -296,7 +296,7 @@ class SelectTool(SnapMixin, SketchTool):
             return False
 
         elif hit_type == "entity":
-            entity = cast(Any, hit_obj)
+            entity = cast(Entity, hit_obj)
             self.element.selection.select_entity(entity, is_multi)
             mx, my = self.element.hittester.screen_to_model(
                 world_x, world_y, self.element
@@ -993,7 +993,7 @@ class SelectTool(SnapMixin, SketchTool):
         self._calculate_geometric_hops(pid)
 
     def _prepare_entity_drag(
-        self, entity: Any, model_x: float, model_y: float
+        self, entity: Entity, model_x: float, model_y: float
     ):
         """Sets up state for dragging an entity (or group of entities)."""
         self.dragged_entity = entity
@@ -1085,7 +1085,7 @@ class SelectTool(SnapMixin, SketchTool):
         }
         self.drag_hold_positions = dict(self.drag_initial_positions)
 
-        # Capture Any States
+        # Capture Entity States
         self.drag_initial_entity_states = {}
         registry = self.element.sketch.registry
         for eid in registry.entity_ids():

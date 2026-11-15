@@ -245,7 +245,7 @@ class EllipseCommand(SketchChangeCommand):
             )
 
         if self.is_start_temp and registry.get_point(self.start_id):
-            add_cmd.adopt_point(self.start_id)
+            self.sketch.remove_point_if_unused(self.start_id)
 
         self.add_cmd = add_cmd
 

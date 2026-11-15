@@ -1,12 +1,13 @@
 from dataclasses import dataclass, field
 from enum import Enum, auto
-from typing import Any
 
 from raygeo.geo.types import Point as GeoPoint
+from raygeo.sketch.entities.point import SketchPoint
+from raygeo.sketch.registry import EntityRegistry
 
 from rayforge.core.color import ColorRGBA
 
-from ..types import EntityID
+from ..types import Entity, EntityID
 
 
 class SnapLineType(Enum):
@@ -83,7 +84,7 @@ class SnapPoint:
     x: float
     y: float
     line_type: SnapLineType
-    source: Any | None = None
+    source: Entity | SketchPoint | None = None
     spacing: float | None = None
     is_horizontal: bool = False
     pattern_coords: tuple[float, ...] | None = None
@@ -99,7 +100,7 @@ class SnapLine:
     is_horizontal: bool
     coordinate: float
     line_type: SnapLineType
-    source: Any | None = None
+    source: Entity | SketchPoint | None = None
 
     @property
     def style(self) -> SnapLineStyle:
@@ -196,7 +197,7 @@ class DragContext:
         self,
         x: float,
         y: float,
-        registry: Any,
+        registry: EntityRegistry,
         epsilon: float = 1e-6,
     ) -> bool:
         """

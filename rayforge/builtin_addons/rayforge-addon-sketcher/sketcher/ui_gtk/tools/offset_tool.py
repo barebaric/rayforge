@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import Any, ClassVar
+from typing import ClassVar
 
 import cairo
 from gi.repository import Adw, Gtk
@@ -9,6 +9,7 @@ from rayforge.ui_gtk.shared.pref_rows import SpinRow
 
 from ...core.commands import OffsetCommand
 from ...core.contour import build_offset_items
+from ...core.types import HitTarget
 from .base import SketchTool
 
 logger = logging.getLogger(__name__)
@@ -33,7 +34,7 @@ class OffsetTool(SketchTool):
 
     def is_available(
         self,
-        target: Any | None,
+        target: HitTarget | None,
         target_type: str | None,
     ) -> bool:
         return bool(self.element.selection.entity_ids)

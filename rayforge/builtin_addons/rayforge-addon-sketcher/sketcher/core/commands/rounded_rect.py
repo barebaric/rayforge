@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     from raygeo.sketch.registry import EntityRegistry
 
     from ..sketch import Sketch
+    from ..types import Constraint
 
 
 class RoundedRectPreviewState(PreviewState):
@@ -326,7 +327,7 @@ class RoundedRectCommand(SketchChangeCommand):
         ]
         entities = lines + arcs
 
-        constraints: list[Any] = [
+        constraints: list[Constraint] = [
             HorizontalConstraint(pid["t1"], pid["t2"]),
             VerticalConstraint(pid["t3"], pid["t4"]),
             HorizontalConstraint(pid["t5"], pid["t6"]),

@@ -2,12 +2,12 @@ import logging
 import math
 from collections import defaultdict
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import cairo
 from gi.repository import PangoCairo
 from raygeo.geo import Geometry, Matrix
-from raygeo.geo.shape.text import text_to_geometry
+from raygeo.geo.shape.text import FontConfig, text_to_geometry
 from raygeo.geo.types import Point as GeoPoint
 from raygeo.sketch.constraints.coincident import CoincidentConstraint
 from raygeo.sketch.constraints.point_on_curve import (
@@ -35,7 +35,7 @@ from ..core.entity_ops import (
     text_box_fourth_corner,
 )
 from ..core.sketch import FillStyle
-from ..core.types import EntityID
+from ..core.types import Entity, EntityID
 from .tools import PathTool, TextBoxTool
 
 if TYPE_CHECKING:
@@ -44,10 +44,8 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def _font_config(entity: TextBox, props: dict) -> Any:
+def _font_config(entity: TextBox, props: dict) -> FontConfig | None:
     """The text box's effective font configuration, overlay first."""
-    from raygeo.geo.shape.text import FontConfig
-
     return FontConfig(
         family=props.get("font_family", entity.font_family),
         size=props.get("font_size", entity.font_size),
@@ -115,7 +113,7 @@ class SketchRenderer:
     def draw_entity_highlight(
         self,
         ctx: cairo.Context,
-        entity: Any,
+        entity: Entity,
         color: tuple,
         line_width: float = 3.0,
     ) -> bool:
@@ -492,7 +490,10 @@ class SketchRenderer:
                 ctx.set_source_rgb(0.0, 0.0, 0.0)
 
     def _safe_get_point(self, pid: EntityID) -> tuple | None:
-        return self.element.sketch.registry.get_point(pid)
+        position = self.element.sketch.registry.get_point(pid)
+        if position is None:
+            return None
+        return (position[0], position[1])
 
     def _define_line_path(self, ctx: cairo.Context, line: Line) -> bool:
         """Defines the path for a line without stroking."""
@@ -808,7 +809,7 @@ class SketchRenderer:
         ctx.stroke_preserve()
         ctx.restore()
 
-    def _get_entity_by_id(self, eid: EntityID) -> Any | None:
+    def _get_entity_by_id(self, eid: EntityID) -> Entity | None:
         return self.element.sketch.registry.get_entity_object(eid)
 
     # --- Points ---

@@ -12,9 +12,10 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from .offset import PolygonOutline
+from .types import Entity
 
 if TYPE_CHECKING:
     from raygeo.sketch.registry import EntityRegistry
@@ -26,7 +27,7 @@ logger = logging.getLogger(__name__)
 _JUNCTION_EPS = 1e-6
 _SAMPLE_TOLERANCE = 0.02
 
-OffsetItem = Any
+OffsetItem = Entity | PolygonOutline
 
 
 def build_offset_items(
@@ -46,7 +47,7 @@ def build_offset_items(
     """
     registry = sketch.registry
     items: list[OffsetItem] = []
-    chainable: list[Any] = []
+    chainable: list[Entity] = []
     for eid in entity_ids:
         entity = registry.get_entity_object(eid)
         if entity is None:
@@ -83,7 +84,7 @@ def build_offset_items(
     return items or None
 
 
-def _as_offset_item(registry, entity: Any) -> OffsetItem | None:
+def _as_offset_item(registry, entity: Entity) -> OffsetItem | None:
     """The offsettable item an entity forms when it is offset on its
     own, or None when it cannot stand alone (chain members fall back
     to outline sampling; non-offsettable types are skipped)."""
@@ -104,8 +105,8 @@ def _as_offset_item(registry, entity: Any) -> OffsetItem | None:
 
 
 def partition_components(
-    sketch: Sketch, entities: list[Any]
-) -> list[list[Any]] | None:
+    sketch: Sketch, entities: list[Entity]
+) -> list[list[Entity]] | None:
     """
     Groups endpoint-bearing entities into connected components,
     treating coincident endpoints as the same node. Returns None if
@@ -131,12 +132,12 @@ def partition_components(
         return None
 
     visited = [False] * len(entities)
-    components: list[list[Any]] = []
+    components: list[list[Entity]] = []
     for start in range(len(entities)):
         if visited[start]:
             continue
         stack = [start]
-        component: list[Any] = []
+        component: list[Entity] = []
         while stack:
             edge_idx = stack.pop()
             if visited[edge_idx]:
@@ -154,8 +155,8 @@ def partition_components(
 
 
 def walk_component(
-    sketch: Sketch, entities: list[Any]
-) -> tuple[list[tuple[Any, bool]], bool]:
+    sketch: Sketch, entities: list[Entity]
+) -> tuple[list[tuple[Entity, bool]], bool]:
     """
     Orders one connected component's entities into an oriented chain,
     starting at a degree-1 endpoint (open chains) or at an arbitrary
@@ -183,7 +184,7 @@ def walk_component(
     closed = len(node_edges[start_node]) == 2
 
     used = [False] * len(entities)
-    ordered: list[tuple[Any, bool]] = []
+    ordered: list[tuple[Entity, bool]] = []
     current_node = start_node
     while True:
         edge_idx = next(
@@ -208,7 +209,7 @@ def _node_for(sketch: Sketch, node_of: dict[int, int], pid: int) -> int:
 
 def chain_vertices(
     registry: EntityRegistry,
-    edges: list[tuple[Any, bool]],
+    edges: list[tuple[Entity, bool]],
     closed: bool,
 ) -> list[tuple[float, float]]:
     """Samples an ordered chain into one deduplicated vertex list."""
@@ -235,7 +236,7 @@ def chain_vertices(
 
 
 def _entity_samples(
-    registry: EntityRegistry, entity: Any, fwd: bool
+    registry: EntityRegistry, entity: Entity, fwd: bool
 ) -> list[tuple[float, float]]:
     """Samples one entity along its traversal direction."""
     points = registry.to_polyline(entity.id, _SAMPLE_TOLERANCE)

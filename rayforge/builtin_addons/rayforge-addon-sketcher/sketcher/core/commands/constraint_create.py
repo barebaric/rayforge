@@ -13,13 +13,17 @@ from raygeo.sketch.entities.line import Line
 
 from rayforge.core.undo.command import Command
 
+from ..types import Constraint as SketchConstraint
+from ..types import Entity
 from .base import SketchChangeCommand
 from .constraint import ModifyConstraintCommand
 from .items import AddItemsCommand
 
-if TYPE_CHECKING:
-    from typing import Any
+DimensionalConstraint = (
+    DistanceConstraint | RadiusConstraint | DiameterConstraint
+)
 
+if TYPE_CHECKING:
     from ..sketch import Sketch
 
 
@@ -34,29 +38,29 @@ class CreateOrEditConstraintCommand(SketchChangeCommand):
     def __init__(
         self,
         sketch: Sketch,
-        entity: Any,
-        name: str = _("Add Any"),
+        entity: Entity,
+        name: str = _("Add Constraint"),
     ):
         super().__init__(sketch, name)
         self.entity = entity
-        self._existing_constraint: Any | None = None
-        self._created_constraint: Any | None = None
+        self._existing_constraint: DimensionalConstraint | None = None
+        self._created_constraint: DimensionalConstraint | None = None
         self._add_cmd: AddItemsCommand | None = None
 
-    def _get_command_label(self, constraint: Any) -> str:
+    def _get_command_label(self, constraint: SketchConstraint) -> str:
         if isinstance(constraint, DistanceConstraint):
             return _("Add Distance")
         if isinstance(constraint, RadiusConstraint):
             return _("Add Radius")
         if isinstance(constraint, DiameterConstraint):
             return _("Add Diameter")
-        return _("Add Any")
+        return _("Add Constraint")
 
     @staticmethod
     def get_constraint_for_entity(
         sketch: Sketch,
-        entity: Any,
-    ) -> Any | None:
+        entity: Entity,
+    ) -> DimensionalConstraint | None:
         """
         Returns existing constraint for entity, or None.
 
@@ -98,9 +102,9 @@ class CreateOrEditConstraintCommand(SketchChangeCommand):
     @staticmethod
     def create_constraint_for_entity(
         sketch: Sketch,
-        entity: Any,
+        entity: Entity,
         initial_value: float | None = None,
-    ) -> Any | None:
+    ) -> DimensionalConstraint | None:
         """
         Creates and returns a new dimensional constraint for an entity.
 
@@ -151,7 +155,7 @@ class CreateOrEditConstraintCommand(SketchChangeCommand):
         return None
 
     @property
-    def constraint(self) -> Any | None:
+    def constraint(self) -> DimensionalConstraint | None:
         """
         Returns the constraint involved in this operation.
 

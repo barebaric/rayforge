@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from blinker import Signal
 
@@ -7,6 +7,8 @@ from .types import EntityID
 
 if TYPE_CHECKING:
     from raygeo.sketch.registry import EntityRegistry
+
+    from .types import Entity
 
 
 class SketchSelection:
@@ -47,12 +49,12 @@ class SketchSelection:
 
     def resolve_entities(
         self, registry: "EntityRegistry | None"
-    ) -> "list[Any] | None":
+    ) -> "list[Entity] | None":
         """Resolves the selected entities, or None if the registry is
         unavailable or an entity cannot be found."""
         if registry is None:
             return None
-        entities: list[Any] = []
+        entities: list[Entity] = []
         for eid in self.entity_ids:
             entity = registry.get_entity_object(eid)
             if entity is None:

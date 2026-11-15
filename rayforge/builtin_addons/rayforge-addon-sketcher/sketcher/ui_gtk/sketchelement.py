@@ -1,9 +1,10 @@
 import logging
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, cast
 
 import cairo
 from blinker import Signal
 from raygeo.geo import Matrix
+from raygeo.sketch.entities.line import Line
 
 from rayforge.ui_gtk.canvas import CanvasElement
 
@@ -25,7 +26,7 @@ from ..core.snap.producers import (
     MidpointsProducer,
     OnEntityProducer,
 )
-from ..core.types import EntityID
+from ..core.types import Entity, EntityID
 from .hittest import SketchHitTester
 from .renderer import SketchRenderer
 from .tools import TOOL_REGISTRY
@@ -321,7 +322,7 @@ class SketchElement(CanvasElement):
         tool.on_modifier_change(shift=shift, ctrl=ctrl)
         tool.on_hover_motion(world_x, world_y)
 
-    def get_lines_at_point(self, pid: EntityID) -> list[Any]:
+    def get_lines_at_point(self, pid: EntityID) -> list[Line]:
         from raygeo.sketch.entities.line import Line
 
         return [
@@ -413,7 +414,7 @@ class SketchElement(CanvasElement):
             if entity:
                 point_ids.update(entity.get_point_ids())
 
-        movable: dict[EntityID, Any] = {}
+        movable: dict[EntityID, tuple[float, float]] = {}
         for pid in point_ids:
             try:
                 p = registry.get_point(pid)
@@ -445,7 +446,7 @@ class SketchElement(CanvasElement):
         self.execute_command(cmd)
         return True
 
-    def request_array_edit(self, entity: Any) -> bool:
+    def request_array_edit(self, entity: Entity) -> bool:
         """
         Opens the edit dialog for the array whose master geometry is
         the given entity. Returns True if an array was found and the

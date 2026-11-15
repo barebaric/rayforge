@@ -52,7 +52,7 @@ from .legacy import migrate_sketch_data
 from .params import ParameterContext
 from .solver import Solver
 from .template_functions import get_template_functions
-from .types import EntityID
+from .types import Constraint, Entity, EntityID
 
 DEFAULT_FILL_COLOR: ColorRGBA = (0.85, 0.85, 0.85, 0.7)
 FORMAT_VERSION = 1
@@ -146,7 +146,7 @@ class Sketch(IAsset, IGeometryProvider):
         self._name = name
         self.params = ParameterContext()
         self.registry = EntityRegistry()
-        self._constraints: list[Any] = []
+        self._constraints: list[Constraint] = []
         self.flags = EntityFlags()
         self.flags._registry = self.registry
         self.fills: list[Fill] = []
@@ -172,20 +172,22 @@ class Sketch(IAsset, IGeometryProvider):
         )
 
     @property
-    def constraints(self) -> list[Any]:
+    def constraints(self) -> list[Constraint]:
         """The sketch's constraints, in registration order. The list
         is a snapshot; add and remove constraints through the sketch's
         ``add_constraint``/``remove_constraint`` methods."""
         return list(self._constraints)
 
-    def add_constraint(self, constraint: Any) -> Any:
+    def add_constraint(self, constraint: Constraint) -> Constraint:
         """Registers a constraint object and returns it."""
         self.registry.add_constraint(constraint)
         self._constraints.append(constraint)
         self._coincident_dirty = True
         return constraint
 
-    def add_constraints(self, constraints: Iterable[Any]) -> list[Any]:
+    def add_constraints(
+        self, constraints: Iterable[Constraint]
+    ) -> list[Constraint]:
         """Registers several constraint objects and returns them."""
         added = []
         for constraint in constraints:
@@ -202,7 +204,7 @@ class Sketch(IAsset, IGeometryProvider):
         self._coincident_dirty = True
         return constraint
 
-    def remove_constraint_at(self, index: int) -> Any:
+    def remove_constraint_at(self, index: int) -> Constraint:
         """Removes the constraint at the given position and returns
         it."""
         constraint = self._constraints.pop(index)
@@ -210,7 +212,7 @@ class Sketch(IAsset, IGeometryProvider):
         self._coincident_dirty = True
         return constraint
 
-    def remove_constraint_object(self, constraint: Any) -> bool:
+    def remove_constraint_object(self, constraint: Constraint) -> bool:
         """Removes the given constraint (matched by identity). Returns
         whether it was found."""
         for index, candidate in enumerate(self._constraints):
@@ -219,7 +221,9 @@ class Sketch(IAsset, IGeometryProvider):
                 return True
         return False
 
-    def remove_constraints(self, constraints: Sequence[Any]) -> list[Any]:
+    def remove_constraints(
+        self, constraints: Sequence[Constraint]
+    ) -> list[Constraint]:
         """Removes the given constraints (matched by identity) and
         returns the removed subset, in registration order."""
         targets = {id(c) for c in constraints}
@@ -228,7 +232,9 @@ class Sketch(IAsset, IGeometryProvider):
             self.remove_constraint_object(constraint)
         return removed
 
-    def replace_constraint_at(self, index: int, constraint: Any) -> None:
+    def replace_constraint_at(
+        self, index: int, constraint: Constraint
+    ) -> None:
         """Replaces the constraint at the given position."""
         self._constraints[index] = constraint
         self.registry.replace_constraint(index, constraint)
@@ -253,7 +259,7 @@ class Sketch(IAsset, IGeometryProvider):
         points = {
             point.id: (point.x, point.y) for point in self.registry.points()
         }
-        entities: dict[int, Any] = {}
+        entities: dict[int, dict[str, Any]] = {}
         for eid in self.registry.entity_ids():
             state = self.registry.get_state(eid)
             if state is not None:
@@ -525,7 +531,7 @@ class Sketch(IAsset, IGeometryProvider):
         return True
 
     @property
-    def conflicting_constraints(self) -> list[Any]:
+    def conflicting_constraints(self) -> list[Constraint]:
         """
         Returns a list of constraints that are currently marked as CONFLICTING.
         """
@@ -545,7 +551,7 @@ class Sketch(IAsset, IGeometryProvider):
             for c in self._constraints
         )
 
-    def _constraint_to_dict(self, index: int, constraint: Any) -> dict:
+    def _constraint_to_dict(self, index: int, constraint: Constraint) -> dict:
         """Serializes a constraint from its stored reference dictionary
         (preserving entity references and registration order), overlaying
         the constraint's current mutable state."""
@@ -780,7 +786,7 @@ class Sketch(IAsset, IGeometryProvider):
 
     def get_internal_constraints(
         self, entity_ids: set[int] | list[int]
-    ) -> list[Any]:
+    ) -> list[Constraint]:
         """
         Returns the constraints that hold a group of entities together
         as one shape: every point and entity they reference belongs to
@@ -806,7 +812,7 @@ class Sketch(IAsset, IGeometryProvider):
                 # its ID so its constraints count as internal.
                 group_pids.add(eid)
 
-        internal: list[Any] = []
+        internal: list[Constraint] = []
         paired_axes = self._find_axis_coincidence_pairs()
         for constr in self._constraints:
             # Constraints pinned to the sketch origin are world-anchored.
@@ -996,11 +1002,11 @@ class Sketch(IAsset, IGeometryProvider):
         """Moves a point to the given coordinates."""
         self.registry.set_point_position(pid, x, y)
 
-    def get_entity(self, eid: EntityID) -> Any | None:
+    def get_entity(self, eid: EntityID) -> Entity | None:
         """The entity object for an id, or None."""
         return self.registry.get_entity_object(eid)
 
-    def remove_entities(self, entities_to_remove: Iterable[Any]) -> None:
+    def remove_entities(self, entities_to_remove: Iterable[Entity]) -> None:
         """
         Removes entities from the sketch and automatically cleans up any
         dependent fills.
@@ -1116,7 +1122,7 @@ class Sketch(IAsset, IGeometryProvider):
             self.registry.add_constraint(constraint)
 
     def rebuild_constraints(
-        self, constraints: Sequence[Any], pid_map: dict[int, int]
+        self, constraints: Sequence[Constraint], pid_map: dict[int, int]
     ) -> None:
         """Replaces the given constraints with rebuilt objects whose
         point references are remapped through ``pid_map``."""
@@ -1642,7 +1648,7 @@ class Sketch(IAsset, IGeometryProvider):
 
     def solve(
         self,
-        extra_constraints: Sequence[Any] | None = None,
+        extra_constraints: Sequence[Constraint] | None = None,
         update_constraint_status: bool = True,
         variable_overrides: dict[str, Any] | None = None,
         excluded_constraints: set[int] | None = None,
@@ -1686,7 +1692,7 @@ class Sketch(IAsset, IGeometryProvider):
         params_done = prep_done = solver_done = arrays_done = solve_started
         success = False
         solver: Solver | None = None
-        all_constraints: list[Any] = []
+        all_constraints: list[Constraint] = []
         update_status = False
         solve_completed = False
         scope = point_scope

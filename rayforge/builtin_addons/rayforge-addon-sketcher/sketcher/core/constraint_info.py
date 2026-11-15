@@ -43,8 +43,13 @@ from rayforge.core.expression import safe_evaluate
 from .types import EntityID
 
 if TYPE_CHECKING:
+    from raygeo.sketch.constraints.perpendicular import PerpendicularTarget
+    from raygeo.sketch.constraints.symmetry import SymmetryTarget
+    from raygeo.sketch.registry import EntityRegistry
+
     from .selection import SketchSelection
     from .sketch import Sketch
+    from .types import Constraint, Entity
 
 
 class ConstraintStatus(IntEnum):
@@ -56,7 +61,7 @@ class ConstraintStatus(IntEnum):
     CONFLICTING = 4
 
 
-def status_of(constraint: Any) -> ConstraintStatus:
+def status_of(constraint: Constraint) -> ConstraintStatus:
     """Reads the constraint's status; unpersisted values fall back to
     VALID."""
     try:
@@ -65,7 +70,7 @@ def status_of(constraint: Any) -> ConstraintStatus:
         return ConstraintStatus.VALID
 
 
-def set_status(constraint: Any, status: ConstraintStatus) -> None:
+def set_status(constraint: Constraint, status: ConstraintStatus) -> None:
     """Writes the UI status ordinal onto the constraint."""
     constraint.status = status.value
 
@@ -149,33 +154,33 @@ _EDIT_SUBTITLES: dict[type, str] = {
 }
 
 
-def type_key(constraint: Any) -> str | None:
+def type_key(constraint: Constraint) -> str | None:
     """The short key identifying the constraint type, if any."""
     return _TYPE_KEYS.get(type(constraint))
 
 
-def dict_type_name(constraint: Any) -> str:
+def dict_type_name(constraint: Constraint) -> str:
     """The constraint type string used in serialized dictionaries."""
     return _DICT_TYPE_NAMES.get(type(constraint), type(constraint).__name__)
 
 
-def get_type_name(constraint: Any) -> str:
+def get_type_name(constraint: Constraint) -> str:
     return _TYPE_NAMES.get(type(constraint), type(constraint).__name__)
 
 
-def is_world_anchored(constraint: Any) -> bool:
+def is_world_anchored(constraint: Constraint) -> bool:
     """Whether the constraint pins geometry to the global axes."""
     return isinstance(constraint, (HorizontalConstraint, VerticalConstraint))
 
 
-def is_mirror_compatible(constraint: Any) -> bool:
+def is_mirror_compatible(constraint: Constraint) -> bool:
     """Whether the constraint survives mirroring of its geometry."""
     return not (
         isinstance(constraint, AngleConstraint) and constraint.expression
     )
 
 
-def user_visible(constraint: Any) -> bool:
+def user_visible(constraint: Constraint) -> bool:
     """Whether the constraint is surfaced in lists and hit testing."""
     getter = getattr(constraint, "user_visible", None)
     if getter is None:
@@ -185,7 +190,7 @@ def user_visible(constraint: Any) -> bool:
     return bool(getter)
 
 
-def has_expression(constraint: Any) -> bool:
+def has_expression(constraint: Constraint) -> bool:
     """Whether the constraint carries an expression string."""
     expression = (
         constraint.expression if hasattr(constraint, "expression") else None
@@ -193,12 +198,12 @@ def has_expression(constraint: Any) -> bool:
     return bool(expression)
 
 
-def get_expression(constraint: Any) -> str | None:
+def get_expression(constraint: Constraint) -> str | None:
     """The constraint's expression string, if any."""
     return constraint.expression if hasattr(constraint, "expression") else None
 
 
-def get_title(constraint: Any) -> str:
+def get_title(constraint: Constraint) -> str:
     """A human-readable title for the constraint."""
     name = get_type_name(constraint)
     if isinstance(
@@ -215,7 +220,7 @@ def get_title(constraint: Any) -> str:
     return name
 
 
-def get_subtitle(registry: Any, constraint: Any) -> str:
+def get_subtitle(registry: EntityRegistry, constraint: Constraint) -> str:
     """A human-readable subtitle describing the constrained geometry."""
 
     def pt(pid: EntityID):
@@ -294,14 +299,14 @@ def get_subtitle(registry: Any, constraint: Any) -> str:
     return ""
 
 
-def get_edit_subtitle(constraint: Any) -> str:
+def get_edit_subtitle(constraint: Constraint) -> str:
     """The editing hint shown in the constraint edit dialog."""
     return _EDIT_SUBTITLES.get(
         type(constraint), _("Enter value or expression.")
     )
 
 
-def get_draggable_point(constraint: Any) -> EntityID | None:
+def get_draggable_point(constraint: Constraint) -> EntityID | None:
     """The point that can be dragged to manipulate the constraint."""
     if isinstance(constraint, CoincidentConstraint):
         return constraint.p1
@@ -310,15 +315,15 @@ def get_draggable_point(constraint: Any) -> EntityID | None:
     return None
 
 
-def _is_line(entity: Any) -> bool:
+def _is_line(entity: Entity) -> bool:
     return entity.type_name() == "line"
 
 
-def _is_radius_entity(entity: Any) -> bool:
+def _is_radius_entity(entity: Entity) -> bool:
     return entity.type_name() in ("circle", "arc")
 
 
-def _has_characteristic_length(entity: Any) -> bool:
+def _has_characteristic_length(entity: Entity) -> bool:
     return entity.type_name() in ("line", "arc", "bezier", "circle", "ellipse")
 
 
@@ -425,12 +430,14 @@ def _applies_to_entities(constraint_type: type, entities: list) -> bool:
     return False
 
 
-def referenced_point_ids(constraint: Any) -> set[EntityID]:
+def referenced_point_ids(constraint: Constraint) -> set[EntityID]:
     """The point ids the constraint references."""
     return set(constraint.referenced_points())
 
 
-def referenced_entity_ids(registry: Any, constraint: Any) -> set[EntityID]:
+def referenced_entity_ids(
+    registry: EntityRegistry, constraint: Constraint
+) -> set[EntityID]:
     """The entity ids the constraint restricts, recovered through the
     registry by matching the constraint's resolved geometry."""
     eids: set[EntityID] = set()
@@ -470,7 +477,9 @@ def referenced_entity_ids(registry: Any, constraint: Any) -> set[EntityID]:
     return eids
 
 
-def _radius_entity_of(registry: Any, constraint: Any) -> Any:
+def _radius_entity_of(
+    registry: EntityRegistry, constraint: Constraint
+) -> Entity | None:
     for eid in registry.entity_ids():
         if registry.is_radius_entity(eid) and constraint.constrains_radius(
             registry, eid
@@ -479,7 +488,9 @@ def _radius_entity_of(registry: Any, constraint: Any) -> Any:
     return None
 
 
-def _target_entity_ids(registry: Any, target: Any) -> set[EntityID]:
+def _target_entity_ids(
+    registry: EntityRegistry, target: SymmetryTarget | PerpendicularTarget
+) -> set[EntityID]:
     if hasattr(target, "l1"):
         return _entities_with_points(registry, (target.l1, target.l2))
     if hasattr(target, "radius_point"):
@@ -489,7 +500,9 @@ def _target_entity_ids(registry: Any, target: Any) -> set[EntityID]:
     return set()
 
 
-def _perpendicular_entity_ids(registry: Any, target: Any) -> set[EntityID]:
+def _perpendicular_entity_ids(
+    registry: EntityRegistry, target: SymmetryTarget | PerpendicularTarget
+) -> set[EntityID]:
     if hasattr(target, "a1"):
         return _entities_with_points(
             registry, (target.a1, target.a2, target.b1, target.b2)
@@ -505,7 +518,7 @@ def _perpendicular_entity_ids(registry: Any, target: Any) -> set[EntityID]:
 
 
 def _entities_with_points(
-    registry: Any, pids: tuple[EntityID, ...]
+    registry: EntityRegistry, pids: tuple[EntityID, ...]
 ) -> set[EntityID]:
     """Entities whose defining points contain all of the given ids."""
     wanted = {pid for pid in pids if pid is not None}
@@ -519,13 +532,15 @@ def _entities_with_points(
     return matches
 
 
-def depends_on_points(constraint: Any, point_ids: set[EntityID]) -> bool:
+def depends_on_points(
+    constraint: Constraint, point_ids: set[EntityID]
+) -> bool:
     """Whether the constraint references any of the given points."""
     return not referenced_point_ids(constraint).isdisjoint(point_ids)
 
 
 def depends_on_entities(
-    registry: Any, constraint: Any, entity_ids: set[EntityID]
+    registry: EntityRegistry, constraint: Constraint, entity_ids: set[EntityID]
 ) -> bool:
     """Whether the constraint restricts any of the given entities."""
     return not referenced_entity_ids(registry, constraint).isdisjoint(
@@ -533,7 +548,9 @@ def depends_on_entities(
     )
 
 
-def update_from_context(constraint: Any, context: dict[str, Any]) -> None:
+def update_from_context(
+    constraint: Constraint, context: dict[str, Any]
+) -> None:
     """Re-evaluates the constraint's expression and updates its value
     and status."""
     expression = get_expression(constraint)

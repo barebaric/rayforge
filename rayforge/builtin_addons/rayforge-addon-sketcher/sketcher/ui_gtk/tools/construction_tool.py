@@ -1,8 +1,9 @@
 import logging
 from gettext import gettext as _
-from typing import Any, ClassVar
+from typing import ClassVar
 
 from ...core.commands import ToggleConstructionCommand
+from ...core.types import HitTarget
 from .base import SketchTool
 
 logger = logging.getLogger(__name__)
@@ -15,7 +16,7 @@ class ConstructionTool(SketchTool):
 
     def is_available(
         self,
-        target: Any | None,
+        target: HitTarget | None,
         target_type: str | None,
     ) -> bool:
         return len(self.element.selection.entity_ids) > 0

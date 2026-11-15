@@ -1,7 +1,8 @@
 from gettext import gettext as _
-from typing import Any, ClassVar
+from typing import ClassVar
 
 from ...core.commands import MirrorCommand, MirrorDirection
+from ...core.types import HitTarget
 from .base import SketchTool
 
 
@@ -13,7 +14,7 @@ class MirrorVerticalTool(SketchTool):
 
     def is_available(
         self,
-        target: Any | None,
+        target: HitTarget | None,
         target_type: str | None,
     ) -> bool:
         sel = self.element.selection
@@ -43,7 +44,7 @@ class MirrorHorizontalTool(SketchTool):
 
     def is_available(
         self,
-        target: Any | None,
+        target: HitTarget | None,
         target_type: str | None,
     ) -> bool:
         sel = self.element.selection

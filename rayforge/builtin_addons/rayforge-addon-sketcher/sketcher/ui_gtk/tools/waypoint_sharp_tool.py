@@ -1,12 +1,11 @@
 from gettext import gettext as _
-from typing import Any
 
 from raygeo.sketch.entities.bezier import Bezier
 from raygeo.sketch.entities.line import Line
 
 from ...core.commands import SetWaypointTypeCommand
 from ...core.entity_flags import WaypointType
-from ...core.types import EntityID
+from ...core.types import EntityID, HitTarget
 from .base import SketchTool
 
 
@@ -17,7 +16,7 @@ class WaypointSharpTool(SketchTool):
 
     def is_available(
         self,
-        target: Any | None,
+        target: HitTarget | None,
         target_type: str | None,
     ) -> bool:
         pid = self._get_waypoint_pid()
@@ -50,7 +49,7 @@ class WaypointSharpTool(SketchTool):
 
     def _is_waypoint_at_bezier(self, pid: EntityID) -> bool:
         sketch = self.element.sketch
-        for entity in sketch.registry.entities:
+        for entity in sketch.registry.entities():
             if isinstance(entity, Bezier) and pid in (
                 entity.start_idx,
                 entity.end_idx,
@@ -60,7 +59,7 @@ class WaypointSharpTool(SketchTool):
 
     def _is_waypoint_at_line(self, pid: EntityID) -> bool:
         sketch = self.element.sketch
-        for entity in sketch.registry.entities:
+        for entity in sketch.registry.entities():
             if isinstance(entity, Line) and pid in (
                 entity.p1_idx,
                 entity.p2_idx,

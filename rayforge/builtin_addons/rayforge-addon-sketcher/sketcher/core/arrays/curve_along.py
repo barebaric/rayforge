@@ -18,7 +18,10 @@ from .base import (
 )
 
 if TYPE_CHECKING:
+    from raygeo.sketch.entities.point import SketchPoint
     from raygeo.sketch.registry import EntityRegistry
+
+    from ..types import Entity
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +91,7 @@ class CurveAlongArrayStrategy(ArrayStrategy):
     def template_placement(
         self,
         template_center: tuple[float, float],
-        registry: Any | None = None,
+        registry: EntityRegistry | None = None,
     ) -> InstancePlacement:
         """Position 0 of the guide is the path start: the template's
         center is mapped to the first sample and rotated to its
@@ -110,7 +113,7 @@ class CurveAlongArrayStrategy(ArrayStrategy):
     def member_placements(
         self,
         template_center: tuple[float, float],
-        registry: Any | None = None,
+        registry: EntityRegistry | None = None,
     ) -> list[InstancePlacement]:
         """Computes the placements deriving slots 1..N-1 from the
         template (slot 0).
@@ -147,7 +150,7 @@ class CurveAlongArrayStrategy(ArrayStrategy):
         self,
         center_pid: int | None,
         radius_pt_pid: int | None,
-    ) -> tuple[list[Any], list[Any], list[Any]]:
+    ) -> tuple[list[SketchPoint], list[Entity], list[dict[str, Any]]]:
         # The guide path entity is created by the user before invoking
         # the tool, so the array reuses it as master instead of
         # generating new construction geometry here.
@@ -201,7 +204,7 @@ def sample_path(
 
 
 def _polyline_for(
-    entity: Any, registry: EntityRegistry
+    entity: Entity, registry: EntityRegistry
 ) -> list[tuple[float, float]]:
     def p(pid):
         position = registry.get_point(pid)

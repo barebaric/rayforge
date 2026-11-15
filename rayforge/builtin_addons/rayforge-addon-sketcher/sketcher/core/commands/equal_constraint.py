@@ -1,18 +1,19 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from raygeo.sketch.constraints.equal_length import EqualLengthConstraint
 
 if TYPE_CHECKING:
     from ..sketch import Sketch
+    from ..types import Constraint
 
 
 @dataclass
 class EqualConstraintMergeResult:
     final_entity_ids: list[int]
-    constraints_to_remove: list[Any]
+    constraints_to_remove: list[Constraint]
 
 
 class EqualConstraintCommand:
@@ -22,7 +23,7 @@ class EqualConstraintCommand:
         selected_entity_ids: list[int],
     ) -> EqualConstraintMergeResult | None:
         selected_ids = set(selected_entity_ids)
-        existing_constraints_to_merge: list[Any] = []
+        existing_constraints_to_merge: list[EqualLengthConstraint] = []
         final_ids = set(selected_ids)
 
         for constr in sketch.constraints:

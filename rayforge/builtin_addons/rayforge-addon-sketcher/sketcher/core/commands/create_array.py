@@ -22,6 +22,7 @@ from .items import AddItemsCommand
 
 if TYPE_CHECKING:
     from ..sketch import Sketch
+    from ..types import Constraint
 
 logger = logging.getLogger(__name__)
 
@@ -55,9 +56,11 @@ class CreateArrayCommand(SketchChangeCommand):
         self.created_member_groups: list[list[int]] = []
         self.guide_circle_id: int | None = None
         self._pre_place_snapshot: list[tuple[int, float, float]] = []
-        self._pre_place_cp_snapshot: list[tuple[int, Any, Any]] = []
+        self._pre_place_cp_snapshot: list[
+            tuple[int, tuple[float, float] | None, tuple[float, float] | None]
+        ] = []
         self._template_placement: InstancePlacement | None = None
-        self._erased_constraints: list[Any] = []
+        self._erased_constraints: list[Constraint] = []
         self._clone_pid_map: dict[int, int] = {}
         self._extracted_helper_ids: list[int] = []
         self._extra_template_pids: list[int] = []

@@ -18,6 +18,8 @@ from .base import (
 if TYPE_CHECKING:
     from raygeo.sketch.registry import EntityRegistry
 
+    from ..types import Entity
+
 
 class CircularArrayStrategy(ArrayStrategy):
     """
@@ -56,7 +58,7 @@ class CircularArrayStrategy(ArrayStrategy):
     def template_placement(
         self,
         template_center: tuple[float, float],
-        registry: Any | None = None,
+        registry: EntityRegistry | None = None,
     ) -> InstancePlacement:
         """Places the template onto the guide circle: a radial
         translation putting its center on the circle at the angle it
@@ -81,7 +83,7 @@ class CircularArrayStrategy(ArrayStrategy):
     def member_placements(
         self,
         template_center: tuple[float, float],
-        registry: Any | None = None,
+        registry: EntityRegistry | None = None,
     ) -> list[InstancePlacement]:
         count = max(int(self.count), 1)
         total = math.radians(self.total_angle_deg)
@@ -118,7 +120,7 @@ class CircularArrayStrategy(ArrayStrategy):
         self,
         center_pid: int | None,
         radius_pt_pid: int | None,
-    ) -> tuple[list[Any], list[Any], list[Any]]:
+    ) -> tuple[list[SketchPoint], list[Entity], list[dict[str, Any]]]:
         if center_pid is None or radius_pt_pid is None:
             return [], [], []
         if self.radius <= 0.0:

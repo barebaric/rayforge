@@ -8,9 +8,8 @@ from typing import TYPE_CHECKING, ClassVar
 import cairo
 
 if TYPE_CHECKING:
-    from typing import Any
-
     from ...core.commands.base import PreviewState
+    from ...types import HitTarget
     from ..sketchelement import SketchElement
 
 
@@ -127,7 +126,7 @@ class SketchTool(ABC):
 
     def is_available(
         self,
-        target: Any | None,
+        target: HitTarget | None,
         target_type: str | None,
     ) -> bool:
         """

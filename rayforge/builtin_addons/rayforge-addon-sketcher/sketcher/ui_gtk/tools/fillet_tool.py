@@ -1,12 +1,12 @@
 import logging
 import math
 from gettext import gettext as _
-from typing import Any, ClassVar
+from typing import ClassVar
 
 from raygeo.sketch.entities.line import Line
 
 from ...core.commands import FilletCommand
-from ...core.types import EntityID
+from ...core.types import EntityID, HitTarget
 from .base import SketchTool
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ class FilletTool(SketchTool):
 
     def is_available(
         self,
-        target: Any | None,
+        target: HitTarget | None,
         target_type: str | None,
     ) -> bool:
         if target_type != "junction" or not isinstance(target, int):

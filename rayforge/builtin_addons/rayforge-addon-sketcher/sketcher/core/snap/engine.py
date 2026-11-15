@@ -1,11 +1,11 @@
 import logging
 from collections.abc import Iterator
-from typing import Any
 
 from raygeo.geo.types import Point as GeoPoint
+from raygeo.sketch.entities.point import SketchPoint
 
 from ..registry import EntityRegistry
-from ..types import EntityID
+from ..types import Entity, EntityID
 from .spatial import SnapLineIndex
 from .types import (
     DragContext,
@@ -17,7 +17,9 @@ from .types import (
 logger = logging.getLogger(__name__)
 
 
-def _same_source(a: Any, b: Any) -> bool:
+def _same_source(
+    a: Entity | SketchPoint | None, b: Entity | SketchPoint | None
+) -> bool:
     """Whether two snap sources refer to the same model object,
     compared by id rather than object identity (raygeo hands out
     fresh view objects)."""

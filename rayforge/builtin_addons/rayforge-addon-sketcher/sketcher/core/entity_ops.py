@@ -25,6 +25,8 @@ from raygeo.sketch.entities.text_box import TextBox
 if TYPE_CHECKING:
     from raygeo.sketch.registry import EntityRegistry
 
+    from .types import Entity
+
 
 class PlacementTransform(Protocol):
     """Anything that can map absolute points and relative offsets
@@ -48,10 +50,10 @@ def flips_chirality(placement: PlacementTransform) -> bool:
 
 def clone_entity(
     registry: EntityRegistry,
-    entity: Any,
+    entity: Entity,
     pid_map: dict[int, int],
     placement: PlacementTransform | None = None,
-) -> Any:
+) -> Entity:
     """Builds an unattached copy of the entity with its point ids
     remapped through ``pid_map``. Helper references (ellipse axis
     lines, text box construction lines) are not copied: a copy must
@@ -124,7 +126,7 @@ def clone_entity(
     raise ValueError(f"Unsupported entity type: {kind}")
 
 
-def entity_from_dict(entity_dict: dict) -> Any:
+def entity_from_dict(entity_dict: dict) -> Entity:
     """Builds an unattached entity from its reference dictionary,
     preserving its id and point ids. The registry assigns a fresh id
     on insertion."""

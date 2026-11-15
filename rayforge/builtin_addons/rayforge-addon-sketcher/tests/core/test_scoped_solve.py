@@ -1,5 +1,3 @@
-from typing import Any
-
 import pytest
 from core.constraint_builders import tangent_from_entities
 from raygeo.sketch.constraints.drag import DragConstraint
@@ -135,7 +133,7 @@ def test_scoped_solve_moves_dragged_island_only():
     before_b = positions(sketch, rect_b)
 
     delta = 5.0
-    drag_constraints: list[Any] = [
+    drag_constraints: list[DragConstraint] = [
         DragConstraint(pid, x + delta, y, weight=1.0)
         for pid, (x, y) in before_a.items()
     ]
@@ -165,7 +163,7 @@ def test_scoped_solve_matches_global_solve():
     sketch_s, rect_a_s, rect_b_s = build()
 
     start_a = positions(sketch_g, rect_a_g)
-    global_constraints: list[Any] = [
+    global_constraints: list[DragConstraint] = [
         DragConstraint(pid, x + delta[0], y + delta[1], weight=1.0)
         for pid, (x, y) in start_a.items()
     ]
@@ -181,7 +179,7 @@ def test_scoped_solve_matches_global_solve():
 
     scope = drag_scope(sketch_s, rect_a_s)
     assert scope == set(rect_a_s)
-    scoped_constraints: list[Any] = [
+    scoped_constraints: list[DragConstraint] = [
         DragConstraint(pid, x + delta[0], y + delta[1], weight=1.0)
         for pid, (x, y) in positions(sketch_s, rect_a_s).items()
     ]
@@ -208,7 +206,7 @@ def test_scoped_solve_falls_back_on_stale_scope():
     add_rect(sketch, 0, 0, 10, 5, anchored=False)
     p_far = sketch.add_point(200, 200)
 
-    drag_constraints: list[Any] = [
+    drag_constraints: list[DragConstraint] = [
         DragConstraint(p_far, 300.0, 200.0, weight=1.0)
     ]
     sketch.solve(
@@ -238,7 +236,7 @@ def test_tool_style_drag_keeps_other_islands_frozen():
     start_a = positions(sketch, dragged)
 
     for step in range(1, 11):
-        drag_constraints: list[Any] = [
+        drag_constraints: list[DragConstraint] = [
             DragConstraint(pid, x + step, y, weight=1.0)
             for pid, (x, y) in start_a.items()
         ]

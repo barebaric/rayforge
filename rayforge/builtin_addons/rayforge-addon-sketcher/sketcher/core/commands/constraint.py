@@ -9,9 +9,8 @@ from rayforge.core.undo.command import Command
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
-    from typing import Any
-
     from ..sketch import Sketch
+    from ..types import Constraint
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +23,7 @@ class ModifyConstraintCommand(SketchChangeCommand):
     def __init__(
         self,
         sketch: Sketch,
-        constraint: Any,
+        constraint: Constraint,
         new_value: float,
         new_expression: str | None = None,
         name: str = _("Edit Constraint"),

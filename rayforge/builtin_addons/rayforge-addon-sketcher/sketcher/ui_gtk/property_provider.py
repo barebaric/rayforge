@@ -131,7 +131,7 @@ class SketchPropertyProvider(PropertyProvider):
 
         logger.debug("Multiple items selected, checking for mixed values.")
         for key, (row, var) in self.varset_widget.widget_map.items():
-            all_values: set[Any] = set()
+            all_values: set[float | str] = set()
             for wp in workpieces:
                 value = wp.geometry_provider_params.get(key, var.default)
                 all_values.add(value)

@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import cairo
 from raygeo.geo.types import Point as GeoPoint
@@ -27,6 +27,7 @@ from ...core.snap import (
     SnapResult,
 )
 from ...core.snap.types import SnapLineStyle
+from ...core.types import Constraint, Entity
 from .base import SketcherKey
 
 if TYPE_CHECKING:
@@ -195,8 +196,8 @@ class SnapMixin:
         *,
         end_pid: int | None = None,
         snapped_to_existing: bool = False,
-        existing_constraints: list[Any] | None = None,
-    ) -> list[Any]:
+        existing_constraints: list[Constraint] | None = None,
+    ) -> list[Constraint]:
         """Build constraints from the current snap result.
 
         Call this when finalizing geometry to create persistent constraints
@@ -213,7 +214,7 @@ class SnapMixin:
         Returns:
             List of constraints to add to the sketch
         """
-        constraints: list[Any] = []
+        constraints: list[Constraint] = []
         result = self.current_snap_result
         if not result:
             return constraints
@@ -276,7 +277,7 @@ class SnapMixin:
         return [PointOnLineConstraint(pid, target)]
 
     def _build_axis_constraints(self, result, end_pid, existing):
-        constraints: list[Any] = []
+        constraints: list[Constraint] = []
         seen: set = set()
         for ec in existing or []:
             if isinstance(ec, (HorizontalConstraint, VerticalConstraint)):
@@ -641,7 +642,7 @@ class SnapMixin:
         ctx.restore()
 
 
-def _is_sketch_point(source: Any) -> bool:
+def _is_sketch_point(source: Entity | SketchPoint | None) -> bool:
     """Whether the snap source is a sketch point (carries an id and
     coordinates)."""
     return (

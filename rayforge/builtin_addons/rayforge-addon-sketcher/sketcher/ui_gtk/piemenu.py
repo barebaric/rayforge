@@ -1,12 +1,13 @@
 import logging
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from blinker import Signal
 from gi.repository import Gtk
 
 from rayforge.ui_gtk.shared.piemenu import PieMenu, PieMenuItem
 
+from ..core.types import HitTarget
 from .tools import PIE_GROUPS, TOOL_REGISTRY
 
 if TYPE_CHECKING:
@@ -31,7 +32,7 @@ class SketchPieMenu(PieMenu):
         super().__init__(parent_widget)
 
         self.sketch_element: SketchElement | None = None
-        self.target: Any | None = None
+        self.target: HitTarget | None = None
         self.target_type: str | None = None
 
         self.tool_selected = Signal()
@@ -46,7 +47,7 @@ class SketchPieMenu(PieMenu):
     def set_context(
         self,
         sketch_element: "SketchElement",
-        target: Any | None,
+        target: HitTarget | None,
         target_type: str | None,
     ):
         self.sketch_element = sketch_element

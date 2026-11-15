@@ -1,7 +1,7 @@
 import logging
 import math
 from gettext import gettext as _
-from typing import Any, cast
+from typing import cast
 
 from gi.repository import Adw, Gdk, Gtk
 from raygeo.geo import Matrix
@@ -17,6 +17,7 @@ from rayforge.ui_gtk.shared.expression_entry import ExpressionEntry
 from ..core import constraint_info
 from ..core.commands import ModifyConstraintCommand
 from ..core.sketch import Sketch
+from ..core.types import Constraint
 from .editor import SketchEditor
 from .sketchelement import SketchElement
 
@@ -257,7 +258,9 @@ class SketchCanvas(WorldSurface):
         self.set_pan(pan_x, pan_y)
         self.set_zoom(1.0)
 
-    def _on_constraint_edit_requested(self, sender, constraint: Any):
+    def _on_constraint_edit_requested(
+        self, sender: object, constraint: Constraint
+    ):
         """
         Opens a dialog to edit the value of a constraint. This is triggered
         by a double-click on a constraint label.

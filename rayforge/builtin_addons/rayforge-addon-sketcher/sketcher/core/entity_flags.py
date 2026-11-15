@@ -11,9 +11,16 @@ merged back into the serialized entity dictionaries on save.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from raygeo.sketch.registry import EntityRegistry
+
+    from .types import Entity
+
 import copy
 from enum import Enum
-from typing import Any
+from typing import TYPE_CHECKING
 
 
 class WaypointType(Enum):
@@ -36,9 +43,9 @@ class EntityFlags:
         self.waypoints: dict[int, WaypointType] = {}
         self.fill_colors: dict[int, tuple] = {}
         self.text: dict[int, dict[str, Any]] = {}
-        self._registry: Any = None
+        self._registry: EntityRegistry | None = None
 
-    def absorb(self, registry: Any) -> None:
+    def absorb(self, registry: EntityRegistry) -> None:
         """Seeds the overlay from the raygeo registry's storage."""
         self._registry = registry
         self.invisible.clear()
@@ -69,7 +76,7 @@ class EntityFlags:
                     "italic": entity.italic,
                 }
 
-    def _entity(self, eid: int) -> Any:
+    def _entity(self, eid: int) -> Entity | None:
         if self._registry is None:
             return None
         return self._registry.get_entity_object(eid)
@@ -142,7 +149,9 @@ class EntityFlags:
         """The text box's content and font properties, overlay first."""
         return dict(self.text.get(eid, {}))
 
-    def set_text_property(self, eid: int, key: str, value: Any) -> None:
+    def set_text_property(
+        self, eid: int, key: str, value: str | float | bool
+    ) -> None:
         if key not in _TEXT_FIELDS:
             raise ValueError(f"Unknown text property: {key}")
         self.text.setdefault(eid, {})[key] = value

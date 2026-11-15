@@ -1,11 +1,12 @@
 from gettext import gettext as _
-from typing import Any, ClassVar, cast
+from typing import ClassVar, cast
 
 from gi.repository import Adw, Gtk
 
 from rayforge.ui_gtk.shared.pref_rows import SpinRow
 
 from ...core.commands import GridCommand
+from ...core.types import HitTarget
 from .base import SketchTool
 
 
@@ -17,7 +18,7 @@ class GridTool(SketchTool):
 
     def is_available(
         self,
-        target: Any | None,
+        target: HitTarget | None,
         target_type: str | None,
     ) -> bool:
         return target is None

@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import Any, ClassVar
+from typing import ClassVar
 
 from raygeo.sketch.constraints.symmetry import SymmetryConstraint
 
@@ -9,6 +9,7 @@ from ...core.commands import (
     AddItemsCommand,
     SymmetryConstraintCommand,
 )
+from ...core.types import HitTarget
 from .base import SketchTool
 
 logger = logging.getLogger(__name__)
@@ -22,7 +23,7 @@ class SymmetryConstraintTool(SketchTool):
 
     def is_available(
         self,
-        target: Any | None,
+        target: HitTarget | None,
         target_type: str | None,
     ) -> bool:
         return constraint_info.can_apply(

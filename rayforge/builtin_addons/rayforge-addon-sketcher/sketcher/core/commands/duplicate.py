@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from .. import constraint_info
 from ..constraint_ops import rebuild
@@ -15,6 +15,7 @@ from .items import AddItemsCommand
 if TYPE_CHECKING:
     from ..selection import SketchSelection
     from ..sketch import Sketch
+    from ..types import Constraint
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,7 @@ class DuplicateCommand(SketchChangeCommand):
         super().__init__(sketch, _("Duplicate Selection"))
         self._selection = selection.copy()
         self.add_cmd: AddItemsCommand | None = None
-        self.created_constraints: list[Any] = []
+        self.created_constraints: list[Constraint] = []
         self.new_entity_ids: list[EntityID] = []
         self.new_point_ids: list[EntityID] = []
         self._entity_id_map: dict[EntityID, EntityID] = {}
@@ -59,7 +60,7 @@ class DuplicateCommand(SketchChangeCommand):
         tuple[
             list[EntityID],
             set[EntityID],
-            list[Any],
+            list[Constraint],
         ]
         | None
     ):
@@ -104,7 +105,7 @@ class DuplicateCommand(SketchChangeCommand):
 
         # 3. Find internal constraints to duplicate. Constraints that
         #    reference geometry outside the selection are not copied.
-        constraints_to_duplicate: list[Any] = []
+        constraints_to_duplicate: list[Constraint] = []
         for constr in sketch.constraints:
             ref_points = constr.get_referenced_point_ids()
             ref_entities = constraint_info.referenced_entity_ids(

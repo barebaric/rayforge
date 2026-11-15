@@ -4,7 +4,7 @@ import logging
 from dataclasses import dataclass
 from enum import Enum, auto
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from .. import constraint_info
 from ..entity_group import EntityGroup, points_bbox_center
@@ -14,6 +14,7 @@ from .base import SketchChangeCommand
 if TYPE_CHECKING:
     from ..selection import SketchSelection
     from ..sketch import Sketch
+    from ..types import Constraint
 
 logger = logging.getLogger(__name__)
 
@@ -81,9 +82,9 @@ class MirrorCommand(SketchChangeCommand):
         self._selection = selection
         self._direction: MirrorDirection = direction
         self._axis: MirrorAxis | None = None
-        self._dropped_constraints: list[Any] = []
+        self._dropped_constraints: list[Constraint] = []
         self._mirrored_constraint_states: dict[int, dict] = {}
-        self._mirrored_constraints: list[Any] = []
+        self._mirrored_constraints: list[Constraint] = []
 
     @staticmethod
     def prepare(
@@ -94,7 +95,7 @@ class MirrorCommand(SketchChangeCommand):
         tuple[
             list[EntityID],
             set[EntityID],
-            list[Any],
+            list[Constraint],
             MirrorAxis,
         ]
         | None
@@ -159,7 +160,7 @@ class MirrorCommand(SketchChangeCommand):
         #      ref outside the selection.
         #    - Constraints that are not mirror-compatible (e.g. expression-
         #      based AngleConstraint) with all refs inside.
-        constraints_to_drop: list[Any] = []
+        constraints_to_drop: list[Constraint] = []
         for constr in sketch.constraints:
             ref_points = constr.get_referenced_point_ids()
             ref_entities = constraint_info.referenced_entity_ids(

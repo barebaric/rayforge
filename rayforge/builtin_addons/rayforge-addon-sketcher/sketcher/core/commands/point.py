@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point as GeoPoint
 
@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from rayforge.core.undo.command import Command
 
     from ..sketch import Sketch
+    from ..types import Constraint
 
 logger = logging.getLogger(__name__)
 
@@ -29,14 +30,14 @@ class MovePointCommand(SketchChangeCommand):
         start_pos: GeoPoint,
         end_pos: GeoPoint,
         snapshot: dict | None = None,
-        snap_constraints: list[Any] | None = None,
+        snap_constraints: list[Constraint] | None = None,
     ):
         super().__init__(sketch, _("Move Point"))
         self.point_id = point_id
         self.start_pos = start_pos
         self.end_pos = end_pos
-        self._snap_constraints: list[Any] = snap_constraints or []
-        self._created_constraints: list[Any] = []
+        self._snap_constraints: list[Constraint] = snap_constraints or []
+        self._created_constraints: list[Constraint] = []
 
         # If we are provided with a snapshot (from the tool), use it.
         # This is critical because the drag operation changes coordinates

@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from raygeo.sketch.registry import EntityRegistry
 
     from ..sketch import Sketch
+    from ..types import Constraint
 
 
 def _font_properties(sketch: Sketch, text_entity_id: EntityID) -> dict:
@@ -61,13 +62,13 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
         self.old_point_positions: dict[EntityID, GeoPoint] = {}
         self.old_aspect_ratio: float | None = None
         self.aspect_ratio_constraint_idx: int | None = None
-        self._added_constraints: list[Any] = []
+        self._added_constraints: list[Constraint] = []
 
         self._entity_was_removed = False
         self._removed_entity_dict: dict[str, Any] | None = None
         self._removed_point_dicts: list[dict[str, Any]] = []
         self._removed_entity_dicts: list[dict[str, Any]] = []
-        self._removed_constraints: list[Any] = []
+        self._removed_constraints: list[Constraint] = []
 
     @property
     def _removed_entity(self):

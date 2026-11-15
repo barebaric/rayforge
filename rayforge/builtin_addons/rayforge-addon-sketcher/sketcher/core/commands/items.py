@@ -9,6 +9,7 @@ from .base import SketchChangeCommand
 if TYPE_CHECKING:
     from ..selection import SketchSelection
     from ..sketch import Sketch
+    from ..types import Constraint, Entity
 
 logger = logging.getLogger(__name__)
 
@@ -26,12 +27,12 @@ class AddItemsCommand(SketchChangeCommand):
         self,
         sketch: Sketch,
         name: str,
-        constraints: list[Any] | None = None,
+        constraints: list[Constraint] | None = None,
     ):
         super().__init__(sketch, name)
         self.point_ids: list[int] = []
         self.entity_ids: list[int] = []
-        self.constraints: list[Any] = []
+        self.constraints: list[Constraint] = []
         self._point_dicts: list[dict[str, Any]] = []
         self._entity_dicts: list[dict[str, Any]] = []
         for constraint in constraints or []:
@@ -55,7 +56,7 @@ class AddItemsCommand(SketchChangeCommand):
         self._point_dicts.append({"id": pid, "x": x, "y": y, "fixed": fixed})
         return pid
 
-    def add_entity(self, entity: Any) -> int:
+    def add_entity(self, entity: Entity) -> int:
         eid = self.sketch.registry.add_entity(entity)
         self.entity_ids.append(eid)
         self._entity_dicts.append(self.sketch.registry.entity_to_dict(eid))
@@ -94,7 +95,7 @@ class AddItemsCommand(SketchChangeCommand):
             }
         )
 
-    def add_constraint(self, constraint: Any) -> Any:
+    def add_constraint(self, constraint: Constraint) -> Constraint:
         if isinstance(constraint, dict):
             added = self.sketch.add_constraint_from_dict(constraint)
         else:
@@ -158,20 +159,20 @@ class RemoveItemsCommand(SketchChangeCommand):
         name: str,
         points: list[dict[str, Any]] | None = None,
         entity_ids: list[int] | None = None,
-        constraints: list[Any] | None = None,
+        constraints: list[Constraint] | None = None,
         entities: list[int] | None = None,
     ):
         super().__init__(sketch, name)
         self.point_dicts: list[dict[str, Any]] = points or []
         self.entity_ids: list[int] = entity_ids or entities or []
-        self.constraints: list[Any] = constraints or []
+        self.constraints: list[Constraint] = constraints or []
         self._entity_dicts: list[dict[str, Any]] = []
         self._point_dicts: list[dict[str, Any]] = []
 
     @staticmethod
     def calculate_dependencies(
         sketch: Sketch, selection: SketchSelection
-    ) -> tuple[list[dict[str, Any]], list[int], list[Any]]:
+    ) -> tuple[list[dict[str, Any]], list[int], list[Constraint]]:
         """
         Calculates the full set of items to be deleted based on the current
         selection, including dependent items. Returns (point_dicts,
@@ -187,13 +188,13 @@ class RemoveItemsCommand(SketchChangeCommand):
         sketch: Sketch,
         entity_ids: set[int],
         point_ids: set[int] | None = None,
-    ) -> tuple[list[dict[str, Any]], list[int], list[Any]]:
+    ) -> tuple[list[dict[str, Any]], list[int], list[Constraint]]:
         """
         Calculates the removal dependencies for a plain set of entity
         (and optionally point) IDs, without going through a selection.
         """
         registry = sketch.registry
-        to_delete_constraints: list[Any] = []
+        to_delete_constraints: list[Constraint] = []
         to_delete_entity_ids = set(entity_ids)
         to_delete_point_ids = set(point_ids or set())
 
@@ -378,7 +379,7 @@ class RemoveItemsCommand(SketchChangeCommand):
         cls,
         sketch: Sketch,
         selection: SketchSelection,
-    ) -> tuple[list[dict[str, Any]], list[int], list[Any]]:
+    ) -> tuple[list[dict[str, Any]], list[int], list[Constraint]]:
         """Removal dependencies including a selected constraint."""
         point_dicts, entity_ids, constraints = (
             cls.calculate_dependencies_for_ids(
