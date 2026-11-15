@@ -23,6 +23,7 @@ from raygeo.sketch.entities.bezier import Bezier
 from raygeo.sketch.entities.circle import Circle
 from raygeo.sketch.entities.line import Line
 from raygeo.sketch.entities.text_box import TextBox
+from raygeo.sketch.types import EntityID
 
 from ...core.commands import (
     CreateOrEditConstraintCommand,
@@ -34,7 +35,6 @@ from ...core.commands.waypoint import enforce_waypoint_constraint
 from ...core.components import compute_constraint_components
 from ...core.entity_flags import WaypointType
 from ...core.snap import DragContext
-from ...core.types import EntityID
 from .base import SketcherKey, SketchTool
 from .snap_mixin import SnapMixin
 from .text_box_tool import TextBoxTool

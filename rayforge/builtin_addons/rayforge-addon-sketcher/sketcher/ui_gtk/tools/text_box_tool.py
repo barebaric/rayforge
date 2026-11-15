@@ -13,6 +13,7 @@ from raygeo.sketch.constraints.aspect_ratio import AspectRatioConstraint
 from raygeo.sketch.constraints.horizontal import HorizontalConstraint
 from raygeo.sketch.constraints.vertical import VerticalConstraint
 from raygeo.sketch.entities.text_box import TextBox
+from raygeo.sketch.types import EntityID
 
 from rayforge.image.geo_renderer import geometry_to_cairo
 
@@ -23,7 +24,6 @@ from ...core.entity_ops import (
     text_box_fourth_corner,
     text_box_natural_size,
 )
-from ...core.types import EntityID
 from .base import SketcherKey, SketchTool
 
 if TYPE_CHECKING:

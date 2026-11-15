@@ -37,10 +37,9 @@ from raygeo.sketch.constraints.rotational import RotationalConstraint
 from raygeo.sketch.constraints.symmetry import SymmetryConstraint
 from raygeo.sketch.constraints.tangent import TangentConstraint
 from raygeo.sketch.constraints.vertical import VerticalConstraint
+from raygeo.sketch.types import EntityID
 
 from rayforge.core.expression import safe_evaluate
-
-from .types import EntityID
 
 if TYPE_CHECKING:
     from raygeo.sketch.constraints import Constraint

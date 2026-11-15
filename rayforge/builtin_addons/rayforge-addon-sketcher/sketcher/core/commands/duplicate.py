@@ -4,11 +4,12 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
+from raygeo.sketch.types import EntityID
+
 from .. import constraint_info
 from ..constraint_ops import rebuild
 from ..entity_group import EntityGroup
 from ..entity_ops import clone_entity
-from ..types import EntityID
 from .base import SketchChangeCommand
 from .items import AddItemsCommand
 

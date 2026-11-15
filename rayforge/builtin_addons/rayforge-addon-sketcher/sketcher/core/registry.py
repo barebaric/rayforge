@@ -11,8 +11,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 
 from raygeo.sketch.registry import EntityRegistry
-
-from .types import EntityID
+from raygeo.sketch.types import EntityID
 
 __all__ = ["EntityRegistry", "iter_connected_entity_ids"]
 

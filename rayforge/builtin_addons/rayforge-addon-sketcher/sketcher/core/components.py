@@ -11,8 +11,9 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
+from raygeo.sketch.types import EntityID
+
 from . import constraint_info
-from .types import EntityID
 
 if TYPE_CHECKING:
     from raygeo.sketch.constraints import Constraint

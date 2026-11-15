@@ -4,8 +4,8 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
 from raygeo.sketch.entities.bezier import Bezier
+from raygeo.sketch.types import EntityID
 
-from ..types import EntityID
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:

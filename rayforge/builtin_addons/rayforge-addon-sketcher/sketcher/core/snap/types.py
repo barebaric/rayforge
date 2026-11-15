@@ -5,10 +5,9 @@ from raygeo.geo.types import Point as GeoPoint
 from raygeo.sketch.entities import Entity
 from raygeo.sketch.entities.point import SketchPoint
 from raygeo.sketch.registry import EntityRegistry
+from raygeo.sketch.types import EntityID
 
 from rayforge.core.color import ColorRGBA
-
-from ..types import EntityID
 
 
 class SnapLineType(Enum):

@@ -4,9 +4,10 @@ from gettext import gettext as _
 from typing import ClassVar
 
 from raygeo.sketch.entities.line import Line
+from raygeo.sketch.types import EntityID
 
 from ...core.commands import FilletCommand
-from ...core.types import EntityID, HitTarget
+from ...core.types import HitTarget
 from .base import SketchTool
 
 logger = logging.getLogger(__name__)

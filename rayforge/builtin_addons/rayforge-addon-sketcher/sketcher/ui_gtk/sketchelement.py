@@ -6,6 +6,7 @@ from blinker import Signal
 from raygeo.geo import Matrix
 from raygeo.sketch.entities import Entity
 from raygeo.sketch.entities.line import Line
+from raygeo.sketch.types import EntityID
 
 from rayforge.ui_gtk.canvas import CanvasElement
 
@@ -27,7 +28,6 @@ from ..core.snap.producers import (
     MidpointsProducer,
     OnEntityProducer,
 )
-from ..core.types import EntityID
 from .hittest import SketchHitTester
 from .renderer import SketchRenderer
 from .tools import TOOL_REGISTRY

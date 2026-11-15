@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point as GeoPoint
 from raygeo.sketch.entities.circle import Circle
+from raygeo.sketch.types import EntityID
 
-from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData
 from .items import AddItemsCommand

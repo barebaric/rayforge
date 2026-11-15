@@ -2,10 +2,11 @@ from gettext import gettext as _
 
 from raygeo.sketch.entities.bezier import Bezier
 from raygeo.sketch.entities.line import Line
+from raygeo.sketch.types import EntityID
 
 from ...core.commands import SetWaypointTypeCommand
 from ...core.entity_flags import WaypointType
-from ...core.types import EntityID, HitTarget
+from ...core.types import HitTarget
 from .base import SketchTool
 
 

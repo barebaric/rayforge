@@ -22,6 +22,7 @@ from raygeo.sketch.entities.ellipse import Ellipse
 from raygeo.sketch.entities.line import Line
 from raygeo.sketch.entities.polygon import Polygon
 from raygeo.sketch.entities.text_box import TextBox
+from raygeo.sketch.types import EntityID
 
 from rayforge.image.geo_renderer import geometry_to_cairo
 from rayforge.ui_gtk.canvas import WorldSurface
@@ -36,7 +37,6 @@ from ..core.entity_ops import (
     text_box_fourth_corner,
 )
 from ..core.sketch import FillStyle
-from ..core.types import EntityID
 from .tools import PathTool, TextBoxTool
 
 if TYPE_CHECKING:

@@ -4,8 +4,7 @@ from collections.abc import Sequence
 
 from raygeo.sketch import PointDef
 from raygeo.sketch import Solver as GeoSolver
-
-from .types import EntityID
+from raygeo.sketch.types import EntityID
 
 CONFLICT_ERROR_THRESHOLD = 1e-3
 

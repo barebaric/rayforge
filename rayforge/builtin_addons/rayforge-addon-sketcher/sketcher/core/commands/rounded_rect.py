@@ -12,10 +12,10 @@ from raygeo.sketch.constraints.horizontal import HorizontalConstraint
 from raygeo.sketch.constraints.tangent import TangentConstraint
 from raygeo.sketch.constraints.vertical import VerticalConstraint
 from raygeo.sketch.entities.arc import Arc
+from raygeo.sketch.types import EntityID
 
 from .. import constraint_ops
 from ..entity_ops import clone_entity
-from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData
 from .items import AddItemsCommand

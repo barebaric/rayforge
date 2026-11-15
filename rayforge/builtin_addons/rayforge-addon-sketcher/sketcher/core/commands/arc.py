@@ -11,8 +11,8 @@ from raygeo.sketch.constraints.equal_distance import (
     EqualDistanceConstraint,
 )
 from raygeo.sketch.entities.arc import Arc
+from raygeo.sketch.types import EntityID
 
-from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData
 from .items import AddItemsCommand

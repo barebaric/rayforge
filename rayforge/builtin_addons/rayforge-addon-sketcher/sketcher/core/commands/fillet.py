@@ -13,8 +13,8 @@ from raygeo.sketch.constraints.tangent import TangentConstraint
 from raygeo.sketch.entities.arc import Arc
 from raygeo.sketch.entities.line import Line
 from raygeo.sketch.entities.point import SketchPoint
+from raygeo.sketch.types import EntityID
 
-from ..types import EntityID
 from .base import SketchChangeCommand
 from .items import AddItemsCommand, RemoveItemsCommand
 

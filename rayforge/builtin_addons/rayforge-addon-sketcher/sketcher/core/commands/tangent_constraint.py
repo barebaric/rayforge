@@ -6,8 +6,7 @@ from typing import TYPE_CHECKING
 from raygeo.sketch.entities.arc import Arc
 from raygeo.sketch.entities.circle import Circle
 from raygeo.sketch.entities.line import Line
-
-from ..types import EntityID
+from raygeo.sketch.types import EntityID
 
 if TYPE_CHECKING:
     from ..registry import EntityRegistry

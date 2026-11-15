@@ -4,10 +4,10 @@ import time
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
+from raygeo.sketch.types import EntityID
+
 from rayforge.core.undo.command import Command
 from rayforge.core.undo.history import COALESCE_THRESHOLD
-
-from ..types import EntityID
 
 if TYPE_CHECKING:
     from ..sketch import Sketch

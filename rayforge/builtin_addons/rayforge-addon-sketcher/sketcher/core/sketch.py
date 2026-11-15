@@ -36,6 +36,7 @@ from raygeo.sketch.constraints.vertical import VerticalConstraint
 from raygeo.sketch.entities import Entity
 from raygeo.sketch.entities.text_box import TextBox
 from raygeo.sketch.registry import EntityRegistry
+from raygeo.sketch.types import EntityID
 
 from rayforge.core.asset import IAsset
 from rayforge.core.color import ColorRGBA
@@ -54,7 +55,6 @@ from .legacy import migrate_sketch_data
 from .params import ParameterContext
 from .solver import Solver
 from .template_functions import get_template_functions
-from .types import EntityID
 
 DEFAULT_FILL_COLOR: ColorRGBA = (0.85, 0.85, 0.85, 0.7)
 FORMAT_VERSION = 1

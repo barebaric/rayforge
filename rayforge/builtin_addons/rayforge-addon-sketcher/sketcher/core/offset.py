@@ -36,9 +36,9 @@ from raygeo.geo.shape.polygon import (
 )
 from raygeo.geo.types import Rect
 from raygeo.sketch.entities.polygon import Polygon
+from raygeo.sketch.types import EntityID
 
 from .entity_ops import polygon_world_rings, polygon_world_vertices
-from .types import EntityID
 
 _MIN_OFFSET_RADIUS = 1e-6
 

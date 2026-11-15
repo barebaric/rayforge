@@ -7,9 +7,9 @@ from typing import TYPE_CHECKING, Any
 
 from raygeo.geo.types import Point as GeoPoint
 from raygeo.sketch.entities.bezier import Bezier
+from raygeo.sketch.types import EntityID
 
 from ..entity_flags import WaypointType
-from ..types import EntityID
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:

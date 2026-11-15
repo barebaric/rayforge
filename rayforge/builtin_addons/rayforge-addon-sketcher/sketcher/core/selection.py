@@ -1,9 +1,9 @@
 from typing import TYPE_CHECKING
 
 from blinker import Signal
+from raygeo.sketch.types import EntityID
 
 from .registry import get_connected_entity_ids
-from .types import EntityID
 
 if TYPE_CHECKING:
     from raygeo.sketch.entities import Entity

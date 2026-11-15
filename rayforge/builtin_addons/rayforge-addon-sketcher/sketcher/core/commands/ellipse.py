@@ -8,8 +8,8 @@ from raygeo.sketch.constraints.equal_distance import (
     EqualDistanceConstraint,
 )
 from raygeo.sketch.entities.line import Line
+from raygeo.sketch.types import EntityID
 
-from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .items import AddItemsCommand
 

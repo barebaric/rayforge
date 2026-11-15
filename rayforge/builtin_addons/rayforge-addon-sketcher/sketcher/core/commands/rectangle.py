@@ -10,8 +10,8 @@ from raygeo.sketch.constraints.symmetry import (
     SymmetryTarget,
 )
 from raygeo.sketch.entities.line import Line
+from raygeo.sketch.types import EntityID
 
-from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData
 from .items import AddItemsCommand

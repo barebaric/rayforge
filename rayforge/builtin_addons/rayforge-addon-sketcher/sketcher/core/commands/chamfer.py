@@ -11,8 +11,8 @@ from raygeo.sketch.constraints.equal_distance import (
 )
 from raygeo.sketch.entities.line import Line
 from raygeo.sketch.entities.point import SketchPoint
+from raygeo.sketch.types import EntityID
 
-from ..types import EntityID
 from .base import SketchChangeCommand
 from .items import AddItemsCommand, RemoveItemsCommand
 

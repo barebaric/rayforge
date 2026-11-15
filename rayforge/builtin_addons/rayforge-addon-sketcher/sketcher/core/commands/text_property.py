@@ -9,9 +9,9 @@ from raygeo.sketch.constraints.aspect_ratio import AspectRatioConstraint
 from raygeo.sketch.constraints.distance import DistanceConstraint
 from raygeo.sketch.constraints.equal_length import EqualLengthConstraint
 from raygeo.sketch.entities.point import SketchPoint
+from raygeo.sketch.types import EntityID
 
 from ..entity_ops import text_box_fourth_corner, text_box_natural_size
-from ..types import EntityID
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
