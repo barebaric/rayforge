@@ -30,6 +30,23 @@ Die Addonliste zeigt alle installierten Addons mit:
 - **Beschreibung**: Kurze Beschreibung der Funktionalität
 - **Status**: Ob aktiviert oder deaktiviert
 
+## Addon-Details
+
+![Addon-Detailansicht](/screenshots/app-settings-addons-detail.webp)
+
+Klicke auf eine Addon-Zeile — in der Liste der installierten Addons oder im Addon-Registry-Dialog —,
+um die Detailansicht zu öffnen. Die Detailansicht zeigt:
+
+- **Screenshots**: Eine wischbare Galerie, wenn der Autor des Addons Screenshots bereitstellt
+- **Beschreibung**: Eine längere Beschreibung der Funktionalität, mit Markdown-Formatierung
+- **Autor, Version und Lizenz**
+- Einen Link zum Repository des Addons
+- Die Aktion **Installieren**, **Aktualisieren** oder **Freischalten**, je nach Status des Addons
+
+Screenshots und die lange Beschreibung werden aus der Online-Registry geladen. Wenn externe
+Addon-Dienste deaktiviert sind oder die Registry nicht erreicht werden kann, zeigt die Detailansicht
+weiterhin die lokalen Informationen des Addons.
+
 ## Addons verwalten
 
 ### Addons installieren

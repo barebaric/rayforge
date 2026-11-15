@@ -30,6 +30,23 @@ A lista de addons mostra todos os addons instalados com:
 - **Descrição**: Breve descrição da funcionalidade
 - **Status**: Se está ativado ou desativado
 
+## Detalhes do Addon
+
+![Visão de detalhes do addon](/screenshots/app-settings-addons-detail.webp)
+
+Clique na linha de um addon — na lista de addons instalados ou no diálogo do Registro de Addons —
+para abrir sua visão de detalhes. A visão de detalhes mostra:
+
+- **Capturas de tela**: Uma galeria deslizável, quando o autor do addon fornece capturas
+- **Descrição**: Uma descrição mais longa do que o addon faz, com formatação Markdown
+- **Autor, versão e licença**
+- Um link para o repositório do addon
+- A ação **Instalar**, **Atualizar** ou **Desbloquear**, dependendo do estado do addon
+
+As capturas de tela e a descrição longa são carregadas do registro online. Quando os serviços
+externos de addons estão desativados ou o registro não pode ser alcançado, a visão de detalhes ainda
+mostra as informações locais do addon.
+
 ## Gerenciando Addons
 
 ### Instalando Addons

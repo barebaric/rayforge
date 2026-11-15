@@ -127,6 +127,32 @@ version: 1.0.0
 maturity: experimental
 ```
 
+### `long_description`
+
+您的插件的较长描述（最多 2000 个字符），使用 Markdown 编写。当用户在插件管理器中点击您的插件时，打开的插件详情视图会显示该描述。支持标题、列表、强调、链接和代码块。省略此字段时，将使用简短的
+`description` 作为纯文本替代。
+
+```yaml
+long_description: |
+  插件功能的较长描述。
+
+  - **易于使用**：开箱即用
+  - 详情请参阅[文档](https://example.com/docs)
+```
+
+### `screenshots`
+
+最多 5 个相对于仓库的 PNG、JPEG 或 WebP 图片路径（每张图片最多 3
+MB）。它们会在插件详情视图中以图库形式显示。图片必须提交到您的仓库中；发布版本时，注册表会将每个路径固定到版本标签，并验证其可以下载。
+
+```yaml
+screenshots:
+  - docs/screenshots/overview.png
+  - docs/screenshots/settings.png
+```
+
+对于随 Rayforge 一起发布的内置插件，路径会相对于 Rayforge 仓库在应用版本标签处解析，开发构建则回退到默认分支。
+
 ## 入口点
 
 `provides` 部分定义您的插件为 Rayforge 提供的内容。

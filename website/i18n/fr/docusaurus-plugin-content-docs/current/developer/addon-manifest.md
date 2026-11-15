@@ -140,6 +140,39 @@ le champ pour les extensions stables.
 maturity: experimental
 ```
 
+### `long_description`
+
+Une description plus longue de votre extension (2000 caractères maximum), rédigée en Markdown. Elle
+est affichée dans la vue détaillée de l'extension qui s'ouvre lorsqu'un utilisateur clique sur votre
+extension dans le gestionnaire d'extensions. Les titres, listes, emphases, liens et blocs de code
+sont pris en charge. La `description` courte sert de solution de repli en texte brut lorsque ce
+champ est omis.
+
+```yaml
+long_description: |
+  Une description plus longue de ce que fait l'extension.
+
+  - **Facile à utiliser** : fonctionne immédiatement
+  - Consultez la [documentation](https://example.com/docs) pour plus de détails
+```
+
+### `screenshots`
+
+Jusqu'à 5 chemins relatifs au dépôt vers des images PNG, JPEG ou WebP (3 Mo maximum chacune). Elles
+sont affichées sous forme de galerie dans la vue détaillée de l'extension. Les images doivent être
+commitées dans votre dépôt ; lors de la publication d'une version, le registre épingle chaque chemin
+à l'étiquette de version et vérifie qu'il peut être téléchargé.
+
+```yaml
+screenshots:
+  - docs/screenshots/overview.png
+  - docs/screenshots/settings.png
+```
+
+Pour les extensions intégrées livrées avec Rayforge, les chemins sont résolus par rapport au dépôt
+Rayforge à l'étiquette de version de l'application, avec la branche par défaut comme solution de
+repli pour les versions de développement.
+
 ## Points d'entrée
 
 La section `provides` définit ce que votre extension apporte à Rayforge.

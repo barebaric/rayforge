@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-14 09:06+0100\n"
+"POT-Creation-Date: 2026-11-15 11:30+0100\n"
 "PO-Revision-Date: 2025-08-08 10:00+0200\n"
 "Last-Translator: Samuel Abels\n"
 "Language-Team: Spanish <LL@li.org>\n"
@@ -841,7 +841,7 @@ msgid "Lock"
 msgstr "Bloqueado"
 
 #: rayforge/machine/driver/driver.py
-#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+#: rayforge/ui_gtk/addon_manager/action_button.py
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 msgid "Unlock"
 msgstr "Desbloquear"
@@ -7643,43 +7643,17 @@ msgid "Community addon"
 msgstr "Complemento de la comunidad"
 
 #: rayforge/ui_gtk/addon_manager/addon_dialog.py
-msgid "Install"
-msgstr "Instalar"
-
-#: rayforge/ui_gtk/addon_manager/addon_dialog.py
-#: rayforge/ui_gtk/doceditor/step_settings/recipe_control_widget.py
-msgid "Update"
-msgstr "Actualizar"
-
-#: rayforge/ui_gtk/addon_manager/addon_dialog.py
-msgid "Installed"
-msgstr "Instalado"
-
-#: rayforge/ui_gtk/addon_manager/addon_dialog.py
-#, python-brace-format
-msgid "Version {v} already installed"
-msgstr "La versión {v} ya está instalada"
-
-#: rayforge/ui_gtk/addon_manager/addon_dialog.py
-msgid "Incompatible"
-msgstr "Incompatible"
-
-#: rayforge/ui_gtk/addon_manager/addon_dialog.py
-#, python-brace-format
-msgid "Requires {deps}, but current rayforge version is {current}"
-msgstr "Requiere {deps}, pero la versión actual de Rayforge es {current}"
-
-#: rayforge/ui_gtk/addon_manager/addon_dialog.py
-msgid "Unavailable"
-msgstr "No disponible"
-
-#: rayforge/ui_gtk/addon_manager/addon_dialog.py
 msgid "Manual Install"
 msgstr "Instalación manual"
 
 #: rayforge/ui_gtk/addon_manager/addon_dialog.py
 msgid "Enter the Git URL."
 msgstr "Introduce la URL de Git."
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+#: rayforge/ui_gtk/addon_manager/action_button.py
+msgid "Install"
+msgstr "Instalar"
 
 #: rayforge/ui_gtk/addon_manager/community_dialog.py
 msgid "Install Community Addon?"
@@ -7706,8 +7680,36 @@ msgid "Install Anyway"
 msgstr "Instalar de todos modos"
 
 #: rayforge/ui_gtk/addon_manager/community_dialog.py
+#: rayforge/ui_gtk/addon_manager/addon_detail_dialog.py
 msgid "Open the repository in your browser"
 msgstr "Abrir el repositorio en el navegador"
+
+#: rayforge/ui_gtk/addon_manager/action_button.py
+#: rayforge/ui_gtk/doceditor/step_settings/recipe_control_widget.py
+msgid "Update"
+msgstr "Actualizar"
+
+#: rayforge/ui_gtk/addon_manager/action_button.py
+msgid "Installed"
+msgstr "Instalado"
+
+#: rayforge/ui_gtk/addon_manager/action_button.py
+#, python-brace-format
+msgid "Version {v} already installed"
+msgstr "La versión {v} ya está instalada"
+
+#: rayforge/ui_gtk/addon_manager/action_button.py
+msgid "Incompatible"
+msgstr "Incompatible"
+
+#: rayforge/ui_gtk/addon_manager/action_button.py
+#, python-brace-format
+msgid "Requires {deps}, but current rayforge version is {current}"
+msgstr "Requiere {deps}, pero la versión actual de Rayforge es {current}"
+
+#: rayforge/ui_gtk/addon_manager/action_button.py
+msgid "Unavailable"
+msgstr "No disponible"
 
 #: rayforge/ui_gtk/addon_manager/license_dialog.py
 msgid "Enter License Key"
@@ -7896,6 +7898,11 @@ msgstr "Error al eliminar el complemento."
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 msgid "Info"
 msgstr "Información"
+
+#: rayforge/ui_gtk/addon_manager/addon_detail_dialog.py
+#, python-brace-format
+msgid "by {author}"
+msgstr "por {author}"
 
 #: rayforge/ui_gtk/addon_manager/experimental_dialog.py
 msgid "Enable Experimental Addon?"
