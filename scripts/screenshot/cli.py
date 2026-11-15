@@ -21,6 +21,7 @@ TEST_CONFIG_DIR = PROJECT_ROOT / "tests" / "config"
 
 TARGETS = {
     "addon:ai-workpiece-generator": "ai_workpiece_generator",
+    "addon:cnc:adaptive-clearing": "cnc_adaptive_clearing",
     "addon:deepnest": "deepnest",
     "addon:image-editing:adjust": "adjust_image_dialog",
     "addon:print-and-cut:pick": "print_and_cut",
@@ -37,6 +38,8 @@ TARGETS = {
     "app-settings:color-rules:add": "color_rule_dialog",
     "app-settings:ai": "app_settings_ai",
     "app-settings:addons": "app_settings_addons",
+    "app-settings:addons:detail": "addon_detail_dialog",
+    "app-settings:tools": "app_settings_tools",
     "bottom-panel:console": "bottom_panel",
     "bottom-panel:layers": "bottom_panel",
     "config-wizard:ai-lookup": "config_wizard",

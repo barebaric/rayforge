@@ -35,6 +35,23 @@ The addon list shows all installed addons with:
 - **Description**: Brief description of functionality
 - **Status**: Whether enabled or disabled
 
+## Addon Details
+
+![Addon Detail View](/screenshots/app-settings-addons-detail.webp)
+
+Click an addon row — in the installed addons list or in the Addon Registry dialog — to open its
+detail view. The detail view shows:
+
+- **Screenshots**: A swipeable gallery, when the addon's author provides screenshots
+- **Description**: A longer description of what the addon does, with Markdown formatting
+- **Author, version, and license**
+- A link to the addon's repository
+- The **Install**, **Update**, or **Unlock** action, depending on the addon's state
+
+Screenshots and the long description are loaded from the online registry. When external addon
+services are disabled or the registry cannot be reached, the detail view still shows the addon's
+local information.
+
 ## Managing Addons
 
 ### Installing Addons

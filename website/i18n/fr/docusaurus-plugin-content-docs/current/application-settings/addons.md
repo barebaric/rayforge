@@ -30,6 +30,23 @@ La liste des addons affiche tous les addons installés avec :
 - **Description** : Brève description de la fonctionnalité
 - **Statut** : Activé ou désactivé
 
+## Détails de l'extension
+
+![Vue détaillée de l'extension](/screenshots/app-settings-addons-detail.webp)
+
+Cliquez sur la ligne d'une extension — dans la liste des extensions installées ou dans la boîte de
+dialogue du registre des extensions — pour ouvrir sa vue détaillée. La vue détaillée affiche :
+
+- **Captures d'écran** : une galerie balayable, lorsque l'auteur de l'extension fournit des captures
+- **Description** : une description plus longue de ce que fait l'extension, avec formatage Markdown
+- **Auteur, version et licence**
+- Un lien vers le dépôt de l'extension
+- L'action **Installer**, **Mettre à jour** ou **Déverrouiller**, selon l'état de l'extension
+
+Les captures d'écran et la description longue sont chargées depuis le registre en ligne. Lorsque les
+services d'extensions externes sont désactivés ou que le registre est injoignable, la vue détaillée
+affiche toujours les informations locales de l'extension.
+
 ## Gérer les Addons
 
 ### Installer des Addons

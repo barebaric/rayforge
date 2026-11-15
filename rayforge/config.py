@@ -2,7 +2,7 @@ import logging
 import os
 from pathlib import Path
 
-from platformdirs import user_config_dir, user_log_dir
+from platformdirs import user_cache_dir, user_config_dir, user_log_dir
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +58,11 @@ BUILTIN_DEVICES_DIR = Path(__file__).parent / "resources" / "devices"
 LOG_DIR = Path(user_log_dir("rayforge"))
 logger.info(f"Log dir is {LOG_DIR}")
 LOG_DIR.mkdir(parents=True, exist_ok=True)
+
+# Disposable downloads (like addon screenshots)
+CACHE_DIR = Path(user_cache_dir("rayforge"))
+logger.info(f"Cache dir is {CACHE_DIR}")
+CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 # Material directories
 USER_MATERIALS_DIR = CONFIG_DIR / "materials"

@@ -132,6 +132,38 @@ gerenciador de addons. O padrão é `stable`; omita o campo para addons estávei
 maturity: experimental
 ```
 
+### `long_description`
+
+Uma descrição mais longa do seu addon (no máximo 2000 caracteres), escrita em Markdown. Ela é
+exibida na visão de detalhes do addon que se abre quando um usuário clica no seu addon no
+gerenciador de addons. Títulos, listas, ênfase, links e blocos de código são suportados. A
+`description` curta é usada como alternativa em texto sem formatação quando este campo é omitido.
+
+```yaml
+long_description: |
+  Uma descrição mais longa do que o addon faz.
+
+  - **Fácil de usar**: funciona sem configuração
+  - Consulte a [documentação](https://example.com/docs) para mais detalhes
+```
+
+### `screenshots`
+
+Até 5 caminhos relativos ao repositório de imagens PNG, JPEG ou WebP (no máximo 3 MB cada). Elas são
+exibidas como uma galeria na visão de detalhes do addon. As imagens devem estar commitadas no seu
+repositório; quando uma versão é publicada, o registro fixa cada caminho à tag da versão e verifica
+que ele pode ser baixado.
+
+```yaml
+screenshots:
+  - docs/screenshots/overview.png
+  - docs/screenshots/settings.png
+```
+
+Para addons integrados que acompanham o Rayforge, os caminhos são resolvidos em relação ao
+repositório do Rayforge na tag de versão do aplicativo, com o branch padrão como alternativa para
+compilações de desenvolvimento.
+
 ## Pontos de Entrada
 
 A seção `provides` define o que seu addon contribui para o Rayforge.

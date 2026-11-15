@@ -73,6 +73,48 @@ class TestAddonMetadata:
         assert meta.author.name == ""
         assert meta.author.email == ""
 
+    def test_from_registry_entry_detail_fields(self):
+        """The registry provides detail-view content for addons."""
+        data = {
+            "depends": [],
+            "long_description": "A longer description.",
+            "screenshots": [
+                "https://raw.githubusercontent.com/o/r/v1.0.0/a.png",
+                "https://raw.githubusercontent.com/o/r/v1.0.0/b.png",
+            ],
+        }
+        meta = AddonMetadata.from_registry_entry("my_addon", data)
+        assert meta.long_description == "A longer description."
+        assert meta.screenshots == data["screenshots"]
+
+    def test_from_registry_entry_detail_fields_default_empty(self):
+        """Addons without detail content parse to empty defaults."""
+        data = {"depends": []}
+        meta = AddonMetadata.from_registry_entry("my_addon", data)
+        assert meta.long_description == ""
+        assert meta.screenshots == []
+
+    def test_from_registry_entry_screenshots_filters_invalid(self):
+        """Only absolute HTTP(S) URLs survive parsing."""
+        data = {
+            "depends": [],
+            "screenshots": [
+                "https://example.com/a.png",
+                "file:///etc/passwd",
+                "relative/path.png",
+                42,
+                "",
+            ],
+        }
+        meta = AddonMetadata.from_registry_entry("my_addon", data)
+        assert meta.screenshots == ["https://example.com/a.png"]
+
+    def test_from_registry_entry_screenshots_wrong_type(self):
+        """A non-list screenshots field is ignored."""
+        data = {"depends": [], "screenshots": "not-a-list"}
+        meta = AddonMetadata.from_registry_entry("my_addon", data)
+        assert meta.screenshots == []
+
     def test_from_registry_entry_official_flag(self):
         """The registry can mark an addon as official."""
         data = {
@@ -297,6 +339,46 @@ class TestAddon:
 
             addon = Addon.load_from_directory(path, version=TEST_VERSION)
             assert addon.metadata.maturity == AddonMaturity.EXPERIMENTAL
+
+    def test_load_from_directory_parses_long_description(self):
+        """Installed manifests can carry a long description."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp)
+            data = {
+                "name": "test_pkg",
+                "author": {"name": "Me", "email": "me@me.com"},
+                "provides": {"worker": "main.py"},
+                "long_description": "Details about the addon.",
+            }
+            with open(path / "rayforge-addon.yaml", "w") as f:
+                yaml.dump(data, f)
+
+            addon = Addon.load_from_directory(path, version=TEST_VERSION)
+            assert addon.metadata.long_description == (
+                "Details about the addon."
+            )
+
+    def test_load_from_directory_parses_screenshots(self):
+        """Local manifests list repo-relative screenshot paths."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp)
+            data = {
+                "name": "test_pkg",
+                "author": {"name": "Me", "email": "me@me.com"},
+                "provides": {"worker": "main.py"},
+                "screenshots": [
+                    "docs/screenshots/one.png",
+                    "../escape.png",
+                    "/absolute.png",
+                    "https://example.com/x.png",
+                    42,
+                ],
+            }
+            with open(path / "rayforge-addon.yaml", "w") as f:
+                yaml.dump(data, f)
+
+            addon = Addon.load_from_directory(path, version=TEST_VERSION)
+            assert addon.metadata.screenshots == ["docs/screenshots/one.png"]
 
     def test_load_missing_metadata(self):
         """Test error when metadata file is missing."""

@@ -185,6 +185,8 @@ class AddonMetadata:
     default_state: str = "enabled"
     maturity: AddonMaturity = AddonMaturity.STABLE
     official: bool = False
+    long_description: str = ""
+    screenshots: list[str] = field(default_factory=list)
 
     @property
     def license_name(self) -> str:
@@ -269,7 +271,45 @@ class AddonMetadata:
             default_state=data.get("default_state", "enabled"),
             maturity=parse_maturity(data.get("maturity")),
             official=bool(data.get("official", False)),
+            long_description=data.get("long_description", ""),
+            screenshots=_parse_screenshots(data.get("screenshots")),
         )
+
+
+def _parse_screenshots(raw: Any) -> list[str]:
+    """Parse the 'screenshots' list from registry data.
+
+    Only absolute HTTP(S) URLs are kept; the registry publishes
+    screenshots as raw URLs pinned to the addon's release tag.
+    """
+    if not isinstance(raw, list):
+        return []
+    return [
+        item
+        for item in raw
+        if isinstance(item, str) and item.startswith(("https://", "http://"))
+    ]
+
+
+def _parse_local_screenshots(raw: Any) -> list[str]:
+    """Parse repo-relative screenshot paths from a local manifest.
+
+    Unlike registry entries, local manifests list paths relative to
+    the repository root; the UI resolves them to raw download URLs.
+    """
+    if not isinstance(raw, list):
+        return []
+    paths = []
+    for item in raw:
+        if not isinstance(item, str) or not item:
+            continue
+        if item.startswith("/") or "://" in item:
+            continue
+        parts = item.split("/")
+        if ".." in parts or "." in parts or "" in parts:
+            continue
+        paths.append(item)
+    return paths
 
 
 def _parse_version_entries(
@@ -416,6 +456,8 @@ class Addon:
                 license=AddonLicense.from_dict(data.get("license")),
                 default_state=default_state,
                 maturity=parse_maturity(data.get("maturity")),
+                long_description=data.get("long_description", ""),
+                screenshots=_parse_local_screenshots(data.get("screenshots")),
             )
 
             return cls(path=addon_dir, metadata=metadata)
