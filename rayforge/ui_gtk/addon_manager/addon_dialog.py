@@ -150,6 +150,7 @@ class AddonRegistryDialog(PatchedDialogWindow):
                 title=addon.display_name or addon.name or "?",
                 subtitle=addon.description,
             )
+            row.set_activatable(True)
             icon = get_icon("addon-symbolic")
             if not addon.is_official:
                 icon = get_icon("addon-community-symbolic")

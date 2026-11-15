@@ -42,7 +42,19 @@ def main():
 
     dialog = run_on_main_thread(open_dialog)
 
-    time.sleep(1.0)
+    def first_image_loaded():
+        carousel = dialog._carousel
+        if carousel is None or carousel.get_n_pages() == 0:
+            return False
+        slide = carousel.get_nth_page(0)
+        return getattr(slide, "_texture", None) is not None
+
+    deadline = time.monotonic() + 15
+    while time.monotonic() < deadline:
+        if run_on_main_thread(first_image_loaded):
+            break
+        time.sleep(0.1)
+    time.sleep(0.25)
 
     logger.info("Taking screenshot: app-settings-addons-detail.webp")
     take_screenshot()

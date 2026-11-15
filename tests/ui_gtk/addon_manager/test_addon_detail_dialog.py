@@ -13,7 +13,7 @@ gi.require_version("Adw", "1")
 
 import pytest
 import pyvips
-from gi.repository import Gdk, GLib, Gtk
+from gi.repository import Adw, Gdk, GLib, Gtk
 
 from rayforge.addon_mgr.addon import (
     AddonAuthor,
@@ -174,9 +174,11 @@ def test_registry_row_activation_opens_detail(ui_context_initializer):
             assert _pump_until(
                 lambda: dialog.stack.get_visible_child_name() == "list"
             )
-            row = dialog.list_box.get_row_at_index(0)
+            row = cast(Adw.ActionRow, dialog.list_box.get_row_at_index(0))
+            assert row is not None
+            assert row.get_activatable() is True
             with patch.object(addon_dialog, "AddonDetailDialog") as detail:
-                dialog._on_row_activated(dialog.list_box, row)
+                dialog.list_box.emit("row-activated", row)
             detail.assert_called_once()
             assert detail.call_args.args[1] is meta
         finally:
@@ -304,7 +306,7 @@ def test_carousel_shows_nav_buttons_for_multiple_screenshots(
     with _dialog_with_screenshots(ui_context_initializer, SHOTS) as dialog:
         assert dialog._prev_btn.get_visible() is True
         assert dialog._next_btn.get_visible() is True
-        assert dialog._prev_btn.get_sensitive() is False
+        assert dialog._prev_btn.get_sensitive() is True
         assert dialog._next_btn.get_sensitive() is True
 
 
@@ -336,12 +338,28 @@ def test_carousel_arrow_key_scrolls(ui_context_initializer):
         assert scroll.call_args.args[0] is carousel.get_nth_page(1)
 
 
-def test_carousel_buttons_disable_at_last_page(ui_context_initializer):
+def test_carousel_next_wraps_to_first_page(ui_context_initializer):
     with _dialog_with_screenshots(ui_context_initializer, SHOTS) as dialog:
-        with patch.object(dialog._carousel, "get_position", return_value=1.0):
-            dialog._update_carousel_buttons()
-        assert dialog._prev_btn.get_sensitive() is True
-        assert dialog._next_btn.get_sensitive() is False
+        carousel = dialog._carousel
+        assert carousel is not None
+        with (
+            patch.object(carousel, "get_position", return_value=1.0),
+            patch.object(carousel, "scroll_to") as scroll,
+        ):
+            dialog._next_btn.emit("clicked")
+        assert scroll.call_args.args[0] is carousel.get_nth_page(0)
+
+
+def test_carousel_prev_wraps_to_last_page(ui_context_initializer):
+    with _dialog_with_screenshots(ui_context_initializer, SHOTS) as dialog:
+        carousel = dialog._carousel
+        assert carousel is not None
+        with (
+            patch.object(carousel, "get_position", return_value=0.0),
+            patch.object(carousel, "scroll_to") as scroll,
+        ):
+            dialog._prev_btn.emit("clicked")
+        assert scroll.call_args.args[0] is carousel.get_nth_page(1)
 
 
 def test_clicking_screenshot_opens_lightbox(ui_context_initializer):

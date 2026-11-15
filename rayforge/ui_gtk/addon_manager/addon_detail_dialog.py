@@ -278,7 +278,6 @@ class AddonDetailDialog(PatchedDialogWindow):
                 )
             )
         self._carousel = carousel
-        carousel.connect("page-changed", self._on_carousel_page_changed)
 
         overlay = Gtk.Overlay()
         overlay.set_child(carousel)
@@ -307,7 +306,6 @@ class AddonDetailDialog(PatchedDialogWindow):
         multiple = carousel.get_n_pages() > 1
         self._prev_btn.set_visible(multiple)
         self._next_btn.set_visible(multiple)
-        self._update_carousel_buttons()
 
     def _make_nav_button(self, icon_name: str, tooltip: str) -> Gtk.Button:
         btn = Gtk.Button(child=get_icon(icon_name))
@@ -319,22 +317,10 @@ class AddonDetailDialog(PatchedDialogWindow):
     def _scroll_carousel(self, delta: int):
         if self._carousel is None:
             return
-        target = round(self._carousel.get_position()) + delta
-        target = max(0, min(target, self._carousel.get_n_pages() - 1))
+        count = self._carousel.get_n_pages()
+        target = (round(self._carousel.get_position()) + delta) % count
         page = self._carousel.get_nth_page(target)
         self._carousel.scroll_to(page, True)
-
-    def _on_carousel_page_changed(self, _carousel, _position):
-        self._update_carousel_buttons()
-
-    def _update_carousel_buttons(self):
-        if self._carousel is None:
-            return
-        position = round(self._carousel.get_position())
-        self._prev_btn.set_sensitive(position > 0)
-        self._next_btn.set_sensitive(
-            position < self._carousel.get_n_pages() - 1
-        )
 
     def _on_carousel_key(self, _controller, keyval, _keycode, _state):
         if self._carousel is None:
