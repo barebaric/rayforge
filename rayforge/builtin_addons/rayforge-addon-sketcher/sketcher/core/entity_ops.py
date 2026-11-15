@@ -23,9 +23,8 @@ from raygeo.sketch.entities.polygon import Polygon
 from raygeo.sketch.entities.text_box import TextBox
 
 if TYPE_CHECKING:
+    from raygeo.sketch.entities import Entity
     from raygeo.sketch.registry import EntityRegistry
-
-    from .types import Entity
 
 
 class PlacementTransform(Protocol):

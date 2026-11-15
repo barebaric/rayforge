@@ -6,8 +6,9 @@ from typing import TYPE_CHECKING
 from raygeo.sketch.constraints.equal_length import EqualLengthConstraint
 
 if TYPE_CHECKING:
+    from raygeo.sketch.constraints import Constraint
+
     from ..sketch import Sketch
-    from ..types import Constraint
 
 
 @dataclass

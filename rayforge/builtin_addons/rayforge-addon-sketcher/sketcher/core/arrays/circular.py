@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
 from raygeo.sketch.constraints.radius import RadiusConstraint
@@ -16,9 +17,8 @@ from .base import (
 )
 
 if TYPE_CHECKING:
+    from raygeo.sketch.entities import Entity
     from raygeo.sketch.registry import EntityRegistry
-
-    from ..types import Entity
 
 
 class CircularArrayStrategy(ArrayStrategy):
@@ -152,7 +152,7 @@ class CircularArrayStrategy(ArrayStrategy):
 
     def capture_master_frame(
         self, registry: EntityRegistry, array_def: Array
-    ) -> tuple[tuple[float, float], float] | None:
+    ) -> tuple[Sequence[float], float] | None:
         circle = registry.get_entity_object(array_def.guide_circle_id)
         if not isinstance(circle, Circle):
             return None
@@ -168,7 +168,7 @@ class CircularArrayStrategy(ArrayStrategy):
         self,
         registry: EntityRegistry,
         array_def: Array,
-        old_frame: tuple[tuple[float, float], float],
+        old_frame: tuple[Sequence[float], float],
         constraints: list,
         frame_state: dict[str, Any] | None = None,
     ) -> dict[str, Any] | None:

@@ -14,10 +14,10 @@ from ..types import EntityID
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
+    from raygeo.sketch.constraints import Constraint
     from raygeo.sketch.registry import EntityRegistry
 
     from ..sketch import Sketch
-    from ..types import Constraint
 
 
 def _font_properties(sketch: Sketch, text_entity_id: EntityID) -> dict:

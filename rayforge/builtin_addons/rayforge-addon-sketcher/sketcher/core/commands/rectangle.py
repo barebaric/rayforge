@@ -16,10 +16,10 @@ from .dimension import DimensionData
 from .items import AddItemsCommand
 
 if TYPE_CHECKING:
+    from raygeo.sketch.constraints import Constraint
     from raygeo.sketch.registry import EntityRegistry
 
     from ..sketch import Sketch
-    from ..types import Constraint
 
 
 class RectanglePreviewState(PreviewState):

@@ -14,6 +14,7 @@ from raygeo.sketch.constraints.point_on_curve import (
     PointOnCurveConstraint,
 )
 from raygeo.sketch.constraints.point_on_line import PointOnLineConstraint
+from raygeo.sketch.entities import Entity
 from raygeo.sketch.entities.arc import Arc
 from raygeo.sketch.entities.bezier import Bezier
 from raygeo.sketch.entities.circle import Circle
@@ -35,7 +36,7 @@ from ..core.entity_ops import (
     text_box_fourth_corner,
 )
 from ..core.sketch import FillStyle
-from ..core.types import Entity, EntityID
+from ..core.types import EntityID
 from .tools import PathTool, TextBoxTool
 
 if TYPE_CHECKING:

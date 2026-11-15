@@ -18,10 +18,9 @@ from .base import (
 )
 
 if TYPE_CHECKING:
+    from raygeo.sketch.entities import Entity
     from raygeo.sketch.entities.point import SketchPoint
     from raygeo.sketch.registry import EntityRegistry
-
-    from ..types import Entity
 
 logger = logging.getLogger(__name__)
 

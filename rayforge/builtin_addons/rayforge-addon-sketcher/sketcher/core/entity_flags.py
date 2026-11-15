@@ -14,9 +14,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    from raygeo.sketch.entities import Entity
     from raygeo.sketch.registry import EntityRegistry
-
-    from .types import Entity
 
 import copy
 from enum import Enum

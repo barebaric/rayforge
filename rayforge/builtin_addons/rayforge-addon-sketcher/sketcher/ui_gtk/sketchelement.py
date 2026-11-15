@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, cast
 import cairo
 from blinker import Signal
 from raygeo.geo import Matrix
+from raygeo.sketch.entities import Entity
 from raygeo.sketch.entities.line import Line
 
 from rayforge.ui_gtk.canvas import CanvasElement
@@ -26,7 +27,7 @@ from ..core.snap.producers import (
     MidpointsProducer,
     OnEntityProducer,
 )
-from ..core.types import Entity, EntityID
+from ..core.types import EntityID
 from .hittest import SketchHitTester
 from .renderer import SketchRenderer
 from .tools import TOOL_REGISTRY

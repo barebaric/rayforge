@@ -9,8 +9,9 @@ from rayforge.core.undo.command import Command
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
+    from raygeo.sketch.constraints import Constraint
+
     from ..sketch import Sketch
-    from ..types import Constraint
 
 logger = logging.getLogger(__name__)
 

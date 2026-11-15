@@ -13,10 +13,9 @@ from raygeo.sketch.entities.circle import Circle
 from ..entity_group import EntityGroup
 
 if TYPE_CHECKING:
+    from raygeo.sketch.entities import Entity
     from raygeo.sketch.entities.point import SketchPoint
     from raygeo.sketch.registry import EntityRegistry
-
-    from ..types import Entity
 
     GeometrySignature = tuple[tuple[float, float] | float | str | bool, ...]
 
@@ -193,7 +192,7 @@ class ArrayStrategy(ABC):
 
     def capture_master_frame(
         self, registry: EntityRegistry, array_def: Array
-    ) -> tuple[tuple[float, float], float] | None:
+    ) -> tuple[Sequence[float], float] | None:
         """
         Returns the master geometry's reference frame as
         ``(center, radius)``, or None if the strategy has no scalable
@@ -317,9 +316,7 @@ class Array(ABC):
         # detected.
         self._cached_guide_sig: GeometrySignature | None = None
         self._cached_template_sig: tuple[GeometrySignature, ...] | None = None
-        self._cached_guide_frame: tuple[tuple[float, float], float] | None = (
-            None
-        )
+        self._cached_guide_frame: tuple[Sequence[float], float] | None = None
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Array:

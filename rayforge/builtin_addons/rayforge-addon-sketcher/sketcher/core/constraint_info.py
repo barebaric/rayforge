@@ -43,13 +43,14 @@ from rayforge.core.expression import safe_evaluate
 from .types import EntityID
 
 if TYPE_CHECKING:
+    from raygeo.sketch.constraints import Constraint
     from raygeo.sketch.constraints.perpendicular import PerpendicularTarget
     from raygeo.sketch.constraints.symmetry import SymmetryTarget
+    from raygeo.sketch.entities import Entity
     from raygeo.sketch.registry import EntityRegistry
 
     from .selection import SketchSelection
     from .sketch import Sketch
-    from .types import Constraint, Entity
 
 
 class ConstraintStatus(IntEnum):

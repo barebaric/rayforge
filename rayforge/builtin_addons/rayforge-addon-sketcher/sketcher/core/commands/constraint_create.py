@@ -4,17 +4,17 @@ import math
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
+from raygeo.sketch.constraints import Constraint as SketchConstraint
 from raygeo.sketch.constraints.diameter import DiameterConstraint
 from raygeo.sketch.constraints.distance import DistanceConstraint
 from raygeo.sketch.constraints.radius import RadiusConstraint
+from raygeo.sketch.entities import Entity
 from raygeo.sketch.entities.arc import Arc
 from raygeo.sketch.entities.circle import Circle
 from raygeo.sketch.entities.line import Line
 
 from rayforge.core.undo.command import Command
 
-from ..types import Constraint as SketchConstraint
-from ..types import Entity
 from .base import SketchChangeCommand
 from .constraint import ModifyConstraintCommand
 from .items import AddItemsCommand

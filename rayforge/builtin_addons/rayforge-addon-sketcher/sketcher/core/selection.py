@@ -6,9 +6,8 @@ from .registry import get_connected_entity_ids
 from .types import EntityID
 
 if TYPE_CHECKING:
+    from raygeo.sketch.entities import Entity
     from raygeo.sketch.registry import EntityRegistry
-
-    from .types import Entity
 
 
 class SketchSelection:

@@ -22,9 +22,8 @@ from .entity_ops import (
 )
 
 if TYPE_CHECKING:
+    from raygeo.sketch.entities import Entity
     from raygeo.sketch.registry import EntityRegistry
-
-    from ..types import Entity
 
 
 def points_bbox_center(

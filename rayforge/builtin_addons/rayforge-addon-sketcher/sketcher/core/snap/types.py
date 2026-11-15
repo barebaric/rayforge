@@ -2,12 +2,13 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 
 from raygeo.geo.types import Point as GeoPoint
+from raygeo.sketch.entities import Entity
 from raygeo.sketch.entities.point import SketchPoint
 from raygeo.sketch.registry import EntityRegistry
 
 from rayforge.core.color import ColorRGBA
 
-from ..types import Entity, EntityID
+from ..types import EntityID
 
 
 class SnapLineType(Enum):

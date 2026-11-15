@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 import cairo
 from raygeo.geo.types import Point as GeoPoint
+from raygeo.sketch.constraints import Constraint
 from raygeo.sketch.constraints.coincident import CoincidentConstraint
 from raygeo.sketch.constraints.horizontal import HorizontalConstraint
 from raygeo.sketch.constraints.point_on_line import (
@@ -15,6 +16,7 @@ from raygeo.sketch.constraints.symmetry import (
     SymmetryTarget,
 )
 from raygeo.sketch.constraints.vertical import VerticalConstraint
+from raygeo.sketch.entities import Entity
 from raygeo.sketch.entities.arc import Arc
 from raygeo.sketch.entities.circle import Circle
 from raygeo.sketch.entities.line import Line
@@ -27,7 +29,6 @@ from ...core.snap import (
     SnapResult,
 )
 from ...core.snap.types import SnapLineStyle
-from ...core.types import Constraint, Entity
 from .base import SketcherKey
 
 if TYPE_CHECKING:

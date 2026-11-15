@@ -7,9 +7,11 @@ from .. import constraint_info
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
+    from raygeo.sketch.constraints import Constraint
+    from raygeo.sketch.entities import Entity
+
     from ..selection import SketchSelection
     from ..sketch import Sketch
-    from ..types import Constraint, Entity
 
 logger = logging.getLogger(__name__)
 

@@ -18,6 +18,7 @@ from raygeo.geo import Geometry
 from raygeo.geo import Line as GeoLine
 from raygeo.geo import Move as GeoMove
 from raygeo.geo.shape.polygon import is_point_inside_polygon
+from raygeo.sketch.constraints import Constraint
 from raygeo.sketch.constraints.coincident import CoincidentConstraint
 from raygeo.sketch.constraints.diameter import DiameterConstraint
 from raygeo.sketch.constraints.distance import DistanceConstraint
@@ -32,6 +33,7 @@ from raygeo.sketch.constraints.symmetry import (
     SymmetryTarget,
 )
 from raygeo.sketch.constraints.vertical import VerticalConstraint
+from raygeo.sketch.entities import Entity
 from raygeo.sketch.entities.text_box import TextBox
 from raygeo.sketch.registry import EntityRegistry
 
@@ -52,7 +54,7 @@ from .legacy import migrate_sketch_data
 from .params import ParameterContext
 from .solver import Solver
 from .template_functions import get_template_functions
-from .types import Constraint, Entity, EntityID
+from .types import EntityID
 
 DEFAULT_FILL_COLOR: ColorRGBA = (0.85, 0.85, 0.85, 0.7)
 FORMAT_VERSION = 1

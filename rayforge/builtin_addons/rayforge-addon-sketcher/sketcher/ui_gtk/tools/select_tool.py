@@ -17,6 +17,7 @@ from raygeo.sketch.constraints.diameter import DiameterConstraint
 from raygeo.sketch.constraints.distance import DistanceConstraint
 from raygeo.sketch.constraints.drag import DragConstraint
 from raygeo.sketch.constraints.radius import RadiusConstraint
+from raygeo.sketch.entities import Entity
 from raygeo.sketch.entities.arc import Arc
 from raygeo.sketch.entities.bezier import Bezier
 from raygeo.sketch.entities.circle import Circle
@@ -33,7 +34,7 @@ from ...core.commands.waypoint import enforce_waypoint_constraint
 from ...core.components import compute_constraint_components
 from ...core.entity_flags import WaypointType
 from ...core.snap import DragContext
-from ...core.types import Entity, EntityID
+from ...core.types import EntityID
 from .base import SketcherKey, SketchTool
 from .snap_mixin import SnapMixin
 from .text_box_tool import TextBoxTool

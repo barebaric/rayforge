@@ -2,10 +2,11 @@ import logging
 from collections.abc import Iterator
 
 from raygeo.geo.types import Point as GeoPoint
+from raygeo.sketch.entities import Entity
 from raygeo.sketch.entities.point import SketchPoint
 
 from ..registry import EntityRegistry
-from ..types import Entity, EntityID
+from ..types import EntityID
 from .spatial import SnapLineIndex
 from .types import (
     DragContext,
