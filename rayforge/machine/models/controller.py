@@ -16,6 +16,7 @@ from ..driver.driver import (
     DeviceStatus,
     Driver,
     DriverPrecheckError,
+    DriverSetupError,
 )
 from ..driver.dummy import NoDeviceDriver
 from ..transport import TransportStatus
@@ -87,7 +88,7 @@ class MachineController:
         # the driver instance to match
         if self.machine.driver_name:
             task_mgr.add_coroutine(
-                self.rebuild_driver,
+                self._safe_rebuild_driver,
                 key=(self.machine.id, "rebuild-driver-on-init"),
             )
 
@@ -103,7 +104,7 @@ class MachineController:
         if self.driver is not None:
             await self.driver.cleanup()
             task_mgr.add_coroutine(
-                self.rebuild_driver,
+                self._safe_rebuild_driver,
                 key=(self.machine.id, "rebuild-driver"),
             )
 
@@ -162,7 +163,23 @@ class MachineController:
         await asyncio.sleep(_REBUILD_DEBOUNCE_SECONDS)
         if ctx is not None and ctx.is_cancelled():
             return
-        await self.rebuild_driver(ctx)
+        await self._safe_rebuild_driver(ctx)
+
+    async def _safe_rebuild_driver(
+        self, ctx: Optional["ExecutionContext"] = None
+    ):
+        """
+        Runs rebuild_driver() for background tasks, downgrading failures
+        that indicate the device is not reachable or the driver cannot
+        be set up to a warning instead of an unhandled task exception.
+        """
+        try:
+            await self.rebuild_driver(ctx)
+        except (OSError, DeviceConnectionError, DriverSetupError) as e:
+            logger.warning(
+                f"Driver rebuild for machine '{self.machine.name}' "
+                f"(id:{self.machine.id}) failed: {e}"
+            )
 
     def _connect_driver_signals(self):
         if self.driver is None:
