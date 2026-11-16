@@ -125,6 +125,11 @@ apply_css(controls_css)
 
 
 class BottomPanel(Gtk.Box):
+    shop_controls: ShopControlPanel | None = None
+    shop_jog: ShopJogPanel | None = None
+    pointer_alignment_btn: Gtk.ToggleButton | None = None
+    _pointer_alignment_handler_id: int = 0
+
     def __init__(
         self,
         machine: Machine | None,
