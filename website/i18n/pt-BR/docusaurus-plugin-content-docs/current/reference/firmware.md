@@ -162,6 +162,10 @@ grblHAL (Telnet)
 O driver grblHAL (Telnet) se conecta a controladores baseados em GRBL pela rede via uma interface
 Telnet. Ideal para placas com WiFi ou Ethernet integrado — sem necessidade de cabo USB.
 
+Placas grblHAL em rede não se anunciam via mDNS, então o assistente também executa uma varredura de
+sub-rede estreita (apenas porta telnet, concorrência e tempo limite por host limitados) e confirma
+cada controlador que responde antes de listá-lo.
+
 **Recursos:**
 
 - Conectividade de rede (Ethernet/WiFi)

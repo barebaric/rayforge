@@ -11,6 +11,7 @@ from typing import (
 )
 
 import aiohttp
+from raydriver.core.discovery.spec import DiscoverySpec, MdnsRecognizer
 from raygeo.ops.axis import Axis
 
 from ....context import RayforgeContext
@@ -24,7 +25,6 @@ from ....core.varset.hostnamevar import is_valid_hostname_or_ip
 from ....core.varset.var import Var
 from ....pipeline.encoder.base import EncodedOutput, OpsEncoder
 from ....pipeline.encoder.gcode import GcodeEncoder
-from ...discovery.spec import DiscoverySpec, MdnsRecognizer
 from ...transport import TransportStatus
 from ..driver import (
     DeviceConnectionError,

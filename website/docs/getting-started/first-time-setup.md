@@ -49,12 +49,17 @@ everything in by hand:
 - **USB serial devices** are listed as they appear.
 - **Network devices** are discovered via mDNS: OctoPrint servers and ESP3D boards appear alongside
   USB serial devices.
+- **grblHAL boards over telnet** announce nothing via mDNS, so a narrow subnet scan (telnet port
+  only, bounded concurrency) runs alongside the serial and mDNS scans; Rayforge confirms each
+  responding controller before listing it.
 - Discovered devices are **matched to built-in profiles** when a confident match is found, so you
   can often just confirm the detected settings rather than entering them.
 - GRBL auto-selects the correct G-code dialect from the firmware's compile flags, and
   OctoPrint/Smoothieware are probed over the network.
 - Devices you have already configured are shown as **read-only** so you don't accidentally create
   duplicates.
+
+![Wizard — Discover Devices](/screenshots/config-wizard-discover.webp)
 
 Click a discovered device to pre-fill the wizard, or pick a starting point manually as described
 below.

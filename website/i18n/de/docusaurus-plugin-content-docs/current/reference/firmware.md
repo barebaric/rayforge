@@ -164,6 +164,10 @@ Der grblHAL (Telnet)-Treiber verbindet sich über eine Telnet-Schnittstelle übe
 GRBL-basierten Controllern. Ideal für Platinen mit integriertem WiFi oder Ethernet — kein USB-Kabel
 erforderlich.
 
+Vernetzte grblHAL-Boards kündigen sich nicht per mDNS an, daher führt der Assistent zusätzlich einen
+schmalen Subnetz-Scan aus (nur Telnet-Port, begrenzte Parallelität und Timeout pro Host) und
+bestätigt jeden antwortenden Controller, bevor er aufgelistet wird.
+
 **Funktionen:**
 
 - Netzwerkverbindung (Ethernet/WiFi)

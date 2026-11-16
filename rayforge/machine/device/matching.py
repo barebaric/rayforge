@@ -25,10 +25,10 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from ..discovery import (
+from raydriver.core.discovery import DeviceIdentity
+from raydriver.core.discovery.serial_channel import (
     CORPORATE_TOKENS,
     GENERIC_TOKENS,
-    DeviceIdentity,
     normalize_tokens,
 )
 

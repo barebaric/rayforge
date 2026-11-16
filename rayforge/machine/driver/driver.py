@@ -12,6 +12,7 @@ from typing import (
 )
 
 from blinker import Signal
+from raydriver.core.discovery.spec import DiscoverySpec
 from raygeo.ops import Ops
 from raygeo.ops.axis import Axis
 from raygeo.ops.state import PowerMode
@@ -19,7 +20,6 @@ from raygeo.ops.state import PowerMode
 from ...context import RayforgeContext
 from ...core.varset import IntVar, VarSet
 from ...shared.units.system import UnitSystem
-from ..discovery.spec import DiscoverySpec
 
 if TYPE_CHECKING:
     from ...core.doc import Doc

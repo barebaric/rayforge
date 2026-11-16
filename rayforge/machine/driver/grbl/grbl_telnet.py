@@ -2,6 +2,7 @@ import logging
 from gettext import gettext as _
 from typing import Any, cast
 
+from raydriver.core.discovery.spec import DiscoverySpec, TcpRecognizer
 from raydriver.grbl import GrblSession
 
 from ....core.varset import HostnameVar, PortVar, Var, VarSet
@@ -29,8 +30,13 @@ class GrblTelnetDriver(GrblSerialDriver):
     )
     # Serial-port discovery is inherited from GrblSerialDriver but
     # makes no sense here: a telnet connection has no serial port and
-    # must not claim devices found on one.
-    DISCOVERY = None
+    # must not claim devices found on one. Networked grblHAL boards
+    # announce nothing via mDNS, so raydriver's subnet scan probes
+    # the raw telnet port and confirms hosts with the $I build-info
+    # command.
+    DISCOVERY = DiscoverySpec(
+        tcp=TcpRecognizer(port=23, probe_command="$I\n", match_prefix="[VER:")
+    )
 
     @classmethod
     def precheck(cls, **kwargs: Any) -> None:

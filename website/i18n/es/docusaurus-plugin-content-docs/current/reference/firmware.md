@@ -163,6 +163,10 @@ El controlador grblHAL (Telnet) se conecta a controladores basados en GRBL a tra
 mediante una interfaz Telnet. Ideal para placas con WiFi o Ethernet integrado — sin necesidad de
 cable USB.
 
+Las placas grblHAL en red no se anuncian vía mDNS, por lo que el asistente también ejecuta un
+escaneo de subred acotado (solo puerto telnet, concurrencia y tiempo de espera por host limitados) y
+confirma cada controlador que responde antes de listararlo.
+
 **Características:**
 
 - Conectividad de red (Ethernet/WiFi)

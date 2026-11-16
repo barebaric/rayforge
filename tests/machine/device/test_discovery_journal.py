@@ -1,5 +1,7 @@
 import json
 
+from raydriver.core.discovery import DeviceIdentity
+
 from rayforge.machine.device import discovery_journal
 from rayforge.machine.device.matching import ProfileMatch
 from rayforge.machine.device.profile import (
@@ -7,7 +9,6 @@ from rayforge.machine.device.profile import (
     DeviceProfile,
     MachineConfig,
 )
-from rayforge.machine.discovery import DeviceIdentity
 
 
 def _profile(name: str) -> DeviceProfile:

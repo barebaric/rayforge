@@ -11,6 +11,7 @@ from typing import (
 from urllib.parse import quote
 
 import aiohttp
+from raydriver.core.discovery.spec import DiscoverySpec, MdnsRecognizer
 
 from ....context import RayforgeContext
 from ....core.varset import ChoiceVar, HostnameVar, PortVar, Var, VarSet
@@ -18,7 +19,6 @@ from ....core.varset.hostnamevar import is_valid_hostname_or_ip
 from ....pipeline.encoder.base import EncodedOutput, OpsEncoder
 from ....pipeline.encoder.gcode import GcodeEncoder
 from ....shared.units.system import UnitSystem, inches_to_mm
-from ...discovery.spec import DiscoverySpec, MdnsRecognizer
 from ...transport import HttpTransport, TransportStatus, WebSocketTransport
 from ..driver import (
     Axis,
