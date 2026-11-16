@@ -20,7 +20,11 @@ from ..device.schema_migration import (
     CURRENT_SCHEMA_VERSION,
     find_schema_migrations,
 )
-from ..driver.driver import ResourceBusyError
+from ..driver.driver import (
+    DeviceConnectionError,
+    DriverSetupError,
+    ResourceBusyError,
+)
 from .controller import MachineController
 from .machine import Machine
 
@@ -105,17 +109,22 @@ class MachineManager:
         A single, sequenced task that rebuilds a machine's driver and then
         connects if auto_connect is on.
 
-        A failing rebuild is logged as a warning instead of crashing the
-        managed task. This is expected at startup, e.g. when the device
-        is not reachable yet; the connect step is skipped because an
-        immediate retry would fail the same way.
+        A failing rebuild that indicates the device is not reachable or
+        the driver cannot be set up is logged as a warning instead of
+        crashing the managed task; the connect step is skipped because
+        an immediate retry would fail the same way. Any other error
+        still propagates.
         """
         controller = self.get_controller(machine.id)
         # Only rebuild if not already connected to avoid disconnecting
         if not machine.is_connected():
             try:
                 await controller.rebuild_driver()
-            except Exception as e:  # noqa: BLE001 - async auto-connect task
+            except (
+                OSError,
+                DeviceConnectionError,
+                DriverSetupError,
+            ) as e:
                 logger.warning(
                     f"Initial connect for machine '{machine.name}' failed: {e}"
                 )
