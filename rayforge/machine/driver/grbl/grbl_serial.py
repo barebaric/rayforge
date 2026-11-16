@@ -77,8 +77,8 @@ class GrblSerialDriver(Driver):
     and are passed to the session as resolved command templates.
     """
 
-    label = _("GRBL (Serial)")
-    subtitle = _("GRBL-compatible serial connection")
+    label = _("GRBL (USB/Serial)")
+    subtitle = _("GRBL-compatible USB/serial connection (recommended)")
     supports_settings = True
     reports_granular_progress = True
     supports_probing = True

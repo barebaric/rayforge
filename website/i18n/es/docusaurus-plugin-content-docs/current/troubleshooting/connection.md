@@ -229,7 +229,7 @@ Rayforge muestra diferentes estados de conexión:
 1. **Configurar la máquina:**
    - Abre Configuración → Máquina
    - Selecciona o crea un perfil de máquina
-   - Elige el controlador correcto (GRBL Serial)
+   - Elige el controlador correcto (GRBL (USB/Serial))
    - Selecciona el puerto serie
    - Establece la velocidad de transmisión (típicamente 115200)
 

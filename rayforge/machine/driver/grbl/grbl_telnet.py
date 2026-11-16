@@ -23,8 +23,10 @@ class GrblTelnetDriver(GrblSerialDriver):
     driver.
     """
 
-    label = _("GRBL (Telnet)")
-    subtitle = _("GRBL-compatible controller over a raw TCP/telnet connection")
+    label = _("grblHAL (Telnet)")
+    subtitle = _(
+        "Raw TCP/telnet connection (grblHAL networking, ESP3D telnet bridge)"
+    )
     # Serial-port discovery is inherited from GrblSerialDriver but
     # makes no sense here: a telnet connection has no serial port and
     # must not claim devices found on one.
@@ -44,7 +46,7 @@ class GrblTelnetDriver(GrblSerialDriver):
             vars=[
                 HostnameVar(
                     key="host",
-                    label=_("Hostname"),
+                    label=_("Hostname or IP address"),
                     description=_("The IP address or hostname of the device"),
                 ),
                 PortVar(

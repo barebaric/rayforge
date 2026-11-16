@@ -9,23 +9,24 @@ compatible con Marlin, Smoothieware y otros tipos de firmware.
 
 ### Matriz de Compatibilidad
 
-| Firmware         | Version | Estado                  | Controlador                      | Notas                          |
-| ---------------- | ------- | ----------------------- | -------------------------------- | ------------------------------ |
-| **GRBL**         | 1.1+    | Completamente soportado | GRBL Serial / GRBL Serial Simple | Recomendado                    |
-| **grblHAL**      | 2023+   | Compatible              | GRBL Serial / GRBL Telnet        | Fork moderno de GRBL           |
-| **GRBL**         | 0.9     | Limitado                | GRBL Serial                      | Antiguo, puede tener problemas |
-| **Smoothieware** | Todos   | Compatible              | SmoothieDriver (Telnet)          | Basado en red                  |
-| **Marlin**       | 2.0+    | Compatible              | Marlin Serial                    | Requiere modo láser            |
-| **ESP3D**        | Todos   | Compatible              | GRBL Telnet                      | Basado en red                  |
-| **OctoPrint**    | Todos   | Experimental            | OctoPrint                        | Ver notas abajo                |
-| **Otros**        | -       | No soportado            | -                                | Solicitar soporte              |
+| Firmware         | Version | Estado                  | Controlador                              | Notas                          |
+| ---------------- | ------- | ----------------------- | ---------------------------------------- | ------------------------------ |
+| **GRBL**         | 1.1+    | Completamente soportado | GRBL (USB/Serial) (+ compatibility mode) | Recomendado                    |
+| **grblHAL**      | 2023+   | Compatible              | GRBL (USB/Serial) / grblHAL (Telnet)     | Fork moderno de GRBL           |
+| **GRBL**         | 0.9     | Limitado                | GRBL (USB/Serial)                        | Antiguo, puede tener problemas |
+| **FluidNC**      | Todos   | Compatible              | FluidNC / ESP3D (Web API)                | Basado en ESP32                |
+| **Smoothieware** | Todos   | Compatible              | SmoothieDriver (Telnet)                  | Basado en red                  |
+| **Marlin**       | 2.0+    | Compatible              | Marlin Serial                            | Requiere modo láser            |
+| **ESP3D**        | Todos   | Compatible              | grblHAL (Telnet) / Web API               | v2: Telnet, v3: Web API        |
+| **OctoPrint**    | Todos   | Experimental            | OctoPrint                                | Ver notas abajo                |
+| **Otros**        | -       | No soportado            | -                                        | Solicitar soporte              |
 
 ---
 
 ## Firmware GRBL
 
-**Estado:** ✓ Completamente Soportado **Versiones:** 1.1+ **Controlador:** GRBL Serial, GRBL Serial
-Simple
+**Estado:** ✓ Completamente Soportado **Versiones:** 1.1+ **Controlador:** GRBL (USB/Serial) (+
+compatibility mode)
 
 ### GRBL 1.1 (Recomendado)
 
@@ -94,7 +95,7 @@ GRBL 0.9 es una versión antigua con algunos problemas de compatibilidad:
 
 **Instrucciones de actualización:** Ver [GRBL Wiki](https://github.com/gnea/grbl/wiki)
 
-### Controlador GRBL Serial Simple
+### Controlador GRBL (USB/Serial — compatibility mode)
 
 Rayforge incluye un segundo controlador serie GRBL para dispositivos donde el controlador estándar
 con contador de búfer causa falsas alarmas o errores de comunicación.
@@ -114,7 +115,7 @@ con contador de búfer causa falsas alarmas o errores de comunicación.
 
 **Cuándo NO usarlo:**
 
-- El controlador GRBL Serial estándar funciona de manera fiable en la mayoría de dispositivos
+- El controlador GRBL (USB/Serial) estándar funciona de manera fiable en la mayoría de dispositivos
 - El controlador simple carece de recuperación de bloqueos, por lo que los trabajos pueden detenerse
   ante una respuesta "ok" perdida sin recuperación automática
 
@@ -122,7 +123,7 @@ con contador de búfer causa falsas alarmas o errores de comunicación.
 
 ## grblHAL
 
-**Estado:** Compatible **Versiones:** 2023+ **Controlador:** GRBL Serial
+**Estado:** Compatible **Versiones:** 2023+ **Controlador:** GRBL (USB/Serial), grblHAL (Telnet)
 
 ### ¿Qué es grblHAL?
 
@@ -138,28 +139,29 @@ grblHAL es un fork moderno de GRBL con funciones mejoradas:
 
 - **Completamente compatible** - grblHAL mantiene el protocolo GRBL 1.1
 - Todas las funciones de GRBL funcionan
-- Funciones adicionales (red, SD) aún no soportadas por Rayforge
+- La conexión en red es compatible mediante el controlador grblHAL (Telnet)
 - Reportes de estado idénticos a GRBL
 
 **Usando grblHAL:**
 
-1. Selecciona el controlador "GRBL Serial" en Rayforge
+1. Selecciona el controlador "GRBL (USB/Serial)" en Rayforge
 2. Conecta vía serie USB (igual que GRBL)
 3. Todas las funciones funcionan como está documentado para GRBL
 
-**Futuro:** Rayforge puede añadir soporte para funciones específicas de grblHAL (red, etc.)
+Para una conexión de red en lugar de USB, usa el controlador grblHAL (Telnet) descrito abajo.
 
 ---
 
-## Controlador GRBL Telnet
+## Controlador grblHAL (Telnet)
 
 **Estado:** Soportado **Firmware:** grblHAL, ESP3D y otros controladores GRBL en red
-**Controlador:** GRBL Telnet
+**Controlador:** grblHAL (Telnet)
 
-### Acerca del Controlador GRBL Telnet
+### Acerca del Controlador grblHAL (Telnet)
 
-El controlador GRBL Telnet se conecta a controladores basados en GRBL a través de la red mediante
-una interfaz Telnet. Ideal para placas con WiFi o Ethernet integrado — sin necesidad de cable USB.
+El controlador grblHAL (Telnet) se conecta a controladores basados en GRBL a través de la red
+mediante una interfaz Telnet. Ideal para placas con WiFi o Ethernet integrado — sin necesidad de
+cable USB.
 
 **Características:**
 
@@ -167,11 +169,11 @@ una interfaz Telnet. Ideal para placas con WiFi o Ethernet integrado — sin nec
 - Compatible con placas basadas en grblHAL y ESP3D
 - Mismo protocolo GRBL que el controlador serie
 
-**Usando el controlador GRBL Telnet:**
+**Usando el controlador grblHAL (Telnet):**
 
 1. **Configura la red** en tu controlador (WiFi o Ethernet)
-2. **Selecciona "GRBL Telnet"** en los ajustes de máquina
-3. **Introduce la dirección IP** y puerto de tu controlador
+2. **Selecciona "grblHAL (Telnet)"** en los ajustes de máquina
+3. **Introduce el nombre de host o la dirección IP** y puerto de tu controlador
 4. **Conecta** — el controlador se comunica por Telnet
 
 **Requisitos:**
@@ -182,9 +184,35 @@ una interfaz Telnet. Ideal para placas con WiFi o Ethernet integrado — sin nec
 
 ---
 
+## Controlador FluidNC / ESP3D (Web API)
+
+**Estado:** Soportado **Firmware:** FluidNC, ESP3D v3 **Controlador:** FluidNC / ESP3D (Web API)
+
+### Acerca del controlador Web API
+
+El controlador FluidNC / ESP3D (Web API) utiliza la interfaz HTTP/WebSocket del controlador, la
+misma que usa su interfaz web. Frente al controlador telnet añade carga de archivos y lectura y
+escritura de los ajustes del dispositivo, y Rayforge descubre automáticamente los dispositivos
+FluidNC y ESP3D v3 mediante mDNS.
+
+**Usando el controlador Web API:**
+
+1. **Configura la red** en tu controlador (WiFi o Ethernet)
+2. **Selecciona "FluidNC / ESP3D (Web API)"** en los ajustes de máquina
+3. **Introduce el nombre de host o la dirección IP** y los puertos HTTP/WebSocket (en FluidNC, ambos
+   suelen ser 80)
+4. **Conecta**
+
+**Requisitos:**
+
+- Firmware FluidNC o ESP3D v3
+- Controlador y ordenador en la misma red
+
+---
+
 ## Smoothieware
 
-**Controlador:** GRBL Serial (modo compatibilidad)
+**Controlador:** GRBL (USB/Serial) (modo compatibilidad)
 
 ### Notas de Compatibilidad
 

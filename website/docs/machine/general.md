@@ -21,16 +21,17 @@ dropdown when you have multiple machines configured.
 Select the driver that matches your machine's controller. The driver handles communication between
 Rayforge and the hardware.
 
-GRBL devices have three serial driver options:
+GRBL devices can connect over USB/serial or over the network:
 
-- **GRBL (Serial)** — Buffer-counting driver with deadlock detection and stall recovery. Recommended
-  for most GRBL devices
-- **GRBL (Serial Simple)** — Ping-pong protocol driver. Sends one line, waits for "ok", sends the
-  next. No buffer management, no deadlock detection. Useful when the standard driver causes false
-  alarms
-- **GRBL (Rust)** — Experimental driver whose complete GRBL serial protocol stack (flow control, job
-  streaming, stall detection, deadlock recovery, settings, and probing) runs in Rust. Can be
-  selected as a drop-in alternative to GRBL (Serial)
+- **GRBL (USB/Serial)** — Buffer-counting driver with deadlock detection and stall recovery. Its
+  GRBL protocol stack runs in Rust. Recommended for most GRBL devices
+- **GRBL (USB/Serial — compatibility mode)** — Ping-pong protocol driver. Sends one line, waits for
+  "ok", sends the next. No buffer management, no deadlock detection. Only needed when the standard
+  driver causes false alarms or communication errors
+- **grblHAL (Telnet)** — Raw TCP/telnet connection for networked grblHAL controllers and for ESP3D's
+  telnet bridge
+- **FluidNC / ESP3D (Web API)** — HTTP/WebSocket driver for FluidNC and ESP3D v3 controllers, with
+  file upload and device settings support
 
 Ruida-based controllers are supported by the **Ruida RPA** driver, which connects over USB or UDP
 directly, or via TUI RPC through the Ruida Protocol Analyzer. Its USB field offers a dropdown of

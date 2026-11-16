@@ -99,7 +99,7 @@ class SmoothieDriver(Driver):
             vars=[
                 HostnameVar(
                     key="host",
-                    label=_("Hostname"),
+                    label=_("Hostname or IP address"),
                     description=_("The IP address or hostname of the device"),
                 ),
                 PortVar(

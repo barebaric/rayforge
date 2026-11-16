@@ -21,16 +21,18 @@ erkennen, wenn du mehrere Maschinen konfiguriert hast.
 Wähle den Treiber aus, der zum Controller deiner Maschine passt. Der Treiber übernimmt die
 Kommunikation zwischen Rayforge und der Hardware.
 
-GRBL-Geräte haben drei serielle Treiber-Optionen:
+GRBL-Geräte können über USB/Serial oder über das Netzwerk verbunden werden:
 
-- **GRBL (Serial)** — Pufferzählender Treiber mit Deadlock-Erkennung und Stall-Wiederherstellung.
-  Für die meisten GRBL-Geräte empfohlen
-- **GRBL (Serial Simple)** — Ping-Pong-Protokoll-Treiber. Sendet eine Zeile, wartet auf "ok", sendet
-  die nächste. Keine Pufferverwaltung, keine Deadlock-Erkennung. Nützlich, wenn der Standardtreiber
-  falsche Alarme auslöst
-- **GRBL (Rust)** — Experimenteller Treiber, dessen kompletter GRBL-Protokollstack (Flusssteuerung,
-  Auftrags-Streaming, Stall-Erkennung, Deadlock-Recovery, Einstellungen und Probe) in Rust läuft.
-  Kann als direkter Ersatz für GRBL (Serial) ausgewählt werden
+- **GRBL (USB/Serial)** — Pufferzählender Treiber mit Deadlock-Erkennung und
+  Stall-Wiederherstellung. Sein GRBL-Protokollstack läuft in Rust. Für die meisten GRBL-Geräte
+  empfohlen
+- **GRBL (USB/Serial — compatibility mode)** — Ping-Pong-Protokoll-Treiber. Sendet eine Zeile,
+  wartet auf "ok", sendet die nächste. Keine Pufferverwaltung, keine Deadlock-Erkennung. Nur nötig,
+  wenn der Standardtreiber falsche Alarme oder Kommunikationsfehler auslöst
+- **grblHAL (Telnet)** — Raw-TCP/Telnet-Verbindung für vernetzte grblHAL-Controller und für die
+  Telnet-Bridge von ESP3D
+- **FluidNC / ESP3D (Web API)** — HTTP/WebSocket-Treiber für FluidNC- und ESP3D-v3-Controller, mit
+  Datei-Upload und Unterstützung für Geräteeinstellungen
 
 Ruida-basierte Controller werden vom Treiber **Ruida RPA** unterstützt, der sich direkt über USB
 oder UDP verbindet oder per TUI-RPC über den Ruida Protocol Analyzer. Sein USB-Feld bietet eine

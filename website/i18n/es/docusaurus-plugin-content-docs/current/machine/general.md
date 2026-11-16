@@ -21,16 +21,18 @@ cuando tienes varias máquinas configuradas.
 Selecciona el controlador que corresponda al control de tu máquina. El controlador gestiona la
 comunicación entre Rayforge y el hardware.
 
-Los dispositivos GRBL tienen tres opciones de controlador serie:
+Los dispositivos GRBL pueden conectarse por USB/serie o por red:
 
-- **GRBL (Serial)** — Controlador con contador de búfer, detección de bloqueos y recuperación de
-  paradas. Recomendado para la mayoría de dispositivos GRBL
-- **GRBL (Serial Simple)** — Controlador de protocolo ping-pong. Envía una línea, espera "ok", envía
-  la siguiente. Sin gestión de búfer ni detección de bloqueos. Útil cuando el controlador estándar
-  genera falsas alarmas
-- **GRBL (Rust)** — Controlador experimental cuya pila completa del protocolo serie GRBL (control de
-  flujo, transmisión de trabajos, detección de paradas, recuperación de bloqueos, ajustes y probing)
-  se ejecuta en Rust. Puede seleccionarse como alternativa directa a GRBL (Serial)
+- **GRBL (USB/Serial)** — Controlador con contador de búfer, detección de bloqueos y recuperación de
+  paradas. Su pila del protocolo GRBL se ejecuta en Rust. Recomendado para la mayoría de
+  dispositivos GRBL
+- **GRBL (USB/Serial — compatibility mode)** — Controlador de protocolo ping-pong. Envía una línea,
+  espera "ok", envía la siguiente. Sin gestión de búfer ni detección de bloqueos. Solo necesario
+  cuando el controlador estándar genera falsas alarmas o errores de comunicación
+- **grblHAL (Telnet)** — Conexión TCP sin procesar (telnet) para controladores grblHAL en red y para
+  el puente telnet de ESP3D
+- **FluidNC / ESP3D (Web API)** — Controlador HTTP/WebSocket para controladores FluidNC y ESP3D v3,
+  con carga de archivos y soporte de ajustes del dispositivo
 
 Los controladores basados en Ruida son compatibles con el controlador **Ruida RPA**, que se conecta
 directamente por USB o UDP, o vía TUI RPC a través del Ruida Protocol Analyzer. Su campo USB ofrece

@@ -73,8 +73,10 @@ class GrblNetworkDriver(Driver):
     modern file upload API and allows reading/writing device settings.
     """
 
-    label = _("GRBL (Network)")
-    subtitle = _("Connect to a GRBL-compatible device over the network")
+    label = _("FluidNC / ESP3D (Web API)")
+    subtitle = _(
+        "FluidNC or ESP3D controller via its HTTP/WebSocket interface"
+    )
     supports_settings = True
     supports_probing = True
     supports_unit_detection = True
@@ -141,7 +143,7 @@ class GrblNetworkDriver(Driver):
             vars=[
                 HostnameVar(
                     key="host",
-                    label=_("Hostname"),
+                    label=_("Hostname or IP address"),
                     description=_("The IP address or hostname of the device"),
                 ),
                 PortVar(

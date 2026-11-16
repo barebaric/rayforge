@@ -1721,7 +1721,7 @@ def test_esp3d_device_selected_goes_to_probe(ui_context_initializer):
     device = _discovered_device(
         driver_name="GrblNetworkDriver",
         params={"host": "192.168.1.60", "port": 80},
-        label="GRBL (Network)",
+        label="FluidNC / ESP3D (Web API)",
         detail="192.168.1.60:80 (esp3d.local)",
         identity=DeviceIdentity(firmware="grblnetwork", banner="ESP3D"),
     )
