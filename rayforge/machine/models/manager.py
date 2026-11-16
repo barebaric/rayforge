@@ -104,11 +104,22 @@ class MachineManager:
         """
         A single, sequenced task that rebuilds a machine's driver and then
         connects if auto_connect is on.
+
+        A failing rebuild is logged as a warning instead of crashing the
+        managed task. This is expected at startup, e.g. when the device
+        is not reachable yet; the connect step is skipped because an
+        immediate retry would fail the same way.
         """
         controller = self.get_controller(machine.id)
         # Only rebuild if not already connected to avoid disconnecting
         if not machine.is_connected():
-            await controller.rebuild_driver()
+            try:
+                await controller.rebuild_driver()
+            except Exception as e:  # noqa: BLE001 - async auto-connect task
+                logger.warning(
+                    f"Initial connect for machine '{machine.name}' failed: {e}"
+                )
+                return
         if machine.auto_connect and not machine.is_connected():
             await self._safe_connect(machine)
 
