@@ -11,12 +11,17 @@ machines and coordinating their lifecycle.
 """
 
 import asyncio
+import logging
 from dataclasses import replace as dc_replace
 
 import pytest
 
 from rayforge.config import BUILTIN_DEVICES_DIR
 from rayforge.machine.device.profile import DeviceProfile
+from rayforge.machine.driver.driver import (
+    DriverSetupError,
+    ResourceBusyError,
+)
 from rayforge.machine.models.machine import Machine
 from rayforge.machine.models.manager import MachineManager
 from rayforge.shared import tasker
@@ -139,6 +144,74 @@ class TestMachineManager:
         assert machine.has_controller is False
         with pytest.raises(ValueError):
             _ = machine.controller
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "exc",
+        [
+            ConnectionRefusedError("[Errno 111] Connect call failed"),
+            ResourceBusyError("/dev/ttyUSB0", "Other machine"),
+            DriverSetupError("driver failed to initialize"),
+        ],
+        ids=["refused", "busy", "setup"],
+    )
+    async def test_initial_connect_failure_logs_warning(
+        self, exc, machine, task_mgr, caplog, mocker
+    ):
+        """
+        A failure indicating the device is not reachable or the driver
+        cannot be set up must be logged as a warning instead of
+        crashing the managed task with an unhandled exception.
+        """
+        machine.auto_connect = True
+        mocker.patch.object(
+            machine.controller,
+            "rebuild_driver",
+            side_effect=exc,
+        )
+        connect_spy = mocker.patch.object(machine, "connect")
+        manager = machine.context.machine_mgr
+
+        manager.initialize_connections()
+        await asyncio.to_thread(task_mgr.wait_until_settled, 5000)
+
+        assert any(
+            r.levelno == logging.WARNING
+            and "Initial connect for machine" in r.getMessage()
+            and machine.name in r.getMessage()
+            for r in caplog.records
+        )
+        assert not any(
+            "Unhandled exception in managed task" in r.getMessage()
+            for r in caplog.records
+        )
+        connect_spy.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_initial_connect_bug_still_propagates(
+        self, machine, task_mgr, caplog, mocker
+    ):
+        """
+        Exceptions that do not indicate an unreachable device are not
+        downgraded: they still surface as unhandled task errors.
+        """
+        machine.auto_connect = True
+        mocker.patch.object(
+            machine.controller,
+            "rebuild_driver",
+            side_effect=ValueError("broken driver configuration"),
+        )
+        connect_spy = mocker.patch.object(machine, "connect")
+        manager = machine.context.machine_mgr
+
+        manager.initialize_connections()
+        await asyncio.to_thread(task_mgr.wait_until_settled, 5000)
+
+        assert any(
+            "Unhandled exception in managed task" in r.getMessage()
+            for r in caplog.records
+        )
+        connect_spy.assert_not_called()
 
 
 @pytest.mark.usefixtures("lite_context")

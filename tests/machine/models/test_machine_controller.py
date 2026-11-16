@@ -10,10 +10,12 @@ The MachineController is the logic layer that owns and manages the driver.
 """
 
 import asyncio
+import logging
 
 import pytest
 
 import rayforge.machine.driver as driver_module
+from rayforge.machine.driver.driver import DriverSetupError
 from rayforge.machine.driver.dummy import NoDeviceDriver
 from rayforge.machine.models.controller import MachineController
 from rayforge.machine.models.machine import Machine
@@ -114,6 +116,63 @@ class TestDriverRebuildDebounce:
 
         assert rebuild_spy.call_count == 1
         assert machine.driver_name == "TestDriver"
+
+
+@pytest.mark.usefixtures("lite_context")
+class TestRebuildFailureLogging:
+    """Rebuild tasks must downgrade failures that indicate the device
+    is not reachable or the driver cannot be set up to a warning
+    instead of an unhandled task exception.
+
+    rebuild_driver is patched rather than driven with a real driver,
+    because the automatic connect after a rebuild skips NoDeviceDriver
+    instances. Patching still verifies the wiring: a task that ran
+    rebuild_driver directly would surface the exception as an unhandled
+    task error and fail the last assertion.
+    """
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "exc",
+        [
+            ConnectionRefusedError("[Errno 111] Connect call failed"),
+            DriverSetupError("Port must be configured."),
+        ],
+        ids=["refused", "setup"],
+    )
+    @pytest.mark.parametrize(
+        "trigger",
+        ["on-init", "on-change", "after-disconnect"],
+    )
+    async def test_rebuild_task_failure_logs_warning(
+        self, trigger, exc, machine, task_mgr, caplog, mocker
+    ):
+        mocker.patch.object(
+            MachineController,
+            "rebuild_driver",
+            side_effect=exc,
+        )
+        machine.auto_connect = True
+        if trigger == "on-init":
+            machine.driver_name = "OptOutDriver"
+            machine.context.machine_mgr.get_controller(machine.id)
+        elif trigger == "on-change":
+            machine.set_driver(OptOutDriver, {"port": "/dev/null"})
+        else:
+            machine.context.machine_mgr.get_controller(machine.id)
+            await machine.disconnect()
+        await wait_until_settled(task_mgr, 5000)
+
+        assert any(
+            r.levelno == logging.WARNING
+            and "Driver rebuild for machine" in r.getMessage()
+            and machine.name in r.getMessage()
+            for r in caplog.records
+        )
+        assert not any(
+            "Unhandled exception in managed task" in r.getMessage()
+            for r in caplog.records
+        )
 
 
 @pytest.mark.usefixtures("lite_context")
