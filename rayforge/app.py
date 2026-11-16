@@ -20,8 +20,13 @@ for i, arg in enumerate(sys.argv):
         os.environ["RAYFORGE_CONFIG_DIR"] = sys.argv[i + 1]
         break
 
-from rayforge.gtk_environment import configure_gtk_environment
 from rayforge.logging_setup import setup_logging
+
+
+def configure_gtk_environment():
+    if sys.platform == "win32":
+        os.environ.setdefault("GTK_IM_MODULE", "simple")
+
 
 configure_gtk_environment()
 
