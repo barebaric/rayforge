@@ -20,7 +20,10 @@ for i, arg in enumerate(sys.argv):
         os.environ["RAYFORGE_CONFIG_DIR"] = sys.argv[i + 1]
         break
 
+from rayforge.gtk_environment import configure_gtk_environment
 from rayforge.logging_setup import setup_logging
+
+configure_gtk_environment()
 
 # ===================================================================
 # SECTION 1: SAFE, MODULE-LEVEL SETUP
