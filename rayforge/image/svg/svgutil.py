@@ -1,5 +1,6 @@
 import logging
 import warnings
+from gettext import gettext as _
 from typing import Any
 from xml.etree import ElementTree as ET
 
@@ -31,6 +32,12 @@ MM_PER_PX: float = 25.4 / PPI
 # Raygeo bucket key for shapes whose chosen color attribute is `none` or
 # unset. These shapes have no color but still contain real geometry.
 NO_COLOR_KEY: str = "_no_color"
+
+# Reserved layer key for geometry outside any named top-level layer group
+# (root-level shapes and unnamed groups). The layer-aware vector extraction
+# never assigns such geometry to a named layer, so it is offered as a
+# selectable pseudo-layer instead of being silently dropped.
+NO_LAYER_KEY: str = "_no_layer"
 
 INKSCAPE_NS = "http://www.inkscape.org/namespaces/inkscape"
 SVG_NS = "http://www.w3.org/2000/svg"
@@ -289,6 +296,26 @@ def _get_local_tag_name(element: ET.Element) -> str:
     return element.tag.rsplit("}", 1)[-1]
 
 
+def _is_orphan_element(element: ET.Element) -> bool:
+    """True for root-level visual content outside any named layer.
+
+    Mirrors the layer-aware vector extraction: only top-level groups with
+    a non-empty id are layers, everything else visual at the root level is
+    orphan geometry.
+    """
+    tag = _get_local_tag_name(element)
+    if tag == "g":
+        return not element.get("id")
+    return tag in SHAPE_TAGS or tag == "use"
+
+
+def _count_shape_features(element: ET.Element) -> int:
+    """Counts visual elements recursively to detect empty layers."""
+    return sum(
+        1 for elem in element.iter() if _get_local_tag_name(elem) in SHAPE_TAGS
+    )
+
+
 def hex_color_to_rgb(color: str) -> tuple[float, float, float]:
     """
     Converts a "#rrggbb" hex color string to an RGB tuple in the 0-1 range.
@@ -348,11 +375,16 @@ def extract_layer_manifest(data: bytes) -> list[dict[str, Any]]:
     """
     Parses the SVG to find top-level groups with IDs, treating them as layers.
     Also counts the number of geometric elements in each layer.
+
+    Root-level geometry outside any named layer is reported as an extra
+    ``NO_LAYER_KEY`` pseudo-layer (only when named layers exist), so it can
+    be selected and imported instead of being silently dropped.
     """
     if not data:
         return []
 
     layers = []
+    orphan_count = 0
     logger.debug("--- Starting SVG Layer Extraction ---")
     try:
         root = ET.fromstring(data)
@@ -364,10 +396,7 @@ def extract_layer_manifest(data: bytes) -> list[dict[str, Any]]:
                 label = child.get(f"{{{INKSCAPE_NS}}}label") or layer_id
 
                 # Count visual elements recursively to detect empty layers
-                feature_count = 0
-                for elem in child.iter():
-                    if _get_local_tag_name(elem) in SHAPE_TAGS:
-                        feature_count += 1
+                feature_count = _count_shape_features(child)
 
                 layers.append(
                     {
@@ -380,16 +409,51 @@ def extract_layer_manifest(data: bytes) -> list[dict[str, Any]]:
                     f"Found layer: ID='{layer_id}', "
                     f"Name='{label}', Count={feature_count}"
                 )
+            elif _is_orphan_element(child):
+                orphan_count += _count_shape_features(child)
     except ET.ParseError as e:
         logger.error(f"Failed to parse SVG for layer extraction: {e}")
         return []
 
+    if layers and orphan_count:
+        layers.append(
+            {
+                "id": NO_LAYER_KEY,
+                "name": _("Ungrouped"),
+                "count": orphan_count,
+            }
+        )
+        logger.debug(
+            f"Found layer: ID='{NO_LAYER_KEY}', "
+            f"Name='{_('Ungrouped')}', Count={orphan_count}"
+        )
+
     return layers
+
+
+def _layer_filter_keeps(
+    child: ET.Element, visible_layer_ids: list[str], keep_orphans: bool
+) -> bool:
+    """Whether a root-level element survives the layer filter."""
+    tag = _get_local_tag_name(child)
+    if tag == "g":
+        layer_id = child.get("id")
+        # If ID exists AND it is NOT in the visible list, remove it.
+        if layer_id:
+            return layer_id in visible_layer_ids
+        return keep_orphans
+    if _is_orphan_element(child):
+        return keep_orphans
+    return True
 
 
 def filter_svg_layers(data: bytes, visible_layer_ids: list[str]) -> bytes:
     """
     Returns a modified SVG with only specified top-level groups visible.
+
+    Root-level orphan geometry (shapes and unnamed groups) is kept only
+    when the ``NO_LAYER_KEY`` pseudo-layer is selected, matching the
+    layer-aware vector extraction which never assigns it to a named layer.
     """
     if not data:
         return b""
@@ -397,14 +461,11 @@ def filter_svg_layers(data: bytes, visible_layer_ids: list[str]) -> bytes:
     try:
         root = ET.fromstring(data)
         elements_to_remove = []
+        keep_orphans = NO_LAYER_KEY in visible_layer_ids
 
         for child in root:
-            tag = _get_local_tag_name(child)
-            if tag == "g":
-                layer_id = child.get("id")
-                # If ID exists AND it is NOT in the visible list, remove it.
-                if layer_id and layer_id not in visible_layer_ids:
-                    elements_to_remove.append(child)
+            if not _layer_filter_keeps(child, visible_layer_ids, keep_orphans):
+                elements_to_remove.append(child)
 
         for elem in elements_to_remove:
             root.remove(elem)

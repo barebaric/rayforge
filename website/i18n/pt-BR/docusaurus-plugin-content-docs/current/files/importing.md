@@ -230,6 +230,14 @@ Desative "Usar vetores originais" para usar este método.
 - SVGs com efeitos, filtros, gradientes
 - Quando a importação direta produz erros
 
+### Seleção de camadas e geometria não agrupada
+
+Com **Usar vetores originais**, a lista **Selecionar camadas** mostra uma entrada por camada SVG
+nomeada (ou por cor, ao agrupar por cores). As formas que ficam fora de qualquer camada nomeada são
+oferecidas como uma camada extra **Não agrupado**, ativada por padrão, para que sejam importadas e
+cortadas como qualquer outra camada. Desmarcar uma camada exclui sua geometria tanto da visualização
+quanto dos percursos de ferramenta gerados.
+
 ### Visualização em tempo real
 
 O diálogo de importação mostra uma visualização em tempo real de como seu SVG será importado:

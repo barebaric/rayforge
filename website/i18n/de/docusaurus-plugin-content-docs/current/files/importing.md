@@ -236,6 +236,14 @@ Deaktiviere "Originalvektoren verwenden", um diese Methode zu nutzen.
 - SVGs mit Effekten, Filtern, Farbverläufen
 - Wenn direkter Import Fehler produziert
 
+### Ebenenauswahl und nicht gruppierte Geometrie
+
+Mit **Originalvektoren verwenden** zeigt die Liste **Ebenen auswählen** einen Eintrag pro benannter
+SVG-Ebene (bzw. pro Farbe bei Gruppierung nach Farben). Formen außerhalb jeder benannten Ebene
+werden als zusätzliche Ebene **Nicht gruppiert** angeboten, standardmäßig aktiviert, damit sie wie
+jede andere Ebene importiert und geschnitten werden. Das Abwählen einer Ebene schließt ihre
+Geometrie sowohl aus der Vorschau als auch aus den erzeugten Werkzeugbahnen aus.
+
 ### Live-Vorschau
 
 Der Import-Dialog zeigt eine Live-Vorschau, wie dein SVG importiert wird:

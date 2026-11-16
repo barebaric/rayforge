@@ -5,6 +5,9 @@ import pytest
 # Assuming the file structure allows this import
 from rayforge.image.svg.svgutil import (
     MM_PER_PX,
+    NO_LAYER_KEY,
+    extract_layer_manifest,
+    filter_svg_layers,
     get_natural_size,
     trim_svg,
 )
@@ -170,3 +173,86 @@ class TestTrimSvg:
         """Test that an empty SVG is returned unchanged."""
         trimmed_data = trim_svg(empty_svg_data)
         assert trimmed_data == empty_svg_data
+
+
+# --- Test data for orphan (root-level) geometry ---
+
+
+@pytest.fixture
+def svg_orphan_data() -> bytes:
+    """Named layer plus root-level shapes outside any layer."""
+    return b"""<svg width="100mm" height="100mm" viewBox="0 0 100 100"
+                 xmlns="http://www.w3.org/2000/svg">
+                 <defs><linearGradient id="grad"/></defs>
+                 <g id="layer1"><rect x="0" y="0" width="10" height="10"/></g>
+                 <rect x="20" y="20" width="30" height="5"/>
+                 <g><rect x="60" y="20" width="30" height="5"/></g>
+               </svg>"""
+
+
+# --- Tests for extract_layer_manifest ---
+
+
+class TestExtractLayerManifest:
+    def test_orphan_geometry_listed_as_pseudo_layer(
+        self, svg_orphan_data: bytes
+    ):
+        manifest = extract_layer_manifest(svg_orphan_data)
+        by_id = {layer["id"]: layer for layer in manifest}
+        assert set(by_id) == {"layer1", NO_LAYER_KEY}
+        assert by_id[NO_LAYER_KEY]["count"] == 2
+        assert by_id[NO_LAYER_KEY]["name"] == "Ungrouped"
+
+    def test_no_pseudo_layer_without_orphans(self):
+        data = b"""<svg xmlns="http://www.w3.org/2000/svg">
+                     <g id="layer1"><rect width="10" height="10"/></g>
+                   </svg>"""
+        manifest = extract_layer_manifest(data)
+        assert [layer["id"] for layer in manifest] == ["layer1"]
+
+    def test_no_pseudo_layer_without_named_layers(self):
+        data = b"""<svg xmlns="http://www.w3.org/2000/svg">
+                     <rect width="10" height="10"/>
+                   </svg>"""
+        assert extract_layer_manifest(data) == []
+
+
+# --- Tests for filter_svg_layers ---
+
+
+class TestFilterSvgLayers:
+    def test_named_layer_drops_orphan_geometry(self, svg_orphan_data: bytes):
+        filtered = filter_svg_layers(svg_orphan_data, ["layer1"])
+        root = ET.fromstring(filtered)
+        tags = [child.tag.rsplit("}", 1)[-1] for child in root]
+        assert "rect" not in tags
+        assert tags.count("g") == 1
+        assert "defs" in tags
+        group = next(
+            child for child in root if child.tag.rsplit("}", 1)[-1] == "g"
+        )
+        assert group.get("id") == "layer1"
+
+    def test_pseudo_layer_keeps_only_orphan_geometry(
+        self, svg_orphan_data: bytes
+    ):
+        filtered = filter_svg_layers(svg_orphan_data, [NO_LAYER_KEY])
+        root = ET.fromstring(filtered)
+        groups = [
+            child for child in root if child.tag.rsplit("}", 1)[-1] == "g"
+        ]
+        assert all(not group.get("id") for group in groups)
+        rects = [
+            child for child in root if child.tag.rsplit("}", 1)[-1] == "rect"
+        ]
+        assert len(rects) == 1
+        assert len(groups) == 1
+
+    def test_named_layer_keeps_orphans_when_pseudo_selected(
+        self, svg_orphan_data: bytes
+    ):
+        filtered = filter_svg_layers(svg_orphan_data, ["layer1", NO_LAYER_KEY])
+        root = ET.fromstring(filtered)
+        tags = [child.tag.rsplit("}", 1)[-1] for child in root]
+        assert tags.count("g") == 2
+        assert "rect" in tags
