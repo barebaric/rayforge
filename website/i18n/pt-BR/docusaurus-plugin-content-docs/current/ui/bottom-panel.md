@@ -173,6 +173,12 @@ Mostra a posição da cabeça do laser no sistema de coordenadas ativo:
 - Atualiza em tempo real conforme você faz jog ou executa trabalhos
 - Formato: Valores X, Y, Z em milímetros
 
+Com o [Modo oficina](settings.md) ativado nas configurações do aplicativo, toda a aba de controles
+muda para uma superfície de controle sensível ao toque — leituras grandes por eixo com botões de
+zero, offsets, steppers de velocidade/passo e botões superdimensionados de jog e trabalho:
+
+![Painel inferior em modo oficina](/screenshots/bottom-panel-shop-mode.webp)
+
 ### Status de Conexão
 
 - **Conectado**: Indicador verde, máquina está respondendo

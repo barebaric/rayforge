@@ -178,6 +178,12 @@ Shows the laser head's position in the active coordinate system:
 - Updates in real-time as you jog or run jobs
 - Format: X, Y, Z values in millimeters
 
+With [Shop mode](settings.md#appearance) enabled in the application settings, the whole Controls tab
+switches to a touch-friendly control surface — large per-axis readouts with zero buttons, offsets,
+speed/step steppers and oversized jog and job buttons:
+
+![Bottom Panel in Shop Mode](/screenshots/bottom-panel-shop-mode.webp)
+
 ### Connection Status
 
 - **Connected**: Green indicator, machine is responding

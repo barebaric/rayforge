@@ -179,6 +179,12 @@ Muestra la posición de la cabeza del láser en el sistema de coordenadas activo
 - Se actualiza en tiempo real mientras te desplazas o ejecutas trabajos
 - Formato: Valores X, Y, Z en milímetros
 
+Con el [Modo taller](settings.md#apariencia) activado en los ajustes de la aplicación, toda la
+pestaña de controles cambia a una superficie de control táctil: lecturas grandes por eje con botones
+de cero, offsets, steppers de velocidad/paso y botones sobredimensionados de jog y trabajo:
+
+![Panel inferior en modo taller](/screenshots/bottom-panel-shop-mode.webp)
+
 ### Estado de Conexión
 
 - **Conectado**: Indicador verde, la máquina está respondiendo

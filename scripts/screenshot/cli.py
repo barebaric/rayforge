@@ -42,6 +42,7 @@ TARGETS = {
     "app-settings:tools": "app_settings_tools",
     "bottom-panel:console": "bottom_panel",
     "bottom-panel:layers": "bottom_panel",
+    "bottom-panel:shop-mode": "bottom_panel",
     "config-wizard:ai-lookup": "config_wizard",
     "config-wizard:ai-provider": "config_wizard",
     "config-wizard:camera": "config_wizard",

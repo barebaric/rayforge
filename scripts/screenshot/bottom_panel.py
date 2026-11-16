@@ -4,6 +4,7 @@ Screenshot: Bottom panel dock tabs (cropped to just the panel).
 Usage: pixi run screenshot bottom-panel
        pixi run screenshot bottom-panel:console
        pixi run screenshot bottom-panel:layers
+       pixi run screenshot bottom-panel:shop-mode
 """
 
 import logging
@@ -23,11 +24,13 @@ from utils import (
     wait_for_settled,
 )
 
+from rayforge.context import get_context
 from rayforge.uiscript import app, win
 
 logger = logging.getLogger(__name__)
 
 PANEL_HEIGHT = 280
+SHOP_PANEL_HEIGHT = 480
 MARGIN = 10
 STATUS_BAR_HEIGHT = 60
 PANELS = ["toggle_bottom_panel"]
@@ -35,6 +38,7 @@ PANELS = ["toggle_bottom_panel"]
 TAB_CONFIG = {
     "console": {"project": "contour.ryp"},
     "layers": {"project": "twolayer.ryp"},
+    "shop-mode": {"project": "contour.ryp"},
 }
 
 
@@ -49,6 +53,9 @@ def get_tab_name(target: str) -> str:
 def main():
     target = get_target("bottom-panel:console")
     tab_name = get_tab_name(target)
+    shop_mode = tab_name == "shop-mode"
+    if shop_mode:
+        tab_name = "console"
     config = TAB_CONFIG.get(tab_name, TAB_CONFIG["console"])
 
     set_window_size(win, 1400, 900)
@@ -66,10 +73,27 @@ def main():
     show_panel(win, "toggle_bottom_panel", True)
     show_bottom_tab(win, tab_name)
 
+    panel_height = PANEL_HEIGHT
+    if shop_mode:
+        # Enable the touch surface and seed a position so the shot
+        # shows numbers instead of the offline placeholder. The
+        # shop-mode panels need more room than the regular rows.
+        panel_height = SHOP_PANEL_HEIGHT
+
+        def enable_shop_mode():
+            machine = get_context().config.machine
+            get_context().config.set_shop_mode(True)
+            win.bottom_panel.set_size_request(-1, panel_height)
+            if machine is not None:
+                machine.device_state.machine_pos = (120.0, 80.0, 0.0)
+                machine.state_changed.send(machine, state=machine.device_state)
+
+        run_on_main_thread(enable_shop_mode)
+
     time.sleep(0.5)
 
     window_height = run_on_main_thread(lambda: win.get_height())
-    crop_from_top = window_height - PANEL_HEIGHT - MARGIN - STATUS_BAR_HEIGHT
+    crop_from_top = window_height - panel_height - MARGIN - STATUS_BAR_HEIGHT
 
     logger.info(
         f"Taking cropped screenshot of '{tab_name}' tab "

@@ -16,6 +16,11 @@ bureau ou ta préférence personnelle. Tu peux aussi configurer les **Couleurs d
 utiliser soit la couleur du laser, soit la couleur du calque comme distinction visuelle sur le
 canevas.
 
+**Mode atelier** remplace l'onglet de commandes du panneau inférieur par une surface de contrôle
+tactile : grands affichages de position par axe avec boutons de zéro, une carte des offsets, des
+steppers surdimensionnés pour la vitesse/pas de jog et une grille de gros boutons de jog et de
+travail. Conçu pour piloter la machine debout devant elle ; désactivé par défaut.
+
 ### Unités
 
 Configure les unités d'affichage utilisées dans l'application. Tu peux définir des unités séparées

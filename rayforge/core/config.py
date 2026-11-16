@@ -99,6 +99,9 @@ class Config:
         self.right_panel_visible: bool = True
         self.right_panel_mode: RightPanelMode = RightPanelMode.NON_EMPTY_LAYERS
         self.canvas_view: CanvasViewState = CanvasViewState()
+        # Shop mode: large, high-contrast position readouts for
+        # working at the machine. Off by default.
+        self.shop_mode: bool = False
         self.auto_pipeline: bool = True
         self.ops_color_mode: OpsColorMode = OpsColorMode.LASER
         self.check_for_app_updates: bool = True
@@ -201,6 +204,13 @@ class Config:
         if self.right_panel_mode == mode:
             return
         self.right_panel_mode = mode
+        self.changed.send(self)
+
+    def set_shop_mode(self, enabled: bool):
+        """Sets whether shop mode enlarges the position readouts."""
+        if self.shop_mode == enabled:
+            return
+        self.shop_mode = enabled
         self.changed.send(self)
 
     def set_import_dpi(self, dpi: float):
@@ -378,6 +388,7 @@ class Config:
             "right_panel_visible": self.right_panel_visible,
             "right_panel_mode": self.right_panel_mode.value,
             "canvas_view": self.canvas_view.to_dict(),
+            "shop_mode": self.shop_mode,
             "auto_pipeline": self.auto_pipeline,
             "check_for_app_updates": self.check_for_app_updates,
             "check_for_addon_updates": self.check_for_addon_updates,
@@ -452,6 +463,7 @@ class Config:
         config.canvas_view = CanvasViewState.from_dict(
             data.get("canvas_view", {})
         )
+        config.shop_mode = data.get("shop_mode", False)
         config.auto_pipeline = data.get("auto_pipeline", True)
         config.check_for_app_updates = data.get("check_for_app_updates", True)
         config.check_for_addon_updates = data.get(

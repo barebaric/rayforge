@@ -11427,3 +11427,52 @@ msgstr "Connexion TCP brute (telnet) (réseau grblHAL, pont telnet ESP3D)"
 #: rayforge/machine/driver/smoothie/smoothie_driver.py:102
 msgid "Hostname or IP address"
 msgstr "Nom d'hôte ou adresse IP"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py:177
+msgid "Shop mode"
+msgstr "Mode atelier"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py:178
+msgid ""
+"Show the current position in large, high-contrast readouts, for working at"
+"the machine"
+msgstr ""
+"Affiche la position actuelle en grands caractères à fort contraste, pour le"
+"travail à la machine"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py:178
+msgid ""
+"Replace the machine controls with large, touch-friendly readouts and buttons"
+"for working at the machine"
+msgstr ""
+"Remplace les commandes de la machine par des affichages et boutons grands et"
+"tactiles pour le travail à la machine"
+
+#: rayforge/ui_gtk/machine/shop_mode_widget.py:125
+msgid "Offsets"
+msgstr "Offsets"
+
+#: rayforge/ui_gtk/machine/shop_mode_widget.py:174
+msgid "SPEED"
+msgstr "Vitesse"
+
+#: rayforge/ui_gtk/machine/shop_mode_widget.py:191
+msgid "STEP"
+msgstr "Pas"
+
+#: rayforge/ui_gtk/machine/shop_mode_widget.py:743
+msgid "Move Z Up"
+msgstr "Déplacer Z vers le haut"
+
+#: rayforge/ui_gtk/machine/shop_mode_widget.py:744
+msgid "Move Z Down"
+msgstr "Déplacer Z vers le bas"
+
+#: rayforge/ui_gtk/machine/shop_mode_widget.py:520
+msgid "Frame job outline"
+msgstr "Parcourir le contour du travail"
+
+#: rayforge/ui_gtk/machine/shop_mode_widget.py:108
+#, python-brace-format
+msgid "Set current {axis} position as 0 for active WCS"
+msgstr "Définir la position {axis} actuelle comme 0 pour le WCS actif"

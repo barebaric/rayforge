@@ -10830,3 +10830,48 @@ msgstr "原始 TCP/telnet 连接（grblHAL 网络、ESP3D telnet 桥接）"
 #: rayforge/machine/driver/smoothie/smoothie_driver.py:102
 msgid "Hostname or IP address"
 msgstr "主机名或 IP 地址"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py:177
+msgid "Shop mode"
+msgstr "车间模式"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py:178
+msgid ""
+"Show the current position in large, high-contrast readouts, for working at"
+"the machine"
+msgstr "以大号、高对比度读数显示当前位置，便于在机器旁工作"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py:178
+msgid ""
+"Replace the machine controls with large, touch-friendly readouts and buttons"
+"for working at the machine"
+msgstr "将机器控制替换为大号、触控友好的读数和按钮，便于在机器旁工作"
+
+#: rayforge/ui_gtk/machine/shop_mode_widget.py:125
+msgid "Offsets"
+msgstr "偏置"
+
+#: rayforge/ui_gtk/machine/shop_mode_widget.py:174
+msgid "SPEED"
+msgstr "速度"
+
+#: rayforge/ui_gtk/machine/shop_mode_widget.py:191
+msgid "STEP"
+msgstr "步长"
+
+#: rayforge/ui_gtk/machine/shop_mode_widget.py:743
+msgid "Move Z Up"
+msgstr "Z 上移"
+
+#: rayforge/ui_gtk/machine/shop_mode_widget.py:744
+msgid "Move Z Down"
+msgstr "Z 下移"
+
+#: rayforge/ui_gtk/machine/shop_mode_widget.py:520
+msgid "Frame job outline"
+msgstr "沿作业轮廓走框"
+
+#: rayforge/ui_gtk/machine/shop_mode_widget.py:108
+#, python-brace-format
+msgid "Set current {axis} position as 0 for active WCS"
+msgstr "将当前 {axis} 位置设为活动 WCS 的 0"

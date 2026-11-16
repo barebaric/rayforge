@@ -21,6 +21,11 @@ Choose between **System**, **Light**, or **Dark** theme to match your desktop en
 personal preference. You can also configure **Operation Colors** to use either the laser color or
 the layer color for visual distinction on the canvas.
 
+**Shop mode** replaces the bottom panel's Controls tab with a touch-friendly control surface: large
+per-axis position readouts with zero buttons, an offsets card, oversized jog speed/step steppers,
+and a grid of large jog and job buttons. It is meant for operating the machine while standing at it,
+and is disabled by default.
+
 ### Units
 
 Configure the display units used throughout the application. You can set separate units for

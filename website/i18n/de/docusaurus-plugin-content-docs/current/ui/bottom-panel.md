@@ -174,6 +174,13 @@ Zeigt die Position des Laserkopfes im aktiven Koordinatensystem:
 - Aktualisiert sich in Echtzeit beim Joggen oder Ausführen von Aufträgen
 - Format: X-, Y-, Z-Werte in Millimetern
 
+Mit aktiviertem [Shop-Modus](settings.md#erscheinungsbild) in den Anwendungseinstellungen wechselt
+der gesamte Steuerungs-Tab zu einer touchfreundlichen Bedienoberfläche — große Positionsanzeigen pro
+Achse mit Null-Tasten, Offsets, Geschwindigkeits-/Schrittweiten-Stepper und übergroße Jog- und
+Job-Tasten:
+
+![Bottom-Panel im Shop-Modus](/screenshots/bottom-panel-shop-mode.webp)
+
 ### Verbindungsstatus
 
 - **Verbunden**: Grüner Indikator, Maschine antwortet
