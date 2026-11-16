@@ -19,7 +19,7 @@
     "react-dom": "^19.3.1"
   },
   "devDependencies": {
-    "prettier": "^3.9.10"
+    "prettier": "^3.10.1"
   },
   "overrides": {
     "@mermaid-js/layout-elk": "^1.0.2",
