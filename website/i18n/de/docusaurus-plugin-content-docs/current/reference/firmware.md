@@ -10,23 +10,24 @@ Marlin, Smoothieware und andere Firmware-Typen.
 
 ### Kompatibilitätsmatrix
 
-| Firmware         | Version | Status                  | Treiber                          | Hinweise                   |
-| ---------------- | ------- | ----------------------- | -------------------------------- | -------------------------- |
-| **GRBL**         | 1.1+    | Vollständig unterstützt | GRBL Serial / GRBL Serial Simple | Empfohlen                  |
-| **grblHAL**      | 2023+   | Kompatibel              | GRBL Serial / GRBL Telnet        | Moderner GRBL-Fork         |
-| **GRBL**         | 0.9     | Eingeschränkt           | GRBL Serial                      | Älter, kann Probleme haben |
-| **Smoothieware** | Alle    | Kompatibel              | SmoothieDriver (Telnet)          | Netzwerkbasiert            |
-| **Marlin**       | 2.0+    | Kompatibel              | Marlin Serial                    | Laser-Modus erforderlich   |
-| **ESP3D**        | Alle    | Kompatibel              | GRBL Telnet                      | Netzwerkbasiert            |
-| **OctoPrint**    | Alle    | Experimentell           | OctoPrint                        | Siehe Hinweise unten       |
-| **Andere**       | -       | Nicht unterstützt       | -                                | Support anfordern          |
+| Firmware         | Version | Status                  | Treiber                                  | Hinweise                   |
+| ---------------- | ------- | ----------------------- | ---------------------------------------- | -------------------------- |
+| **GRBL**         | 1.1+    | Vollständig unterstützt | GRBL (USB/Serial) (+ compatibility mode) | Empfohlen                  |
+| **grblHAL**      | 2023+   | Kompatibel              | GRBL (USB/Serial) / grblHAL (Telnet)     | Moderner GRBL-Fork         |
+| **GRBL**         | 0.9     | Eingeschränkt           | GRBL (USB/Serial)                        | Älter, kann Probleme haben |
+| **FluidNC**      | Alle    | Kompatibel              | FluidNC / ESP3D (Web API)                | ESP32-basiert              |
+| **Smoothieware** | Alle    | Kompatibel              | SmoothieDriver (Telnet)                  | Netzwerkbasiert            |
+| **Marlin**       | 2.0+    | Kompatibel              | Marlin Serial                            | Laser-Modus erforderlich   |
+| **ESP3D**        | Alle    | Kompatibel              | grblHAL (Telnet) / Web API               | v2: Telnet, v3: Web API    |
+| **OctoPrint**    | Alle    | Experimentell           | OctoPrint                                | Siehe Hinweise unten       |
+| **Andere**       | -       | Nicht unterstützt       | -                                        | Support anfordern          |
 
 ---
 
 ## GRBL-Firmware
 
-**Status:** Vollständig unterstützt **Versionen:** 1.1+ **Treiber:** GRBL Serial / GRBL Serial
-Simple
+**Status:** Vollständig unterstützt **Versionen:** 1.1+ **Treiber:** GRBL (USB/Serial) (+
+compatibility mode)
 
 ### GRBL 1.1 (Empfohlen)
 
@@ -95,7 +96,7 @@ GRBL 0.9 ist eine ältere Version mit einigen Kompatibilitätsproblemen:
 
 **Upgrade-Anleitung:** Siehe [GRBL Wiki](https://github.com/gnea/grbl/wiki)
 
-### GRBL Serial Simple Treiber
+### GRBL (USB/Serial — compatibility mode) Treiber
 
 Rayforge enthält einen zweiten seriellen GRBL-Treiber für Geräte, bei denen der standardmäßige
 pufferzählende Treiber falsche Alarme oder Kommunikationsfehler verursacht.
@@ -115,7 +116,7 @@ pufferzählende Treiber falsche Alarme oder Kommunikationsfehler verursacht.
 
 **Nicht verwenden wenn:**
 
-- Der standardmäßige GRBL Serial Treiber bei dir zuverlässig funktioniert
+- Der standardmäßige GRBL (USB/Serial) Treiber bei dir zuverlässig funktioniert
 - Der Simple Treiber hat keine Deadlock-Wiederherstellung und Jobs können bei verlorenen
   "ok"-Antworten ohne automatische Wiederherstellung stoppen
 
@@ -123,7 +124,7 @@ pufferzählende Treiber falsche Alarme oder Kommunikationsfehler verursacht.
 
 ## grblHAL
 
-**Status:** Kompatibel **Versionen:** 2023+ **Treiber:** GRBL Serial
+**Status:** Kompatibel **Versionen:** 2023+ **Treiber:** GRBL (USB/Serial), grblHAL (Telnet)
 
 ### Was ist grblHAL?
 
@@ -139,28 +140,27 @@ grblHAL ist ein moderner Fork von GRBL mit erweiterten Funktionen:
 
 - **Vollständig kompatibel** – grblHAL behält das GRBL 1.1-Protokoll bei
 - Alle GRBL-Funktionen funktionieren
-- Zusätzliche Funktionen (Netzwerk, SD) noch nicht von Rayforge unterstützt
+- Netzwerk wird über den Treiber grblHAL (Telnet) unterstützt
 - Statusberichte identisch zu GRBL
 
 **Verwendung von grblHAL:**
 
-1. Wähle "GRBL Serial"-Treiber in Rayforge
+1. Wähle "GRBL (USB/Serial)"-Treiber in Rayforge
 2. Verbinde über USB-Seriell (genau wie GRBL)
 3. Alle Funktionen funktionieren wie für GRBL dokumentiert
 
-**Zukunft:** Rayforge könnte Unterstützung für grblHAL-spezifische Funktionen hinzufügen (Netzwerk
-usw.)
+Für eine Netzwerkverbindung statt USB verwende den unten beschriebenen Treiber grblHAL (Telnet).
 
 ---
 
-## GRBL-Telnet-Treiber
+## grblHAL (Telnet)-Treiber
 
 **Status:** Unterstützt **Firmware:** grblHAL, ESP3D und andere GRBL-Netzwerk-Controller
-**Treiber:** GRBL Telnet
+**Treiber:** grblHAL (Telnet)
 
-### Über den GRBL-Telnet-Treiber
+### Über den grblHAL (Telnet)-Treiber
 
-Der GRBL-Telnet-Treiber verbindet sich über eine Telnet-Schnittstelle über das Netzwerk mit
+Der grblHAL (Telnet)-Treiber verbindet sich über eine Telnet-Schnittstelle über das Netzwerk mit
 GRBL-basierten Controllern. Ideal für Platinen mit integriertem WiFi oder Ethernet — kein USB-Kabel
 erforderlich.
 
@@ -170,11 +170,11 @@ erforderlich.
 - Kompatibel mit grblHAL- und ESP3D-basierten Platinen
 - Gleiches GRBL-Protokoll wie der serielle Treiber
 
-**Verwendung des GRBL-Telnet-Treibers:**
+**Verwendung des grblHAL (Telnet)-Treibers:**
 
 1. **Netzwerk konfigurieren** auf deinem Controller (WiFi oder Ethernet)
-2. **"GRBL Telnet"-Treiber auswählen** in den Maschineneinstellungen
-3. **IP-Adresse und Port** deines Controllers eingeben
+2. **"grblHAL (Telnet)"-Treiber auswählen** in den Maschineneinstellungen
+3. **Hostnamen oder IP-Adresse und Port** deines Controllers eingeben
 4. **Verbinden** — der Treiber kommuniziert über Telnet
 
 **Voraussetzungen:**
@@ -185,9 +185,35 @@ erforderlich.
 
 ---
 
+## FluidNC / ESP3D (Web API)-Treiber
+
+**Status:** Unterstützt **Firmware:** FluidNC, ESP3D v3 **Treiber:** FluidNC / ESP3D (Web API)
+
+### Über den Web-API-Treiber
+
+Der Treiber FluidNC / ESP3D (Web API) spricht die HTTP/WebSocket-Schnittstelle des Controllers an —
+dieselbe, die auch seine Weboberfläche nutzt. Gegenüber dem Telnet-Treiber bietet er zusätzlich
+Datei-Upload sowie das Lesen und Schreiben von Geräteeinstellungen, und Rayforge erkennt FluidNC-
+und ESP3D-v3-Geräte automatisch per mDNS.
+
+**Verwendung des Web-API-Treibers:**
+
+1. **Netzwerk konfigurieren** auf deinem Controller (WiFi oder Ethernet)
+2. **"FluidNC / ESP3D (Web API)"-Treiber auswählen** in den Maschineneinstellungen
+3. **Hostnamen oder IP-Adresse** und die HTTP/WebSocket-Ports eingeben (bei FluidNC sind beide
+   normalerweise 80)
+4. **Verbinden**
+
+**Voraussetzungen:**
+
+- FluidNC- oder ESP3D-v3-Firmware
+- Controller und Computer im selben Netzwerk
+
+---
+
 ## Smoothieware
 
-**Treiber:** GRBL Serial (Kompatibilitätsmodus)
+**Treiber:** GRBL (USB/Serial) (Kompatibilitätsmodus)
 
 ### Kompatibilitätshinweise
 

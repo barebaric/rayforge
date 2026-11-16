@@ -85,9 +85,10 @@ class GrblSerialSimpleDriver(Driver):
     issues with the advanced driver.
     """
 
-    label = _("GRBL (Serial Simple)")
+    label = _("GRBL (USB/Serial — compatibility mode)")
     subtitle = _(
-        "GRBL serial with simple ping-pong protocol (no buffer counting)"
+        "Only needed if the standard serial connection misbehaves "
+        "(ping-pong protocol, no buffer counting)"
     )
     supports_settings = True
     reports_granular_progress = True

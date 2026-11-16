@@ -375,7 +375,7 @@ class RuidaRPAAdapter(Driver):
                 # name) to avoid breaking either side.
                 HostnameVar(
                     key="udp_host",
-                    label=_("Hostname"),
+                    label=_("Hostname or IP address"),
                     description=_(
                         "The IP address or hostname of the Ruida controller"
                     ),

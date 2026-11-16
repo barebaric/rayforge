@@ -11282,3 +11282,47 @@ msgstr ""
 "Rayforge só consegue lê-lo com o Ghostscript, que não foi encontrado. "
 "Instale o Ghostscript ou salve o arquivo novamente no Illustrator com a "
 "opção \"Criar arquivo compatível com PDF\" ativada."
+
+#: rayforge/machine/driver/grbl/grbl_serial.py:80
+msgid "GRBL (USB/Serial)"
+msgstr "GRBL (USB/Serial)"
+
+#: rayforge/machine/driver/grbl/grbl_serial.py:81
+msgid "GRBL-compatible USB/serial connection (recommended)"
+msgstr "Conexão USB/serial compatível com GRBL (recomendada)"
+
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py:88
+msgid "GRBL (USB/Serial — compatibility mode)"
+msgstr "GRBL (USB/Serial — compatibility mode)"
+
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py:89
+msgid ""
+"Only needed if the standard serial connection misbehaves (ping-pong"
+"protocol, no buffer counting)"
+msgstr ""
+"Necessário apenas se a conexão serial padrão apresentar problemas (protocolo"
+"ping-pong, sem contagem de buffer)"
+
+#: rayforge/machine/driver/grbl/grbl_network.py:76
+msgid "FluidNC / ESP3D (Web API)"
+msgstr "FluidNC / ESP3D (Web API)"
+
+#: rayforge/machine/driver/grbl/grbl_network.py:77
+msgid "FluidNC or ESP3D controller via its HTTP/WebSocket interface"
+msgstr "Controlador FluidNC ou ESP3D via sua interface HTTP/WebSocket"
+
+#: rayforge/machine/driver/grbl/grbl_telnet.py:26
+msgid "grblHAL (Telnet)"
+msgstr "grblHAL (Telnet)"
+
+#: rayforge/machine/driver/grbl/grbl_telnet.py:27
+msgid "Raw TCP/telnet connection (grblHAL networking, ESP3D telnet bridge)"
+msgstr "Conexão TCP bruta (telnet) (rede do grblHAL, ponte telnet do ESP3D)"
+
+#: rayforge/machine/driver/grbl/grbl_network.py:144
+#: rayforge/machine/driver/grbl/grbl_telnet.py:47
+#: rayforge/machine/driver/octoprint/octoprint_driver.py:203
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py:378
+#: rayforge/machine/driver/smoothie/smoothie_driver.py:102
+msgid "Hostname or IP address"
+msgstr "Nome de host ou endereço IP"

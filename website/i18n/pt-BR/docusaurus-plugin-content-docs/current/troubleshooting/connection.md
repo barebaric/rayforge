@@ -225,7 +225,7 @@ O Rayforge mostra diferentes estados de conexão:
 1. **Configure a máquina:**
    - Abra Configurações Máquina
    - Selecione ou crie um perfil de máquina
-   - Escolha o driver correto (GRBL Serial)
+   - Escolha o driver correto (GRBL (USB/Serial))
    - Selecione a porta serial
    - Defina taxa de transmissão (tipicamente 115200)
 

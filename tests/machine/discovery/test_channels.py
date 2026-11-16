@@ -569,7 +569,7 @@ async def test_esp3d_service_maps_to_grbl_network_driver(monkeypatch):
     device = devices[0]
     assert device.driver_name == "GrblNetworkDriver"
     assert device.params == {"host": "192.168.1.60", "port": 80}
-    assert device.label == "GRBL (Network)"
+    assert device.label == "FluidNC / ESP3D (Web API)"
     assert device.detail == "192.168.1.60:80 (esp3d.local)"
     assert device.identity.firmware == "grblnetwork"
     assert device.identity.banner == "ESP3D"
@@ -684,7 +684,7 @@ def _fingerprint_driver(fingerprint, name="FingerprintDriver"):
                 fingerprint=fingerprint,
             )
         )
-        label = "GRBL (Network)"
+        label = "FluidNC / ESP3D (Web API)"
 
     FingerprintDriver.__name__ = name
     return FingerprintDriver
@@ -720,7 +720,7 @@ async def test_http_candidate_fingerprinted_and_claimed(monkeypatch):
     device = devices[0]
     assert device.driver_name == "FingerprintDriver"
     assert device.params == {"host": "192.168.1.70", "port": 80}
-    assert device.label == "GRBL (Network)"
+    assert device.label == "FluidNC / ESP3D (Web API)"
 
 
 @pytest.mark.asyncio
