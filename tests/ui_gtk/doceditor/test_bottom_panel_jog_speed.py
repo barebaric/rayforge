@@ -17,6 +17,8 @@ def jog_panel(sync_machine):
     panel.speed_row = None
     panel.jog_widget = SimpleNamespace(jog_speed=0)
     panel.console = SimpleNamespace(set_machine=lambda machine: None)
+    panel.shop_controls = None
+    panel.shop_jog = None
     return panel
 
 

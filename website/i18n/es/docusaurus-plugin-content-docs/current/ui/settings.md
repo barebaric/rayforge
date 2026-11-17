@@ -15,6 +15,11 @@ Elige entre el tema **Sistema**, **Claro** u **Oscuro** para coincidir con tu en
 o preferencia personal. También puedes configurar los **Colores de operación** para usar el color
 del láser o el color de la capa como distinción visual en el lienzo.
 
+**Modo taller** sustituye la pestaña de controles del panel inferior por una superficie de control
+táctil: lecturas de posición grandes por eje con botones de cero, una tarjeta de offsets, steppers
+sobredimensionados de velocidad/paso de jog y una cuadrícula de botones grandes de jog y trabajo.
+Pensado para manejar la máquina estando junto a ella; está desactivado por defecto.
+
 ### Unidades
 
 Configura las unidades de pantalla usadas en toda la aplicación. Puedes establecer unidades

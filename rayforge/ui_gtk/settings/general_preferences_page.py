@@ -173,6 +173,17 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         )
         app_settings_group.add(self.right_panel_mode_row)
 
+        self.shop_mode_row = Adw.SwitchRow(
+            title=_("Shop mode"),
+            subtitle=_(
+                "Replace the machine controls with large, touch-friendly "
+                "readouts and buttons for working at the machine"
+            ),
+        )
+        self.shop_mode_row.set_active(config.shop_mode)
+        self.shop_mode_row.connect("notify::active", self.on_shop_mode_changed)
+        app_settings_group.add(self.shop_mode_row)
+
         # Units Preferences
         units_group = Adw.PreferencesGroup()
         units_group.set_title(_("Units"))
@@ -509,6 +520,10 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         selected_index = combo_row.get_selected()
         mode = self.RIGHT_PANEL_MODES[selected_index]
         get_context().config.set_right_panel_mode(mode)
+
+    def on_shop_mode_changed(self, switch_row, _):
+        """Called when the user toggles shop mode."""
+        get_context().config.set_shop_mode(switch_row.get_active())
 
     def on_length_unit_changed(self, combo_row, _):
         """Called when the user selects a new length unit."""
