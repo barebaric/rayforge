@@ -7,9 +7,9 @@ from blinker import Signal
 from gi.repository import Adw, Gtk
 from raygeo.ops.axis import Axis
 
+from ...context import get_context
 from ...logging_setup import ui_log_event_received
 from ...machine.cmd import MachineCmd
-from ...machine.driver.dummy import NoDeviceDriver
 from ...machine.models.machine import Machine
 from ...shared.gcodeedit.viewer import GcodeViewer
 from ...shared.tasker import task_mgr
@@ -19,6 +19,7 @@ from ..machine.console import Console
 from ..machine.jog_widget import JogWidget
 from ..machine.laser_control_widget import LaserControlWidget
 from ..machine.move_to_popover import MoveToPopover
+from ..machine.shop_mode_widget import ShopControlPanel, ShopJogPanel
 from ..machine.wcs_dialog import WcsDialog
 from ..shared.dock_item import DockItem
 from ..shared.dock_layout import DockLayout
@@ -37,6 +38,86 @@ controls_css = """
 preferencesgroup.compact list {
     margin-left: 0;
     margin-right: 0;
+}
+
+.shop-mode-card {
+    background-color: alpha(@theme_fg_color, 0.07);
+    border-radius: 12px;
+    padding: 12px;
+}
+
+.shop-mode-axis-tile {
+    background-color: alpha(@theme_fg_color, 0.1);
+    border-radius: 8px;
+    padding: 2px 10px;
+}
+
+.shop-mode-axis {
+    font-size: 20pt;
+    font-weight: bold;
+}
+
+.shop-mode-axis-x { color: #e01b24; }
+.shop-mode-axis-y { color: #33d17a; }
+.shop-mode-axis-z { color: #3584e4; }
+
+.shop-mode-axis-sub {
+    font-size: 10pt;
+    font-weight: bold;
+}
+
+.shop-mode-value {
+    font-family: monospace;
+    font-size: 30pt;
+    font-weight: bold;
+}
+
+.shop-mode-offset {
+    font-family: monospace;
+    font-size: 10pt;
+}
+
+.shop-mode-caption {
+    font-size: 12pt;
+    font-weight: bold;
+}
+
+.shop-mode-unit {
+    font-size: 9pt;
+}
+
+.shop-mode-zero {
+    min-width: 44px;
+    min-height: 44px;
+}
+
+.shop-mode-stepper {
+    min-width: 56px;
+    min-height: 56px;
+    font-size: 18pt;
+    font-weight: bold;
+}
+
+.shop-mode-step-value {
+    font-family: monospace;
+    font-size: 14pt;
+    font-weight: bold;
+    min-width: 70px;
+}
+
+.shop-mode-button {
+    min-width: 64px;
+    min-height: 64px;
+}
+
+.shop-mode-hold {
+    background-color: #e66100;
+    color: white;
+}
+
+.shop-mode-wcs {
+    font-size: 16pt;
+    font-weight: bold;
 }
 """
 
@@ -129,12 +210,15 @@ class BottomPanel(Gtk.Box):
         self._controls_widget.set_margin_top(9)
         self._controls_widget.set_margin_bottom(9)
 
+        self.shop_controls: ShopControlPanel | None = None
+        self.shop_jog: ShopJogPanel | None = None
+        self.pointer_alignment_btn: Gtk.ToggleButton | None = None
+        self._pointer_alignment_handler_id = 0
         if machine:
             self._setup_wcs_controls()
             self._connect_machine_signals()
-            self._controls_widget.set_children(
-                self.wcs_group, self._jog_laser_box
-            )
+            self._setup_shop_controls()
+            self._sync_shop_mode()
         else:
             self._controls_widget.set_children(self._jog_laser_box)
 
@@ -145,6 +229,11 @@ class BottomPanel(Gtk.Box):
         self._register_items()
         self._build_default_layout()
         self.append(self.dock_layout)
+
+        self._config_handler_id = get_context().config.changed.connect(
+            self._on_config_changed
+        )
+        self.connect("destroy", self._on_destroy)
 
     def _register_items(self):
         self.dock_layout.register_item(
@@ -456,11 +545,11 @@ class BottomPanel(Gtk.Box):
             _("Speed"),
             lower=1,
             upper=60000,
-            value_in_base=1000,
         )
         self.speed_row.value_changed.connect(self._on_speed_changed)
         self.wcs_group.add(self.speed_row)
         self.move_to_popover.set_speed_getter(self._get_jog_speed)
+        self._sync_jog_speed()
 
         self.distance_row = LengthSpinRow(
             _("Jog Distance"),
@@ -483,14 +572,33 @@ class BottomPanel(Gtk.Box):
         """The current jog speed in mm/min, shared with move commands."""
         return self._get_jog_speed()
 
+    def _sync_jog_speed(self):
+        """Shows the machine's stored jog speed on the row and widget."""
+        if not self.machine:
+            return
+        speed_mm_min = int(self.machine.jog_speed)
+        self.speed_row.set_value_in_base_units(speed_mm_min)
+        self.jog_widget.jog_speed = speed_mm_min
+        if self.shop_controls is not None and self.shop_jog is not None:
+            self.shop_controls.jog_speed = speed_mm_min
+            self.shop_jog.jog_speed = speed_mm_min
+
     def _on_speed_changed(self, row):
+        if not self.machine:
+            return
         speed_mm_min = int(self.speed_row.get_value_in_base_units())
         self.jog_widget.jog_speed = speed_mm_min
+        self.machine.set_jog_speed(speed_mm_min)
+        if self.shop_controls is not None and self.shop_jog is not None:
+            self.shop_controls.jog_speed = speed_mm_min
+            self.shop_jog.jog_speed = speed_mm_min
 
     def _on_distance_changed(self, row):
-        self.jog_widget.jog_distance = (
-            self.distance_row.get_value_in_base_units()
-        )
+        distance = self.distance_row.get_value_in_base_units()
+        self.jog_widget.jog_distance = distance
+        if self.shop_controls is not None and self.shop_jog is not None:
+            self.shop_controls.jog_distance = distance
+            self.shop_jog.jog_distance = distance
 
     def _connect_machine_signals(self):
         if self.machine:
@@ -526,12 +634,20 @@ class BottomPanel(Gtk.Box):
 
         if self.machine:
             self._connect_machine_signals()
+            self._sync_jog_speed()
             self._update_wcs_ui()
 
         if self.machine and self.machine_cmd:
             self.jog_widget.set_machine(self.machine, self.machine_cmd)
             self.laser_control.set_machine(self.machine, self.machine_cmd)
             self.move_to_popover.set_machine(self.machine, self.machine_cmd)
+
+        if self.shop_controls is not None and self.shop_jog is not None:
+            self.shop_controls.set_machine(self.machine, self.machine_cmd)
+            self.shop_jog.set_machine(self.machine, self.machine_cmd)
+            self._sync_jog_speed()
+            self.shop_controls.jog_distance = self.jog_widget.jog_distance
+            self.shop_jog.jog_distance = self.jog_widget.jog_distance
 
     def _on_wcs_selection_changed(self, combo_row, _pspec):
         if self._updating_wcs_ui:
@@ -593,7 +709,7 @@ class BottomPanel(Gtk.Box):
     def update_position_menu_sensitivity(self):
         if not self.machine:
             return
-        is_dummy = isinstance(self.machine.driver, NoDeviceDriver)
+        is_dummy = self.machine.is_driverless
         is_connected = self.machine.is_connected()
         is_active = is_connected or is_dummy
 
@@ -672,7 +788,7 @@ class BottomPanel(Gtk.Box):
     def _sync_pointer_alignment_btn(self):
         """Mirrors the machine alignment state into the toggle button
         without re-echoing the change back to the machine."""
-        button = getattr(self, "pointer_alignment_btn", None)
+        button = self.pointer_alignment_btn
         if button is None:
             return
         button.handler_block(self._pointer_alignment_handler_id)
@@ -683,6 +799,71 @@ class BottomPanel(Gtk.Box):
             button.set_sensitive(False)
             button.set_active(False)
         button.handler_unblock(self._pointer_alignment_handler_id)
+
+    def _on_destroy(self, *args):
+        get_context().config.changed.disconnect(self._config_handler_id)
+
+    def _on_config_changed(self, sender, **kwargs):
+        self._sync_shop_mode()
+
+    def _setup_shop_controls(self):
+        """Builds the touch-friendly shop-mode panels and keeps their
+        jog speed/step in sync with the regular controls."""
+        machine = self.machine
+        if machine is None:
+            return
+        self.shop_controls = ShopControlPanel()
+        self.shop_jog = ShopJogPanel()
+        self.shop_controls.set_machine(machine, self.machine_cmd)
+        self.shop_jog.set_machine(machine, self.machine_cmd)
+        self.shop_controls.jog_speed = int(machine.jog_speed)
+        self.shop_jog.jog_speed = int(machine.jog_speed)
+        self.shop_controls.jog_distance = self.jog_widget.jog_distance
+        self.shop_jog.jog_distance = self.jog_widget.jog_distance
+
+        self.shop_controls.speed_changed.connect(self._on_shop_speed_changed)
+        self.shop_controls.distance_changed.connect(
+            self._on_shop_distance_changed
+        )
+        self.shop_jog.move_requested.connect(self._on_shop_move_requested)
+        self.shop_jog.move_to_zero_requested.connect(
+            self._on_shop_move_to_zero
+        )
+
+    def _sync_shop_mode(self):
+        """Swaps the Controls tab between the regular preferences
+        group + jog widget and the shop-mode panels."""
+        if self.shop_controls is None or self.shop_jog is None:
+            return
+        if get_context().config.shop_mode:
+            self._controls_widget.set_children(
+                self.shop_controls, self.shop_jog
+            )
+        else:
+            self._controls_widget.set_children(
+                self.wcs_group, self._jog_laser_box
+            )
+
+    def _on_shop_speed_changed(self, sender, speed):
+        if not self.machine:
+            return
+        self.machine.set_jog_speed(speed)
+        self.jog_widget.jog_speed = speed
+        self.speed_row.set_value_in_base_units(speed)
+        if self.shop_jog is not None:
+            self.shop_jog.jog_speed = speed
+
+    def _on_shop_distance_changed(self, sender, distance):
+        self.jog_widget.jog_distance = distance
+        self.distance_row.set_value_in_base_units(distance)
+        if self.shop_jog is not None:
+            self.shop_jog.jog_distance = distance
+
+    def _on_shop_move_requested(self, sender, position):
+        self.move_to_popover.move_to_position(position)
+
+    def _on_shop_move_to_zero(self, sender):
+        self.move_to_popover.move_to_wcs_zero()
 
     def _update_wcs_ui(self):
         if not self.machine:
@@ -730,7 +911,7 @@ class BottomPanel(Gtk.Box):
             offset_parts.append(f"Z: {off_z:.2f}")
         self.wcs_row.set_subtitle("   ".join(offset_parts))
 
-        is_dummy = isinstance(self.machine.driver, NoDeviceDriver)
+        is_dummy = self.machine.is_driverless
         is_connected = self.machine.is_connected()
         is_active = is_connected or is_dummy
 

@@ -7,6 +7,10 @@ override_dh_auto_build:
 	python3 -m pip show setuptools
 	pip3 --version
 	ls -l
+	# Compile the gettext catalogs; the .mo files are not tracked in git.
+	set -e; for po in $$(find rayforge -path '*/LC_MESSAGES/*.po'); do \
+		msgfmt "$$po" -o "$${po%.po}.mo"; \
+	done
 	export VERSION="$$(dpkg-parsechangelog -S Version | sed -e 's/-[0-9~a-z].*$$//' -e 's/~alpha/a/g' -e 's/~beta/b/g' -e 's/~rc/rc/g' -e 's/~dev/.dev/g' -e 's/~/\+/g')"; \
 	\
 	echo "Patching pyproject.toml with static version: $$VERSION"; \

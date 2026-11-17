@@ -349,6 +349,35 @@ def test_added_to_preferences_group(ui_context_initializer):
 
 
 @pytest.mark.ui
+def test_default_step_is_one_in_mm(ui_context_initializer):
+    config = ui_context_initializer.config
+    config.unit_preferences["length"] = "mm"
+    row = LengthSpinRow("Len")
+    adj = row.get_spin_button().get_adjustment()
+    assert adj.get_step_increment() == pytest.approx(1.0)
+
+
+@pytest.mark.ui
+def test_step_follows_display_unit(ui_context_initializer):
+    config = ui_context_initializer.config
+    config.unit_preferences["length"] = "mm"
+    row = LengthSpinRow("Len", step_in_base=0.1)
+    adj = row.get_spin_button().get_adjustment()
+    assert adj.get_step_increment() == pytest.approx(0.1)
+    config.set_unit_preference("length", "in")
+    assert adj.get_step_increment() == pytest.approx(0.1 / 25.4)
+
+
+@pytest.mark.ui
+def test_step_increment_override(ui_context_initializer):
+    config = ui_context_initializer.config
+    config.unit_preferences["length"] = "mm"
+    row = LengthSpinRow("Len", step_in_base=0.5)
+    adj = row.get_spin_button().get_adjustment()
+    assert adj.get_step_increment() == pytest.approx(0.5)
+
+
+@pytest.mark.ui
 def test_quantity_subclasses(ui_context_initializer):
     speed = SpeedSpinRow("Speed", value_in_base=1000.0)
     accel = AccelerationSpinRow("Accel", value_in_base=500.0)

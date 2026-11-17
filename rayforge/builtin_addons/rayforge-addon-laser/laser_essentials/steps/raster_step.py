@@ -66,6 +66,7 @@ class EngraveStep(LaserStep):
     line_interval_mm: float | None
     sample_interval_mm: float | None
     dot_width_correction_mm: float | None
+    dither_min_feature_px: int | None
 
     @classmethod
     def recipe_varset(cls) -> VarSet:
@@ -142,6 +143,29 @@ class EngraveStep(LaserStep):
                         "Alternate the dither direction on every row to "
                         "avoid directional artifacts"
                     ),
+                    default=True,
+                    visible_when=is_error_diffusion,
+                ),
+                IntVar(
+                    key="dither_min_feature_px",
+                    label=_("Min Feature Size"),
+                    description=_(
+                        "Smallest dot width in scan-line pixels. The "
+                        "auto value matches the laser spot size; "
+                        "smaller values allow finer but fainter dots"
+                    ),
+                    default=None,
+                    min_val=1,
+                    max_val=64,
+                    visible_when=is_error_diffusion,
+                ),
+                BoolVar(
+                    key="dither_linear",
+                    label=_("Linear Light"),
+                    description=_(
+                        "Diffuse in linear light instead of on the raw "
+                        "sRGB values, which engraves mid-tones darker"
+                    ),
                     default=False,
                     visible_when=is_error_diffusion,
                 ),
@@ -193,18 +217,18 @@ class EngraveStep(LaserStep):
                     default=0.0,
                     min_val=0.0,
                     digits=3,
+                    step=0.1,
                 ),
                 LengthVar(
                     key="sample_interval_mm",
                     label=_("Sample Interval"),
                     description=_(
-                        "Distance between power samples along scan "
-                        "line. Lower values improve accuracy, but "
-                        "increase output size"
+                        "Distance between samples along scan line. "
+                        "Lower values improve accuracy, but increase "
+                        "output size"
                     ),
                     default=0.0,
                     min_val=0.0,
-                    visible_when=is_power,
                     digits=3,
                 ),
                 LengthVar(
@@ -347,7 +371,9 @@ class EngraveStep(LaserStep):
         self.z_step_down = 0.0
         self.angle_increment = 0.0
         self.dither_algorithm = None
-        self.dither_serpentine = False
+        self.dither_serpentine = True
+        self.dither_min_feature_px = None
+        self.dither_linear = False
         self.halftone_cell_mm = DEFAULT_HALFTONE_CELL_MM
         self.halftone_angle = DEFAULT_HALFTONE_ANGLE
         self.bidir_x_offset_mm = 0.0
@@ -471,7 +497,11 @@ class EngraveStep(LaserStep):
         kwargs = self.get_assembler_kwargs(machine, workpiece)
         depth_mode = DepthMode[self.depth_mode]
         line_interval = kwargs["line_interval_mm"] or spot_y
-        sample_interval = kwargs["sample_interval_mm"] or spot_x / 2.0
+        sample_interval = kwargs["sample_interval_mm"] or (
+            auto_sample_interval_mm(
+                self.depth_mode, line_interval, spot_x, spot_y
+            )
+        )
         dot_width = (
             kwargs["dot_width_correction_mm"]
             if kwargs["dot_width_correction_mm"] is not None
@@ -533,6 +563,8 @@ class EngraveStep(LaserStep):
                     else None
                 ),
                 "dither_serpentine": self.dither_serpentine,
+                "dither_min_feature_px": self.dither_min_feature_px,
+                "dither_linear": self.dither_linear,
                 "halftone_cell_mm": self.halftone_cell_mm,
                 "halftone_angle": self.halftone_angle,
             }
@@ -575,6 +607,8 @@ class EngraveStep(LaserStep):
             self.dither_algorithm.value if self.dither_algorithm else None
         )
         result["dither_serpentine"] = self.dither_serpentine
+        result["dither_min_feature_px"] = self.dither_min_feature_px
+        result["dither_linear"] = self.dither_linear
         result["halftone_cell_mm"] = self.halftone_cell_mm
         result["halftone_angle"] = self.halftone_angle
         result["bidir_x_offset_mm"] = self.bidir_x_offset_mm
@@ -670,6 +704,8 @@ class EngraveStep(LaserStep):
             except ValueError:
                 step.dither_algorithm = DitherAlgorithm.FLOYD_STEINBERG
         step.dither_serpentine = data.get("dither_serpentine", False)
+        step.dither_min_feature_px = data.get("dither_min_feature_px", None)
+        step.dither_linear = bool(data.get("dither_linear", False))
         step.halftone_cell_mm = data.get(
             "halftone_cell_mm", DEFAULT_HALFTONE_CELL_MM
         )
@@ -705,6 +741,8 @@ class EngraveStep(LaserStep):
                 "angle_increment",
                 "dither_algorithm",
                 "dither_serpentine",
+                "dither_min_feature_px",
+                "dither_linear",
                 "halftone_cell_mm",
                 "halftone_angle",
                 "bidir_x_offset_mm",
@@ -786,6 +824,26 @@ class EngraveStep(LaserStep):
         return step
 
 
+def auto_sample_interval_mm(
+    depth_mode: str,
+    line_interval_mm: float | None,
+    spot_x: float,
+    spot_y: float,
+) -> float:
+    """The effective sample interval when the setting is unset.
+
+    Dither and constant-power renders use square cells, so the sample
+    pitch follows the line spacing; power-modulated modes sample
+    finer than the spot to ramp power smoothly along the line.
+    """
+    if depth_mode in (
+        DepthMode.DITHER.name,
+        DepthMode.CONSTANT_POWER.name,
+    ):
+        return line_interval_mm or spot_y
+    return spot_x / 2.0
+
+
 def _build_raster_part(
     step: EngraveStep,
     machine: Machine,
@@ -806,7 +864,12 @@ def _build_raster_part(
         return Part(size_mm=size), None
 
     spot_x, spot_y = LaserHead.get_spot_size(step.get_selected_laser(machine))
-    px_per_mm_x = 1.0 / (step.sample_interval_mm or spot_x / 2.0)
+    px_per_mm_x = 1.0 / (
+        step.sample_interval_mm
+        or auto_sample_interval_mm(
+            step.depth_mode, step.line_interval_mm, spot_x, spot_y
+        )
+    )
     px_per_mm_y = 1.0 / spot_y
 
     target_w = max(1, int(size[0] * px_per_mm_x))
@@ -850,6 +913,8 @@ def _build_raster_part(
         pixels_per_mm_x=px_per_mm_x,
         pixels_per_mm_y=px_per_mm_y,
         dither_serpentine=step.dither_serpentine,
+        dither_min_feature_px=step.dither_min_feature_px,
+        dither_linear=step.dither_linear,
         halftone_cell_mm=step.halftone_cell_mm,
         halftone_angle=step.halftone_angle,
     )

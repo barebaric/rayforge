@@ -226,7 +226,7 @@ Rayforge zeigt verschiedene Verbindungsstatus:
 1. **Die Maschine konfigurieren:**
    - Einstellungen → Maschine öffnen
    - Ein Maschinenprofil auswählen oder erstellen
-   - Den korrekten Treiber wählen (GRBL Serial)
+   - Den korrekten Treiber wählen (GRBL (USB/Serial))
    - Den seriellen Port auswählen
    - Baudrate einstellen (typischerweise 115200)
 

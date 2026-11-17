@@ -302,6 +302,8 @@ def preprocess_raster_image(
     pixels_per_mm_x: float = 1.0,
     pixels_per_mm_y: float | None = None,
     dither_serpentine: bool = False,
+    dither_min_feature_px: int | None = None,
+    dither_linear: bool = False,
     halftone_cell_mm: float = DEFAULT_HALFTONE_CELL_MM,
     halftone_angle: float = DEFAULT_HALFTONE_ANGLE,
 ) -> tuple[np.ndarray | None, np.ndarray | None]:
@@ -329,14 +331,19 @@ def preprocess_raster_image(
             ``CONSTANT_POWER`` mode.
         dither_algorithm: Dithering algorithm for ``DITHER`` mode.
         laser_spot_x_mm: Laser spot X diameter in mm, used to
-            compute minimum feature size for dithering.
+            compute the automatic minimum feature size for dithering.
         pixels_per_mm_x: Rendered pixels-per-mm in X, used with
-            ``laser_spot_x_mm`` for dither minimum feature size.
+            ``laser_spot_x_mm`` for the dither minimum feature size.
         pixels_per_mm_y: Rendered pixels-per-mm in Y; defaults to
             ``pixels_per_mm_x``. Screens use both to keep their cells
             square in millimetres.
         dither_serpentine: Alternate the scan direction per row for
             the error-diffusion algorithms.
+        dither_min_feature_px: Minimum feature size in scan-line
+            pixels for the error-diffusion algorithms. ``None``
+            derives it from the laser spot size.
+        dither_linear: Diffuse in linear light instead of on the raw
+            sRGB-encoded values (error-diffusion algorithms).
         halftone_cell_mm: Dot spacing of the halftone screen in mm.
         halftone_angle: Halftone screen angle in degrees.
 
@@ -359,9 +366,14 @@ def preprocess_raster_image(
         return gray_image, alpha
 
     if mode == DepthMode.DITHER:
-        min_feature_px = max(
+        auto_feature_px = max(
             1,
             round(laser_spot_x_mm * pixels_per_mm_x),
+        )
+        min_feature_px = (
+            auto_feature_px
+            if dither_min_feature_px is None
+            else dither_min_feature_px
         )
         algo = dither_algorithm or DitherAlgorithm.FLOYD_STEINBERG
         gray_image, alpha = surface_to_grayscale(surface)
@@ -377,6 +389,7 @@ def preprocess_raster_image(
             gray_image,
             algo,
             min_feature_px=min_feature_px,
+            linear=dither_linear,
             serpentine=dither_serpentine,
             halftone_cell_mm=halftone_cell_mm,
             halftone_angle=halftone_angle,

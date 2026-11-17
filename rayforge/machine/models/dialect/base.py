@@ -70,6 +70,7 @@ class GcodeDialect:
     clear_alarm: str
     set_wcs_offset: str
     probe_cycle: str
+    move_to_park: str = ""
     dwell: str = "G4 P{seconds:.3f}"
 
     spindle_on_cw: str = "M3 S{rpm}"
@@ -179,6 +180,7 @@ class GcodeDialect:
             ("home_all", _("Home All")),
             ("home_axis", _("Home Axis")),
             ("move_to", _("Move To")),
+            ("move_to_park", _("Move To Park")),
             ("jog", _("Jog")),
             ("clear_alarm", _("Clear Alarm")),
             ("set_wcs_offset", _("Set WCS Offset")),

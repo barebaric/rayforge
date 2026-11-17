@@ -13,6 +13,7 @@ from .mesh_correction_transformer import MeshCorrectionTransformer
 from .multipass_transformer import MultiPassTransformer
 from .optimize_transformer import Optimize
 from .overscan_transformer import OverscanTransformer
+from .perforation_transformer import PerforationTransformer
 from .smooth_transformer import Smooth
 from .tabs_transformer import TabOpsTransformer
 
@@ -25,6 +26,7 @@ __all__ = [
     "MultiPassTransformer",
     "Optimize",
     "OverscanTransformer",
+    "PerforationTransformer",
     "Smooth",
     "TabOpsTransformer",
 ]

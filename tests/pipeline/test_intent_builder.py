@@ -31,6 +31,8 @@ from raygeo.ops.convert import Encoder, GcodeSpec, PythonEncoder
 from raygeo.ops.material.spec import CylinderStock, MaterialFoldSpec
 from raygeo.ops.part import Part
 from raygeo.ops.transform.bidir_scan_offset import BidirScanOffsetSpec
+from raygeo.ops.transform.tabs import TabsSpec
+from raygeo.ops.types import CommandType
 from raygeo.pipeline.execute import execute_stages
 from raygeo.pipeline.request import NodeRequest
 from raygeo.pipeline.stage import StageSpec
@@ -42,6 +44,7 @@ from rayforge.core.layer import Layer
 from rayforge.core.step import Step
 from rayforge.core.stock import StockItem
 from rayforge.core.stock_asset import StockAsset
+from rayforge.core.tab import Tab
 from rayforge.core.workpiece import WorkPiece
 from rayforge.machine.driver.dummy import NoDeviceDriver
 from rayforge.machine.models.dialect.grbl import GRBL_DIALECT
@@ -552,6 +555,124 @@ def test_compute_token_changes_on_machine_arc_tolerance(
     before_t = next(n.version_token for n in before if n.key == wpk)
     after_t = next(n.version_token for n in after if n.key == wpk)
     assert before_t != after_t
+
+
+def _square_workpiece_with_tab(name: str = "wp") -> WorkPiece:
+    geo = Geometry()
+    geo.move_to(0.0, 0.0)
+    geo.line_to(1.0, 0.0)
+    geo.line_to(1.0, 1.0)
+    geo.line_to(0.0, 1.0)
+    geo.line_to(0.0, 0.0)
+    wp = WorkPiece(name=name)
+    wp._edited_boundaries = geo
+    wp.set_size(40.0, 20.0)
+    wp.tabs = [Tab(width=6.0, segment_index=1, pos=0.5)]
+    return wp
+
+
+def _tabs_spec(nodes, wp: WorkPiece, step: Step) -> TabsSpec:
+    wp_node = next(
+        n for n in nodes if n.key == workpiece_key(wp.uid, step.uid)
+    )
+    return next(
+        t for t in wp_node.stage.params.transformers if isinstance(t, TabsSpec)
+    )
+
+
+def test_tab_power_reaches_tabs_spec(
+    contour_step_class, test_machine_and_config
+):
+    """The step's power and tab_power must be forwarded to the
+    TabsSpec, so tabs are cut at reduced power instead of being
+    skipped entirely (issue #667)."""
+    machine, context = test_machine_and_config
+    step = contour_step_class.create(context, name="cut")
+    step.set_power(0.8)
+    step.set_tab_power(0.7)
+    wp = _square_workpiece_with_tab()
+    doc = _make_doc(step, wp)
+
+    nodes = IntentBuilder(machine=machine).build(doc)
+    spec = _tabs_spec(nodes, wp, step)
+
+    assert spec.tab_power == 0.7
+    assert spec.original_power == 0.8
+    assert len(spec.clips) == 1
+    clip_x, clip_y, clip_width = spec.clips[0]
+    assert clip_x == pytest.approx(20.0)
+    assert clip_y == pytest.approx(0.0)
+    assert clip_width == 6.0
+
+
+def test_zero_tab_power_reaches_tabs_spec(
+    contour_step_class, test_machine_and_config
+):
+    """With tab power at 0% the TabsSpec still carries the values, so
+    the tab falls back to the gap (skip) mode."""
+    machine, context = test_machine_and_config
+    step = contour_step_class.create(context, name="cut")
+    step.set_power(0.8)
+    wp = _square_workpiece_with_tab()
+    doc = _make_doc(step, wp)
+
+    nodes = IntentBuilder(machine=machine).build(doc)
+    spec = _tabs_spec(nodes, wp, step)
+
+    assert spec.tab_power == 0.0
+    assert spec.original_power == 0.8
+
+
+def test_tab_power_change_invalidates_compute_token(
+    contour_step_class, test_machine_and_config
+):
+    """Changing the step's tab_power must change the compute token so
+    the cached toolpath is regenerated."""
+    machine, context = test_machine_and_config
+    step = contour_step_class.create(context, name="cut")
+    wp = _square_workpiece_with_tab()
+    doc = _make_doc(step, wp)
+    wpk = workpiece_key(wp.uid, step.uid)
+
+    before = IntentBuilder(machine=machine).build(doc)
+    before_t = next(n.version_token for n in before if n.key == wpk)
+
+    step.set_tab_power(0.5)
+    after = IntentBuilder(machine=machine).build(doc)
+    after_t = next(n.version_token for n in after if n.key == wpk)
+    assert before_t != after_t
+
+
+def test_tab_power_applied_to_ops_end_to_end(
+    contour_step_class, test_machine_and_config
+):
+    """Full pipeline: with tab power above zero the ops keep cutting
+    through the tab at reduced power instead of skipping it."""
+    machine, context = test_machine_and_config
+    step = contour_step_class.create(context, name="cut")
+    step.set_power(1.0)
+    step.set_tab_power(0.7)
+    wp = _square_workpiece_with_tab()
+    doc = _make_doc(step, wp)
+
+    nodes = IntentBuilder(machine=machine, generation_id=1).build(doc)
+    completed = []
+    execute_stages(nodes, on_completed=completed.append)
+
+    ops_node = next(
+        c
+        for c in completed
+        if c.key == workpiece_key(wp.uid, step.uid)
+        and not c.error
+        and c.output is not None
+    )
+    ops = ops_node.output.ops
+    powers = [
+        ops.power(i)
+        for i in range(ops.len())
+        if ops.command_type(i) == CommandType.SET_POWER
+    ]
+    assert 0.7 in powers, powers
 
 
 def test_compute_token_changes_on_laser_power_change(

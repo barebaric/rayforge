@@ -166,8 +166,9 @@ SVG (Scalable Vector Graphics) is the **recommended format** for vector designs.
 :::tip[Automate Step Assignment]
 You can configure
 [color rules](../application-settings/color-rules.md) to automatically assign step types (Contour,
-Engrave, etc.) based on the colors in your SVG. When rules exist, the import dialog defaults to
-grouping shapes by color so the rules take effect.
+Engrave, etc.) based on the colors in your SVG. Until you pick a layer source yourself, the import
+dialog defaults to grouping shapes by color when rules exist, so the rules take effect; the layer
+source you choose is remembered for future imports.
 :::
 <!-- prettier-ignore-end -->
 
@@ -230,6 +231,13 @@ Disable "Use Original Vectors" to use this method.
 - SVGs with effects, filters, gradients
 - When direct import produces errors
 
+### Selecting Layers and Ungrouped Geometry
+
+With **Use Original Vectors**, the **Select Layers** list shows one entry per named SVG layer (or
+per color when grouping by color). Shapes that lie outside any named layer are offered as an extra
+**Ungrouped** layer, enabled by default, so they are imported and cut like any other layer.
+Deselecting a layer excludes its geometry from both the preview and the generated toolpaths.
+
 ### Live Preview
 
 The import dialog shows a live preview of how your SVG will be imported:
@@ -289,6 +297,21 @@ Rayforge supports standard DXF formats:
 - **R2000+** - Generally works, but R12 is safer
 
 **Tip:** Export as R12/LT2 DXF for maximum compatibility.
+
+### Z Flattening
+
+Some CAD exporters write DXF files with geometry at different Z heights — for example a 3D model
+exported with the outlines of both the top and the bottom face of a part. Rayforge is a 2D program:
+on a machine with a Z axis, such Z values become real Z moves in the job, and the head can plunge
+below the material surface and crash.
+
+When a DXF file contains geometry at more than one Z height, the import dialog therefore offers a
+**Flatten Z Coordinates** option (under "Import Mode"). It is enabled by default and projects all
+imported geometry onto the Z=0 plane. You can turn it off to keep the original Z heights — the
+dialog then warns you that the toolpath will move in Z, which is only safe if you know your file
+needs it (for example to re-create a specific focus height per shape).
+
+For flat drawings the option is not shown; there is nothing to flatten.
 
 ### DXF Import Tips
 

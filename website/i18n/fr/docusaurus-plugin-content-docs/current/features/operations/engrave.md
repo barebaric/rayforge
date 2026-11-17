@@ -249,8 +249,17 @@ ressemblant à l'impression demi-teinte traditionnelle.
 **Stucki, Jarvis, Sierra, Burkes et Atkinson** sont des algorithmes de diffusion d'erreur comme
 Floyd-Steinberg qui répartissent l'erreur sur un voisinage plus large, ce qui donne un grain plus
 régulier dans les zones uniformes comme les tons chair. Atkinson ne diffuse qu'une partie de
-l'erreur, ce qui augmente le contraste. Active **Serpentin** pour alterner le sens de balayage à
-chaque ligne et éviter les stries directionnelles.
+l'erreur, ce qui augmente le contraste. **Serpentin** (activé par défaut) alterne le sens de
+balayage à chaque ligne et évite les stries directionnelles.
+
+**Taille de feature minimale** regroupe chaque ligne de balayage en cellules avant la diffusion,
+afin qu'aucun point ne soit plus petit que le nombre de pixels indiqué. La valeur automatique
+correspond à la taille du spot laser, ce qui garde chaque point à pleine intensité ; des valeurs
+plus petites permettent des points plus fins mais plus faibles.
+
+**Lumière linéaire** diffuse en lumière linéaire plutôt que sur les valeurs sRGB brutes. Diffuser
+sur les valeurs sRGB conserve une couverture de points fidèle au ton que l'image montre à l'écran ;
+la lumière linéaire grave les tons moyens nettement plus sombres.
 
 **Papier journal** et **Demi-teinte** regroupent les pixels en points. Demi-teinte trace des points
 ronds sur une grille définie par **Taille de cellule de demi-teinte** (la distance entre les centres
@@ -310,6 +319,21 @@ Pour les images, l'intervalle de ligne devrait correspondre ou dépasser la rés
 votre image est de 10 pixels/mm (254 DPI), utilisez un intervalle de ligne de 0.1mm ou moins.
 :::
 <!-- prettier-ignore-end -->
+
+#### Intervalle d'Échantillonnage
+
+**Intervalle d'échantillonnage (mm) :**
+
+- Distance entre les échantillons le long de chaque ligne de balayage, dans tous les modes trame
+- En tramage il définit la longueur de chaque point ; en gravure à puissance modulée, la fréquence
+  des changements de puissance le long de la ligne
+- Plus petit = plus de détails, fichiers de sortie plus volumineux
+- La valeur automatique donne des points carrés en tramage (elle suit l'intervalle de ligne) et vaut
+  la moitié de la largeur du spot laser dans les modes à puissance modulée
+
+**Recommandé :** garde la valeur automatique. Un intervalle d'échantillonnage bien plus grand que
+l'intervalle de ligne transforme chaque point en tiret long, visible comme texture dans les
+dégradés.
 
 #### Direction de Balayage
 
@@ -464,7 +488,7 @@ Voir [Overscan](../overscan.md) pour plus de détails.
 
 **Banding (rayures claires/foncées) :**
 
-- Calibrez le [Décalage de Balayage Bidirectionnel](#décalage-de-balayage-bidirectionnel)
+- Calibrez le [Décalage de Balayage Bidirectionnel](#bidirectional-scan-offset)
 - Vérifiez la tension des courroies
 - Réduisez la vitesse
 - Essayez un angle de balayage différent

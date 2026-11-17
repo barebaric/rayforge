@@ -10,10 +10,18 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
 from gi.repository import Adw, Gtk
-from laser_essentials.steps import EngraveStep, MaterialTestStep
+from laser_essentials.steps import (
+    EngraveStep,
+    MaterialTestStep,
+    OffsetFillStep,
+)
+from laser_essentials.widgets import ASSEMBLER_WIDGETS
 from laser_essentials.widgets.contour_page import ContourStepSettingsPage
 from laser_essentials.widgets.material_test_grid_page import (
     MaterialTestGridSettingsPage,
+)
+from laser_essentials.widgets.offset_fill_page import (
+    OffsetFillStepSettingsPage,
 )
 from laser_essentials.widgets.raster_page import RasterSettingsPage
 from laser_essentials.widgets.raster_power_widget import RasterPowerWidget
@@ -180,204 +188,15 @@ def test_material_test_laser_page_shows_travel_speed_with_support(
 
 
 @pytest.mark.ui
-def test_material_test_tuple_rows_round_trip(
+def test_material_test_page_leaves_the_grid_to_the_test_settings(
     editor, laser_machine, ui_context
 ):
-    """Tuple rows (ranges, grid dimensions) read and write tuples."""
-    step = MaterialTestStep()
-    page = MaterialTestGridSettingsPage(editor, step)
-
-    for key in ("power_range", "speed_range", "passes_range", "offset_range"):
-        row = _row(page, key)
-        assert row is not None, f"{key} row missing"
-    _row(page, "grid_dimensions")
-
-    # Programmatic push lands in the widgets.
-    page.params_widget.set_values(
-        {
-            "power_range": (20.0, 80.0),
-            "speed_range": (200.0, 900.0),
-        }
-    )
-    values = page.params_widget.get_values()
-    assert values["power_range"] == (20.0, 80.0)
-    assert values["speed_range"] == (200.0, 900.0)
-
-
-@pytest.mark.ui
-def test_material_test_speed_rows_are_unit_aware(editor, ui_context):
-    """Material-test speed rows adapt to the user's unit preference."""
-    step = MaterialTestStep()
-    page = MaterialTestGridSettingsPage(editor, step)
-
-    label = cast(SpeedSpinRow, _row(page, "label_speed"))
-    fixed = cast(SpeedSpinRow, _row(page, "fixed_speed"))
-    speed = cast(SpeedSpinRow, _row(page, "speed_range"))
-    assert isinstance(label, SpeedSpinRow)
-    assert isinstance(fixed, SpeedSpinRow)
-    assert isinstance(speed, SpeedSpinRow)
-
-    # mm/min -> mm/s: divide by 60 (mm/s precision is one digit).
-    ui_context.config.set_unit_preference("speed", "mm/s")
-    assert label.get_spin_button().get_text() == "16.7"
-    assert fixed.get_spin_button().get_text() == "16.7"
-    assert speed.get_spin_button().get_text() == "1.7"
-
-
-@pytest.mark.ui
-def test_material_test_offset_rows_are_unit_aware(editor, ui_context):
-    """Material-test offset rows adapt to the user's unit preference."""
-    step = MaterialTestStep()
-    step.grid_mode = "Speed vs Offset"
-    page = MaterialTestGridSettingsPage(editor, step)
-
-    offset = cast(LengthSpinRow, _row(page, "offset_range"))
-    assert isinstance(offset, LengthSpinRow)
-
-    # -0.5 mm -> -0.0197 in, rounded to three digits.
-    ui_context.config.set_unit_preference("length", "in")
-    assert offset.get_spin_button().get_text() == "-0.020"
-
-
-@pytest.mark.ui
-def test_material_test_tuple_labels_survive_config_change(editor, ui_context):
-    """A unit-preference change must not clobber tuple row labels.
-
-    Rebuilding the varsets (as a config change does) must keep the
-    component titles, not replace the first row's title with the var's
-    own label.
-    """
-    step = MaterialTestStep()
-    page = MaterialTestGridSettingsPage(editor, step)
-
-    primary = _row(page, "power_range")
-    adapter = page.params_widget.adapter_for("power_range")
-    assert adapter is not None
-    extra = adapter.extra_rows()[0]
-    assert primary.get_title() == "Minimum Power (%)"
-    assert extra.get_title() == "Maximum Power (%)"
-
-    # Changing the unit preference fires config.changed -> _on_config_changed
-    # -> populate -> adapter.update_from_var.
-    ui_context.config.set_unit_preference("speed", "mm/s")
-
-    assert primary.get_title() == "Minimum Power (%)"
-    assert extra.get_title() == "Maximum Power (%)"
-
-
-@pytest.mark.ui
-def test_material_test_grid_mode_visibility(editor, laser_machine, ui_context):
-    """Parameters rows follow the grid-mode visible_when predicates."""
-    step = MaterialTestStep()
-    page = MaterialTestGridSettingsPage(editor, step)
-
-    power = _row(page, "power_range")
-    speed = _row(page, "speed_range")
-    passes = _row(page, "passes_range")
-    offset = _row(page, "offset_range")
-    fixed_speed = _row(page, "fixed_speed")
-    fixed_power = _row(page, "fixed_power")
-
-    assert power.get_visible() is True  # Power vs Speed default
-    assert speed.get_visible() is True
-    assert passes.get_visible() is False
-    assert offset.get_visible() is False
-
-    step.grid_mode = "Speed vs Offset"
-    step.updated.send(step)
-    assert power.get_visible() is False
-    assert speed.get_visible() is True
-    assert passes.get_visible() is False
-    assert offset.get_visible() is True
-    assert fixed_speed.get_visible() is False
-    assert fixed_power.get_visible() is True
-
-
-@pytest.mark.ui
-def test_material_test_labels_sensitivity(editor, laser_machine, ui_context):
-    """Label rows are insensitive while labels are disabled."""
-    step = MaterialTestStep()
-    page = MaterialTestGridSettingsPage(editor, step)
-
-    label_power = _row(page, "label_power_percent")
-    label_speed = _row(page, "label_speed")
-    assert label_power.get_sensitive() is True
-
-    step.include_labels = False
-    step.updated.send(step)
-    assert label_power.get_sensitive() is False
-    assert label_speed.get_sensitive() is False
-
-
-@pytest.mark.ui
-def test_material_test_preset_applies_values(
-    editor, laser_machine, ui_context
-):
-    """Selecting a preset commits speed/power ranges and test type."""
-    step = MaterialTestStep()
-    page = MaterialTestGridSettingsPage(editor, step)
-    page.preset_row.set_selected(2)  # Diode Cut
-
-    assert step.test_type == "Cut"
-    assert step.power_range == (50.0, 100.0)
-    assert step.speed_range[0] >= 100.0
-
-
-@pytest.mark.ui
-def test_material_test_speed_bounds_follow_machine(
-    editor, laser_machine, ui_context
-):
-    """Speed range rows cap at the live machine's limit, not the
-    step's creation-time snapshot (#439)."""
-    step_cls = step_registry.get("MaterialTestStep")
-    assert step_cls is not None
-    step = step_cls.create(ui_context)
-    step.max_cut_speed = 1000  # stale snapshot from an older machine
-    page = MaterialTestGridSettingsPage(editor, step)
-
-    adapter = page.params_widget.adapter_for("speed_range")
-    assert adapter is not None
-    max_row = cast(SpeedSpinRow, adapter.extra_rows()[0])
-    assert max_row._upper == pytest.approx(5000.0)
-
-    # Raising the machine's limit while the page is open lifts the cap.
-    laser_machine.set_max_cut_speed(8000)
-    adapter = page.params_widget.adapter_for("speed_range")
-    assert adapter is not None
-    max_row = cast(SpeedSpinRow, adapter.extra_rows()[0])
-    assert max_row._upper == pytest.approx(8000.0)
-
-
-@pytest.mark.ui
-def test_material_test_preset_clamps_to_machine_limit(
-    editor, laser_machine, ui_context
-):
-    """Preset speed ranges clamp to the live machine's limit, not a
-    stale step snapshot."""
-    step = MaterialTestStep()
-    step.max_cut_speed = 1000  # stale snapshot from an older machine
-    page = MaterialTestGridSettingsPage(editor, step)
-    page.preset_row.set_selected(1)  # Diode Engrave: (1000, 10000)
-
-    assert step.speed_range == (1000.0, 5000.0)
-
-
-@pytest.mark.ui
-def test_material_test_speed_vs_offset_defaults(
-    editor, laser_machine, ui_context
-):
-    """Switching to Speed vs Offset applies engrave defaults."""
-    step = MaterialTestStep()
-    page = MaterialTestGridSettingsPage(editor, step)
-
-    mode_adapter = page.grid_widget.adapter_for("grid_mode")
-    assert mode_adapter is not None
-    mode_adapter.set_value("Speed vs Offset")
-    page._sync_grid_context()
-    page._apply_speed_vs_offset_defaults()
-
-    assert step.test_type == "Engrave"
-    assert step.line_interval_mm == 0.5
+    """The grid is set in the Test Settings panel, so the step page
+    has no grid, label or range rows."""
+    page = MaterialTestGridSettingsPage(editor, MaterialTestStep())
+    for key in ("grid_mode", "grid_dimensions", "speed_range"):
+        with pytest.raises(AssertionError):
+            _row(page, key)
 
 
 @pytest.mark.ui
@@ -454,11 +273,15 @@ def test_raster_page_mode_visibility(editor, laser_machine, ui_context):
     step.depth_mode = "CONSTANT_POWER"
     step.updated.send(step)
     assert threshold.get_visible() is True
-    assert sample_interval.get_visible() is False
+    assert sample_interval.get_visible() is True
 
     step.depth_mode = "POWER_MODULATION"
     step.updated.send(step)
     assert threshold.get_visible() is False
+    assert sample_interval.get_visible() is True
+
+    step.depth_mode = "DITHER"
+    step.updated.send(step)
     assert sample_interval.get_visible() is True
 
 
@@ -466,8 +289,8 @@ def test_raster_page_mode_visibility(editor, laser_machine, ui_context):
 def test_raster_page_dither_option_visibility(
     editor, laser_machine, ui_context
 ):
-    """Serpentine follows the error-diffusion algorithms, the halftone
-    rows only show for Halftone."""
+    """Serpentine and the new dither rows follow the error-diffusion
+    algorithms, the halftone rows only show for Halftone."""
     step_cls = step_registry.get("EngraveStep")
     assert step_cls is not None
     step = cast(EngraveStep, step_cls.create(ui_context))
@@ -475,22 +298,30 @@ def test_raster_page_dither_option_visibility(
     page = RasterSettingsPage(editor, step)
 
     serpentine = _row(page, "dither_serpentine")
+    min_feature = _row(page, "dither_min_feature_px")
+    linear = _row(page, "dither_linear")
     cell = _row(page, "halftone_cell_mm")
     angle = _row(page, "halftone_angle")
 
     step.set_dither_algorithm("STUCKI")
     assert serpentine.get_visible() is True
+    assert min_feature.get_visible() is True
+    assert linear.get_visible() is True
     assert cell.get_visible() is False
     assert angle.get_visible() is False
 
     step.set_dither_algorithm("HALFTONE")
     assert serpentine.get_visible() is False
+    assert min_feature.get_visible() is False
+    assert linear.get_visible() is False
     assert cell.get_visible() is True
     assert angle.get_visible() is True
 
     step.depth_mode = "POWER_MODULATION"
     step.updated.send(step)
     assert serpentine.get_visible() is False
+    assert min_feature.get_visible() is False
+    assert linear.get_visible() is False
     assert cell.get_visible() is False
 
 
@@ -802,3 +633,13 @@ def test_dialog_initial_laser_page(editor, laser_machine, ui_context):
     assert dialog._extra_buttons[0].get_active() is True
     assert dialog.btn_step_settings.get_active() is False
     dialog.close()
+
+
+@pytest.mark.ui
+def test_offset_fill_page_shows_fill_rows(editor, laser_machine, ui_context):
+    assert ASSEMBLER_WIDGETS["offset_fill"] is OffsetFillStepSettingsPage
+    step = OffsetFillStep.create(ui_context)
+    page = OffsetFillStepSettingsPage(editor, step)
+    for key in ("line_interval_mm", "offset_mm", "fill_direction"):
+        _row(page, key)
+    assert isinstance(_row(page, "line_interval_mm"), LengthSpinRow)

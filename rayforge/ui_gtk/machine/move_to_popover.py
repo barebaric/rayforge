@@ -6,7 +6,6 @@ from gi.repository import Adw, Gtk
 from raygeo.ops.axis import Axis
 
 from ...machine.cmd import MachineCmd
-from ...machine.driver.dummy import NoDeviceDriver
 from ...machine.models.machine import Machine
 from ..icons import get_icon
 from ..shared.pref_rows.length_spin_row import LengthSpinRow
@@ -203,7 +202,7 @@ class MoveToPopover(Gtk.Popover):
     def _is_machine_active(self) -> bool:
         if not self.machine:
             return False
-        is_dummy = isinstance(self.machine.driver, NoDeviceDriver)
+        is_dummy = self.machine.is_driverless
         return self.machine.is_connected() or is_dummy
 
     def update_sensitivity(self):
@@ -360,6 +359,14 @@ class MoveToPopover(Gtk.Popover):
         return True
 
     def _on_move_to_position(self, button, position: str):
+        self.move_to_position(position)
+
+    def move_to_position(self, position: str):
+        """Moves to a corner/center of the selection or workarea.
+
+        Shared with the shop-mode control surface's quick-move
+        buttons.
+        """
         if not self.machine or not self.machine_cmd:
             logger.debug(
                 "Move to %s skipped: no machine or command handler",
@@ -420,6 +427,11 @@ class MoveToPopover(Gtk.Popover):
         )
 
     def _on_move_to_wcs_zero(self, button):
+        self.move_to_wcs_zero()
+
+    def move_to_wcs_zero(self):
+        """Moves to the origin of the active WCS, honoring pointer
+        alignment. Shared with the shop-mode control surface."""
         if not self.machine or not self.machine_cmd:
             return
         dx, dy = self._get_pointer_shift()

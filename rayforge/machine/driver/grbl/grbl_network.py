@@ -11,6 +11,7 @@ from typing import (
 from urllib.parse import quote
 
 import aiohttp
+from raydriver.core.discovery.spec import DiscoverySpec, MdnsRecognizer
 
 from ....context import RayforgeContext
 from ....core.varset import ChoiceVar, HostnameVar, PortVar, Var, VarSet
@@ -18,7 +19,6 @@ from ....core.varset.hostnamevar import is_valid_hostname_or_ip
 from ....pipeline.encoder.base import EncodedOutput, OpsEncoder
 from ....pipeline.encoder.gcode import GcodeEncoder
 from ....shared.units.system import UnitSystem, inches_to_mm
-from ...discovery.spec import DiscoverySpec, MdnsRecognizer
 from ...transport import HttpTransport, TransportStatus, WebSocketTransport
 from ..driver import (
     Axis,
@@ -73,8 +73,10 @@ class GrblNetworkDriver(Driver):
     modern file upload API and allows reading/writing device settings.
     """
 
-    label = _("GRBL (Network)")
-    subtitle = _("Connect to a GRBL-compatible device over the network")
+    label = _("FluidNC / ESP3D (Web API)")
+    subtitle = _(
+        "FluidNC or ESP3D controller via its HTTP/WebSocket interface"
+    )
     supports_settings = True
     supports_probing = True
     supports_unit_detection = True
@@ -141,7 +143,7 @@ class GrblNetworkDriver(Driver):
             vars=[
                 HostnameVar(
                     key="host",
-                    label=_("Hostname"),
+                    label=_("Hostname or IP address"),
                     description=_("The IP address or hostname of the device"),
                 ),
                 PortVar(
@@ -376,6 +378,10 @@ class GrblNetworkDriver(Driver):
             )
             return
 
+        if self._connection_task and not self._connection_task.done():
+            logger.debug("Connection loop is already running.")
+            return
+
         self.keep_running = True
         self._connection_task = asyncio.create_task(self._connection_loop())
 
@@ -570,6 +576,14 @@ class GrblNetworkDriver(Driver):
         # Toggle sequence
         await self.execute_interactive_command(temp_wcs)
         await self.execute_interactive_command(active_wcs)
+
+        park = self._machine.park_position_after_homing
+        if axes is None and park is not None:
+            template = self.dialect.move_to_park
+            if template:
+                await self.execute_interactive_command(
+                    template.format(x=park[0], y=park[1])
+                )
 
     async def move_to(self, pos_x, pos_y, pos_z=None, speed=None) -> None:
         cmd = self._format_move_to(float(pos_x), float(pos_y), pos_z, speed)

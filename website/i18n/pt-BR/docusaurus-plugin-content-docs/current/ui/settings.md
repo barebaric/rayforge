@@ -15,6 +15,11 @@ Escolha entre o tema **Sistema**, **Claro** ou **Escuro** para corresponder ao s
 desktop ou preferência pessoal. Você também pode configurar as **Cores da operação** para usar a cor
 do laser ou a cor da camada como distinção visual na tela.
 
+**Modo oficina** substitui a aba de controles do painel inferior por uma superfície de controle
+sensível ao toque: leituras de posição grandes por eixo com botões de zero, um cartão de offsets,
+steppers superdimensionados de velocidade/passo de jog e uma grade de botões grandes de jog e
+trabalho. Feito para operar a máquina em pé junto a ela; desativado por padrão.
+
 ### Unidades
 
 Configure as unidades de exibição usadas em todo o aplicativo. Você pode definir unidades separadas
@@ -29,6 +34,9 @@ automaticamente** e acionar o recálculo manualmente pelo botão na barra de fer
 
 O Rayforge pode **Verificar atualizações** automaticamente na inicialização. Quando habilitado, você
 será notificado quando uma nova versão estiver disponível.
+
+O Rayforge também pode **Verificar atualizações de addons** automaticamente na inicialização.
+Desativar essa opção não impede verificações manuais na página Addons.
 
 Com **Vigiar arquivos importados** ativado, o Rayforge monitora os arquivos por trás das peças de
 trabalho importadas e oferece recarregá-los quando eles mudam no disco. Veja

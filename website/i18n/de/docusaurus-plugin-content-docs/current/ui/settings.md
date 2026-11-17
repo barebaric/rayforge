@@ -16,6 +16,11 @@ oder persönliche Vorliebe anzupassen. Du kannst auch **Operationsfarben** konfi
 ob die Laserfarbe oder die Ebenenfarbe zur visuellen Unterscheidung auf der Arbeitsfläche verwendet
 wird.
 
+**Shop-Modus** ersetzt den Steuerungs-Tab im unteren Panel durch eine touchfreundliche
+Bedienoberfläche: große Positionsanzeigen pro Achse mit Null-Tasten, eine Offsets-Karte, übergroße
+Jog-Geschwindigkeits-/Schrittweiten-Stepper und ein Raster großer Jog- und Job-Tasten. Gedacht für
+die Bedienung direkt an der Maschine; standardmäßig deaktiviert.
+
 ### Einheiten
 
 Konfiguriere die in der gesamten Anwendung verwendeten Anzeigeeinheiten. Du kannst separate
@@ -31,6 +36,9 @@ Symbolleisten-Schaltfläche auslösen.
 
 Rayforge kann beim Start **automatisch nach Updates suchen**. Wenn aktiviert, wirst du
 benachrichtigt, wenn eine neue Version verfügbar ist.
+
+Rayforge kann beim Start außerdem **automatisch nach Addon-Updates suchen**. Das Deaktivieren
+verhindert keine manuellen Prüfungen auf der Addons-Seite.
 
 Ist **Importierte Dateien beobachten** aktiviert, überwacht Rayforge die Dateien hinter importierten
 Werkstücken und bietet an, sie neu zu laden, wenn sie sich auf der Festplatte ändern. Details

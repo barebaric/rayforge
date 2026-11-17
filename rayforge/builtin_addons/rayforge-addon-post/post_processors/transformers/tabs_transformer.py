@@ -120,8 +120,16 @@ class TabOpsTransformer(OpsTransformer):
         machine=None,
         settings=None,
     ) -> TabsSpec:
-        tab_power = self.tab_power
-        original_power = self.original_power
+        tab_power = (
+            settings.get("tab_power", self.tab_power)
+            if settings
+            else self.tab_power
+        )
+        original_power = (
+            settings.get("power", self.original_power)
+            if settings
+            else self.original_power
+        )
 
         if not workpiece or not workpiece.tabs_enabled or not workpiece.tabs:
             return TabsSpec(

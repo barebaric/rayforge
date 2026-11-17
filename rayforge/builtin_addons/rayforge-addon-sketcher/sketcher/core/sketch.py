@@ -2,6 +2,7 @@ import copy
 import json
 import logging
 import math
+import time
 import uuid
 from collections import defaultdict
 from gettext import gettext as _
@@ -306,6 +307,15 @@ class Sketch(IAsset, IGeometryProvider):
 
         return SKETCH_RENDERER
 
+    def get_reference_point(self) -> tuple[float, float]:
+        """
+        The sketch origin, in sketch coordinates. The origin is a fixed
+        solver anchor, so geometry constrained to it stays registered
+        when parameters change.
+        """
+        origin = self.registry.get_point(self.origin_id)
+        return (origin.x, origin.y)
+
     def get_geometry(
         self,
         params: dict[str, Any] | None = None,
@@ -374,10 +384,10 @@ class Sketch(IAsset, IGeometryProvider):
         # Shallow-copy the registry: new Point objects (solver mutates x/y),
         # copied entity list (sync_arrays may rebuild it).
         clone.registry = EntityRegistry()
-        clone.registry.points = [
+        clone.registry.set_points(
             Point(p.id, p.x, p.y, p.fixed, p.waypoint_type)
             for p in self.registry.points
-        ]
+        )
         clone.registry.entities = list(self.registry.entities)
         clone.registry._entity_map = dict(self.registry._entity_map)
         clone.registry._id_counter = self.registry._id_counter
@@ -714,7 +724,9 @@ class Sketch(IAsset, IGeometryProvider):
         origin, other geometry) are global and excluded — and so are
         world-anchored orientation constraints (horizontal/vertical):
         they pin the shape to the world axes and would fight any
-        array rotation.
+        array rotation. The exception is a horizontal+vertical pair
+        on the same two points: the pair is a coincidence and holds
+        the shape together, so it stays internal.
         """
         wanted = set(entity_ids)
         group_pids: set[int] = set()
@@ -732,12 +744,13 @@ class Sketch(IAsset, IGeometryProvider):
                     pass
 
         internal: list[Constraint] = []
+        paired_axes = self._find_axis_coincidence_pairs()
         for constr in self.constraints:
-            if constr.is_world_anchored():
-                continue
             # Constraints pinned to the sketch origin are world-anchored.
             pids = constr.get_referenced_point_ids()
             if pids & {self.origin_id}:
+                continue
+            if constr.is_world_anchored() and id(constr) not in paired_axes:
                 continue
             eids = constr.get_referenced_entity_ids()
             if not (pids & group_pids or eids & wanted):
@@ -745,6 +758,29 @@ class Sketch(IAsset, IGeometryProvider):
             if pids <= group_pids and eids <= wanted:
                 internal.append(constr)
         return internal
+
+    def _find_axis_coincidence_pairs(self) -> set[int]:
+        """Returns the IDs of horizontal/vertical constraints that
+        have a perpendicular partner on the same two points.
+
+        Such a pair is a coincidence in disguise: together the two
+        constraints pin one point onto the other instead of anchoring
+        the shape to the world axes, so they survive rotation and must
+        not be stripped from array templates — dropping them would
+        open closed shapes whose only closure is the pair.
+        """
+        verticals: dict[frozenset[EntityID], VerticalConstraint] = {}
+        for constr in self.constraints:
+            if isinstance(constr, VerticalConstraint):
+                verticals[frozenset((constr.p1, constr.p2))] = constr
+        paired: set[int] = set()
+        for constr in self.constraints:
+            if isinstance(constr, HorizontalConstraint):
+                partner = verticals.get(frozenset((constr.p1, constr.p2)))
+                if partner is not None:
+                    paired.add(id(constr))
+                    paired.add(id(partner))
+        return paired
 
     @classmethod
     def from_file(cls, file_path: str | Path) -> "Sketch":
@@ -910,9 +946,7 @@ class Sketch(IAsset, IGeometryProvider):
         if pid is None:
             return False
         if not self.registry.is_point_used(pid):
-            self.registry.points = [
-                p for p in self.registry.points if p.id != pid
-            ]
+            self.registry.remove_points([pid])
             return True
         return False
 
@@ -1414,16 +1448,18 @@ class Sketch(IAsset, IGeometryProvider):
         if self._solving:
             return True
         self._solving = True
+        solve_started = time.perf_counter()
+        params_done = prep_done = solver_done = arrays_done = solve_started
         success = False
         solver: Solver | None = None
         all_constraints: list[Constraint] = []
         update_status = False
         solve_completed = False
+        scope = point_scope
         try:
             # A scope referencing deleted points (e.g. after an array
             # re-apply removed geometry mid-drag) cannot be honored;
             # solve globally instead.
-            scope = point_scope
             if scope is not None:
                 existing = {p.id for p in self.registry.points}
                 if not scope.issubset(existing):
@@ -1454,27 +1490,7 @@ class Sketch(IAsset, IGeometryProvider):
             # ParameterContext rebuilds per text box.
             self._solved_ctx = ctx.copy()
             self._solved_ctx.update(get_template_functions())
-
-            # --- Solver Stabilization ---
-            # Add weak, temporary constraints to every non-fixed point,
-            # pulling it towards its current location. This acts as an
-            # "inertia" term, encouraging the solver to find the solution
-            # closest to the current state and preventing large, unexpected
-            # geometric jumps.
-            stabilizer_constraints = []
-            hold_weight = 1e-4
-            for p in self.registry.points:
-                if p.fixed or (scope is not None and p.id not in scope):
-                    continue
-                stabilizer_constraints.append(
-                    DragConstraint(
-                        p.id,
-                        p.x,
-                        p.y,
-                        weight=hold_weight,
-                        user_visible=False,
-                    )
-                )
+            params_done = time.perf_counter()
 
             # Step 4: Update constraints with the final, resolved values.
             excluded = excluded_constraints or set()
@@ -1505,6 +1521,38 @@ class Sketch(IAsset, IGeometryProvider):
                 if hasattr(c, "update_from_context"):
                     c.update_from_context(ctx)
 
+            # --- Solver Stabilization ---
+            # Add weak, temporary constraints to every non-fixed point
+            # the solve references, pulling it towards its current
+            # location. This acts as an "inertia" term, encouraging the
+            # solver to find the solution closest to the current state
+            # and preventing large, unexpected geometric jumps. Points
+            # no constraint references cannot move anyway; pinning them
+            # would only grow the solver's state vector.
+            touched: set[EntityID] = set()
+            for c in all_constraints:
+                touched |= get_referenced_points(self.registry, c)
+            stabilizer_constraints = []
+            hold_weight = 1e-4
+            for p in self.registry.points:
+                if (
+                    p.fixed
+                    or p.id not in touched
+                    or (scope is not None and p.id not in scope)
+                ):
+                    continue
+                stabilizer_constraints.append(
+                    DragConstraint(
+                        p.id,
+                        p.x,
+                        p.y,
+                        weight=hold_weight,
+                        user_visible=False,
+                    )
+                )
+
+            prep_done = time.perf_counter()
+
             # Step 5: Run the solver with the disposable, correctly
             # evaluated context.
             solver = Solver(
@@ -1517,6 +1565,7 @@ class Sketch(IAsset, IGeometryProvider):
             update_status = update_constraint_status and scope is None
             success = solver.solve(update_dof=update_status)
             solve_completed = True
+            solver_done = time.perf_counter()
 
         except (np.linalg.LinAlgError, ValueError):
             logger.exception("Sketch solve failed")
@@ -1531,6 +1580,7 @@ class Sketch(IAsset, IGeometryProvider):
             self.sync_arrays()
         finally:
             self._solving = False
+        arrays_done = time.perf_counter()
 
         # Step 6: Update constraint conflict status. This must happen
         # AFTER the array sync: re-anchoring an array template can
@@ -1550,6 +1600,20 @@ class Sketch(IAsset, IGeometryProvider):
             }
             self._apply_conflict_status(mapped)
 
+        logger.debug(
+            "Sketch.solve: points=%d constraints=%d scope=%s "
+            "params=%.1fms prep=%.1fms solver=%.1fms arrays=%.1fms "
+            "total=%.1fms ok=%s",
+            len(self.registry.points),
+            len(all_constraints),
+            len(scope) if scope is not None else None,
+            (params_done - solve_started) * 1000.0,
+            (prep_done - params_done) * 1000.0,
+            (solver_done - prep_done) * 1000.0,
+            (arrays_done - solver_done) * 1000.0,
+            (time.perf_counter() - solve_started) * 1000.0,
+            success,
+        )
         return success
 
     def _apply_conflict_status(self, conflicting_indices: set[int]) -> None:

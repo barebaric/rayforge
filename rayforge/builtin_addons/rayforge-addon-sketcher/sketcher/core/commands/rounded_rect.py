@@ -696,7 +696,7 @@ class RoundedRectCommand(SketchChangeCommand):
         }
         registry.remove_entities_by_id(list(entity_ids_to_remove))
 
-        registry.points = [p for p in registry.points if p.id not in point_ids]
+        registry.remove_points(point_ids)
 
     def _do_execute(self) -> None:
         if self.add_cmd:
@@ -727,7 +727,7 @@ class RoundedRectCommand(SketchChangeCommand):
 
         points_to_add = result["points"]
         if self.is_start_temp:
-            reg.points.remove(start_p)
+            reg.remove_points([start_p.id])
             # Unlike Rectangle, RoundedRect doesn't use the start_pid in its
             # final geometry, so we just remove it.
 

@@ -108,6 +108,7 @@ Configura el comportamiento de las operaciones de desplazamiento:
 - **Rango**: 1-60,000 mm/min
 - **Por defecto**: 1,000 mm/min
 - **Propósito**: Controla qué tan rápido se mueve la cabeza del láser
+- **Persistencia**: La última velocidad utilizada se guarda por máquina
 
 <!-- prettier-ignore-start -->
 :::tip[Selección de Velocidad]
@@ -177,6 +178,12 @@ Muestra la posición de la cabeza del láser en el sistema de coordenadas activo
 - Las coordenadas son relativas al origen WCS seleccionado
 - Se actualiza en tiempo real mientras te desplazas o ejecutas trabajos
 - Formato: Valores X, Y, Z en milímetros
+
+Con el [Modo taller](settings.md#apariencia) activado en los ajustes de la aplicación, toda la
+pestaña de controles cambia a una superficie de control táctil: lecturas grandes por eje con botones
+de cero, offsets, steppers de velocidad/paso y botones sobredimensionados de jog y trabajo:
+
+![Panel inferior en modo taller](/screenshots/bottom-panel-shop-mode.webp)
 
 ### Estado de Conexión
 

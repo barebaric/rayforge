@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-12 18:45+0200\n"
+"POT-Creation-Date: 2026-11-11 17:23+0100\n"
 "PO-Revision-Date: 2026-09-27 22:58\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -42,6 +42,44 @@ msgstr "गति बनाम पास"
 #: laser_essentials/material_test_helpers.py
 msgid "Speed vs Offset"
 msgstr "गति बनाम ऑफ़सेट"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Columns (Power Steps)"
+msgstr "कॉलम (शक्ति चरण)"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Rows (Speed Steps)"
+msgstr "पंक्तियाँ (गति चरण)"
+
+#: laser_essentials/material_test_helpers.py
+#: laser_essentials/steps/material_test.py
+msgid "Number of power variations"
+msgstr "शक्ति भिन्नताओं की संख्या"
+
+#: laser_essentials/material_test_helpers.py
+#: laser_essentials/steps/material_test.py
+msgid "Number of speed variations"
+msgstr "गति भिन्नताओं की संख्या"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Rows (Passes Steps)"
+msgstr "पंक्तियाँ (पास चरण)"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Number of passes variations"
+msgstr "पास भिन्नताओं की संख्या"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Columns (Speed Steps)"
+msgstr "कॉलम (गति चरण)"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Rows (Offset Steps)"
+msgstr "पंक्तियाँ (ऑफ़सेट चरण)"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Number of offset variations"
+msgstr "ऑफ़सेट भिन्नताओं की संख्या"
 
 #: laser_essentials/widgets/shrinkwrap_page.py
 #: laser_essentials/steps/shrinkwrap_step.py
@@ -102,44 +140,6 @@ msgstr "ज्यामिति"
 #: laser_essentials/widgets/frame_page.py
 msgid "Cut a frame around the selected content."
 msgstr "चयनित सामग्री के चारों ओर फ़्रेम काटें."
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Columns (Power Steps)"
-msgstr "कॉलम (शक्ति चरण)"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Rows (Speed Steps)"
-msgstr "पंक्तियाँ (गति चरण)"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-#: laser_essentials/steps/material_test.py
-msgid "Number of power variations"
-msgstr "शक्ति भिन्नताओं की संख्या"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-#: laser_essentials/steps/material_test.py
-msgid "Number of speed variations"
-msgstr "गति भिन्नताओं की संख्या"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Rows (Passes Steps)"
-msgstr "पंक्तियाँ (पास चरण)"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Number of passes variations"
-msgstr "पास भिन्नताओं की संख्या"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Columns (Speed Steps)"
-msgstr "कॉलम (गति चरण)"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Rows (Offset Steps)"
-msgstr "पंक्तियाँ (ऑफ़सेट चरण)"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Number of offset variations"
-msgstr "ऑफ़सेट भिन्नताओं की संख्या"
 
 #: laser_essentials/widgets/material_test_grid_page.py
 msgid "Grid"
@@ -239,6 +239,15 @@ msgstr "शक्ति मॉडुलन और चमक सीमा."
 msgid "Change Power Range"
 msgstr "शक्ति सीमा बदलें"
 
+#: laser_essentials/widgets/offset_fill_page.py
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Offset Fill"
+msgstr "ऑफ़सेट भराव"
+
+#: laser_essentials/widgets/offset_fill_page.py
+msgid "Fill closed shapes with rings that follow the outline."
+msgstr "बंद आकृतियों को रूपरेखा का अनुसरण करने वाले छल्लों से भरता है."
+
 #: laser_essentials/widgets/levels_adapter.py
 msgid "Auto-adjusted based on image content"
 msgstr "छवि सामग्री के आधार पर स्वतः समायोजित"
@@ -333,7 +342,9 @@ msgstr "कट पक्ष"
 
 #: laser_essentials/steps/shrinkwrap_step.py
 #: laser_essentials/steps/wavefront_step.py
-#: laser_essentials/steps/frame_step.py laser_essentials/steps/contour_step.py
+#: laser_essentials/steps/frame_step.py
+#: laser_essentials/steps/offset_fill_step.py
+#: laser_essentials/steps/contour_step.py
 msgid "Offset"
 msgstr "ऑफ़सेट"
 
@@ -385,6 +396,29 @@ msgstr "कोना त्रिज्या"
 msgid "Radius used to round the frame's corners"
 msgstr "फ़्रेम के कोने गोल करने के लिए त्रिज्या"
 
+#: laser_essentials/steps/offset_fill_step.py
+#: laser_essentials/steps/material_test.py
+msgid "Line Interval"
+msgstr "रेखा अंतराल"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid ""
+"Distance between neighbouring fill rings. Defaults to the laser spot size"
+msgstr ""
+"आस-पास के भराव छल्लों के बीच की दूरी. डिफ़ॉल्ट रूप से लेज़र स्पॉट आकार का उपयोग होता है"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Distance of the first ring inside the outline"
+msgstr "रूपरेखा के भीतर पहले छल्ले की दूरी"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Fill Direction"
+msgstr "भराव दिशा"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Order in which the rings are cut"
+msgstr "छल्लों को काटने का क्रम"
+
 #: laser_essentials/steps/raster_step.py
 msgid "Mode"
 msgstr "मोड"
@@ -413,6 +447,30 @@ msgstr "सर्पाकार"
 msgid ""
 "Alternate the dither direction on every row to avoid directional artifacts"
 msgstr "दिशात्मक दोषों से बचने के लिए हर पंक्ति में डाइदर की दिशा बदलें"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Min Feature Size"
+msgstr "न्यूनतम फ़ीचर आकार"
+
+#: laser_essentials/steps/raster_step.py
+msgid ""
+"Smallest dot width in scan-line pixels. The auto value matches the laser "
+"spot size; smaller values allow finer but fainter dots"
+msgstr ""
+"स्कैन-पंक्ति पिक्सेल में न्यूनतम बिंदु चौड़ाई. स्वतः मान लेज़र स्पॉट आकार से मेल खाता है; छोटे "
+"मान बारीक पर कमज़ोर बिंदु देते हैं"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Linear Light"
+msgstr "रैखिक प्रकाश"
+
+#: laser_essentials/steps/raster_step.py
+msgid ""
+"Diffuse in linear light instead of on the raw sRGB values, which engraves "
+"mid-tones darker"
+msgstr ""
+"कच्चे sRGB मानों के बजाय रैखिक प्रकाश में फैलाता है, जिससे मध्य टोन काफ़ी गहरा उत्कीर्ण होते "
+"हैं"
 
 #: laser_essentials/steps/raster_step.py
 msgid "Halftone Cell Size"
@@ -472,10 +530,11 @@ msgstr "सैंपल अंतराल"
 
 #: laser_essentials/steps/raster_step.py
 msgid ""
-"Distance between power samples along scan line. Lower values improve "
-"accuracy, but increase output size"
+"Distance between samples along scan line. Lower values improve accuracy, but "
+"increase output size"
 msgstr ""
-"स्कैन रेखा पर शक्ति सैंपलों के बीच दूरी. कम मान सटीकता सुधारते हैं, लेकिन आउटपुट आकार बढ़ाते हैं"
+"स्कैन रेखा के अनुदिश नमूनों के बीच दूरी। कम मान सटीकता बढ़ाते हैं, लेकिन आउटपुट आकार भी "
+"बढ़ाते हैं"
 
 #: laser_essentials/steps/raster_step.py
 msgid "Dot Width Correction"
@@ -643,10 +702,6 @@ msgid "Gap between test squares"
 msgstr "परीक्षण वर्गों के बीच अंतर"
 
 #: laser_essentials/steps/material_test.py
-msgid "Line Interval"
-msgstr "रेखा अंतराल"
-
-#: laser_essentials/steps/material_test.py
 msgid ""
 "Distance between scan lines in machine units (for Engrave mode). Leave at 0 "
 "to use laser spot size"
@@ -663,8 +718,8 @@ msgid "Add speed/power annotations to the grid"
 msgstr "ग्रिड में गति/शक्ति एनोटेशन जोड़ें"
 
 #: laser_essentials/steps/material_test.py
-msgid "Label Engrave Power (%)"
-msgstr "लेबल उत्कीर्णन शक्ति (%)"
+msgid "Label Engrave Power"
+msgstr "लेबल उत्कीर्णन शक्ति"
 
 #: laser_essentials/steps/material_test.py
 msgid "Label Engrave Speed"
@@ -769,6 +824,11 @@ msgstr "पहली पंक्ति के लिए द्विदिश�
 #: laser_essentials/steps/material_test.py
 msgid "Bidir scan X-offset for last row"
 msgstr "अंतिम पंक्ति के लिए द्विदिशात्मक स्कैन X-ऑफ़सेट"
+
+#: laser_essentials/steps/material_test.py
+#, python-brace-format
+msgid "Cut speed ({value}) exceeds the machine's maximum ({max})."
+msgstr "कट गति ({value}) मशीन की अधिकतम ({max}) से अधिक है।"
 
 #: laser_essentials/frontend.py
 msgid "Create Material Test Grid"

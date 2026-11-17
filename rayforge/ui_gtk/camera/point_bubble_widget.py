@@ -4,10 +4,14 @@ from gettext import gettext as _
 from blinker import Signal
 from gi.repository import Gtk
 
+from ...context import get_context
+from ...shared.units.formatter import get_preferred_unit
 from ..icons import get_icon
 from ..shared.gtk import apply_css
 
 logger = logging.getLogger(__name__)
+
+WORLD_RANGE_MM = 10000.0
 
 css = """
 .point-bubble {
@@ -72,9 +76,10 @@ class PointBubbleWidget(Gtk.Box):
 
         # World X
         x_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
-        x_box.append(Gtk.Label(label="X:"))
+        self.x_label = Gtk.Label(label="X:")
+        x_box.append(self.x_label)
         adjustment_x = Gtk.Adjustment.new(
-            0.0, -10000.0, 10000.0, 0.1, 1.0, 0.0
+            0.0, -WORLD_RANGE_MM, WORLD_RANGE_MM, 0.1, 1.0, 0.0
         )
         self.world_x_spin = Gtk.SpinButton.new(adjustment_x, 0.1, 2)
         self.world_x_spin.set_valign(Gtk.Align.CENTER)
@@ -84,9 +89,10 @@ class PointBubbleWidget(Gtk.Box):
 
         # World Y
         y_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
-        y_box.append(Gtk.Label(label="Y:"))
+        self.y_label = Gtk.Label(label="Y:")
+        y_box.append(self.y_label)
         adjustment_y = Gtk.Adjustment.new(
-            0.0, -10000.0, 10000.0, 0.1, 1.0, 0.0
+            0.0, -WORLD_RANGE_MM, WORLD_RANGE_MM, 0.1, 1.0, 0.0
         )
         self.world_y_spin = Gtk.SpinButton.new(adjustment_y, 0.1, 2)
         self.world_y_spin.set_valign(Gtk.Align.CENTER)
@@ -95,6 +101,10 @@ class PointBubbleWidget(Gtk.Box):
         coords_box.append(y_box)
 
         self.append(coords_box)
+
+        self._unit = None
+        self._config_handler_id = None
+        self._apply_unit()
 
         # Connect SpinButtons
         self.world_x_spin.connect("value-changed", self.on_value_changed)
@@ -160,6 +170,51 @@ class PointBubbleWidget(Gtk.Box):
         )
         self.world_y_spin.add_controller(focus_controller_y)
 
+        self._config_handler_id = get_context().config.changed.connect(
+            self._on_config_changed
+        )
+        self.connect("destroy", self._on_destroy)
+
+    def _apply_unit(self) -> None:
+        self._unit = get_preferred_unit("length")
+        unit = self._unit
+        if unit is None:
+            return
+        self.x_label.set_label(_("X ({unit}):").format(unit=unit.label))
+        self.y_label.set_label(_("Y ({unit}):").format(unit=unit.label))
+        for spin in (self.world_x_spin, self.world_y_spin):
+            adj = spin.get_adjustment()
+            adj.set_lower(unit.from_base(-WORLD_RANGE_MM))
+            adj.set_upper(unit.from_base(WORLD_RANGE_MM))
+            spin.set_digits(max(2, unit.precision))
+
+    def _display_to_base(self, spin: Gtk.SpinButton) -> float:
+        try:
+            value = float(spin.get_text())
+        except ValueError:
+            value = spin.get_value()
+        if self._unit is None:
+            return value
+        return float(self._unit.to_base(value))
+
+    def _base_to_display(self, value: float) -> float:
+        if self._unit is None:
+            return value
+        return float(self._unit.from_base(value))
+
+    def _on_config_changed(self, _sender, **_kwargs) -> None:
+        unit = get_preferred_unit("length")
+        if unit is None or (self._unit and unit.name == self._unit.name):
+            return
+        x_base, y_base = self.get_world_coords()
+        self._apply_unit()
+        self.set_world_coords(x_base, y_base)
+
+    def _on_destroy(self, _widget) -> None:
+        if self._config_handler_id:
+            get_context().config.changed.disconnect(self._config_handler_id)
+        self._config_handler_id = None
+
     def set_point_index(self, index: int):
         self.point_index = index
         self.title_label.set_label(_("Point {n}").format(n=index + 1))
@@ -186,19 +241,13 @@ class PointBubbleWidget(Gtk.Box):
         return None
 
     def get_world_coords(self) -> tuple[float, float]:
-        try:
-            x = float(self.world_x_spin.get_text())
-        except ValueError:
-            x = self.world_x_spin.get_value()
-        try:
-            y = float(self.world_y_spin.get_text())
-        except ValueError:
-            y = self.world_y_spin.get_value()
+        x = self._display_to_base(self.world_x_spin)
+        y = self._display_to_base(self.world_y_spin)
         return x, y
 
     def set_world_coords(self, x: float, y: float):
-        self.world_x_spin.set_value(x)
-        self.world_y_spin.set_value(y)
+        self.world_x_spin.set_value(self._base_to_display(x))
+        self.world_y_spin.set_value(self._base_to_display(y))
 
     def clear_focus(self):
         if self.world_x_spin.has_focus() or self.world_y_spin.has_focus():

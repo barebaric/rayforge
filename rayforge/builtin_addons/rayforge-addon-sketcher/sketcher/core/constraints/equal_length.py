@@ -103,6 +103,9 @@ class EqualLengthConstraint(Constraint):
     ) -> bool:
         return entity_id in self.entity_ids
 
+    def get_referenced_entity_ids(self) -> set[EntityID]:
+        return set(self.entity_ids)
+
     def _pair_dist(self, pa_idx, pb_idx, reg):
         pa = reg.get_point(pa_idx)
         pb = reg.get_point(pb_idx)

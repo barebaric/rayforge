@@ -249,8 +249,17 @@ impresión tradicional de media tinta.
 **Stucki, Jarvis, Sierra, Burkes y Atkinson** son algoritmos de difusión de error como
 Floyd-Steinberg que reparten el error en un entorno más amplio, lo que da un grano más uniforme en
 zonas planas como los tonos de piel. Atkinson solo difunde parte del error, lo que aumenta el
-contraste. Activa **Serpentina** para alternar la dirección de barrido en cada fila y evitar rayas
-direccionales.
+contraste. **Serpentina** (activada por defecto) alterna la dirección de barrido en cada fila y
+evita rayas direccionales.
+
+**Tamaño mínimo de punto** agrupa cada línea de barrido en celdas antes de difundir, de modo que
+ningún punto sea más pequeño que el número de píxeles indicado. El valor automático coincide con el
+tamaño del punto láser, lo que mantiene cada punto a plena intensidad; los valores más pequeños
+permiten puntos más finos pero más débiles.
+
+**Luz lineal** difunde en luz lineal en lugar de sobre los valores sRGB sin procesar. Difundir sobre
+los valores sRGB mantiene la cobertura de puntos en el tono que la imagen muestra en pantalla; la
+luz lineal graba los tonos medios notablemente más oscuros.
 
 **Papel prensa** y **Semitono** agrupan los píxeles en puntos. Semitono dibuja puntos redondos sobre
 una cuadrícula definida por **Tamaño de celda del semitono** (la distancia entre los centros de los
@@ -310,6 +319,20 @@ Para imágenes, el intervalo de línea debe coincidir o exceder la resolución d
 imagen es de 10 píxeles/mm (254 DPI), usa un intervalo de línea de 0.1mm o menor.
 :::
 <!-- prettier-ignore-end -->
+
+#### Intervalo de Muestreo
+
+**Intervalo de muestreo (mm):**
+
+- Distancia entre muestras a lo largo de cada línea de escaneo, en todos los modos de trama
+- En el tramado define la longitud de cada punto; en la grabación con potencia modulada, la
+  frecuencia con la que cambia la potencia a lo largo de la línea
+- Más pequeño = más detalle, archivos de salida más grandes
+- El valor automático da puntos cuadrados en el tramado (sigue el intervalo de línea) y es la mitad
+  del ancho del punto láser en los modos con potencia modulada
+
+**Recomendado:** mantén el valor automático. Un intervalo de muestreo mucho mayor que el intervalo
+de línea convierte cada punto en un guion largo, que se nota como textura visible en los degradados.
 
 #### Dirección de Escaneo
 
@@ -464,7 +487,7 @@ Ver [Overscan](../overscan.md) para detalles.
 
 **Bandas (rayas oscuras/claras):**
 
-- Calibra el [Desplazamiento de Escaneo Bidireccional](#desplazamiento-de-escaneo-bidireccional)
+- Calibra el [Desplazamiento de Escaneo Bidireccional](#bidirectional-scan-offset)
 - Revisa la tensión de las correas
 - Reduce la velocidad
 - Prueba un ángulo de escaneo diferente

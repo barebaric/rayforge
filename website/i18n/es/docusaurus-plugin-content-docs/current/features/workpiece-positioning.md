@@ -20,6 +20,7 @@ Rayforge proporciona varias herramientas complementarias para el posicionamiento
 | **Enmarcado**               | Previsualizar límites        | Verificar que el diseño cabe en el material      |
 | **Cero SCF**                | Establecer origen            | Posicionamiento repetible                        |
 | **Superposición de Cámara** | Colocación visual del diseño | Alineación precisa en características existentes |
+| **Punto de Referencia**     | Elegir el punto de anclaje   | Alinear bocetos paramétricos                     |
 
 ---
 
@@ -209,6 +210,38 @@ completa.
 
 ---
 
+## Punto de Referencia
+
+Por defecto, los campos **Posición X** y **Posición Y** del panel de propiedades se refieren a la
+esquina inferior izquierda del rectángulo delimitador de la pieza. Para bocetos paramétricos esta no
+suele ser la referencia más útil: cuando un parámetro cambia el tamaño del boceto, una posición
+basada en la esquina hace que el diseño parezca desplazarse respecto a todo lo demás.
+
+El desplegable **Posición relativa a** del panel de propiedades permite elegir a qué punto se
+refieren los campos de posición:
+
+| Opción                  | Se refiere a                                                  |
+| ----------------------- | ------------------------------------------------------------- |
+| **Esquina**             | La esquina inferior izquierda del rectángulo (predeterminado) |
+| **Centro**              | El centro del rectángulo delimitador                          |
+| **Punto de referencia** | El origen lógico de la geometría, p. ej. el origen del boceto |
+
+![El desplegable «Posición relativa a» en el panel de propiedades](/screenshots/main-item-properties.webp)
+
+El punto de referencia elegido es también el punto que permanece fijo al redimensionar la pieza y al
+regenerar un boceto con parámetros modificados. La opción **Punto de referencia** solo está
+disponible para piezas cuya fuente define uno, como los bocetos, donde es el origen del boceto.
+
+<!-- prettier-ignore-start -->
+:::tip[Alinear bocetos paramétricos]
+Para mantener un grabado registrado dentro de un contorno de corte: vincule ambos bocetos al
+origen del boceto, configure ambas piezas en **Punto de referencia** y asigne la misma posición
+X/Y a ambas. Los bocetos permanecen alineados sin importar cómo cambien los parámetros.
+:::
+<!-- prettier-ignore-end -->
+
+---
+
 ## Posicionamiento Basado en Cámara
 
 La superposición de cámara muestra una vista en vivo de su material con su diseño superpuesto,
@@ -297,6 +330,16 @@ Para material más largo que la cama láser (alimentado a través de la máquina
 5. **Posiciona el siguiente segmento** del diseño relativo a ese origen en el lienzo.
 6. **Enmarca para verificar**, luego **ejecuta el trabajo**.
 7. Repite desde el paso 2 para cada segmento restante.
+
+### Flujo de Trabajo de Bocetos Paramétricos
+
+Para trabajos que combinan un boceto de corte con un boceto de grabado paramétrico:
+
+1. **Vincule ambos bocetos** al origen del boceto (p. ej. centre la geometría en el origen)
+2. **Coloque ambas piezas** en el lienzo y configure **Posición relativa a → Punto de referencia**
+3. **Introduzca la misma posición X/Y** para ambas piezas
+4. **Ajuste los parámetros** según sea necesario: los bocetos permanecen registrados entre sí
+5. **Enmarque el trabajo** para verificar la colocación
 
 ### Flujo de Trabajo de Producción
 

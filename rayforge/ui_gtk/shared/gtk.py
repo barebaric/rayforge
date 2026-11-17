@@ -2,7 +2,7 @@ import logging
 from gettext import gettext as _
 from typing import cast
 
-from gi.repository import Gdk, Gtk
+from gi.repository import Gdk, Gio, GLib, Gtk
 
 from ...image.registry import FileFilter
 from ...shared.util.once import once_per_object
@@ -91,3 +91,17 @@ def file_filter_to_gtk(
     for mime_type in filt.mime_types:
         gtk_filter.add_mime_type(mime_type)
     return gtk_filter
+
+
+def report_dialog_error(context: str, error: GLib.Error) -> bool:
+    """
+    Logs a failed file chooser operation, ignoring user cancellations.
+
+    Returns True for real failures, which are logged with their message
+    and may deserve a user-visible report; False when the user simply
+    cancelled the dialog.
+    """
+    if error.matches(Gio.io_error_quark(), Gio.IOErrorEnum.CANCELLED):
+        return False
+    logger.error(f"{context}: {error.message}")
+    return True

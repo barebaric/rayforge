@@ -232,6 +232,14 @@ Desactiva "Usar vectores originales" para utilizar este método.
 - SVG con efectos, filtros, degradados
 - Cuando la importación directa produce errores
 
+### Selección de capas y geometría sin agrupar
+
+Con **Usar vectores originales**, la lista **Seleccionar capas** muestra una entrada por cada capa
+SVG con nombre (o por color al agrupar por colores). Las formas que quedan fuera de cualquier capa
+con nombre se ofrecen como una capa adicional **Sin agrupar**, activada de forma predeterminada,
+para que se importen y corten como cualquier otra capa. Desmarcar una capa excluye su geometría
+tanto de la vista previa como de las trayectorias de herramienta generadas.
+
 ### Vista previa en tiempo real
 
 El diálogo de importación muestra una vista previa en tiempo real de cómo se importará tu SVG:
@@ -291,6 +299,22 @@ Rayforge admite formatos DXF estándar:
 - **R2000+** - Generalmente funciona, pero R12 es más seguro
 
 **Consejo:** Exporta como DXF R12/LT2 para máxima compatibilidad.
+
+### Aplanado de coordenadas Z
+
+Algunos exportadores CAD escriben archivos DXF con geometría a diferentes alturas Z — por ejemplo,
+un modelo 3D exportado con los contornos de las caras superior e inferior de una pieza. Rayforge es
+un programa 2D: en una máquina con eje Z, dichos valores Z se convierten en movimientos Z reales
+dentro del trabajo, y la cabeza puede hundirse por debajo de la superficie del material y chocar.
+
+Cuando un archivo DXF contiene geometría a más de una altura Z, el diálogo de importación ofrece por
+ello una opción **Aplanar coordenadas Z** (dentro de "Modo de importación"). Viene activada por
+defecto y proyecta toda la geometría importada sobre el plano Z=0. Puedes desactivarla para
+conservar las alturas Z originales — el diálogo te avisará entonces de que la trayectoria se moverá
+en Z, lo que solo es seguro si sabes que tu archivo lo necesita (por ejemplo, para recrear una
+altura de enfoque específica por forma).
+
+En los dibujos planos no se muestra la opción; no hay nada que aplanar.
 
 ### Consejos para importación DXF
 

@@ -47,7 +47,7 @@ class AddItemsCommand(SketchChangeCommand):
             if old_id != p.id:
                 id_map[old_id] = p.id
             new_points.append(p)
-        registry.points.extend(new_points)
+        registry.add_points(new_points)
 
         new_entities = []
         for e in self.entities:
@@ -99,7 +99,7 @@ class AddItemsCommand(SketchChangeCommand):
         point_ids = {p.id for p in self.points}
         entity_ids = {e.id for e in self.entities}
 
-        registry.points = [p for p in registry.points if p.id not in point_ids]
+        registry.remove_points(point_ids)
         registry.entities = [
             e for e in registry.entities if e.id not in entity_ids
         ]
@@ -283,7 +283,7 @@ class RemoveItemsCommand(SketchChangeCommand):
         registry = self.sketch.registry
         point_ids = {p.id for p in self.points}
         entity_ids = {e.id for e in self.entities}
-        registry.points = [p for p in registry.points if p.id not in point_ids]
+        registry.remove_points(point_ids)
         registry.entities = [
             e for e in registry.entities if e.id not in entity_ids
         ]
@@ -298,7 +298,7 @@ class RemoveItemsCommand(SketchChangeCommand):
 
     def _do_undo(self) -> None:
         registry = self.sketch.registry
-        registry.points.extend(self.points)
+        registry.add_points(self.points)
         registry.entities.extend(self.entities)
         registry._entity_map = {e.id: e for e in registry.entities}
         self.sketch.constraints.extend(self.constraints)

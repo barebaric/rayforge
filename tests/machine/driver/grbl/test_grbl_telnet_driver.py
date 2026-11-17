@@ -13,7 +13,13 @@ class TestRegistry:
     def test_metadata(self):
         assert GrblTelnetDriver.machine_space_wcs
         assert GrblTelnetDriver.supports_settings
-        assert GrblTelnetDriver.DISCOVERY is None
+        # Telnet devices are discovered by the subnet channel, not
+        # the serial one.
+        spec = GrblTelnetDriver.DISCOVERY
+        assert spec is not None
+        assert spec.serial is None
+        assert spec.tcp is not None
+        assert spec.tcp.port == 23
 
     def test_setup_vars(self):
         varset = GrblTelnetDriver.get_setup_vars()

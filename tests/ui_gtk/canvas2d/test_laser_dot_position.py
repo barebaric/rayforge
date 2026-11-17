@@ -149,6 +149,13 @@ def _get_pointer_dot_center(surface):
     return center_x, center_y
 
 
+def _report_state(machine: Machine, state: DeviceState) -> None:
+    """Feeds a device state report to the surface, as the
+    MachineController does on every status report."""
+    machine.set_device_state(state)
+    machine.state_changed.send(machine, state=state)
+
+
 class TestLaserDotWithWCSOffset:
     """
     Tests that the laser dot is positioned at the machine coordinates
@@ -191,7 +198,7 @@ class TestLaserDotWithWCSOffset:
             wco=(30.0, 30.0, 0.0),
         )
 
-        surface._on_machine_state_changed(machine, state)
+        _report_state(machine, state)
 
         center_x, center_y = _get_laser_dot_center(surface)
 
@@ -222,7 +229,7 @@ class TestLaserDotWithWCSOffset:
             wco=(0.0, 0.0, 0.0),
         )
 
-        surface._on_machine_state_changed(machine, state)
+        _report_state(machine, state)
 
         center_x, center_y = _get_laser_dot_center(surface)
 
@@ -255,7 +262,7 @@ class TestLaserDotWithWCSOffset:
             wco=(50.0, 30.0, 0.0),
         )
 
-        surface._on_machine_state_changed(machine, state)
+        _report_state(machine, state)
 
         center_x, center_y = _get_laser_dot_center(surface)
 
@@ -269,6 +276,119 @@ def _make_surface(ui_context_initializer, machine) -> WorkSurface:
     mock_editor.doc = MagicMock()
     mock_editor.doc.active_layer.rotary_enabled = False
     return WorkSurface(mock_editor, MagicMock(), machine)
+
+
+class TestLaserDotInWorkareaOriginMode:
+    """
+    On workarea-origin machines the canvas is anchored to the work
+    origin and G-code is emitted in work coordinates, so the laser
+    dot must be drawn from the controller's work position (WPos)
+    rather than the machine position (MPos).
+
+    Regression test for issue #580: the dot followed the raw MPos and
+    landed far outside the work area whenever the controller carried
+    a nonzero work coordinate offset.
+    """
+
+    def _make_machine(self, ui_context_initializer) -> Machine:
+        machine = Machine(ui_context_initializer)
+        machine.set_axis_extents(WIDTH, HEIGHT)
+        machine.set_origin(Origin.BOTTOM_LEFT)
+        machine.wcs_origin_is_workarea_origin = True
+        machine.active_wcs = "G54"
+        machine.update_wcs_offset("G54", (-397.0, -397.0, 7.0))
+        return machine
+
+    @pytest.mark.ui
+    def test_laser_dot_uses_work_pos(self, ui_context_initializer):
+        """
+        Issue #580 scenario: the controller reports MPos(-230.681,
+        -242.813) with WCO(-397, -397), so the beam is at WPos(166.3,
+        154.2). The dot must appear at the work position, inside the
+        work area, matching the Current Position panel.
+        """
+        machine = self._make_machine(ui_context_initializer)
+        surface = _make_surface(ui_context_initializer, machine)
+
+        _report_state(
+            machine,
+            DeviceState(
+                machine_pos=(-230.681, -242.813, -86.0),
+                work_pos=(166.319, 154.187, -93.0),
+                wco=(-397.0, -397.0, 7.0),
+            ),
+        )
+
+        center_x, center_y = _get_laser_dot_center(surface)
+        assert abs(center_x - 166.319) < 1e-5
+        assert abs(center_y - 154.187) < 1e-5
+
+    @pytest.mark.ui
+    def test_laser_dot_shifts_by_work_margins(self, ui_context_initializer):
+        """
+        The workarea origin offset by margins is the canvas anchor, so
+        the work position is translated by the same offset.
+        """
+        machine = self._make_machine(ui_context_initializer)
+        machine.set_work_margins(10.0, 20.0, 10.0, 20.0)
+        surface = _make_surface(ui_context_initializer, machine)
+
+        _report_state(
+            machine,
+            DeviceState(
+                machine_pos=(-230.681, -242.813, -86.0),
+                work_pos=(166.319, 154.187, -93.0),
+                wco=(-397.0, -397.0, 7.0),
+            ),
+        )
+
+        center_x, center_y = _get_laser_dot_center(surface)
+        assert abs(center_x - (166.319 + 10.0)) < 1e-5
+        assert abs(center_y - (154.187 + 20.0)) < 1e-5
+
+    @pytest.mark.ui
+    def test_laser_dot_falls_back_to_machine_pos(self, ui_context_initializer):
+        """
+        Drivers that do not report a work position leave it unset; the
+        dot then falls back to the machine position.
+        """
+        machine = self._make_machine(ui_context_initializer)
+        surface = _make_surface(ui_context_initializer, machine)
+
+        _report_state(
+            machine,
+            DeviceState(
+                machine_pos=(30.0, 40.0, 0.0),
+                work_pos=(None, None, None),
+                wco=(-397.0, -397.0, 7.0),
+            ),
+        )
+
+        center_x, center_y = _get_laser_dot_center(surface)
+        assert abs(center_x - 30.0) < 1e-5
+        assert abs(center_y - 40.0) < 1e-5
+
+    @pytest.mark.ui
+    def test_laser_dot_ignored_without_machine_pos(
+        self, ui_context_initializer
+    ):
+        """Without any reported position the dot does not move."""
+        machine = self._make_machine(ui_context_initializer)
+        surface = _make_surface(ui_context_initializer, machine)
+
+        surface.set_laser_dot_position(30.0, 40.0)
+        _report_state(
+            machine,
+            DeviceState(
+                machine_pos=(None, None, None),
+                work_pos=(None, None, None),
+                wco=(-397.0, -397.0, 7.0),
+            ),
+        )
+
+        center_x, center_y = _get_laser_dot_center(surface)
+        assert abs(center_x - 30.0) < 1e-5
+        assert abs(center_y - 40.0) < 1e-5
 
 
 class TestDualDotsWithPointerOffset:

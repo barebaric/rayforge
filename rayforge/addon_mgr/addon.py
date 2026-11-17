@@ -8,12 +8,27 @@ from typing import Any, Optional
 import semver
 import yaml
 
+from rayforge.const import GITHUB_URL
 from rayforge.core.hooks import MINIMUM_API_VERSION, PLUGIN_API_VERSION
 from rayforge.shared.util.versioning import UnknownVersion, get_git_tag_version
 
 logger = logging.getLogger(__name__)
 
 METADATA_FILENAME = "rayforge-addon.yaml"
+
+
+def is_official_addon_url(url: str | None) -> bool:
+    """
+    Check whether a repository URL belongs to the Rayforge team.
+
+    Official addons are hosted under the same GitHub account as the
+    Rayforge application itself.
+    """
+    if not url:
+        return False
+    owner_url = GITHUB_URL.rsplit("/", 1)[0]
+    normalized = url.strip().removesuffix("/").removesuffix(".git")
+    return normalized.lower().startswith(owner_url.lower() + "/")
 
 
 class AddonValidationError(Exception):
@@ -169,11 +184,26 @@ class AddonMetadata:
     version_entries: list[dict[str, Any]] = field(default_factory=list)
     default_state: str = "enabled"
     maturity: AddonMaturity = AddonMaturity.STABLE
+    official: bool = False
+    long_description: str = ""
+    screenshots: list[str] = field(default_factory=list)
 
     @property
     def license_name(self) -> str:
         """Returns the license name if available."""
         return self.license.name if self.license else ""
+
+    @property
+    def is_official(self) -> bool:
+        """
+        Whether the addon is provided by the Rayforge team.
+
+        True when the curated registry marks the addon as official, or
+        when the addon is hosted under the Rayforge team's GitHub
+        account. The registry flag is only trusted from the registry
+        itself, never from an addon's own manifest.
+        """
+        return self.official or is_official_addon_url(self.url)
 
     def to_dict(self) -> dict[str, Any]:
         """Converts metadata back to a dictionary for YAML serialization."""
@@ -240,7 +270,46 @@ class AddonMetadata:
             version_entries=version_entries,
             default_state=data.get("default_state", "enabled"),
             maturity=parse_maturity(data.get("maturity")),
+            official=bool(data.get("official", False)),
+            long_description=data.get("long_description", ""),
+            screenshots=_parse_screenshots(data.get("screenshots")),
         )
+
+
+def _parse_screenshots(raw: Any) -> list[str]:
+    """Parse the 'screenshots' list from registry data.
+
+    Only absolute HTTP(S) URLs are kept; the registry publishes
+    screenshots as raw URLs pinned to the addon's release tag.
+    """
+    if not isinstance(raw, list):
+        return []
+    return [
+        item
+        for item in raw
+        if isinstance(item, str) and item.startswith(("https://", "http://"))
+    ]
+
+
+def _parse_local_screenshots(raw: Any) -> list[str]:
+    """Parse repo-relative screenshot paths from a local manifest.
+
+    Unlike registry entries, local manifests list paths relative to
+    the repository root; the UI resolves them to raw download URLs.
+    """
+    if not isinstance(raw, list):
+        return []
+    paths = []
+    for item in raw:
+        if not isinstance(item, str) or not item:
+            continue
+        if item.startswith("/") or "://" in item:
+            continue
+        parts = item.split("/")
+        if ".." in parts or "." in parts or "" in parts:
+            continue
+        paths.append(item)
+    return paths
 
 
 def _parse_version_entries(
@@ -387,6 +456,8 @@ class Addon:
                 license=AddonLicense.from_dict(data.get("license")),
                 default_state=default_state,
                 maturity=parse_maturity(data.get("maturity")),
+                long_description=data.get("long_description", ""),
+                screenshots=_parse_local_screenshots(data.get("screenshots")),
             )
 
             return cls(path=addon_dir, metadata=metadata)

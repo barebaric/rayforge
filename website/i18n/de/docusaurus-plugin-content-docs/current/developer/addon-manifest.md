@@ -135,6 +135,38 @@ weglassen.
 maturity: experimental
 ```
 
+### `long_description`
+
+Eine längere Beschreibung deines Addons (höchstens 2000 Zeichen), geschrieben in Markdown. Sie wird
+in der Addon-Detailansicht angezeigt, die sich öffnet, wenn ein Benutzer im Addon-Manager auf dein
+Addon klickt. Überschriften, Listen, Hervorhebungen, Links und Codeblöcke werden unterstützt. Die
+kurze `description` wird als reine Textalternative verwendet, wenn dieses Feld weggelassen wird.
+
+```yaml
+long_description: |
+  Eine längere Beschreibung dessen, was das Addon tut.
+
+  - **Einfach zu bedienen**: funktioniert sofort
+  - Siehe die [Dokumentation](https://example.com/docs) für Details
+```
+
+### `screenshots`
+
+Bis zu 5 repository-relative Pfade zu PNG-, JPEG- oder WebP-Bildern (jeweils höchstens 3 MB). Sie
+werden als Galerie in der Addon-Detailansicht angezeigt. Die Bilder müssen in dein Repository
+committet werden; wenn eine Version veröffentlicht wird, pinnt die Registry jeden Pfad an den
+Release-Tag und prüft, dass er heruntergeladen werden kann.
+
+```yaml
+screenshots:
+  - docs/screenshots/overview.png
+  - docs/screenshots/settings.png
+```
+
+Bei integrierten Addons, die mit Rayforge ausgeliefert werden, werden die Pfade gegen das
+Rayforge-Repository am Versions-Tag der App aufgelöst, mit dem Standard-Branch als Alternative für
+Entwicklungs-Builds.
+
 ## Einstiegspunkte
 
 Der Abschnitt `provides` definiert, was dein Addon zu Rayforge beisteuert.

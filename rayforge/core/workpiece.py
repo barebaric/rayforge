@@ -6,6 +6,8 @@ import warnings
 from collections.abc import Generator, Iterable
 from copy import deepcopy
 from dataclasses import asdict
+from enum import Enum, auto
+from gettext import gettext as _
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -78,6 +80,30 @@ class RenderContext(NamedTuple):
     size_mm: tuple[float, float] | None = None
 
 
+class AnchorMode(Enum):
+    """Defines which local point a workpiece is positioned around."""
+
+    CORNER = auto()
+    """The lower-left corner of the geometry's bounding box."""
+    CENTER = auto()
+    """The center of the geometry's bounding box."""
+    REFERENCE = auto()
+    """The geometry provider's reference point, e.g. the sketch origin.
+
+    Falls back to the center when the provider declares no reference
+    point.
+    """
+
+    def label(self) -> str:
+        """Return a translatable label for this anchor mode."""
+        labels = {
+            self.CORNER: _("Corner"),
+            self.CENTER: _("Center"),
+            self.REFERENCE: _("Reference point"),
+        }
+        return labels[self]
+
+
 class WorkPiece(DocItem):
     """
     Represents a real-world workpiece. It is a lightweight data container,
@@ -98,6 +124,13 @@ class WorkPiece(DocItem):
         # Natural (untransformed) dimensions of the workpiece content.
         self.natural_width_mm: float = 0.0
         self.natural_height_mm: float = 0.0
+
+        # Which local point the workpiece is positioned and resized
+        # around.
+        self._anchor_mode: AnchorMode = AnchorMode.CORNER
+        # Position of the provider's reference point in the normalized
+        # 0-1 space, updated whenever the geometry is normalized.
+        self._reference_anchor: tuple[float, float] | None = None
 
         # An optional override for the workpiece geometry. If set, this takes
         # precedence over the source_segment's geometry. It allows for
@@ -220,6 +253,9 @@ class WorkPiece(DocItem):
             geometry.transform(norm_matrix)
             for fd in fill_data:
                 fd.geometry.transform(norm_matrix)
+            instance._reference_anchor = instance._compute_reference_anchor(
+                provider, min_x, min_y, width, height
+            )
 
         # Cache the results (even if empty) to ensure fast rendering
         instance._boundaries_cache = geometry
@@ -227,6 +263,23 @@ class WorkPiece(DocItem):
         instance._resolved_text_cache = instance_cache
 
         return instance
+
+    @staticmethod
+    def _compute_reference_anchor(
+        provider: IGeometryProvider,
+        min_x: float,
+        min_y: float,
+        width: float,
+        height: float,
+    ) -> tuple[float, float] | None:
+        """
+        Maps the provider's reference point into the normalized 0-1
+        space, or returns None when the provider declares none.
+        """
+        ref = provider.get_reference_point()
+        if ref is None:
+            return None
+        return ((ref[0] - min_x) / width, (ref[1] - min_y) / height)
 
     @property
     def source_segment(self) -> SourceAssetSegment | None:
@@ -276,6 +329,42 @@ class WorkPiece(DocItem):
         This is the authoritative source for the workpiece's intrinsic size.
         """
         return (self.natural_width_mm, self.natural_height_mm)
+
+    @property
+    def anchor_mode(self) -> AnchorMode:
+        """
+        Which local point the workpiece is positioned and resized around.
+        """
+        return self._anchor_mode
+
+    @anchor_mode.setter
+    def anchor_mode(self, mode: AnchorMode):
+        if self._anchor_mode != mode:
+            self._anchor_mode = mode
+
+    @property
+    def anchor_point(self) -> tuple[float, float]:
+        """
+        The anchor point in the normalized 0-1 local space, derived from
+        the anchor mode. Reference mode falls back to the center when the
+        geometry provider declares no reference point.
+        """
+        if self._anchor_mode is AnchorMode.CENTER:
+            return (0.5, 0.5)
+        if self._anchor_mode is AnchorMode.REFERENCE:
+            if self._reference_anchor is not None:
+                return self._reference_anchor
+            return (0.5, 0.5)
+        return (0.0, 0.0)
+
+    def get_anchor_world(self) -> Point:
+        """The anchor point's current position in world space (mm)."""
+        return self.get_world_transform().transform_point(self.anchor_point)
+
+    def has_reference_point(self) -> bool:
+        """True if the geometry provider declares a reference point."""
+        provider = self.get_geometry_provider()
+        return bool(provider and provider.get_reference_point() is not None)
 
     def get_local_bbox(self) -> Rect | None:
         """
@@ -468,6 +557,10 @@ class WorkPiece(DocItem):
             for fill_data in unnormalized_fills:
                 fill_data.geometry.transform(norm_matrix)
 
+            self._reference_anchor = self._compute_reference_anchor(
+                provider, min_x, min_y, width, height
+            )
+
             self._boundaries_cache = unnormalized_geo
             self._fills_cache = unnormalized_fills
             return self._boundaries_cache
@@ -624,6 +717,8 @@ class WorkPiece(DocItem):
             self._geometry_provider_params
         )
         world_wp.source_asset_uid = self.source_asset_uid
+        world_wp._anchor_mode = self._anchor_mode
+        world_wp._reference_anchor = self._reference_anchor
         world_wp._resolved_text_cache = dict(self._resolved_text_cache)
 
         world_wp._image_edits = self._image_edits
@@ -952,6 +1047,7 @@ class WorkPiece(DocItem):
             "matrix": self._matrix.to_list(),
             "width_mm": self.natural_width_mm,
             "height_mm": self.natural_height_mm,
+            "anchor_mode": self._anchor_mode.name,
             "tabs": [asdict(t) for t in self._tabs],
             "tabs_enabled": self._tabs_enabled,
             "source_segment": (
@@ -1003,6 +1099,7 @@ class WorkPiece(DocItem):
             "matrix",
             "width_mm",
             "height_mm",
+            "anchor_mode",
             "tabs",
             "tabs_enabled",
             "source_segment",
@@ -1039,6 +1136,10 @@ class WorkPiece(DocItem):
         wp.matrix = Matrix.from_list(data["matrix"])
         wp.natural_width_mm = data.get("width_mm", 0.0)
         wp.natural_height_mm = data.get("height_mm", 0.0)
+        try:
+            wp._anchor_mode = AnchorMode[data.get("anchor_mode", "CORNER")]
+        except KeyError:
+            wp._anchor_mode = AnchorMode.CORNER
 
         loaded_tabs = [Tab(**t_data) for t_data in data.get("tabs", [])]
         wp.tabs = loaded_tabs
@@ -1589,6 +1690,44 @@ class WorkPiece(DocItem):
 
         return new_workpieces
 
+    def apply_provider_geometry(
+        self, provider: IGeometryProvider, geometry: Geometry
+    ) -> None:
+        """
+        Adopts geometry freshly generated by *provider* as the
+        workpiece's new natural size, keeping the anchor point (see
+        `anchor_mode`) at its world position.
+
+        The workpiece is resized around the anchor point's new normalized
+        position and then re-positioned, because that position shifts
+        whenever the bounding box moves relative to the anchor.
+        """
+        anchor_world_before = self.get_anchor_world()
+
+        # Calculate bounding box in mm
+        min_x, min_y, max_x, max_y = geometry.rect()
+        width = max(max_x - min_x, 1e-9)  # Prevent zero size
+        height = max(max_y - min_y, 1e-9)  # Prevent zero size
+
+        self._reference_anchor = self._compute_reference_anchor(
+            provider, min_x, min_y, width, height
+        )
+
+        self.natural_width_mm = width
+        self.natural_height_mm = height
+
+        logger.debug(
+            f"WP {self.uid[:8]}: New natural size: {width:.2f}x{height:.2f}mm"
+        )
+        self.set_size(width, height, anchor=self.anchor_point)
+
+        anchor_world_after = self.get_anchor_world()
+        dx = anchor_world_before[0] - anchor_world_after[0]
+        dy = anchor_world_before[1] - anchor_world_after[1]
+        if abs(dx) > 1e-9 or abs(dy) > 1e-9:
+            pos = self.pos
+            self.pos = (pos[0] + dx, pos[1] + dy)
+
     def regenerate_from_geometry_provider(self) -> None:
         """
         Regenerates the workpiece from its geometry provider.
@@ -1596,10 +1735,9 @@ class WorkPiece(DocItem):
         This method:
         1. Fetches the geometry provider.
         2. Gets geometry with instance-specific parameter overrides.
-        3. Calculates the new natural size from the geometry.
-        4. Updates the instance's `natural_width/height_mm`.
-        5. It resizes the on-canvas item.
-        6. Invalidates caches and signals the UI to redraw.
+        3. Adopts the geometry, keeping the anchor point (see
+           `anchor_mode`) at its world position.
+        4. Invalidates caches and signals the UI to redraw.
         """
         if not self.geometry_provider_uid:
             logger.warning(
@@ -1612,7 +1750,7 @@ class WorkPiece(DocItem):
         if not provider:
             logger.warning(
                 f"WP {self.uid[:8]}: Could not find geometry provider "
-                f"{self.geometry_provider_uid}"
+                f"{self.geometry_provider_uid[:8]}"
             )
             return
 
@@ -1639,20 +1777,7 @@ class WorkPiece(DocItem):
                 "Natural size not updated."
             )
         else:
-            # Calculate bounding box in mm
-            min_x, min_y, max_x, max_y = geometry.rect()
-            width = max(max_x - min_x, 1e-9)  # Prevent zero size
-            height = max(max_y - min_y, 1e-9)  # Prevent zero size
-
-            self.natural_width_mm = width
-            self.natural_height_mm = height
-
-            logger.debug(
-                f"WP {self.uid[:8]}: New natural size: "
-                f"{width:.2f}x{height:.2f}mm"
-            )
-            # Update the workpiece's actual size to match its new natural size.
-            self.set_size(width, height)
+            self.apply_provider_geometry(provider, geometry)
 
         # Invalidate the geometry cache to force regeneration on next render
         self.clear_render_cache()

@@ -12,6 +12,7 @@ from gi.repository import GLib
 from ...context import get_context
 from ...core.source_asset import SourceAsset
 from ...doceditor.source_watcher import SourceWatcher
+from ..shared.gtk import report_dialog_error
 from . import file_dialogs
 from .source_changed_dialog import SourceChangedDialog
 
@@ -93,7 +94,8 @@ class SourceReloadMonitor:
     def _on_relink_response(self, dialog, result, asset: SourceAsset):
         try:
             file = dialog.open_finish(result)
-        except GLib.Error:
+        except GLib.Error as e:
+            report_dialog_error("Relinking source", e)
             return
         if file is not None and file.get_path():
             self.relink_to(asset, Path(file.get_path()))

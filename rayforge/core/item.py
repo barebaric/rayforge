@@ -94,6 +94,11 @@ class DocItem(ABC):
         self.transform_changed = _RevisionSignal(
             owner_ref, lambda o: o._bump_transform_revision()
         )
+        # Fired when only the item's name changes. A rename is a pure
+        # label change: it must not bump revision counters or trigger
+        # re-rendering, so it gets a dedicated signal instead of riding
+        # on ``updated``.
+        self.renamed = Signal()
 
         # Bubbled Signals
         # Fired when a descendant is added anywhere in the subtree.
@@ -104,6 +109,8 @@ class DocItem(ABC):
         self.descendant_updated = Signal()
         # Fired when a descendant's `transform_changed` signal is fired.
         self.descendant_transform_changed = Signal()
+        # Fired when a descendant's `renamed` signal is fired.
+        self.descendant_renamed = Signal()
 
         self._natural_size: tuple[float, float] = (0.0, 0.0)
 
@@ -148,10 +155,16 @@ class DocItem(ABC):
 
     @name.setter
     def name(self, new_name: str):
-        """Sets the item name and sends an update signal if changed."""
+        """
+        Sets the item name and sends the ``renamed`` signal if changed.
+
+        A rename is a pure label change. It deliberately does not fire
+        ``updated`` so receivers keep render caches and pipeline
+        rebuilds untouched.
+        """
         if self._name != new_name:
             self._name = new_name
-            self.updated.send(self)
+            self.renamed.send(self)
 
     def depends_on_asset(self, asset: IAsset) -> bool:
         """
@@ -301,10 +314,16 @@ class DocItem(ABC):
         """
         return self.get_world_transform().get_abs_scale()
 
-    def set_size(self, width_mm: float, height_mm: float):
+    def set_size(
+        self,
+        width_mm: float,
+        height_mm: float,
+        anchor: tuple[float, float] = (0.5, 0.5),
+    ):
         """
-        Sets the item size in mm while preserving its world-space center
-        point. This manipulates the existing matrix.
+        Sets the item size in mm while keeping the item's local ``anchor``
+        point (in the normalized 0-1 space) at its current world position.
+        Defaults to the center point. This manipulates the existing matrix.
         """
         # Guard against zero dimensions to prevent singular matrices in Cairo
         width_mm = max(abs(width_mm), 1e-9)
@@ -329,23 +348,23 @@ class DocItem(ABC):
         # Compose a new world matrix with the new scale, but without its
         # translation corrected yet.
         # We use (0,0) for translation initially, as we will correct the
-        # center point manually.
+        # anchor point manually.
         world_transform_new_uncorrected = Matrix.compose(
             0, 0, angle, new_sx, new_sy, skew
         )
 
-        # The old center point that we must maintain
-        center_world_old = world_transform_old.transform_point((0.5, 0.5))
+        # The old position of the anchor point that we must maintain
+        anchor_world_old = world_transform_old.transform_point(anchor)
 
-        # The center point of our newly composed matrix (before translation)
-        center_world_new_uncorrected = (
-            world_transform_new_uncorrected.transform_point((0.5, 0.5))
+        # The anchor point of our newly composed matrix (before translation)
+        anchor_world_new_uncorrected = (
+            world_transform_new_uncorrected.transform_point(anchor)
         )
 
-        # Calculate the required translation to move the new center to the old
-        # center's position.
-        final_tx = center_world_old[0] - center_world_new_uncorrected[0]
-        final_ty = center_world_old[1] - center_world_new_uncorrected[1]
+        # Calculate the required translation to move the new anchor to the
+        # old anchor's position.
+        final_tx = anchor_world_old[0] - anchor_world_new_uncorrected[0]
+        final_ty = anchor_world_old[1] - anchor_world_new_uncorrected[1]
 
         # Create the final desired world matrix
         world_transform_new = world_transform_new_uncorrected.set_translation(
@@ -784,22 +803,26 @@ class DocItem(ABC):
     def _connect_child_signals(self, child: DocItem):
         child.updated.connect(self._on_child_updated)
         child.transform_changed.connect(self._on_child_transform_changed)
+        child.renamed.connect(self._on_child_renamed)
         child.descendant_added.connect(self._on_descendant_added)
         child.descendant_removed.connect(self._on_descendant_removed)
         child.descendant_updated.connect(self._on_descendant_updated)
         child.descendant_transform_changed.connect(
             self._on_descendant_transform_changed
         )
+        child.descendant_renamed.connect(self._on_descendant_renamed)
 
     def _disconnect_child_signals(self, child: DocItem):
         child.updated.disconnect(self._on_child_updated)
         child.transform_changed.disconnect(self._on_child_transform_changed)
+        child.renamed.disconnect(self._on_child_renamed)
         child.descendant_added.disconnect(self._on_descendant_added)
         child.descendant_removed.disconnect(self._on_descendant_removed)
         child.descendant_updated.disconnect(self._on_descendant_updated)
         child.descendant_transform_changed.disconnect(
             self._on_descendant_transform_changed
         )
+        child.descendant_renamed.disconnect(self._on_descendant_renamed)
 
     def _on_child_updated(self, sender: DocItem):
         self.descendant_updated.send(
@@ -811,6 +834,11 @@ class DocItem(ABC):
     ):
         self.descendant_transform_changed.send(
             self, origin=sender, parent_of_origin=self, old_matrix=old_matrix
+        )
+
+    def _on_child_renamed(self, sender: DocItem):
+        self.descendant_renamed.send(
+            self, origin=sender, parent_of_origin=self
         )
 
     def _on_descendant_added(
@@ -831,6 +859,13 @@ class DocItem(ABC):
         self, sender: DocItem, *, origin: DocItem, parent_of_origin: DocItem
     ):
         self.descendant_updated.send(
+            self, origin=origin, parent_of_origin=parent_of_origin
+        )
+
+    def _on_descendant_renamed(
+        self, sender: DocItem, *, origin: DocItem, parent_of_origin: DocItem
+    ):
+        self.descendant_renamed.send(
             self, origin=origin, parent_of_origin=parent_of_origin
         )
 

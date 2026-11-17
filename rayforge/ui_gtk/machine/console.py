@@ -10,7 +10,6 @@ from ...logging_setup import (
     get_ui_formatter,
     get_ui_log_records,
 )
-from ...machine.driver.dummy import NoDeviceDriver
 from ...machine.models.machine import Machine
 from ...usage import get_usage_tracker
 from ..icons import get_icon
@@ -85,7 +84,7 @@ class Console(Gtk.Box):
         self.verbose_toggle = Gtk.ToggleButton()
         self.verbose_toggle.set_active(False)
         self.verbose_toggle.set_tooltip_text(
-            _("Show verbose output (status polls)")
+            _("Show verbose output (status polls, raw I/O)")
         )
         self.verbose_toggle.connect("toggled", self._on_verbose_toggled)
         self.verbose_toggle.set_margin_top(9)
@@ -514,7 +513,7 @@ class Console(Gtk.Box):
         if not text:
             return
 
-        is_dummy = isinstance(machine.driver, NoDeviceDriver)
+        is_dummy = machine.is_driverless
         is_connected = machine.is_connected()
 
         if not is_connected and not is_dummy:
@@ -563,7 +562,7 @@ class Console(Gtk.Box):
         if not self._machine:
             sensitive = False
         else:
-            is_dummy = isinstance(self._machine.driver, NoDeviceDriver)
+            is_dummy = self._machine.is_driverless
             is_connected = self._machine.is_connected()
             sensitive = is_connected or is_dummy
 

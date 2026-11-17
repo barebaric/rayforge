@@ -103,6 +103,7 @@ sa page :
 | [Ellipse](arc-ellipse.md)                 | `G+C`     |
 | [Rectangle](rectangle.md)                 | `G+R`     |
 | [Rectangle arrondi](rectangle.md)         | `G+O`     |
+| [Polygone](polygon.md)                    | `G+X`     |
 | [Remplissage de zone](fill.md)            | `G+F`     |
 | [Zone de texte](text-box.md)              | `G+T`     |
 | [Tableau circulaire](arrays.md)           | `G+Y`     |
@@ -154,9 +155,10 @@ de construction dans la barre d'outils les masque quand elles gênent.
 
 Chaque outil de dessin est documenté sur sa propre page : [Tracé](path.md) (lignes et courbes de
 Bézier), [Arc et ellipse](arc-ellipse.md), [Rectangle](rectangle.md) (et rectangles arrondis),
-[Remplissage de zones](fill.md), [Zone de texte](text-box.md) et [Grille](grid.md). Les
-modifications comme [Décalage](offset.md) et [Chanfrein et congé](chamfer-fillet.md) transforment la
-géométrie existante, [Tableaux](arrays.md) la copie le long d'un cercle ou d'une courbe, et
-[Expressions](expressions.md) explique les paramètres, les expressions et les zones de texte
-paramétriques. Les esquisses peuvent être enregistrées puis réimportées avec toutes leurs
-contraintes — voir [Importation et exportation](import-export.md).
+[Polygone](polygon.md) (et étoiles), [Remplissage de zones](fill.md), [Zone de texte](text-box.md)
+et [Grille](grid.md). Les modifications comme [Décalage](offset.md) et
+[Chanfrein et congé](chamfer-fillet.md) transforment la géométrie existante, [Tableaux](arrays.md)
+la copie le long d'un cercle ou d'une courbe, et [Expressions](expressions.md) explique les
+paramètres, les expressions et les zones de texte paramétriques. Les esquisses peuvent être
+enregistrées puis réimportées avec toutes leurs contraintes — voir
+[Importation et exportation](import-export.md).

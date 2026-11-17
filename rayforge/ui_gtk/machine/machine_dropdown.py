@@ -10,7 +10,6 @@ from ...machine.driver.driver import (
     DEVICE_STATUS_LABELS,
     DeviceStatus,
 )
-from ...machine.driver.dummy import NoDeviceDriver
 from ...machine.models.machine import Machine
 from ...machine.transport.transport import TransportStatus
 from ...shared.util.time_format import format_seconds
@@ -52,7 +51,7 @@ def _get_connection_icon_name(status: TransportStatus) -> str:
 def _get_status_text(
     machine: Machine, eta_seconds: float | None = None
 ) -> str:
-    is_nodriver = isinstance(machine.driver, NoDeviceDriver)
+    is_nodriver = machine.is_driverless
     if is_nodriver:
         return _("No driver")
     status = machine.device_state.status
@@ -67,7 +66,7 @@ def _get_status_text(
 
 
 def _get_connection_status(machine: Machine) -> TransportStatus:
-    if isinstance(machine.driver, NoDeviceDriver):
+    if machine.is_driverless:
         return TransportStatus.DISCONNECTED
     return machine.connection_status
 

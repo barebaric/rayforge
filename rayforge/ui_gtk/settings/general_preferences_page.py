@@ -1,9 +1,9 @@
 import logging
 from gettext import gettext as _
 from pathlib import Path
-from typing import ClassVar
+from typing import Any, ClassVar
 
-from gi.repository import Adw, GLib, Gtk
+from gi.repository import Adw, Gio, GLib, Gtk
 
 from ...context import get_context
 from ...core.config import OpsColorMode, RightPanelMode, StartupBehavior
@@ -14,6 +14,7 @@ from ...shared.units.definitions import (
 from ...shared.util.localized import SUPPORTED_LANGUAGES
 from ...ui_gtk.doceditor import file_dialogs
 from ...usage import get_usage_tracker
+from ..shared.gtk import report_dialog_error
 from ..shared.pref_rows.base import SpinRow
 from ..shared.preferences_page import TrackedPreferencesPage
 
@@ -172,6 +173,17 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         )
         app_settings_group.add(self.right_panel_mode_row)
 
+        self.shop_mode_row = Adw.SwitchRow(
+            title=_("Shop mode"),
+            subtitle=_(
+                "Replace the machine controls with large, touch-friendly "
+                "readouts and buttons for working at the machine"
+            ),
+        )
+        self.shop_mode_row.set_active(config.shop_mode)
+        self.shop_mode_row.connect("notify::active", self.on_shop_mode_changed)
+        app_settings_group.add(self.shop_mode_row)
+
         # Units Preferences
         units_group = Adw.PreferencesGroup()
         units_group.set_title(_("Units"))
@@ -316,6 +328,16 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
             "notify::active", self.on_check_updates_changed
         )
         startup_group.add(self.check_updates_row)
+
+        self.check_addon_updates_row = Adw.SwitchRow(
+            title=_("Check for addon updates"),
+            subtitle=_("Automatically check for addon updates on startup"),
+        )
+        self.check_addon_updates_row.set_active(config.check_for_addon_updates)
+        self.check_addon_updates_row.connect(
+            "notify::active", self.on_check_addon_updates_changed
+        )
+        startup_group.add(self.check_addon_updates_row)
 
         self.watch_sources_row = Adw.SwitchRow(
             title=_("Watch imported files"),
@@ -474,7 +496,14 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
                     parent = window.get_transient_for()
                     if parent is not None:
                         app = parent.get_application()
-                if app is not None:
+                if app is None:
+                    # On macOS the window deliberately has no transient
+                    # parent (see patched_dialog_window); fall back to
+                    # the running application itself.
+                    default_app: Any = Gio.Application.get_default()
+                    if default_app is not None:
+                        default_app.request_restart()
+                else:
                     app.request_restart()
 
         dialog.connect("response", _on_response)
@@ -491,6 +520,10 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         selected_index = combo_row.get_selected()
         mode = self.RIGHT_PANEL_MODES[selected_index]
         get_context().config.set_right_panel_mode(mode)
+
+    def on_shop_mode_changed(self, switch_row, _):
+        """Called when the user toggles shop mode."""
+        get_context().config.set_shop_mode(switch_row.get_active())
 
     def on_length_unit_changed(self, combo_row, _):
         """Called when the user selects a new length unit."""
@@ -556,7 +589,14 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
             self.startup_project_row.set_text(str(file_path))
             get_context().config.set_startup_project_path(file_path)
         except GLib.Error as e:
-            logger.error(f"Error selecting file: {e.message}")
+            if report_dialog_error("Selecting startup project", e):
+                window = self.get_ancestor(Adw.PreferencesWindow)
+                if window:
+                    window.add_toast(
+                        Adw.Toast(
+                            title=_("Error: {msg}").format(msg=e.message)
+                        )
+                    )
 
     def on_usage_consent_changed(self, switch_row, _):
         """Called when the user toggles usage reporting."""
@@ -578,6 +618,11 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         """Called when the user toggles the update check setting."""
         enabled = switch_row.get_active()
         get_context().config.set_check_for_app_updates(enabled)
+
+    def on_check_addon_updates_changed(self, switch_row, _):
+        """Called when the user toggles addon update checks."""
+        enabled = switch_row.get_active()
+        get_context().config.set_check_for_addon_updates(enabled)
 
     def on_watch_sources_changed(self, switch_row, _):
         """Called when the user toggles watching imported files."""

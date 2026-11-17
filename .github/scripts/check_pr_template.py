@@ -5,7 +5,8 @@ Pull requests that leave template sections empty or the checklist
 unticked are closed automatically with a comment listing what is
 missing. Editing the description into compliance reopens the pull
 request. Drafts, bots, and users with write access to the repository
-are exempt.
+are exempt. Only pull requests opened after the check was introduced
+are subject to it.
 """
 
 import argparse
@@ -17,6 +18,7 @@ import subprocess
 MARKER = "<!-- pr-template-check-bot -->"
 LABEL = "invalid-template"
 MIN_ANSWER_CHARS = 30
+ENFORCED_SINCE = "2026-10-15T11:12:21Z"
 
 BOT_LOGINS = ("dependabot[bot]", "github-actions[bot]")
 
@@ -171,7 +173,11 @@ def has_write_access(repo, login):
 
 
 def has_label(pr, name):
-    return any(l.get("name") == name for l in pr.get("labels", []))
+    return any(c.get("name") == name for c in pr.get("labels", []))
+
+
+def is_enforced(pr):
+    return pr.get("created_at", "") >= ENFORCED_SINCE
 
 
 def reject(repo, number, problems):
@@ -221,7 +227,7 @@ def main():
 
     problems = find_problems(pr.get("body") or "")
     if problems:
-        if pr["state"] == "open":
+        if is_enforced(pr) and pr["state"] == "open":
             reject(repo, args.pr_number, problems)
         return
     if has_label(pr, LABEL):

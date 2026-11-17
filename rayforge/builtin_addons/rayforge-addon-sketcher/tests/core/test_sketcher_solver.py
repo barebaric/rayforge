@@ -9,6 +9,7 @@ from sketcher.core.constraints import (
 )
 from sketcher.core.params import ParameterContext
 from sketcher.core.registry import EntityRegistry
+from sketcher.core.sketch import Sketch
 from sketcher.core.solver import Solver
 
 
@@ -210,3 +211,138 @@ def test_solver_impossible_constraints():
     optimal_dist = 15.0
     # Relax tolerance slightly as the solver may terminate just short
     assert reg.get_point(p2).x == pytest.approx(optimal_dist, abs=1e-2)
+
+
+def test_solver_skips_points_no_constraint_references():
+    """Points that no constraint references keep their exact
+    positions and stay out of the solve."""
+    reg = EntityRegistry()
+    params = ParameterContext()
+
+    p1 = reg.add_point(0, 0, fixed=True)
+    p2 = reg.add_point(5, 0)
+    far1 = reg.add_point(100, 100)
+    far2 = reg.add_point(-50, 25)
+
+    constraints = [DistanceConstraint(p1, p2, 10.0)]
+    solver = Solver(reg, params, constraints)
+    assert solver.solve() is True
+
+    assert reg.get_point(p2).x == pytest.approx(10.0, abs=1e-4)
+    assert reg.get_point(far1).pos() == (100.0, 100.0)
+    assert reg.get_point(far2).pos() == (-50.0, 25.0)
+
+
+def test_solver_dof_flags_for_unreferenced_points():
+    """DOF analysis flags only the points the constraints touch;
+    unreferenced points stay unconstrained."""
+    reg = EntityRegistry()
+    params = ParameterContext()
+
+    p1 = reg.add_point(0, 0, fixed=True)
+    p2 = reg.add_point(5, 0)
+    p3 = reg.add_point(0, 5)
+    free = reg.add_point(42, 42)
+
+    constraints = [
+        HorizontalConstraint(p1, p2),
+        VerticalConstraint(p1, p3),
+        DistanceConstraint(p1, p2, 3.0),
+        DistanceConstraint(p1, p3, 4.0),
+    ]
+    solver = Solver(reg, params, constraints)
+    assert solver.solve() is True
+
+    assert reg.get_point(p2).constrained is True
+    assert reg.get_point(p3).constrained is True
+    assert reg.get_point(free).constrained is False
+
+
+def test_sketch_solve_with_unconstrained_geometry():
+    """Imported geometry without constraints solves trivially: nothing
+    moves and no point gets flagged as constrained."""
+    sketch = Sketch("test")
+    pids = [sketch.add_point(float(i), float(i * 2)) for i in range(1, 51)]
+    for i in range(len(pids) - 1):
+        sketch.add_line(pids[i], pids[i + 1])
+
+    assert sketch.solve() is True
+
+    for i, pid in enumerate(pids, start=1):
+        point = sketch.registry.get_point(pid)
+        assert point.pos() == (float(i), float(i * 2))
+        assert point.constrained is False
+
+
+def test_partition_constraints_separates_islands():
+    """Global solves split into one sub-problem per connected
+    constraint island."""
+    reg = EntityRegistry()
+    p1 = reg.add_point(0, 0, fixed=True)
+    p2 = reg.add_point(5, 0)
+    p3 = reg.add_point(200, 0, fixed=True)
+    p4 = reg.add_point(205, 0)
+
+    solver = Solver(
+        reg,
+        ParameterContext(),
+        [DistanceConstraint(p1, p2, 10.0), DistanceConstraint(p3, p4, 50.0)],
+    )
+
+    parts = solver._partition_constraints()
+    point_sets = sorted(sorted(part[2]) for part in parts)
+    assert point_sets == [
+        sorted({p1, p2}),
+        sorted({p3, p4}),
+    ]
+
+
+def test_partition_constraints_merges_bridged_islands():
+    """A constraint coupling two islands merges them into one
+    sub-problem."""
+    reg = EntityRegistry()
+    p1 = reg.add_point(0, 0, fixed=True)
+    p2 = reg.add_point(5, 0)
+    p3 = reg.add_point(200, 0, fixed=True)
+    p4 = reg.add_point(205, 0)
+
+    solver = Solver(
+        reg,
+        ParameterContext(),
+        [
+            DistanceConstraint(p1, p2, 10.0),
+            DistanceConstraint(p3, p4, 50.0),
+            DistanceConstraint(p1, p3, 200.0),
+        ],
+    )
+
+    parts = solver._partition_constraints()
+    assert len(parts) == 1
+    assert parts[0][2] == {p1, p2, p3, p4}
+
+
+def test_solver_conflict_isolated_to_its_island():
+    """A conflicting island fails the solve without poisoning the
+    other island: it still reaches its constraint, and its fully
+    constrained points get flagged even though the global result is a
+    failure."""
+    reg = EntityRegistry()
+    params = ParameterContext()
+    p1 = reg.add_point(0, 0, fixed=True)
+    p2 = reg.add_point(5, 0)
+    p3 = reg.add_point(200, 0, fixed=True)
+    p4 = reg.add_point(205, 0)
+
+    constraints = [
+        HorizontalConstraint(p1, p2),
+        DistanceConstraint(p1, p2, 10.0),
+        DistanceConstraint(p3, p4, 50.0),
+        DistanceConstraint(p3, p4, 60.0),
+    ]
+    solver = Solver(reg, params, constraints)
+    assert solver.solve() is False
+
+    assert reg.get_point(p2).x == pytest.approx(10.0, abs=1e-4)
+    assert reg.get_point(p2).constrained is True
+    assert reg.get_point(p4).x == pytest.approx(255.0, abs=1e-2)
+    assert reg.get_point(p4).constrained is False

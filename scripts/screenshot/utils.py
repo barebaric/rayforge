@@ -35,7 +35,6 @@ from PIL import Image, ImageDraw, ImageFilter
 from rayforge.config import CONFIG_DIR
 from rayforge.context import get_context
 from rayforge.core.recipe import Recipe
-from rayforge.core.step_registry import step_registry
 from rayforge.doceditor.array import ArrayMode
 from rayforge.ui_gtk.array_dialog import (
     CircularArrayDialog,
@@ -1433,28 +1432,14 @@ def open_recipe_editor(
     return dialog
 
 
-def open_material_test(win: "MainWindow") -> "StepSettingsDialog":
-    """Open material test grid dialog."""
+def create_calibration_test(win: "MainWindow", action_name: str) -> None:
+    """Create a calibration test through its Tools menu action.
 
-    def _open() -> "StepSettingsDialog":
-        context = win.doc_editor.context
-        step_cls = step_registry.get("MaterialTestStep")
-        assert step_cls is not None
-        step = step_cls.create(context)
-        step.name = "Material Test Grid"
-        dialog = StepSettingsDialog(
-            editor=win.doc_editor,
-            step=step,
-            transient_for=win,
-        )
-        dialog.set_initial_page("step-settings")
-        dialog.set_default_size(600, 900)
-        dialog.present()
-        return dialog
-
-    dialog = run_on_main_thread(_open)
-    logger.info("Opened material test grid dialog")
-    return dialog
+    The test gets its own layer and is selected, so its Test Settings
+    show in the item properties panel.
+    """
+    run_on_main_thread(lambda: win.lookup_action(action_name).activate(None))
+    logger.info(f"Created calibration test via {action_name}")
 
 
 def open_array_dialog(

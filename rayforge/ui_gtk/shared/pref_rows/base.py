@@ -156,12 +156,18 @@ class SpinRow(Adw.ActionRow):
         except ValueError:
             current = float(self._spin_button.get_value())
         if abs(value - current) < 1e-9:
+            self._last_emitted_value = value
             return
         if self._echoes_clamped_text(value):
             return
         self._is_updating = True
         try:
             self._spin_button.set_value(value)
+            # GTK delivers the entry text update asynchronously; record
+            # the value now so that the deferred change notification is
+            # recognized as an echo of this programmatic set rather
+            # than a user edit.
+            self._last_emitted_value = value
         finally:
             self._is_updating = False
 

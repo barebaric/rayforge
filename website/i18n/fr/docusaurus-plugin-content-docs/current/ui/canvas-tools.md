@@ -162,8 +162,25 @@ Combinez ou soustrayez des formes :
 
 ## Édition vectorielle
 
-Double-cliquez sur une pièce sur le canevas pour entrer en mode d'édition vectorielle. Dans ce mode,
-vous pouvez sélectionner et supprimer des segments vectoriels individuels de la pièce.
+Double-cliquez sur une pièce importée sur le canevas pour entrer en mode d'édition vectorielle. Dans
+ce mode, vous pouvez sélectionner et supprimer des segments vectoriels individuels de la pièce, et
+modifier ses nœuds.
+
+Cliquez sur un segment pour le sélectionner, ou tracez un cadre autour de plusieurs. Les nœuds du
+contour sélectionné apparaissent sous forme de petits carrés, et les poignées des courbes
+sélectionnées sous forme de points ronds :
+
+- **Faites glisser un nœud** pour le déplacer ; les poignées de courbe voisines le suivent. Dans un
+  chemin fermé, le nœud de début et le nœud de fin ne forment qu'un seul nœud.
+- **Faites glisser une poignée** pour modifier la forme d'une courbe.
+- Cliquez sur un nœud et appuyez sur <kbd>Suppr</kbd> pour le supprimer ; les segments de part et
+  d'autre sont réunis en un seul. Sans nœud sélectionné, <kbd>Suppr</kbd> supprime les segments
+  sélectionnés.
+- Pointez un segment et appuyez sur <kbd>I</kbd> pour y insérer un nœud.
+- Appuyez sur <kbd>C</kbd> pour transformer les segments sélectionnés en courbes, ou de nouveau en
+  lignes droites lorsqu'ils sont déjà tous des courbes.
+
+Chaque modification peut être annulée. Les esquisses se modifient plutôt dans l'esquisseur.
 
 Pour quitter le mode d'édition vectorielle, cliquez en dehors de la pièce ou appuyez sur
 <kbd>Échap</kbd>.

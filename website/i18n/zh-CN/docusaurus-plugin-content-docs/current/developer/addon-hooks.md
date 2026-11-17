@@ -65,6 +65,102 @@ def main_window_ready(main_window):
     main_window.add_page("my-page", MyCustomPage())
 ```
 
+## 作业监控钩子
+
+这些钩子报告机器上运行的作业的生命周期和进度，让插件能够在作业开始、推进、暂停、恢复或结束时作出反应——例如执行外部命令或更新智能家居系统。
+
+所有钩子都会收到一个 `JobStatus`
+快照（`rayforge.machine.job_status.JobStatus`），这是一个不可变对象，包含以下字段：
+
+- `machine_id` 和 `machine_name`：标识正在运行作业的机器
+- `kind`：`JobKind.SEND` 表示烧刻作业，`JobKind.FRAME` 表示轮廓描迹
+- `phase`：`JobPhase.RUNNING` 或 `JobPhase.PAUSED`
+- `started_at`：作业开始时的墙上时钟时间（自纪元起的秒数）
+- `elapsed_seconds`：作业开始以来经过的秒数
+- `total_distance` 和 `traveled_distance`：路径的总长度和已完成的长度（毫米）
+- `progress_fraction`：作业已完成的占比，介于 `0.0` 到 `1.0`
+- `eta_seconds`：预计剩余秒数，未知时为 `None`
+- `estimated_seconds`：作业的预计总时长（秒），未知时为 `None`
+
+处理器在主线程上运行，必须快速返回；耗时较长的操作（如启动子进程或网络调用）请交给后台线程处理。
+
+### `on_job_started(status)`
+
+在作业开始于某台机器上执行时调用。
+
+```python
+@hookimpl
+def on_job_started(status):
+    logger.info(f"Job on {status.machine_name} started")
+```
+
+### `on_job_updated(status)`
+
+在作业运行期间随进度更新调用，最多大约每秒一次。
+
+```python
+@hookimpl
+def on_job_updated(status):
+    print(
+        f"Progress: {status.progress_fraction:.0%}, "
+        f"ETA {status.eta_seconds}s"
+    )
+```
+
+### `on_job_paused(status)` / `on_job_resumed(status)`
+
+在正在运行的作业进入或离开进给保持（暂停）时调用。
+
+### `on_job_finished(status, outcome, message="")`
+
+在作业结束时调用，无论其如何结束。`outcome` 参数是 `JobOutcome` 成员——`COMPLETED`、`CANCELLED` 或
+`FAILED`——当结果为 `FAILED` 时，`message` 包含错误详情。对于已完成的作业，快照的 `progress_fraction`
+为 `1.0`。
+
+```python
+@hookimpl
+def on_job_finished(status, outcome, message=""):
+    if outcome == JobOutcome.FAILED:
+        notify(f"Job failed: {message}")
+    else:
+        notify(f"Job {outcome.name.lower()} on {status.machine_name}")
+```
+
+最新快照也可以在事件之间轮询：作业运行期间，`machine.current_job` 返回它的
+`JobStatus`，没有作业运行时返回 `None`。
+
+下面是一个完整的插件，它在每次作业状态变化时运行一条 shell 命令：
+
+```python
+import subprocess
+
+import pluggy
+
+from rayforge.machine.job_status import JobOutcome
+
+hookimpl = pluggy.HookimplMarker("rayforge")
+
+
+@hookimpl
+def on_job_started(status):
+    subprocess.Popen(["/usr/local/bin/notify-ha", "started"])
+
+
+@hookimpl
+def on_job_paused(status):
+    subprocess.Popen(["/usr/local/bin/notify-ha", "paused"])
+
+
+@hookimpl
+def on_job_resumed(status):
+    subprocess.Popen(["/usr/local/bin/notify-ha", "resumed"])
+
+
+@hookimpl
+def on_job_finished(status, outcome, message=""):
+    subprocess.Popen(["/usr/local/bin/notify-ha", outcome.name.lower()])
+```
+
 ## 注册钩子
 
 这些钩子让您可以向 Rayforge 的各种注册表注册自定义组件。
@@ -261,7 +357,10 @@ def transformer_settings_loaded(dialog, step, transformer):
 钩子是有版本的，以保持向后兼容性。当添加新钩子或现有钩子发生变化时，API 版本会递增。您的插件的
 `api_version` 字段必须至少是最低支持的版本。
 
-当前 API 版本是 9。以下是最近版本的变更内容：
+当前 API 版本是 24。以下是最近版本的变更内容：
+
+**版本 24** 添加了作业监控钩子 `on_job_started`、`on_job_updated`、`on_job_paused`、
+`on_job_resumed` 和 `on_job_finished`，以及 `Machine.current_job` 轮询 API。
 
 **版本 9** 添加了 `main_window_ready`、`register_exporters`、`register_importers` 和
 `register_renderers`。

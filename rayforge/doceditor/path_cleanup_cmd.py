@@ -6,8 +6,9 @@ from typing import TYPE_CHECKING
 from raygeo.geo import Geometry, Matrix
 
 from ..core.item import DocItem
-from ..core.undo import ChangePropertyCommand, ListItemCommand
+from ..core.undo import ListItemCommand
 from ..core.workpiece import WorkPiece
+from .boundaries import edited_boundaries_command
 from .split_cmd import ContourSplitStrategy
 
 if TYPE_CHECKING:
@@ -134,7 +135,7 @@ class PathCleanupCmd:
                     )
                 )
             for workpiece, new_geo, count in changes:
-                t.execute(self._boundaries_command(workpiece, new_geo, name))
+                t.execute(edited_boundaries_command(workpiece, new_geo, name))
                 removed += count
         return removed
 
@@ -162,7 +163,7 @@ class PathCleanupCmd:
         total = 0
         with self._editor.history_manager.transaction(name) as t:
             for workpiece, new_geo, count in changes:
-                t.execute(self._boundaries_command(workpiece, new_geo, name))
+                t.execute(edited_boundaries_command(workpiece, new_geo, name))
                 total += count
         return total
 
@@ -191,22 +192,6 @@ class PathCleanupCmd:
             new_geo.transform(Matrix.scale(1.0 / sx, 1.0 / sy))
             changes.append((workpiece, new_geo, count))
         return changes
-
-    def _boundaries_command(
-        self, workpiece: WorkPiece, new_geo: Geometry, name: str
-    ) -> ChangePropertyCommand:
-        def _on_changed():
-            workpiece.clear_render_cache()
-            workpiece.updated.send(workpiece)
-
-        return ChangePropertyCommand(
-            target=workpiece,
-            property_name="_edited_boundaries",
-            new_value=new_geo,
-            old_value=workpiece._edited_boundaries,
-            on_change_callback=_on_changed,
-            name=name,
-        )
 
     def _find_duplicate_workpieces(
         self, workpieces: list[WorkPiece], tolerance_mm: float

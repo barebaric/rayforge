@@ -20,6 +20,7 @@ O Rayforge fornece várias ferramentas complementares para posicionamento:
 | **Enquadramento**          | Pré-visualizar limites          | Verificar se o design cabe no material            |
 | **Zero SCT**               | Definir origem                  | Posicionamento repetível                          |
 | **Sobreposição de Câmera** | Posicionamento visual do design | Alinhamento preciso em características existentes |
+| **Ponto de Referência**    | Escolher o ponto de ancoragem   | Alinhar esboços paramétricos                      |
 
 ---
 
@@ -209,6 +210,38 @@ completa.
 
 ---
 
+## Ponto de Referência
+
+Por padrão, os campos **Posição X** e **Posição Y** no painel de propriedades se referem ao canto
+inferior esquerdo da caixa delimitadora da peça. Para esboços paramétricos, esse geralmente não é o
+ponto de ancoragem mais útil: quando um parâmetro altera o tamanho do esboço, uma posição baseada no
+canto faz o design parecer se deslocar em relação a todo o resto.
+
+A lista suspensa **Posição relativa a** no painel de propriedades permite escolher a qual ponto os
+campos de posição se referem:
+
+| Opção                   | Refere-se a                                              |
+| ----------------------- | -------------------------------------------------------- |
+| **Canto**               | O canto inferior esquerdo da caixa delimitadora (padrão) |
+| **Centro**              | O centro da caixa delimitadora                           |
+| **Ponto de referência** | A origem lógica da geometria, ex. a origem do esboço     |
+
+![A lista «Posição relativa a» no painel de propriedades](/screenshots/main-item-properties.webp)
+
+O ponto de referência escolhido também é o ponto que permanece fixo ao redimensionar a peça e ao
+regenerar um esboço com parâmetros alterados. A opção **Ponto de referência** está disponível apenas
+para peças cuja origem define um, como esboços, onde é a origem do esboço.
+
+<!-- prettier-ignore-start -->
+:::tip[Alinhando esboços paramétricos]
+Para manter uma gravação registrada dentro de um contorno de corte: vincule ambos os esboços à
+origem do esboço, configure ambas as peças como **Ponto de referência** e informe a mesma posição
+X/Y para ambas. Os esboços permanecem alinhados não importa como os parâmetros mudem.
+:::
+<!-- prettier-ignore-end -->
+
+---
+
 ## Posicionamento Baseado em Câmera
 
 A sobreposição de câmera mostra uma visualização ao vivo do seu material com seu design sobreposto,
@@ -297,6 +330,16 @@ do ponteiro** elimina o cálculo manual:
 5. **Posicione o próximo segmento** do desenho em relação a essa origem na tela.
 6. **Enquadre para verificar**, então **execute o trabalho**.
 7. Repita a partir do passo 2 para cada segmento restante.
+
+### Fluxo de Trabalho de Esboços Paramétricos
+
+Para trabalhos que combinam um esboço de corte com um esboço de gravação paramétrico:
+
+1. **Vincule ambos os esboços** à origem do esboço (ex. centralize a geometria na origem)
+2. **Posicione ambas as peças** na tela e defina **Posição relativa a → Ponto de referência**
+3. **Informe a mesma posição X/Y** para ambas as peças
+4. **Ajuste os parâmetros** conforme necessário — os esboços permanecem registrados entre si
+5. **Enquadre o trabalho** para verificar o posicionamento
 
 ### Fluxo de Trabalho de Produção
 

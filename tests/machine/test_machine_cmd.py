@@ -2,6 +2,7 @@ import asyncio
 from functools import partial
 from unittest.mock import AsyncMock, MagicMock, PropertyMock
 
+import pluggy
 import pytest
 import pytest_asyncio
 from raygeo.ops import Ops
@@ -24,9 +25,39 @@ from rayforge.machine.driver.driver import (
     FrameCorner,
     build_frame_ops,
 )
+from rayforge.machine.job_status import JobKind, JobOutcome
 from rayforge.machine.models.machine import Machine
 from rayforge.pipeline.artifact import JobArtifact
 from rayforge.shared.tasker.manager import TaskManager
+
+hookimpl = pluggy.HookimplMarker("rayforge")
+
+
+class HookRecorder:
+    """A rayforge plugin that records every job monitoring hook call."""
+
+    def __init__(self):
+        self.events: list[tuple] = []
+
+    @hookimpl
+    def on_job_started(self, status):
+        self.events.append(("on_job_started", status))
+
+    @hookimpl
+    def on_job_updated(self, status):
+        self.events.append(("on_job_updated", status))
+
+    @hookimpl
+    def on_job_paused(self, status):
+        self.events.append(("on_job_paused", status))
+
+    @hookimpl
+    def on_job_resumed(self, status):
+        self.events.append(("on_job_resumed", status))
+
+    @hookimpl
+    def on_job_finished(self, status, outcome, message=""):
+        self.events.append(("on_job_finished", status, outcome, message))
 
 
 @pytest_asyncio.fixture(autouse=True)
@@ -170,9 +201,10 @@ class TestMachineCmdJobMonitoring:
 
         # 2. Verify granular progress updates
         # The JobMonitor sends updates for all commands, including those with
-        # zero distance (like MoveToCommand).
+        # zero distance (like MoveToCommand), plus a final 100% update when
+        # the job completes.
         # We must calculate the expected number of calls by counting all cmds.
-        expected_call_count = len(simple_ops)
+        expected_call_count = len(simple_ops) + 1
         assert progress_updated_spy.call_count == expected_call_count
 
     @pytest.mark.asyncio
@@ -312,6 +344,152 @@ class TestMachineCmdJobMonitoring:
         message = notification_spy.call_args.kwargs["message"]
         assert "already running" in message
         assert "Sending failed" not in message
+
+
+class TestMachineCmdJobEventHooks:
+    """End-to-end emission of the addon job monitoring hooks."""
+
+    @pytest.fixture
+    def recorder(self, lite_context):
+        """Registers a hook recorder plugin with the app context."""
+        recorder = HookRecorder()
+        lite_context.plugin_mgr.register(recorder)
+        return recorder
+
+    @pytest.mark.asyncio
+    async def test_send_job_reports_lifecycle(
+        self,
+        machine_cmd,
+        doc_editor,
+        machine,
+        job_artifact,
+        recorder,
+    ):
+        await machine_cmd._run_send_action(
+            job_artifact, machine, on_progress=None
+        )
+        await asyncio.sleep(0)
+        await doc_editor.wait_until_settled()
+
+        names = [event[0] for event in recorder.events]
+        assert names[0] == "on_job_started"
+        assert names[-1] == "on_job_finished"
+
+        started_status = recorder.events[0][1]
+        assert started_status.kind == JobKind.SEND
+        assert started_status.machine_id == machine.id
+
+        _, final_status, outcome, message = recorder.events[-1]
+        assert outcome == JobOutcome.COMPLETED
+        assert message == ""
+        assert final_status.progress_fraction == 1.0
+        assert machine.current_job is None
+
+    @pytest.mark.asyncio
+    async def test_current_job_snapshot_is_live_during_job(
+        self,
+        machine_cmd,
+        doc_editor,
+        machine,
+        job_artifact,
+        recorder,
+    ):
+        snapshots = []
+
+        def on_job_started(sender):
+            snapshots.append(machine.current_job)
+
+        machine_cmd.job_started.connect(on_job_started)
+
+        await machine_cmd._run_send_action(
+            job_artifact, machine, on_progress=None
+        )
+        await asyncio.sleep(0)
+        await doc_editor.wait_until_settled()
+
+        assert len(snapshots) == 1
+        assert snapshots[0] is not None
+        assert snapshots[0].kind == JobKind.SEND
+        assert snapshots[0].machine_id == machine.id
+        assert machine.current_job is None
+
+    @pytest.mark.asyncio
+    async def test_cancelled_job_reports_cancelled(
+        self,
+        machine_cmd,
+        doc_editor,
+        machine,
+        job_artifact,
+        recorder,
+        mocker,
+    ):
+        mocker.patch.object(
+            machine.driver, "run", side_effect=asyncio.CancelledError
+        )
+
+        with pytest.raises(asyncio.CancelledError):
+            await machine_cmd._run_send_action(
+                job_artifact, machine, on_progress=None
+            )
+        await asyncio.sleep(0)
+        await doc_editor.wait_until_settled()
+
+        names = [event[0] for event in recorder.events]
+        assert names[0] == "on_job_started"
+        _, final_status, outcome, _message = recorder.events[-1]
+        assert outcome == JobOutcome.CANCELLED
+        assert final_status.progress_fraction < 1.0
+        assert machine.current_job is None
+
+    @pytest.mark.asyncio
+    async def test_failed_job_reports_error_message(
+        self,
+        machine_cmd,
+        doc_editor,
+        machine,
+        job_artifact,
+        recorder,
+        mocker,
+    ):
+        mocker.patch.object(
+            machine.driver, "run", side_effect=ValueError("boom")
+        )
+
+        with pytest.raises(ValueError):
+            await machine_cmd._run_send_action(
+                job_artifact, machine, on_progress=None
+            )
+        await asyncio.sleep(0)
+        await doc_editor.wait_until_settled()
+
+        _, _final_status, outcome, message = recorder.events[-1]
+        assert outcome == JobOutcome.FAILED
+        assert message == "boom"
+        assert machine.current_job is None
+
+    @pytest.mark.asyncio
+    async def test_frame_job_reports_frame_kind(
+        self,
+        machine_cmd,
+        doc_editor,
+        machine,
+        job_artifact,
+        recorder,
+        mocker,
+    ):
+        mocker.patch.object(machine.driver, "frame", new_callable=AsyncMock)
+
+        await machine_cmd._run_frame_action(
+            job_artifact, machine, on_progress=None
+        )
+        await asyncio.sleep(0)
+        await doc_editor.wait_until_settled()
+
+        started_status = recorder.events[0][1]
+        assert started_status.kind == JobKind.FRAME
+        outcome = recorder.events[-1][2]
+        assert outcome == JobOutcome.COMPLETED
+        assert machine.current_job is None
 
 
 class TestMachineCmdPointerDryRun:
@@ -604,6 +782,44 @@ class TestMachineCmdLaserPower:
         await wait_for_tasks_to_finish(task_mgr)
 
         set_power_mock.assert_called_once_with(head, 0.5)
+
+    @pytest.mark.asyncio
+    async def test_set_focus_power_reports_success(
+        self, machine_cmd, machine, mocker, task_mgr
+    ):
+        head = machine.get_default_head()
+        mocker.patch.object(
+            machine, "set_focus_power", new_callable=mocker.AsyncMock
+        )
+        done = []
+
+        machine_cmd.set_focus_power(head, 0.25, machine, when_done=done.append)
+
+        await wait_for_tasks_to_finish(task_mgr)
+        await asyncio.sleep(0.05)
+
+        assert len(done) == 1
+        assert done[0].get_status() == "completed"
+
+    @pytest.mark.asyncio
+    async def test_set_focus_power_reports_failure(
+        self, machine_cmd, machine, mocker, task_mgr
+    ):
+        head = machine.get_default_head()
+        mocker.patch.object(
+            machine,
+            "set_focus_power",
+            side_effect=RuntimeError("no session"),
+        )
+        done = []
+
+        machine_cmd.set_focus_power(head, 0.25, machine, when_done=done.append)
+
+        await wait_for_tasks_to_finish(task_mgr)
+        await asyncio.sleep(0.05)
+
+        assert len(done) == 1
+        assert done[0].get_status() == "failed"
 
 
 def _frame_corners() -> list[FrameCorner]:

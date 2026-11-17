@@ -92,15 +92,18 @@ abzüglich der Ränder berechnet.
 ## Software-Limits
 
 Konfigurierbare Sicherheitsgrenzen für das Verfahren des Maschinenkopfes. Wenn aktiviert, verhindern
-die Jog-Steuerungen Bewegungen außerhalb dieser Grenzen.
+die Jog-Steuerungen Bewegungen außerhalb dieser Grenzen. Wenn deaktiviert, ist das Verfahren nicht
+begrenzt.
 
-- **Benutzerdefinierte Software-Limits aktivieren**: Umschalten, um benutzerdefinierte Limits statt
-  der Arbeitsflächen-Grenzen zu verwenden
-- **X/Y Min**: Minimale Koordinate für jede Achse
-- **X/Y Max**: Maximale Koordinate für jede Achse
+- **Software-Limits aktivieren**: Schaltet die Jog-Limit-Prüfung ein oder aus
+- **X/Y Mindestabstand vom Ursprung**: Kleinster zulässiger Abstand von der Ursprungsecke je Achse
+- **X/Y Maximalabstand vom Ursprung**: Größter zulässiger Abstand von der Ursprungsecke je Achse
 
-Software-Limits werden automatisch eingeschränkt, um innerhalb der Achsenbereiche zu bleiben (0 bis
-Bereichswert).
+Software-Limits werden in Maschinenkoordinaten ausgewertet und bleiben an der physischen Maschine
+verankert, sie verschieben sich also nicht, wenn der Arbeitsursprung neu genullt wird. Werte werden
+als Abstände von der Ecke des Koordinatenursprungs in die Maschine hinein angegeben. Ohne
+benutzerdefinierte Grenzen werden bei Aktivierung die Achsenbereiche verwendet. Limits werden
+automatisch eingeschränkt, um innerhalb der Achsenbereiche zu bleiben (0 bis Bereichswert).
 
 <!-- prettier-ignore-start -->
 :::tip

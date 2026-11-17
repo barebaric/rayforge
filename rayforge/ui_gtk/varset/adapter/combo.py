@@ -2,6 +2,13 @@ from gettext import gettext as _
 from typing import Any, cast
 
 from gi.repository import Adw, Gtk
+from raydriver.core.discovery.ports import (
+    SerialPortInfo,
+    is_usb_serial_port,
+    natural_key,
+)
+
+from rayforge.machine.transport.serial import SerialTransport
 
 from ....core.varset import (
     BaudrateVar,
@@ -10,12 +17,6 @@ from ....core.varset import (
     Var,
     format_vidpid,
     parse_vidpid,
-)
-from ....machine.transport.serial import (
-    SerialPortInfo,
-    SerialTransport,
-    is_usb_serial_port,
-    natural_key,
 )
 from ...shared.adwfix import ensure_row_min_width
 from .base import (

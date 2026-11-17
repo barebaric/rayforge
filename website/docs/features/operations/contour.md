@@ -208,6 +208,7 @@ See [Kerf](../kerf.md) for detailed guide.
 Contour operations support several post-processing options:
 
 - **[Smooth Path](../smooth.md)** - Reduce jagged edges in cutting paths
+- **[Perforation](../perforation.md)** - Cut dashed lines for folds, tear-off lines and stitch holes
 - **[Holding Tabs](../holding-tabs.md)** - Keep cut pieces attached to stock material
 - **[Crop to Stock](../crop-to-stock.md)** - Limit cuts to material boundary
 - **[Path Optimization](../path-optimization.md)** - Reduce travel distance between cuts

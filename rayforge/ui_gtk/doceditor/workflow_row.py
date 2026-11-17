@@ -126,6 +126,9 @@ class WorkflowRow(Gtk.Box):
             self._workflow.descendant_updated.connect(
                 self._on_workflow_changed
             )
+            self._workflow.descendant_renamed.connect(
+                self._on_workflow_renamed
+            )
             self._workflow.updated.connect(self._on_workflow_changed)
 
     def _disconnect_workflow(self):
@@ -141,6 +144,9 @@ class WorkflowRow(Gtk.Box):
             self._workflow.descendant_updated.disconnect(
                 self._on_workflow_changed
             )
+            self._workflow.descendant_renamed.disconnect(
+                self._on_workflow_renamed
+            )
             self._workflow.updated.disconnect(self._on_workflow_changed)
         except (TypeError, ValueError):
             pass
@@ -153,6 +159,9 @@ class WorkflowRow(Gtk.Box):
             self._rebuild()
 
     def _on_workflow_changed(self, sender, **kwargs):
+        self._rebuild()
+
+    def _on_workflow_renamed(self, sender, **kwargs):
         self._rebuild()
 
     def _get_step_icon(self, step) -> str:

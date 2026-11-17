@@ -241,7 +241,7 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
         ]
         registry._entity_map = {e.id: e for e in registry.entities}
 
-        registry.points = [p for p in registry.points if p.id not in point_ids]
+        registry.remove_points(point_ids)
 
         for e in self._removed_entities:
             registry.entities = [
@@ -328,10 +328,12 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
         registry = self.sketch.registry
 
         point_ids = {p.id for p in registry.points}
+        new_points = []
         for p in self._removed_points:
             if p.id not in point_ids:
-                registry.points.append(p)
+                new_points.append(p)
                 point_ids.add(p.id)
+        registry.add_points(new_points)
 
         entity_ids = {e.id for e in registry.entities}
         for e in self._removed_entities:

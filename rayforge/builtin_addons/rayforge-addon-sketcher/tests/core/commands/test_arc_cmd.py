@@ -586,7 +586,7 @@ def test_arc_preview_get_dimensions_missing_point():
         sketch.registry, 0, 0, snapped_pid=None
     )
     ArcCommand.set_start_point(sketch.registry, state, 50, 0)
-    sketch.registry.points.clear()
+    sketch.registry.set_points([])
 
     dims = state.get_dimensions(sketch.registry)
 

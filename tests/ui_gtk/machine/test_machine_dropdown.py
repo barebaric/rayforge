@@ -56,7 +56,10 @@ def dropdown(
 ) -> Iterator[MachineDropdown]:
     context = ui_context_initializer
     mocker.patch.object(
-        Machine, "driver", new_callable=PropertyMock, return_value=None
+        Machine,
+        "is_driverless",
+        new_callable=PropertyMock,
+        return_value=False,
     )
     machine = make_running_machine(context)
     context.machine_mgr.add_machine(machine)

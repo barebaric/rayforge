@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-03 16:38+0200\n"
+"POT-Creation-Date: 2026-11-11 13:48+0100\n"
 "PO-Revision-Date: 2026-03-18 23:38+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -34,6 +34,26 @@ msgid "Keep the first workpiece at its original position"
 msgstr "Keep the first workpiece at its original position"
 
 #: post_processors/widgets/optimize_group.py
+msgid "Choose Best Start Point"
+msgstr ""
+
+#: post_processors/widgets/optimize_group.py
+msgid ""
+"Start closed paths at the vertex nearest the laser head to shorten travel "
+"moves."
+msgstr ""
+
+#: post_processors/widgets/optimize_group.py
+msgid "Prefer Corners"
+msgstr ""
+
+#: post_processors/widgets/optimize_group.py
+msgid ""
+"Start closed paths at a sharp corner where the path has one, which makes the "
+"seam less visible."
+msgstr ""
+
+#: post_processors/widgets/optimize_group.py
 msgid "Merge Scanlines"
 msgstr ""
 
@@ -54,6 +74,17 @@ msgid ""
 msgstr ""
 
 #: post_processors/widgets/optimize_group.py
+msgid "Reorder Scan Lines"
+msgstr ""
+
+#: post_processors/widgets/optimize_group.py
+msgid ""
+"Reorder raster scan lines for shorter travel. Raster rows normally keep "
+"their order: reordering makes the machine hop its Y axis between rows, which "
+"can cause banding."
+msgstr ""
+
+#: post_processors/widgets/optimize_group.py
 msgid "Toggle Flipping"
 msgstr "Toggle Flipping"
 
@@ -62,7 +93,19 @@ msgid "Toggle Preserve First Workpiece"
 msgstr "Toggle Preserve First Workpiece"
 
 #: post_processors/widgets/optimize_group.py
+msgid "Toggle Choose Best Start Point"
+msgstr ""
+
+#: post_processors/widgets/optimize_group.py
+msgid "Toggle Prefer Corners"
+msgstr ""
+
+#: post_processors/widgets/optimize_group.py
 msgid "Change maximum bridged gap"
+msgstr ""
+
+#: post_processors/widgets/optimize_group.py
+msgid "Toggle Reorder Scan Lines"
 msgstr ""
 
 #: post_processors/widgets/overscan_group.py
@@ -199,6 +242,30 @@ msgstr ""
 msgid "Change Lead-Out Distance"
 msgstr ""
 
+#: post_processors/widgets/perforation_group.py
+msgid "Cut Length"
+msgstr ""
+
+#: post_processors/widgets/perforation_group.py
+msgid "Distance the laser fires before each gap"
+msgstr ""
+
+#: post_processors/widgets/perforation_group.py
+msgid "Skip Length"
+msgstr ""
+
+#: post_processors/widgets/perforation_group.py
+msgid "Distance travelled with the laser off between cuts"
+msgstr ""
+
+#: post_processors/widgets/perforation_group.py
+msgid "Change perforation cut length"
+msgstr ""
+
+#: post_processors/widgets/perforation_group.py
+msgid "Change perforation skip length"
+msgstr ""
+
 #: post_processors/widgets/merge_lines_group.py
 msgid "Tolerance"
 msgstr ""
@@ -250,6 +317,15 @@ msgstr ""
 
 #: post_processors/transformers/merge_lines_transformer.py
 msgid "Merges overlapping lines to avoid double passing."
+msgstr ""
+
+#: post_processors/transformers/perforation_transformer.py
+msgid "Perforation"
+msgstr ""
+
+#: post_processors/transformers/perforation_transformer.py
+msgid ""
+"Cuts in dashes: the laser fires for the cut length and skips the skip length"
 msgstr ""
 
 #: post_processors/transformers/overscan_transformer.py

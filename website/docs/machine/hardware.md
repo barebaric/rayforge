@@ -94,13 +94,16 @@ margins.
 ## Soft Limits
 
 Configurable safety bounds for jogging the machine head. When enabled, the jog controls will prevent
-movement outside these limits.
+movement outside these limits. When disabled, jogging is not limited.
 
-- **Enable Custom Soft Limits**: Toggle to use custom limits instead of the work surface bounds
-- **X/Y Min**: Minimum coordinate for each axis
-- **X/Y Max**: Maximum coordinate for each axis
+- **Enable Soft Limits**: Toggle jog limit checks on or off
+- **X/Y Min Distance from Origin**: Closest allowed distance from the origin corner along each axis
+- **X/Y Max Distance from Origin**: Farthest allowed distance from the origin corner along each axis
 
-Soft limits are automatically constrained to stay within the axis extents (0 to extent value).
+Soft limits are evaluated in machine coordinates and stay anchored to the physical bed, so they do
+not move when the work origin is re-zeroed. Values are entered as distances from the coordinate
+origin corner into the bed. When enabled without custom bounds, the axis extents are used. Limits
+are automatically constrained to stay within the axis extents (0 to extent value).
 
 <!-- prettier-ignore-start -->
 :::tip

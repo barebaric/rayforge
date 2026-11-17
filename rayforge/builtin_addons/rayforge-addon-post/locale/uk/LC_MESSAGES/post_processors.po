@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-03 16:38+0200\n"
+"POT-Creation-Date: 2026-11-11 13:48+0100\n"
 "PO-Revision-Date: 2026-03-18 23:38+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -35,6 +35,30 @@ msgid "Keep the first workpiece at its original position"
 msgstr "Залишити першу деталь на її початковій позиції"
 
 #: post_processors/widgets/optimize_group.py
+msgid "Choose Best Start Point"
+msgstr "Вибрати найкращу початкову точку"
+
+#: post_processors/widgets/optimize_group.py
+msgid ""
+"Start closed paths at the vertex nearest the laser head to shorten travel "
+"moves."
+msgstr ""
+"Починає замкнені шляхи з вершини, найближчої до лазерної головки, щоб "
+"скоротити переміщення."
+
+#: post_processors/widgets/optimize_group.py
+msgid "Prefer Corners"
+msgstr "Надавати перевагу кутам"
+
+#: post_processors/widgets/optimize_group.py
+msgid ""
+"Start closed paths at a sharp corner where the path has one, which makes the "
+"seam less visible."
+msgstr ""
+"Починає замкнені шляхи з гострого кута, якщо такий є, що робить шов менш "
+"помітним."
+
+#: post_processors/widgets/optimize_group.py
 msgid "Merge Scanlines"
 msgstr "Об'єднати лінії сканування"
 
@@ -59,6 +83,20 @@ msgstr ""
 "автоматично за прискоренням машини"
 
 #: post_processors/widgets/optimize_group.py
+msgid "Reorder Scan Lines"
+msgstr "Перевпорядкувати лінії сканування"
+
+#: post_processors/widgets/optimize_group.py
+msgid ""
+"Reorder raster scan lines for shorter travel. Raster rows normally keep "
+"their order: reordering makes the machine hop its Y axis between rows, which "
+"can cause banding."
+msgstr ""
+"Перевпорядковує лінії сканування растра для коротших переміщень. Рядки "
+"растра зазвичай зберігають свій порядок: перевпорядкування змушує машину "
+"стрибати віссю Y між рядками, що може спричинити смугастість."
+
+#: post_processors/widgets/optimize_group.py
 msgid "Toggle Flipping"
 msgstr "Перемкнути перевертання"
 
@@ -67,8 +105,20 @@ msgid "Toggle Preserve First Workpiece"
 msgstr "Перемкнути збереження першої деталі"
 
 #: post_processors/widgets/optimize_group.py
+msgid "Toggle Choose Best Start Point"
+msgstr "Перемкнути вибір найкращої початкової точки"
+
+#: post_processors/widgets/optimize_group.py
+msgid "Toggle Prefer Corners"
+msgstr "Перемкнути перевагу кутам"
+
+#: post_processors/widgets/optimize_group.py
 msgid "Change maximum bridged gap"
 msgstr "Змінити максимальний зазор, що перекривається"
+
+#: post_processors/widgets/optimize_group.py
+msgid "Toggle Reorder Scan Lines"
+msgstr "Перемкнути перевпорядкування лінії сканування"
 
 #: post_processors/widgets/overscan_group.py
 msgid "This machine adds overscan automatically; the setting has no effect."
@@ -205,6 +255,30 @@ msgstr "Змінити відстань в'їзду"
 msgid "Change Lead-Out Distance"
 msgstr "Змінити відстань виїзду"
 
+#: post_processors/widgets/perforation_group.py
+msgid "Cut Length"
+msgstr "Довжина різання"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Distance the laser fires before each gap"
+msgstr "Відстань, яку лазер залишається увімкненим перед кожним проміжком"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Skip Length"
+msgstr "Довжина пропуску"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Distance travelled with the laser off between cuts"
+msgstr "Відстань, пройдена з вимкненим лазером між різаннями"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Change perforation cut length"
+msgstr "Змінити довжину різання перфорації"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Change perforation skip length"
+msgstr "Змінити довжину пропуску перфорації"
+
 #: post_processors/widgets/merge_lines_group.py
 msgid "Tolerance"
 msgstr "Допуск"
@@ -260,6 +334,17 @@ msgstr "Об'єднати лінії"
 #: post_processors/transformers/merge_lines_transformer.py
 msgid "Merges overlapping lines to avoid double passing."
 msgstr "Об'єднує лінії, що перекриваються, щоб уникнути подвійного проходу."
+
+#: post_processors/transformers/perforation_transformer.py
+msgid "Perforation"
+msgstr "Перфорація"
+
+#: post_processors/transformers/perforation_transformer.py
+msgid ""
+"Cuts in dashes: the laser fires for the cut length and skips the skip length"
+msgstr ""
+"Ріже пунктиром: лазер увімкнений на довжину різання та вимкнений на довжину "
+"пропуску"
 
 #: post_processors/transformers/overscan_transformer.py
 msgid "Overscan"

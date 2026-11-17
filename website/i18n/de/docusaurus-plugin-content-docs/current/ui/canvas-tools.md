@@ -160,8 +160,25 @@ Formen kombinieren oder subtrahieren:
 
 ## Vektorbearbeitung
 
-Doppelklicke auf ein Werkstück auf der Arbeitsfläche, um in den Vektorbearbeitungsmodus zu wechseln.
-In diesem Modus kannst du einzelne Vektorsegmente des Werkstücks auswählen und löschen.
+Doppelklicke auf ein importiertes Werkstück auf der Arbeitsfläche, um in den Vektorbearbeitungsmodus
+zu wechseln. In diesem Modus kannst du einzelne Vektorsegmente des Werkstücks auswählen und löschen
+sowie seine Knoten bearbeiten.
+
+Klicke auf ein Segment, um es auszuwählen, oder ziehe einen Rahmen um mehrere Segmente. Die Knoten
+der ausgewählten Kontur erscheinen als kleine Quadrate, die Anfasser ausgewählter Kurven als runde
+Punkte:
+
+- **Ziehe einen Knoten**, um ihn zu verschieben; die angrenzenden Kurvenanfasser bewegen sich mit.
+  In einem geschlossenen Pfad sind Start- und Endknoten ein einziger Knoten.
+- **Ziehe einen Anfasser**, um die Form einer Kurve zu ändern.
+- Klicke auf einen Knoten und drücke <kbd>Entf</kbd>, um ihn zu entfernen; die Segmente auf beiden
+  Seiten werden zu einem verbunden. Ist kein Knoten ausgewählt, entfernt <kbd>Entf</kbd> die
+  ausgewählten Segmente.
+- Zeige auf ein Segment und drücke <kbd>I</kbd>, um dort einen Knoten einzufügen.
+- Drücke <kbd>C</kbd>, um die ausgewählten Segmente in Kurven umzuwandeln, oder zurück in gerade
+  Linien, wenn sie bereits alle Kurven sind.
+
+Jede Änderung lässt sich rückgängig machen. Skizzen werden stattdessen im Sketcher bearbeitet.
 
 Um den Vektorbearbeitungsmodus zu verlassen, klicke außerhalb des Werkstücks oder drücke
 <kbd>Escape</kbd>.

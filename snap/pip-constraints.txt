@@ -1,0 +1,5 @@
+pip<26.3
+# pip 26.3 breaks its own entry point when upgraded inside the
+# core24 build base's system-site venv (ImportError: cannot import
+# name 'cli' from 'pip._internal.cli.main'), so cap it until a fixed
+# release is out.

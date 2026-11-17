@@ -46,6 +46,9 @@ class _FakeProvider:
     def get_geometry(self, params=None, *, resolved_text_cache=None):
         return self._geometry.copy(), []
 
+    def get_reference_point(self):
+        return None
+
     def to_dict(self):
         return {}
 

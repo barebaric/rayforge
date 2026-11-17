@@ -155,7 +155,7 @@ class DuplicateCommand(SketchChangeCommand):
         for obj in (*self.created_entities, *self.created_constraints):
             _remap_id_refs(obj, id_map)
 
-        registry.points.extend(self.created_points)
+        registry.add_points(self.created_points)
         registry.entities.extend(self.created_entities)
         registry._entity_map = {e.id: e for e in registry.entities}
         self.sketch.constraints.extend(self.created_constraints)
@@ -170,7 +170,7 @@ class DuplicateCommand(SketchChangeCommand):
         point_ids = {p.id for p in self.created_points}
         entity_ids = {e.id for e in self.created_entities}
 
-        registry.points = [p for p in registry.points if p.id not in point_ids]
+        registry.remove_points(point_ids)
         registry.entities = [
             e for e in registry.entities if e.id not in entity_ids
         ]

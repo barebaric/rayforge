@@ -43,6 +43,9 @@ class Optimize(OpsTransformer):
         merge_scanlines: bool = True,
         merge_max_gap_mm: float = DEFAULT_MERGE_MAX_GAP,
         merge_tolerance: float = DEFAULT_MERGE_TOLERANCE,
+        best_start_point: bool = False,
+        prefer_corners: bool = False,
+        reorder_scanlines: bool = False,
         **kwargs,
     ):
         super().__init__(enabled=enabled, **kwargs)
@@ -52,6 +55,9 @@ class Optimize(OpsTransformer):
         self.merge_scanlines = merge_scanlines
         self.merge_max_gap_mm = merge_max_gap_mm
         self.merge_tolerance = merge_tolerance
+        self.best_start_point = best_start_point
+        self.prefer_corners = prefer_corners
+        self.reorder_scanlines = reorder_scanlines
 
     @property
     def label(self) -> str:
@@ -86,6 +92,9 @@ class Optimize(OpsTransformer):
             preserve_first=self.preserve_first,
             preserve_order=list(self.preserve_order),
             merge_scanlines=merge,
+            best_start_point=self.best_start_point,
+            prefer_corners=self.prefer_corners,
+            reorder_scanlines=self.reorder_scanlines,
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -96,6 +105,9 @@ class Optimize(OpsTransformer):
         result["merge_scanlines"] = self.merge_scanlines
         result["merge_max_gap_mm"] = self.merge_max_gap_mm
         result["merge_tolerance"] = self.merge_tolerance
+        result["best_start_point"] = self.best_start_point
+        result["prefer_corners"] = self.prefer_corners
+        result["reorder_scanlines"] = self.reorder_scanlines
         return result
 
     @classmethod
@@ -117,4 +129,7 @@ class Optimize(OpsTransformer):
             merge_tolerance=data.get(
                 "merge_tolerance", cls.DEFAULT_MERGE_TOLERANCE
             ),
+            best_start_point=data.get("best_start_point", False),
+            prefer_corners=data.get("prefer_corners", False),
+            reorder_scanlines=data.get("reorder_scanlines", False),
         )

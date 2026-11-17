@@ -14,6 +14,7 @@ from rayforge.addon_mgr.addon import (
     AddonMetadata,
     AddonProvides,
     AddonValidationError,
+    is_official_addon_url,
     parse_maturity,
 )
 from rayforge.shared.util.versioning import UnknownVersion, get_git_tag_version
@@ -71,6 +72,121 @@ class TestAddonMetadata:
         assert meta.description == ""
         assert meta.author.name == ""
         assert meta.author.email == ""
+
+    def test_from_registry_entry_detail_fields(self):
+        """The registry provides detail-view content for addons."""
+        data = {
+            "depends": [],
+            "long_description": "A longer description.",
+            "screenshots": [
+                "https://raw.githubusercontent.com/o/r/v1.0.0/a.png",
+                "https://raw.githubusercontent.com/o/r/v1.0.0/b.png",
+            ],
+        }
+        meta = AddonMetadata.from_registry_entry("my_addon", data)
+        assert meta.long_description == "A longer description."
+        assert meta.screenshots == data["screenshots"]
+
+    def test_from_registry_entry_detail_fields_default_empty(self):
+        """Addons without detail content parse to empty defaults."""
+        data = {"depends": []}
+        meta = AddonMetadata.from_registry_entry("my_addon", data)
+        assert meta.long_description == ""
+        assert meta.screenshots == []
+
+    def test_from_registry_entry_screenshots_filters_invalid(self):
+        """Only absolute HTTP(S) URLs survive parsing."""
+        data = {
+            "depends": [],
+            "screenshots": [
+                "https://example.com/a.png",
+                "file:///etc/passwd",
+                "relative/path.png",
+                42,
+                "",
+            ],
+        }
+        meta = AddonMetadata.from_registry_entry("my_addon", data)
+        assert meta.screenshots == ["https://example.com/a.png"]
+
+    def test_from_registry_entry_screenshots_wrong_type(self):
+        """A non-list screenshots field is ignored."""
+        data = {"depends": [], "screenshots": "not-a-list"}
+        meta = AddonMetadata.from_registry_entry("my_addon", data)
+        assert meta.screenshots == []
+
+    def test_from_registry_entry_official_flag(self):
+        """The registry can mark an addon as official."""
+        data = {
+            "depends": [],
+            "author": {"name": "Test User", "email": "test@example.com"},
+            "official": True,
+        }
+        meta = AddonMetadata.from_registry_entry("my_addon", data)
+        assert meta.official is True
+        assert meta.is_official is True
+
+    def test_from_registry_entry_official_defaults_to_false(self):
+        """Addons are community addons unless marked official."""
+        data = {
+            "depends": [],
+            "author": {"name": "Test User", "email": "test@example.com"},
+        }
+        meta = AddonMetadata.from_registry_entry("my_addon", data)
+        assert meta.official is False
+        assert meta.is_official is False
+
+    def test_is_official_via_repository_url(self):
+        """Addons hosted by the Rayforge team are official."""
+        data = {
+            "depends": [],
+            "author": {"name": "Test User", "email": "test@example.com"},
+            "repository": "https://github.com/barebaric/rayforge-addon-x",
+        }
+        meta = AddonMetadata.from_registry_entry("my_addon", data)
+        assert meta.official is False
+        assert meta.is_official is True
+
+    def test_is_not_official_via_community_repository_url(self):
+        """Addons hosted elsewhere remain community addons."""
+        data = {
+            "depends": [],
+            "author": {"name": "Test User", "email": "test@example.com"},
+            "repository": "https://github.com/someone/rayforge-addon-x",
+        }
+        meta = AddonMetadata.from_registry_entry("my_addon", data)
+        assert meta.is_official is False
+
+
+class TestIsOfficialAddonUrl:
+    def test_team_repository_is_official(self):
+        assert is_official_addon_url(
+            "https://github.com/barebaric/rayforge-addon-deepnest"
+        )
+
+    def test_team_repository_with_git_suffix(self):
+        assert is_official_addon_url(
+            "https://github.com/barebaric/rayforge-addon-deepnest.git"
+        )
+
+    def test_team_repository_with_trailing_slash(self):
+        assert is_official_addon_url(
+            "https://github.com/barebaric/rayforge-addon-deepnest/"
+        )
+
+    def test_other_owner_is_not_official(self):
+        assert not is_official_addon_url(
+            "https://github.com/someone/rayforge-addon-x"
+        )
+
+    def test_similar_owner_prefix_is_not_official(self):
+        assert not is_official_addon_url(
+            "https://github.com/barebaric-evil/rayforge-addon-x"
+        )
+
+    def test_empty_url_is_not_official(self):
+        assert not is_official_addon_url("")
+        assert not is_official_addon_url(None)
 
     def test_to_dict(self):
         """Test converting metadata to dictionary."""
@@ -223,6 +339,46 @@ class TestAddon:
 
             addon = Addon.load_from_directory(path, version=TEST_VERSION)
             assert addon.metadata.maturity == AddonMaturity.EXPERIMENTAL
+
+    def test_load_from_directory_parses_long_description(self):
+        """Installed manifests can carry a long description."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp)
+            data = {
+                "name": "test_pkg",
+                "author": {"name": "Me", "email": "me@me.com"},
+                "provides": {"worker": "main.py"},
+                "long_description": "Details about the addon.",
+            }
+            with open(path / "rayforge-addon.yaml", "w") as f:
+                yaml.dump(data, f)
+
+            addon = Addon.load_from_directory(path, version=TEST_VERSION)
+            assert addon.metadata.long_description == (
+                "Details about the addon."
+            )
+
+    def test_load_from_directory_parses_screenshots(self):
+        """Local manifests list repo-relative screenshot paths."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp)
+            data = {
+                "name": "test_pkg",
+                "author": {"name": "Me", "email": "me@me.com"},
+                "provides": {"worker": "main.py"},
+                "screenshots": [
+                    "docs/screenshots/one.png",
+                    "../escape.png",
+                    "/absolute.png",
+                    "https://example.com/x.png",
+                    42,
+                ],
+            }
+            with open(path / "rayforge-addon.yaml", "w") as f:
+                yaml.dump(data, f)
+
+            addon = Addon.load_from_directory(path, version=TEST_VERSION)
+            assert addon.metadata.screenshots == ["docs/screenshots/one.png"]
 
     def test_load_missing_metadata(self):
         """Test error when metadata file is missing."""

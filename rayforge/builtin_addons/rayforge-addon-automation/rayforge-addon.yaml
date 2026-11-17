@@ -1,6 +1,14 @@
 name: automation
 display_name: "Automation"
 description: "Automation helpers, starting with the Command step for injecting custom machine code"
+long_description: |
+  Automation helpers for advanced workflows.
+
+  - **Command step**: inject custom machine code at any point in a
+    workflow, for tool changes, probing, air assist, or any other
+    machine-specific sequence
+screenshots:
+  - website/static/screenshots/step-settings-command-general.webp
 api_version: 19
 author:
   name: "Rayforge Team"

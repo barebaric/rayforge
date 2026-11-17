@@ -230,7 +230,7 @@ Rayforge affiche différents états de connexion :
 1. **Configurez la machine :**
    - Ouvrez Paramètres → Machine
    - Sélectionnez ou créez un profil machine
-   - Choisissez le bon pilote (GRBL Serial)
+   - Choisissez le bon pilote (GRBL (USB/Serial))
    - Sélectionnez le port série
    - Définissez le débit en bauds (généralement 115200)
 

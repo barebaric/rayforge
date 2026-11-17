@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-03 16:38+0200\n"
+"POT-Creation-Date: 2026-11-11 13:48+0100\n"
 "PO-Revision-Date: 2026-03-18 23:38+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -36,6 +36,30 @@ msgid "Keep the first workpiece at its original position"
 msgstr "Garder la première pièce à sa position d'origine"
 
 #: post_processors/widgets/optimize_group.py
+msgid "Choose Best Start Point"
+msgstr "Choisir le meilleur point de départ"
+
+#: post_processors/widgets/optimize_group.py
+msgid ""
+"Start closed paths at the vertex nearest the laser head to shorten travel "
+"moves."
+msgstr ""
+"Démarre les trajectoires fermées au sommet le plus proche de la tête laser "
+"pour raccourcir les déplacements à vide."
+
+#: post_processors/widgets/optimize_group.py
+msgid "Prefer Corners"
+msgstr "Privilégier les angles"
+
+#: post_processors/widgets/optimize_group.py
+msgid ""
+"Start closed paths at a sharp corner where the path has one, which makes the "
+"seam less visible."
+msgstr ""
+"Démarre les trajectoires fermées sur un angle vif lorsque la trajectoire en "
+"possède un, ce qui rend la couture moins visible."
+
+#: post_processors/widgets/optimize_group.py
 msgid "Merge Scanlines"
 msgstr "Fusionner les lignes de balayage"
 
@@ -60,6 +84,21 @@ msgstr ""
 "d'après l'accélération de la machine"
 
 #: post_processors/widgets/optimize_group.py
+msgid "Reorder Scan Lines"
+msgstr "Réordonner les lignes de balayage"
+
+#: post_processors/widgets/optimize_group.py
+msgid ""
+"Reorder raster scan lines for shorter travel. Raster rows normally keep "
+"their order: reordering makes the machine hop its Y axis between rows, which "
+"can cause banding."
+msgstr ""
+"Réordonne les lignes de balayage raster pour raccourcir les déplacements. "
+"Les lignes raster conservent normalement leur ordre : la réorganisation fait "
+"sauter l'axe Y de la machine entre les lignes, ce qui peut provoquer des "
+"bandes."
+
+#: post_processors/widgets/optimize_group.py
 msgid "Toggle Flipping"
 msgstr "Activer/désactiver l'inversion"
 
@@ -68,8 +107,20 @@ msgid "Toggle Preserve First Workpiece"
 msgstr "Activer/désactiver la conservation de la première pièce"
 
 #: post_processors/widgets/optimize_group.py
+msgid "Toggle Choose Best Start Point"
+msgstr "Activer/désactiver le choix du meilleur point de départ"
+
+#: post_processors/widgets/optimize_group.py
+msgid "Toggle Prefer Corners"
+msgstr "Activer/désactiver la préférence pour les angles"
+
+#: post_processors/widgets/optimize_group.py
 msgid "Change maximum bridged gap"
 msgstr "Modifier l'écart maximal franchi"
+
+#: post_processors/widgets/optimize_group.py
+msgid "Toggle Reorder Scan Lines"
+msgstr "Activer/désactiver la réorganisation des lignes de balayage"
 
 #: post_processors/widgets/overscan_group.py
 msgid "This machine adds overscan automatically; the setting has no effect."
@@ -209,6 +260,30 @@ msgstr "Modifier la distance d'entrée"
 msgid "Change Lead-Out Distance"
 msgstr "Modifier la distance de sortie"
 
+#: post_processors/widgets/perforation_group.py
+msgid "Cut Length"
+msgstr "Longueur de coupe"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Distance the laser fires before each gap"
+msgstr "Distance pendant laquelle le laser reste allumé avant chaque espace"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Skip Length"
+msgstr "Longueur d'omission"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Distance travelled with the laser off between cuts"
+msgstr "Distance parcourue avec le laser éteint entre les coupes"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Change perforation cut length"
+msgstr "Modifier la longueur de coupe de la perforation"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Change perforation skip length"
+msgstr "Modifier la longueur d'omission de la perforation"
+
 #: post_processors/widgets/merge_lines_group.py
 msgid "Tolerance"
 msgstr "Tolérance"
@@ -266,6 +341,17 @@ msgstr "Fusionner les lignes"
 #: post_processors/transformers/merge_lines_transformer.py
 msgid "Merges overlapping lines to avoid double passing."
 msgstr "Fusionne les lignes se chevauchant pour éviter les passages doubles."
+
+#: post_processors/transformers/perforation_transformer.py
+msgid "Perforation"
+msgstr "Perforation"
+
+#: post_processors/transformers/perforation_transformer.py
+msgid ""
+"Cuts in dashes: the laser fires for the cut length and skips the skip length"
+msgstr ""
+"Coupe en tirets : le laser s'allume pendant la longueur de coupe et s'éteint "
+"pendant la longueur d'omission"
 
 #: post_processors/transformers/overscan_transformer.py
 msgid "Overscan"

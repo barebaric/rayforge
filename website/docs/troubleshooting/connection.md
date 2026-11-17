@@ -229,7 +229,7 @@ Rayforge shows different connection states:
 1. **Configure the machine:**
    - Open Settings Machine
    - Select or create a machine profile
-   - Choose the correct driver (GRBL Serial)
+   - Choose the correct driver (GRBL (USB/Serial))
    - Select the serial port
    - Set baud rate (typically 115200)
 

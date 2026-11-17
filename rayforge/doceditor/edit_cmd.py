@@ -19,6 +19,7 @@ from ..core.undo import (
 )
 from ..core.workflow import Workflow
 from ..core.workpiece import WorkPiece
+from .boundaries import edited_boundaries_command
 
 if TYPE_CHECKING:
     from ..core.asset import IAsset
@@ -345,23 +346,10 @@ class EditCmd:
         for contour in remaining:
             new_geo.extend(contour)
 
-        old_value = workpiece._edited_boundaries
-
-        def _on_changed():
-            workpiece.clear_render_cache()
-            workpiece.updated.send(workpiece)
-
-        history = self._editor.history_manager
-        with history.transaction(_("Delete contour(s)")) as t:
-            cmd = ChangePropertyCommand(
-                target=workpiece,
-                property_name="_edited_boundaries",
-                new_value=new_geo,
-                old_value=old_value,
-                on_change_callback=_on_changed,
-                name=_("Delete contour(s)"),
-            )
-            t.execute(cmd)
+        command = edited_boundaries_command(
+            workpiece, new_geo, _("Delete contour(s)")
+        )
+        self._editor.history_manager.execute(command)
 
     def delete_segments(
         self,
@@ -394,23 +382,10 @@ class EditCmd:
         keep = set(range(len(data))) - to_remove
         new_geo = boundaries.filter(keep)
 
-        old_value = workpiece._edited_boundaries
-
-        def _on_changed():
-            workpiece.clear_render_cache()
-            workpiece.updated.send(workpiece)
-
-        history = self._editor.history_manager
-        with history.transaction(_("Delete segment(s)")) as t:
-            cmd = ChangePropertyCommand(
-                target=workpiece,
-                property_name="_edited_boundaries",
-                new_value=new_geo,
-                old_value=old_value,
-                on_change_callback=_on_changed,
-                name=_("Delete segment(s)"),
-            )
-            t.execute(cmd)
+        command = edited_boundaries_command(
+            workpiece, new_geo, _("Delete segment(s)")
+        )
+        self._editor.history_manager.execute(command)
 
     def add_geometry_provider_instance(
         self,

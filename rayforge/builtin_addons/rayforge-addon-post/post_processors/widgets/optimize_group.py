@@ -47,6 +47,33 @@ class OptimizeSettingsGroup(TransformerSettingsGroup):
             "notify::active", self._on_preserve_first_toggled
         )
 
+        self.best_start_row = Adw.SwitchRow(
+            title=_("Choose Best Start Point"),
+            subtitle=_(
+                "Start closed paths at the vertex nearest the laser "
+                "head to shorten travel moves."
+            ),
+        )
+        self.best_start_row.set_active(transformer.best_start_point)
+        self.add(self.best_start_row)
+        self.best_start_row.connect(
+            "notify::active", self._on_best_start_toggled
+        )
+
+        self.prefer_corners_row = Adw.SwitchRow(
+            title=_("Prefer Corners"),
+            subtitle=_(
+                "Start closed paths at a sharp corner where the path "
+                "has one, which makes the seam less visible."
+            ),
+        )
+        self.prefer_corners_row.set_active(transformer.prefer_corners)
+        self.prefer_corners_row.set_sensitive(transformer.best_start_point)
+        self.add(self.prefer_corners_row)
+        self.prefer_corners_row.connect(
+            "notify::active", self._on_prefer_corners_toggled
+        )
+
         self.merge_row = Adw.SwitchRow(
             title=_("Merge Scanlines"),
             subtitle=_(
@@ -74,6 +101,21 @@ class OptimizeSettingsGroup(TransformerSettingsGroup):
             lambda r: self._on_merge_gap_changed(r)
         )
 
+        self.reorder_scanlines_row = Adw.SwitchRow(
+            title=_("Reorder Scan Lines"),
+            subtitle=_(
+                "Reorder raster scan lines for shorter travel. Raster "
+                "rows normally keep their order: reordering makes the "
+                "machine hop its Y axis between rows, which can cause "
+                "banding."
+            ),
+        )
+        self.reorder_scanlines_row.set_active(transformer.reorder_scanlines)
+        self.add(self.reorder_scanlines_row)
+        self.reorder_scanlines_row.connect(
+            "notify::active", self._on_reorder_scanlines_toggled
+        )
+
     def _on_flip_toggled(
         self, row: Adw.SwitchRow, _pspec: GObject.ParamSpec
     ) -> None:
@@ -94,6 +136,27 @@ class OptimizeSettingsGroup(TransformerSettingsGroup):
             name=_("Toggle Preserve First Workpiece"),
         )
 
+    def _on_best_start_toggled(
+        self, row: Adw.SwitchRow, _pspec: GObject.ParamSpec
+    ) -> None:
+        self.prefer_corners_row.set_sensitive(row.get_active())
+        self.param_changed.send(
+            self,
+            key="best_start_point",
+            value=row.get_active(),
+            name=_("Toggle Choose Best Start Point"),
+        )
+
+    def _on_prefer_corners_toggled(
+        self, row: Adw.SwitchRow, _pspec: GObject.ParamSpec
+    ) -> None:
+        self.param_changed.send(
+            self,
+            key="prefer_corners",
+            value=row.get_active(),
+            name=_("Toggle Prefer Corners"),
+        )
+
     def _on_merge_toggled(
         self, row: Adw.SwitchRow, _pspec: GObject.ParamSpec
     ) -> None:
@@ -111,4 +174,14 @@ class OptimizeSettingsGroup(TransformerSettingsGroup):
             key="merge_max_gap_mm",
             value=row.get_value_in_base_units(),
             name=_("Change maximum bridged gap"),
+        )
+
+    def _on_reorder_scanlines_toggled(
+        self, row: Adw.SwitchRow, _pspec: GObject.ParamSpec
+    ) -> None:
+        self.param_changed.send(
+            self,
+            key="reorder_scanlines",
+            value=row.get_active(),
+            name=_("Toggle Reorder Scan Lines"),
         )

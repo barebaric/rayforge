@@ -111,6 +111,26 @@ class Workflow(DocItem):
             )
         super().remove_child(child)
 
+    def add_children(
+        self, children_to_add: Iterable[DocItem], index: int | None = None
+    ):
+        children = list(children_to_add)
+        for child in children:
+            if isinstance(child, Step):
+                child.per_step_transformer_changed.connect(
+                    self._on_per_step_transformer_changed
+                )
+        super().add_children(children, index)
+
+    def remove_children(self, children_to_remove: Iterable[DocItem]):
+        children = list(children_to_remove)
+        for child in children:
+            if isinstance(child, Step) and child in self.children:
+                child.per_step_transformer_changed.disconnect(
+                    self._on_per_step_transformer_changed
+                )
+        super().remove_children(children)
+
     def set_children(self, new_children: Iterable[DocItem]):
         old_steps = self.steps
         for step in old_steps:

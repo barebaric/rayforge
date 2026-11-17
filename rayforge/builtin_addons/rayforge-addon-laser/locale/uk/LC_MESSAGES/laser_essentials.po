@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-12 18:45+0200\n"
+"POT-Creation-Date: 2026-11-11 17:23+0100\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: Ukrainian\n"
@@ -43,6 +43,44 @@ msgstr "Швидкість vs Проходи"
 #: laser_essentials/material_test_helpers.py
 msgid "Speed vs Offset"
 msgstr "Швидкість vs Зсув"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Columns (Power Steps)"
+msgstr "Стовпці (кроки потужності)"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Rows (Speed Steps)"
+msgstr "Рядки (кроки швидкості)"
+
+#: laser_essentials/material_test_helpers.py
+#: laser_essentials/steps/material_test.py
+msgid "Number of power variations"
+msgstr "Кількість варіацій потужності"
+
+#: laser_essentials/material_test_helpers.py
+#: laser_essentials/steps/material_test.py
+msgid "Number of speed variations"
+msgstr "Кількість варіацій швидкості"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Rows (Passes Steps)"
+msgstr "Рядки (Кроки проходів)"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Number of passes variations"
+msgstr "Кількість варіацій проходів"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Columns (Speed Steps)"
+msgstr "Стовпці (Кроки швидкості)"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Rows (Offset Steps)"
+msgstr "Рядки (кроки зсуву)"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Number of offset variations"
+msgstr "Кількість варіацій зсуву"
 
 #: laser_essentials/widgets/shrinkwrap_page.py
 #: laser_essentials/steps/shrinkwrap_step.py
@@ -103,44 +141,6 @@ msgstr "Геометрія"
 #: laser_essentials/widgets/frame_page.py
 msgid "Cut a frame around the selected content."
 msgstr "Виріжте рамку навколо вибраного вмісту."
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Columns (Power Steps)"
-msgstr "Стовпці (кроки потужності)"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Rows (Speed Steps)"
-msgstr "Рядки (кроки швидкості)"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-#: laser_essentials/steps/material_test.py
-msgid "Number of power variations"
-msgstr "Кількість варіацій потужності"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-#: laser_essentials/steps/material_test.py
-msgid "Number of speed variations"
-msgstr "Кількість варіацій швидкості"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Rows (Passes Steps)"
-msgstr "Рядки (Кроки проходів)"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Number of passes variations"
-msgstr "Кількість варіацій проходів"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Columns (Speed Steps)"
-msgstr "Стовпці (Кроки швидкості)"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Rows (Offset Steps)"
-msgstr "Рядки (кроки зсуву)"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Number of offset variations"
-msgstr "Кількість варіацій зсуву"
 
 #: laser_essentials/widgets/material_test_grid_page.py
 msgid "Grid"
@@ -243,6 +243,15 @@ msgstr "Модуляція потужності та діапазон яскра
 msgid "Change Power Range"
 msgstr "Змінити діапазон потужності"
 
+#: laser_essentials/widgets/offset_fill_page.py
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Offset Fill"
+msgstr "Заливка зі зміщенням"
+
+#: laser_essentials/widgets/offset_fill_page.py
+msgid "Fill closed shapes with rings that follow the outline."
+msgstr "Заповнює замкнені фігури кільцями, що повторюють контур."
+
 #: laser_essentials/widgets/levels_adapter.py
 msgid "Auto-adjusted based on image content"
 msgstr "Автоналаштування на основі вмісту зображення"
@@ -341,7 +350,9 @@ msgstr "Сторона різу"
 
 #: laser_essentials/steps/shrinkwrap_step.py
 #: laser_essentials/steps/wavefront_step.py
-#: laser_essentials/steps/frame_step.py laser_essentials/steps/contour_step.py
+#: laser_essentials/steps/frame_step.py
+#: laser_essentials/steps/offset_fill_step.py
+#: laser_essentials/steps/contour_step.py
 msgid "Offset"
 msgstr "Зміщення"
 
@@ -393,6 +404,30 @@ msgstr "Радіус кутів"
 msgid "Radius used to round the frame's corners"
 msgstr "Радіус, що використовується для заокруглення кутів рамки"
 
+#: laser_essentials/steps/offset_fill_step.py
+#: laser_essentials/steps/material_test.py
+msgid "Line Interval"
+msgstr "Інтервал ліній"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid ""
+"Distance between neighbouring fill rings. Defaults to the laser spot size"
+msgstr ""
+"Відстань між сусідніми кільцями заливки. Типово використовується розмір "
+"лазерної плями"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Distance of the first ring inside the outline"
+msgstr "Відстань першого кільця всередині контуру"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Fill Direction"
+msgstr "Напрямок заливки"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Order in which the rings are cut"
+msgstr "Порядок різання кілець"
+
 #: laser_essentials/steps/raster_step.py
 msgid "Mode"
 msgstr "Режим"
@@ -423,6 +458,31 @@ msgid ""
 msgstr ""
 "Змінювати напрямок дизерингу в кожному рядку, щоб уникнути спрямованих "
 "артефактів"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Min Feature Size"
+msgstr "Мінімальний розмір елемента"
+
+#: laser_essentials/steps/raster_step.py
+msgid ""
+"Smallest dot width in scan-line pixels. The auto value matches the laser "
+"spot size; smaller values allow finer but fainter dots"
+msgstr ""
+"Найменша ширина точки в пікселях рядка сканування. Автоматичне значення "
+"відповідає розміру лазерної плями; менші значення дають дрібніші, але слабші "
+"точки"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Linear Light"
+msgstr "Лінійне світло"
+
+#: laser_essentials/steps/raster_step.py
+msgid ""
+"Diffuse in linear light instead of on the raw sRGB values, which engraves "
+"mid-tones darker"
+msgstr ""
+"Виконує дифузію в лінійному світлі замість сирих значень sRGB, що гравіює "
+"середні тони темнішими"
 
 #: laser_essentials/steps/raster_step.py
 msgid "Halftone Cell Size"
@@ -482,11 +542,11 @@ msgstr "Інтервал вибірки"
 
 #: laser_essentials/steps/raster_step.py
 msgid ""
-"Distance between power samples along scan line. Lower values improve "
-"accuracy, but increase output size"
+"Distance between samples along scan line. Lower values improve accuracy, but "
+"increase output size"
 msgstr ""
-"Відстань між зразками потужності вздовж лінії сканування. Менші значення "
-"покращують точність, але збільшують розмір виводу"
+"Відстань між вибірками уздовж лінії сканування. Менші значення підвищують "
+"точність, але збільшують розмір виводу"
 
 #: laser_essentials/steps/raster_step.py
 msgid "Dot Width Correction"
@@ -658,10 +718,6 @@ msgid "Gap between test squares"
 msgstr "Проміжок між тестовими квадратами"
 
 #: laser_essentials/steps/material_test.py
-msgid "Line Interval"
-msgstr "Інтервал ліній"
-
-#: laser_essentials/steps/material_test.py
 msgid ""
 "Distance between scan lines in machine units (for Engrave mode). Leave at 0 "
 "to use laser spot size"
@@ -678,8 +734,8 @@ msgid "Add speed/power annotations to the grid"
 msgstr "Додати анотації швидкості/потужності до сітки"
 
 #: laser_essentials/steps/material_test.py
-msgid "Label Engrave Power (%)"
-msgstr "Потужність гравіювання міток (%)"
+msgid "Label Engrave Power"
+msgstr "Потужність гравіювання міток"
 
 #: laser_essentials/steps/material_test.py
 msgid "Label Engrave Speed"
@@ -784,6 +840,11 @@ msgstr "Двоспрямований зсув X сканування для пе
 #: laser_essentials/steps/material_test.py
 msgid "Bidir scan X-offset for last row"
 msgstr "Двоспрямований зсув X сканування для останнього рядка"
+
+#: laser_essentials/steps/material_test.py
+#, python-brace-format
+msgid "Cut speed ({value}) exceeds the machine's maximum ({max})."
+msgstr "Швидкість різання ({value}) перевищує максимум машини ({max})."
 
 #: laser_essentials/frontend.py
 msgid "Create Material Test Grid"

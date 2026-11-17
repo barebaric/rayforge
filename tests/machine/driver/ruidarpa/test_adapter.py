@@ -34,8 +34,8 @@ from unittest.mock import Mock, PropertyMock, call
 import pytest
 import pytest_asyncio
 from raygeo.ops import Ops
-from rpalib.rpyc_client import RpcRdDriver
-from ruidadriver.rd_gluescript import GlueScript
+from ruida_pa.rpalib.rpyc_client import RpcRdDriver
+from ruida_pa.ruidadriver.rd_gluescript import GlueScript
 
 from rayforge.core.doc import Doc
 from rayforge.core.varset import (
@@ -776,6 +776,19 @@ class TestWcsHandling:
         assert await adapter.read_parser_state() == "ANCHOR"
         await adapter.select_wcs("SET_POINT")
         assert await adapter.read_parser_state() == "SET_POINT"
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "active_wcs, expected",
+        [("CURRENT", "CURRENT"), ("ANCHOR", "ANCHOR"), ("G54", "MACHINE")],
+    )
+    async def test_new_adapter_keeps_machine_wcs(
+        self, isolated_context, isolated_machine, active_wcs, expected
+    ):
+        """A rebuilt adapter reports the machine's WCS, not MACHINE."""
+        isolated_machine.active_wcs = active_wcs
+        adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
+        assert await adapter.read_parser_state() == expected
 
 
 class TestLiveBridgeRpc:

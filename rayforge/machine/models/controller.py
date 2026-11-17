@@ -16,6 +16,7 @@ from ..driver.driver import (
     DeviceStatus,
     Driver,
     DriverPrecheckError,
+    DriverSetupError,
 )
 from ..driver.dummy import NoDeviceDriver
 from ..transport import TransportStatus
@@ -77,11 +78,17 @@ class MachineController:
         # driver configuration changes
         self.machine.changed.connect(self._on_machine_changed)
 
+        # Listen for dialect edits so the live driver re-reads its
+        # dialect templates
+        self.context.dialect_mgr.dialects_changed.connect(
+            self._on_dialects_changed
+        )
+
         # If the machine already has a driver_name configured, rebuild
         # the driver instance to match
         if self.machine.driver_name:
             task_mgr.add_coroutine(
-                self.rebuild_driver,
+                self._safe_rebuild_driver,
                 key=(self.machine.id, "rebuild-driver-on-init"),
             )
 
@@ -97,7 +104,7 @@ class MachineController:
         if self.driver is not None:
             await self.driver.cleanup()
             task_mgr.add_coroutine(
-                self.rebuild_driver,
+                self._safe_rebuild_driver,
                 key=(self.machine.id, "rebuild-driver"),
             )
 
@@ -156,7 +163,23 @@ class MachineController:
         await asyncio.sleep(_REBUILD_DEBOUNCE_SECONDS)
         if ctx is not None and ctx.is_cancelled():
             return
-        await self.rebuild_driver(ctx)
+        await self._safe_rebuild_driver(ctx)
+
+    async def _safe_rebuild_driver(
+        self, ctx: Optional["ExecutionContext"] = None
+    ):
+        """
+        Runs rebuild_driver() for background tasks, downgrading failures
+        that indicate the device is not reachable or the driver cannot
+        be set up to a warning instead of an unhandled task exception.
+        """
+        try:
+            await self.rebuild_driver(ctx)
+        except (OSError, DeviceConnectionError, DriverSetupError) as e:
+            logger.warning(
+                f"Driver rebuild for machine '{self.machine.name}' "
+                f"(id:{self.machine.id}) failed: {e}"
+            )
 
     def _connect_driver_signals(self):
         if self.driver is None:
@@ -191,17 +214,25 @@ class MachineController:
     def _on_dialects_changed(self, sender=None, **kwargs):
         """
         Callback when dialects are updated.
-        Sends machine's changed signal to trigger recalculation.
+        Sends machine's changed signal to trigger recalculation, and
+        lets the live driver re-read its dialect templates so manual
+        commands use the edited definitions without waiting for a
+        reconnect or job. The machine's own handler is registered
+        before this one, so its cached dialect is already invalidated
+        when the driver resolves the templates.
         """
         self.machine.changed.send(self.machine)
+        if self.driver is not None:
+            self.driver.refresh_dialect()
 
     async def rebuild_driver(self, ctx: Optional["ExecutionContext"] = None):
         """
         Applies the machine's current driver configuration.
 
-        If the driver class is unchanged, the live driver is asked via
-        update_settings() to absorb the new arguments. Drivers that opt
-        in keep running without interruption; everything else falls
+        If the driver class is unchanged and the driver has not been
+        cleaned up, the live driver is asked via update_settings() to
+        absorb the new arguments. Drivers that opt in keep running
+        without interruption; everything else falls
         through to a full rebuild, which instantiates the driver, and
         connects if auto_connect is enabled and the new driver is not
         NoDeviceDriver.
@@ -226,8 +257,10 @@ class MachineController:
         else:
             self.machine.set_precheck_error(None)
 
-        if isinstance(self.driver, driver_cls) and self.driver.update_settings(
-            **self.machine.driver_args
+        if (
+            isinstance(self.driver, driver_cls)
+            and self.driver.did_setup
+            and self.driver.update_settings(**self.machine.driver_args)
         ):
             logger.info(
                 f"Machine '{self.machine.name}' (id:{self.machine.id}) "
@@ -633,8 +666,9 @@ class MachineController:
         """
         Switches the active WCS on both the model and the device.
 
-        Sends the G-code WCS command (e.g. G54), then queries $G
-        to confirm the switch before updating _confirmed_active_wcs.
+        Selects the WCS through the driver (the G-code command, e.g.
+        G54, for G-code controllers), then queries $G to confirm the
+        switch before updating _confirmed_active_wcs.
         This prevents stale WCO from status reports corrupting the
         newly-selected WCS offset.
         """
@@ -644,7 +678,7 @@ class MachineController:
 
         if self.machine.is_connected():
             try:
-                await self.driver.run_raw(wcs)
+                await self.driver.select_wcs(wcs)
                 confirmed = await self.driver.read_parser_state()
                 if confirmed == wcs:
                     self._confirmed_active_wcs = wcs

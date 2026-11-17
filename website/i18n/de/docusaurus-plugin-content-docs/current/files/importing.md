@@ -236,6 +236,14 @@ Deaktiviere "Originalvektoren verwenden", um diese Methode zu nutzen.
 - SVGs mit Effekten, Filtern, Farbverläufen
 - Wenn direkter Import Fehler produziert
 
+### Ebenenauswahl und nicht gruppierte Geometrie
+
+Mit **Originalvektoren verwenden** zeigt die Liste **Ebenen auswählen** einen Eintrag pro benannter
+SVG-Ebene (bzw. pro Farbe bei Gruppierung nach Farben). Formen außerhalb jeder benannten Ebene
+werden als zusätzliche Ebene **Nicht gruppiert** angeboten, standardmäßig aktiviert, damit sie wie
+jede andere Ebene importiert und geschnitten werden. Das Abwählen einer Ebene schließt ihre
+Geometrie sowohl aus der Vorschau als auch aus den erzeugten Werkzeugbahnen aus.
+
 ### Live-Vorschau
 
 Der Import-Dialog zeigt eine Live-Vorschau, wie dein SVG importiert wird:
@@ -295,6 +303,22 @@ Rayforge unterstützt Standard-DXF-Formate:
 - **R2000+** - Funktioniert normalerweise, aber R12 ist sicherer
 
 **Tipp:** Exportiere als R12/LT2 DXF für maximale Kompatibilität.
+
+### Abflachen der Z-Koordinaten
+
+Manche CAD-Exporteure schreiben DXF-Dateien mit Geometrie auf unterschiedlichen Z-Höhen – zum
+Beispiel ein 3D-Modell, das mit den Konturen der Ober- und der Unterseite eines Teils exportiert
+wurde. Rayforge ist ein 2D-Programm: Auf einer Maschine mit Z-Achse werden solche Z-Werte zu echten
+Z-Bewegungen im Job, und der Kopf kann unter die Materialoberfläche eintauchen und abstürzen.
+
+Enthält eine DXF-Datei Geometrie auf mehr als einer Z-Höhe, bietet der Import-Dialog daher eine
+Option **Z-Koordinaten abflachen** (unter „Import-Modus“) an. Sie ist standardmäßig aktiviert und
+projiziert die gesamte importierte Geometrie auf die Z=0-Ebene. Du kannst sie deaktivieren, um die
+ursprünglichen Z-Höhen beizubehalten – der Dialog warnt dich dann, dass sich der Werkzeugpfad in Z
+bewegt, was nur sicher ist, wenn du weißt, dass deine Datei dies benötigt (zum Beispiel, um eine
+bestimmte Fokushöhe pro Form nachzubilden).
+
+Bei flachen Zeichnungen wird die Option nicht angezeigt; es gibt nichts abzuflachen.
 
 ### DXF-Import-Tipps
 

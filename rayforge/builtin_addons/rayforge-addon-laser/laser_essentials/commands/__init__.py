@@ -4,8 +4,10 @@ Laser Essentials Commands.
 Provides command implementations for laser operations.
 """
 
-from .material_test_cmd import MaterialTestCmd
+from .calibration_cmd import CalibrationCmd
+from .calibration_sync import CalibrationSync
 
 __all__ = [
-    "MaterialTestCmd",
+    "CalibrationCmd",
+    "CalibrationSync",
 ]

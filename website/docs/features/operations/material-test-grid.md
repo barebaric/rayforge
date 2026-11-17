@@ -12,14 +12,18 @@ combination: it generates a pattern of test cells in which each cell is engraved
 slightly different setting, all in a single job. After one run you can see at a glance which
 combination produces the result you want.
 
-Create one via **Tools → Create Material Test Grid**. Rayforge adds a special workpiece to the
-canvas along with a matching operation, and you configure the grid in its settings dialog.
+Create one via **Tools → Create Material Test Grid**. Rayforge adds the grid on a new layer named
+after the test, with one workpiece and a matching operation, and selects it. The grid's settings
+appear under **Test Settings** in the item properties panel on the right, so the canvas and the
+grid stay in view while you change them. Every change rebuilds the grid right away, as one step you
+can undo. Select the grid again later to bring its settings back. The
+[Interval and Focus Tests](interval-and-focus-tests.md) work the same way.
 
 ![Material Test Grid Settings](/screenshots/material-test.webp)
 
 ## Presets
 
-The settings dialog offers presets for common laser types. They fill in a sensible speed range,
+The Test Settings offer presets for common laser types. They fill in a sensible speed range,
 power range, and test type so you can start with a reasonable baseline:
 
 | Preset            | Speed Range       | Power Range | Test Type |
@@ -47,9 +51,10 @@ power is scaled along with the speed, so all cells stay visually comparable.
 
 ## Configuring the Grid
 
-The settings dialog groups the parameters into three sections.
+The Test Settings list the grid settings first, then the labels, then the parameter ranges. The
+laser head and the post-processing stay in the settings of the operation.
 
-The **Grid** section controls the test itself. The test type determines whether each cell cuts the
+The **grid** settings control the test itself. The test type determines whether each cell cuts the
 outline of a square or fills it with raster lines. The grid dimensions set how many columns and rows
 to test — each column represents one step of the mode's first parameter and each row one step of the
 second, from the minimum to the maximum of the range you enter. Between 2 and 20 steps are allowed
@@ -58,12 +63,12 @@ determine how large the grid becomes. For the Engrave test type, the line interv
 distance between scan lines — smaller values fill more densely but take longer. Leave it at zero to
 use your laser's spot size, which is a good match for most engraving.
 
-The **Labels** section controls the annotations engraved next to the grid. Labels are on by default
+The **label** settings control the annotations engraved next to the grid. Labels are on by default
 and are engraved first, so the test pattern cannot obscure them. They get their own power (10% by
 default) and speed (1000 mm/min by default), and speed values are shown in your preferred display
 unit.
 
-The **Parameters** section holds the ranges the grid varies — speed, power, passes, or offset,
+The **parameter ranges** are what the grid varies — speed, power, passes, or offset,
 depending on the selected mode. Modes that keep a parameter fixed (for example the speed in Power vs
 Passes) let you set that constant here as well.
 
@@ -72,8 +77,8 @@ Passes) let you set that constant here as well.
 Every operation normally processes all workpieces on its layer, and the **Workpieces** tab of its
 settings dialog lists them all as included. The Material Test Grid is the exception: its operation
 is linked to the workpiece it generated and processes that workpiece only. On the Workpieces tab the
-generated grid appears as the only included workpiece, while everything else on the layer is marked
-as excluded.
+generated grid appears as the only included workpiece, and anything you add to the test's layer
+later is marked as excluded.
 
 ![Workpieces tab of the Material Test Grid settings](/screenshots/step-settings-material-test-grid-workpieces.webp)
 
@@ -130,7 +135,8 @@ those settings the next time you cut the same material.
 
 Material test grids are ordinary workpieces, so they combine freely with other operations. A common
 pattern is to add a contour operation around the finished grid and cut the test piece free from the
-stock after engraving completes.
+stock after engraving completes. Operations you add to the test's layer stay when the grid is
+rebuilt.
 
 Running the same grid configuration on different materials is a quick way to build up a library of
 known-good settings — and recipes make that library searchable by material and thickness later.

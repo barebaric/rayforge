@@ -14,6 +14,13 @@ Addons são extensões que adicionam funcionalidade ao Rayforge. Eles podem forn
 - Melhorias na interface
 - Bibliotecas de materiais
 
+## Serviços online
+
+A opção **Ativar serviços externos de addons** controla o acesso ao registro online, a instalação
+remota e os serviços de licença do Gumroad e Patreon. Quando desativada, os addons integrados e os
+já instalados localmente continuam disponíveis, mas o Rayforge não faz solicitações a serviços
+externos de addons.
+
 ## Addons Instalados
 
 A lista de addons mostra todos os addons instalados com:
@@ -23,13 +30,30 @@ A lista de addons mostra todos os addons instalados com:
 - **Descrição**: Breve descrição da funcionalidade
 - **Status**: Se está ativado ou desativado
 
+## Detalhes do Addon
+
+![Visão de detalhes do addon](/screenshots/app-settings-addons-detail.webp)
+
+Clique na linha de um addon — na lista de addons instalados ou no diálogo do Registro de Addons —
+para abrir sua visão de detalhes. A visão de detalhes mostra:
+
+- **Capturas de tela**: Uma galeria deslizável, quando o autor do addon fornece capturas
+- **Descrição**: Uma descrição mais longa do que o addon faz, com formatação Markdown
+- **Autor, versão e licença**
+- Um link para o repositório do addon
+- A ação **Instalar**, **Atualizar** ou **Desbloquear**, dependendo do estado do addon
+
+As capturas de tela e a descrição longa são carregadas do registro online. Quando os serviços
+externos de addons estão desativados ou o registro não pode ser alcançado, a visão de detalhes ainda
+mostra as informações locais do addon.
+
 ## Gerenciando Addons
 
 ### Instalando Addons
 
 1. Clique no botão **Instalar**
 2. Selecione um arquivo de addon (`.zip` ou repositório de addon)
-3. Confirme a instalação
+3. Confirme a instalação (addons da comunidade exigem confirmar um aviso de confiança)
 4. Aguarde a conclusão da instalação
 
 ### Atualizando Addons
@@ -46,6 +70,22 @@ em **Atualizar** para instalar as atualizações disponíveis.
 <!-- prettier-ignore-start -->
 :::warning
 Remover um addon pode afetar documentos que usam seus recursos.
+:::
+<!-- prettier-ignore-end -->
+
+## Addons da Comunidade
+
+Addons que não foram criados pela equipe Rayforge são marcados como addons da comunidade com um
+ícone dedicado nas listas de addons.
+
+Ao instalar um addon da comunidade, um diálogo de confirmação explica que o addon não é fornecido
+pelo próprio Rayforge e mostra um link para o repositório do addon. Abra o link no seu navegador
+para revisar o código e o autor antes de continuar.
+
+<!-- prettier-ignore-start -->
+:::warning
+Os addons têm o mesmo acesso ao seu computador e aos seus arquivos que o próprio Rayforge. Instale
+addons da comunidade apenas se você confiar nos autores.
 :::
 <!-- prettier-ignore-end -->
 

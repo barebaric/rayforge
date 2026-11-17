@@ -249,8 +249,17 @@ impressão tradicional de meio-tom.
 **Stucki, Jarvis, Sierra, Burkes e Atkinson** são algoritmos de difusão de erro como o
 Floyd-Steinberg que espalham o erro por uma vizinhança maior, o que dá um grão mais uniforme em
 áreas planas como tons de pele. O Atkinson difunde só parte do erro, o que aumenta o contraste.
-Ative **Serpentina** para alternar a direção de varredura em cada linha e evitar listras
+**Serpentina** (ativada por padrão) alterna a direção de varredura em cada linha e evita listras
 direcionais.
+
+**Tamanho mínimo de elemento** agrupa cada linha de varredura em células antes da difusão, para que
+nenhum ponto fique menor que o número de pixels indicado. O valor automático corresponde ao tamanho
+do spot do laser, mantendo cada ponto em força total; valores menores permitem pontos mais finos,
+porém mais fracos.
+
+**Luz linear** difunde em luz linear em vez de sobre os valores sRGB brutos. Difundir sobre os
+valores sRGB mantém a cobertura de pontos no tom que a imagem mostra na tela; a luz linear grava
+tons médios notavelmente mais escuros.
 
 **Papel de jornal** e **Meio-tom** agrupam os pixels em pontos. O meio-tom desenha pontos redondos
 numa grade definida por **Tamanho da célula de meio-tom** (a distância entre os centros dos pontos)
@@ -309,6 +318,20 @@ Para imagens, o intervalo de linha deve corresponder ou exceder a resolução da
 tem 10 pixels/mm (254 DPI), use intervalo de linha de 0.1mm ou menor.
 :::
 <!-- prettier-ignore-end -->
+
+#### Intervalo de Amostragem
+
+**Intervalo de amostragem (mm):**
+
+- Distância entre amostras ao longo de cada linha de varredura, em todos os modos de raster
+- No pontilhado define o comprimento de cada ponto; na gravação com potência modulada, a frequência
+  com que a potência muda ao longo da linha
+- Menor = mais detalhe, arquivos de saída maiores
+- O valor automático dá pontos quadrados no pontilhado (segue o intervalo de linha) e é metade da
+  largura do spot do laser nos modos com potência modulada
+
+**Recomendado:** mantenha o valor automático. Um intervalo de amostragem muito maior que o intervalo
+de linha transforma cada ponto em um traço longo, que aparece como textura visível nos gradientes.
 
 #### Direção de Varredura
 
@@ -462,7 +485,7 @@ Veja [Overscan](../overscan.md) para detalhes.
 
 **Faixas (listras escuras/claras):**
 
-- Calibre o [Deslocamento de Varredura Bidirecional](#deslocamento-de-varredura-bidirecional)
+- Calibre o [Deslocamento de Varredura Bidirecional](#bidirectional-scan-offset)
 - Verifique tensão das correias
 - Reduza velocidade
 - Tente ângulo de varredura diferente

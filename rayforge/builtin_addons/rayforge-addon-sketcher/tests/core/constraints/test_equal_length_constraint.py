@@ -7,6 +7,7 @@ import numpy as np
 import pytest
 from scipy.optimize import check_grad
 from sketcher.core import Sketch
+from sketcher.core.components import get_referenced_points
 from sketcher.core.constraints import EqualLengthConstraint
 from sketcher.core.params import ParameterContext
 from sketcher.core.registry import EntityRegistry
@@ -504,3 +505,20 @@ def test_equal_length_can_apply_to_ellipse_and_circle():
     selection.point_ids = []
     selection.entity_ids = [circ, ell]
     assert EqualLengthConstraint.can_apply_to(selection, sketch) is True
+
+
+def test_equal_length_reports_referenced_entities():
+    """The solver's touched-point set relies on reference reporting;
+    the entity list must surface the entities' defining points."""
+    reg = EntityRegistry()
+    p1 = reg.add_point(0, 0)
+    p2 = reg.add_point(10, 0)
+    p3 = reg.add_point(0, 10)
+    p4 = reg.add_point(5, 10)
+    l1 = reg.add_line(p1, p2)
+    l2 = reg.add_line(p3, p4)
+
+    c = EqualLengthConstraint([l1, l2])
+
+    assert c.get_referenced_entity_ids() == {l1, l2}
+    assert get_referenced_points(reg, c) == {p1, p2, p3, p4}

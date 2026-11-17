@@ -43,7 +43,7 @@ que serão enviados ao laser. As imagens base dos seus workpieces não são exib
 exibição focada nas trajetórias de corte.
 
 O quadro de extensão da máquina aparece como uma borda representando toda a área de deslocamento dos
-eixos da sua máquina. A mira da origem de trabalho mostra onde a origem do sistema de coordenadas
+eixos da sua máquina. As setas da origem de trabalho mostram onde a origem do sistema de coordenadas
 está localizada dentro dessa área. Ambos são atualizados automaticamente se você alterar o
 deslocamento do sistema de coordenadas de trabalho na sua máquina.
 

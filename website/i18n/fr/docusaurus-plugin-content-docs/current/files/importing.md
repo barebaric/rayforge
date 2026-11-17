@@ -238,6 +238,14 @@ Désactive « Utiliser les vecteurs originaux » pour utiliser cette méthode.
 - SVG avec effets, filtres, dégradés
 - Quand l'importation directe produit des erreurs
 
+### Sélection des calques et géométrie non groupée
+
+Avec **Utiliser les vecteurs d'origine**, la liste **Sélectionner les calques** affiche une entrée
+par calque SVG nommé (ou par couleur en regroupant par couleurs). Les formes situées hors de tout
+calque nommé sont proposées comme calque supplémentaire **Non groupé**, activé par défaut, afin
+d'être importées et découpées comme n'importe quel autre calque. Décocher un calque exclut sa
+géométrie à la fois de l'aperçu et des trajectoires d'outil générées.
+
 ### Aperçu en direct
 
 La boîte de dialogue d'importation affiche un aperçu en direct de l'importation de ton SVG :
@@ -297,6 +305,23 @@ Rayforge prend en charge les formats DXF standard :
 - **R2000+** - Fonctionne généralement, mais R12 est plus sûr
 
 **Astuce :** Exporte en DXF R12/LT2 pour une compatibilité maximale.
+
+### Aplatissement des coordonnées Z
+
+Certains logiciels de CAO écrivent des fichiers DXF contenant de la géométrie à différentes hauteurs
+Z — par exemple un modèle 3D exporté avec les contours des faces supérieure et inférieure d'une
+pièce. Rayforge est un programme 2D : sur une machine dotée d'un axe Z, ces valeurs Z deviennent de
+véritables mouvements en Z dans le travail, et la tête peut plonger sous la surface du matériau et
+entrer en collision.
+
+Lorsqu'un fichier DXF contient de la géométrie à plus d'une hauteur Z, la boîte de dialogue
+d'importation propose donc une option **Aplatir les coordonnées Z** (sous « Mode d'importation »).
+Elle est activée par défaut et projette toute la géométrie importée sur le plan Z=0. Tu peux la
+désactiver pour conserver les hauteurs Z d'origine — la boîte de dialogue t'avertit alors que le
+parcours de l'outil se déplacera en Z, ce qui n'est sûr que si tu sais que ton fichier en a besoin
+(par exemple pour recréer une hauteur de mise au point spécifique par forme).
+
+Pour les dessins plats, l'option n'est pas affichée ; il n'y a rien à aplatir.
 
 ### Conseils pour l'importation DXF
 

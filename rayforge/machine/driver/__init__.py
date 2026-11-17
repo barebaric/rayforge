@@ -1,13 +1,14 @@
 import inspect
 from typing import cast
 
-from ..discovery import (
+from raydriver.core.discovery import (
     DeviceIdentity,
     DiscoveredDevice,
-    find_all_devices,
-    find_network_devices,
-    normalize_tokens,
 )
+from raydriver.core.discovery.engine import find_all_devices
+from raydriver.core.discovery.mdns_channel import find_network_devices
+from raydriver.core.discovery.serial_channel import normalize_tokens
+
 from .driver import (
     DRIVER_MATURITY_LABELS,
     Driver,
@@ -23,6 +24,7 @@ from .grbl import (
 )
 from .marlin import MarlinSerialDriver
 from .octoprint import OctoPrintDriver
+from .remote_driver import RaydriverRemoteDriver
 from .ruidarpa import RuidaRPAAdapter
 from .smoothie import SmoothieDriver
 
@@ -68,6 +70,7 @@ __all__ = [
     "NoDeviceDriver",
     "OctoPrintDriver",
     "PWMParams",
+    "RaydriverRemoteDriver",
     "RuidaRPAAdapter",
     "SmoothieDriver",
     "find_all_devices",

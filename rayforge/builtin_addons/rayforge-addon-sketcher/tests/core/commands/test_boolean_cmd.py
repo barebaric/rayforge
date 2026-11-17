@@ -94,7 +94,9 @@ def test_undo_restores_exact_geometry():
     cmd = BooleanCommand(sketch, [c1, c2], BooleanOp.UNION)
     cmd.execute()
     cmd.undo()
-    assert _point_state(sketch) == pytest.approx(before)
+    assert _point_state(sketch) == {
+        pid: pytest.approx(pt) for pid, pt in before.items()
+    }
 
 
 def test_difference_bakes_hole_into_single_entity():
@@ -146,7 +148,7 @@ def test_multi_ring_polygon_survives_serialization():
         clone.get_world_rings(sketch.registry),
         polygon.get_world_rings(sketch.registry),
     ):
-        assert ring_clone == pytest.approx(ring)
+        assert ring_clone == [pytest.approx(p) for p in ring]
 
 
 def test_result_is_selectable_and_cuttable():
@@ -195,7 +197,9 @@ def test_prepare_solids_is_side_effect_free():
     entities_before = len(sketch.registry.entities)
     solids = BooleanCommand.prepare_solids(sketch, [c1, c2], BooleanOp.UNION)
     assert solids is not None and len(solids) == 1
-    assert _point_state(sketch) == pytest.approx(points_before)
+    assert _point_state(sketch) == {
+        pid: pytest.approx(pt) for pid, pt in points_before.items()
+    }
     assert len(sketch.registry.entities) == entities_before
 
 

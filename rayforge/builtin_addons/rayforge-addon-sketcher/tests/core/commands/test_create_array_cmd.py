@@ -3,7 +3,11 @@ import math
 import pytest
 from sketcher.core.arrays import CircularArrayStrategy
 from sketcher.core.commands import CreateArrayCommand
-from sketcher.core.constraints import RadiusConstraint
+from sketcher.core.constraints import (
+    HorizontalConstraint,
+    RadiusConstraint,
+    VerticalConstraint,
+)
 from sketcher.core.entity_group import EntityGroup
 from sketcher.core.sketch import Sketch
 
@@ -233,3 +237,40 @@ def test_solver_keeps_geometry_stable_after_apply(sketch_with_template):
         pt = sketch.registry.get_point(pid)
         assert pt.x == pytest.approx(x, abs=1e-3)
         assert pt.y == pytest.approx(y, abs=1e-3)
+
+
+def test_axis_pair_closure_survives_extraction():
+    """A horizontal+vertical pair on the same two points pins one
+    point onto the other — a coincidence, not a world anchor. Array
+    extraction must keep it, or a closed shape whose closure is the
+    pair opens when its junction point is dragged."""
+    sketch = Sketch()
+    p1 = sketch.add_point(0, 0)
+    p2 = sketch.add_point(10, 0)
+    p3 = sketch.add_point(0, 10)
+    p4 = sketch.add_point(0, 0)
+    line_a = sketch.add_line(p1, p2)
+    line_b = sketch.add_line(p2, p3)
+    line_c = sketch.add_line(p3, p4)
+    sketch.constrain_horizontal(p1, p4)
+    sketch.constrain_vertical(p1, p4)
+
+    cmd = CreateArrayCommand(sketch, make_strategy(), [line_a, line_b, line_c])
+    cmd.execute()
+
+    closure = [
+        c
+        for c in sketch.constraints
+        if isinstance(c, (HorizontalConstraint, VerticalConstraint))
+        and {c.p1, c.p2} == {p1, p4}
+    ]
+    assert len(closure) == 2
+
+    cmd.undo()
+    closure = [
+        c
+        for c in sketch.constraints
+        if isinstance(c, (HorizontalConstraint, VerticalConstraint))
+        and {c.p1, c.p2} == {p1, p4}
+    ]
+    assert len(closure) == 2

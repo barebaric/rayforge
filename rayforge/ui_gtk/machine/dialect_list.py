@@ -170,6 +170,59 @@ class DialectListEditor(PreferencesGroupWithButton):
         placeholder.add_css_class("dim-label")
         self.list_box.set_placeholder(placeholder)
 
+        self.cleanup_button = Gtk.Button(child=get_icon("clean-symbolic"))
+        self.cleanup_button.set_tooltip_text(_("Delete Unused Dialects"))
+        self.cleanup_button.set_valign(Gtk.Align.CENTER)
+        self.cleanup_button.connect("clicked", self._on_cleanup_clicked)
+        self.set_header_suffix(self.cleanup_button)
+
+    def _on_cleanup_clicked(self, button: Gtk.Button):
+        unused = self.dialect_mgr.get_unused_dialects(
+            get_context().machine_mgr.get_machines()
+        )
+        parent = cast(Gtk.Window, self.get_ancestor(Gtk.Window))
+        if not unused:
+            dialog = Adw.MessageDialog(
+                transient_for=parent,
+                heading=_("No Unused Dialects"),
+                body=_(
+                    "Every custom dialect is used by at least one machine."
+                ),
+            )
+            dialog.add_response("ok", _("OK"))
+            dialog.set_default_response("ok")
+            dialog.present()
+            return
+
+        listing = "\n".join(f"• {d.label}" for d in unused)
+        dialog = Adw.MessageDialog(
+            transient_for=parent,
+            heading=_("Delete Unused Dialects?"),
+            body=(
+                _("The following dialects are not used by any machine:")
+                + f"\n\n{listing}\n\n"
+                + _(
+                    "They will be permanently removed. "
+                    "This action cannot be undone."
+                )
+            ),
+        )
+        dialog.set_body_use_markup(False)
+        dialog.add_response("cancel", _("Cancel"))
+        dialog.add_response("delete", _("Delete"))
+        dialog.set_response_appearance(
+            "delete", Adw.ResponseAppearance.DESTRUCTIVE
+        )
+        dialog.connect("response", self._on_cleanup_response)
+        dialog.present()
+
+    def _on_cleanup_response(
+        self, dialog: Adw.MessageDialog, response_id: str
+    ):
+        if response_id == "delete":
+            machines = get_context().machine_mgr.get_machines()
+            self.dialect_mgr.delete_unused_dialects(machines)
+
     def _on_destroy(self, *args):
         self.dialect_mgr.dialects_changed.disconnect(self._on_dialects_changed)
         if self.machine:

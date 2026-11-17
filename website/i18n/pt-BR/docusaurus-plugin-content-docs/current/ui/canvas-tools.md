@@ -160,8 +160,24 @@ Combine ou subtraia formas:
 
 ## Edição de Vetores
 
-Clique duas vezes em uma peça de trabalho na tela para entrar no modo de edição de vetores. Neste
-modo, você pode selecionar e excluir segmentos de vetor individuais da peça de trabalho.
+Clique duas vezes em uma peça de trabalho importada na tela para entrar no modo de edição de
+vetores. Neste modo, você pode selecionar e excluir segmentos de vetor individuais da peça de
+trabalho, e editar seus nós.
+
+Clique em um segmento para selecioná-lo, ou arraste um quadro ao redor de vários. Os nós do contorno
+selecionado aparecem como pequenos quadrados, e as alças das curvas selecionadas como pontos
+redondos:
+
+- **Arraste um nó** para movê-lo; as alças de curva vizinhas acompanham. Em um caminho fechado, o nó
+  inicial e o final são um só nó.
+- **Arraste uma alça** para mudar a forma de uma curva.
+- Clique em um nó e pressione <kbd>Delete</kbd> para removê-lo; os segmentos dos dois lados se unem
+  em um. Sem nenhum nó selecionado, <kbd>Delete</kbd> remove os segmentos selecionados.
+- Aponte para um segmento e pressione <kbd>I</kbd> para inserir um nó ali.
+- Pressione <kbd>C</kbd> para transformar os segmentos selecionados em curvas, ou de volta em linhas
+  retas quando todos já forem curvas.
+
+Toda alteração pode ser desfeita. Esboços são editados no esboçador.
 
 Para sair do modo de edição de vetores, clique fora da peça de trabalho ou pressione
 <kbd>Escape</kbd>.

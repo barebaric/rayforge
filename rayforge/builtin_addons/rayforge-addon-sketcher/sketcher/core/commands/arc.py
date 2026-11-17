@@ -369,9 +369,7 @@ class ArcCommand(SketchChangeCommand):
             registry._entity_map = {e.id: e for e in registry.entities}
 
         if preview_state.temp_end_id is not None:
-            registry.points = [
-                p for p in registry.points if p.id != preview_state.temp_end_id
-            ]
+            registry.remove_points([preview_state.temp_end_id])
 
     @staticmethod
     def cleanup_center_preview(
@@ -457,7 +455,7 @@ class ArcCommand(SketchChangeCommand):
         if self.is_center_temp:
             try:
                 p = registry.get_point(self.center_id)
-                registry.points.remove(p)
+                registry.remove_points([p.id])
                 points_to_add.append(p)
             except (IndexError, ValueError):
                 pass
@@ -465,7 +463,7 @@ class ArcCommand(SketchChangeCommand):
         if self.is_start_temp:
             try:
                 p = registry.get_point(self.start_id)
-                registry.points.remove(p)
+                registry.remove_points([p.id])
                 points_to_add.append(p)
             except (IndexError, ValueError):
                 pass

@@ -1,6 +1,19 @@
 name: image_editing
 display_name: "Image Editing"
 description: "Non-destructive image editing tools for workpieces"
+long_description: |
+  Edit a workpiece's image without touching the imported file. Each
+  edit is stored with the workpiece, so you can undo it, remove it
+  later, or place the same file several times with different edits.
+
+  - **Invert Image**: swap light and dark areas, for lithophanes and
+    embossing
+  - **Adjust Image**: tune brightness, contrast, and gamma
+
+  The canvas, the 3D preview, and every operation use the edited
+  image: what you see is what the laser engraves.
+screenshots:
+  - website/static/screenshots/addon-image-editing-adjust.webp
 api_version: 23
 author:
   name: "Rayforge Team"

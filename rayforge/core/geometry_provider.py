@@ -10,6 +10,7 @@ from blinker import Signal
 
 if TYPE_CHECKING:
     from raygeo.geo import Geometry
+    from raygeo.geo.types import Point
 
     from ..image.base_renderer import Renderer
     from ..image.structures import FillRenderData
@@ -68,3 +69,15 @@ class IGeometryProvider(Protocol):
     def to_dict(self) -> dict[str, Any]:
         """Serialize the provider to a dictionary."""
         ...
+
+    def get_reference_point(self) -> Optional["Point"]:
+        """
+        A point in the provider's own coordinate system that acts as the
+        logical anchor of the generated content, e.g. the origin of a
+        sketch. Workpieces keep this point at a fixed world position when
+        the generated geometry changes.
+
+        Returns None when the content has no meaningful reference point;
+        workpieces then behave as if anchored at their center.
+        """
+        return None

@@ -60,6 +60,12 @@ von Hand ausfüllen musst:
 - Geräte, die du bereits konfiguriert hast, werden als **nur lesen** angezeigt, damit du
   versehentlich keine Duplizate erstellst.
 
+- **grblHAL-Boards über Telnet** kündigen sich nicht per mDNS an, daher läuft ein schmaler
+  Subnetz-Scan (nur Telnet-Port, begrenzte Parallelität) zusammen mit den Serial- und mDNS-Scans;
+  Rayforge bestätigt jeden antwortenden Controller, bevor er aufgelistet wird.
+
+![Assistent — Geräte erkennen](/screenshots/config-wizard-discover.webp)
+
 Klicke auf ein erkanntes Gerät, um den Assistenten vorzufüllen, oder wähle manuell einen
 Ausgangspunkt wie unten beschrieben.
 

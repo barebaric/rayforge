@@ -230,6 +230,14 @@ Desative "Usar vetores originais" para usar este método.
 - SVGs com efeitos, filtros, gradientes
 - Quando a importação direta produz erros
 
+### Seleção de camadas e geometria não agrupada
+
+Com **Usar vetores originais**, a lista **Selecionar camadas** mostra uma entrada por camada SVG
+nomeada (ou por cor, ao agrupar por cores). As formas que ficam fora de qualquer camada nomeada são
+oferecidas como uma camada extra **Não agrupado**, ativada por padrão, para que sejam importadas e
+cortadas como qualquer outra camada. Desmarcar uma camada exclui sua geometria tanto da visualização
+quanto dos percursos de ferramenta gerados.
+
 ### Visualização em tempo real
 
 O diálogo de importação mostra uma visualização em tempo real de como seu SVG será importado:
@@ -289,6 +297,22 @@ O Rayforge suporta formatos DXF padrão:
 - **R2000+** - Geralmente funciona, mas R12 é mais seguro
 
 **Dica:** Exporte como DXF R12/LT2 para compatibilidade máxima.
+
+### Aplanamento das coordenadas Z
+
+Alguns exportadores CAD gravam arquivos DXF com geometria em diferentes alturas de Z — por exemplo,
+um modelo 3D exportado com os contornos das faces superior e inferior de uma peça. O Rayforge é um
+programa 2D: em uma máquina com eixo Z, esses valores de Z se tornam movimentos reais de Z no
+trabalho, e a cabeça pode mergulhar abaixo da superfície do material e colidir.
+
+Quando um arquivo DXF contém geometria em mais de uma altura de Z, o diálogo de importação oferece
+por isso uma opção **Aplanar coordenadas Z** (em "Modo de importação"). Ela vem ativada por padrão e
+projeta toda a geometria importada no plano Z=0. Você pode desativá-la para manter as alturas Z
+originais — o diálogo então avisa que o caminho da ferramenta vai se mover em Z, o que só é seguro
+se você souber que seu arquivo precisa disso (por exemplo, para recriar uma altura de foco
+específica por forma).
+
+Em desenhos planos a opção não é mostrada; não há nada a aplanar.
 
 ### Dicas para importação DXF
 

@@ -1,6 +1,7 @@
 """Tests for the persistent Config class."""
 
 from rayforge.core.config import Config
+from rayforge.core.vectorization_spec import LayerSource
 
 
 class TestSetupCompletedFlag:
@@ -181,3 +182,153 @@ class TestWatchSourceFiles:
     def test_absent_key_falls_back_to_true(self):
         restored = Config.from_dict({}, get_machine_by_id=lambda mid: None)
         assert restored.watch_source_files is True
+
+
+class TestShopMode:
+    def test_defaults_to_false(self):
+        assert Config().shop_mode is False
+
+    def test_setter_emits_changed_once(self):
+        config = Config()
+        calls = []
+
+        def on_changed(sender, **kwargs):
+            calls.append(sender)
+
+        config.changed.connect(on_changed, weak=False)
+
+        config.set_shop_mode(True)
+        config.set_shop_mode(True)
+
+        assert len(calls) == 1
+
+    def test_round_trip(self):
+        config = Config()
+        config.set_shop_mode(True)
+        data = config.to_dict()
+
+        restored = Config.from_dict(data, get_machine_by_id=lambda mid: None)
+
+        assert data["shop_mode"] is True
+        assert restored.shop_mode is True
+
+    def test_absent_key_falls_back_to_false(self):
+        restored = Config.from_dict({}, get_machine_by_id=lambda mid: None)
+        assert restored.shop_mode is False
+
+
+class TestAddonUpdateChecks:
+    def test_defaults_to_true(self):
+        assert Config().check_for_addon_updates is True
+
+    def test_setter_emits_changed_once(self):
+        config = Config()
+        calls = []
+
+        def on_changed(sender, **kwargs):
+            calls.append(sender)
+
+        config.changed.connect(on_changed, weak=False)
+
+        config.set_check_for_addon_updates(False)
+        config.set_check_for_addon_updates(False)
+
+        assert len(calls) == 1
+
+    def test_round_trip(self):
+        config = Config()
+        config.set_check_for_addon_updates(False)
+        data = config.to_dict()
+
+        restored = Config.from_dict(data, get_machine_by_id=lambda mid: None)
+
+        assert data["check_for_addon_updates"] is False
+        assert restored.check_for_addon_updates is False
+
+    def test_absent_key_falls_back_to_true(self):
+        restored = Config.from_dict({}, get_machine_by_id=lambda mid: None)
+        assert restored.check_for_addon_updates is True
+
+
+class TestExternalAddonServices:
+    def test_defaults_to_true(self):
+        assert Config().external_addon_services_enabled is True
+
+    def test_setter_emits_changed_once(self):
+        config = Config()
+        calls = []
+
+        def on_changed(sender, **kwargs):
+            calls.append(sender)
+
+        config.changed.connect(on_changed, weak=False)
+
+        config.set_external_addon_services_enabled(False)
+        config.set_external_addon_services_enabled(False)
+
+        assert len(calls) == 1
+
+    def test_round_trip(self):
+        config = Config()
+        config.set_external_addon_services_enabled(False)
+        data = config.to_dict()
+
+        restored = Config.from_dict(data, get_machine_by_id=lambda mid: None)
+
+        assert data["external_addon_services_enabled"] is False
+        assert restored.external_addon_services_enabled is False
+
+    def test_absent_key_falls_back_to_true(self):
+        restored = Config.from_dict({}, get_machine_by_id=lambda mid: None)
+        assert restored.external_addon_services_enabled is True
+
+
+class TestImportLayerSource:
+    def test_defaults_to_none(self):
+        config = Config()
+        assert config.import_layer_source is None
+
+    def test_setter_emits_changed_once(self):
+        config = Config()
+        calls = []
+
+        def on_changed(sender, **kwargs):
+            calls.append(sender)
+
+        config.changed.connect(on_changed, weak=False)
+
+        config.set_import_layer_source(LayerSource.COLORS)
+        assert len(calls) == 1
+
+        # Setting the same value again must not re-emit.
+        config.set_import_layer_source(LayerSource.COLORS)
+        assert len(calls) == 1
+
+    def test_round_trip(self):
+        config = Config()
+        config.set_import_layer_source(LayerSource.COLORS)
+        data = config.to_dict()
+        assert data["import_layer_source"] == "colors"
+
+        restored = Config.from_dict(data, get_machine_by_id=lambda mid: None)
+        assert restored.import_layer_source == LayerSource.COLORS
+
+    def test_round_trip_none(self):
+        config = Config()
+        data = config.to_dict()
+        assert data["import_layer_source"] is None
+
+        restored = Config.from_dict(data, get_machine_by_id=lambda mid: None)
+        assert restored.import_layer_source is None
+
+    def test_absent_key_falls_back_to_none(self):
+        """Older configs without the key must not crash on load."""
+        restored = Config.from_dict({}, get_machine_by_id=lambda mid: None)
+        assert restored.import_layer_source is None
+
+    def test_invalid_value_falls_back_to_none(self):
+        restored = Config.from_dict(
+            {"import_layer_source": "bogus"},
+            get_machine_by_id=lambda mid: None,
+        )
+        assert restored.import_layer_source is None

@@ -76,11 +76,10 @@ function findReleaseAsset({ release, os, linuxMethod, windowsMethod, macosMethod
         assets.find((a) => a?.name?.endsWith('.deb'))
       );
     }
-    return (
-      assets.find((a) => a?.name?.endsWith('.AppImage')) ||
-      assets.find((a) => a?.name?.endsWith('.deb')) ||
-      assets.find((a) => a?.name?.endsWith('.rpm'))
-    );
+    if (linuxMethod === 'appimage') {
+      return assets.find((a) => a?.name?.endsWith('.AppImage'));
+    }
+    return null;
   }
 
   return null;

@@ -97,46 +97,80 @@ MIDDLE_RESIZE_HANDLES: set[ElementRegion] = (
     RESIZE_HANDLES - CORNER_RESIZE_HANDLES
 )
 
+# Deterministic hit-test priority. Handles must win over the body, otherwise
+# handles fully contained in a padded flat body would be unreachable. Sets
+# have a process-dependent iteration order, so never rely on them for this.
+_HIT_TEST_ORDER: tuple[ElementRegion, ...] = (
+    ElementRegion.TOP_LEFT,
+    ElementRegion.TOP_MIDDLE,
+    ElementRegion.TOP_RIGHT,
+    ElementRegion.MIDDLE_LEFT,
+    ElementRegion.MIDDLE_RIGHT,
+    ElementRegion.BOTTOM_LEFT,
+    ElementRegion.BOTTOM_MIDDLE,
+    ElementRegion.BOTTOM_RIGHT,
+    ElementRegion.ROTATE_TOP_LEFT,
+    ElementRegion.ROTATE_TOP_RIGHT,
+    ElementRegion.ROTATE_BOTTOM_LEFT,
+    ElementRegion.ROTATE_BOTTOM_RIGHT,
+    ElementRegion.SHEAR_TOP,
+    ElementRegion.SHEAR_RIGHT,
+    ElementRegion.SHEAR_BOTTOM,
+    ElementRegion.SHEAR_LEFT,
+    ElementRegion.MOVE,
+    ElementRegion.BODY,
+)
 
-def get_region_rect(
+
+# An axis whose on-screen extent is smaller than this many pixels is treated
+# as flat, e.g. a perfectly horizontal line has zero height.
+FLAT_HIT_THRESHOLD_PX = 1.0
+# Minimum on-screen thickness given to a flat axis so it behaves like a very
+# thin rectangle. This keeps the element selectable and its resize handles
+# usable.
+FLAT_HIT_TOLERANCE_PX = 8.0
+
+
+def flat_axis_padding(size: float, scale: float) -> float:
+    """
+    Returns local-space padding for an axis that is flat on screen.
+
+    A perfectly flat element has a zero-height (or zero-width) bounding
+    box, which would otherwise be infinitely thin. Padding the axis on
+    both sides makes the element behave like a very thin rectangle, so it
+    can be selected and gets usable resize handles.
+
+    Args:
+        size: The axis length in local units.
+        scale: The absolute screen scale in pixels per local unit.
+
+    Returns:
+        Padding in local units to apply on both sides of the axis.
+    """
+    if scale <= 1e-12:
+        return 0.0
+    screen_size = size * scale
+    if screen_size >= FLAT_HIT_THRESHOLD_PX:
+        return 0.0
+    return max(0.0, FLAT_HIT_TOLERANCE_PX - screen_size / 2.0) / scale
+
+
+def _region_rect_in_box(
     region: ElementRegion,
     width: float,
     height: float,
     base_handle_size: float,
-    scale_compensation: float | tuple[float, float] = 1.0,
+    abs_scale_x: float,
+    abs_scale_y: float,
+    is_flipped_y: bool,
 ) -> Rect:
     """
-    A generic function to calculate the rectangle (x, y, w, h) for a given
-    region, relative to a bounding box of a given width and height.
+    Calculates the rectangle (x, y, w, h) for a region inside a box.
 
-    It compensates for scale to keep handle sizes visually consistent and
-    adapts to flipped coordinate systems by checking the sign of the
-    scale_compensation.
-
-    Args:
-        region: The ElementRegion to calculate.
-        width: The width of the bounding box.
-        height: The height of the bounding box.
-        base_handle_size: The desired base size of the handles in pixels.
-        scale_compensation: The signed scale factor(s) of the context.
-                            A negative y-scale indicates a flipped axis.
+    The box is anchored at the local origin and has the given width and
+    height. Scale values must already be absolute.
     """
     w, h = width, height
-
-    if isinstance(scale_compensation, tuple):
-        scale_x, scale_y = scale_compensation
-    else:
-        scale_x = scale_y = scale_compensation
-
-    # Check for a flipped Y-axis BEFORE taking the absolute value.
-    is_flipped_y = scale_y < 0
-
-    # Use absolute scale for calculating handle *dimensions*.
-    abs_scale_x = abs(scale_x)
-    abs_scale_y = abs(scale_y)
-
-    if abs_scale_x < 1e-6 or abs_scale_y < 1e-6:
-        return (0.0, 0.0, 0.0, 0.0)
 
     # Calculate local handle dimensions by dividing the desired
     # visual size by the scale factors.
@@ -251,6 +285,62 @@ def get_region_rect(
     return 0.0, 0.0, 0.0, 0.0  # For NONE or other cases
 
 
+def get_region_rect(
+    region: ElementRegion,
+    width: float,
+    height: float,
+    base_handle_size: float,
+    scale_compensation: float | tuple[float, float] = 1.0,
+) -> Rect:
+    """
+    A generic function to calculate the rectangle (x, y, w, h) for a given
+    region, relative to a bounding box of a given width and height.
+
+    It compensates for scale to keep handle sizes visually consistent and
+    adapts to flipped coordinate systems by checking the sign of the
+    scale_compensation. Flat axes are padded to a minimum screen
+    thickness so that horizontal or vertical elements still get usable
+    handles.
+
+    Args:
+        region: The ElementRegion to calculate.
+        width: The width of the bounding box.
+        height: The height of the bounding box.
+        base_handle_size: The desired base size of the handles in pixels.
+        scale_compensation: The signed scale factor(s) of the context.
+                            A negative y-scale indicates a flipped axis.
+    """
+    if isinstance(scale_compensation, tuple):
+        scale_x, scale_y = scale_compensation
+    else:
+        scale_x = scale_y = scale_compensation
+
+    # Check for a flipped Y-axis BEFORE taking the absolute value.
+    is_flipped_y = scale_y < 0
+
+    # Use absolute scale for calculating handle *dimensions*.
+    abs_scale_x = abs(scale_x)
+    abs_scale_y = abs(scale_y)
+
+    if abs_scale_x < 1e-12 or abs_scale_y < 1e-12:
+        return (0.0, 0.0, 0.0, 0.0)
+
+    pad_x = flat_axis_padding(width, abs_scale_x)
+    pad_y = flat_axis_padding(height, abs_scale_y)
+
+    rx, ry, rw, rh = _region_rect_in_box(
+        region,
+        width + 2.0 * pad_x,
+        height + 2.0 * pad_y,
+        base_handle_size,
+        abs_scale_x,
+        abs_scale_y,
+        is_flipped_y,
+    )
+    # Shift the box back so it stays centered on the original bounds.
+    return (rx - pad_x, ry - pad_y, rw, rh)
+
+
 def check_region_hit(
     local_x: float,
     local_y: float,
@@ -275,10 +365,12 @@ def check_region_hit(
         candidates: Optional set of regions to check against.
     """
     # Determine which handle regions to check based on the candidates.
-    # The order of _HIT_TEST_ORDER is crucial to resolve overlap ambiguity.
+    # _HIT_TEST_ORDER is crucial to resolve overlap ambiguity.
     regions_to_check = candidates if candidates is not None else BBOX_REGIONS
 
-    for region in regions_to_check:
+    for region in _HIT_TEST_ORDER:
+        if region not in regions_to_check or region == ElementRegion.BODY:
+            continue
         # Calculate the hit rectangle for the current region. This ensures
         # the hit-test area matches the rendered handle size.
         rx, ry, rw, rh = get_region_rect(
@@ -292,10 +384,17 @@ def check_region_hit(
         ):
             return region
 
-    # If no handle is hit, check the body if it's a candidate.
-    if ElementRegion.BODY in regions_to_check and (
-        0 <= local_x < width and 0 <= local_y < height
-    ):
-        return ElementRegion.BODY
+    # If no handle is hit, check the body if it's a candidate. The body
+    # rect already accounts for flat-axis padding.
+    if ElementRegion.BODY in regions_to_check:
+        bx, by, bw, bh = get_region_rect(
+            ElementRegion.BODY,
+            width,
+            height,
+            base_handle_size,
+            scale_compensation,
+        )
+        if bx <= local_x < bx + bw and by <= local_y < by + bh:
+            return ElementRegion.BODY
 
     return ElementRegion.NONE

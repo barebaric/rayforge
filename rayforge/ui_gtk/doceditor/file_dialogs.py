@@ -17,11 +17,13 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+FileDialogCallback = Callable[[Gtk.FileDialog, Gio.AsyncResult, Any], None]
+
 
 def show_import_dialog(
     win: "MainWindow",
     editor: "DocEditor",
-    callback: Callable,
+    callback: FileDialogCallback,
     user_data: Any = None,
 ):
     """
@@ -43,7 +45,7 @@ def show_import_dialog(
 def show_relink_dialog(
     win: Gtk.Window,
     asset: "SourceAsset",
-    callback: Callable,
+    callback: FileDialogCallback,
     user_data: Any = None,
 ):
     """
@@ -89,7 +91,7 @@ def _set_import_filters(dialog: Gtk.FileDialog):
 
 def show_export_gcode_dialog(
     win: "MainWindow",
-    callback: Callable,
+    callback: FileDialogCallback,
     initial_name: str | None = None,
 ):
     """
@@ -124,7 +126,7 @@ def show_export_gcode_dialog(
 
 def show_export_object_dialog(
     win: "MainWindow",
-    callback: Callable,
+    callback: FileDialogCallback,
     workpiece: Optional["WorkPiece"] = None,
 ):
     """
@@ -175,7 +177,7 @@ def show_export_object_dialog(
 
 def show_export_document_dialog(
     win: "MainWindow",
-    callback: Callable,
+    callback: FileDialogCallback,
     initial_name: str | None = None,
 ):
     """
@@ -217,7 +219,7 @@ def show_export_document_dialog(
     dialog.save(win, None, callback, win)
 
 
-def show_open_project_dialog(win: "MainWindow", callback: Callable):
+def show_open_project_dialog(win: "MainWindow", callback: FileDialogCallback):
     """
     Shows file chooser dialog for opening Rayforge project files.
 
@@ -247,7 +249,7 @@ def show_open_project_dialog(win: "MainWindow", callback: Callable):
 
 def show_save_project_dialog(
     win: "MainWindow",
-    callback: Callable,
+    callback: FileDialogCallback,
     initial_name: str | None = None,
 ):
     """

@@ -75,6 +75,107 @@ def main_window_ready(main_window):
     main_window.add_page("my-page", MyCustomPage())
 ```
 
+## Hooks de Monitoreo de Trabajos
+
+Estos hooks informan sobre el ciclo de vida y el progreso de los trabajos que se ejecutan en una
+máquina, de modo que los addons puedan reaccionar cuando un trabajo comienza, avanza, se pausa, se
+reanuda o termina; por ejemplo, para ejecutar comandos externos o actualizar un sistema de domótica.
+
+Todos reciben una instantánea `JobStatus` (`rayforge.machine.job_status.JobStatus`), un objeto
+inmutable con estos campos:
+
+- `machine_id` y `machine_name`: identifican la máquina que ejecuta el trabajo
+- `kind`: `JobKind.SEND` para trabajos de grabado, `JobKind.FRAME` para trazados de contorno
+- `phase`: `JobPhase.RUNNING` o `JobPhase.PAUSED`
+- `started_at`: hora del reloj (segundos desde la época) en la que comenzó el trabajo
+- `elapsed_seconds`: segundos transcurridos desde que comenzó el trabajo
+- `total_distance` y `traveled_distance`: longitud total y recorrida del trazado, en milímetros
+- `progress_fraction`: fracción completada del trabajo, de `0.0` a `1.0`
+- `eta_seconds`: segundos restantes estimados, u `None` si se desconoce
+- `estimated_seconds`: duración total modelada del trabajo en segundos, u `None` si se desconoce
+
+Los handlers se ejecutan en el hilo principal y deben retornar rápidamente; delega el trabajo largo
+(como lanzar subprocesos o llamadas de red) a un hilo en segundo plano.
+
+### `on_job_started(status)`
+
+Se llama cuando un trabajo comienza a ejecutarse en una máquina.
+
+```python
+@hookimpl
+def on_job_started(status):
+    logger.info(f"Job on {status.machine_name} started")
+```
+
+### `on_job_updated(status)`
+
+Se llama con actualizaciones de progreso mientras el trabajo se ejecuta, como máximo aproximadamente
+una vez por segundo.
+
+```python
+@hookimpl
+def on_job_updated(status):
+    print(
+        f"Progress: {status.progress_fraction:.0%}, "
+        f"ETA {status.eta_seconds}s"
+    )
+```
+
+### `on_job_paused(status)` / `on_job_resumed(status)`
+
+Se llama cuando el trabajo en ejecución entra o sale de una pausa de alimentación (feed hold).
+
+### `on_job_finished(status, outcome, message="")`
+
+Se llama cuando un trabajo termina, independientemente de cómo haya terminado. El argumento
+`outcome` es un miembro de `JobOutcome` —`COMPLETED`, `CANCELLED` o `FAILED`— y `message` contiene
+los detalles del error cuando el resultado es `FAILED`. Para los trabajos completados, el
+`progress_fraction` de la instantánea es `1.0`.
+
+```python
+@hookimpl
+def on_job_finished(status, outcome, message=""):
+    if outcome == JobOutcome.FAILED:
+        notify(f"Job failed: {message}")
+    else:
+        notify(f"Job {outcome.name.lower()} on {status.machine_name}")
+```
+
+La instantánea más reciente también puede consultarse entre eventos: mientras un trabajo se ejecuta,
+`machine.current_job` devuelve su `JobStatus`, o `None` cuando no hay ningún trabajo en ejecución.
+
+Aquí hay un addon completo que ejecuta un comando de shell en cada cambio de estado del trabajo:
+
+```python
+import subprocess
+
+import pluggy
+
+from rayforge.machine.job_status import JobOutcome
+
+hookimpl = pluggy.HookimplMarker("rayforge")
+
+
+@hookimpl
+def on_job_started(status):
+    subprocess.Popen(["/usr/local/bin/notify-ha", "started"])
+
+
+@hookimpl
+def on_job_paused(status):
+    subprocess.Popen(["/usr/local/bin/notify-ha", "paused"])
+
+
+@hookimpl
+def on_job_resumed(status):
+    subprocess.Popen(["/usr/local/bin/notify-ha", "resumed"])
+
+
+@hookimpl
+def on_job_finished(status, outcome, message=""):
+    subprocess.Popen(["/usr/local/bin/notify-ha", outcome.name.lower()])
+```
+
 ## Hooks de Registro
 
 Estos hooks te permiten registrar componentes personalizados con los diversos registros de Rayforge.
@@ -286,7 +387,11 @@ Los hooks están versionados para mantener compatibilidad hacia atrás. Cuando s
 o los existentes cambian, la versión de API se incrementa. El campo `api_version` de tu addon debe
 ser al menos la versión mínima soportada.
 
-La versión actual de API es 9. Esto es lo que cambió en versiones recientes:
+La versión actual de API es 24. Esto es lo que cambió en versiones recientes:
+
+**La versión 24** agregó los hooks de monitoreo de trabajos `on_job_started`, `on_job_updated`,
+`on_job_paused`, `on_job_resumed` y `on_job_finished`, además de la API de consulta
+`Machine.current_job`.
 
 **La versión 9** agregó `main_window_ready`, `register_exporters`, `register_importers` y
 `register_renderers`.

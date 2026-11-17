@@ -38,7 +38,7 @@ def test_ellipse_command_execute_temp_start():
     """Test command execution when the start point was temporary."""
     sketch = Sketch()
     start_pid = 100
-    sketch.registry.points.append(Point(start_pid, 0, 0))
+    sketch.registry.add_points([Point(start_pid, 0, 0)])
 
     cmd = EllipseCommand(sketch, start_pid, (100, 50), is_start_temp=True)
     cmd.execute()

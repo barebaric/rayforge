@@ -20,6 +20,23 @@ Rayforge 适用于 Linux、Windows 和 macOS。选择您的平台并按照安装
 
 实际的磁盘和内存需求取决于项目的复杂度。简单项目可能只需要很少的额外资源，而复杂项目可能轻松消耗 10 GB 或更多内存，并需要大量额外的磁盘空间。
 
+## Linux CPU 要求（x86-64-v2）
+
+Linux 软件包自带 NumPy，要求 x86-64-v2 指令集级别（SSE4.2 和 POPCNT）。这适用于
+Snap、Flatpak 和 AppImage 软件包，以及通过 pip 从 PyPI 安装的版本。在较旧的
+x86-64 CPU（Intel Core 2 及更早、AMD Phenom 及更早）上，Rayforge 无法启动，
+且通常没有任何错误提示。Intel Nehalem（2008 年）及更新、AMD Bulldozer
+（2011 年）及更新的 CPU 支持 x86-64-v2。
+
+可以使用以下命令检查您的 CPU 是否满足要求：
+
+```bash
+grep -m1 flags /proc/cpuinfo | grep -o -w -E 'sse4_2|popcnt' | sort -u
+```
+
+如果命令没有同时输出这两个标志，请改用 Ubuntu PPA 版本或您发行版软件源中的
+软件包。这些版本使用发行版自带的 NumPy，可以在较旧的 CPU 上运行。
+
 ## 下一步
 
 现在 Rayforge 已安装完成，请继续[首次设置](first-time-setup)以配置您的机器。

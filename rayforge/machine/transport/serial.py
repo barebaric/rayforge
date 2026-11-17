@@ -1,23 +1,18 @@
 import asyncio
-import glob
 import logging
 import os
-import re
 import threading
 import time
-from collections.abc import Iterable
-from dataclasses import dataclass
 from gettext import gettext as _
 
 import serial
-from serial.tools import list_ports
+from raydriver.core.discovery import ports as _ports
+from raydriver.core.discovery.ports import SerialPortInfo
 
 from ...core.varset.serialportvar import format_vidpid, parse_vidpid
 from .transport import Transport, TransportStatus
 
 logger = logging.getLogger(__name__)
-
-USB_PORT_MARKERS = ("ttyUSB", "ttyACM")
 
 
 class SerialPort(str):
@@ -26,116 +21,6 @@ class SerialPort(str):
 
 class SerialPortPermissionError(Exception):
     """Custom exception for systemic serial port permission issues."""
-
-
-@dataclass(frozen=True)
-class SerialPortInfo:
-    """A serial port path together with optional metadata used to
-    identify the underlying USB device."""
-
-    device: str
-    description: str | None = None
-    manufacturer: str | None = None
-    vid: int | None = None
-    pid: int | None = None
-
-
-def is_usb_serial_port(port: str) -> bool:
-    """
-    Heuristically determines if a port path refers to a USB serial
-    device. On non-POSIX systems (e.g. Windows), every port is treated
-    as potentially USB.
-    """
-    if os.name != "posix":
-        return True
-    return any(marker in port for marker in USB_PORT_MARKERS)
-
-
-def natural_key(s: str) -> list[int | str]:
-    return [
-        int(t) if t.isdigit() else t.lower() for t in re.split("([0-9]+)", s)
-    ]
-
-
-def _port_sort_key(port: str) -> tuple[int, list[int | str]]:
-    return (not is_usb_serial_port(port), natural_key(port))
-
-
-def sort_ports(ports: Iterable[str]) -> list[str]:
-    """
-    Sorts ports so USB serial adapters come first, followed by all
-    other ports. Each group is ordered naturally, e.g.
-    ttyUSB2 before ttyUSB10.
-    """
-    return sorted(ports, key=_port_sort_key)
-
-
-_BY_ID_SUFFIX_RE = re.compile(r"-if\d+(-port\d+)?$")
-
-
-def _describe_by_id_link(path: str) -> str | None:
-    """
-    Extracts a device description from a /dev/serial/by-id symlink
-    name, which embeds vendor and product strings, e.g.
-    'usb-FTDI_FT232R_USB_UART_AH03K1A0-if00-port0'.
-    """
-    name = os.path.basename(path)
-    if not name.startswith("usb-"):
-        return None
-    name = name[len("usb-") :]
-    name = _BY_ID_SUFFIX_RE.sub("", name)
-    name = name.replace("_", " ").strip()
-    return name or None
-
-
-def _collect_by_id_descriptions(paths: list[str]) -> dict[str, str]:
-    """
-    Maps port paths to descriptions derived from /dev/serial/by-id
-    symlinks. Both the link path itself and the resolved device path
-    are mapped, so ttyUSB devices get described too.
-    """
-    descriptions: dict[str, str] = {}
-    for path in paths:
-        if "/by-id/" not in path:
-            continue
-        desc = _describe_by_id_link(path)
-        if not desc:
-            continue
-        try:
-            resolved = os.path.realpath(path)
-        except OSError:
-            continue
-        descriptions.setdefault(path, desc)
-        descriptions.setdefault(resolved, desc)
-    return descriptions
-
-
-def safe_list_ports_linux() -> list[str]:
-    """
-    A non-crashing implementation of list_ports for sandboxed Linux envs.
-
-    pyserial's default list_ports.comports() tries to access /dev/ttyS*
-    ports, which is forbidden by the snap sandbox. This leads to a
-    permission error that causes a TypeError in the pyserial code.
-
-    This function avoids that by only looking for common USB-to-serial
-    device patterns that are permitted by the serial-port interface.
-    """
-    ports = []
-    # Use glob to find all devices matching the common patterns
-    for pattern in [
-        "/dev/ttyUSB*",
-        "/dev/ttyACM*",
-        "/dev/serial/by-id/*",
-        "/dev/serial/by-path/*",
-    ]:
-        try:
-            ports.extend(glob.glob(pattern))
-        except OSError as e:
-            logger.warning(
-                f"Error scanning for serial ports. Pattern '{pattern}': {e}"
-            )
-    return sorted(ports)
 
 
 def resolve_serial_port(port: str) -> str:
@@ -176,66 +61,17 @@ class SerialTransport(Transport):
     @staticmethod
     def list_ports() -> list[str]:
         """Lists available serial ports, USB adapters first."""
-        # If we're on Linux (posix) and running in a Snap, use our
-        # safe scanner, as list_ports.comports() fails with permission errors.
-        if os.name == "posix" and "SNAP" in os.environ:
-            return sort_ports(safe_list_ports_linux())
-
-        # On other systems or outside a Snap, the default is fine.
-        try:
-            return sort_ports([p.device for p in list_ports.comports()])
-        except (OSError, serial.SerialException, TypeError) as e:
-            # Fallback for any other unexpected errors
-            logger.error(f"Failed to list serial ports with pyserial: {e}")
-            return []
+        return _ports.list_ports()
 
     @staticmethod
     def list_port_info() -> list[SerialPortInfo]:
-        """
-        Lists available serial ports together with a human-readable
-        description when the platform provides one. USB adapters are
-        listed first.
-        """
-        if os.name == "posix" and "SNAP" in os.environ:
-            paths = safe_list_ports_linux()
-            descriptions = _collect_by_id_descriptions(paths)
-            infos = [
-                SerialPortInfo(path, descriptions.get(path)) for path in paths
-            ]
-            infos.sort(key=lambda info: _port_sort_key(info.device))
-            return infos
-
-        try:
-            infos = []
-            for port in list_ports.comports():
-                desc = port.description
-                if not desc or desc == "n/a":
-                    desc = None
-                infos.append(
-                    SerialPortInfo(
-                        device=port.device,
-                        description=desc,
-                        manufacturer=getattr(port, "manufacturer", None),
-                        vid=getattr(port, "vid", None),
-                        pid=getattr(port, "pid", None),
-                    )
-                )
-            infos.sort(key=lambda info: _port_sort_key(info.device))
-            return infos
-        except (OSError, serial.SerialException, TypeError) as e:
-            logger.error(f"Failed to list serial ports with pyserial: {e}")
-            return []
+        """Lists serial ports with USB metadata, adapters first."""
+        return _ports.list_port_info()
 
     @staticmethod
     def list_usb_ports() -> list[str]:
         """Like list_ports, but only returns USB serial ports."""
-
-        all_ports = SerialTransport.list_ports()
-        if os.name != "posix":
-            # On non-POSIX systems, we can't reliably filter, so return all.
-            return all_ports
-
-        return [p for p in all_ports if is_usb_serial_port(p)]
+        return _ports.list_usb_ports()
 
     @staticmethod
     def check_serial_permissions_globally() -> None:

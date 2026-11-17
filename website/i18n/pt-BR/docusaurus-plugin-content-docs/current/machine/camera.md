@@ -147,8 +147,9 @@ Primeiro escolha um **Pattern Type**:
 3. Mova o padrão para diferentes posições e ângulos dentro da vista da câmera e clique em **Capture
    Frame** para cada posição. Procure fazer pelo menos 8 capturas cobrindo todo o quadro, incluindo
    cantos e bordas. A barra de progresso e os indicadores de status mostram a qualidade da captura.
-4. Quando quadros suficientes forem capturados, o assistente calcula o modelo de distorção e o
-   aplica — a sobreposição da câmera agora mostra uma imagem corrigida e reta.
+4. Quando quadros suficientes forem capturados, clique em **Calibrate**. O assistente mostra o
+   resultado — confirme com **Save Calibration** para aplicá-lo (apenas **Discard** descarta o
+   resultado) — e a sobreposição da câmera agora mostra uma imagem corrigida e reta.
 
 #### Usando um padrão já impresso
 
@@ -210,6 +211,8 @@ ajuste fino dos parâmetros radial (k1–k3) e tangencial (p1–p2).
 O alinhamento de imagem é o estágio final do assistente de câmera. O alinhamento da câmera calibra a
 relação entre pixels da câmera e coordenadas do mundo real, permitindo posicionamento preciso. O
 assistente usa o mesmo procedimento descrito aqui, e aplicar o alinhamento conclui o assistente.
+Finalizar sem um alinhamento aplicado exibe primeiro um aviso, porque a visão da câmera então não
+pode ser mapeada com precisão sobre a área de trabalho.
 
 #### Por Que o Alinhamento é Necessário
 
@@ -243,8 +246,10 @@ máquina.
    - Repita para cada ponto de referência
 
 4. **Insira coordenadas do mundo real:**
-   - Para cada ponto na imagem, insira as coordenadas X/Y reais em mm
-   - Estas são as coordenadas reais da máquina onde cada ponto está localizado
+   - Para cada ponto na imagem, insira as coordenadas X/Y reais na sua unidade de exibição (definida
+     nas configurações do aplicativo)
+   - Estas são as coordenadas reais da máquina onde cada ponto está localizado, medidas a partir da
+     origem da área de trabalho
    - Meça com precisão com uma régua ou use posições conhecidas da máquina
 
 5. **Aplique o alinhamento:**

@@ -10,6 +10,7 @@ from ..transformers import (
     MultiPassTransformer,
     Optimize,
     OverscanTransformer,
+    PerforationTransformer,
     Smooth,
 )
 from .crop_group import CropSettingsGroup
@@ -19,6 +20,7 @@ from .mesh_correction_group import MeshCorrectionSettingsGroup
 from .multipass_group import MultiPassSettingsGroup
 from .optimize_group import OptimizeSettingsGroup
 from .overscan_group import OverscanSettingsGroup
+from .perforation_group import PerforationSettingsGroup
 from .smooth_group import SmoothSettingsGroup
 
 TRANSFORMER_WIDGETS = {
@@ -29,5 +31,6 @@ TRANSFORMER_WIDGETS = {
     MultiPassTransformer: MultiPassSettingsGroup,
     Optimize: OptimizeSettingsGroup,
     OverscanTransformer: OverscanSettingsGroup,
+    PerforationTransformer: PerforationSettingsGroup,
     Smooth: SmoothSettingsGroup,
 }

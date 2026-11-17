@@ -49,6 +49,9 @@ class PostProcessingPage(TrackedPreferencesPage):
         self.add(self._main_group)
         self._has_expanders = False
         self._group_dicts: dict[TransformerSettingsGroup, dict] = {}
+        self._expander_rows: dict[
+            TransformerSettingsGroup, Adw.ExpanderRow
+        ] = {}
 
         all_transformer_dicts = (
             step.per_workpiece_transformers_dicts or []
@@ -150,7 +153,30 @@ class PostProcessingPage(TrackedPreferencesPage):
 
         _update_warning_icon()
         self._main_group.add(expander)
+        self._expander_rows[group] = expander
         self._has_expanders = True
+
+    def get_transformer_group(
+        self, transformer_name: str
+    ) -> TransformerSettingsGroup:
+        """Return the settings group of the named transformer.
+
+        Raises KeyError when the page has no group for it.
+        """
+        for group, t_dict in self._group_dicts.items():
+            if t_dict.get("name") == transformer_name:
+                return group
+        raise KeyError(
+            f"No {transformer_name} group on the post-processing page"
+        )
+
+    def get_expander_row(self, transformer_name: str) -> Adw.ExpanderRow:
+        """Return the expander row of the named transformer.
+
+        Raises KeyError when the page has no group for it.
+        """
+        group = self.get_transformer_group(transformer_name)
+        return self._expander_rows[group]
 
     def _on_param_changed(
         self,

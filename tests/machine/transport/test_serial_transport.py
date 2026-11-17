@@ -1,20 +1,21 @@
 import asyncio
+import os
 import queue
-from types import SimpleNamespace
 
 import pytest
 import serial
+from raydriver.core.discovery.ports import (
+    SerialPortInfo,
+    is_usb_serial_port,
+    sort_ports,
+)
 
 from rayforge.machine.transport import TransportStatus
 from rayforge.machine.transport.serial import (
     SerialPort,
-    SerialPortInfo,
     SerialPortPermissionError,
     SerialTransport,
-    is_usb_serial_port,
     resolve_serial_port,
-    safe_list_ports_linux,
-    sort_ports,
 )
 
 
@@ -87,86 +88,6 @@ def test_serial_port_subclass():
     port = SerialPort("/dev/ttyUSB0")
     assert isinstance(port, str)
     assert port == "/dev/ttyUSB0"
-
-
-def test_safe_list_ports_linux(monkeypatch):
-    """Test the safe_list_ports_linux globbing logic."""
-
-    def mock_glob(pattern):
-        if pattern == "/dev/ttyUSB*":
-            return ["/dev/ttyUSB1", "/dev/ttyUSB0"]
-        if pattern == "/dev/ttyACM*":
-            return ["/dev/ttyACM0"]
-        if pattern == "/dev/serial/by-id/*":
-            return [
-                (
-                    "/dev/serial/by-id/"
-                    "usb-FTDI_FT232R_USB_UART_AH03K1A0-if00-port0"
-                )
-            ]
-        if pattern == "/dev/serial/by-path/*":
-            return ["/dev/serial/by-path/pci-0000:00:14.0-usb-0:1:1.0-port0"]
-        return []
-
-    monkeypatch.setattr(
-        "rayforge.machine.transport.serial.glob.glob", mock_glob
-    )
-    ports = safe_list_ports_linux()
-    expected_ports = [
-        "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_AH03K1A0-if00-port0",
-        "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1:1.0-port0",
-        "/dev/ttyACM0",
-        "/dev/ttyUSB0",
-        "/dev/ttyUSB1",
-    ]
-    assert ports == expected_ports
-
-
-def test_safe_list_ports_linux_symlinks_only(monkeypatch):
-    """Test that symlinks are included when no standard ports exist."""
-
-    def mock_glob(pattern):
-        if pattern in ["/dev/ttyUSB*", "/dev/ttyACM*"]:
-            return []
-        if pattern == "/dev/serial/by-id/*":
-            return [
-                (
-                    "/dev/serial/by-id/"
-                    "usb-FTDI_FT232R_USB_UART_AH03K1A0-if00-port0"
-                )
-            ]
-        if pattern == "/dev/serial/by-path/*":
-            return []
-        return []
-
-    monkeypatch.setattr(
-        "rayforge.machine.transport.serial.glob.glob", mock_glob
-    )
-    ports = safe_list_ports_linux()
-    expected_ports = [
-        "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_AH03K1A0-if00-port0"
-    ]
-    assert ports == expected_ports
-
-
-def test_list_usb_ports_filtering(mocker):
-    """Test the USB port filtering logic."""
-    mock_ports = [
-        "/dev/ttyS0",
-        "/dev/ttyUSB0",
-        "/dev/ttyACM1",
-        "COM3",
-        "/dev/cu.usbmodem123",
-    ]
-    mocker.patch.object(SerialTransport, "list_ports", return_value=mock_ports)
-
-    mocker.patch("os.name", "posix")
-    usb_ports = SerialTransport.list_usb_ports()
-    assert usb_ports == ["/dev/ttyUSB0", "/dev/ttyACM1"]
-
-    mocker.patch("os.name", "nt")
-    all_ports = SerialTransport.list_usb_ports()
-    assert all_ports == mock_ports
 
 
 class TestSerialPermissions:
@@ -449,23 +370,25 @@ def test_resolve_serial_port_by_vidpid_not_found(mocker):
         resolve_serial_port("0403:6001")
 
 
-def test_is_usb_serial_port(mocker):
+@pytest.mark.skipif(os.name != "posix", reason="POSIX heuristic")
+def test_is_usb_serial_port_posix():
     """Test the USB port detection heuristic."""
-    mocker.patch("os.name", "posix")
     assert is_usb_serial_port("/dev/ttyUSB0")
     assert is_usb_serial_port("/dev/ttyACM0")
     assert not is_usb_serial_port("/dev/ttyS0")
 
-    mocker.patch("os.name", "nt")
+
+@pytest.mark.skipif(os.name == "posix", reason="non-POSIX treats all as USB")
+def test_is_usb_serial_port_windows():
     assert is_usb_serial_port("/dev/ttyS0")
 
 
-def test_sort_ports_usb_first(mocker):
+@pytest.mark.skipif(os.name != "posix", reason="POSIX sort order")
+def test_sort_ports_usb_first():
     """
     USB adapters must come first; each group ordered naturally,
     so ttyUSB2 sorts before ttyUSB10.
     """
-    mocker.patch("os.name", "posix")
     ports = [
         "/dev/ttyS3",
         "/dev/ttyUSB10",
@@ -480,78 +403,3 @@ def test_sort_ports_usb_first(mocker):
         "/dev/ttyS0",
         "/dev/ttyS3",
     ]
-
-
-def test_list_port_info_with_descriptions(monkeypatch, mocker):
-    """
-    Outside a Snap, pyserial's descriptions are used. Placeholder
-    descriptions ('n/a') are discarded.
-    """
-    mocker.patch("os.name", "posix")
-    monkeypatch.delenv("SNAP", raising=False)
-    devices = [
-        SimpleNamespace(device="/dev/ttyS0", description="ttyS0"),
-        SimpleNamespace(device="/dev/ttyUSB10", description="CH340"),
-        SimpleNamespace(device="/dev/ttyACM0", description="n/a"),
-        SimpleNamespace(device="/dev/ttyUSB2", description=None),
-    ]
-    monkeypatch.setattr(
-        "rayforge.machine.transport.serial.list_ports.comports",
-        lambda: devices,
-    )
-    infos = SerialTransport.list_port_info()
-    assert [i.device for i in infos] == [
-        "/dev/ttyACM0",
-        "/dev/ttyUSB2",
-        "/dev/ttyUSB10",
-        "/dev/ttyS0",
-    ]
-    by_device = {i.device: i for i in infos}
-    assert by_device["/dev/ttyUSB10"].description == "CH340"
-    assert by_device["/dev/ttyACM0"].description is None
-    assert by_device["/dev/ttyUSB2"].description is None
-    assert by_device["/dev/ttyS0"].description == "ttyS0"
-
-
-def test_list_port_info_snap_by_id_descriptions(monkeypatch):
-    """
-    In a Snap, descriptions are derived from /dev/serial/by-id symlink
-    names and also applied to the resolved device paths.
-    """
-    monkeypatch.setattr("os.name", "posix")
-    monkeypatch.setenv("SNAP", "/snap/rayforge/123")
-    by_id = "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_AH03K1A0-if00-port0"
-
-    def mock_glob(pattern):
-        if pattern == "/dev/serial/by-id/*":
-            return [by_id]
-        if pattern in ["/dev/ttyUSB*", "/dev/ttyACM*"]:
-            return ["/dev/ttyUSB0"]
-        return []
-
-    monkeypatch.setattr(
-        "rayforge.machine.transport.serial.glob.glob", mock_glob
-    )
-    monkeypatch.setattr(
-        "os.path.realpath",
-        lambda p: "/dev/ttyUSB0" if p == by_id else p,
-    )
-    infos = SerialTransport.list_port_info()
-    descriptions = {i.device: i.description for i in infos}
-    desc = "FTDI FT232R USB UART AH03K1A0"
-    assert descriptions["/dev/ttyUSB0"] == desc
-    assert descriptions[by_id] == desc
-
-
-def test_list_port_info_pyserial_error(monkeypatch):
-    """If pyserial fails, an empty list is returned instead of raising."""
-    monkeypatch.delenv("SNAP", raising=False)
-
-    def raise_error():
-        raise OSError("boom")
-
-    monkeypatch.setattr(
-        "rayforge.machine.transport.serial.list_ports.comports",
-        raise_error,
-    )
-    assert SerialTransport.list_port_info() == []

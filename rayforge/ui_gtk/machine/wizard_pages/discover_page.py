@@ -9,8 +9,11 @@ rows the user can activate to adopt them.
 Discovery and data collection are fully automatic: as soon as a
 device is identified, its driver is asked to probe it (firmware
 build info, working area, speeds) and the row is updated with what
-the device reported — e.g. "Sculpfun iCube, 120×120 mm". The user
-never interacts with this page beyond picking a row.
+the device reported — e.g. "Sculpfun iCube, 120×120 mm".
+
+Controllers that announce nothing via mDNS (e.g. grblHAL boards
+with the raw telnet service) are found by a narrow subnet scan
+that runs alongside the serial and mDNS scans.
 
 All scan/probe state lives in the GTK-free
 :class:`~rayforge.machine.discovery.DiscoverySession`; this page
@@ -30,16 +33,16 @@ from typing import TYPE_CHECKING, Any
 
 from blinker import Signal
 from gi.repository import Adw, GLib, Gtk
+from raydriver.core.discovery import (
+    DiscoveredDevice,
+    device_key,
+)
+from raydriver.core.discovery.engine import find_all_devices
+from raydriver.core.discovery.session import DiscoverySession
 
 from ....context import get_context
 from ....machine.device.profile import DeviceProfile
-from ....machine.discovery import (
-    DiscoveredDevice,
-    DiscoverySession,
-    device_key,
-    find_all_devices,
-)
-from ....machine.driver import get_driver_cls
+from ....machine.driver import drivers, get_driver_cls
 from ....machine.transport import SerialTransport
 from ....shared.tasker import task_mgr
 from ....shared.tasker.context import ExecutionContext
@@ -185,7 +188,7 @@ class DiscoverPage(WizardPage):
 
         async def _coroutine(exec_ctx: ExecutionContext) -> Any:
             return await find_all_devices(
-                exclude_ports=self.session.held_ports
+                drivers, exclude_ports=self.session.held_ports
             )
 
         task_mgr.add_coroutine(
@@ -306,7 +309,9 @@ class DiscoverPage(WizardPage):
         wizard to match a device profile automatically.
         """
         driver_cls = get_driver_cls(device.driver_name)
-        if driver_cls is None or not driver_cls.supports_probing:
+        if driver_cls is None or not driver_cls.supports_probing_for(
+            device.params
+        ):
             return
         context = get_context()
         params = dict(device.params)

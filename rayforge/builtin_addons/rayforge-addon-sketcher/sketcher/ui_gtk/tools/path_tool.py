@@ -1,4 +1,5 @@
 import logging
+import math
 from collections.abc import Callable
 from gettext import gettext as _
 from typing import ClassVar
@@ -45,6 +46,7 @@ class PathTool(SnapMixin, SketchTool):
         self._in_press: bool = False
         self._mirror_cp_offset: tuple[float, float] | None = None
         self._release_handled: bool = False
+        self._path_start_id: int | None = None
         self.hovered_point_id: int | None = None
 
     def is_available(self, target, target_type) -> bool:
@@ -102,6 +104,7 @@ class PathTool(SnapMixin, SketchTool):
         self._dragging = False
         self._in_press = False
         self._mirror_cp_offset = None
+        self._path_start_id = None
         self._release_handled = False
         self.hovered_point_id = None
         self.clear_snap_result()
@@ -175,6 +178,7 @@ class PathTool(SnapMixin, SketchTool):
             self._preview_state = BezierCommand.start_preview(
                 self.element.sketch.registry, mx, my, snapped_pid=pid_hit
             )
+            self._path_start_id = self._preview_state.start_id
             logger.debug(
                 f"start_preview created: entity_id="
                 f"{self._preview_state.temp_entity_id}"
@@ -370,6 +374,29 @@ class PathTool(SnapMixin, SketchTool):
         except IndexError:
             return False
 
+    def _path_start_close_pid(self, x: float, y: float) -> int | None:
+        """Returns the path's start point when the segment end lands
+        within snap range of it.
+
+        The engine's point snap only fires while the cursor hovers
+        the start point; a drop released just outside it would
+        otherwise commit a duplicate loose corner instead of closing
+        the path."""
+        if self._path_start_id is None:
+            return None
+        threshold = getattr(self.element.snap_engine, "threshold", None)
+        if not isinstance(threshold, (int, float)):
+            return None
+        try:
+            start_pt = self.element.sketch.registry.get_point(
+                self._path_start_id
+            )
+        except IndexError:
+            return None
+        if math.hypot(x - start_pt.x, y - start_pt.y) <= threshold:
+            return self._path_start_id
+        return None
+
     def _finalize_line_segment(self):
         """Finalize the current segment and start a new preview."""
         if self._preview_state is None:
@@ -401,6 +428,20 @@ class PathTool(SnapMixin, SketchTool):
             except IndexError:
                 final_pid = None
 
+        if final_pid is None:
+            final_pid = self._path_start_close_pid(end_x, end_y)
+
+        logger.debug(
+            "PathClose[%s]: snapped_pid=%s end=(%.3f, %.3f) "
+            "final_pid=%s path_start=%s",
+            "line" if self._preview_state.is_line_preview else "bezier",
+            self._snapped_pid,
+            end_x,
+            end_y,
+            final_pid,
+            self._path_start_id,
+        )
+
         if final_pid == start_id:
             self._press_pos = None
             self._waypoint_model_pos = None
@@ -427,6 +468,11 @@ class PathTool(SnapMixin, SketchTool):
             snapped_to_existing=(final_pid is not None),
             existing_constraints=self.element.sketch.constraints,
         )
+        if final_pid is not None:
+            # The end reuses an existing point: the shared point is
+            # the connection. Axis alignments to other points would
+            # only over-constrain the joined geometry.
+            constraints = []
 
         cmd = BezierCommand(
             self.element.sketch,
@@ -439,19 +485,31 @@ class PathTool(SnapMixin, SketchTool):
         )
         self.element.execute_command(cmd)
 
-        if cmd.committed_end_id is not None:
-            try:
-                new_start_pt = self.element.sketch.registry.get_point(
-                    cmd.committed_end_id
-                )
-                self._preview_state = BezierCommand.start_preview(
-                    self.element.sketch.registry,
-                    new_start_pt.x,
-                    new_start_pt.y,
-                    snapped_pid=cmd.committed_end_id,
-                )
-            except IndexError:
-                pass
+        if cmd.committed_end_id is None:
+            return
+
+        if cmd.committed_end_id == self._path_start_id:
+            logger.debug(
+                "PathClose: path closed at point %s; ending path",
+                cmd.committed_end_id,
+            )
+            self._path_start_id = None
+            self._preview_state = None
+            self.element.preview_changed.send(self.element)
+            return
+
+        try:
+            new_start_pt = self.element.sketch.registry.get_point(
+                cmd.committed_end_id
+            )
+            self._preview_state = BezierCommand.start_preview(
+                self.element.sketch.registry,
+                new_start_pt.x,
+                new_start_pt.y,
+                snapped_pid=cmd.committed_end_id,
+            )
+        except IndexError:
+            pass
 
         self.clear_snap_result()
 
@@ -491,6 +549,20 @@ class PathTool(SnapMixin, SketchTool):
                 end_x, end_y = snapped_pt.x, snapped_pt.y
             except IndexError:
                 final_pid = None
+
+        if final_pid is None:
+            final_pid = self._path_start_close_pid(end_x, end_y)
+
+        logger.debug(
+            "PathClose[%s]: snapped_pid=%s end=(%.3f, %.3f) "
+            "final_pid=%s path_start=%s",
+            "line" if self._preview_state.is_line_preview else "bezier",
+            self._snapped_pid,
+            end_x,
+            end_y,
+            final_pid,
+            self._path_start_id,
+        )
 
         if final_pid == start_id:
             BezierCommand.cleanup_preview(
@@ -538,6 +610,11 @@ class PathTool(SnapMixin, SketchTool):
             snapped_to_existing=(final_pid is not None),
             existing_constraints=self.element.sketch.constraints,
         )
+        if final_pid is not None:
+            # The end reuses an existing point: the shared point is
+            # the connection. Axis alignments to other points would
+            # only over-constrain the joined geometry.
+            snap_constraints = []
 
         cmd = BezierCommand(
             self.element.sketch,
@@ -552,20 +629,32 @@ class PathTool(SnapMixin, SketchTool):
         )
         self.element.execute_command(cmd)
 
-        if cmd.committed_end_id is not None:
-            try:
-                new_start_pt = self.element.sketch.registry.get_point(
-                    cmd.committed_end_id
-                )
-                self._preview_state = BezierCommand.start_preview(
-                    self.element.sketch.registry,
-                    new_start_pt.x,
-                    new_start_pt.y,
-                    snapped_pid=cmd.committed_end_id,
-                    virtual_cp=self._mirror_cp_offset,
-                )
-            except IndexError:
-                pass
+        if cmd.committed_end_id is None:
+            return
+
+        if cmd.committed_end_id == self._path_start_id:
+            logger.debug(
+                "PathClose: path closed at point %s; ending path",
+                cmd.committed_end_id,
+            )
+            self._path_start_id = None
+            self._preview_state = None
+            self.element.preview_changed.send(self.element)
+            return
+
+        try:
+            new_start_pt = self.element.sketch.registry.get_point(
+                cmd.committed_end_id
+            )
+            self._preview_state = BezierCommand.start_preview(
+                self.element.sketch.registry,
+                new_start_pt.x,
+                new_start_pt.y,
+                snapped_pid=cmd.committed_end_id,
+                virtual_cp=self._mirror_cp_offset,
+            )
+        except IndexError:
+            pass
 
         self.clear_snap_result()
 
