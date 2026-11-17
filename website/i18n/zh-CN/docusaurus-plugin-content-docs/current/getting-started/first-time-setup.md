@@ -46,6 +46,10 @@ description:
 - GRBL 从固件的编译标志自动选择正确的 G 代码方言，OctoPrint/Smoothieware 通过网络探测。
 - 您已配置的设备显示为**只读**，以避免意外创建重复项。
 
+- **通过 telnet 连接的 grblHAL 板**不会通过 mDNS 广播，因此一个窄范围子网扫描（仅 telnet 端口、有限并发）会与串口和 mDNS 扫描一起运行；Rayforge 会先确认每个响应的控制器，再将其列出。
+
+![向导 — 发现设备](/screenshots/config-wizard-discover.webp)
+
 点击发现的设备以预填充向导，或按如下所述手动选择起点。
 
 配置向导会根据您的选择调整其显示的步骤：

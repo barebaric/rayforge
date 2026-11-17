@@ -59,6 +59,12 @@ y completes todo manualmente:
 - Los dispositivos que ya has configurado se muestran como **solo lectura** para que no crees
   duplicados accidentalmente.
 
+- **Las placas grblHAL por telnet** no se anuncian vía mDNS, por lo que un escaneo de subred acotado
+  (solo puerto telnet, concurrencia limitada) se ejecuta junto a los escaneos serie y mDNS; Rayforge
+  confirma cada controlador que responde antes de listararlo.
+
+![Asistente — Descubrir dispositivos](/screenshots/config-wizard-discover.webp)
+
 Haz clic en un dispositivo descubierto para rellenar previamente el asistente, o elige un punto de
 partida manualmente como se describe a continuación.
 

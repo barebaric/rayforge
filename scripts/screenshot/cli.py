@@ -48,6 +48,7 @@ TARGETS = {
     "config-wizard:camera": "config_wizard",
     "config-wizard:controller": "config_wizard",
     "config-wizard:connect": "config_wizard",
+    "config-wizard:discover": "config_wizard",
     "config-wizard:permissions": "config_wizard",
     "config-wizard:probe": "config_wizard",
     "config-wizard:profile": "config_wizard",
@@ -630,9 +631,12 @@ def get_matching_targets(target: str) -> list[str]:
 def run_script(script_name: str, target: str, base_env: dict[str, str]) -> int:
     with tempfile.TemporaryDirectory(prefix="rayforge-screenshot-") as tmpdir:
         shutil.copytree(TEST_CONFIG_DIR, tmpdir, dirs_exist_ok=True)
+        # Same interpreter as this CLI: under `pixi run screenshot`
+        # that is the project environment, and it keeps working when
+        # the CLI is invoked directly in an activated environment.
         cmd = [
-            "pixi",
-            "run",
+            sys.executable,
+            "-m",
             "rayforge",
             "--config",
             tmpdir,

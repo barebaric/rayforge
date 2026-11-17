@@ -2,6 +2,12 @@ from pathlib import Path
 
 import pytest
 import yaml
+from raydriver.core.discovery import DeviceIdentity
+from raydriver.core.discovery.serial_channel import (
+    GENERIC_TOKENS,
+    build_identity,
+    normalize_tokens,
+)
 
 import rayforge
 from rayforge.machine.device import discovery_journal
@@ -16,12 +22,6 @@ from rayforge.machine.device.matching import (
     certain_match,
 )
 from rayforge.machine.device.profile import DeviceProfile, parse_meta
-from rayforge.machine.discovery import (
-    GENERIC_TOKENS,
-    DeviceIdentity,
-    build_identity,
-    normalize_tokens,
-)
 
 #: A fictional vendor-specific vid/pid pair (not a stock USB-serial
 #: bridge chip).

@@ -827,7 +827,7 @@ class UnifiedWizard(PatchedDialogWindow):
         device = self.aux_state.get("discovered")
         if not isinstance(device, DiscoveredDevice):
             return
-        device = dc_replace(device, probe_profile=probed)
+        device.probe_profile = probed
         try:
             matches = get_context().device_profile_mgr.match_device(
                 self._probe_identity(device)

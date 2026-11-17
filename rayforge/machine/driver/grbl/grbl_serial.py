@@ -10,6 +10,7 @@ from typing import (
 
 import serial
 from raydriver.core import SessionEvent
+from raydriver.core.discovery.spec import DiscoverySpec, SerialRecognizer
 from raydriver.grbl import GrblSession
 from raydriver.grbl.parser import (
     error_code_to_device_error,
@@ -31,7 +32,6 @@ from ....pipeline.encoder.base import (
 )
 from ....pipeline.encoder.gcode import GcodeEncoder
 from ....shared.units.system import UnitSystem
-from ...discovery.spec import DiscoverySpec, SerialRecognizer
 from ...transport import TransportStatus
 from ...transport.serial import (
     SerialPortPermissionError,

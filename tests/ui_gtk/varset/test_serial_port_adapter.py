@@ -70,6 +70,7 @@ def _scan_patches(infos: list):
     ]
 
 
+@pytest.mark.skipif(os.name != "posix", reason="POSIX sort order")
 def test_usb_ports_come_first(ui_context_initializer):
     """USB adapters are listed before hardware ports."""
     var = SerialPortVar(key="port", label="Port")
@@ -165,8 +166,15 @@ def test_vidpid_value_round_trip(ui_context_initializer):
             stack.enter_context(p)
         row, adapter = _create_row(var)
         strings = _model_strings(row)
-        assert strings == [NULL_LABEL, VIDPID_ENTRY_LABEL, "0403:6001"]
-        assert row.get_selected() == 2
+        # sys.platform, not os.name: the scan patches os.name.
+        if sys.platform != "win32":
+            assert strings == [NULL_LABEL, VIDPID_ENTRY_LABEL, "0403:6001"]
+            assert row.get_selected() == 2
+        else:
+            # Non-POSIX treats every port as USB, so the pinned spec
+            # sorts into the USB group ahead of the VID:PID entry.
+            assert strings == [NULL_LABEL, "0403:6001", VIDPID_ENTRY_LABEL]
+            assert row.get_selected() == 1
         assert adapter.get_value() == "0403:6001"
 
         adapter.set_value("0403:6001")

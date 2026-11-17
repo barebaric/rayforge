@@ -11,6 +11,7 @@ from typing import (
 import serial
 import serial.serialutil
 from raydriver.core import SessionEvent
+from raydriver.core.discovery.spec import DiscoverySpec, SerialRecognizer
 from raydriver.marlin import MarlinSession
 from raydriver.marlin.parser import (
     extract_marlin_banner_from_output,
@@ -30,7 +31,6 @@ from ....pipeline.encoder.base import (
 )
 from ....pipeline.encoder.gcode import GcodeEncoder
 from ....shared.units.system import UnitSystem
-from ...discovery.spec import DiscoverySpec, SerialRecognizer
 from ...transport import TransportStatus
 from ...transport.serial import (
     SerialPortPermissionError,

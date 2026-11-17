@@ -61,6 +61,12 @@ départ et de tout remplir à la main :
 - Les appareils que vous avez déjà configurés sont affichés en **lecture seule** pour que vous ne
   créiez pas accidentellement des doublons.
 
+- **Les cartes grblHAL via telnet** ne s'annoncent pas via mDNS, donc un scan de sous-réseau
+  restreint (port telnet uniquement, concurrence limitée) s'exécute avec les scans série et mDNS ;
+  Rayforge confirme chaque contrôleur qui répond avant de le lister.
+
+![Assistant — Découverte des appareils](/screenshots/config-wizard-discover.webp)
+
 Cliquez sur un appareil découvert pour préremplir l'assistant, ou choisissez un point de départ
 manuellement comme décrit ci-dessous.
 

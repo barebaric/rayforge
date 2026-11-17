@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from gi.repository import Adw, Gtk
+from raydriver.core.discovery import DeviceIdentity
 
 from rayforge.machine.device.matching import (
     CONFIDENCE_CERTAIN,
@@ -16,7 +17,6 @@ from rayforge.machine.device.profile import (
     DeviceProfile,
     MachineConfig,
 )
-from rayforge.machine.discovery import DeviceIdentity
 from rayforge.machine.driver.grbl import GrblSerialDriver
 from rayforge.machine.models.machine import Origin
 from rayforge.shared.util.permissions import PermissionIssue
@@ -1028,7 +1028,7 @@ def test_ai_lookup_page_progress_bar_tracks_lookup(ui_context_initializer):
 
 
 def _discovered_device(**overrides):
-    from rayforge.machine.discovery import DiscoveredDevice
+    from raydriver.core.discovery import DiscoveredDevice
 
     defaults = {
         "driver_name": "GrblSerialDriver",

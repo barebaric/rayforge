@@ -6,7 +6,7 @@ driver can talk to (FluidNC, ESP3D v3) announce only a generic mDNS
 service type that says nothing about their firmware. This probe
 actively questions such a candidate host over HTTP with the ESP800
 firmware-info command both firmwares answer, and reports a synthetic
-:class:`~rayforge.machine.transport.mdns_scan.MDNSService` when the
+:class:`~raydriver.core.discovery.mdns_scan.MDNSService` when the
 response identifies GRBL-family firmware.
 
 The discovery engine knows nothing about GRBL — it only calls the
@@ -19,8 +19,7 @@ import logging
 import re
 
 import aiohttp
-
-from ...transport.mdns_scan import MDNSService
+from raydriver.core.discovery.mdns_scan import MDNSService
 
 logger = logging.getLogger(__name__)
 

@@ -59,6 +59,12 @@ partida e preencha tudo manualmente:
 - Dispositivos que você já configurou são mostrados como **somente leitura** para que você não crie
   duplicatas acidentalmente.
 
+- **Placas grblHAL via telnet** não se anunciam via mDNS, então uma varredura de sub-rede estreita
+  (apenas porta telnet, concorrência limitada) roda junto com as varreduras serial e mDNS; o
+  Rayforge confirma cada controlador que responde antes de listá-lo.
+
+![Assistente — Descobrir dispositivos](/screenshots/config-wizard-discover.webp)
+
 Clique em um dispositivo descoberto para pré-preencher o assistente, ou escolha um ponto de partida
 manualmente conforme descrito abaixo.
 

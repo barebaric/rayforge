@@ -1,13 +1,14 @@
 import inspect
 from typing import cast
 
-from ..discovery import (
+from raydriver.core.discovery import (
     DeviceIdentity,
     DiscoveredDevice,
-    find_all_devices,
-    find_network_devices,
-    normalize_tokens,
 )
+from raydriver.core.discovery.engine import find_all_devices
+from raydriver.core.discovery.mdns_channel import find_network_devices
+from raydriver.core.discovery.serial_channel import normalize_tokens
+
 from .driver import (
     DRIVER_MATURITY_LABELS,
     Driver,
