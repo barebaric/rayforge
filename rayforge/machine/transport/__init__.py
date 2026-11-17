@@ -1,9 +1,7 @@
 import sys
 
-from .grbl import GrblSerialTransport
 from .http import HttpTransport
 from .serial import SerialTransport
-from .telnet import TelnetTransport
 from .transport import Transport, TransportStatus
 from .udp import UdpTransport
 from .udp_server import UdpServerTransport
@@ -16,11 +14,9 @@ else:
 
 
 __all__ = [
-    "GrblSerialTransport",
     "HttpTransport",
     "SerialServerTransport",
     "SerialTransport",
-    "TelnetTransport",
     "Transport",
     "TransportStatus",
     "UdpServerTransport",
