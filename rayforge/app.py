@@ -22,13 +22,8 @@ for i, arg in enumerate(sys.argv):
 
 from rayforge.logging_setup import setup_logging
 
-
-def configure_gtk_environment():
-    if sys.platform == "win32":
-        os.environ.setdefault("GTK_IM_MODULE", "simple")
-
-
-configure_gtk_environment()
+if sys.platform == "win32":
+    os.environ.setdefault("GTK_IM_MODULE", "simple")
 
 # ===================================================================
 # SECTION 1: SAFE, MODULE-LEVEL SETUP
