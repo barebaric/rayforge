@@ -22,6 +22,9 @@ for i, arg in enumerate(sys.argv):
 
 from rayforge.logging_setup import setup_logging
 
+if sys.platform == "win32":
+    os.environ.setdefault("GTK_IM_MODULE", "simple")
+
 # ===================================================================
 # SECTION 1: SAFE, MODULE-LEVEL SETUP
 # This code will run for the main app AND all subprocesses.
