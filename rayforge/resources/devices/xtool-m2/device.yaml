@@ -1,0 +1,30 @@
+api_version: 1
+device:
+  name: xTool M2
+  vendor: xTool
+  model: M2
+  description: 3-in-1 diode/IR laser and printer, monitored and controlled via Wi-Fi
+machine:
+  driver: XtoolM2Driver
+  axis_extents:
+  - 426.0
+  - 320.0
+  origin: bottom_left
+  max_travel_speed: 18000
+  max_cut_speed: 1000
+  home_on_start: false
+  single_axis_homing_enabled: false
+  has_z: false
+  driver_args:
+    host: ''
+    port: 28900
+    tls_allow_invalid_certs: false
+  heads:
+  - max_power: 1000
+    wavelength_nm: 455
+    max_power_watts: 20
+    frame_power_percent: 1.0
+    focus_power_percent: 1.0
+    spot_size_mm:
+    - 0.06
+    - 0.06
