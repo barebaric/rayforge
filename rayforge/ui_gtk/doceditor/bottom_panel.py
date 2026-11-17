@@ -125,11 +125,6 @@ apply_css(controls_css)
 
 
 class BottomPanel(Gtk.Box):
-    shop_controls: ShopControlPanel | None = None
-    shop_jog: ShopJogPanel | None = None
-    pointer_alignment_btn: Gtk.ToggleButton | None = None
-    _pointer_alignment_handler_id: int = 0
-
     def __init__(
         self,
         machine: Machine | None,
@@ -217,6 +212,8 @@ class BottomPanel(Gtk.Box):
 
         self.shop_controls: ShopControlPanel | None = None
         self.shop_jog: ShopJogPanel | None = None
+        self.pointer_alignment_btn: Gtk.ToggleButton | None = None
+        self._pointer_alignment_handler_id = 0
         if machine:
             self._setup_wcs_controls()
             self._connect_machine_signals()
@@ -224,9 +221,6 @@ class BottomPanel(Gtk.Box):
             self._sync_shop_mode()
         else:
             self._controls_widget.set_children(self._jog_laser_box)
-
-        self.pointer_alignment_btn: Gtk.ToggleButton | None = None
-        self._pointer_alignment_handler_id = 0
 
         self.dock_layout = DockLayout(orientation=Gtk.Orientation.HORIZONTAL)
         self.dock_layout.layout_changed.connect(self._on_dock_layout_changed)

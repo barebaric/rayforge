@@ -630,16 +630,18 @@ class ShopJogPanel(Gtk.Box):
         if not self.machine:
             return
         wcs_list = list(self.machine.supported_wcs)
-        if wcs_list != self._wcs_list:
-            self._wcs_list = wcs_list
-            self.wcs_dropdown.set_model(Gtk.StringList.new(wcs_list))
         current = self.machine.active_wcs
-        if current in self._wcs_list:
-            idx = self._wcs_list.index(current)
-            if self.wcs_dropdown.get_selected() != idx:
-                self._syncing_wcs = True
-                self.wcs_dropdown.set_selected(idx)
-                self._syncing_wcs = False
+        self._syncing_wcs = True
+        try:
+            if wcs_list != self._wcs_list:
+                self._wcs_list = wcs_list
+                self.wcs_dropdown.set_model(Gtk.StringList.new(wcs_list))
+            if current in self._wcs_list:
+                idx = self._wcs_list.index(current)
+                if self.wcs_dropdown.get_selected() != idx:
+                    self.wcs_dropdown.set_selected(idx)
+        finally:
+            self._syncing_wcs = False
 
     def _on_wcs_selected(self, dropdown, _pspec):
         if self._syncing_wcs or not self.machine:

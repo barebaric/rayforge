@@ -86,6 +86,23 @@ def test_jog_panel_wcs_selection_switches(sync_machine, mocker):
 
 
 @pytest.mark.ui
+def test_jog_panel_initial_wcs_sync_does_not_switch_wcs(sync_machine, mocker):
+    task_mgr = mocker.patch(
+        "rayforge.ui_gtk.machine.shop_mode_widget.task_mgr"
+    )
+    wcs_list = list(sync_machine.supported_wcs)
+    assert len(wcs_list) > 1
+    sync_machine.active_wcs = wcs_list[1]
+
+    panel = ShopJogPanel()
+    panel.set_machine(sync_machine, MagicMock())
+
+    assert panel.wcs_dropdown.get_selected() == 1
+    assert sync_machine.active_wcs == wcs_list[1]
+    task_mgr.add_coroutine.assert_not_called()
+
+
+@pytest.mark.ui
 def test_jog_panel_hold_icon_follows_state(sync_machine):
     panel = ShopJogPanel()
     panel.set_machine(sync_machine, MagicMock())
