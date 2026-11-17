@@ -579,11 +579,9 @@ class BottomPanel(Gtk.Box):
         speed_mm_min = int(self.machine.jog_speed)
         self.speed_row.set_value_in_base_units(speed_mm_min)
         self.jog_widget.jog_speed = speed_mm_min
-        shop_controls = getattr(self, "shop_controls", None)
-        shop_jog = getattr(self, "shop_jog", None)
-        if shop_controls is not None and shop_jog is not None:
-            shop_controls.jog_speed = speed_mm_min
-            shop_jog.jog_speed = speed_mm_min
+        if self.shop_controls is not None and self.shop_jog is not None:
+            self.shop_controls.jog_speed = speed_mm_min
+            self.shop_jog.jog_speed = speed_mm_min
 
     def _on_speed_changed(self, row):
         if not self.machine:
@@ -591,20 +589,16 @@ class BottomPanel(Gtk.Box):
         speed_mm_min = int(self.speed_row.get_value_in_base_units())
         self.jog_widget.jog_speed = speed_mm_min
         self.machine.set_jog_speed(speed_mm_min)
-        shop_controls = getattr(self, "shop_controls", None)
-        shop_jog = getattr(self, "shop_jog", None)
-        if shop_controls is not None and shop_jog is not None:
-            shop_controls.jog_speed = speed_mm_min
-            shop_jog.jog_speed = speed_mm_min
+        if self.shop_controls is not None and self.shop_jog is not None:
+            self.shop_controls.jog_speed = speed_mm_min
+            self.shop_jog.jog_speed = speed_mm_min
 
     def _on_distance_changed(self, row):
         distance = self.distance_row.get_value_in_base_units()
         self.jog_widget.jog_distance = distance
-        shop_controls = getattr(self, "shop_controls", None)
-        shop_jog = getattr(self, "shop_jog", None)
-        if shop_controls is not None and shop_jog is not None:
-            shop_controls.jog_distance = distance
-            shop_jog.jog_distance = distance
+        if self.shop_controls is not None and self.shop_jog is not None:
+            self.shop_controls.jog_distance = distance
+            self.shop_jog.jog_distance = distance
 
     def _connect_machine_signals(self):
         if self.machine:
@@ -648,14 +642,12 @@ class BottomPanel(Gtk.Box):
             self.laser_control.set_machine(self.machine, self.machine_cmd)
             self.move_to_popover.set_machine(self.machine, self.machine_cmd)
 
-        shop_controls = getattr(self, "shop_controls", None)
-        shop_jog = getattr(self, "shop_jog", None)
-        if shop_controls is not None and shop_jog is not None:
-            shop_controls.set_machine(self.machine, self.machine_cmd)
-            shop_jog.set_machine(self.machine, self.machine_cmd)
+        if self.shop_controls is not None and self.shop_jog is not None:
+            self.shop_controls.set_machine(self.machine, self.machine_cmd)
+            self.shop_jog.set_machine(self.machine, self.machine_cmd)
             self._sync_jog_speed()
-            shop_controls.jog_distance = self.jog_widget.jog_distance
-            shop_jog.jog_distance = self.jog_widget.jog_distance
+            self.shop_controls.jog_distance = self.jog_widget.jog_distance
+            self.shop_jog.jog_distance = self.jog_widget.jog_distance
 
     def _on_wcs_selection_changed(self, combo_row, _pspec):
         if self._updating_wcs_ui:
@@ -796,18 +788,17 @@ class BottomPanel(Gtk.Box):
     def _sync_pointer_alignment_btn(self):
         """Mirrors the machine alignment state into the toggle button
         without re-echoing the change back to the machine."""
-        button = getattr(self, "pointer_alignment_btn", None)
+        button = self.pointer_alignment_btn
         if button is None:
             return
-        handler_id = getattr(self, "_pointer_alignment_handler_id", 0)
-        button.handler_block(handler_id)
+        button.handler_block(self._pointer_alignment_handler_id)
         if self.machine and self.machine.has_pointer_offset():
             button.set_sensitive(True)
             button.set_active(self.machine.pointer_alignment_enabled)
         else:
             button.set_sensitive(False)
             button.set_active(False)
-        button.handler_unblock(handler_id)
+        button.handler_unblock(self._pointer_alignment_handler_id)
 
     def _on_destroy(self, *args):
         get_context().config.changed.disconnect(self._config_handler_id)
@@ -859,16 +850,14 @@ class BottomPanel(Gtk.Box):
         self.machine.set_jog_speed(speed)
         self.jog_widget.jog_speed = speed
         self.speed_row.set_value_in_base_units(speed)
-        shop_jog = getattr(self, "shop_jog", None)
-        if shop_jog is not None:
-            shop_jog.jog_speed = speed
+        if self.shop_jog is not None:
+            self.shop_jog.jog_speed = speed
 
     def _on_shop_distance_changed(self, sender, distance):
         self.jog_widget.jog_distance = distance
         self.distance_row.set_value_in_base_units(distance)
-        shop_jog = getattr(self, "shop_jog", None)
-        if shop_jog is not None:
-            shop_jog.jog_distance = distance
+        if self.shop_jog is not None:
+            self.shop_jog.jog_distance = distance
 
     def _on_shop_move_requested(self, sender, position):
         self.move_to_popover.move_to_position(position)

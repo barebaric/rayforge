@@ -34,6 +34,8 @@ def bottom_panel_dro(sync_machine):
     bottom.zero_here_btn = MagicMock()
     bottom.edit_offsets_btn = MagicMock()
     bottom.update_position_menu_sensitivity = MagicMock()
+    bottom.pointer_alignment_btn = None
+    bottom._pointer_alignment_handler_id = 0
     return bottom
 
 
