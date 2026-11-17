@@ -62,12 +62,15 @@ class RpaDirectDriver:
             True if connection succeeded.
         """
         driver = self._ensure_driver()
-        kwargs: dict = {"udp_host": udp_host, "usb_device": usb_device}
+        kwargs: dict = {
+            "network_host": udp_host,
+            "usb_device": usb_device,
+        }
         if magic is not None:
             kwargs["magic"] = magic
         if protocol is not None:
             kwargs["protocol"] = protocol
-        result = driver.start(**kwargs)
+        result = driver.connect(**kwargs)
         if result:
             _logger.info(
                 "RPA direct driver connected; udp=%s, usb=%s, protocol=%s",
@@ -97,7 +100,7 @@ class RpaDirectDriver:
         """
         if self._driver is not None:
             try:
-                self._driver.stop()
+                self._driver.disconnect()
             except Exception:
                 _logger.exception("Error stopping RPA direct driver")
 
