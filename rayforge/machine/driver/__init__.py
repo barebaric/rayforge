@@ -27,6 +27,7 @@ from .octoprint import OctoPrintDriver
 from .remote_driver import RaydriverRemoteDriver
 from .ruidarpa import RuidaRPAAdapter
 from .smoothie import SmoothieDriver
+from .xtool import XtoolM2Driver, XtoolNetworkDriver
 
 
 def isdriver(obj):
@@ -73,6 +74,8 @@ __all__ = [
     "RaydriverRemoteDriver",
     "RuidaRPAAdapter",
     "SmoothieDriver",
+    "XtoolM2Driver",
+    "XtoolNetworkDriver",
     "find_all_devices",
     "find_network_devices",
     "normalize_tokens",

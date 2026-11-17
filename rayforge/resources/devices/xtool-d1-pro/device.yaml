@@ -5,7 +5,7 @@ device:
   model: D1 Pro
   description: Diode laser engraver with 430x390mm work area, connected via Wi-Fi
 machine:
-  driver: GrblNetworkDriver
+  driver: XtoolNetworkDriver
   gcode_precision: 3
   axis_extents:
   - 430.0
@@ -14,10 +14,11 @@ machine:
   max_travel_speed: 3000
   max_cut_speed: 1000
   home_on_start: true
+  single_axis_homing_enabled: false
   has_z: false
   driver_args:
     host: ''
-    port: 8080
+    http_port: 8080
     ws_port: 8081
   heads:
   - max_power: 1000
