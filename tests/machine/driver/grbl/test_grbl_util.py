@@ -1,55 +1,10 @@
 import pytest
 
 from rayforge.core.varset import Var, VarSet
-from rayforge.machine.driver.driver import DeviceState, DeviceStatus
 from rayforge.machine.driver.grbl.grbl_util import (
     apply_setting_to_varset,
     get_grbl_setting_varsets,
-    sync_state_wco,
 )
-
-
-class TestSyncStateWco:
-    """Tests for the authoritative WCS refresh during a ``$#`` read."""
-
-    def test_updates_offset_and_recalculates_work_position(self):
-        state = DeviceState(
-            status=DeviceStatus.IDLE,
-            machine_pos=(10.0, 20.0, 5.0),
-            work_pos=(0.0, 0.0, 0.0),
-            wco=(0.0, 0.0, 0.0),
-        )
-
-        sync_state_wco(state, {"G54": (2.0, 3.0, 1.0)}, "G54")
-
-        assert state.wco == (2.0, 3.0, 1.0)
-        assert state.work_pos == (8.0, 17.0, 4.0)
-
-    def test_ignores_unknown_active_wcs(self):
-        state = DeviceState(
-            status=DeviceStatus.IDLE,
-            machine_pos=(10.0, 20.0, 5.0),
-            work_pos=(1.0, 2.0, 3.0),
-            wco=(0.0, 0.0, 0.0),
-        )
-
-        sync_state_wco(state, {"G54": (2.0, 3.0, 1.0)}, "G55")
-
-        assert state.wco == (0.0, 0.0, 0.0)
-        assert state.work_pos == (1.0, 2.0, 3.0)
-
-    def test_ignores_missing_active_wcs(self):
-        state = DeviceState(
-            status=DeviceStatus.IDLE,
-            machine_pos=(10.0, 20.0, 5.0),
-            work_pos=(1.0, 2.0, 3.0),
-            wco=(0.0, 0.0, 0.0),
-        )
-
-        sync_state_wco(state, {"G54": (2.0, 3.0, 1.0)}, None)
-
-        assert state.wco == (0.0, 0.0, 0.0)
-        assert state.work_pos == (1.0, 2.0, 3.0)
 
 
 class TestGrblHALMaskSettings:

@@ -1,43 +1,12 @@
-import asyncio
 import logging
 from copy import deepcopy
-from dataclasses import dataclass, field
 from gettext import gettext as _
-from typing import cast
 
 from raydriver.grbl.parser import parse_msg, parse_ver
 
 from ....core.varset import Var, VarSet
-from ..driver import DeviceState, Pos
 
 logger = logging.getLogger(__name__)
-
-
-# GRBL Next-gen command requests
-@dataclass
-class CommandRequest:
-    """A request to send a command and await its full response."""
-
-    command: str
-    op_index: int | None = None
-    response_lines: list[str] = field(default_factory=list)
-    finished: asyncio.Event = field(default_factory=asyncio.Event)
-
-    @property
-    def payload(self) -> bytes:
-        return (self.command + "\n").encode("utf-8")
-
-
-# GRBL Network URLs
-hw_info_url = "/command?plain=%5BESP420%5D&PAGEID="
-fw_info_url = "/command?plain=%5BESP800%5D&PAGEID="
-eeprom_info_url = "/command?plain=%5BESP400%5D&PAGEID="
-command_url = "/command?commandText={command}&PAGEID="
-upload_url = "/upload"
-execute_url = "/command?commandText=%5BESP220%5D/{filename}"
-status_url = command_url.format(command="?")
-fluidnc_command_url = "/?commandText={command}"
-fluidnc_status_url = fluidnc_command_url.format(command="%3F")
 
 
 def parse_board(line: str) -> str | None:
@@ -76,118 +45,6 @@ def extract_device_name(build_info: list[str]) -> str:
             if build_name:
                 return build_name
     return "Unknown Grbl Device"
-
-
-def _recalculate_positions(
-    machine_pos: Pos,
-    work_pos: Pos,
-    wco: Pos,
-    mpos_found: bool,
-    wpos_found: bool,
-    wco_found: bool,
-) -> tuple[Pos, Pos, Pos]:
-    """
-    Recalculate positions based on GRBL equations for consistency.
-    Also infers WCO if missing but both MPos and WPos are present.
-
-    Args:
-        machine_pos: Current machine position
-        work_pos: Current work position
-        wco: Work coordinate offset
-        mpos_found: Whether machine position was found in input
-        wpos_found: Whether work position was found in input
-        wco_found: Whether work coordinate offset was found in input
-
-    Returns:
-        Tuple of (recalculated_machine_pos, recalculated_work_pos,
-        recalculated_wco)
-    """
-    n = max(len(machine_pos), len(work_pos), len(wco))
-
-    def _pad(pos: Pos, default: float = 0.0) -> Pos:
-        result = list(pos)
-        while len(result) < n:
-            result.append(default)
-        return tuple(result)
-
-    machine_pos = _pad(machine_pos)
-    work_pos = _pad(work_pos)
-    wco = _pad(wco)
-
-    # 1. Infer WCO if explicitly missing but both MPos and WPos exist.
-    # WCO = MPos - WPos
-    if (
-        mpos_found
-        and wpos_found
-        and not wco_found
-        and all(v is not None for v in machine_pos)
-        and all(v is not None for v in work_pos)
-    ):
-        m_float = cast(tuple[float, ...], machine_pos)
-        w_float = cast(tuple[float, ...], work_pos)
-        wco = tuple(m_float[i] - w_float[i] for i in range(n))
-
-    # 2. Recalculate missing positions based on what we have.
-    # If MPos is known, calculate WPos.
-    if (
-        mpos_found
-        and all(v is not None for v in machine_pos)
-        and all(v is not None for v in wco)
-    ):
-        m_float = cast(tuple[float, ...], machine_pos)
-        wco_float = cast(tuple[float, ...], wco)
-        return (
-            machine_pos,
-            tuple(m_float[i] - wco_float[i] for i in range(n)),
-            wco,
-        )
-
-    # If WPos is known (and MPos isn't), calculate MPos.
-    elif (
-        wpos_found
-        and all(v is not None for v in work_pos)
-        and all(v is not None for v in wco)
-    ):
-        w_float = cast(tuple[float, ...], work_pos)
-        wco_float = cast(tuple[float, ...], wco)
-        return (
-            tuple(w_float[i] + wco_float[i] for i in range(n)),
-            work_pos,
-            wco,
-        )
-
-    return machine_pos, work_pos, wco
-
-
-def sync_state_wco(
-    state: DeviceState,
-    offsets: dict[str, Pos],
-    active_wcs: str | None,
-) -> None:
-    """
-    Refresh *state*'s work coordinate offset from authoritative
-    ``$#`` data.
-
-    GRBL includes WCO in status reports only when it changes, so
-    right after a WCS write the cached WCO can be stale and
-    ``machine_pos``, when derived from WPos + WCO, is wrong until
-    the next report carries the new WCO. Zeroing again in that
-    window would read a wrong machine position and write the old
-    offset back. The ``$#`` read-back reports every slot, so the
-    active slot's offset is authoritative and positions are
-    recomputed from it immediately.
-    """
-    if not active_wcs or active_wcs not in offsets:
-        return
-    state.wco = offsets[active_wcs]
-    state.machine_pos, state.work_pos, _ = _recalculate_positions(
-        state.machine_pos,
-        state.work_pos,
-        state.wco,
-        state.machine_pos[0] is not None,
-        state.work_pos[0] is not None,
-        True,
-    )
 
 
 # GRBL Typed Settings Definitions
