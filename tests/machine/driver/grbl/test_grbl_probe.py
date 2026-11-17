@@ -1,6 +1,11 @@
 from unittest.mock import AsyncMock
 
 import pytest
+from raydriver.grbl.parser import (
+    parse_grbl_settings,
+    parse_msg,
+    parse_ver,
+)
 
 from rayforge.machine.driver.grbl.grbl_probe import (
     build_grbl_profile,
@@ -9,9 +14,6 @@ from rayforge.machine.driver.grbl.grbl_serial import GrblSerialDriver
 from rayforge.machine.driver.grbl.grbl_util import (
     extract_device_name,
     parse_board,
-    parse_grbl_settings,
-    parse_msg,
-    parse_ver,
 )
 from rayforge.machine.transport import TransportStatus
 from rayforge.shared.units.system import UnitSystem
