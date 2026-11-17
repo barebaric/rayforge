@@ -2,6 +2,7 @@ import logging
 from gettext import gettext as _
 from typing import Any, cast
 
+from raydriver.core.discovery.fingerprints import TcpFingerprint
 from raydriver.core.discovery.spec import (
     DiscoverySpec,
     MdnsRecognizer,
@@ -12,7 +13,6 @@ from raydriver.grbl import GrblSession
 from ....core.varset import HostnameVar, PortVar, Var, VarSet
 from ....core.varset.hostnamevar import is_valid_hostname_or_ip
 from ..driver import DriverPrecheckError, DriverSetupError
-from .grbl_fingerprint import fingerprint_grbl_telnet
 from .grbl_serial import GrblSerialDriver
 
 logger = logging.getLogger(__name__)
@@ -44,7 +44,10 @@ class GrblTelnetDriver(GrblSerialDriver):
     DISCOVERY = DiscoverySpec(
         mdns=MdnsRecognizer(
             fingerprint_services=("_telnet._tcp",),
-            fingerprint=fingerprint_grbl_telnet,
+            fingerprint=TcpFingerprint(
+                probe_command="$I\n",
+                match_prefix="[VER:",
+            ),
         ),
         tcp=TcpRecognizer(port=23, probe_command="$I\n", match_prefix="[VER:"),
     )
