@@ -49,8 +49,8 @@ El asistente puede descubrir dispositivos por ti en lugar de requerir que elijas
 y completes todo manualmente:
 
 - **Dispositivos serie USB** se listan a medida que aparecen.
-- **Dispositivos de red** se descubren vía mDNS: servidores OctoPrint y placas ESP3D aparecen junto
-  a dispositivos serie USB.
+- **Dispositivos de red** se descubren vía mDNS: servidores OctoPrint, placas ESP3D y placas grblHAL
+  que anuncian `_telnet._tcp` aparecen junto a dispositivos serie USB.
 - Los dispositivos descubridos se **emparejan con perfiles integrados** cuando se encuentra una
   coincidencia segura, por lo que a menudo solo puedes confirmar los ajustes detectados en lugar de
   introducirlos.
@@ -59,9 +59,10 @@ y completes todo manualmente:
 - Los dispositivos que ya has configurado se muestran como **solo lectura** para que no crees
   duplicados accidentalmente.
 
-- **Las placas grblHAL por telnet** no se anuncian vía mDNS, por lo que un escaneo de subred acotado
-  (solo puerto telnet, concurrencia limitada) se ejecuta junto a los escaneos serie y mDNS; Rayforge
-  confirma cada controlador que responde antes de listararlo.
+- **Las placas grblHAL por telnet** se confirman con el comando de información de compilación `$I`
+  antes de listarlas. Las placas cuya firmware no se anuncia por mDNS se encuentran mediante un
+  escaneo de subred acotado (solo puerto telnet, concurrencia limitada) que se ejecuta junto a los
+  escaneos serie y mDNS.
 
 ![Asistente — Descubrir dispositivos](/screenshots/config-wizard-discover.webp)
 

@@ -5,6 +5,7 @@ built-in drivers' DiscoverySpec declarations and end-to-end recognition
 of real firmware banners.
 """
 
+import asyncio
 import os
 import sys
 import threading
@@ -31,6 +32,7 @@ from rayforge.machine.driver import (
 )
 from rayforge.machine.driver.grbl.grbl_fingerprint import (
     fingerprint_grbl_http,
+    fingerprint_grbl_telnet,
 )
 
 SCULPFUN_ICUBE_BANNER = (
@@ -164,14 +166,19 @@ def test_builtin_discovery_drivers():
         "MarlinSerialDriver",
         "OctoPrintDriver",
     }
-    # Telnet devices are found by the subnet channel, not the serial
-    # one: a telnet connection has no serial port to claim.
+    # Telnet devices are found by the mDNS and subnet channels, not
+    # the serial one: a telnet connection has no serial port to claim.
     telnet_spec = GrblTelnetDriver.DISCOVERY
     assert telnet_spec is not None
     assert telnet_spec.serial is None
+    assert telnet_spec.mdns is not None
+    assert telnet_spec.mdns.services == ()
+    assert telnet_spec.mdns.fingerprint_services == ("_telnet._tcp",)
+    assert telnet_spec.mdns.fingerprint is fingerprint_grbl_telnet
     assert telnet_spec.tcp is not None
     assert telnet_spec.tcp.port == 23
     assert telnet_spec.tcp.probe_command == "$I\n"
+    assert telnet_spec.tcp.match_prefix == "[VER:"
     grbl_spec = GrblSerialDriver.DISCOVERY
     assert grbl_spec is not None
     assert grbl_spec.serial is not None
@@ -234,6 +241,7 @@ def test_builtin_mdns_declarations():
     assert declared == {
         "OctoPrintDriver": ("_octoprint._tcp.local.",),
         "GrblNetworkDriver": ("_esp3d._tcp.local.",),
+        "GrblTelnetDriver": (),
     }
     octo_spec = OctoPrintDriver.DISCOVERY
     assert octo_spec is not None and octo_spec.mdns is not None
@@ -241,3 +249,137 @@ def test_builtin_mdns_declarations():
     grbl_net_spec = GrblNetworkDriver.DISCOVERY
     assert grbl_net_spec is not None and grbl_net_spec.mdns is not None
     assert grbl_net_spec.mdns.fingerprint is fingerprint_grbl_http
+    assert grbl_net_spec.mdns.fingerprint_services == ("_http._tcp",)
+    telnet_spec = GrblTelnetDriver.DISCOVERY
+    assert telnet_spec is not None and telnet_spec.mdns is not None
+    assert telnet_spec.mdns.fingerprint is fingerprint_grbl_telnet
+    assert telnet_spec.mdns.fingerprint_services == ("_telnet._tcp",)
+
+
+@pytest.mark.asyncio
+async def test_telnet_mdns_candidate_is_claimed(monkeypatch):
+    """A board announcing _telnet._tcp is fingerprinted with $I and
+    claimed as a grblHAL (Telnet) device with SRV host/port params."""
+
+    seen = []
+    calls = []
+
+    async def fake_scan(service_types):
+        seen.append(set(service_types))
+        return [
+            MDNSService(
+                service_type="_telnet._tcp",
+                name="grblHAL",
+                host="192.168.1.50",
+                port=23,
+                server="grblhal.local",
+                txt={},
+            )
+        ]
+
+    async def fake_fingerprint(host, port):
+        calls.append((host, port))
+        return MDNSService(
+            service_type="_telnet._tcp",
+            name="[VER:1.1h.20240101:]",
+            host=host,
+            port=port,
+        )
+
+    class FakeTelnetDriver:
+        DISCOVERY = DiscoverySpec(
+            mdns=MdnsRecognizer(
+                fingerprint_services=("_telnet._tcp",),
+                fingerprint=fake_fingerprint,
+            )
+        )
+        label = "grblHAL (Telnet)"
+
+    monkeypatch.setattr(mdns_channel, "scan_mdns_services", fake_scan)
+    devices = await find_network_devices([FakeTelnetDriver])
+    assert seen == [{"_telnet._tcp"}]
+    assert calls == [("192.168.1.50", 23)]
+    assert len(devices) == 1
+    device = devices[0]
+    assert device.driver_name == "FakeTelnetDriver"
+    assert device.params == {"host": "192.168.1.50", "port": 23}
+    assert device.label == "grblHAL (Telnet)"
+    assert device.identity.banner == "grblHAL"
+
+
+async def _start_telnet_server(handler):
+    server = await asyncio.start_server(handler, "127.0.0.1", 0)
+    port = server.sockets[0].getsockname()[1]
+    return server, port
+
+
+@pytest.mark.asyncio
+async def test_fingerprint_grbl_telnet_probes_with_build_info():
+    """A telnet listener that answers $I with a [VER: line is claimed;
+    the synthetic service carries the SRV host/port."""
+
+    async def handler(reader, writer):
+        try:
+            await reader.readline()
+            writer.write(b"[VER:1.1h.20240101:]\r\n[OPT:V,15,128]\r\n")
+            await writer.drain()
+            await reader.read()
+        finally:
+            writer.close()
+
+    server, port = await _start_telnet_server(handler)
+    try:
+        service = await fingerprint_grbl_telnet("127.0.0.1", port)
+    finally:
+        server.close()
+        await server.wait_closed()
+    assert service is not None
+    assert service.service_type == "_telnet._tcp"
+    assert service.host == "127.0.0.1"
+    assert service.port == port
+    assert service.name.startswith("[VER:")
+
+
+@pytest.mark.asyncio
+async def test_fingerprint_grbl_telnet_accepts_unsolicited_banner():
+    """Boards that emit their build info on connect are claimed
+    without an explicit $I probe."""
+
+    async def handler(reader, writer):
+        try:
+            writer.write(b"[VER:1.1h.20240101:]\r\n")
+            await writer.drain()
+            await reader.read()
+        finally:
+            writer.close()
+
+    server, port = await _start_telnet_server(handler)
+    try:
+        service = await fingerprint_grbl_telnet("127.0.0.1", port)
+    finally:
+        server.close()
+        await server.wait_closed()
+    assert service is not None
+    assert service.name.startswith("[VER:")
+
+
+@pytest.mark.asyncio
+async def test_fingerprint_grbl_telnet_rejects_other_listeners():
+    """An unrelated telnet listener is never mislabeled as grblHAL."""
+
+    async def handler(reader, writer):
+        try:
+            await reader.readline()
+            writer.write(b"Welcome to the telnet console\r\n")
+            await writer.drain()
+            await reader.read()
+        finally:
+            writer.close()
+
+    server, port = await _start_telnet_server(handler)
+    try:
+        service = await fingerprint_grbl_telnet("127.0.0.1", port, timeout=1.2)
+    finally:
+        server.close()
+        await server.wait_closed()
+    assert service is None

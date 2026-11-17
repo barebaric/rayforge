@@ -2,12 +2,17 @@ import logging
 from gettext import gettext as _
 from typing import Any, cast
 
-from raydriver.core.discovery.spec import DiscoverySpec, TcpRecognizer
+from raydriver.core.discovery.spec import (
+    DiscoverySpec,
+    MdnsRecognizer,
+    TcpRecognizer,
+)
 from raydriver.grbl import GrblSession
 
 from ....core.varset import HostnameVar, PortVar, Var, VarSet
 from ....core.varset.hostnamevar import is_valid_hostname_or_ip
 from ..driver import DriverPrecheckError, DriverSetupError
+from .grbl_fingerprint import fingerprint_grbl_telnet
 from .grbl_serial import GrblSerialDriver
 
 logger = logging.getLogger(__name__)
@@ -30,12 +35,18 @@ class GrblTelnetDriver(GrblSerialDriver):
     )
     # Serial-port discovery is inherited from GrblSerialDriver but
     # makes no sense here: a telnet connection has no serial port and
-    # must not claim devices found on one. Networked grblHAL boards
-    # announce nothing via mDNS, so raydriver's subnet scan probes
-    # the raw telnet port and confirms hosts with the $I build-info
-    # command.
+    # must not claim devices found on one. grblHAL builds with LWIP
+    # mDNS announce _telnet._tcp, so that fast path is fingerprinted
+    # with $I -> [VER: before a board is claimed. Boards whose firmware
+    # announces nothing stay discoverable through raydriver's subnet
+    # scan, which probes the raw telnet port with the same
+    # confirmation.
     DISCOVERY = DiscoverySpec(
-        tcp=TcpRecognizer(port=23, probe_command="$I\n", match_prefix="[VER:")
+        mdns=MdnsRecognizer(
+            fingerprint_services=("_telnet._tcp",),
+            fingerprint=fingerprint_grbl_telnet,
+        ),
+        tcp=TcpRecognizer(port=23, probe_command="$I\n", match_prefix="[VER:"),
     )
 
     @classmethod

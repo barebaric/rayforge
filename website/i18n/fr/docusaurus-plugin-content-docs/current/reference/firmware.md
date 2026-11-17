@@ -162,9 +162,11 @@ Pour une connexion réseau plutôt qu'USB, utilisez le pilote grblHAL (Telnet) d
 Le pilote grblHAL (Telnet) se connecte aux contrôleurs basés sur GRBL via le réseau par une
 interface Telnet. Idéal pour les cartes avec WiFi ou Ethernet intégré — pas de câble USB nécessaire.
 
-Les cartes grblHAL en réseau ne s'annoncent pas via mDNS, donc l'assistant exécute aussi un scan de
-sous-réseau restreint (port telnet uniquement, concurrence et délai par hôte limités) et confirme
-chaque contrôleur qui répond avant de le lister.
+Les builds grblHAL avec LWIP mDNS annoncent `_telnet._tcp`, donc l'assistant les trouve
+immédiatement et confirme chaque carte avec la commande d'informations de compilation `$I` avant de
+la lister. Les cartes dont le firmware ne s'annonce pas via mDNS sont trouvées par un scan de
+sous-réseau restreint (port telnet uniquement, concurrence et délai par hôte limités) avec la même
+confirmation.
 
 **Fonctionnalités :**
 
