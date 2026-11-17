@@ -166,8 +166,12 @@ class BedMeshPage(TrackedPreferencesPage):
 
         self.safe_z_row = LengthSpinRow(
             _("Safe Z"),
-            _("Z height traveled at between probe points"),
-            lower=0.1,
+            _(
+                "Z position to travel at between probe points. This is "
+                "a position, not a distance, and may be negative on "
+                "machines that home Z upward"
+            ),
+            lower=-1000,
             upper=1000,
             value_in_base=DEFAULT_SAFE_Z,
         )

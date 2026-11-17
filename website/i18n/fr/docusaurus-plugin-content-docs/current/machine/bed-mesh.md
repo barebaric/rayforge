@@ -30,7 +30,8 @@ Ouvrez **Paramètres → Machine** et accédez à la page **Maillage du plateau*
    temps.
 2. **Sondage** : Configurez la vitesse d'avance de la sonde, la distance maximale dont la tête peut
    descendre pour chercher la surface à chaque point (Course maximale) et la hauteur Z de sécurité
-   utilisée entre les points.
+   utilisée entre les points. La hauteur Z de sécurité est une position, pas une distance ; elle
+   peut être négative sur les machines qui référencent Z vers le haut.
 3. Cliquez sur **Démarrer le sondage**. La machine parcourt chaque point de la grille en motif
    serpentin et touche la surface à chacun ; la vue 3D se remplit en direct au fil des résultats.
    Vous pouvez arrêter l'exécution à tout moment ; le maillage n'est enregistré qu'une fois la
@@ -53,13 +54,14 @@ Le sondage ne fait qu'enregistrer la carte de hauteur — son application se con
 - **Dérogation par calque** : Dans les paramètres d'un calque (Paramètres du calque →
   Post-traitement), la valeur par défaut de la machine apparaît avec les actions **Personnaliser**
   et **Désactiver**. Personnaliser copie la correction dans le calque, où vous pouvez ajuster le
-  décalage Z (par ex. pour focaliser légèrement au-dessus de la surface) ; Désactiver coupe la
-  correction pour ce calque uniquement. Supprimer l'entrée du calque ramène au réglage par défaut de
-  la machine.
+  **décalage de mise au point** (la distance au-dessus de la surface sondée à laquelle doit se
+  trouver le point de mise au point) ; Désactiver coupe la correction pour ce calque uniquement.
+  Supprimer l'entrée du calque ramène au réglage par défaut de la machine.
 
 La correction s'applique aussi bien aux mouvements de découpe qu'aux déplacements, et les arcs
 restent des arcs (ils deviennent hélicoïdaux). Elle s'exécute sur le parcours final en coordonnées
-machine : elle n'est donc pas affectée par les systèmes de coordonnées de travail ni par le coin
+machine et tient compte du décalage Z du système de coordonnées de travail actif : un travail à Z 0
+suit donc la hauteur du plateau plus le décalage de mise au point, et non la Z machine brute sondée.
 d'origine de la machine.
 
 ---

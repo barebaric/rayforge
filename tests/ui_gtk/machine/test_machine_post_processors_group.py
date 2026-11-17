@@ -96,3 +96,19 @@ def test_edit_existing_entry_persists(ui_context_initializer):
     _, entry, _source = group._group_dicts[widget_group]
     assert entry is not None
     assert entry["enabled"] is False
+
+
+@pytest.mark.ui
+def test_focus_offset_is_persisted(ui_context_initializer):
+    machine = _make_machine()
+    _make_mesh(machine)
+    group = MachinePostProcessorsGroup(machine)
+
+    widget_group, (_cls, _entry, _source) = _mesh(group)
+    widget_group.param_changed.send(
+        widget_group, key="z_offset", value=2.5, name="test"
+    )
+
+    assert machine.default_post_processors_dicts == [
+        {"name": MESH_NAME, "enabled": True, "z_offset": 2.5}
+    ]

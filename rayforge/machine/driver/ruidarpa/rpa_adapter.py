@@ -1431,7 +1431,7 @@ class RuidaRPAAdapter(Driver):
     # --- Probing ---
 
     async def run_probe_cycle(
-        self, axis: Axis, max_travel: float, feed_rate: int
+        self, axis: Axis, target: float, feed_rate: int
     ) -> Pos | None:
         self.probe_status_changed.send(
             self, message=_("Probe not supported by RPA driver")

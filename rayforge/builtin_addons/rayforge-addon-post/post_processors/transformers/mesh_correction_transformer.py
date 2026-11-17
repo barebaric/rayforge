@@ -28,6 +28,11 @@ class MeshCorrectionTransformer(OpsTransformer):
     The transformer itself is geometry-free: it queries the machine's
     probed bed mesh in ``to_spec`` and raises when none has been
     probed, which the pipeline handles by skipping it.
+
+    The mesh heights are machine Z positions where the probe touched
+    the bed. Every move's Z becomes its own Z plus the bed height under
+    it, plus the focus offset, minus the active work offset's Z, so the
+    result is in the work coordinates the job is emitted in.
     """
 
     SPEC_NAME = "mesh_correction"
@@ -35,8 +40,19 @@ class MeshCorrectionTransformer(OpsTransformer):
     #: Applies to a layer's merged toolpath in machine space.
     LAYER_APPLICABLE = True
 
-    def __init__(self, enabled: bool = True):
+    def __init__(self, enabled: bool = True, z_offset: float = 0.0):
         super().__init__(enabled=enabled)
+        self._z_offset: float = 0.0
+        self.z_offset = z_offset
+
+    @property
+    def z_offset(self) -> float:
+        """The focus offset above the probed surface, in mm."""
+        return self._z_offset
+
+    @z_offset.setter
+    def z_offset(self, value: float) -> None:
+        self._z_offset = float(value)
 
     @property
     def label(self) -> str:
@@ -56,20 +72,34 @@ class MeshCorrectionTransformer(OpsTransformer):
         machine=None,
         settings=None,
     ) -> MeshCorrectionSpec:
-        mesh = machine.bed_mesh if machine is not None else None
-        if mesh is None:
+        if machine is None or machine.bed_mesh is None:
             raise ValueError(
                 "machine has no probed bed mesh; probe the bed in the "
                 "machine settings first"
             )
+        mesh = machine.bed_mesh
         heights = np.asarray(mesh.heights, dtype=np.float64).reshape(
             mesh.ny, mesh.nx
         )
-        return MeshCorrectionSpec(mesh.x0, mesh.y0, mesh.dx, mesh.dy, heights)
+        wcs_z = float(machine.get_active_wcs_offset()[2])
+        return MeshCorrectionSpec(
+            mesh.x0,
+            mesh.y0,
+            mesh.dx,
+            mesh.dy,
+            heights,
+            z_offset=self.z_offset - wcs_z,
+        )
 
     def to_dict(self) -> dict[str, Any]:
-        return {**super().to_dict()}
+        data = {**super().to_dict()}
+        if self.z_offset:
+            data["z_offset"] = self.z_offset
+        return data
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> MeshCorrectionTransformer:
-        return cls(enabled=data.get("enabled", True))
+        return cls(
+            enabled=data.get("enabled", True),
+            z_offset=data.get("z_offset", 0.0),
+        )

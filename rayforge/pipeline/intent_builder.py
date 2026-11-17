@@ -1720,6 +1720,7 @@ def _machine_transform_config_payload(
 
     payload: dict[str, Any] = {
         "wcs_origin_is_workarea_origin": machine.wcs_origin_is_workarea_origin,
+        "active_wcs_offset": list(machine.get_active_wcs_offset()),
         "default_post_processors_dicts": _canonical(
             machine.default_post_processors_dicts
         ),

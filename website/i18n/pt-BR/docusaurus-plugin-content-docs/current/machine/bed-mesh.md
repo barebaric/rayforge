@@ -28,7 +28,8 @@ Abra **Configurações → Máquina** e navegue até a página **Malha da mesa**
    Grades mais densas seguem a superfície com mais precisão, mas levam mais tempo.
 2. **Medição**: Configure a velocidade de avanço da medição, o quanto a cabeça pode descer
    procurando a superfície em cada ponto (Curso máximo) e a altura Z segura usada para mover entre
-   os pontos.
+   os pontos. A Z segura é uma posição, não uma distância; pode ser negativa em máquinas que
+   referenciam Z para cima.
 3. Clique em **Iniciar medição**. A máquina visita cada ponto da grade em padrão serpenteante e toca
    a superfície em cada um; a visualização 3D é preenchida ao vivo conforme os resultados chegam.
    Você pode interromper a execução a qualquer momento; a malha só é salva quando a grade completa
@@ -50,13 +51,14 @@ Medir apenas registra o mapa de altura — aplicá-lo é controlado por trabalho
   eixo Z de todos os trabalhos nesta máquina.
 - **Substituição por camada**: Nas configurações de uma camada (Configurações da camada →
   Pós-processamento), o padrão da máquina aparece com as ações **Personalizar** e **Desativar**.
-  Personalizar copia a correção para a camada, onde você pode ajustar o deslocamento Z (por exemplo,
-  para focar ligeiramente acima da superfície); desativar desliga a correção apenas para essa
-  camada. Remover a entrada da camada volta ao padrão da máquina.
+  Personalizar copia a correção para a camada, onde você pode ajustar o **deslocamento de foco** (a
+  que distância acima da superfície medida o ponto de foco deve ficar); desativar desliga a correção
+  apenas para essa camada. Remover a entrada da camada volta ao padrão da máquina.
 
 A correção se aplica tanto a movimentos de corte quanto de deslocamento, e os arcos continuam arcos
-(tornam-se helicoidais). Ela roda no trajeto final em coordenadas da máquina, portanto não é afetada
-por sistemas de coordenadas de trabalho nem pelo canto de origem da máquina.
+(tornam-se helicoidais). Ela roda no trajeto final em coordenadas da máquina e considera o
+deslocamento Z do sistema de coordenadas de trabalho ativo, de modo que um trabalho em Z 0 segue a
+altura da mesa mais o deslocamento de foco, em vez da Z de máquina medida bruta.
 
 ---
 

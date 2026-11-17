@@ -27,7 +27,8 @@ Open **Settings → Machine** and navigate to the **Bed Mesh** page.
    (columns and rows). The page shows the resulting number of probe points and estimates the probing
    duration. Denser grids follow the surface more accurately but take longer to probe.
 2. **Probing**: Configure the probing feed rate, how far the head may travel down searching for the
-   surface at each point (Maximum Travel), and the Safe Z height used to move between points.
+   surface at each point (Maximum Travel), and the Safe Z height used to move between points. Safe Z
+   is a position, not a distance; it may be negative on machines that home Z upward.
 3. Click **Start Probing**. The machine visits every grid point in a serpentine pattern, touches the
    surface at each one, and the 3D view fills in live as results arrive. You can stop the run at any
    time; the mesh is only saved when the full grid completes.
@@ -48,13 +49,14 @@ Probing only records the height map — applying it is controlled per job:
   every job on this machine.
 - **Per-layer override**: In a layer's settings (Layer Settings → Post Processing), the machine
   default shows up with **Customize** and **Disable** actions. Customizing copies the correction
-  into the layer, where you can adjust the Z offset (e.g. to focus slightly above the surface);
-  disabling turns the correction off for that layer only. Removing the layer's entry falls back to
-  the machine default.
+  into the layer, where you can adjust the **Focus Offset** (how far above the probed surface the
+  focus point should be); disabling turns the correction off for that layer only. Removing the
+  layer's entry falls back to the machine default.
 
 The correction applies to cutting moves and travel moves alike, and arcs stay arcs (they become
-helical). It runs on the final toolpath in machine coordinates, so it is unaffected by work
-coordinate systems or the machine origin corner.
+helical). It runs on the final toolpath in machine coordinates and accounts for the active work
+coordinate system's Z offset, so a job at Z 0 follows the bed height at the focus offset rather than
+the raw probed machine Z.
 
 ---
 

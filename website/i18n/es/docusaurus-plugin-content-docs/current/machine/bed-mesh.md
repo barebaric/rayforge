@@ -28,7 +28,8 @@ Abre **Ajustes → Máquina** y navega a la página **Malla de la cama**.
    estima la duración. Las cuadrículas más densas siguen la superficie con más precisión, pero
    tardan más.
 2. **Sondeo**: Configura la velocidad de sondeo, cuánto puede bajar la cabeza buscando la superficie
-   en cada punto (Recorrido máximo) y la altura Z segura para moverse entre puntos.
+   en cada punto (Recorrido máximo) y la altura Z segura para moverse entre puntos. La Z segura es
+   una posición, no una distancia; puede ser negativa en máquinas que referencian Z hacia arriba.
 3. Pulsa **Iniciar sondeo**. La máquina visita cada punto de la cuadrícula en patrón serpenteante y
    toca la superficie en cada uno; la vista 3D se rellena en vivo a medida que llegan los
    resultados. Puedes detener la ejecución en cualquier momento; la malla solo se guarda cuando la
@@ -50,14 +51,14 @@ Sondear solo registra el mapa de altura; aplicarlo se controla por trabajo:
   compensar el eje Z de cada trabajo en esta máquina.
 - **Anulación por capa**: En los ajustes de una capa (Ajustes de capa → Posprocesamiento), el valor
   por defecto de la máquina aparece con las acciones **Personalizar** y **Desactivar**. Personalizar
-  copia la corrección a la capa, donde puedes ajustar el desfase Z (p. ej. para enfocar ligeramente
-  por encima de la superficie); desactivar apaga la corrección solo para esa capa. Al eliminar la
-  entrada de la capa se vuelve al valor por defecto de la máquina.
+  copia la corrección a la capa, donde puedes ajustar el **desfase de enfoque** (cuánto por encima
+  de la superficie sondeada debe estar el punto de enfoque); desactivar apaga la corrección solo
+  para esa capa. Al eliminar la entrada de la capa se vuelve al valor por defecto de la máquina.
 
 La corrección se aplica por igual a los movimientos de corte y de desplazamiento, y los arcos siguen
-siendo arcos (se vuelven helicoidales). Se ejecuta sobre el trayecto final en coordenadas de
-máquina, por lo que no le afectan los sistemas de coordenadas de trabajo ni la esquina de origen de
-la máquina.
+siendo arcos (se vuelven helicoidales). Se ejecuta sobre el trayecto final en coordenadas de máquina
+y tiene en cuenta el desfase Z del sistema de coordenadas de trabajo activo, de modo que un trabajo
+en Z 0 sigue la altura de la cama más el desfase de enfoque en lugar de la Z de máquina sondeada.
 
 ---
 

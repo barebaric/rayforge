@@ -15,6 +15,7 @@ class FakeMachine:
         acceleration: float = 500.0,
         native_overscan: bool = False,
         bed_mesh=None,
+        wcs_offset: tuple[float, float, float] = (0.0, 0.0, 0.0),
     ):
         self.max_cut_speed = max_cut_speed
         self.max_travel_speed = max_travel_speed
@@ -23,3 +24,7 @@ class FakeMachine:
             "Driver", (), {"native_overscan": native_overscan}
         )()
         self.bed_mesh = bed_mesh
+        self._wcs_offset = wcs_offset
+
+    def get_active_wcs_offset(self) -> tuple[float, float, float]:
+        return self._wcs_offset

@@ -886,16 +886,17 @@ class Driver(ABC):
 
     @abstractmethod
     async def run_probe_cycle(
-        self, axis: Axis, max_travel: float, feed_rate: int
+        self, axis: Axis, target: float, feed_rate: int
     ) -> Pos | None:
         """
-        Initiates a single probing move along the specified axis. The move
-        is performed in the negative direction if max_travel is negative.
+        Initiates a single probing move along the specified axis toward
+        the given absolute coordinate in the active work coordinate
+        system. The sign of *target* therefore indicates the direction
+        relative to the current position.
 
         Args:
             axis: The axis to probe along.
-            max_travel: The maximum distance to travel in mm. The sign
-                        indicates direction.
+            target: The coordinate to stop at, in mm.
             feed_rate: The speed of the probing move in mm/min.
 
         Returns:

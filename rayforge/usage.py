@@ -69,7 +69,7 @@ def _get_machine_data(machine) -> dict:
     typing to avoid a dependency on the machine model classes."""
     head = machine.get_default_laser_head()
     laser = head.laser_type.value if head else "none"
-    power = int(head.effective_max_power_watts) if head else 0
+    power = int(head.effective_max_power_watts()) if head else 0
 
     width, height = machine.axis_extents
     return {

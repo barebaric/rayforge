@@ -942,14 +942,14 @@ class OctoPrintDriver(Driver):
     async def run_probe_cycle(
         self,
         axis: Axis,
-        max_travel: float,
+        target: float,
         feed_rate: int,
     ) -> Pos | None:
         assert axis.name, "Probing requires a named axis."
         axis_letter = axis.name.upper()
         cmd = (
             f"G38.2 {axis_letter}"
-            f"{self._to_machine_length(max_travel):.3f} "
+            f"{self._to_machine_length(target):.3f} "
             f"F{self._to_machine_speed(feed_rate)}"
         )
         self.probe_status_changed.send(

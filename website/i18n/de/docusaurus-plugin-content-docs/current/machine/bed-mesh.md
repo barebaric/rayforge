@@ -27,7 +27,9 @@ Marlin, Smoothie und OctoPrint derzeit). Die Seite **Bettnetz** erscheint nur un
    Rasterdichte (Spalten und Zeilen). Die Seite zeigt die Anzahl der Tastpunkte und eine geschätzte
    Dauer. Feinere Raster folgen der Oberfläche genauer, dauern aber länger.
 2. **Tasten**: Stelle die Tastgeschwindigkeit ein, wie weit der Kopf an jedem Punkt nach unten
-   suchen darf (Maximaler Hub) und die sichere Z-Höhe für Bewegungen zwischen den Punkten.
+   suchen darf (Maximaler Hub) und die sichere Z-Höhe für Bewegungen zwischen den Punkten. Die
+   sichere Z-Höhe ist eine Position, keine Distanz; sie kann negativ sein, wenn die Maschine Z nach
+   oben referenziert.
 3. Klicke auf **Abtastung starten**. Die Maschine fährt jeden Rasterpunkt im Schlangenlinienmuster
    an und berührt die Oberfläche; die 3D-Ansicht füllt sich während der Messung live. Du kannst den
    Lauf jederzeit stoppen; das Netz wird erst gespeichert, wenn das komplette Raster abgeschlossen
@@ -49,13 +51,14 @@ Das Aufnehmen des Netzes ändert nur die Höhenkarte — die Anwendung wird pro 
   jedes Auftrags auf dieser Maschine zu kompensieren.
 - **Pro-Ebene-Überschreibung**: In den Ebenen-Einstellungen (Ebeneneinstellungen → Nachbearbeitung)
   erscheint der Maschinenstandard mit den Aktionen **Anpassen** und **Deaktivieren**. Anpassen
-  kopiert die Korrektur in die Ebene, wo du den Z-Versatz ändern kannst (z. B. um etwas über der
-  Oberfläche zu fokussieren); Deaktivieren schaltet die Korrektur nur für diese Ebene aus. Entfernt
-  man den Eintrag der Ebene, greift wieder der Maschinenstandard.
+  kopiert die Korrektur in die Ebene, wo du den **Fokusversatz** ändern kannst (wie weit über der
+  abgetasteten Oberfläche der Fokuspunkt liegen soll); Deaktivieren schaltet die Korrektur nur für
+  diese Ebene aus. Entfernt man den Eintrag der Ebene, greift wieder der Maschinenstandard.
 
 Die Korrektur gilt für Schneide- und Bewegungsbewegungen gleichermaßen, und Bögen bleiben Bögen (sie
-werden zu Helixbewegungen). Sie läuft auf dem fertigen Werkzeugweg in Maschinenkoordinaten und ist
-daher von Arbeitskoordinatensystemen oder der Ursprungsecke der Maschine unbeeinflusst.
+werden zu Helixbewegungen). Sie läuft auf dem fertigen Werkzeugweg in Maschinenkoordinaten und
+berücksichtigt den Z-Versatz des aktiven Arbeitskoordinatensystems, sodass ein Auftrag bei Z 0 der
+Betthöhe plus Fokusversatz folgt statt der rohen abgetasteten Maschinen-Z.
 
 ---
 
