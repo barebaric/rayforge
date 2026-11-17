@@ -12,6 +12,16 @@ from urllib.parse import quote
 
 import aiohttp
 from raydriver.core.discovery.spec import DiscoverySpec, MdnsRecognizer
+from raydriver.grbl.parser import (
+    detect_unit_system_from_settings,
+    gcode_to_p_number,
+    is_report_in_inches,
+    parse_grbl_parser_state,
+    parse_probe_line,
+    parse_setting_pairs,
+    parse_state,
+    parse_wcs_line,
+)
 
 from ....context import RayforgeContext
 from ....core.varset import ChoiceVar, HostnameVar, PortVar, Var, VarSet
@@ -29,30 +39,23 @@ from ..driver import (
     DriverSetupError,
     Pos,
 )
+from ..session_state import from_session_state, to_session_state
 from .grbl_fingerprint import fingerprint_grbl_http
 from .grbl_probe import probe_grbl_device
 from .grbl_util import (
     CommandRequest,
     apply_setting_to_varset,
     command_url,
-    detect_unit_system_from_settings,
     eeprom_info_url,
     execute_url,
     fluidnc_command_url,
     fluidnc_status_url,
     fw_info_url,
-    gcode_to_p_number,
     get_grbl_setting_varsets,
-    grbl_setting_re,
     hw_info_url,
-    is_report_in_inches,
-    parse_grbl_parser_state,
-    parse_state,
-    prb_re,
     status_url,
     sync_state_wco,
     upload_url,
-    wcs_re,
 )
 
 if TYPE_CHECKING:
@@ -718,11 +721,12 @@ class GrblNetworkDriver(Driver):
 
             # Process line for state updates, regardless of active request.
             if is_status_report:
-                state = parse_state(
-                    line,
-                    self.state,
-                    lambda message: logger.info(message),
-                    report_in_inches=self._report_in_inches,
+                state = from_session_state(
+                    parse_state(
+                        line,
+                        to_session_state(self.state),
+                        report_in_inches=self._report_in_inches,
+                    )
                 )
                 old_status = self.state.status
                 if state != self.state:
@@ -763,7 +767,12 @@ class GrblNetworkDriver(Driver):
             logger.warning(f"Unit system detection failed: {e}")
             return None
         self._report_in_inches = is_report_in_inches(response_lines)
-        return detect_unit_system_from_settings(response_lines)
+        result = detect_unit_system_from_settings(response_lines)
+        if result == "metric":
+            return UnitSystem.METRIC
+        if result == "imperial":
+            return UnitSystem.IMPERIAL
+        return None
 
     async def read_settings(self) -> None:
         response_lines = await self.execute_interactive_command("$$")
@@ -783,27 +792,24 @@ class GrblNetworkDriver(Driver):
             ),
         )
 
-        for line in response_lines:
-            match = grbl_setting_re.match(line)
-            if match:
-                key, value_str = match.groups()
-                # Find which VarSet this key belongs to
-                target_varset = key_to_varset_map.get(key)
-                if target_varset:
-                    # Update the value in the correct VarSet
-                    apply_setting_to_varset(target_varset, key, value_str)
-                else:
-                    # This setting is not defined in our known VarSets
-                    if unknown_vars.get(key) is None:
-                        unknown_vars.add(
-                            Var(
-                                key=key,
-                                label=f"${key}",
-                                var_type=str,
-                                value=value_str,
-                                description=_("Unknown setting from device"),
-                            )
+        for key, value_str in parse_setting_pairs(response_lines):
+            # Find which VarSet this key belongs to
+            target_varset = key_to_varset_map.get(key)
+            if target_varset:
+                # Update the value in the correct VarSet
+                apply_setting_to_varset(target_varset, key, value_str)
+            else:
+                # This setting is not defined in our known VarSets
+                if unknown_vars.get(key) is None:
+                    unknown_vars.add(
+                        Var(
+                            key=key,
+                            label=f"${key}",
+                            var_type=str,
+                            value=value_str,
+                            description=_("Unknown setting from device"),
                         )
+                    )
 
         # The result is the list of known VarSets (now populated)
         result = known_varsets
@@ -843,16 +849,16 @@ class GrblNetworkDriver(Driver):
         response_lines = await self.execute_interactive_command("$#")
         offsets = {}
         for line in response_lines:
-            match = wcs_re.match(line)
-            if match:
-                slot, x_str, y_str, z_str = match.groups()
-                z_str = z_str or "0.000"
-                parsed: Pos = (float(x_str), float(y_str), float(z_str))
-                offsets[slot] = (
-                    tuple(inches_to_mm(v) for v in parsed)
-                    if self._report_in_inches
-                    else parsed
-                )
+            parsed_line = parse_wcs_line(line)
+            if parsed_line is None:
+                continue
+            slot, parsed_pos = parsed_line
+            parsed: Pos = parsed_pos
+            offsets[slot] = (
+                tuple(inches_to_mm(v) for v in parsed)
+                if self._report_in_inches
+                else parsed
+            )
         sync_state_wco(
             self.state,
             offsets,
@@ -889,17 +895,18 @@ class GrblNetworkDriver(Driver):
         response_lines = await self.execute_interactive_command(cmd)
 
         for line in response_lines:
-            match = prb_re.match(line)
-            if match:
-                x_str, y_str, z_str, success = match.groups()
-                if int(success) == 1:
-                    pos: Pos = (float(x_str), float(y_str), float(z_str))
-                    if self._report_in_inches:
-                        pos = tuple(inches_to_mm(v) for v in pos)
-                    self.probe_status_changed.send(
-                        self, message=f"Probe triggered at {pos}"
-                    )
-                    return pos
+            parsed_probe = parse_probe_line(line)
+            if parsed_probe is None:
+                continue
+            parsed_pos, success = parsed_probe
+            if success:
+                pos: Pos = parsed_pos
+                if self._report_in_inches:
+                    pos = tuple(inches_to_mm(v) for v in pos)
+                self.probe_status_changed.send(
+                    self, message=f"Probe triggered at {pos}"
+                )
+                return pos
 
         self.probe_status_changed.send(self, message="Probe failed")
         return None
