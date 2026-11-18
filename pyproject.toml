@@ -80,6 +80,7 @@ test = [
     "pytest-asyncio",
     "pytest-mock",
     "pytest-cov", # Add coverage tool
+    "pytest-xdist",
     "pygobject-stubs",
 ]
 

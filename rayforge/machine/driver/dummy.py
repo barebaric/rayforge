@@ -38,6 +38,9 @@ class NoDeviceDriver(Driver):
     subtitle = _("No connection")
     supports_settings = False
     reports_granular_progress = True
+    # Delay between simulated commands. Tests that only care about the
+    # resulting calls (not real-time progress) set this to 0.
+    simulation_step_delay_s = 0.01
 
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         super().__init__(context, machine)
@@ -130,7 +133,7 @@ class NoDeviceDriver(Driver):
         # Simulate command execution with delays
         for op_index in range(num_ops):
             # Small delay to simulate execution time
-            await asyncio.sleep(0.01)
+            await asyncio.sleep(self.simulation_step_delay_s)
 
             # Call the callback if provided, awaiting it if it's a coroutine
             if on_command_done is not None:
@@ -154,7 +157,7 @@ class NoDeviceDriver(Driver):
         ]
         for line in lines:
             logger.info(line, extra=self._log_extra("USER_COMMAND"))
-            await asyncio.sleep(0.01)
+            await asyncio.sleep(self.simulation_step_delay_s)
         self.job_finished.send(self)
 
     async def set_hold(self, hold: bool = True) -> None:

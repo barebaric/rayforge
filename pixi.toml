@@ -89,6 +89,7 @@ appstream = "==1.1.1|==1.2.3"
 pytest-asyncio = "==1.5.0"
 pytest-mock = "==3.17.0"
 pytest-cov = "==7.1.0"
+pytest-xdist = "==3.8.0"
 pygobject-stubs = "==2.20.0"
 flake8 = "==7.5.0"
 pyflakes = "==4.1.0"
@@ -158,12 +159,12 @@ env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection
 cmd = "scripts/with_gdk.sh"
 
 [tasks.test]
-env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0)"}
-cmd = "pytest -v --ignore=tests/ui_gtk"
+env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0)", PYTEST_XDIST_AUTO_NUM_WORKERS = "$(python -c 'import os; print(min(os.cpu_count() or 1, 8))')"}
+cmd = "pytest -v --ignore=tests/ui_gtk -n auto"
 
 [tasks.uitest]
-env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0):/usr/lib/x86_64-linux-gnu/girepository-1.0", GSK_RENDERER = "cairo" }
-cmd = "xvfb-run -a pytest -v -m ui"
+env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0):/usr/lib/x86_64-linux-gnu/girepository-1.0", GSK_RENDERER = "cairo", PYTEST_XDIST_AUTO_NUM_WORKERS = "$(python -c 'import os; print(min(os.cpu_count() or 1, 8))')"}
+cmd = "xvfb-run -a pytest -v -m ui -n auto"
 
 [tasks.screenshot]
 env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0)"}
