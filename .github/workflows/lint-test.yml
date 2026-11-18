@@ -81,7 +81,7 @@ jobs:
         run: pixi run --frozen compile-translations
 
       - name: Run stress tests
-        run: pixi run --frozen test -m stress --log-cli-level=DEBUG
+        run: pixi run --frozen test -m stress -n 0 --log-cli-level=DEBUG
 
   test-ui:
     name: UI Tests
