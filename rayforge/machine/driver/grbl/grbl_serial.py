@@ -111,6 +111,11 @@ class GrblSerialDriver(Driver):
             return None
         return self._session.resource_uri
 
+    @property
+    def session(self) -> GrblSession | None:
+        """The underlying raydriver session, if set up."""
+        return self._session
+
     def _require_session(self) -> GrblSession:
         """Returns the session, raising a descriptive error when the
         driver was never set up (e.g. no port configured)."""

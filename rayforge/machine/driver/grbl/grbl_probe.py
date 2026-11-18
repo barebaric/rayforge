@@ -9,19 +9,12 @@ from typing import (
 )
 
 from blinker import Signal
-from raydriver.grbl.parser import (
-    extract_device_name,
-    parse_grbl_settings,
-    parse_opt_flags,
-    parse_opt_info,
-    parse_version,
-)
+from raydriver.grbl.probe import GrblDeviceInfo, GrblFlavor, probe_device
 
 from ....shared.units.system import UnitSystem
 from ...models.dialect.grbl import GRBL_DIALECT
 from ...models.dialect.grbl_dynamic import GRBL_DYNAMIC_DIALECT
 from ...transport import TransportStatus
-from .grbl_dialect_detect import detect_grbl_dialect
 
 if TYPE_CHECKING:
     from ....context import RayforgeContext
@@ -41,6 +34,8 @@ class _GrblProbeDriver(Protocol):
 
     connection_status_changed: Signal
 
+    session: Any
+
     def __init__(
         self,
         context: "RayforgeContext",
@@ -53,8 +48,6 @@ class _GrblProbeDriver(Protocol):
 
     async def cleanup(self) -> None: ...
 
-    async def execute_interactive_command(self, command: str) -> list[str]: ...
-
 
 async def probe_grbl_device(
     driver_cls: type[_GrblProbeDriver],
@@ -64,8 +57,9 @@ async def probe_grbl_device(
     """
     Shared probe orchestration for all Grbl drivers.
 
-    Creates a temporary machine + driver, connects, queries $I and $$,
-    disconnects, and returns a ``(DeviceProfile, warnings)`` tuple.
+    Creates a temporary machine + driver, connects, runs the device
+    census over the driver's session, disconnects, and returns a
+    ``(DeviceProfile, warnings)`` tuple.
     """
     from ...models.machine import Machine
 
@@ -86,8 +80,7 @@ async def probe_grbl_device(
         # bootloader-delayed first handshake plus one retry cycle
         # (HANDSHAKE_TIMEOUT + reconnect sleep + HANDSHAKE_TIMEOUT).
         await asyncio.wait_for(connected.wait(), timeout=30.0)
-        build_info = await driver.execute_interactive_command("$I")
-        settings_lines = await driver.execute_interactive_command("$$")
+        info = await probe_device(driver.session)
     finally:
         driver.connection_status_changed.disconnect(_on_status)
         await driver.cleanup()
@@ -95,27 +88,22 @@ async def probe_grbl_device(
             machine._on_dialects_changed
         )
 
-    profile, warnings = build_grbl_profile(build_info, settings_lines)
+    profile, warnings = build_grbl_profile(info)
     profile.machine_config.driver = driver_cls.__name__
     profile.machine_config.driver_args = kwargs
     return profile, warnings
 
 
 def build_grbl_profile(
-    build_info: list[str],
-    settings_lines: list[str],
+    info: GrblDeviceInfo,
 ) -> tuple["DeviceProfile", list[str]]:
     """
-    Build a ``DeviceProfile`` from raw Grbl ``$I`` and ``$``
-    response lines.
+    Build a ``DeviceProfile`` from a Grbl device census.
 
-    This is a pure data-transformation function with no I/O.
-    The caller is responsible for communicating with the device
-    and passing the collected response lines.
-
-    Returns a ``(DeviceProfile, warnings)`` tuple where *warnings*
-    is a list of human-readable strings about potential issues
-    detected in the device configuration.
+    This is a pure data-transformation function with no I/O; the
+    census itself comes from ``raydriver.grbl.probe``. Maps the
+    protocol-neutral values onto Rayforge's profile model and adds
+    user-facing warnings.
     """
     from ...device.profile import (
         DeviceMeta,
@@ -123,66 +111,21 @@ def build_grbl_profile(
         MachineConfig,
     )
 
-    rx_buffer_size: int | None = None
-    compile_flags: str = ""
-    for line in build_info:
-        rx = parse_opt_info(line)
-        if rx is not None:
-            rx_buffer_size = rx
-        flags = parse_opt_flags(line)
-        if flags is not None:
-            compile_flags = flags
-
-    settings = parse_grbl_settings(settings_lines)
     warnings: list[str] = []
 
-    name = extract_device_name(build_info)
-    axis_x = settings.get("130")
-    axis_y = settings.get("131")
-    max_x_rate = settings.get("110")
-    max_y_rate = settings.get("111")
-    x_accel = settings.get("120")
-    y_accel = settings.get("121")
-    max_spindle = settings.get("30")
-    laser_mode = settings.get("32")
-    homing_enabled = settings.get("22")
-    report_inches = settings.get("13")
-
-    max_speed: int | None = None
-    if max_x_rate is not None and max_y_rate is not None:
-        max_speed = int(min(max_x_rate, max_y_rate))
-
-    accel: int | None = None
-    if x_accel is not None and y_accel is not None:
-        accel = int(min(x_accel, y_accel))
-
-    single_axis_homing = "H" in compile_flags
-
     driver_config: dict[str, Any] = {}
-    if rx_buffer_size is not None:
-        driver_config["rx_buffer_size"] = rx_buffer_size
-
-    fw_version = parse_version(build_info)
-    if fw_version is not None:
-        driver_config["firmware_version"] = fw_version
-
-    arc_tol = settings.get("12")
-    if arc_tol is not None:
-        driver_config["arc_tolerance"] = arc_tol
-
-    extents: tuple[float, float] | None = None
-    if axis_x is not None and axis_y is not None:
-        extents = (float(axis_x), float(axis_y))
+    if info.rx_buffer_size is not None:
+        driver_config["rx_buffer_size"] = info.rx_buffer_size
+    if info.firmware_version is not None:
+        driver_config["firmware_version"] = info.firmware_version
+    if info.arc_tolerance is not None:
+        driver_config["arc_tolerance"] = info.arc_tolerance
 
     heads: list[dict[str, Any]] | None = None
-    if max_spindle is not None:
-        heads = [{"max_power": int(max_spindle)}]
+    if info.max_spindle is not None:
+        heads = [{"max_power": info.max_spindle}]
 
-    home_on_start: bool | None = None
-    if homing_enabled is not None:
-        home_on_start = bool(int(homing_enabled))
-
-    if report_inches is not None and int(report_inches):
+    if info.report_inches:
         warnings.append(
             _(
                 "Device is configured to report in inches "
@@ -192,10 +135,10 @@ def build_grbl_profile(
         )
 
     detected_unit_system = UnitSystem.METRIC
-    if report_inches is not None and int(report_inches):
+    if info.report_inches:
         detected_unit_system = UnitSystem.IMPERIAL
 
-    if laser_mode is not None and not int(laser_mode):
+    if info.laser_mode is False:
         warnings.append(
             _(
                 "Laser mode is not enabled ($32=0). "
@@ -204,31 +147,26 @@ def build_grbl_profile(
             )
         )
 
-    dialect_uid = detect_grbl_dialect(build_info, settings_lines)
     dialect_config: dict[str, Any] = {}
-    if dialect_uid is not None:
-        dialects = {
-            "grbl": GRBL_DIALECT,
-            "grbl_dynamic": GRBL_DYNAMIC_DIALECT,
-        }
-        dialect = dialects.get(dialect_uid)
-        if dialect is not None:
-            dialect_config = dialect.to_template_dict()
+    if info.flavor is GrblFlavor.STOCK:
+        dialect_config = GRBL_DIALECT.to_template_dict()
+    elif info.flavor in (GrblFlavor.GRBLHAL, GrblFlavor.FLUIDNC):
+        dialect_config = GRBL_DYNAMIC_DIALECT.to_template_dict()
 
     return (
         DeviceProfile(
             meta=DeviceMeta(
-                name=name,
+                name=info.name,
                 description=_("Auto-configured via probe wizard"),
             ),
             machine_config=MachineConfig(
                 driver_config=driver_config or None,
-                axis_extents=extents,
-                max_travel_speed=max_speed,
-                max_cut_speed=max_speed,
-                acceleration=accel,
-                home_on_start=home_on_start,
-                single_axis_homing_enabled=(single_axis_homing or None),
+                axis_extents=info.max_travel,
+                max_travel_speed=info.max_speed,
+                max_cut_speed=info.max_speed,
+                acceleration=info.acceleration,
+                home_on_start=info.homing_enabled,
+                single_axis_homing_enabled=(info.single_axis_homing or None),
                 unit_system=detected_unit_system,
                 heads=heads,
             ),

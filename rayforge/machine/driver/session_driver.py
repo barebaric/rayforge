@@ -71,6 +71,11 @@ class SessionDriverBase(Driver):
             return None
         return self._session.resource_uri
 
+    @property
+    def session(self) -> Any:
+        """The underlying raydriver session, if set up."""
+        return self._session
+
     def _require_session(self) -> Any:
         if self._session is None:
             raise DeviceConnectionError(
