@@ -317,6 +317,36 @@ def test_layer_backward_compatibility_with_legacy_stock_item_uid():
     assert layer.extra["stock_item_uid"] == "old-stock-uid"
 
 
+def test_layer_type_serialization_roundtrip():
+    """Tests that the layer type survives a save and load."""
+    layer = Layer("Test Layer")
+    layer.layer_type = "calibration_test"
+
+    data = layer.to_dict()
+    assert data["layer_type"] == "calibration_test"
+
+    restored = Layer.from_dict(data)
+    assert restored.layer_type == "calibration_test"
+
+
+def test_layer_from_dict_defaults_to_standard_type():
+    """
+    Tests that a layer from an older version without a layer type
+    behaves like an ordinary layer.
+    """
+    legacy_dict = {
+        "uid": "layer-no-type",
+        "type": "layer",
+        "name": "Legacy Layer",
+        "matrix": Matrix.identity().to_list(),
+        "children": [],
+    }
+
+    layer = Layer.from_dict(legacy_dict)
+
+    assert layer.layer_type == ""
+
+
 class TestLayerRotary:
     def test_rotary_defaults(self, layer):
         assert layer.rotary_enabled is False

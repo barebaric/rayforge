@@ -15,10 +15,14 @@ Durchlauf siehst du auf einen Blick, welche Kombination das gewünschte Ergebnis
 Erstelle eines über **Werkzeuge → Materialtest-Raster erstellen**. Rayforge fügt das Raster auf
 einer neuen Ebene hinzu, die nach dem Test benannt ist, mit einem Werkstück und einer passenden
 Operation, und wählt es aus. Die Einstellungen des Rasters erscheinen unter **Test Settings** im
-Eigenschaften-Panel rechts, sodass Arbeitsfläche und Raster sichtbar bleiben, während du sie
-änderst. Jede Änderung baut das Raster sofort neu auf, als ein Schritt, den du rückgängig machen
-kannst. Wähle das Raster später erneut aus, um seine Einstellungen wieder anzuzeigen. Die
-[Intervall- und Fokustests](interval-and-focus-tests.md) funktionieren genauso.
+Einstellungsdialog dieser Ebene: Wähle das Raster aus und klicke im Eigenschaften-Panel auf **Open
+Layer Settings**, oder benutze den Zahnrad-Knopf auf der Ebene des Tests im Ebenen-Panel. Jede
+Änderung baut das Raster sofort neu auf, als ein Schritt, den du rückgängig machen kannst. Die
+[Intervall- und Fokustests](interval-and-focus-tests.md) funktionieren genauso, und ihre
+Einstellungen leben ebenfalls in den Einstellungen ihrer Ebene.
+
+Der Test besitzt seine Ebene: Einfügen, Importieren und das Ziehen anderer Werkstücke hinein werden
+abgelehnt. Ein Feld aus dem Test zu verschieben oder zu löschen bleibt möglich.
 
 ![Materialtest-Raster-Einstellungen](/screenshots/material-test.webp)
 
@@ -83,8 +87,7 @@ die Geschwindigkeit bei Leistung vs. Durchgänge), lassen diese Konstante hier e
 Normalerweise verarbeitet eine Operation alle Werkstücke ihrer Ebene, und der **Werkstücke**-Reiter
 ihres Einstellungs-Dialogs listet alle als einbezogen auf. Das Materialtest-Raster ist die Ausnahme:
 Seine Operation ist mit dem Werkstück verknüpft, das sie erzeugt hat, und verarbeitet ausschließlich
-dieses. Im Werkstücke-Reiter erscheint das erzeugte Raster als einziges einbezogenes Werkstück, und
-alles, was du später auf der Ebene des Tests hinzufügst, als ausgeschlossen.
+dieses. Im Werkstücke-Reiter erscheint das erzeugte Raster als einziges einbezogenes Werkstück.
 
 ![Werkstücke-Reiter der Materialtest-Raster-Einstellungen](/screenshots/step-settings-material-test-grid-workpieces.webp)
 

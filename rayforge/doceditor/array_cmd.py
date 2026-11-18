@@ -19,6 +19,7 @@ from raygeo.geo.types import Rect
 
 from ..core.group import Group
 from ..core.item import DocItem
+from ..core.layer_types import layer_is_locked, locked_layer_notice
 from ..core.undo import ListItemCommand
 from ..core.workpiece import WorkPiece
 from .array import ArrayParams, make_array_strategy
@@ -126,6 +127,14 @@ class ArrayCmd:
         top_level = self._get_top_level_items(source_items)
         if not top_level:
             return []
+
+        for item in top_level:
+            layer = _get_item_layer(item)
+            if layer is not None and layer_is_locked(layer):
+                self._editor.notification_requested.send(
+                    self._editor, message=locked_layer_notice(layer)
+                )
+                return []
 
         deltas = self.compute_plan(top_level, params)
         if len(deltas) <= 1:

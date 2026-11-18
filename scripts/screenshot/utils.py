@@ -1435,8 +1435,8 @@ def open_recipe_editor(
 def create_calibration_test(win: "MainWindow", action_name: str) -> None:
     """Create a calibration test through its Tools menu action.
 
-    The test gets its own layer and is selected, so its Test Settings
-    show in the item properties panel.
+    The test gets its own layer and is selected, and the settings of
+    that layer open with the test's Test Settings in view.
     """
     run_on_main_thread(lambda: win.lookup_action(action_name).activate(None))
     logger.info(f"Created calibration test via {action_name}")

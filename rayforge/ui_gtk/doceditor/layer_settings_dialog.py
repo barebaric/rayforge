@@ -9,6 +9,10 @@ from ..icons import get_icon
 from ..machine.wcs_dialog import WcsDialog
 from ..shared.patched_dialog_window import PatchedDialogWindow
 from ..shared.pref_rows.length_spin_row import LengthSpinRow
+from .layer_settings_sections import (
+    LayerSettingsSection,
+    layer_settings_section_registry,
+)
 from .material_selector import MaterialRow
 
 if TYPE_CHECKING:
@@ -31,7 +35,7 @@ class LayerSettingsDialog(PatchedDialogWindow):
         self._is_initializing = True
 
         self.set_title(_("{name} - Settings").format(name=layer.name))
-        self.set_default_size(600, -1)
+        self.set_default_size(600, 600)
         self.set_modal(False)
 
         main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -47,6 +51,16 @@ class LayerSettingsDialog(PatchedDialogWindow):
 
         content = Adw.PreferencesPage()
         main_box.append(content)
+
+        self._sections: list[LayerSettingsSection] = []
+        if editor is not None:
+            for section in layer_settings_section_registry.sections_for_layer(
+                layer, editor
+            ):
+                for widget in section.create_widgets(layer, editor):
+                    content.add(widget)
+                self._sections.append(section)
+        self.connect("destroy", self._on_sections_destroy)
 
         general_group = Adw.PreferencesGroup(
             title=_("General"),
@@ -163,6 +177,11 @@ class LayerSettingsDialog(PatchedDialogWindow):
 
         if not self.layer.rotary_module_uid and has_modules:
             self.layer.set_rotary_module_uid(self._module_uids[0])
+
+    def _on_sections_destroy(self, *_):
+        for section in self._sections:
+            section.close()
+        self._sections = []
 
     def _populate_wcs_store(self):
         self._wcs_store = Gtk.StringList()

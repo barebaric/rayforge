@@ -8,12 +8,17 @@ description:
 
 Ao lado da [grade de teste de material](material-test-grid.md), o menu Ferramentas oferece mais dois
 trabalhos de calibração. Os três funcionam da mesma forma: **Ferramentas → Criar …** adiciona o
-teste com as configurações padrão em uma nova camada e o seleciona, e as configurações dele aparecem
-em **Test Settings** no painel de propriedades à direita. Cada alteração ali reconstrói o teste na
-hora, como um único passo que você pode desfazer, para que você veja o resultado enquanto o ajusta.
-O teste é conteúdo comum: você pode movê-lo, enquadrá-lo e visualizá-lo como qualquer outro
-conteúdo. Cada célula ou linha tem sua própria operação, que você também pode ajustar à mão, mas uma
-alteração posterior em Test Settings reconstrói essas operações.
+teste com as configurações padrão em uma nova camada e o seleciona. As configurações do teste
+aparecem em **Test Settings** no diálogo de configurações da camada dele: selecione uma parte do
+teste e escolha **Open Layer Settings** no painel de propriedades, ou use o botão de engrenagem da
+camada do teste no painel de camadas. Cada alteração ali reconstrói o teste na hora, como um único
+passo que você pode desfazer, para que você veja o resultado enquanto o ajusta. O teste é conteúdo
+comum: você pode movê-lo, enquadrá-lo e visualizá-lo como qualquer outro conteúdo. Cada célula ou
+linha tem sua própria operação, que você também pode ajustar à mão, mas uma alteração posterior em
+Test Settings reconstrói essas operações.
+
+O teste é dono da sua camada: colar, importar e arrastar outras peças de trabalho para dentro dela é
+recusado. Mover uma célula para fora do teste ou excluir uma continua possível.
 
 ## Teste de intervalo
 

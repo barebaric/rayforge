@@ -24,7 +24,7 @@ from rayforge.core.undo import Command, ListItemCommand
 from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.layer_cmd import AddLayerAndSetActiveCommand
 
-from ..calibration import GENERATORS, CalibrationGenerator
+from ..calibration import GENERATORS, LAYER_TYPE_ID, CalibrationGenerator
 from ..calibration.builder import BuiltTest, CalibrationBuilder, bounds_of
 from ..calibration.lookup import record_for_items, unused_assets
 from ..calibration.record import CalibrationRecord, CalibrationState
@@ -97,6 +97,7 @@ class CalibrationCmd:
             name = f"{title} {number}"
             number += 1
         layer = Layer(name)
+        layer.layer_type = LAYER_TYPE_ID
         material = get_context().material_mgr.get_default_material()
         layer.set_stock_material_uid(material.uid)
         layer.set_color(

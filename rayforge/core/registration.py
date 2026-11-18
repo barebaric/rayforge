@@ -158,6 +158,22 @@ REGISTRY_TABLE = [
     ),
     RegistryEntry(
         None,
+        "layer_type_registry",
+        "rayforge.core.layer_types",
+        "layer_type_registry",
+        worker_ok=True,
+        needs_window=False,
+    ),
+    RegistryEntry(
+        None,
+        "layer_settings_section_registry",
+        "rayforge.ui_gtk.doceditor.layer_settings_sections",
+        "layer_settings_section_registry",
+        worker_ok=False,
+        needs_window=False,
+    ),
+    RegistryEntry(
+        None,
         "gesture_registry",
         "rayforge.ui_gtk.gestures",
         "gesture_registry",

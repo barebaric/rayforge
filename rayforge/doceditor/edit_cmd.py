@@ -11,6 +11,7 @@ from typing import (
 from raygeo.geo import Geometry, Move
 
 from ..core.item import DocItem
+from ..core.layer_types import layer_is_locked, locked_layer_notice
 from ..core.stock import StockItem
 from ..core.undo import (
     ChangePropertyCommand,
@@ -44,6 +45,19 @@ class EditCmd:
     def can_paste(self) -> bool:
         """Checks if there is anything on the clipboard to paste."""
         return len(self._clipboard_snapshot) > 0
+
+    def _reject_locked_target(self, target_layer: Optional["Layer"]) -> bool:
+        """
+        Notifies the user and reports rejection when *target_layer* does
+        not accept other workpieces, such as the layer of a generated
+        calibration test.
+        """
+        if target_layer is None or not layer_is_locked(target_layer):
+            return False
+        self._editor.notification_requested.send(
+            self._editor, message=locked_layer_notice(target_layer)
+        )
+        return True
 
     def _get_top_level_items(
         self, all_items: Sequence[DocItem]
@@ -114,6 +128,8 @@ class EditCmd:
         newly_pasted_items = []
 
         target_layer = self._editor.doc.active_layer
+        if self._reject_locked_target(target_layer):
+            return []
 
         with history.transaction(_("Paste item(s)")) as t:
             offset_x = self._paste_increment_mm[0] * self._paste_counter
@@ -169,6 +185,8 @@ class EditCmd:
         newly_duplicated_items = []
 
         target_layer = self._editor.doc.active_layer
+        if self._reject_locked_target(target_layer):
+            return []
 
         top_level_items = self._get_top_level_items(items)
 
@@ -209,6 +227,8 @@ class EditCmd:
 
         history = self._editor.history_manager
         target_layer = self._editor.doc.active_layer
+        if self._reject_locked_target(target_layer):
+            return []
 
         with history.transaction(_(name)) as t:
             # Add source assets. This is not currently undoable in this simple
@@ -392,7 +412,7 @@ class EditCmd:
         provider_uid: str,
         position_mm: tuple[float, float],
         target_layer: Optional["Layer"] = None,
-    ) -> WorkPiece:
+    ) -> Optional["WorkPiece"]:
         """
         Creates a new WorkPiece instance from a geometry provider.
 
@@ -403,10 +423,13 @@ class EditCmd:
                 the active layer.
 
         Returns:
-            The newly created WorkPiece instance
+            The newly created WorkPiece instance, or None when the target
+            layer does not accept other workpieces
         """
         history = self._editor.history_manager
         target_layer = target_layer or self._editor.doc.active_layer
+        if self._reject_locked_target(target_layer):
+            return None
 
         provider = cast(
             Optional["IGeometryProvider"],

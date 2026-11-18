@@ -15,10 +15,14 @@ ver de un vistazo qué combinación produce el resultado que deseas.
 Crea una mediante **Herramientas → Crear Cuadrícula de Prueba de Material**. Rayforge añade la
 cuadrícula en una capa nueva con el nombre de la prueba, con una pieza de trabajo y una operación
 correspondiente, y la selecciona. Los ajustes de la cuadrícula aparecen en **Test Settings** en el
-panel de propiedades a la derecha, de modo que el lienzo y la cuadrícula siguen a la vista mientras
-los cambias. Cada cambio reconstruye la cuadrícula al instante, como un solo paso que puedes
-deshacer. Vuelve a seleccionar la cuadrícula más tarde para recuperar sus ajustes. Las [pruebas de
-intervalo y de enfoque](interval-and-focus-tests.md) funcionan igual.
+diálogo de ajustes de esa capa: selecciona la cuadrícula y pulsa **Open Layer Settings** en el panel
+de propiedades, o usa el botón de engranaje de la capa de la prueba en el panel de capas. Cada
+cambio reconstruye la cuadrícula al instante, como un solo paso que puedes deshacer. Las
+[pruebas de intervalo y de enfoque](interval-and-focus-tests.md) funcionan igual, y sus ajustes
+viven también en los ajustes de su capa.
+
+La prueba es dueña de su capa: pegar, importar y arrastrar otras piezas de trabajo dentro de ella se
+rechaza. Mover una celda fuera de la prueba o borrar una sigue siendo posible.
 
 ![Ajustes de Cuadrícula de Prueba de Material](/screenshots/material-test.webp)
 
@@ -54,8 +58,8 @@ modo que todas las celdas permanezcan visualmente comparables.
 
 ## Configurar la Cuadrícula
 
-La sección Test Settings muestra primero los ajustes de la cuadrícula, luego las etiquetas y
-después los rangos de parámetros. El cabezal láser y el posprocesado se quedan en los ajustes de la
+La sección Test Settings muestra primero los ajustes de la cuadrícula, luego las etiquetas y después
+los rangos de parámetros. El cabezal láser y el posprocesado se quedan en los ajustes de la
 operación.
 
 Los ajustes de **cuadrícula** controlan la prueba en sí. El tipo de prueba determina si cada celda
@@ -83,7 +87,7 @@ Normalmente una operación procesa todas las piezas de trabajo de su capa, y la 
 trabajo** de su diálogo de ajustes las lista todas como incluidas. La Cuadrícula de Prueba de
 Material es la excepción: su operación está vinculada a la pieza de trabajo que generó y procesa
 solamente esa. En la pestaña Piezas de trabajo, la cuadrícula generada aparece como la única pieza
-incluida, y todo lo que añadas después a la capa de la prueba aparece marcado como excluido.
+incluida.
 
 ![Pestaña Piezas de trabajo de la Cuadrícula de Prueba de Material](/screenshots/step-settings-material-test-grid-workpieces.webp)
 

@@ -22,6 +22,10 @@ from .layout import (
 from .material_test_grid import MaterialTestGridGenerator
 from .record import CalibrationRecord, CalibrationState
 
+#: The layer type of the layer a test is generated on. Tests own their
+#: layer, so other workpieces cannot be placed in it.
+LAYER_TYPE_ID = "calibration_test"
+
 GENERATORS: dict[str, CalibrationGenerator] = {
     generator.id: generator
     for generator in (
@@ -33,6 +37,7 @@ GENERATORS: dict[str, CalibrationGenerator] = {
 
 __all__ = [
     "GENERATORS",
+    "LAYER_TYPE_ID",
     "CalibrationGenerator",
     "CalibrationLayout",
     "CalibrationRecord",

@@ -11,6 +11,7 @@ from ...core.doc import Doc
 from ...core.group import Group
 from ...core.item import DocItem
 from ...core.layer import Layer
+from ...core.layer_types import layer_is_locked
 from ...core.source_asset import SourceAsset
 from ...core.stock_asset import StockAsset
 from ...core.workpiece import WorkPiece
@@ -772,6 +773,8 @@ class LayerColumn(Gtk.Box):
     def _on_drop_accept(self, drop_target, drop):
         if LayerColumn.dragging:
             return False
+        if layer_is_locked(self.layer):
+            return False
         formats = drop.get_formats() if drop else None
         logger.debug(
             "Accept(%s): formats=%s",
@@ -782,10 +785,15 @@ class LayerColumn(Gtk.Box):
 
     def _on_drop_enter(self, drop_target, x, y):
         logger.debug("Enter(%s): x=%d y=%d", self.layer.name, x, y)
+        if layer_is_locked(self.layer):
+            return 0
         return Gdk.DragAction.MOVE
 
     def _on_drop_motion(self, drop_target, x, y):
         if LayerColumn.dragging:
+            return 0
+        if layer_is_locked(self.layer):
+            self._remove_drop_markers()
             return 0
 
         drop = drop_target.get_drop()

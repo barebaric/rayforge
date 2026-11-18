@@ -10,11 +10,17 @@ from pathlib import Path
 from gi.repository import Gio
 
 from rayforge.core.hooks import hookimpl
+from rayforge.core.layer_types import LayerType, layer_type_registry
 from rayforge.ui_gtk.action_registry import MenuPlacement
+from rayforge.ui_gtk.doceditor.layer_settings_sections import (
+    layer_settings_section_registry,
+)
 from rayforge.ui_gtk.icons import register_icon_path
 
+from .calibration import LAYER_TYPE_ID
 from .commands import CalibrationCmd, CalibrationSync
 from .widgets import ASSEMBLER_WIDGETS
+from .widgets.calibration_layer_section import CalibrationLayerSettingsSection
 from .widgets.calibration_provider import (
     register_test_settings,
     show_new_test,
@@ -37,8 +43,20 @@ def register_step_settings_pages(step_settings_page_registry):
 
 @hookimpl
 def rayforge_init(context):
-    """Register the Test Settings with the item properties panel."""
+    """Register the Test Settings and the test layer type."""
     register_test_settings(ADDON_NAME)
+    layer_settings_section_registry.register(
+        CalibrationLayerSettingsSection, ADDON_NAME
+    )
+    layer_type_registry.register(
+        LayerType(
+            id=LAYER_TYPE_ID,
+            title=_("Calibration Test"),
+            icon_name="test-symbolic",
+            locked=True,
+        ),
+        ADDON_NAME,
+    )
 
 
 @hookimpl

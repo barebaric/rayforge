@@ -9,6 +9,7 @@ from ..core.color import pick_unused_color
 from ..core.group import Group
 from ..core.item import DocItem
 from ..core.layer import Layer
+from ..core.layer_types import layer_is_locked, locked_layer_notice
 from ..core.undo import (
     ChangePropertyCommand,
     Command,
@@ -342,6 +343,13 @@ class LayerCmd:
     def move_items_to_layer(self, items: list[DocItem], target_layer: Layer):
         """Creates an undoable command to move items to a specific layer."""
         if not items:
+            return
+
+        if layer_is_locked(target_layer):
+            self._editor.notification_requested.send(
+                self._editor,
+                message=locked_layer_notice(target_layer),
+            )
             return
 
         by_layer: dict[Layer, list[DocItem]] = {}
