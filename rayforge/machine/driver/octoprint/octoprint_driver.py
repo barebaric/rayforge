@@ -504,21 +504,40 @@ class OctoPrintDriver(Driver):
             return
 
         for raw_msg in messages:
-            if not isinstance(raw_msg, str):
-                continue
-            try:
-                payload = json.loads(raw_msg)
-            except json.JSONDecodeError:
-                continue
-            self._process_push_message(payload)
+            payload = self._decode_push_message(raw_msg)
+            if payload is not None:
+                self._process_push_message(payload)
+
+    @staticmethod
+    def _decode_push_message(raw_msg: Any) -> dict[str, Any] | None:
+        """Decodes one element of a SockJS message batch.
+
+        OctoPrint sends JSON objects directly in the batch, i.e.
+        ``a[{"current": ...}]``. Some SockJS servers instead put
+        pre-encoded JSON strings inside it, i.e.
+        ``a["{\\"current\\": ...}"]``. Accept both forms.
+        """
+        if isinstance(raw_msg, dict):
+            return raw_msg
+        if not isinstance(raw_msg, str):
+            return None
+        try:
+            payload = json.loads(raw_msg)
+        except json.JSONDecodeError:
+            return None
+        if isinstance(payload, dict):
+            return payload
+        return None
 
     def _process_push_message(self, payload: dict[str, Any]) -> None:
-        if "current" in payload:
-            self._handle_current_update(payload["current"])
-        elif "history" in payload:
-            self._handle_current_update(payload["history"])
-        elif "event" in payload:
-            self._handle_event(payload["event"])
+        for key in ("current", "history"):
+            data = payload.get(key)
+            if isinstance(data, dict):
+                self._handle_current_update(data)
+                return
+        event = payload.get("event")
+        if isinstance(event, dict):
+            self._handle_event(event)
 
     def _handle_current_update(self, data: dict[str, Any]) -> None:
         state = data.get("state")

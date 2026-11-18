@@ -528,6 +528,60 @@ class TestSockJSProcessing:
         setup_driver._process_sockjs_frame(frame)
         assert setup_driver.state.status == DeviceStatus.IDLE
 
+    def test_object_data_frame_parsed(self, setup_driver):
+        """OctoPrint puts JSON message objects directly in the SockJS
+        batch (``a[{"current": ...}]``); these must update the printer
+        state instead of being skipped as non-strings.
+        """
+        state_data = {
+            "text": "Operational",
+            "flags": {
+                "operational": True,
+                "printing": False,
+                "paused": False,
+                "error": False,
+                "closedOrError": False,
+            },
+        }
+        frame = "a[" + json.dumps({"current": {"state": state_data}}) + "]"
+        setup_driver._process_sockjs_frame(frame)
+        assert setup_driver.state.status == DeviceStatus.IDLE
+
+    def test_object_history_frame_parsed(self, setup_driver):
+        state_data = {
+            "text": "Operational",
+            "flags": {
+                "operational": True,
+                "printing": False,
+                "paused": False,
+                "error": False,
+                "closedOrError": False,
+            },
+        }
+        frame = "a[" + json.dumps({"history": {"state": state_data}}) + "]"
+        setup_driver._process_sockjs_frame(frame)
+        assert setup_driver.state.status == DeviceStatus.IDLE
+
+    def test_object_batch_processes_every_message(self, setup_driver):
+        state_data = {
+            "text": "Operational",
+            "flags": {
+                "operational": True,
+                "printing": False,
+                "paused": False,
+                "error": False,
+                "closedOrError": False,
+            },
+        }
+        setup_driver._job_active = True
+        batch = [
+            {"current": {"state": state_data}},
+            {"event": {"type": "PrintDone"}},
+        ]
+        setup_driver._process_sockjs_frame("a" + json.dumps(batch))
+        assert setup_driver.state.status == DeviceStatus.IDLE
+        assert setup_driver._job_active is False
+
     def test_unknown_frame_ignored(self, setup_driver):
         setup_driver._process_sockjs_frame("x[123]")
 
