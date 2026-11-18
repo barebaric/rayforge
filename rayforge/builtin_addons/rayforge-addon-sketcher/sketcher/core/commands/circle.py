@@ -9,13 +9,15 @@ from raygeo.sketch.constraints import DiameterConstraint
 from raygeo.sketch.entities import Circle
 from raygeo.sketch.entities import SketchPoint as Point
 
+from ..registry_utils import next_temp_id, require_point
 from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData
 from .items import AddItemsCommand
 
 if TYPE_CHECKING:
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
+
     from ..sketch import Sketch
 
 
@@ -54,8 +56,8 @@ class CirclePreviewState(PreviewState):
         self.locked_diameter = diameter
 
         try:
-            center = registry.get_point(self.center_id)
-            radius_pt = registry.get_point(self.radius_id)
+            center = require_point(registry, self.center_id)
+            radius_pt = require_point(registry, self.radius_id)
         except IndexError:
             return
 
@@ -83,8 +85,8 @@ class CirclePreviewState(PreviewState):
             List containing a single DimensionData for the circle diameter.
         """
         try:
-            center = registry.get_point(self.center_id)
-            radius_pt = registry.get_point(self.radius_id)
+            center = require_point(registry, self.center_id)
+            radius_pt = require_point(registry, self.radius_id)
         except IndexError:
             return []
         radius = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
@@ -192,7 +194,7 @@ class CircleCommand(SketchChangeCommand):
             return
 
         try:
-            radius_p = registry.get_point(preview_state.radius_id)
+            radius_p = require_point(registry, preview_state.radius_id)
         except IndexError:
             return
         radius_p.x = x
@@ -219,10 +221,7 @@ class CircleCommand(SketchChangeCommand):
             raise TypeError("Expected CirclePreviewState")
 
         if preview_state.entity_id is not None:
-            registry.entities = [
-                e for e in registry.entities if e.id != preview_state.entity_id
-            ]
-            registry._entity_map = {e.id: e for e in registry.entities}
+            registry.remove_entities([preview_state.entity_id])
 
         if preview_state.radius_id is not None:
             registry.remove_points([preview_state.radius_id])
@@ -234,14 +233,14 @@ class CircleCommand(SketchChangeCommand):
         registry = self.sketch.registry
 
         try:
-            registry.get_point(self.center_id)
+            require_point(registry, self.center_id)
         except IndexError:
             return
 
         final_x, final_y = self.end_pos
         if self.end_pid is not None:
             try:
-                end_p = registry.get_point(self.end_pid)
+                end_p = require_point(registry, self.end_pid)
                 final_x, final_y = end_p.x, end_p.y
             except IndexError:
                 pass
@@ -250,7 +249,7 @@ class CircleCommand(SketchChangeCommand):
         end_pid = self.end_pid
 
         if end_pid is None:
-            temp_id = registry._id_counter
+            temp_id = next_temp_id(registry)
             end_pid = temp_id
             new_point = Point(temp_id, final_x, final_y)
 
@@ -259,14 +258,14 @@ class CircleCommand(SketchChangeCommand):
                 self.sketch.remove_point_if_unused(self.center_id)
             return
 
-        temp_circle_id = registry._id_counter + (1 if new_point else 0)
+        temp_circle_id = next_temp_id(registry) + (1 if new_point else 0)
         new_circle = Circle(temp_circle_id, self.center_id, end_pid)
 
         points_to_add: list[Point] = [new_point] if new_point else []
 
         if self.is_center_temp:
             try:
-                p = registry.get_point(self.center_id)
+                p = require_point(registry, self.center_id)
                 registry.remove_points([p.id])
                 points_to_add.append(p)
             except (IndexError, ValueError):

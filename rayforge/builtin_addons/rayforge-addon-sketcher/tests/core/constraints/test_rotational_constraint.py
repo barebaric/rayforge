@@ -2,8 +2,8 @@ import math
 
 import pytest
 from raygeo.sketch.constraints import RotationalConstraint
+from raygeo.sketch.registry import EntityRegistry
 from sketcher.core.params import ParameterContext
-from sketcher.core.registry import EntityRegistry
 
 
 @pytest.fixture

@@ -6,6 +6,7 @@ from typing import ClassVar
 import cairo
 
 from ...core.commands import EllipseCommand, EllipsePreviewState
+from ...core.registry_utils import require_point
 from .base import SketcherKey, SketchTool
 from .snap_mixin import SnapMixin
 
@@ -158,7 +159,7 @@ class CircleTool(SnapMixin, SketchTool):
     def _is_degenerate(self, start_id: int, mx: float, my: float) -> bool:
         """True when the commit position matches the start point."""
         try:
-            start_p = self.element.sketch.registry.get_point(start_id)
+            start_p = require_point(self.element.sketch.registry, start_id)
         except (IndexError, KeyError):
             return False
         return math.hypot(mx - start_p.x, my - start_p.y) < 1e-6

@@ -69,8 +69,8 @@ def test_chamfer_command_execute(sketch_with_corner):
     """Test the direct execution of ChamferCommand."""
     sketch, corner_pid, line1_id, line2_id = sketch_with_corner
 
-    initial_points_count = len(sketch.registry.points)
-    initial_entities_count = len(sketch.registry.entities)
+    initial_points_count = len(sketch.registry.points())
+    initial_entities_count = len(sketch.registry.entities())
     initial_constraints_count = len(sketch.constraints)
 
     command = ChamferCommand(
@@ -79,9 +79,9 @@ def test_chamfer_command_execute(sketch_with_corner):
     command.execute()
 
     # Verify additions
-    assert len(sketch.registry.points) == initial_points_count + 2
+    assert len(sketch.registry.points()) == initial_points_count + 2
     assert (
-        len(sketch.registry.entities) == initial_entities_count + 1
+        len(sketch.registry.entities()) == initial_entities_count + 1
     )  # 2 removed, 3 added
     assert len(sketch.constraints) == initial_constraints_count + 3
 
@@ -114,8 +114,8 @@ def test_chamfer_command_undo(sketch_with_corner):
 
     # Store initial state
     initial_state = {
-        "points_count": len(sketch.registry.points),
-        "entities_count": len(sketch.registry.entities),
+        "points_count": len(sketch.registry.points()),
+        "entities_count": len(sketch.registry.entities()),
         "constraints_count": len(sketch.constraints),
         "line1_p1": line1.p1_idx,
         "line1_p2": line1.p2_idx,
@@ -129,13 +129,13 @@ def test_chamfer_command_undo(sketch_with_corner):
     command.execute()
 
     # Sanity check that something changed
-    assert len(sketch.registry.points) != initial_state["points_count"]
+    assert len(sketch.registry.points()) != initial_state["points_count"]
 
     command.undo()
 
     # Verify state is restored
-    assert len(sketch.registry.points) == initial_state["points_count"]
-    assert len(sketch.registry.entities) == initial_state["entities_count"]
+    assert len(sketch.registry.points()) == initial_state["points_count"]
+    assert len(sketch.registry.entities()) == initial_state["entities_count"]
     assert len(sketch.constraints) == initial_state["constraints_count"]
 
     restored_line1 = sketch.registry.get_entity(line1_id)

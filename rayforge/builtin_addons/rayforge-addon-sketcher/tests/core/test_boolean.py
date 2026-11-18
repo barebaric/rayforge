@@ -94,8 +94,7 @@ def test_regions_include_polygon_holes():
         world_holes=[[(5.0, 5.0), (9.0, 5.0), (9.0, 9.0), (5.0, 9.0)]],
     )
     sketch.registry.add_points([_center_pt, _handle_pt])
-    sketch.registry.entities.append(polygon)
-    sketch.registry._entity_map[polygon.id] = polygon
+    sketch.registry.append_entity(polygon)
     circle = _circle_sketch(sketch, 40.0)
     regions = _regions(sketch, [polygon.id, circle])
     solid = next(r for r in regions if len(r.rings) == 2)

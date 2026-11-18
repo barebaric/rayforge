@@ -14,8 +14,7 @@ from .types import EntityID
 
 if TYPE_CHECKING:
     from raygeo.sketch.constraints import Constraint
-
-    from .registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
 
 
 def get_referenced_points(

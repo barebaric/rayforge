@@ -16,6 +16,7 @@ from ..core.commands import (
     DuplicateCommand,
     MoveEntitiesCommand,
 )
+from ..core.registry_utils import require_point
 from ..core.selection import SketchSelection
 from ..core.sketch import Sketch
 from ..core.snap import SnapEngine
@@ -219,8 +220,8 @@ class SketchElement(CanvasElement):
         # A sketch is considered "empty" for bounding purposes if it has no
         # entities and at most one point (which would be the origin).
         is_truly_empty = (
-            len(self.sketch.registry.entities) == 0
-            and len(self.sketch.registry.points) <= 1
+            len(self.sketch.registry.entities()) == 0
+            and len(self.sketch.registry.points()) <= 1
         )
 
         new_width: float
@@ -241,11 +242,11 @@ class SketchElement(CanvasElement):
             geometry = self.sketch.to_geometry()
             if geometry.is_empty():
                 # This case handles sketches with only points.
-                if not self.sketch.registry.points:
+                if not self.sketch.registry.points():
                     min_x, max_x, min_y, max_y = 0, 0, 0, 0
                 else:
-                    xs = [p.x for p in self.sketch.registry.points]
-                    ys = [p.y for p in self.sketch.registry.points]
+                    xs = [p.x for p in self.sketch.registry.points()]
+                    ys = [p.y for p in self.sketch.registry.points()]
                     min_x, max_x = min(xs), max(xs)
                     min_y, max_y = min(ys), max(ys)
             else:
@@ -326,7 +327,7 @@ class SketchElement(CanvasElement):
     def get_lines_at_point(self, pid: EntityID) -> list[Line]:
         return [
             e
-            for e in self.sketch.registry.entities
+            for e in self.sketch.registry.entities()
             if isinstance(e, Line) and pid in (e.p1_idx, e.p2_idx)
         ]
 
@@ -416,7 +417,7 @@ class SketchElement(CanvasElement):
         movable: dict[EntityID, Point] = {}
         for pid in point_ids:
             try:
-                p = registry.get_point(pid)
+                p = require_point(registry, pid)
             except IndexError:
                 continue
             if not p.fixed:
@@ -491,10 +492,10 @@ class SketchElement(CanvasElement):
         target_type = None
 
         if sel.junction_pid is not None:
-            target = self.sketch.registry.get_point(sel.junction_pid)
+            target = require_point(self.sketch.registry, sel.junction_pid)
             target_type = "junction"
         elif sel.point_ids:
-            target = self.sketch.registry.get_point(sel.point_ids[0])
+            target = require_point(self.sketch.registry, sel.point_ids[0])
             target_type = "point"
         elif sel.entity_ids:
             target = self.sketch.registry.get_entity(sel.entity_ids[0])

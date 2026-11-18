@@ -8,13 +8,15 @@ from raygeo.geo.types import Point as GeoPoint
 from raygeo.sketch.entities import Bezier, Line
 from raygeo.sketch.entities import SketchPoint as Point
 
+from ..registry_utils import next_temp_id, require_point
 from ..types import EntityID, WaypointType
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData
 from .items import AddItemsCommand
 
 if TYPE_CHECKING:
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
+
     from ..sketch import Sketch
 
 logger = logging.getLogger(__name__)
@@ -63,7 +65,7 @@ class BezierPreviewState(PreviewState):
     ) -> GeoPoint | None:
         if self.virtual_cp is None or self.end_id is None:
             return None
-        end_pt = registry.get_point(self.end_id)
+        end_pt = require_point(registry, self.end_id)
         if end_pt is None:
             return None
         return (end_pt.x + self.virtual_cp[0], end_pt.y + self.virtual_cp[1])
@@ -122,7 +124,7 @@ class BezierCommand(SketchChangeCommand):
             start_id = snapped_pid
             start_temp = False
             try:
-                start_pt = registry.get_point(snapped_pid)
+                start_pt = require_point(registry, snapped_pid)
                 x, y = start_pt.x, start_pt.y
             except IndexError:
                 pass
@@ -135,7 +137,7 @@ class BezierCommand(SketchChangeCommand):
         effective_virtual_cp = virtual_cp
         if snapped_pid is not None and virtual_cp is None:
             try:
-                start_pt = registry.get_point(snapped_pid)
+                start_pt = require_point(registry, snapped_pid)
                 if not start_pt.is_sharp():
                     connected = start_pt.get_connected_beziers(registry)
                     for other_b in connected:
@@ -191,7 +193,7 @@ class BezierCommand(SketchChangeCommand):
             return
 
         try:
-            end_pt = registry.get_point(preview_state.end_id)
+            end_pt = require_point(registry, preview_state.end_id)
         except IndexError:
             return
 
@@ -220,26 +222,18 @@ class BezierCommand(SketchChangeCommand):
             return
 
         try:
-            start_pt = registry.get_point(preview_state.start_id)
+            start_pt = require_point(registry, preview_state.start_id)
         except IndexError:
             return
 
         preview_state.is_line_preview = False
 
-        registry.entities = [
-            e
-            for e in registry.entities
-            if e.id != preview_state.temp_entity_id
-        ]
-        registry._entity_map = {
-            k: v
-            for k, v in registry._entity_map.items()
-            if k != preview_state.temp_entity_id
-        }
+        if preview_state.temp_entity_id is not None:
+            registry.remove_entities([preview_state.temp_entity_id])
 
         if preview_state.end_id is None:
             return
-        end_pt = registry.get_point(preview_state.end_id)
+        end_pt = require_point(registry, preview_state.end_id)
         end_pt.x = waypoint_x
         end_pt.y = waypoint_y
 
@@ -309,7 +303,7 @@ class BezierCommand(SketchChangeCommand):
             return
 
         try:
-            end_pt = registry.get_point(preview_state.end_id)
+            end_pt = require_point(registry, preview_state.end_id)
         except IndexError:
             return
 
@@ -334,12 +328,7 @@ class BezierCommand(SketchChangeCommand):
         )
 
         if preview_state.temp_entity_id is not None:
-            registry.entities = [
-                e
-                for e in registry.entities
-                if e.id != preview_state.temp_entity_id
-            ]
-            registry._entity_map = {e.id: e for e in registry.entities}
+            registry.remove_entities([preview_state.temp_entity_id])
 
         if preview_state.end_temp and preview_state.end_id is not None:
             registry.remove_points([preview_state.end_id])
@@ -353,7 +342,7 @@ class BezierCommand(SketchChangeCommand):
         final_x, final_y = self.end_pos
         if self.end_pid is not None:
             try:
-                end_p = registry.get_point(self.end_pid)
+                end_p = require_point(registry, self.end_pid)
                 final_x, final_y = end_p.x, end_p.y
             except IndexError:
                 pass
@@ -362,7 +351,7 @@ class BezierCommand(SketchChangeCommand):
         end_pid = self.end_pid
 
         if end_pid is None:
-            temp_id = registry._id_counter
+            temp_id = next_temp_id(registry)
             end_pid = temp_id
             new_point = Point(temp_id, final_x, final_y)
 
@@ -370,17 +359,17 @@ class BezierCommand(SketchChangeCommand):
 
         if self.is_start_temp:
             try:
-                p = registry.get_point(self.start_id)
+                p = require_point(registry, self.start_id)
                 registry.remove_points([p.id])
                 points_to_add.append(p)
             except (IndexError, ValueError):
                 pass
 
         if self.is_line:
-            temp_entity_id = registry._id_counter + (1 if new_point else 0)
+            temp_entity_id = next_temp_id(registry) + (1 if new_point else 0)
             new_entity = Line(temp_entity_id, self.start_id, end_pid)
         else:
-            temp_entity_id = registry._id_counter + (1 if new_point else 0)
+            temp_entity_id = next_temp_id(registry) + (1 if new_point else 0)
             new_entity = Bezier(
                 temp_entity_id,
                 self.start_id,
@@ -390,7 +379,7 @@ class BezierCommand(SketchChangeCommand):
             )
 
             try:
-                start_pt = registry.get_point(self.start_id)
+                start_pt = require_point(registry, self.start_id)
                 start_pt.waypoint_type = WaypointType.SYMMETRIC
             except (IndexError, ValueError):
                 pass
@@ -399,7 +388,7 @@ class BezierCommand(SketchChangeCommand):
                 new_point.waypoint_type = WaypointType.SYMMETRIC
             elif end_pid is not None:
                 try:
-                    end_pt = registry.get_point(end_pid)
+                    end_pt = require_point(registry, end_pid)
                     end_pt.waypoint_type = WaypointType.SYMMETRIC
                 except (IndexError, ValueError):
                     pass
@@ -416,7 +405,7 @@ class BezierCommand(SketchChangeCommand):
 
         if not self.is_line and isinstance(new_entity, Bezier):
             try:
-                start_pt = registry.get_point(self.start_id)
+                start_pt = require_point(registry, self.start_id)
                 if not start_pt.is_sharp():
                     connected = start_pt.get_connected_beziers(registry)
                     for other_b in connected:
@@ -444,7 +433,7 @@ class BezierCommand(SketchChangeCommand):
                 pass
 
             try:
-                end_pt = registry.get_point(end_pid)
+                end_pt = require_point(registry, end_pid)
                 if end_pt is not None and not end_pt.is_sharp():
                     connected = end_pt.get_connected_beziers(registry)
                     for other_b in connected:

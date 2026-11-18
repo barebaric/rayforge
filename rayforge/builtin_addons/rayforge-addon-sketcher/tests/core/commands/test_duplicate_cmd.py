@@ -94,8 +94,8 @@ class TestDuplicatePrepare:
 class TestDuplicateExecute:
     def test_creates_copies_at_same_position(self, sketch_with_l):
         s, entity_ids, point_ids = sketch_with_l
-        num_points = len(s.registry.points)
-        num_entities = len(s.registry.entities)
+        num_points = len(s.registry.points())
+        num_entities = len(s.registry.entities())
 
         sel = SketchSelection()
         sel.entity_ids = entity_ids
@@ -108,8 +108,8 @@ class TestDuplicateExecute:
         cmd.capture_undo_state()
         cmd._do_execute()
 
-        assert len(s.registry.points) == num_points + len(dup_point_ids)
-        assert len(s.registry.entities) == 2 * num_entities
+        assert len(s.registry.points()) == num_points + len(dup_point_ids)
+        assert len(s.registry.entities()) == 2 * num_entities
         assert len(cmd.new_entity_ids) == 2
 
         for eid in cmd.new_entity_ids:
@@ -133,7 +133,7 @@ class TestDuplicateExecute:
             p = s.registry.get_point(pid)
             assert p.x == pytest.approx([-100, 0, 0][point_ids.index(pid)])
             assert p.y == pytest.approx([0, 0, 100][point_ids.index(pid)])
-        assert all(e.id in entity_ids for e in s.registry.entities[:2])
+        assert all(e.id in entity_ids for e in s.registry.entities()[:2])
 
     def test_internal_constraint_duplicated_and_remapped(self):
         s = Sketch()
@@ -259,21 +259,21 @@ class TestDuplicateExecute:
 class TestDuplicateUndo:
     def test_undo_removes_duplicates(self, sketch_with_l):
         s, entity_ids, _point_ids = sketch_with_l
-        num_points = len(s.registry.points)
-        num_entities = len(s.registry.entities)
+        num_points = len(s.registry.points())
+        num_entities = len(s.registry.entities())
 
         sel = SketchSelection()
         sel.entity_ids = entity_ids
 
         cmd = DuplicateCommand(s, sel)
         cmd.execute()
-        assert len(s.registry.points) == num_points + len(cmd.created_points)
-        assert len(s.registry.entities) == 2 * num_entities
+        assert len(s.registry.points()) == num_points + len(cmd.created_points)
+        assert len(s.registry.entities()) == 2 * num_entities
 
         cmd.undo()
 
-        assert len(s.registry.points) == num_points
-        assert len(s.registry.entities) == num_entities
+        assert len(s.registry.points()) == num_points
+        assert len(s.registry.entities()) == num_entities
         for eid in cmd.new_entity_ids:
             assert s.registry.get_entity(eid) is None
 

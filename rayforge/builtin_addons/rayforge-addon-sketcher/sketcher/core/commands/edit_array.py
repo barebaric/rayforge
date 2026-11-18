@@ -15,6 +15,7 @@ from ..arrays import (
 )
 from ..entity_group import EntityGroup
 from ..params import ParameterContext
+from ..registry_utils import require_point
 from .base import SketchChangeCommand
 from .create_array import CreateArrayCommand
 from .items import AddItemsCommand, RemoveItemsCommand
@@ -22,8 +23,8 @@ from .items import AddItemsCommand, RemoveItemsCommand
 if TYPE_CHECKING:
     from raygeo.sketch.entities import Entity
     from raygeo.sketch.entities import SketchPoint as Point
+    from raygeo.sketch.registry import EntityRegistry
 
-    from ..registry import EntityRegistry
     from ..sketch import Sketch
 
 logger = logging.getLogger(__name__)
@@ -292,7 +293,7 @@ class EditArrayCommand(SketchChangeCommand):
         registry = sketch.registry
         used_by_remaining = {
             pid
-            for e in registry.entities
+            for e in registry.entities()
             if e.id not in removed
             for pid in e.get_point_ids()
         }
@@ -305,7 +306,7 @@ class EditArrayCommand(SketchChangeCommand):
                 if pid in known or pid in used_by_remaining:
                     continue
                 try:
-                    pt = registry.get_point(pid)
+                    pt = require_point(registry, pid)
                 except IndexError:
                     continue
                 if pt.fixed:
@@ -316,7 +317,7 @@ class EditArrayCommand(SketchChangeCommand):
                 if pid in known:
                     continue
                 try:
-                    pt = registry.get_point(pid)
+                    pt = require_point(registry, pid)
                 except IndexError:
                     continue
                 points.append(pt)
@@ -497,7 +498,7 @@ class EditArrayCommand(SketchChangeCommand):
         snapshot = template_group.with_helpers().snapshot_positions()
         for pid in self._template_standalone:
             try:
-                pt = registry.get_point(pid)
+                pt = require_point(registry, pid)
             except IndexError:
                 continue
             snapshot.append((pt, pt.x, pt.y))

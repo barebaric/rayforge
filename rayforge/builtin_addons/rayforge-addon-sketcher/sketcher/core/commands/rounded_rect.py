@@ -16,13 +16,15 @@ from raygeo.sketch.constraints import (
 from raygeo.sketch.entities import Arc, Line
 from raygeo.sketch.entities import SketchPoint as Point
 
+from ..registry_utils import require_point
 from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData
 from .items import AddItemsCommand
 
 if TYPE_CHECKING:
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
+
     from ..sketch import Sketch
 
 
@@ -87,8 +89,8 @@ class RoundedRectPreviewState(PreviewState):
             self.radius = radius
 
         try:
-            start_p = registry.get_point(self.start_id)
-            end_p = registry.get_point(self.p_end_id)
+            start_p = require_point(registry, self.start_id)
+            end_p = require_point(registry, self.p_end_id)
         except IndexError:
             return
 
@@ -145,8 +147,8 @@ class RoundedRectPreviewState(PreviewState):
             List containing DimensionData for width, height, and corner radius.
         """
         try:
-            p1 = registry.get_point(self.start_id)
-            p2 = registry.get_point(self.p_end_id)
+            p1 = require_point(registry, self.start_id)
+            p2 = require_point(registry, self.p_end_id)
         except IndexError:
             return []
         if self.center_on_start:
@@ -241,7 +243,7 @@ class RoundedRectCommand(SketchChangeCommand):
         The smaller extent wins; the direction of each axis is kept.
         """
         try:
-            start_p = registry.get_point(start_id)
+            start_p = require_point(registry, start_id)
         except IndexError:
             return x, y
 
@@ -448,8 +450,8 @@ class RoundedRectCommand(SketchChangeCommand):
             Dict of preview IDs, or None if geometry is invalid.
         """
         try:
-            start_p = registry.get_point(start_pid)
-            end_p = registry.get_point(end_pid)
+            start_p = require_point(registry, start_pid)
+            end_p = require_point(registry, end_pid)
         except IndexError:
             return None
 
@@ -511,30 +513,30 @@ class RoundedRectCommand(SketchChangeCommand):
                 preview_ids["t8"],
                 preview_ids["t1"],
                 preview_ids["c1"],
-                cw=is_cw,
+                clockwise=is_cw,
             )
             preview_ids["arc2"] = registry.add_arc(
                 preview_ids["t2"],
                 preview_ids["t3"],
                 preview_ids["c2"],
-                cw=is_cw,
+                clockwise=is_cw,
             )
             preview_ids["arc3"] = registry.add_arc(
                 preview_ids["t4"],
                 preview_ids["t5"],
                 preview_ids["c3"],
-                cw=is_cw,
+                clockwise=is_cw,
             )
             preview_ids["arc4"] = registry.add_arc(
                 preview_ids["t6"],
                 preview_ids["t7"],
                 preview_ids["c4"],
-                cw=is_cw,
+                clockwise=is_cw,
             )
         else:
             # Update existing preview geometry
             for name, (px, py) in coords.items():
-                p = registry.get_point(preview_ids[name])
+                p = require_point(registry, preview_ids[name])
                 p.x, p.y = px, py
 
             # Update arc directions
@@ -628,8 +630,8 @@ class RoundedRectCommand(SketchChangeCommand):
         preview_state.center_on_start = center_on_start
 
         try:
-            p_end = registry.get_point(preview_state.p_end_id)
-            p_start = registry.get_point(preview_state.start_id)
+            p_end = require_point(registry, preview_state.p_end_id)
+            p_start = require_point(registry, preview_state.start_id)
         except IndexError:
             return
 
@@ -692,12 +694,12 @@ class RoundedRectCommand(SketchChangeCommand):
 
         entity_ids_to_remove = {
             e.id
-            for e in registry.entities
+            for e in registry.entities()
             if any(pid in point_ids for pid in e.get_point_ids())
         }
-        registry.remove_entities_by_id(list(entity_ids_to_remove))
+        registry.remove_entities(list(entity_ids_to_remove))
 
-        registry.remove_points(point_ids)
+        registry.remove_points(list(point_ids))
 
     def _do_execute(self) -> None:
         if self.add_cmd:
@@ -705,7 +707,7 @@ class RoundedRectCommand(SketchChangeCommand):
 
         reg = self.sketch.registry
         try:
-            start_p = reg.get_point(self.start_pid)
+            start_p = require_point(reg, self.start_pid)
         except IndexError:
             return
 

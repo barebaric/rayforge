@@ -3,13 +3,13 @@ from typing import Any
 
 import pytest
 from raygeo.sketch.constraints import RadiusConstraint
+from raygeo.sketch.registry import EntityRegistry
 from sketcher.core.arrays import InstancePlacement, PlacementKind
 from sketcher.core.entity_group import (
     EntityGroup,
     points_bbox_center,
     remap_point_refs,
 )
-from sketcher.core.registry import EntityRegistry
 
 
 def get_entity(reg: EntityRegistry, eid: int) -> Any:

@@ -29,6 +29,7 @@ from ...core.commands import (
     MovePointCommand,
 )
 from ...core.components import compute_constraint_components
+from ...core.registry_utils import connected_entity_ids, require_point
 from ...core.snap import DragContext
 from ...core.types import EntityID
 from .base import SketcherKey, SketchTool
@@ -178,9 +179,9 @@ class SelectTool(SnapMixin, SketchTool):
             registry = self.element.sketch.registry
             entity_ids = self.element.selection.entity_ids
             entity_ids.clear()
-            for entity in registry.entities:
+            for entity in registry.entities():
                 if pid in entity.get_point_ids():
-                    connected = registry.get_connected_entity_ids(entity.id)
+                    connected = connected_entity_ids(registry, entity.id)
                     entity_ids.extend(connected)
             entity_ids[:] = list(set(entity_ids))
             self.element.selection.point_ids.clear()
@@ -690,7 +691,7 @@ class SelectTool(SnapMixin, SketchTool):
         dragged_group = coincident_group
         if not any_fixed:
             rigid_points = (
-                self.element.sketch.registry.get_rigidly_connected_points(
+                self.element.sketch.registry.rigidly_connected_points(
                     self.dragged_point_id
                 )
             )
@@ -975,7 +976,7 @@ class SelectTool(SnapMixin, SketchTool):
         self.drag_point_start_pos = (p.x, p.y)
         dragged_group = self.element.sketch.get_coincident_points(pid)
         dragged_group |= set(
-            self.element.sketch.registry.get_rigidly_connected_points(pid)
+            self.element.sketch.registry.rigidly_connected_points(pid)
         )
         self._compute_drag_scope(dragged_group)
         self._cache_drag_start_state()
@@ -1061,13 +1062,13 @@ class SelectTool(SnapMixin, SketchTool):
 
         # Capture Points
         self.drag_initial_positions = {
-            pt.id: (pt.x, pt.y) for pt in self.element.sketch.registry.points
+            pt.id: (pt.x, pt.y) for pt in self.element.sketch.registry.points()
         }
         self.drag_hold_positions = dict(self.drag_initial_positions)
 
         # Capture Entity States
         self.drag_initial_entity_states = {}
-        for e in self.element.sketch.registry.entities:
+        for e in self.element.sketch.registry.entities():
             state = e.get_state()
             if state is not None:
                 self.drag_initial_entity_states[e.id] = state
@@ -1086,7 +1087,7 @@ class SelectTool(SnapMixin, SketchTool):
             if pid in exclude:
                 continue
             try:
-                p = registry.get_point(pid)
+                p = require_point(registry, pid)
             except IndexError:
                 self.drag_hold_positions.pop(pid, None)
                 continue
@@ -1096,7 +1097,7 @@ class SelectTool(SnapMixin, SketchTool):
 
     def _safe_get_point(self, pid: EntityID):
         try:
-            return self.element.sketch.registry.get_point(pid)
+            return require_point(self.element.sketch.registry, pid)
         except IndexError:
             return None
 
@@ -1112,14 +1113,14 @@ class SelectTool(SnapMixin, SketchTool):
         using BFS. Results are stored in self.drag_point_distances.
         """
         registry = self.element.sketch.registry
-        if not registry.points:
+        if not registry.points():
             self.drag_point_distances = {}
             return
 
         adj: dict[EntityID, list[EntityID]] = {
-            p.id: [] for p in registry.points
+            p.id: [] for p in registry.points()
         }
-        for entity in registry.entities:
+        for entity in registry.entities():
             if isinstance(entity, Line):
                 p1, p2 = entity.p1_idx, entity.p2_idx
                 if p1 in adj and p2 in adj:
@@ -1138,7 +1139,7 @@ class SelectTool(SnapMixin, SketchTool):
                     adj[r].append(c)
 
         q = [(start_pid, 0)]
-        distances = {p.id: -1 for p in registry.points}
+        distances = {p.id: -1 for p in registry.points()}
         if start_pid in distances:
             distances[start_pid] = 0
 

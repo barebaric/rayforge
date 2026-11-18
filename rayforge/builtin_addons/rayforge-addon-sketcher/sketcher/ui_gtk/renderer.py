@@ -25,6 +25,7 @@ from rayforge.ui_gtk.shared.text import create_text_layout
 
 from ..core.commands import BezierPreviewState
 from ..core.commands.dimension import DimensionData
+from ..core.registry_utils import require_point
 from ..core.sketch import FillStyle
 from ..core.types import EntityID
 from .tools import PathTool, TextBoxTool
@@ -210,7 +211,7 @@ class SketchRenderer:
 
             p_ids = first_ent.get_endpoint_ids()
             start_pid = p_ids[0] if first_fwd else p_ids[1]
-            start_pt = self.element.sketch.registry.get_point(start_pid)
+            start_pt = require_point(self.element.sketch.registry, start_pid)
 
             geo = Geometry()
             geo.move_to(start_pt.x, start_pt.y)
@@ -292,7 +293,7 @@ class SketchRenderer:
 
     def _draw_text_box_fills(self, ctx: cairo.Context, exclude_ids: set):
         """Draw fills for text box entities."""
-        for entity in self.element.sketch.registry.entities:
+        for entity in self.element.sketch.registry.entities():
             if entity.id in exclude_ids:
                 continue
             if (
@@ -316,7 +317,7 @@ class SketchRenderer:
         self, ctx: cairo.Context, is_editing: bool, base_line_width: float
     ):
         is_sketch_fully_constrained = self.element.sketch.is_fully_constrained
-        entities = self.element.sketch.registry.entities or []
+        entities = self.element.sketch.registry.entities() or []
         # Draw array copies first (behind) so original geometry like
         # the guide path stays on top and easy to select.
         entities = sorted(entities, key=lambda e: not e.array_copy)
@@ -462,7 +463,7 @@ class SketchRenderer:
 
     def _safe_get_point(self, pid: EntityID) -> Point | None:
         try:
-            return self.element.sketch.registry.get_point(pid)
+            return require_point(self.element.sketch.registry, pid)
         except IndexError:
             return None
 
@@ -623,7 +624,7 @@ class SketchRenderer:
 
         # Collect all points associated with text boxes to hide their overlays
         text_box_point_ids = set()
-        for entity in self.element.sketch.registry.entities:
+        for entity in self.element.sketch.registry.entities():
             if isinstance(entity, TextBoxEntity):
                 text_box_point_ids.update(
                     entity.get_all_frame_point_ids(
@@ -635,7 +636,7 @@ class SketchRenderer:
         construction_entity_ids = set()
         construction_point_ids = set()
         if not self.element.show_construction_geometry:
-            for entity in self.element.sketch.registry.entities:
+            for entity in self.element.sketch.registry.entities():
                 if entity.construction:
                     construction_entity_ids.add(entity.id)
                     construction_point_ids.update(entity.get_point_ids())
@@ -702,7 +703,7 @@ class SketchRenderer:
         )
 
         point_counts = defaultdict(int)
-        for entity in registry.entities:
+        for entity in registry.entities():
             if isinstance(entity, Line):
                 point_counts[entity.p1_idx] += 1
                 point_counts[entity.p2_idx] += 1
@@ -776,7 +777,7 @@ class SketchRenderer:
     ) -> None:
         """Draws all sketch points, including selection highlights."""
         is_sketch_fully_constrained = self.element.sketch.is_fully_constrained
-        points = self.element.sketch.registry.points or []
+        points = self.element.sketch.registry.points() or []
         origin_id = getattr(self.element.sketch, "origin_id", -1)
         hover_pid = self.element.tools["select"].hovered_point_id
 
@@ -801,7 +802,7 @@ class SketchRenderer:
         # Collect construction point IDs to hide when construction is hidden
         construction_point_ids = set()
         if not self.element.show_construction_geometry:
-            for entity in self.element.sketch.registry.entities:
+            for entity in self.element.sketch.registry.entities():
                 if entity.construction:
                     construction_point_ids.update(entity.get_point_ids())
 
@@ -1013,11 +1014,11 @@ class SketchRenderer:
             return
 
         try:
-            start_pt = self.element.sketch.registry.get_point(
-                preview_state.start_id
+            start_pt = require_point(
+                self.element.sketch.registry, preview_state.start_id
             )
-            end_pt = self.element.sketch.registry.get_point(
-                preview_state.end_id
+            end_pt = require_point(
+                self.element.sketch.registry, preview_state.end_id
             )
         except IndexError:
             return

@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 from raygeo.sketch.entities import OffsetPlan
 
 from ..contour import OffsetItem, build_offset_items
+from ..registry_utils import require_point
 from .base import SketchChangeCommand
 from .items import AddItemsCommand, RemoveItemsCommand
 
@@ -107,7 +108,7 @@ class OffsetCommand(SketchChangeCommand):
             return
         registry = self.sketch.registry
         for pid, (x, y) in self._point_moves.items():
-            point = registry.get_point(pid)
+            point = require_point(registry, pid)
             point.x, point.y = x, y
         for remove_cmd, add_cmd in self._ops:
             if remove_cmd:

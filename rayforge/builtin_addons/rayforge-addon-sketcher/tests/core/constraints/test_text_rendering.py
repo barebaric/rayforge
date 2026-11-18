@@ -9,7 +9,7 @@ from raygeo.sketch.constraints import (
     EqualLengthConstraint,
     RadiusConstraint,
 )
-from sketcher.core.registry import EntityRegistry
+from raygeo.sketch.registry import EntityRegistry
 from sketcher.core.types import ConstraintStatus
 
 

@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 from raygeo.sketch.entities import Arc, Bezier, Line
 
 from ..entity_group import EntityGroup
+from ..registry_utils import require_point
 from .base import (
     Array,
     ArrayStrategy,
@@ -19,8 +20,7 @@ if TYPE_CHECKING:
     from raygeo.sketch.constraints import Constraint
     from raygeo.sketch.entities import Entity
     from raygeo.sketch.entities import SketchPoint as Point
-
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -206,7 +206,7 @@ def _polyline_for(
     entity: Entity, registry: EntityRegistry
 ) -> list[tuple[float, float]]:
     def p(pid):
-        pt = registry.get_point(pid)
+        pt = require_point(registry, pid)
         return (pt.x, pt.y)
 
     if isinstance(entity, Line):
@@ -554,7 +554,7 @@ class CurveAlongArray(Array):
         group.with_helpers().apply_rigid_motion(motion)
         for pid in standalone_pids:
             try:
-                pt = registry.get_point(pid)
+                pt = require_point(registry, pid)
             except IndexError:
                 continue
             pt.x, pt.y = motion.transform_point(pt.x, pt.y)

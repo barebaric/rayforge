@@ -2,8 +2,8 @@ import logging
 from collections.abc import Iterator
 
 from raygeo.geo.types import Point as GeoPoint
+from raygeo.sketch.registry import EntityRegistry
 
-from ..registry import EntityRegistry
 from ..types import EntityID
 from .spatial import SnapLineIndex
 from .types import (
@@ -14,6 +14,12 @@ from .types import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _source_key(source):
+    """Stable key for a snap source (compiled views are new objects)."""
+    source_id = getattr(source, "id", None)
+    return ("id", source_id) if source_id is not None else ("obj", id(source))
 
 
 class SnapLineProducer:
@@ -106,10 +112,10 @@ class SnapEngine:
         cannot make the index stale and must not trigger a rebuild.
         """
         return (
-            registry._entity_version,
+            registry.entity_version(),
             tuple(
                 (round(p.x, 6), round(p.y, 6))
-                for p in registry.points
+                for p in registry.points()
                 if skip_point_ids is None or p.id not in skip_point_ids
             ),
         )
@@ -327,7 +333,7 @@ class SnapEngine:
         for sp in snap_points:
             if sp.line_type != last.line_type:
                 continue
-            if sp.source is not last.source:
+            if _source_key(sp.source) != _source_key(last.source):
                 continue
             dx = x - sp.x
             dy = y - sp.y

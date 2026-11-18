@@ -13,6 +13,7 @@ from raygeo.sketch.entities import Arc, Circle, Entity, Line
 
 from rayforge.core.undo.command import Command
 
+from ..registry_utils import require_point
 from .base import SketchChangeCommand
 from .constraint import ModifyConstraintCommand
 from .items import AddItemsCommand
@@ -109,24 +110,24 @@ class CreateOrEditConstraintCommand(SketchChangeCommand):
         registry = sketch.registry
 
         if isinstance(entity, Arc):
-            start = registry.get_point(entity.start_idx)
-            center = registry.get_point(entity.center_idx)
+            start = require_point(registry, entity.start_idx)
+            center = require_point(registry, entity.center_idx)
             if start and center:
                 radius = math.hypot(start.x - center.x, start.y - center.y)
                 value = initial_value if initial_value is not None else radius
                 return RadiusConstraint(entity.id, value)
 
         elif isinstance(entity, Line):
-            p1 = registry.get_point(entity.p1_idx)
-            p2 = registry.get_point(entity.p2_idx)
+            p1 = require_point(registry, entity.p1_idx)
+            p2 = require_point(registry, entity.p2_idx)
             if p1 and p2:
                 dist = math.hypot(p1.x - p2.x, p1.y - p2.y)
                 value = initial_value if initial_value is not None else dist
                 return DistanceConstraint(entity.p1_idx, entity.p2_idx, value)
 
         elif isinstance(entity, Circle):
-            center = registry.get_point(entity.center_idx)
-            radius_pt = registry.get_point(entity.radius_pt_idx)
+            center = require_point(registry, entity.center_idx)
+            radius_pt = require_point(registry, entity.radius_pt_idx)
             if center and radius_pt:
                 radius = math.hypot(
                     radius_pt.x - center.x, radius_pt.y - center.y

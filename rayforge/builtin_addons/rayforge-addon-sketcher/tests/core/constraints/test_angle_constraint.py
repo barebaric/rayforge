@@ -9,9 +9,9 @@ from raygeo.sketch.constraints import (
     DistanceConstraint,
 )
 from raygeo.sketch.constraints.angle import ARC_RADIUS
+from raygeo.sketch.registry import EntityRegistry
 from sketcher.core import Sketch
 from sketcher.core.params import ParameterContext
-from sketcher.core.registry import EntityRegistry
 from sketcher.core.selection import SketchSelection
 from sketcher.core.solver import Solver
 

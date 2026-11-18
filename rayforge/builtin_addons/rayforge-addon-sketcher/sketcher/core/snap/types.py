@@ -6,6 +6,7 @@ from raygeo.geo.types import Point as GeoPoint
 
 from rayforge.core.color import ColorRGBA
 
+from ..registry_utils import require_point
 from ..types import EntityID
 
 
@@ -215,7 +216,7 @@ class DragContext:
             return False
         for pid in self.dragged_point_ids:
             try:
-                point = registry.get_point(pid)
+                point = require_point(registry, pid)
             except (IndexError, KeyError):
                 continue
             if point is None:

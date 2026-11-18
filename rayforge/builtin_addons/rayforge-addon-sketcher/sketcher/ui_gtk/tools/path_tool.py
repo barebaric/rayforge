@@ -10,6 +10,7 @@ from raygeo.sketch.entities import Bezier
 from rayforge.ui_gtk.shared.keyboard import PRIMARY_KEY_NAME
 
 from ...core.commands import BezierCommand, BezierPreviewState
+from ...core.registry_utils import next_temp_id, require_point
 from .base import SketcherKey, SketchTool
 from .snap_mixin import SnapMixin
 
@@ -135,7 +136,9 @@ class PathTool(SnapMixin, SketchTool):
         ):
             self._snapped_pid = pid_hit
             try:
-                snapped_pt = self.element.sketch.registry.get_point(pid_hit)
+                snapped_pt = require_point(
+                    self.element.sketch.registry, pid_hit
+                )
                 BezierCommand.update_preview(
                     self.element.sketch.registry,
                     self._preview_state,
@@ -193,8 +196,8 @@ class PathTool(SnapMixin, SketchTool):
         if self._preview_state is None:
             return mx, my
         try:
-            start_pt = self.element.sketch.registry.get_point(
-                self._preview_state.start_id
+            start_pt = require_point(
+                self.element.sketch.registry, self._preview_state.start_id
             )
             if start_pt:
                 dx = mx - start_pt.x
@@ -249,11 +252,11 @@ class PathTool(SnapMixin, SketchTool):
         if self._preview_state.end_id is None:
             return
 
-        start_pt = self.element.sketch.registry.get_point(
-            self._preview_state.start_id
+        start_pt = require_point(
+            self.element.sketch.registry, self._preview_state.start_id
         )
-        end_pt = self.element.sketch.registry.get_point(
-            self._preview_state.end_id
+        end_pt = require_point(
+            self.element.sketch.registry, self._preview_state.end_id
         )
         if start_pt and end_pt:
             dist_sq = (start_pt.x - end_pt.x) ** 2 + (
@@ -361,11 +364,11 @@ class PathTool(SnapMixin, SketchTool):
             return False
 
         try:
-            start_pt = self.element.sketch.registry.get_point(
-                self._preview_state.start_id
+            start_pt = require_point(
+                self.element.sketch.registry, self._preview_state.start_id
             )
-            end_pt = self.element.sketch.registry.get_point(
-                self._preview_state.end_id
+            end_pt = require_point(
+                self.element.sketch.registry, self._preview_state.end_id
             )
             dx = end_pt.x - start_pt.x
             dy = end_pt.y - start_pt.y
@@ -388,8 +391,8 @@ class PathTool(SnapMixin, SketchTool):
         if not isinstance(threshold, (int, float)):
             return None
         try:
-            start_pt = self.element.sketch.registry.get_point(
-                self._path_start_id
+            start_pt = require_point(
+                self.element.sketch.registry, self._path_start_id
             )
         except IndexError:
             return None
@@ -411,7 +414,7 @@ class PathTool(SnapMixin, SketchTool):
             return
 
         try:
-            end_pt = self.element.sketch.registry.get_point(end_id)
+            end_pt = require_point(self.element.sketch.registry, end_id)
             end_x, end_y = end_pt.x, end_pt.y
         except (IndexError, AttributeError):
             return
@@ -423,7 +426,9 @@ class PathTool(SnapMixin, SketchTool):
         ):
             final_pid = self._snapped_pid
             try:
-                snapped_pt = self.element.sketch.registry.get_point(final_pid)
+                snapped_pt = require_point(
+                    self.element.sketch.registry, final_pid
+                )
                 end_x, end_y = snapped_pt.x, snapped_pt.y
             except IndexError:
                 final_pid = None
@@ -460,7 +465,7 @@ class PathTool(SnapMixin, SketchTool):
 
         end_pid = final_pid
         if end_pid is None:
-            end_pid = self.element.sketch.registry._id_counter
+            end_pid = next_temp_id(self.element.sketch.registry)
 
         constraints = self.build_snap_constraints(
             end_id,
@@ -499,8 +504,8 @@ class PathTool(SnapMixin, SketchTool):
             return
 
         try:
-            new_start_pt = self.element.sketch.registry.get_point(
-                cmd.committed_end_id
+            new_start_pt = require_point(
+                self.element.sketch.registry, cmd.committed_end_id
             )
             self._preview_state = BezierCommand.start_preview(
                 self.element.sketch.registry,
@@ -533,7 +538,7 @@ class PathTool(SnapMixin, SketchTool):
             return
 
         try:
-            end_pt = self.element.sketch.registry.get_point(end_id)
+            end_pt = require_point(self.element.sketch.registry, end_id)
             end_x, end_y = end_pt.x, end_pt.y
         except (IndexError, AttributeError):
             return
@@ -545,7 +550,9 @@ class PathTool(SnapMixin, SketchTool):
         ):
             final_pid = self._snapped_pid
             try:
-                snapped_pt = self.element.sketch.registry.get_point(final_pid)
+                snapped_pt = require_point(
+                    self.element.sketch.registry, final_pid
+                )
                 end_x, end_y = snapped_pt.x, snapped_pt.y
             except IndexError:
                 final_pid = None
@@ -602,7 +609,7 @@ class PathTool(SnapMixin, SketchTool):
 
         bz_end_pid = final_pid
         if bz_end_pid is None:
-            bz_end_pid = self.element.sketch.registry._id_counter
+            bz_end_pid = next_temp_id(self.element.sketch.registry)
 
         snap_constraints = self.build_snap_constraints(
             end_id,
@@ -643,8 +650,8 @@ class PathTool(SnapMixin, SketchTool):
             return
 
         try:
-            new_start_pt = self.element.sketch.registry.get_point(
-                cmd.committed_end_id
+            new_start_pt = require_point(
+                self.element.sketch.registry, cmd.committed_end_id
             )
             self._preview_state = BezierCommand.start_preview(
                 self.element.sketch.registry,
@@ -691,8 +698,8 @@ class PathTool(SnapMixin, SketchTool):
 
         try:
             if new_hovered_pid is not None:
-                snapped_pt = self.element.sketch.registry.get_point(
-                    new_hovered_pid
+                snapped_pt = require_point(
+                    self.element.sketch.registry, new_hovered_pid
                 )
                 if snapped_pt:
                     BezierCommand.update_preview(

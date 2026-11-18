@@ -39,7 +39,7 @@ def tool(element, monkeypatch):
 def _outline(sketch):
     return [
         e
-        for e in sketch.registry.entities
+        for e in sketch.registry.entities()
         if isinstance(e, Line) and not e.construction
     ]
 
@@ -58,7 +58,7 @@ def test_drag_creates_a_hexagon(tool, element):
     lines = _outline(element.sketch)
     assert len(lines) == 6
     circles = [
-        e for e in element.sketch.registry.entities if isinstance(e, Circle)
+        e for e in element.sketch.registry.entities() if isinstance(e, Circle)
     ]
     assert len(circles) == 1 and circles[0].construction
 
@@ -135,12 +135,12 @@ def test_invalid_corner_count_is_ignored(tool, element):
 
 @pytest.mark.ui
 def test_deactivate_removes_the_preview(tool, element):
-    points_before = len(element.sketch.registry.points)
+    points_before = len(element.sketch.registry.points())
     tool.on_press(0.0, 0.0, 1)
     tool.on_hover_motion(10.0, 0.0)
     tool.on_deactivate()
-    assert element.sketch.registry.entities == []
-    assert len(element.sketch.registry.points) == points_before
+    assert element.sketch.registry.entities() == []
+    assert len(element.sketch.registry.points()) == points_before
 
 
 @pytest.mark.ui

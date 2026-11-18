@@ -9,6 +9,7 @@ from ...core.commands import (
     RectangleCommand,
     RectanglePreviewState,
 )
+from ...core.registry_utils import require_point
 from .base import SketcherKey, SketchTool
 from .dimension_input import DimensionInputHandler
 from .snap_mixin import SnapMixin
@@ -118,8 +119,8 @@ class RectangleTool(SnapMixin, SketchTool):
 
         mx, my = 0.0, 0.0
         try:
-            end_p = self.element.sketch.registry.get_point(
-                self._preview_state.p_end_id
+            end_p = require_point(
+                self.element.sketch.registry, self._preview_state.p_end_id
             )
             mx, my = end_p.x, end_p.y
         except IndexError:
@@ -329,8 +330,8 @@ class RectangleTool(SnapMixin, SketchTool):
         start_temp = self._preview_state.start_temp
         center_on_start = self._preview_state.center_on_start
         try:
-            end_pt = self.element.sketch.registry.get_point(
-                self._preview_state.p_end_id
+            end_pt = require_point(
+                self.element.sketch.registry, self._preview_state.p_end_id
             )
         except IndexError:
             self._preview_state = None

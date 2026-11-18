@@ -64,7 +64,9 @@ def test_validate_and_cleanup_fills_keeps_circle(sketch):
 
 def test_validate_and_cleanup_fills_keeps_all_valid(triangle_sketch):
     line_ids = [
-        e.id for e in triangle_sketch.registry.entities if isinstance(e, Line)
+        e.id
+        for e in triangle_sketch.registry.entities()
+        if isinstance(e, Line)
     ]
 
     fill = Fill(
@@ -98,7 +100,9 @@ def test_get_fill_render_data_circle(sketch):
 
 def test_get_fill_render_data_triangle(triangle_sketch):
     line_ids = [
-        e.id for e in triangle_sketch.registry.entities if isinstance(e, Line)
+        e.id
+        for e in triangle_sketch.registry.entities()
+        if isinstance(e, Line)
     ]
 
     fill = Fill(

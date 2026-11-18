@@ -9,10 +9,11 @@ from raygeo.geo.shape.arc import normalize_angle
 from raygeo.geo.shape.line import get_line_line_intersection
 from raygeo.sketch.entities import Line
 
+from ..registry_utils import require_point
 from ..types import EntityID
 
 if TYPE_CHECKING:
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -40,10 +41,10 @@ class AngleConstraintCommand:
             logger.warning("Angle constraint requires exactly 2 lines.")
             return None
 
-        p1 = registry.get_point(e1.p1_idx)
-        p2 = registry.get_point(e1.p2_idx)
-        p3 = registry.get_point(e2.p1_idx)
-        p4 = registry.get_point(e2.p2_idx)
+        p1 = require_point(registry, e1.p1_idx)
+        p2 = require_point(registry, e1.p2_idx)
+        p3 = require_point(registry, e2.p1_idx)
+        p4 = require_point(registry, e2.p2_idx)
 
         if not (p1 and p2 and p3 and p4):
             return None

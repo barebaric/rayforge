@@ -21,7 +21,9 @@ def test_bezier_command_preserves_control_points():
     )
     cmd.execute()
 
-    bezier = next(e for e in sketch.registry.entities if isinstance(e, Bezier))
+    bezier = next(
+        e for e in sketch.registry.entities() if isinstance(e, Bezier)
+    )
     assert bezier.cp1 == (30.0, 40.0)
     assert bezier.cp2 == (-30.0, -40.0)
 
@@ -54,7 +56,7 @@ def test_bezier_command_mirrors_cp_from_adjacent_segment():
     )
     second.execute()
 
-    beziers = [e for e in sketch.registry.entities if isinstance(e, Bezier)]
+    beziers = [e for e in sketch.registry.entities() if isinstance(e, Bezier)]
     assert len(beziers) == 2
     assert beziers[1].cp1 == (-20.0, -15.0)
     assert beziers[1].cp2 == (10.0, -5.0)

@@ -8,6 +8,7 @@ from raygeo.sketch.entities import Circle
 from raygeo.sketch.entities import SketchPoint as Point
 
 from ..entity_group import EntityGroup
+from ..registry_utils import require_point
 from .base import (
     Array,
     ArrayStrategy,
@@ -18,8 +19,7 @@ from .base import (
 if TYPE_CHECKING:
     from raygeo.sketch.constraints import Constraint
     from raygeo.sketch.entities import Entity
-
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
 
 
 class CircularArrayStrategy(ArrayStrategy):
@@ -153,8 +153,8 @@ class CircularArrayStrategy(ArrayStrategy):
         if not isinstance(circle, Circle):
             return None
         try:
-            center = registry.get_point(circle.center_idx)
-            radius_pt = registry.get_point(circle.radius_pt_idx)
+            center = require_point(registry, circle.center_idx)
+            radius_pt = require_point(registry, circle.radius_pt_idx)
         except IndexError:
             return None
         return (
@@ -237,9 +237,9 @@ class CircularArrayStrategy(ArrayStrategy):
         radius_constraint: RadiusConstraint | None = None
         old_radius_value: float | None = None
         if isinstance(circle, Circle):
-            center_pt = registry.get_point(circle.center_idx)
+            center_pt = require_point(registry, circle.center_idx)
             center_pt.x, center_pt.y = self.center
-            radius_pt = registry.get_point(circle.radius_pt_idx)
+            radius_pt = require_point(registry, circle.radius_pt_idx)
             radius_pt.x = self.center[0] + self.radius
             radius_pt.y = self.center[1]
 
@@ -336,8 +336,8 @@ class CircularArray(Array):
         is the single source of truth for the orbit."""
         circle = registry.get_entity(self.guide_circle_id)
         assert isinstance(circle, Circle)
-        center = registry.get_point(circle.center_idx)
-        radius_pt = registry.get_point(circle.radius_pt_idx)
+        center = require_point(registry, circle.center_idx)
+        radius_pt = require_point(registry, circle.radius_pt_idx)
         return CircularArrayStrategy(
             count=self.count,
             total_angle_deg=self.total_angle_deg,

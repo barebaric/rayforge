@@ -8,7 +8,7 @@ from raygeo.sketch.entities import Arc, Circle, Line
 from ..types import EntityID
 
 if TYPE_CHECKING:
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
 
 
 @dataclass

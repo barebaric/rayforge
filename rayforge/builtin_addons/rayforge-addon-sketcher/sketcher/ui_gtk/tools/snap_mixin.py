@@ -14,6 +14,7 @@ from raygeo.sketch.constraints import (
 from raygeo.sketch.entities import Arc, Circle, Line
 from raygeo.sketch.entities import SketchPoint as Point
 
+from ...core.registry_utils import require_point
 from ...core.snap import (
     SNAP_LINE_STYLES,
     DragContext,
@@ -457,8 +458,8 @@ class SnapMixin:
         elif sp.line_type == SnapLineType.MIDPOINT:
             if isinstance(sp.source, Line):
                 line = sp.source
-                p1 = element.sketch.registry.get_point(line.p1_idx)
-                p2 = element.sketch.registry.get_point(line.p2_idx)
+                p1 = require_point(element.sketch.registry, line.p1_idx)
+                p2 = require_point(element.sketch.registry, line.p2_idx)
                 if p1 and p2:
                     s1 = to_screen.transform_point((p1.x, p1.y))
                     s2 = to_screen.transform_point((p2.x, p2.y))

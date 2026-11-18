@@ -7,6 +7,7 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING
 
 from ..entity_group import EntityGroup, points_bbox_center
+from ..registry_utils import replace_entity_in_order, require_point
 from ..types import EntityID
 from .base import SketchChangeCommand
 
@@ -120,7 +121,7 @@ class MirrorCommand(SketchChangeCommand):
         changed = True
         while changed:
             changed = False
-            for e in registry.entities:
+            for e in registry.entities():
                 helper_ids = e.get_helper_ids()
 
                 if helper_ids and (
@@ -143,7 +144,7 @@ class MirrorCommand(SketchChangeCommand):
         # 3. Compute mirror axis = bbox center of the selected points
         # (plain bbox: unlike an array group's logical center, a
         # selected circle contributes its defining points only).
-        pts = [registry.get_point(pid) for pid in sorted(point_id_set)]
+        pts = [require_point(registry, pid) for pid in sorted(point_id_set)]
         bbox_cx, bbox_cy = points_bbox_center(pts)
         if direction == MirrorDirection.VERTICAL:
             axis_pos = bbox_cy
@@ -199,13 +200,14 @@ class MirrorCommand(SketchChangeCommand):
         # stay put). The set also carries bare selected points, which
         # belong to no entity and are therefore not in the group.
         for pid in point_ids:
-            p = registry.get_point(pid)
+            p = require_point(registry, pid)
             if p and not p.fixed:
                 p.x, p.y = axis.apply(p.x, p.y)
 
         # Mirror entity-specific state
         for e in group.entities():
             e.mirror(axis)
+            replace_entity_in_order(registry, e.id, e)
 
         # Mirror internal constraints (e.g. negate angle values)
         # Constraints that were dropped are skipped.

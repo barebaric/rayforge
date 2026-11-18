@@ -81,7 +81,7 @@ def build_boolean_regions(
     (open chains, branching junctions, or an insufficient selection).
     """
     registry = sketch.registry
-    z_of = {e.id: i for i, e in enumerate(registry.entities)}
+    z_of = {e.id: i for i, e in enumerate(registry.entities())}
     regions: list[BooleanRegion] = []
     chainable: list = []
 

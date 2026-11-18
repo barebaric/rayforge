@@ -148,7 +148,7 @@ def test_deleting_a_copy_and_editing_regenerates_it(text_array):
     for eid in cmd.array.living_entity_ids(registry):
         entity = registry.get_entity(eid)
         assert entity.content == "AB"
-        if entity is not box:
+        if entity.id != box.id:
             assert entity.construction_line_ids == []
 
 
@@ -163,11 +163,10 @@ def test_undoing_the_create_restores_the_template(text_array):
     assert cmd.array not in sketch.arrays
     assert registry.get_entity(box.id) is not None
     assert box.construction_line_ids, "helpers restored"
-    remaining = registry.get_entity(box.id)
     for eid in [box.id]:
-        assert registry.get_entity(eid) is remaining
+        assert registry.get_entity(eid).id == eid
     assert (
-        len([e for e in registry.entities if isinstance(e, TextBoxEntity)])
+        len([e for e in registry.entities() if isinstance(e, TextBoxEntity)])
         == 1
     )
     assert copies_before == 3
@@ -201,7 +200,7 @@ def test_serialization_round_trip_keeps_text_arrays(text_array):
     assert len(restored.arrays) == 1
     assert restored.arrays[0].mode == "circular"
     text_boxes = [
-        e for e in restored.registry.entities if isinstance(e, TextBoxEntity)
+        e for e in restored.registry.entities() if isinstance(e, TextBoxEntity)
     ]
     assert len(text_boxes) == 4
     assert all(e.content == "AB" for e in text_boxes)

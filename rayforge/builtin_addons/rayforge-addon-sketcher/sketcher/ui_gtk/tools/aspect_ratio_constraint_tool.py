@@ -8,6 +8,7 @@ from raygeo.sketch.entities import Entity, Line
 from raygeo.sketch.entities import SketchPoint as Point
 
 from ...core.commands import AddItemsCommand
+from ...core.registry_utils import require_point
 from .base import SketchTool
 
 if TYPE_CHECKING:
@@ -65,10 +66,10 @@ class AspectRatioConstraintTool(SketchTool):
             logger.warning("Aspect ratio constraint requires 2 lines.")
             return
 
-        p1 = sketch.registry.get_point(e1.p1_idx)
-        p2 = sketch.registry.get_point(e1.p2_idx)
-        p3 = sketch.registry.get_point(e2.p1_idx)
-        p4 = sketch.registry.get_point(e2.p2_idx)
+        p1 = require_point(sketch.registry, e1.p1_idx)
+        p2 = require_point(sketch.registry, e1.p2_idx)
+        p3 = require_point(sketch.registry, e2.p1_idx)
+        p4 = require_point(sketch.registry, e2.p2_idx)
 
         if not all([p1, p2, p3, p4]):
             logger.warning("Could not resolve all points for aspect ratio.")

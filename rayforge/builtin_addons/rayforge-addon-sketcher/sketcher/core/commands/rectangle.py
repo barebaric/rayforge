@@ -12,13 +12,15 @@ from raygeo.sketch.constraints import (
 from raygeo.sketch.entities import Line
 from raygeo.sketch.entities import SketchPoint as Point
 
+from ..registry_utils import require_point
 from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData
 from .items import AddItemsCommand
 
 if TYPE_CHECKING:
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
+
     from ..sketch import Sketch
 
 
@@ -75,8 +77,8 @@ class RectanglePreviewState(PreviewState):
             self.locked_height = height
 
         try:
-            start_p = registry.get_point(self.start_id)
-            end_p = registry.get_point(self.p_end_id)
+            start_p = require_point(registry, self.start_id)
+            end_p = require_point(registry, self.p_end_id)
         except IndexError:
             return
 
@@ -132,8 +134,8 @@ class RectanglePreviewState(PreviewState):
             List containing DimensionData for width and height.
         """
         try:
-            p1 = registry.get_point(self.start_id)
-            p2 = registry.get_point(self.p_end_id)
+            p1 = require_point(registry, self.start_id)
+            p2 = require_point(registry, self.p_end_id)
         except IndexError:
             return []
         if self.center_on_start:
@@ -210,7 +212,7 @@ class RectangleCommand(SketchChangeCommand):
         The smaller extent wins; the direction of each axis is kept.
         """
         try:
-            start_p = registry.get_point(start_id)
+            start_p = require_point(registry, start_id)
         except IndexError:
             return x, y
 
@@ -371,8 +373,8 @@ class RectangleCommand(SketchChangeCommand):
         corner points (p2, p4), a center point, and four lines using
         the start/end points as the other two corners.
         """
-        start_p = registry.get_point(start_pid)
-        end_p = registry.get_point(end_pid)
+        start_p = require_point(registry, start_pid)
+        end_p = require_point(registry, end_pid)
 
         coords = {
             "p2": (end_p.x, start_p.y),
@@ -400,8 +402,8 @@ class RectangleCommand(SketchChangeCommand):
         end_pid: EntityID,
     ) -> None:
         """Updates positions of existing corner-mode preview points."""
-        start_p = registry.get_point(start_pid)
-        end_p = registry.get_point(end_pid)
+        start_p = require_point(registry, start_pid)
+        end_p = require_point(registry, end_pid)
         coords = {
             "p2": (end_p.x, start_p.y),
             "p4": (start_p.x, end_p.y),
@@ -411,7 +413,7 @@ class RectangleCommand(SketchChangeCommand):
             ),
         }
         for name, (px, py) in coords.items():
-            p = registry.get_point(preview_ids[name])
+            p = require_point(registry, preview_ids[name])
             p.x, p.y = px, py
 
     @staticmethod
@@ -426,8 +428,8 @@ class RectangleCommand(SketchChangeCommand):
         plus a center point coincident with the start point's
         coordinates, and four lines forming the outline.
         """
-        start_p = registry.get_point(start_pid)
-        end_p = registry.get_point(end_pid)
+        start_p = require_point(registry, start_pid)
+        end_p = require_point(registry, end_pid)
         dx = abs(end_p.x - start_p.x)
         dy = abs(end_p.y - start_p.y)
 
@@ -458,8 +460,8 @@ class RectangleCommand(SketchChangeCommand):
         end_pid: EntityID,
     ) -> None:
         """Updates positions of existing center-on-start preview points."""
-        start_p = registry.get_point(start_pid)
-        end_p = registry.get_point(end_pid)
+        start_p = require_point(registry, start_pid)
+        end_p = require_point(registry, end_pid)
         dx = abs(end_p.x - start_p.x)
         dy = abs(end_p.y - start_p.y)
 
@@ -471,7 +473,7 @@ class RectangleCommand(SketchChangeCommand):
             "center": (start_p.x, start_p.y),
         }
         for name, (px, py) in coords.items():
-            p = registry.get_point(preview_ids[name])
+            p = require_point(registry, preview_ids[name])
             p.x, p.y = px, py
 
     @staticmethod
@@ -500,8 +502,8 @@ class RectangleCommand(SketchChangeCommand):
             Dict of preview IDs, or None if geometry is invalid.
         """
         try:
-            registry.get_point(start_pid)
-            registry.get_point(end_pid)
+            require_point(registry, start_pid)
+            require_point(registry, end_pid)
         except IndexError:
             return None
 
@@ -583,8 +585,8 @@ class RectangleCommand(SketchChangeCommand):
         (start/end points are opposite corners).
         """
         try:
-            p_end = registry.get_point(preview_state.p_end_id)
-            p_start = registry.get_point(preview_state.start_id)
+            p_end = require_point(registry, preview_state.p_end_id)
+            p_start = require_point(registry, preview_state.start_id)
         except IndexError:
             return
 
@@ -630,8 +632,8 @@ class RectangleCommand(SketchChangeCommand):
         half-extent).
         """
         try:
-            p_end = registry.get_point(preview_state.p_end_id)
-            p_start = registry.get_point(preview_state.start_id)
+            p_end = require_point(registry, preview_state.p_end_id)
+            p_start = require_point(registry, preview_state.start_id)
         except IndexError:
             return
 
@@ -735,13 +737,13 @@ class RectangleCommand(SketchChangeCommand):
         # Remove entities that reference the preview points
         entity_ids_to_remove = {
             e.id
-            for e in registry.entities
+            for e in registry.entities()
             if any(pid in point_ids for pid in e.get_point_ids())
         }
-        registry.remove_entities_by_id(list(entity_ids_to_remove))
+        registry.remove_entities(list(entity_ids_to_remove))
 
         # Remove only the preview-derived points (not start/end)
-        registry.remove_points(point_ids)
+        registry.remove_points(list(point_ids))
 
         preview_state.center_on_start = center_on_start
         preview_state.preview_ids = (
@@ -780,13 +782,13 @@ class RectangleCommand(SketchChangeCommand):
         # Find and remove entities that use these points
         entity_ids_to_remove = {
             e.id
-            for e in registry.entities
+            for e in registry.entities()
             if any(pid in point_ids for pid in e.get_point_ids())
         }
-        registry.remove_entities_by_id(list(entity_ids_to_remove))
+        registry.remove_entities(list(entity_ids_to_remove))
 
         # Remove points
-        registry.remove_points(point_ids)
+        registry.remove_points(list(point_ids))
 
     def _do_execute(self) -> None:
         if self.add_cmd:
@@ -794,14 +796,14 @@ class RectangleCommand(SketchChangeCommand):
 
         reg = self.sketch.registry
         try:
-            start_p = reg.get_point(self.start_pid)
+            start_p = require_point(reg, self.start_pid)
         except IndexError:
             return
 
         final_mx, final_my = self.end_pos
         if self.end_pid is not None:
             try:
-                end_p = reg.get_point(self.end_pid)
+                end_p = require_point(reg, self.end_pid)
                 final_mx, final_my = end_p.x, end_p.y
             except IndexError:
                 pass  # Use mouse coords if pid is invalid

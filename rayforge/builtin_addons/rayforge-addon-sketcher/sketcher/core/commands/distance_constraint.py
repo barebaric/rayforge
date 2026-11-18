@@ -6,12 +6,12 @@ from typing import TYPE_CHECKING
 
 from raygeo.sketch.entities import Line
 
+from ..registry_utils import require_point
 from ..types import EntityID
 
 if TYPE_CHECKING:
     from raygeo.sketch.entities import SketchPoint as Point
-
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
 
 
 @dataclass
@@ -29,8 +29,8 @@ class DistanceConstraintCommand:
         entity_ids: list[EntityID],
     ) -> DistanceConstraintParams | None:
         if len(point_ids) == 2:
-            p1 = registry.get_point(point_ids[0])
-            p2 = registry.get_point(point_ids[1])
+            p1 = require_point(registry, point_ids[0])
+            p2 = require_point(registry, point_ids[1])
             if p1 and p2:
                 dist = math.hypot(p1.x - p2.x, p1.y - p2.y)
                 return DistanceConstraintParams(
@@ -43,8 +43,8 @@ class DistanceConstraintCommand:
             eid = entity_ids[0]
             e = registry.get_entity(eid)
             if isinstance(e, Line):
-                p1 = registry.get_point(e.p1_idx)
-                p2 = registry.get_point(e.p2_idx)
+                p1 = require_point(registry, e.p1_idx)
+                p2 = require_point(registry, e.p2_idx)
                 if p1 and p2:
                     dist = math.hypot(p1.x - p2.x, p1.y - p2.y)
                     return DistanceConstraintParams(

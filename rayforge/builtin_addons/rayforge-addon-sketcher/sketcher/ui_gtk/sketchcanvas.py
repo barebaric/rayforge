@@ -221,10 +221,10 @@ class SketchCanvas(WorldSurface):
         if not geometry.is_empty():
             min_x, min_y, max_x, max_y = geometry.rect()
             has_bounds = True
-        elif sketch.registry.points:
+        elif sketch.registry.points():
             # This case handles sketches with only points.
-            xs = [p.x for p in sketch.registry.points]
-            ys = [p.y for p in sketch.registry.points]
+            xs = [p.x for p in sketch.registry.points()]
+            ys = [p.y for p in sketch.registry.points()]
             if xs and ys:
                 min_x, max_x = min(xs), max(xs)
                 min_y, max_y = min(ys), max(ys)
