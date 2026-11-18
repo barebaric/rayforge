@@ -4,9 +4,8 @@ from raygeo.sketch.constraints import (
     DistanceConstraint,
     TangentConstraint,
 )
+from raygeo.sketch.entities import Arc, Bezier
 from sketcher.core import Sketch
-from sketcher.core.arc_entity import Arc
-from sketcher.core.bezier_entity import Bezier
 from sketcher.core.commands import MirrorAxis, MirrorCommand, MirrorDirection
 from sketcher.core.selection import SketchSelection
 

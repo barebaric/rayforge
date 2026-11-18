@@ -2,8 +2,8 @@ from datetime import datetime, timezone
 from typing import cast
 
 from raygeo.geo.shape.text import FontConfig
+from raygeo.sketch.entities import TextBox as TextBoxEntity
 from sketcher.core import Sketch
-from sketcher.core.text_box_entity import TextBoxEntity
 
 from rayforge.core.varset import FloatVar, Var
 

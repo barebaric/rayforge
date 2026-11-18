@@ -9,9 +9,9 @@ from raygeo.sketch.constraints import (
     CollinearConstraint,
     EqualDistanceConstraint,
 )
+from raygeo.sketch.entities import Line
+from raygeo.sketch.entities import SketchPoint as Point
 
-from ..line_entity import Line
-from ..point_entity import Point
 from ..types import EntityID
 from .base import SketchChangeCommand
 from .items import AddItemsCommand, RemoveItemsCommand

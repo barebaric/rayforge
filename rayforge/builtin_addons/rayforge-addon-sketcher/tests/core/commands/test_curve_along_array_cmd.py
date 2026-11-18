@@ -7,15 +7,13 @@ from raygeo.sketch.constraints import (
     TangentConstraint,
     VerticalConstraint,
 )
+from raygeo.sketch.entities import Bezier, Ellipse, Line
 from sketcher.core.arrays import (
     CurveAlongArray,
     CurveAlongArrayStrategy,
     find_array_for_entity,
 )
-from sketcher.core.bezier_entity import Bezier
 from sketcher.core.commands import CreateArrayCommand, EditArrayCommand
-from sketcher.core.ellipse_entity import Ellipse
-from sketcher.core.line_entity import Line
 from sketcher.core.sketch import Sketch
 
 

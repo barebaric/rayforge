@@ -3,8 +3,8 @@ from __future__ import annotations
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
-from ..bezier_entity import Bezier
-from ..line_entity import Line
+from raygeo.sketch.entities import Bezier, Line
+
 from ..types import EntityID
 from .base import SketchChangeCommand
 

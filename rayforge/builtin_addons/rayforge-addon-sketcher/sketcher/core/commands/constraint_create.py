@@ -9,13 +9,10 @@ from raygeo.sketch.constraints import (
     DistanceConstraint,
     RadiusConstraint,
 )
-from raygeo.sketch.entities import Entity
+from raygeo.sketch.entities import Arc, Circle, Entity, Line
 
 from rayforge.core.undo.command import Command
 
-from ..arc_entity import Arc
-from ..circle_entity import Circle
-from ..line_entity import Line
 from .base import SketchChangeCommand
 from .constraint import ModifyConstraintCommand
 from .items import AddItemsCommand

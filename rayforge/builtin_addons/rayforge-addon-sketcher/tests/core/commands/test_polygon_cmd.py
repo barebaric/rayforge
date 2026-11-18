@@ -7,14 +7,13 @@ from raygeo.sketch.constraints import (
     PointOnLineConstraint,
     RadiusConstraint,
 )
+from raygeo.sketch.entities import Circle, Line
 from sketcher.core import Sketch
-from sketcher.core.circle_entity import Circle
 from sketcher.core.commands import (
     PolygonCommand,
     PolygonPreviewState,
     polygon_vertices,
 )
-from sketcher.core.line_entity import Line
 
 
 def _lines(sketch):

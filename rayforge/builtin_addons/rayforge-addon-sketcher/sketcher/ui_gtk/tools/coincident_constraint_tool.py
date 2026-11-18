@@ -8,9 +8,9 @@ from raygeo.sketch.constraints import (
     PointOnLineConstraint,
 )
 from raygeo.sketch.entities import Entity
+from raygeo.sketch.entities import SketchPoint as Point
 
 from ...core.commands import AddItemsCommand
-from ...core.point_entity import Point
 from .base import SketchTool
 
 if TYPE_CHECKING:

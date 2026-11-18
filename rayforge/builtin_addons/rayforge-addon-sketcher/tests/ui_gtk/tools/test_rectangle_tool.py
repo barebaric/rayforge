@@ -1,12 +1,12 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+from raygeo.sketch.entities import SketchPoint
+from raygeo.sketch.entities import SketchPoint as Point
 from sketcher.core.commands import (
     RectangleCommand,
     RectanglePreviewState,
 )
-from sketcher.core.point_entity import Point
-from sketcher.core.point_entity import Point as SketchPoint
 from sketcher.core.snap import SnapLineType
 from sketcher.ui_gtk.tools import RectangleTool
 

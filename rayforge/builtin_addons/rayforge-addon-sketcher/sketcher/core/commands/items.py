@@ -6,16 +6,15 @@ from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
 from raygeo.sketch.constraints import EqualDistanceConstraint
+from raygeo.sketch.entities import Arc
 
-from ..arc_entity import Arc
-from ..reference_map import remap_references
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
     from raygeo.sketch.constraints import Constraint
     from raygeo.sketch.entities import Entity
+    from raygeo.sketch.entities import SketchPoint as Point
 
-    from ..point_entity import Point
     from ..sketch import Sketch
 
 logger = logging.getLogger(__name__)
@@ -65,12 +64,12 @@ class AddItemsCommand(SketchChangeCommand):
 
         # Update point references within the entity
         for e in new_entities:
-            remap_references(e, id_map)
+            e.remap_references(id_map)
         registry.entities.extend(new_entities)
 
         # Update point and entity references within constraints
         for c in self.constraints:
-            remap_references(c, id_map)
+            c.remap_references(id_map)
 
         # Rebuild entity map after adding
         registry._entity_map = {e.id: e for e in registry.entities}

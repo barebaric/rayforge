@@ -3,11 +3,11 @@ from typing import TYPE_CHECKING, ClassVar, Union, cast
 
 from gi.repository import Adw, Gtk
 from raygeo.sketch.entities import Entity
+from raygeo.sketch.entities import SketchPoint as Point
 
 from rayforge.ui_gtk.shared.pref_rows import SpinRow
 
 from ...core.commands import GridCommand
-from ...core.point_entity import Point
 from .base import SketchTool
 
 if TYPE_CHECKING:

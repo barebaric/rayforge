@@ -1,13 +1,11 @@
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Union
 
-from raygeo.sketch.entities import Entity
+from raygeo.sketch.entities import Bezier, Entity, Line
+from raygeo.sketch.entities import SketchPoint as Point
 
-from ...core.bezier_entity import Bezier
 from ...core.commands import SetWaypointTypeCommand
-from ...core.line_entity import Line
-from ...core.point_entity import Point, WaypointType
-from ...core.types import EntityID
+from ...core.types import EntityID, WaypointType
 from .base import SketchTool
 
 if TYPE_CHECKING:

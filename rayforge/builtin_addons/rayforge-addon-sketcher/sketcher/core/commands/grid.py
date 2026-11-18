@@ -4,10 +4,10 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
 from raygeo.sketch.constraints import HorizontalConstraint, VerticalConstraint
+from raygeo.sketch.entities import Line
 from raygeo.sketch.entities import Line as BaseLine
+from raygeo.sketch.entities import SketchPoint as Point
 
-from ..line_entity import Line
-from ..point_entity import Point
 from .base import SketchChangeCommand
 from .items import AddItemsCommand
 

@@ -1,11 +1,11 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+from raygeo.sketch.entities import SketchPoint as Point
 from sketcher.core.commands import (
     RoundedRectCommand,
     RoundedRectPreviewState,
 )
-from sketcher.core.point_entity import Point
 from sketcher.ui_gtk.tools import RoundedRectTool
 
 

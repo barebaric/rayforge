@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING
 
 from raygeo.geo.shape.arc import normalize_angle
 from raygeo.geo.shape.line import get_line_line_intersection
+from raygeo.sketch.entities import Line
 
-from ..line_entity import Line
 from ..types import EntityID
 
 if TYPE_CHECKING:

@@ -3,7 +3,7 @@ import math
 import pytest
 from raygeo.geo import Arc as GeoArc
 from raygeo.geo import Geometry, Move
-from sketcher.core.arc_entity import Arc
+from raygeo.sketch.entities import Arc
 from sketcher.core.registry import EntityRegistry
 
 

@@ -6,9 +6,9 @@ from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point as GeoPoint
 from raygeo.sketch.constraints import DistanceConstraint
+from raygeo.sketch.entities import Line
+from raygeo.sketch.entities import SketchPoint as Point
 
-from ..line_entity import Line
-from ..point_entity import Point
 from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData

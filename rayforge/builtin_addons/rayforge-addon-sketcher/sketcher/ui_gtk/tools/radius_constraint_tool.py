@@ -3,15 +3,13 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING, ClassVar, Union
 
 from raygeo.sketch.constraints import RadiusConstraint
-from raygeo.sketch.entities import Entity
+from raygeo.sketch.entities import Arc, Circle, Entity
+from raygeo.sketch.entities import SketchPoint as Point
 
-from ...core.arc_entity import Arc
-from ...core.circle_entity import Circle
 from ...core.commands import (
     AddItemsCommand,
     CreateOrEditConstraintCommand,
 )
-from ...core.point_entity import Point
 from .base import SketchTool
 
 if TYPE_CHECKING:

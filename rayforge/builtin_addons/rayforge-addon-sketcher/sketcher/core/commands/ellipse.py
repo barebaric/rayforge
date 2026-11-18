@@ -9,10 +9,9 @@ from raygeo.sketch.constraints import (
     EqualDistanceConstraint,
     PerpendicularConstraint,
 )
+from raygeo.sketch.entities import Ellipse, Line
+from raygeo.sketch.entities import SketchPoint as Point
 
-from ..ellipse_entity import Ellipse
-from ..line_entity import Line
-from ..point_entity import Point
 from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .items import AddItemsCommand

@@ -5,12 +5,9 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point as GeoPoint
+from raygeo.sketch.entities import Arc, Bezier, Circle, Line
+from raygeo.sketch.entities import SketchPoint as Point
 
-from ..arc_entity import Arc
-from ..bezier_entity import Bezier
-from ..circle_entity import Circle
-from ..line_entity import Line
-from ..point_entity import Point
 from ..types import EntityID
 from .base import SketchChangeCommand
 

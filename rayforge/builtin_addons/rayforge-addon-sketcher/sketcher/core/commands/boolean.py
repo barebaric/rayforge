@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-import itertools
 import logging
 import uuid
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
+from raygeo.sketch.entities import OffsetPlan
+
 from ..boolean import BooleanOp, apply_boolean, build_boolean_regions
-from ..entity_ops import OffsetPlan
-from ..polygon_entity import outline_item
+from ..offset import outline_item
 from ..sketch import Fill
 from .base import SketchChangeCommand
 from .items import AddItemsCommand, RemoveItemsCommand
@@ -85,7 +85,7 @@ class BooleanCommand(SketchChangeCommand):
             logger.warning("Boolean operation produced no geometry.")
             return False
 
-        allocate_id = itertools.count(-1, -1).__next__
+        allocate_id = self.sketch.registry.allocate_id
         plan = OffsetPlan()
         for solid in solids:
             center_pt, handle_pt, entity = outline_item(

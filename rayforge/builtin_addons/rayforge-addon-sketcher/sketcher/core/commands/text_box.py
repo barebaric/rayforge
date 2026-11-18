@@ -10,10 +10,10 @@ from raygeo.sketch.constraints import (
     ParallelogramConstraint,
     PerpendicularConstraint,
 )
+from raygeo.sketch.entities import Line
+from raygeo.sketch.entities import SketchPoint as Point
+from raygeo.sketch.entities import TextBox as TextBoxEntity
 
-from ..line_entity import Line
-from ..point_entity import Point
-from ..text_box_entity import TextBoxEntity
 from .base import SketchChangeCommand
 from .items import AddItemsCommand
 

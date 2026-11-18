@@ -39,7 +39,9 @@ from raygeo.sketch.constraints import (
     TangentConstraint,
     VerticalConstraint,
 )
-from raygeo.sketch.entities import Entity
+from raygeo.sketch.entities import Arc, Bezier, Entity, Line
+from raygeo.sketch.entities import SketchPoint as Point
+from raygeo.sketch.entities import TextBox as TextBoxEntity
 
 from rayforge.core.asset import IAsset
 from rayforge.core.color import ColorRGBA
@@ -49,18 +51,13 @@ from rayforge.core.varset import VarSet
 from rayforge.image.geo_renderer import render_geometry_to_png
 from rayforge.image.structures import FillRenderData, FillStyle
 
-from .arc_entity import Arc
 from .arrays import Array
-from .bezier_entity import Bezier
 from .components import get_referenced_points
-from .line_entity import Line
 from .params import ParameterContext
-from .point_entity import Point, WaypointType
 from .registry import EntityRegistry
 from .solver import Solver
 from .template_functions import get_template_functions
-from .text_box_entity import TextBoxEntity
-from .types import ConstraintStatus, EntityID
+from .types import ConstraintStatus, EntityID, WaypointType
 
 DEFAULT_FILL_COLOR: ColorRGBA = (0.85, 0.85, 0.85, 0.7)
 FORMAT_VERSION = 1
@@ -387,10 +384,13 @@ class Sketch(IAsset, IGeometryProvider):
         # Shallow-copy the registry: new Point objects (solver mutates x/y),
         # copied entity list (sync_arrays may rebuild it).
         clone.registry = EntityRegistry()
-        clone.registry.set_points(
-            Point(p.id, p.x, p.y, p.fixed, p.waypoint_type)
-            for p in self.registry.points
-        )
+        cloned_points = []
+        for p in self.registry.points:
+            point = Point(p.id, p.x, p.y, p.fixed)
+            if p.waypoint_type != "sharp":
+                point.waypoint_type = p.waypoint_type
+            cloned_points.append(point)
+        clone.registry.set_points(cloned_points)
         clone.registry.entities = list(self.registry.entities)
         clone.registry._entity_map = dict(self.registry._entity_map)
         clone.registry._id_counter = self.registry._id_counter

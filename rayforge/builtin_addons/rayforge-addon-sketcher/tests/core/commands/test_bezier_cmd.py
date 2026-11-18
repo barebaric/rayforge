@@ -1,7 +1,7 @@
 from unittest.mock import Mock
 
+from raygeo.sketch.entities import Bezier
 from sketcher.core import Sketch
-from sketcher.core.bezier_entity import Bezier
 from sketcher.core.commands import BezierCommand, BezierPreviewState
 
 

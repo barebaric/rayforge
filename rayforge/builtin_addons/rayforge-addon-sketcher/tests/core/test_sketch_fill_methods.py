@@ -1,6 +1,6 @@
 import pytest
+from raygeo.sketch.entities import Line
 from sketcher.core import Sketch
-from sketcher.core.line_entity import Line
 from sketcher.core.sketch import Fill
 
 

@@ -4,11 +4,13 @@ import math
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from ..line_entity import Line
+from raygeo.sketch.entities import Line
+
 from ..types import EntityID
 
 if TYPE_CHECKING:
-    from ..point_entity import Point
+    from raygeo.sketch.entities import SketchPoint as Point
+
     from ..registry import EntityRegistry
 
 

@@ -3,8 +3,8 @@ from unittest.mock import MagicMock, patch
 
 import cairo
 import pytest
+from raygeo.sketch.entities import Circle
 from sketcher.core.arrays import CircularArray, CircularArrayStrategy
-from sketcher.core.circle_entity import Circle
 from sketcher.core.commands import CreateArrayCommand, EditArrayCommand
 from sketcher.core.sketch import Sketch
 from sketcher.ui_gtk.tools import CircularArrayTool

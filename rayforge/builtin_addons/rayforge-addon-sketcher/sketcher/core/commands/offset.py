@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import itertools
 import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
+from raygeo.sketch.entities import OffsetPlan
+
 from ..contour import OffsetItem, build_offset_items
-from ..entity_ops import OffsetPlan
 from .base import SketchChangeCommand
 from .items import AddItemsCommand, RemoveItemsCommand
 
@@ -63,7 +63,7 @@ class OffsetCommand(SketchChangeCommand):
         if items is None:
             return False
 
-        allocate_id = itertools.count(-1, -1).__next__
+        allocate_id = self.sketch.registry.allocate_id
         point_moves: dict[int, tuple[float, float]] = {}
         ops: list[tuple[RemoveItemsCommand | None, AddItemsCommand]] = []
         for item in items:

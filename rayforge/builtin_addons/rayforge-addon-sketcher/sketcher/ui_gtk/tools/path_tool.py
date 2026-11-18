@@ -5,10 +5,10 @@ from gettext import gettext as _
 from typing import ClassVar
 
 import cairo
+from raygeo.sketch.entities import Bezier
 
 from rayforge.ui_gtk.shared.keyboard import PRIMARY_KEY_NAME
 
-from ...core.bezier_entity import Bezier
 from ...core.commands import BezierCommand, BezierPreviewState
 from .base import SketcherKey, SketchTool
 from .snap_mixin import SnapMixin

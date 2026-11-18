@@ -4,10 +4,10 @@ import math
 from typing import TYPE_CHECKING, Any
 
 from raygeo.sketch.constraints import RadiusConstraint
+from raygeo.sketch.entities import Circle
+from raygeo.sketch.entities import SketchPoint as Point
 
-from ..circle_entity import Circle
 from ..entity_group import EntityGroup
-from ..point_entity import Point
 from .base import (
     Array,
     ArrayStrategy,

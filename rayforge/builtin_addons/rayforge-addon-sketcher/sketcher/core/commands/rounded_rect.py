@@ -13,10 +13,9 @@ from raygeo.sketch.constraints import (
     TangentConstraint,
     VerticalConstraint,
 )
+from raygeo.sketch.entities import Arc, Line
+from raygeo.sketch.entities import SketchPoint as Point
 
-from ..arc_entity import Arc
-from ..line_entity import Line
-from ..point_entity import Point
 from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData

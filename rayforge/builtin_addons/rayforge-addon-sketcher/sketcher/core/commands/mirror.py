@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from enum import Enum, auto
+from enum import Enum
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class MirrorDirection(Enum):
+class MirrorDirection(str, Enum):
     """
     Direction of a mirror reflection.
 
@@ -29,8 +29,8 @@ class MirrorDirection(Enum):
     coordinates, mirror axis is vertical.
     """
 
-    VERTICAL = auto()
-    HORIZONTAL = auto()
+    VERTICAL = "vertical"
+    HORIZONTAL = "horizontal"
 
 
 @dataclass(frozen=True)

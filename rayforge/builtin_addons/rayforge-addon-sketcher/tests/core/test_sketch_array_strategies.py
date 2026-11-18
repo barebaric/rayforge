@@ -3,6 +3,7 @@ from types import SimpleNamespace
 from typing import Any, cast
 
 import pytest
+from raygeo.sketch.entities import Circle
 from sketcher.core.arrays import (
     Array,
     CircularArray,
@@ -13,7 +14,6 @@ from sketcher.core.arrays import (
     PlacementKind,
     find_array_for_entity,
 )
-from sketcher.core.circle_entity import Circle
 
 
 def test_full_circle_rotation_placements():

@@ -19,11 +19,9 @@ from raygeo.sketch.constraints import (
     DragConstraint,
     RadiusConstraint,
 )
-from raygeo.sketch.entities import Entity
+from raygeo.sketch.entities import Arc, Bezier, Circle, Entity, Line
+from raygeo.sketch.entities import TextBox as TextBoxEntity
 
-from ...core.arc_entity import Arc
-from ...core.bezier_entity import Bezier
-from ...core.circle_entity import Circle
 from ...core.commands import (
     CreateOrEditConstraintCommand,
     MoveControlPointCommand,
@@ -31,9 +29,7 @@ from ...core.commands import (
     MovePointCommand,
 )
 from ...core.components import compute_constraint_components
-from ...core.line_entity import Line
 from ...core.snap import DragContext
-from ...core.text_box_entity import TextBoxEntity
 from ...core.types import EntityID
 from .base import SketcherKey, SketchTool
 from .snap_mixin import SnapMixin

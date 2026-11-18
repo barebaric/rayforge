@@ -3,11 +3,10 @@ import math
 from gettext import gettext as _
 from typing import TYPE_CHECKING, ClassVar, Union
 
-from raygeo.sketch.entities import Entity
+from raygeo.sketch.entities import Entity, Line
+from raygeo.sketch.entities import SketchPoint as Point
 
 from ...core.commands import FilletCommand
-from ...core.line_entity import Line
-from ...core.point_entity import Point
 from ...core.types import EntityID
 from .base import SketchTool
 

@@ -5,9 +5,9 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
+from raygeo.sketch.entities import SketchPoint as Point
+
 from ..entity_group import EntityGroup
-from ..point_entity import Point
-from ..reference_map import remap_references
 from ..types import EntityID
 from .base import SketchChangeCommand
 
@@ -144,7 +144,7 @@ class DuplicateCommand(SketchChangeCommand):
             self.created_constraints.append(copy.deepcopy(constr))
 
         for obj in (*self.created_entities, *self.created_constraints):
-            remap_references(obj, id_map)
+            obj.remap_references(id_map)
 
         registry.add_points(self.created_points)
         registry.entities.extend(self.created_entities)

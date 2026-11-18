@@ -4,10 +4,9 @@ from raygeo.sketch.constraints import (
     EqualDistanceConstraint,
     TangentConstraint,
 )
+from raygeo.sketch.entities import Arc, Line
 from sketcher.core import Sketch
-from sketcher.core.arc_entity import Arc
 from sketcher.core.commands import FilletCommand
-from sketcher.core.line_entity import Line
 
 # Constant for consistency
 DEFAULT_FILLET_RADIUS = 10.0

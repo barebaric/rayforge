@@ -5,8 +5,8 @@ from raygeo.sketch.constraints import (
     PointOnLineConstraint,
     VerticalConstraint,
 )
-from sketcher.core.line_entity import Line
-from sketcher.core.point_entity import Point
+from raygeo.sketch.entities import Line
+from raygeo.sketch.entities import SketchPoint as Point
 from sketcher.core.snap import SnapLineType
 from sketcher.core.snap.types import SnapLine, SnapPoint, SnapResult
 from sketcher.ui_gtk.tools.snap_mixin import SnapMixin

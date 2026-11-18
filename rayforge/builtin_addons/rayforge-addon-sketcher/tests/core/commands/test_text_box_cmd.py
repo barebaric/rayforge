@@ -4,10 +4,10 @@ from raygeo.sketch.constraints import (
     ParallelogramConstraint,
     PerpendicularConstraint,
 )
+from raygeo.sketch.entities import Line
+from raygeo.sketch.entities import TextBox as TextBoxEntity
 from sketcher.core import Sketch
 from sketcher.core.commands import TextBoxCommand
-from sketcher.core.line_entity import Line
-from sketcher.core.text_box_entity import TextBoxEntity
 
 
 def test_text_box_calculate_geometry_default():

@@ -1,8 +1,8 @@
 import pytest
 from raygeo.geo import Geometry
 from raygeo.geo.shape.text import FontConfig
+from raygeo.sketch.entities import TextBox as TextBoxEntity
 from sketcher.core.registry import EntityRegistry
-from sketcher.core.text_box_entity import TextBoxEntity
 
 
 @pytest.fixture
@@ -80,7 +80,7 @@ def test_text_box_get_junction_point_ids(registry):
     box = registry.get_entity(
         registry.add_text_box(p1, p2, p3, "Test", FontConfig())
     )
-    assert box.get_junction_point_ids() == []
+    assert set(box.get_junction_point_ids()) == {p1, p2, p3}
 
 
 def test_text_box_hit_test(registry):

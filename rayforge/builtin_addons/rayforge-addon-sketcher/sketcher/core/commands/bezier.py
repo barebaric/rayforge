@@ -5,11 +5,10 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point as GeoPoint
+from raygeo.sketch.entities import Bezier, Line
+from raygeo.sketch.entities import SketchPoint as Point
 
-from ..bezier_entity import Bezier
-from ..line_entity import Line
-from ..point_entity import Point, WaypointType
-from ..types import EntityID
+from ..types import EntityID, WaypointType
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData
 from .items import AddItemsCommand

@@ -6,6 +6,7 @@ from gettext import gettext as _
 from typing import ClassVar
 
 from gi.repository import Adw, Gtk
+from raygeo.sketch.entities import Circle
 
 from rayforge.ui_gtk.shared.pref_rows import (
     AngleSpinRow,
@@ -17,7 +18,6 @@ from ...core.arrays import (
     CircularArray,
     CircularArrayStrategy,
 )
-from ...core.circle_entity import Circle
 from ...core.commands import CreateArrayCommand
 from ...core.entity_group import EntityGroup
 from .array_base import ArrayToolBase

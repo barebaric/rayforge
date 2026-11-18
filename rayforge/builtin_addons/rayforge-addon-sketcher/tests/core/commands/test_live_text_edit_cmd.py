@@ -1,10 +1,10 @@
 from typing import cast
 from unittest.mock import patch
 
+from raygeo.sketch.entities import TextBox as TextBoxEntity
 from sketcher.core import Sketch
 from sketcher.core.commands import TextBoxCommand
 from sketcher.core.commands.live_text_edit import LiveTextEditCommand
-from sketcher.core.text_box_entity import TextBoxEntity
 
 from rayforge.core.undo.history import COALESCE_THRESHOLD
 

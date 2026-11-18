@@ -6,9 +6,9 @@ from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point as GeoPoint
 from raygeo.sketch.constraints import DiameterConstraint
+from raygeo.sketch.entities import Circle
+from raygeo.sketch.entities import SketchPoint as Point
 
-from ..circle_entity import Circle
-from ..point_entity import Point
 from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData

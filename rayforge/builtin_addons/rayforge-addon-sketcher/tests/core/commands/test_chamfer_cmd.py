@@ -3,9 +3,9 @@ from raygeo.sketch.constraints import (
     CollinearConstraint,
     EqualDistanceConstraint,
 )
+from raygeo.sketch.entities import Line
 from sketcher.core import Sketch
 from sketcher.core.commands import ChamferCommand
-from sketcher.core.line_entity import Line
 
 # This is a constant from the implementation, let's use it for consistency
 DEFAULT_CHAMFER_DISTANCE = 10.0

@@ -1,6 +1,6 @@
 import pytest
 from raygeo.geo import Geometry
-from sketcher.core.ellipse_entity import Ellipse
+from raygeo.sketch.entities import Ellipse
 from sketcher.core.registry import EntityRegistry
 
 
@@ -126,12 +126,11 @@ def test_ellipse_hit_test_rotated(registry):
 
 
 def test_ellipse_hit_test_missing_points(registry):
-    """Tests hit_test raises IndexError when points are missing."""
+    """Tests hit_test returns False when defining points are missing."""
     ellipse = Ellipse(
         id=999, center_idx=999, radius_x_pt_idx=998, radius_y_pt_idx=997
     )
-    with pytest.raises(IndexError):
-        ellipse.hit_test(0, 0, 1.0, registry)
+    assert ellipse.hit_test(0, 0, 1.0, registry) is False
 
 
 def test_ellipse_hit_test_zero_radii(registry):
@@ -372,6 +371,6 @@ def test_ellipse_get_rotation(registry):
 
     import math
 
-    rotation = ellipse._get_rotation(registry)
+    rotation = ellipse.get_rotation(registry)
     expected = math.atan2(10, 10)
     assert abs(rotation - expected) < 1e-9

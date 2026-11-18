@@ -7,12 +7,10 @@ from raygeo.sketch.constraints import (
     PointOnCurveConstraint,
     PointOnLineConstraint,
 )
-from raygeo.sketch.entities import Entity
+from raygeo.sketch.entities import Bezier, Entity
+from raygeo.sketch.entities import TextBox as TextBoxEntity
 
 from rayforge.ui_gtk.canvas.worldsurface import WorldSurface
-
-from ..core.bezier_entity import Bezier
-from ..core.text_box_entity import TextBoxEntity
 
 logger = logging.getLogger(__name__)
 

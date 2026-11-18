@@ -3,9 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from ..arc_entity import Arc
-from ..circle_entity import Circle
-from ..line_entity import Line
+from raygeo.sketch.entities import Arc, Circle, Line
+
 from ..types import EntityID
 
 if TYPE_CHECKING:

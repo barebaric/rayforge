@@ -3,10 +3,9 @@ from raygeo.sketch.constraints import (
     DistanceConstraint,
     TangentConstraint,
 )
+from raygeo.sketch.entities import Arc, Line
 from sketcher.core import Sketch
-from sketcher.core.arc_entity import Arc
 from sketcher.core.commands import DuplicateCommand
-from sketcher.core.line_entity import Line
 from sketcher.core.selection import SketchSelection
 
 

@@ -11,11 +11,9 @@ from raygeo.sketch.constraints import (
     SymmetryConstraint,
     VerticalConstraint,
 )
+from raygeo.sketch.entities import Arc, Circle, Line
+from raygeo.sketch.entities import SketchPoint as Point
 
-from ...core.arc_entity import Arc
-from ...core.circle_entity import Circle
-from ...core.line_entity import Line
-from ...core.point_entity import Point
 from ...core.snap import (
     SNAP_LINE_STYLES,
     DragContext,

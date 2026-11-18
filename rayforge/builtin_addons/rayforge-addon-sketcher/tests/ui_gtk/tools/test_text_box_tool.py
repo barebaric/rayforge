@@ -3,11 +3,11 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from raygeo.geo.shape.text import FontConfig
+from raygeo.sketch.entities import TextBox as TextBoxEntity
 from sketcher.core import Sketch
 from sketcher.core.commands import TextBoxCommand
 from sketcher.core.commands.live_text_edit import LiveTextEditCommand
 from sketcher.core.commands.text_property import ModifyTextPropertyCommand
-from sketcher.core.text_box_entity import TextBoxEntity
 from sketcher.ui_gtk.tools import TextBoxTool
 from sketcher.ui_gtk.tools.base import SketcherKey
 from sketcher.ui_gtk.tools.text_box_tool import TextBoxState

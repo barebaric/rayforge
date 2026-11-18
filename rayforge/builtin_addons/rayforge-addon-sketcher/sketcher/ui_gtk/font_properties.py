@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 from gi.repository import Adw, Gtk, Pango
 from raygeo.geo.shape.text import FontConfig
+from raygeo.sketch.entities import TextBox as TextBoxEntity
 
 from rayforge.ui_gtk.icons import get_icon
 from rayforge.ui_gtk.shared.pref_rows import SpinRow
@@ -11,7 +12,6 @@ from rayforge.ui_gtk.shared.pref_rows import SpinRow
 from ..core.commands.text_property import (
     ModifyTextPropertyCommand,
 )
-from ..core.text_box_entity import TextBoxEntity
 
 if TYPE_CHECKING:
     from .editor import SketchEditor

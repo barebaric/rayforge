@@ -1,11 +1,10 @@
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Union
 
-from raygeo.sketch.entities import Entity
+from raygeo.sketch.entities import Bezier, Entity
+from raygeo.sketch.entities import SketchPoint as Point
 
-from ...core.bezier_entity import Bezier
 from ...core.commands import StraightenBezierCommand
-from ...core.point_entity import Point
 from .base import SketchTool
 
 if TYPE_CHECKING:
@@ -23,7 +22,7 @@ class StraightenTool(SketchTool):
     ) -> bool:
         if not isinstance(target, Bezier):
             return False
-        return not target.is_line(self.element.sketch.registry)
+        return not target.is_line
 
     def on_press(self, world_x: float, world_y: float, n_press: int) -> bool:
         return True

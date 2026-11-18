@@ -14,11 +14,9 @@ from raygeo.sketch.constraints import (
     PointOnLineConstraint,
     RadiusConstraint,
 )
-from raygeo.sketch.entities import Entity
+from raygeo.sketch.entities import Circle, Entity, Line
+from raygeo.sketch.entities import SketchPoint as Point
 
-from ..circle_entity import Circle
-from ..line_entity import Line
-from ..point_entity import Point
 from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData

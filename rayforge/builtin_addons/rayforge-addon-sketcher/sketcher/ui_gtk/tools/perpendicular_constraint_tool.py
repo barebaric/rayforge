@@ -4,9 +4,9 @@ from typing import TYPE_CHECKING, ClassVar, Union
 
 from raygeo.sketch.constraints import PerpendicularConstraint
 from raygeo.sketch.entities import Entity
+from raygeo.sketch.entities import SketchPoint as Point
 
 from ...core.commands import AddItemsCommand
-from ...core.point_entity import Point
 from .base import SketchTool
 
 if TYPE_CHECKING:

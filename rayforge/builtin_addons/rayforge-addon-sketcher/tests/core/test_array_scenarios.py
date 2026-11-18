@@ -11,11 +11,11 @@ from raygeo.sketch.constraints import (
     DragConstraint,
     RadiusConstraint,
 )
+from raygeo.sketch.entities import Circle
 from sketcher.core.arrays import (
     CircularArrayStrategy,
     find_array_for_entity,
 )
-from sketcher.core.circle_entity import Circle
 from sketcher.core.commands import (
     CreateArrayCommand,
     EditArrayCommand,

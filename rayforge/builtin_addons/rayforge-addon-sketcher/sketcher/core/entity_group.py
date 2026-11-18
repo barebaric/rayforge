@@ -15,14 +15,12 @@ import math
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, Protocol
 
-from .circle_entity import Circle
-from .ellipse_entity import Ellipse
-from .reference_map import remap_references
+from raygeo.sketch.entities import Circle, Ellipse
 
 if TYPE_CHECKING:
     from raygeo.sketch.entities import Entity
+    from raygeo.sketch.entities import SketchPoint as Point
 
-    from .point_entity import Point
     from .registry import EntityRegistry
 
 
@@ -47,7 +45,7 @@ def points_bbox_center(points: list[Point]) -> tuple[float, float]:
 
 def remap_point_refs(obj: Any, pid_map: dict[int, int]) -> None:
     """Rewrites point ID references on an entity or constraint."""
-    remap_references(obj, pid_map)
+    obj.remap_references(pid_map)
 
 
 class EntityGroup:

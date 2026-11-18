@@ -2,7 +2,7 @@ import pytest
 from raygeo.geo import Bezier as GeoBezier
 from raygeo.geo import Geometry, Move
 from raygeo.geo import Line as GeoLine
-from sketcher.core.bezier_entity import Bezier
+from raygeo.sketch.entities import Bezier
 from sketcher.core.registry import EntityRegistry
 
 
@@ -56,7 +56,7 @@ def test_bezier_as_line(registry):
     bid = registry.add_bezier(start, end)
     bezier = registry.get_entity(bid)
 
-    assert bezier.is_line(registry) is True
+    assert bezier.is_line is True
 
     vertices = bezier.to_polygon_vertices(registry, forward=True)
     assert len(vertices) == 1
@@ -76,7 +76,7 @@ def test_bezier_with_control_points(registry):
     bezier.cp1 = (5.0, 10.0)
     bezier.cp2 = (-5.0, 10.0)
 
-    assert bezier.is_line(registry) is False
+    assert bezier.is_line is False
 
     vertices = bezier.to_polygon_vertices(registry, forward=True)
     assert len(vertices) == 21
@@ -193,7 +193,7 @@ def test_bezier_with_own_control_points(registry):
     bezier.cp1 = (5.0, 10.0)
     bezier.cp2 = (-5.0, 10.0)
 
-    assert bezier.is_line(registry) is False
+    assert bezier.is_line is False
 
     cp1_x, cp1_y, cp2_x, cp2_y = bezier.get_control_points(registry)
     assert cp1_x == pytest.approx(5.0)

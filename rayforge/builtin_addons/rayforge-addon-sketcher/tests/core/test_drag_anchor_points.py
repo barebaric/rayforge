@@ -6,10 +6,7 @@ from raygeo.sketch.constraints import (
     DragConstraint,
     PerpendicularConstraint,
 )
-from sketcher.core.arc_entity import Arc
-from sketcher.core.circle_entity import Circle
-from sketcher.core.ellipse_entity import Ellipse
-from sketcher.core.line_entity import Line
+from raygeo.sketch.entities import Arc, Circle, Ellipse, Line
 from sketcher.core.params import ParameterContext
 from sketcher.core.registry import EntityRegistry
 from sketcher.core.solver import Solver

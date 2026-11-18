@@ -1,8 +1,8 @@
 import math
 
 from raygeo.geo.shape.arc import get_arc_direction
+from raygeo.sketch.entities import Arc
 from sketcher.core import Sketch
-from sketcher.core.arc_entity import Arc
 from sketcher.core.commands import ArcCommand, ArcPreviewState
 
 
