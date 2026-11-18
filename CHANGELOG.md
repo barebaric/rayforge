@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (firmware identity, motion limits, unit reporting) is computed by
   the raydriver library now; Rayforge only maps the result onto its
   device profiles
+- Machine: network discovery of FluidNC/ESP3D devices and the xTool
+  machine-type query now use the raydriver library's HTTP probes
+  instead of local aiohttp code
 - Dependencies: raydriver upgraded to 1.12.0
 
 ## 1.14.0
