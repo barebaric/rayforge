@@ -42,18 +42,31 @@ PACKAGES = (
 )
 
 
-def _get_version(package: str) -> str:
+def _get_ref(package: ApiDocsPackage) -> str:
+    """The ref to fetch the docs from: the release tag pinned in
+    requirements.txt, or the package's fallback branch while
+    requirements.txt pins a git revision instead of a release."""
     text = REQUIREMENTS.read_text()
     match = re.search(
-        rf"^{re.escape(package)}==" + r"([^\s#]+)", text, re.MULTILINE
+        rf"^{re.escape(package.name)}==" + r"([^\s#]+)", text, re.MULTILINE
     )
-    if not match:
+    if match:
+        return f"v{match.group(1)}"
+    match = re.search(rf"^{re.escape(package.name)}\s*@", text, re.MULTILINE)
+    if match and package.fallback_ref is not None:
+        return package.fallback_ref
+    if match:
         print(
-            f"Could not find pinned {package} version in {REQUIREMENTS}.",
+            f"{package.name} is pinned to a git revision in"
+            f" {REQUIREMENTS}, but no fallback ref is configured.",
             file=sys.stderr,
         )
         sys.exit(1)
-    return match.group(1)
+    print(
+        f"Could not find pinned {package.name} version in {REQUIREMENTS}.",
+        file=sys.stderr,
+    )
+    sys.exit(1)
 
 
 def _newest_mtime(files: list[Path]) -> float:
@@ -113,13 +126,16 @@ def _extract_docs(package: ApiDocsPackage, ref: str, tmp: str) -> Path:
 
 
 def _sync_package(package: ApiDocsPackage) -> int:
-    version = _get_version(package.name)
-    ref = f"v{version}"
+    ref = _get_ref(package)
 
     with tempfile.TemporaryDirectory() as tmp:
         docs_src = _extract_docs(package, ref, tmp)
 
-        if not docs_src.exists() and package.fallback_ref is not None:
+        if (
+            not docs_src.exists()
+            and package.fallback_ref is not None
+            and ref != package.fallback_ref
+        ):
             print(
                 f"docs/api/ not found in {package.name} {ref}; "
                 f"using {package.fallback_ref} docs instead.",
