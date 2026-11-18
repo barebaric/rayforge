@@ -1,9 +1,9 @@
 import math
 
-from sketcher.core.entities import Point
-from sketcher.core.entities.bezier import Bezier
-from sketcher.core.entities.point import WaypointType
+from raygeo.sketch.entities import Bezier
+from raygeo.sketch.entities import SketchPoint as Point
 from sketcher.core.registry import EntityRegistry
+from sketcher.core.types import WaypointType
 
 
 def test_point_instantiation():

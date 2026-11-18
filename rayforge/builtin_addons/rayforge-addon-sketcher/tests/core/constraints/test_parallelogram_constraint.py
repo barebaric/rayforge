@@ -2,8 +2,8 @@ from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
+from raygeo.sketch.constraints import ParallelogramConstraint
 from scipy.optimize import check_grad
-from sketcher.core.constraints import ParallelogramConstraint
 from sketcher.core.params import ParameterContext
 from sketcher.core.registry import EntityRegistry
 

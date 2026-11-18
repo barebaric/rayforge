@@ -6,14 +6,14 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point as GeoPoint
+from raygeo.sketch.entities import Bezier, Line
 
-from ..entities import Bezier, Line
-from ..entities.point import WaypointType
-from ..types import EntityID
+from ..types import EntityID, WaypointType
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
-    from ..entities.point import Point
+    from raygeo.sketch.entities import SketchPoint as Point
+
     from ..registry import EntityRegistry
     from ..sketch import Sketch
 
@@ -45,7 +45,7 @@ class SetWaypointTypeCommand(SketchChangeCommand):
         super().__init__(sketch, label)
         self.waypoint_id = waypoint_id
         self.new_type = new_type
-        self._old_waypoint_type: WaypointType | None = None
+        self._old_waypoint_type: str | None = None
         self._old_bezier_states: (
             dict[int, tuple[GeoPoint | None, GeoPoint | None]] | None
         ) = None

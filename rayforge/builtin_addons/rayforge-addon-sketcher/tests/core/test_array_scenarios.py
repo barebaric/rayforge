@@ -7,6 +7,11 @@ edit/regenerate, undo/redo, and solver stability.
 import math
 
 import pytest
+from raygeo.sketch.constraints import (
+    DragConstraint,
+    RadiusConstraint,
+)
+from raygeo.sketch.entities import Circle
 from sketcher.core.arrays import (
     CircularArrayStrategy,
     find_array_for_entity,
@@ -16,11 +21,6 @@ from sketcher.core.commands import (
     EditArrayCommand,
     RemoveItemsCommand,
 )
-from sketcher.core.constraints import (
-    DragConstraint,
-    RadiusConstraint,
-)
-from sketcher.core.entities import Circle
 from sketcher.core.entity_group import EntityGroup
 from sketcher.core.sketch import Sketch
 

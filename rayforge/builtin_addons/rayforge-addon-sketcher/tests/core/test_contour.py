@@ -1,8 +1,8 @@
 """Tests for selection preprocessing into offsettable items."""
 
+from raygeo.sketch.entities import Arc, Circle, Ellipse, PolygonOutline
 from sketcher.core import Sketch
 from sketcher.core.contour import build_offset_items
-from sketcher.core.entities import Arc, Circle, Ellipse, PolygonOutline
 
 
 def _square_sketch():

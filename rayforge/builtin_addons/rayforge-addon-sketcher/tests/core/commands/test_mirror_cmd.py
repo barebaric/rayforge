@@ -1,12 +1,12 @@
 import pytest
-from sketcher.core import Sketch
-from sketcher.core.commands import MirrorAxis, MirrorCommand, MirrorDirection
-from sketcher.core.constraints import (
+from raygeo.sketch.constraints import (
     AngleConstraint,
     DistanceConstraint,
     TangentConstraint,
 )
-from sketcher.core.entities import Arc, Bezier
+from raygeo.sketch.entities import Arc, Bezier
+from sketcher.core import Sketch
+from sketcher.core.commands import MirrorAxis, MirrorCommand, MirrorDirection
 from sketcher.core.selection import SketchSelection
 
 

@@ -1,11 +1,11 @@
 import pytest
-from sketcher.core import Sketch
-from sketcher.core.commands import DuplicateCommand
-from sketcher.core.constraints import (
+from raygeo.sketch.constraints import (
     DistanceConstraint,
     TangentConstraint,
 )
-from sketcher.core.entities import Arc, Line
+from raygeo.sketch.entities import Arc, Line
+from sketcher.core import Sketch
+from sketcher.core.commands import DuplicateCommand
 from sketcher.core.selection import SketchSelection
 
 

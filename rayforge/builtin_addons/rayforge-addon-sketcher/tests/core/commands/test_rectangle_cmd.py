@@ -1,13 +1,13 @@
+from raygeo.sketch.constraints import (
+    PerpendicularConstraint,
+    SymmetryConstraint,
+)
+from raygeo.sketch.entities import SketchPoint as Point
 from sketcher.core import Sketch
 from sketcher.core.commands import (
     RectangleCommand,
     RectanglePreviewState,
 )
-from sketcher.core.constraints import (
-    PerpendicularConstraint,
-    SymmetryConstraint,
-)
-from sketcher.core.entities import Point
 
 
 def test_rectangle_calculate_geometry_no_snap():

@@ -2,17 +2,17 @@
 Tests for constraint conflict detection in the sketcher.
 """
 
-from sketcher.core.arrays import CurveAlongArrayStrategy
-from sketcher.core.commands import CreateArrayCommand
-from sketcher.core.constraints import (
-    ConstraintStatus,
+from raygeo.sketch.constraints import (
     DistanceConstraint,
     HorizontalConstraint,
 )
+from sketcher.core.arrays import CurveAlongArrayStrategy
+from sketcher.core.commands import CreateArrayCommand
 from sketcher.core.params import ParameterContext
 from sketcher.core.registry import EntityRegistry
 from sketcher.core.sketch import Sketch
 from sketcher.core.solver import CONFLICT_ERROR_THRESHOLD, Solver
+from sketcher.core.types import ConstraintStatus
 
 
 class TestSolverConflictDetection:

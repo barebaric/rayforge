@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from enum import Enum, auto
+from enum import Enum
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
@@ -11,14 +11,15 @@ from ..types import EntityID
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
-    from ..constraints import Constraint
+    from raygeo.sketch.constraints import Constraint
+
     from ..selection import SketchSelection
     from ..sketch import Sketch
 
 logger = logging.getLogger(__name__)
 
 
-class MirrorDirection(Enum):
+class MirrorDirection(str, Enum):
     """
     Direction of a mirror reflection.
 
@@ -28,8 +29,8 @@ class MirrorDirection(Enum):
     coordinates, mirror axis is vertical.
     """
 
-    VERTICAL = auto()
-    HORIZONTAL = auto()
+    VERTICAL = "vertical"
+    HORIZONTAL = "horizontal"
 
 
 @dataclass(frozen=True)

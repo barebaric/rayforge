@@ -5,7 +5,8 @@ import math
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
-from ..entities import Arc, Bezier, Line
+from raygeo.sketch.entities import Arc, Bezier, Line
+
 from ..entity_group import EntityGroup
 from .base import (
     Array,
@@ -15,9 +16,10 @@ from .base import (
 )
 
 if TYPE_CHECKING:
-    from ..constraints import Constraint
-    from ..entities import Entity
-    from ..entities.point import Point
+    from raygeo.sketch.constraints import Constraint
+    from raygeo.sketch.entities import Entity
+    from raygeo.sketch.entities import SketchPoint as Point
+
     from ..registry import EntityRegistry
 
 logger = logging.getLogger(__name__)

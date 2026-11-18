@@ -13,7 +13,8 @@ from typing import TYPE_CHECKING
 from .types import EntityID
 
 if TYPE_CHECKING:
-    from .constraints import Constraint
+    from raygeo.sketch.constraints import Constraint
+
     from .registry import EntityRegistry
 
 

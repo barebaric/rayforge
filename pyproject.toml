@@ -58,6 +58,12 @@ quote-style = "double"
 [tool.pyright]
 stubPath = "typings"
 reportMissingModuleSource = false
+# The sketcher entities subclass compiled raygeo bases whose stubs
+# describe the binding signatures; the Python subclasses restore the
+# reference signatures, which pyright's strict override checks flag
+# as noise.
+reportIncompatibleMethodOverride = false
+reportIncompatibleVariableOverride = false
 include = [
     "rayforge",
     "tests/**/*.py",

@@ -1,8 +1,9 @@
 import math
 
+from raygeo.sketch.entities import Line
+from raygeo.sketch.entities import SketchPoint as Point
 from sketcher.core import Sketch
 from sketcher.core.commands import LineCommand, LinePreviewState
-from sketcher.core.entities import Line, Point
 
 
 def test_line_command_execute_no_snap():

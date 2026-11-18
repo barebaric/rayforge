@@ -4,13 +4,14 @@ import math
 
 import pytest
 from raygeo.geo.shape.polygon import get_polygon_signed_area
+from raygeo.sketch.entities import Circle
+from raygeo.sketch.entities import Polygon as PolygonEntity
 from sketcher.core import Sketch
 from sketcher.core.boolean import (
     BooleanOp,
     apply_boolean,
     build_boolean_regions,
 )
-from sketcher.core.entities import Circle, PolygonEntity
 
 
 def _square_sketch(sketch, x=0.0, y=0.0, size=20.0):

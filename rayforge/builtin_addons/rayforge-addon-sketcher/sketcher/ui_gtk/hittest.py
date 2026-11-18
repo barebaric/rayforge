@@ -2,19 +2,15 @@ import logging
 from typing import Any
 
 import cairo
-
-from rayforge.ui_gtk.canvas.worldsurface import WorldSurface
-
-from ..core.constraints import (
+from raygeo.sketch.constraints import (
     CoincidentConstraint,
     PointOnCurveConstraint,
     PointOnLineConstraint,
 )
-from ..core.entities import (
-    Bezier,
-    Entity,
-    TextBoxEntity,
-)
+from raygeo.sketch.entities import Bezier, Entity
+from raygeo.sketch.entities import TextBox as TextBoxEntity
+
+from rayforge.ui_gtk.canvas.worldsurface import WorldSurface
 
 logger = logging.getLogger(__name__)
 

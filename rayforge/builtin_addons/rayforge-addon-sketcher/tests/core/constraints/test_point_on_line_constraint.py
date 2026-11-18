@@ -3,9 +3,9 @@ from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
+from raygeo.sketch.constraints import PointOnLineConstraint
 from scipy.optimize import check_grad
 from sketcher.core import Sketch
-from sketcher.core.constraints import PointOnLineConstraint
 from sketcher.core.params import ParameterContext
 from sketcher.core.registry import EntityRegistry
 from sketcher.core.selection import SketchSelection

@@ -2,18 +2,21 @@
 
 import itertools
 import math
+from typing import cast
 
 import pytest
 from raygeo.geo.shape.polygon import get_polygon_signed_area
+from raygeo.sketch.entities import Polygon as PolygonEntity
 from sketcher.core import Sketch
 from sketcher.core.commands import MirrorAxis, MirrorDirection
-from sketcher.core.entities import PolygonEntity
-from sketcher.core.entities.polygon import offset_outline
+from sketcher.core.offset import offset_outline
 
 SQUARE = [(0.0, 0.0), (20.0, 0.0), (20.0, 20.0), (0.0, 20.0)]
 
 
-def _sketch_with_polygon(closed=True):
+def _sketch_with_polygon(
+    closed: bool = True,
+) -> tuple[Sketch, PolygonEntity]:
     sketch = Sketch()
     center_id = sketch.add_point(0.0, 0.0)
     handle_id = sketch.add_point(5.0, 0.0)
@@ -26,7 +29,7 @@ def _sketch_with_polygon(closed=True):
     )
     sketch.registry.entities.append(polygon)
     sketch.registry._entity_map[polygon.id] = polygon
-    return sketch, polygon
+    return sketch, cast(PolygonEntity, polygon)
 
 
 def test_world_vertex_roundtrip():
@@ -172,7 +175,7 @@ def _handle_on_contour_dist_sq(grown, handle):
 
 def test_frame_closed_center_inside_handle_on_contour():
     from raygeo.geo.shape.polygon import is_point_inside_polygon
-    from sketcher.core.entities.polygon import _frame_for_outline
+    from sketcher.core.offset import _frame_for_outline
 
     grown = offset_outline(SQUARE, True, 2.0)[0][0]
     center, handle = _frame_for_outline(grown, closed=True)
@@ -183,7 +186,7 @@ def test_frame_closed_center_inside_handle_on_contour():
 def test_frame_handle_at_long_axis_end():
     """For an elongated outline the handle sits at the far end of the
     long axis, not at the narrow inscribed-circle edge."""
-    from sketcher.core.entities.polygon import _frame_for_outline
+    from sketcher.core.offset import _frame_for_outline
 
     stadium = offset_outline([(0.0, 0.0), (100.0, 0.0)], False, 5.0)[0][0]
     center, handle = _frame_for_outline(stadium, closed=True)
@@ -194,10 +197,7 @@ def test_frame_handle_at_long_axis_end():
 
 
 def test_frame_open_handle_on_polyline():
-    from sketcher.core.entities.polygon import (
-        _closest_outline_point,
-        _frame_for_outline,
-    )
+    from sketcher.core.offset import _closest_outline_point, _frame_for_outline
 
     path = [(0.0, 0.0), (30.0, 10.0), (60.0, 0.0)]
     _center, handle = _frame_for_outline(path, closed=False)
@@ -209,7 +209,7 @@ def test_frame_open_handle_on_polyline():
 def test_frame_diagonal_line_nondegenerate():
     """A straight diagonal through its bbox center still yields a
     usable frame (handle strictly off-center)."""
-    from sketcher.core.entities.polygon import _frame_for_outline
+    from sketcher.core.offset import _frame_for_outline
 
     center, handle = _frame_for_outline([(0.0, 0.0), (40.0, 0.0)], False)
     assert (center[0], center[1]) != (handle[0], handle[1])

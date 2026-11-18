@@ -8,12 +8,15 @@ from dataclasses import dataclass
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Any, ClassVar
 
-from ..entities import Circle
+from raygeo.sketch.entities import Circle
+
 from ..entity_group import EntityGroup
 
 if TYPE_CHECKING:
-    from ..constraints import Constraint
-    from ..entities import Entity, Point
+    from raygeo.sketch.constraints import Constraint
+    from raygeo.sketch.entities import Entity
+    from raygeo.sketch.entities import SketchPoint as Point
+
     from ..registry import EntityRegistry
 
 logger = logging.getLogger(__name__)

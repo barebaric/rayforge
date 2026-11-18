@@ -1,10 +1,10 @@
+from raygeo.sketch.constraints import TangentConstraint
+from raygeo.sketch.entities import Arc, Line
 from sketcher.core import Sketch
 from sketcher.core.commands import (
     RoundedRectCommand,
     RoundedRectPreviewState,
 )
-from sketcher.core.constraints import TangentConstraint
-from sketcher.core.entities import Arc, Line
 
 
 def test_rounded_rect_calculate_geometry():

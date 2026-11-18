@@ -2,13 +2,13 @@ from gettext import gettext as _
 from typing import ClassVar
 
 import cairo
+from raygeo.sketch.entities import TextBox as TextBoxEntity
 
 from rayforge.core.color import ColorRGBA
 from rayforge.image.geo_renderer import geometry_to_cairo
 
 from ...core.commands import AddFillCommand, RemoveFillCommand
 from ...core.commands.fill import SetTextFillCommand
-from ...core.entities.text_box import TextBoxEntity
 from ...core.sketch import DEFAULT_FILL_COLOR, FillStyle
 from .base import SketchTool
 

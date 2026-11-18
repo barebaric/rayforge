@@ -5,13 +5,16 @@ from collections.abc import Sequence
 from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
-from ..constraints import EqualDistanceConstraint
-from ..entities import Arc
+from raygeo.sketch.constraints import EqualDistanceConstraint
+from raygeo.sketch.entities import Arc
+
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
-    from ..constraints import Constraint
-    from ..entities import Entity, Point
+    from raygeo.sketch.constraints import Constraint
+    from raygeo.sketch.entities import Entity
+    from raygeo.sketch.entities import SketchPoint as Point
+
     from ..sketch import Sketch
 
 logger = logging.getLogger(__name__)
@@ -61,34 +64,12 @@ class AddItemsCommand(SketchChangeCommand):
 
         # Update point references within the entity
         for e in new_entities:
-            for attr, value in vars(e).items():
-                # Note: bool is an int subclass; never remap flags.
-                if (
-                    isinstance(value, int)
-                    and not isinstance(value, bool)
-                    and value in id_map
-                ):
-                    setattr(e, attr, id_map[value])
-                # Handle lists of IDs, like in TextBoxEntity
-                elif isinstance(value, list) and attr.endswith("_ids"):
-                    new_ids = [id_map.get(old, old) for old in value]
-                    setattr(e, attr, new_ids)
+            e.remap_references(id_map)
         registry.entities.extend(new_entities)
 
         # Update point and entity references within constraints
         for c in self.constraints:
-            for attr, value in vars(c).items():
-                # Note: bool is an int subclass; never remap flags.
-                if (
-                    isinstance(value, int)
-                    and not isinstance(value, bool)
-                    and value in id_map
-                ):
-                    setattr(c, attr, id_map[value])
-                elif isinstance(value, list):
-                    # Handle lists of IDs, like in EqualLengthConstraint
-                    new_ids = [id_map.get(old, old) for old in value]
-                    setattr(c, attr, new_ids)
+            c.remap_references(id_map)
 
         # Rebuild entity map after adding
         registry._entity_map = {e.id: e for e in registry.entities}

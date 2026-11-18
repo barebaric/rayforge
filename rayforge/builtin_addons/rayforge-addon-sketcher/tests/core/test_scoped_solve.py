@@ -1,12 +1,12 @@
 import pytest
-from sketcher.core.components import (
-    compute_constraint_components,
-    get_referenced_points,
-)
-from sketcher.core.constraints import (
+from raygeo.sketch.constraints import (
     Constraint,
     DragConstraint,
     TangentConstraint,
+)
+from sketcher.core.components import (
+    compute_constraint_components,
+    get_referenced_points,
 )
 from sketcher.core.params import ParameterContext
 from sketcher.core.registry import EntityRegistry

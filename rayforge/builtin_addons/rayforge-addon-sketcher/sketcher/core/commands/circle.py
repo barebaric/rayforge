@@ -5,9 +5,10 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point as GeoPoint
+from raygeo.sketch.constraints import DiameterConstraint
+from raygeo.sketch.entities import Circle
+from raygeo.sketch.entities import SketchPoint as Point
 
-from ..constraints import DiameterConstraint
-from ..entities import Circle, Point
 from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData

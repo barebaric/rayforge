@@ -1,19 +1,19 @@
 import math
 
 import pytest
+from raygeo.sketch.constraints import (
+    AspectRatioConstraint,
+    EqualLengthConstraint,
+    PointOnLineConstraint,
+    RadiusConstraint,
+)
+from raygeo.sketch.entities import Circle, Line
 from sketcher.core import Sketch
 from sketcher.core.commands import (
     PolygonCommand,
     PolygonPreviewState,
     polygon_vertices,
 )
-from sketcher.core.constraints import (
-    AspectRatioConstraint,
-    EqualLengthConstraint,
-    PointOnLineConstraint,
-    RadiusConstraint,
-)
-from sketcher.core.entities import Circle, Line
 
 
 def _lines(sketch):

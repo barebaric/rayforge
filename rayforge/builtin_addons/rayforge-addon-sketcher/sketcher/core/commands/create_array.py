@@ -6,6 +6,8 @@ import uuid
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
+from raygeo.sketch.entities import Bezier, Circle, SketchPoint
+
 from ..arrays import (
     Array,
     ArrayStrategy,
@@ -13,15 +15,15 @@ from ..arrays import (
     InstancePlacement,
     resolve_template_center,
 )
-from ..entities import Bezier, Circle
-from ..entities import Point as SketchPoint
 from ..entity_group import EntityGroup, remap_point_refs
 from .base import SketchChangeCommand
 from .items import AddItemsCommand
 
 if TYPE_CHECKING:
-    from ..constraints import Constraint
-    from ..entities import Entity, Point
+    from raygeo.sketch.constraints import Constraint
+    from raygeo.sketch.entities import Entity
+    from raygeo.sketch.entities import SketchPoint as Point
+
     from ..registry import EntityRegistry
     from ..sketch import Sketch
 

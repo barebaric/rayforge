@@ -3,8 +3,8 @@ from collections.abc import Iterator
 from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point as GeoPoint
+from raygeo.sketch.entities import Arc, Circle, Line
 
-from ...entities import Arc, Circle, Line
 from ..engine import SnapLineProducer
 from ..types import DragContext, SnapLine, SnapLineType, SnapPoint
 

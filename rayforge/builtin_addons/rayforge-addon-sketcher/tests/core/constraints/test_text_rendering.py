@@ -1,7 +1,7 @@
 import cairo
 import pytest
 from gi.repository import PangoCairo
-from sketcher.core.constraints import (
+from raygeo.sketch.constraints import (
     AngleConstraint,
     DiameterConstraint,
     DistanceConstraint,
@@ -9,8 +9,8 @@ from sketcher.core.constraints import (
     EqualLengthConstraint,
     RadiusConstraint,
 )
-from sketcher.core.constraints.base import ConstraintStatus
 from sketcher.core.registry import EntityRegistry
+from sketcher.core.types import ConstraintStatus
 
 
 @pytest.mark.parametrize(

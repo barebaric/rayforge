@@ -8,8 +8,8 @@ from raygeo.geo.shape.circle import (
 )
 from raygeo.geo.shape.line import get_line_segment_intersection
 from raygeo.geo.types import Point as GeoPoint
+from raygeo.sketch.entities import Arc, Circle, Line
 
-from ...entities import Arc, Circle, Line
 from ..engine import SnapLineProducer
 from ..types import DragContext, SnapLine, SnapLineType, SnapPoint
 

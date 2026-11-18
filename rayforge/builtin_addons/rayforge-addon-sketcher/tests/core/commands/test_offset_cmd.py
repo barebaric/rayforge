@@ -5,9 +5,10 @@ from raygeo.geo.shape.polygon import (
     get_polygon_closest_point,
     is_point_inside_polygon,
 )
+from raygeo.sketch.entities import Circle, Ellipse
+from raygeo.sketch.entities import Polygon as PolygonEntity
 from sketcher.core import Sketch
 from sketcher.core.commands import OffsetCommand
-from sketcher.core.entities import Circle, Ellipse, PolygonEntity
 
 
 def _circle_sketch():

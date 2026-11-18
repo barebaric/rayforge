@@ -3,16 +3,11 @@ from typing import Any
 
 from raygeo.geo.shape.text import FontConfig
 from raygeo.geo.types import Point as GeoPoint
+from raygeo.sketch.entities import Arc, Bezier, Circle, Ellipse, Entity, Line
+from raygeo.sketch.entities import Polygon as PolygonEntity
+from raygeo.sketch.entities import SketchPoint as Point
+from raygeo.sketch.entities import TextBox as TextBoxEntity
 
-from .entities.arc import Arc
-from .entities.bezier import Bezier
-from .entities.circle import Circle
-from .entities.ellipse import Ellipse
-from .entities.entity import Entity
-from .entities.line import Line
-from .entities.point import Point
-from .entities.polygon import PolygonEntity
-from .entities.text_box import TextBoxEntity
 from .types import EntityID
 
 _ENTITY_CLASSES = {
@@ -38,6 +33,12 @@ class EntityRegistry:
         self._entity_version: int = 0
         # Tracks how many entities reference each point. O(1) is_point_used.
         self._point_usage_count: dict[EntityID, int] = {}
+
+    def allocate_id(self) -> EntityID:
+        """Allocates the next free model id."""
+        eid = self._id_counter
+        self._id_counter += 1
+        return eid
 
     def _increment_point_usage(self, pid: EntityID) -> None:
         self._point_usage_count[pid] = self._point_usage_count.get(pid, 0) + 1
@@ -110,7 +111,12 @@ class EntityRegistry:
     ) -> EntityID:
         eid = self._id_counter
         entity = Arc(
-            eid, start, end, center, clockwise=cw, construction=construction
+            eid,
+            start,
+            end,
+            center,
+            clockwise=bool(cw),
+            construction=construction,
         )
         self.entities.append(entity)
         self._entity_map[eid] = entity

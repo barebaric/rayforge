@@ -6,8 +6,7 @@ import pytest
 from raygeo.geo import Arc as GeoArc
 from raygeo.geo import Geometry, Move
 from raygeo.geo import Line as GeoLine
-from sketcher.core import Sketch
-from sketcher.core.constraints import (
+from raygeo.sketch.constraints import (
     CoincidentConstraint,
     EqualDistanceConstraint,
     EqualLengthConstraint,
@@ -15,6 +14,7 @@ from sketcher.core.constraints import (
     PointOnLineConstraint,
     SymmetryConstraint,
 )
+from sketcher.core import Sketch
 from sketcher.core.sketch import Fill
 
 from rayforge.core.varset import FloatVar

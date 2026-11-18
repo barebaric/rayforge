@@ -1,8 +1,9 @@
 import math
 
+from raygeo.sketch.entities import Circle
+from raygeo.sketch.entities import SketchPoint as Point
 from sketcher.core import Sketch
 from sketcher.core.commands import CircleCommand, CirclePreviewState
-from sketcher.core.entities import Circle, Point
 
 
 def test_circle_command_execute_no_snap():

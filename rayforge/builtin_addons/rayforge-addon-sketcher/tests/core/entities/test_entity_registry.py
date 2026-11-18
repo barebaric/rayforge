@@ -1,12 +1,8 @@
 import pytest
 from raygeo.geo.shape.text import FontConfig
-from sketcher.core.entities import (
-    Arc,
-    Circle,
-    Line,
-    Point,
-    TextBoxEntity,
-)
+from raygeo.sketch.entities import Arc, Circle, Line
+from raygeo.sketch.entities import SketchPoint as Point
+from raygeo.sketch.entities import TextBox as TextBoxEntity
 from sketcher.core.registry import EntityRegistry
 
 

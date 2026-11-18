@@ -10,6 +10,9 @@ import math
 
 import pytest
 from raygeo.geo.shape.text import FontConfig
+from raygeo.sketch.constraints import ParallelogramConstraint
+from raygeo.sketch.entities import Circle, Line
+from raygeo.sketch.entities import TextBox as TextBoxEntity
 from sketcher.core.arrays import CircularArrayStrategy, CurveAlongArrayStrategy
 from sketcher.core.commands import (
     CreateArrayCommand,
@@ -18,8 +21,6 @@ from sketcher.core.commands import (
     TextBoxCommand,
 )
 from sketcher.core.commands.duplicate import DuplicateCommand
-from sketcher.core.constraints import ParallelogramConstraint
-from sketcher.core.entities import Circle, Line, TextBoxEntity
 from sketcher.core.params import ParameterContext
 from sketcher.core.selection import SketchSelection
 from sketcher.core.sketch import Sketch

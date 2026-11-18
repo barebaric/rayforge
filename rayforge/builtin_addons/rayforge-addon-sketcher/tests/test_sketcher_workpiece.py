@@ -4,8 +4,8 @@ from typing import cast
 import pytest
 from raygeo.geo import Geometry, Matrix
 from raygeo.geo.shape.text import FontConfig
+from raygeo.sketch.entities import TextBox as TextBoxEntity
 from sketcher.core import Sketch
-from sketcher.core.entities import TextBoxEntity
 
 from rayforge.core.doc import Doc
 from rayforge.core.source_asset_segment import SourceAssetSegment

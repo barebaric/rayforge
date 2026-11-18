@@ -12,6 +12,15 @@ from typing import (
 import cairo
 from raygeo.geo import Matrix
 from raygeo.geo.types import Point as GeoPoint
+from raygeo.sketch.constraints import (
+    AngleConstraint,
+    DiameterConstraint,
+    DistanceConstraint,
+    DragConstraint,
+    RadiusConstraint,
+)
+from raygeo.sketch.entities import Arc, Bezier, Circle, Entity, Line
+from raygeo.sketch.entities import TextBox as TextBoxEntity
 
 from ...core.commands import (
     CreateOrEditConstraintCommand,
@@ -20,21 +29,6 @@ from ...core.commands import (
     MovePointCommand,
 )
 from ...core.components import compute_constraint_components
-from ...core.constraints import (
-    AngleConstraint,
-    DiameterConstraint,
-    DistanceConstraint,
-    DragConstraint,
-    RadiusConstraint,
-)
-from ...core.entities import (
-    Arc,
-    Bezier,
-    Circle,
-    Entity,
-    Line,
-    TextBoxEntity,
-)
 from ...core.snap import DragContext
 from ...core.types import EntityID
 from .base import SketcherKey, SketchTool

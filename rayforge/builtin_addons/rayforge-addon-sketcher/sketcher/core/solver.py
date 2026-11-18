@@ -4,12 +4,12 @@ from collections.abc import Sequence
 
 import numpy as np
 import scipy.linalg
+from raygeo.sketch.constraints import Constraint
+from raygeo.sketch.entities import SketchPoint as Point
 from scipy.optimize import least_squares
 from threadpoolctl import ThreadpoolController
 
 from .components import compute_constraint_components, get_referenced_points
-from .constraints import Constraint
-from .entities import Point
 from .params import ParameterContext
 from .registry import EntityRegistry
 from .types import EntityID

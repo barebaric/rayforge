@@ -5,14 +5,16 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
-from ..entities.point import Point
+from raygeo.sketch.entities import SketchPoint as Point
+
 from ..entity_group import EntityGroup
 from ..types import EntityID
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
-    from ..constraints import Constraint
-    from ..entities import Entity
+    from raygeo.sketch.constraints import Constraint
+    from raygeo.sketch.entities import Entity
+
     from ..selection import SketchSelection
     from ..sketch import Sketch
 
@@ -23,17 +25,6 @@ def _allocate_id(registry) -> EntityID:
     new_id = registry._id_counter
     registry._id_counter += 1
     return new_id
-
-
-def _remap_id_refs(obj: object, id_map: dict[EntityID, EntityID]) -> None:
-    """Rewrites integer ID references on a copied point/entity/constraint."""
-    for attr, value in vars(obj).items():
-        if isinstance(value, bool):
-            continue
-        if isinstance(value, int) and value in id_map:
-            setattr(obj, attr, id_map[value])
-        elif isinstance(value, list) and attr.endswith("_ids"):
-            setattr(obj, attr, [id_map.get(v, v) for v in value])
 
 
 class DuplicateCommand(SketchChangeCommand):
@@ -153,7 +144,7 @@ class DuplicateCommand(SketchChangeCommand):
             self.created_constraints.append(copy.deepcopy(constr))
 
         for obj in (*self.created_entities, *self.created_constraints):
-            _remap_id_refs(obj, id_map)
+            obj.remap_references(id_map)
 
         registry.add_points(self.created_points)
         registry.entities.extend(self.created_entities)

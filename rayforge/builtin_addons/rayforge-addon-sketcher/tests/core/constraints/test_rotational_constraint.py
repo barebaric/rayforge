@@ -1,7 +1,7 @@
 import math
 
 import pytest
-from sketcher.core.constraints import RotationalConstraint
+from raygeo.sketch.constraints import RotationalConstraint
 from sketcher.core.params import ParameterContext
 from sketcher.core.registry import EntityRegistry
 

@@ -24,13 +24,10 @@ from raygeo.geo.shape.polygon import (
     get_polygons_group_intersection,
     get_polygons_union,
 )
+from raygeo.sketch.entities import Polygon as PolygonEntity
 
 from .contour import chain_vertices, partition_components, walk_component
-from .entities.polygon import (
-    PolygonEntity,
-    group_rings_into_solids,
-    rings_to_geometry,
-)
+from .offset import group_rings_into_solids, rings_to_geometry
 
 if TYPE_CHECKING:
     from .sketch import Sketch

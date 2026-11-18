@@ -1,12 +1,12 @@
 from unittest.mock import MagicMock
 
 import pytest
-from sketcher.core.commands import AddItemsCommand
-from sketcher.core.constraints import (
+from raygeo.sketch.constraints import (
     CoincidentConstraint,
     PointOnCurveConstraint,
     PointOnLineConstraint,
 )
+from sketcher.core.commands import AddItemsCommand
 from sketcher.core.params import ParameterContext
 from sketcher.core.selection import SketchSelection
 from sketcher.core.sketch import Sketch

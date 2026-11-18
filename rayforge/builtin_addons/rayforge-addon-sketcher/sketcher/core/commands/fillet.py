@@ -5,12 +5,14 @@ import math
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
-from ..constraints import (
+from raygeo.sketch.constraints import (
     CollinearConstraint,
     EqualDistanceConstraint,
     TangentConstraint,
 )
-from ..entities import Arc, Line, Point
+from raygeo.sketch.entities import Arc, Line
+from raygeo.sketch.entities import SketchPoint as Point
+
 from ..types import EntityID
 from .base import SketchChangeCommand
 from .items import AddItemsCommand, RemoveItemsCommand

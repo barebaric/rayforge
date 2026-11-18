@@ -9,18 +9,20 @@ from blinker import Signal
 from gi.repository import Gdk, GLib
 from raygeo.geo.shape.polygon import is_point_inside_polygon
 from raygeo.geo.shape.text import FontConfig, text_to_geometry
+from raygeo.sketch.constraints import (
+    AspectRatioConstraint,
+    HorizontalConstraint,
+    VerticalConstraint,
+)
+from raygeo.sketch.entities import Line
+from raygeo.sketch.entities import SketchPoint as Point
+from raygeo.sketch.entities import TextBox as TextBoxEntity
 
 from rayforge.image.geo_renderer import geometry_to_cairo
 
 from ...core.commands import TextBoxCommand
 from ...core.commands.live_text_edit import LiveTextEditCommand
 from ...core.commands.text_property import ModifyTextPropertyCommand
-from ...core.constraints import (
-    AspectRatioConstraint,
-    HorizontalConstraint,
-    VerticalConstraint,
-)
-from ...core.entities import Line, Point, TextBoxEntity
 from ...core.types import EntityID
 from .base import SketcherKey, SketchTool
 

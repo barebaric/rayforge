@@ -5,13 +5,14 @@ from collections.abc import Sequence
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
+from raygeo.sketch.entities import Circle
+
 from ..arrays import (
     Array,
     ArrayStrategy,
     InstancePlacement,
     resolve_template_center,
 )
-from ..entities import Circle
 from ..entity_group import EntityGroup
 from ..params import ParameterContext
 from .base import SketchChangeCommand
@@ -19,7 +20,9 @@ from .create_array import CreateArrayCommand
 from .items import AddItemsCommand, RemoveItemsCommand
 
 if TYPE_CHECKING:
-    from ..entities import Entity, Point
+    from raygeo.sketch.entities import Entity
+    from raygeo.sketch.entities import SketchPoint as Point
+
     from ..registry import EntityRegistry
     from ..sketch import Sketch
 

@@ -1,7 +1,7 @@
 import pytest
 from raygeo.geo import Geometry, Move
 from raygeo.geo import Line as GeoLine
-from sketcher.core.entities import Line
+from raygeo.sketch.entities import Line
 from sketcher.core.registry import EntityRegistry
 
 

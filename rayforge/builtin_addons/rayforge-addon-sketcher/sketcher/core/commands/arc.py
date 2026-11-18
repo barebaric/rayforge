@@ -7,9 +7,10 @@ from typing import TYPE_CHECKING
 from raygeo.geo.shape.arc import get_arc_direction
 from raygeo.geo.shape.circle import project_point_onto_circle
 from raygeo.geo.types import Point as GeoPoint
+from raygeo.sketch.constraints import EqualDistanceConstraint, RadiusConstraint
+from raygeo.sketch.entities import Arc
+from raygeo.sketch.entities import SketchPoint as Point
 
-from ..constraints import EqualDistanceConstraint, RadiusConstraint
-from ..entities import Arc, Point
 from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData

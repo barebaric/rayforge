@@ -1,7 +1,7 @@
+from raygeo.sketch.constraints import HorizontalConstraint, VerticalConstraint
+from raygeo.sketch.entities import Line
 from sketcher.core import Sketch
 from sketcher.core.commands import GridCommand
-from sketcher.core.constraints import HorizontalConstraint, VerticalConstraint
-from sketcher.core.entities import Line
 
 
 def test_grid_calculate_geometry_2x2():
