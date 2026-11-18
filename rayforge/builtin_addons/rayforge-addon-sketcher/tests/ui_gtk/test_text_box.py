@@ -16,7 +16,7 @@ if sys.platform.startswith("linux"):
 from raygeo.geo.shape.text import FontConfig
 from sketcher.core import Sketch
 from sketcher.core.commands import ModifyTextPropertyCommand
-from sketcher.core.entities import TextBoxEntity
+from sketcher.core.text_box_entity import TextBoxEntity
 from sketcher.ui_gtk.renderer import SketchRenderer
 from sketcher.ui_gtk.sketchelement import SketchElement
 from sketcher.ui_gtk.tools import TextBoxTool

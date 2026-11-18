@@ -7,8 +7,8 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING
 
 from ..boolean import BooleanOp, apply_boolean, build_boolean_regions
-from ..entities import OffsetPlan
-from ..entities.polygon import outline_item
+from ..entity_ops import OffsetPlan
+from ..polygon_entity import outline_item
 from ..sketch import Fill
 from .base import SketchChangeCommand
 from .items import AddItemsCommand, RemoveItemsCommand

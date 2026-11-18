@@ -3,13 +3,13 @@ from types import SimpleNamespace
 
 import cairo
 import pytest
-from sketcher.core import Sketch
-from sketcher.core.constraints import (
+from raygeo.sketch.constraints import (
     AngleConstraint,
     Constraint,
     DistanceConstraint,
 )
-from sketcher.core.constraints.angle import ARC_RADIUS
+from raygeo.sketch.constraints.angle import ARC_RADIUS
+from sketcher.core import Sketch
 from sketcher.core.params import ParameterContext
 from sketcher.core.registry import EntityRegistry
 from sketcher.core.selection import SketchSelection

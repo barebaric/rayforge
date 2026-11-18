@@ -6,7 +6,7 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING
 
 from ..contour import OffsetItem, build_offset_items
-from ..entities import OffsetPlan
+from ..entity_ops import OffsetPlan
 from .base import SketchChangeCommand
 from .items import AddItemsCommand, RemoveItemsCommand
 

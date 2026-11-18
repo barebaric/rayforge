@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, cast
 import cairo
 from blinker import Signal
 from raygeo.geo import Matrix
+from raygeo.sketch.entities import Entity
 
 from rayforge.ui_gtk.canvas import CanvasElement
 
@@ -14,7 +15,8 @@ from ..core.commands import (
     DuplicateCommand,
     MoveEntitiesCommand,
 )
-from ..core.entities import Entity, Line, Point
+from ..core.line_entity import Line
+from ..core.point_entity import Point
 from ..core.selection import SketchSelection
 from ..core.sketch import Sketch
 from ..core.snap import SnapEngine

@@ -2,16 +2,20 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, ClassVar, Union
 
+from raygeo.sketch.constraints import RadiusConstraint
+from raygeo.sketch.entities import Entity
+
+from ...core.arc_entity import Arc
+from ...core.circle_entity import Circle
 from ...core.commands import (
     AddItemsCommand,
     CreateOrEditConstraintCommand,
 )
-from ...core.constraints import RadiusConstraint
-from ...core.entities import Arc, Circle, Entity, Point
+from ...core.point_entity import Point
 from .base import SketchTool
 
 if TYPE_CHECKING:
-    from ...core.constraints import Constraint
+    from raygeo.sketch.constraints import Constraint
 
 logger = logging.getLogger(__name__)
 

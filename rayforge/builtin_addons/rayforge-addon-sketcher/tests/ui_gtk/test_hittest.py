@@ -3,7 +3,8 @@ from typing import cast
 from raygeo.geo import Matrix
 from sketcher.core import Sketch
 from sketcher.core.arrays import CurveAlongArray
-from sketcher.core.entities import Bezier, Line
+from sketcher.core.bezier_entity import Bezier
+from sketcher.core.line_entity import Line
 from sketcher.ui_gtk.hittest import SketchHitTester
 
 

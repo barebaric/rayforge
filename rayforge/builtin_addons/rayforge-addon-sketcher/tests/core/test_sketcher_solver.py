@@ -1,7 +1,7 @@
 import math
 
 import pytest
-from sketcher.core.constraints import (
+from raygeo.sketch.constraints import (
     DistanceConstraint,
     DragConstraint,
     HorizontalConstraint,

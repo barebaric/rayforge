@@ -11,7 +11,7 @@ from rayforge.ui_gtk.shared.pref_rows import SpinRow
 from ..core.commands.text_property import (
     ModifyTextPropertyCommand,
 )
-from ..core.entities.text_box import TextBoxEntity
+from ..core.text_box_entity import TextBoxEntity
 
 if TYPE_CHECKING:
     from .editor import SketchEditor

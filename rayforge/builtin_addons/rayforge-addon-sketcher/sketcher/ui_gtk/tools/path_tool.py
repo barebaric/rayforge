@@ -8,8 +8,8 @@ import cairo
 
 from rayforge.ui_gtk.shared.keyboard import PRIMARY_KEY_NAME
 
+from ...core.bezier_entity import Bezier
 from ...core.commands import BezierCommand, BezierPreviewState
-from ...core.entities import Bezier
 from .base import SketcherKey, SketchTool
 from .snap_mixin import SnapMixin
 

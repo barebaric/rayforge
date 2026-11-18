@@ -4,9 +4,9 @@ import cairo
 import numpy as np
 import pytest
 from gi.repository import Pango, PangoCairo
+from raygeo.sketch.constraints import DistanceConstraint
 from scipy.optimize import check_grad
 from sketcher.core import Sketch
-from sketcher.core.constraints import DistanceConstraint
 from sketcher.core.params import ParameterContext
 from sketcher.core.registry import EntityRegistry
 from sketcher.core.selection import SketchSelection

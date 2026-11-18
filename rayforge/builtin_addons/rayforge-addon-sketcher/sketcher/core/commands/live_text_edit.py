@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from rayforge.core.undo.command import Command
 from rayforge.core.undo.history import COALESCE_THRESHOLD
 
-from ..entities.text_box import TextBoxEntity
+from ..text_box_entity import TextBoxEntity
 from ..types import EntityID
 
 if TYPE_CHECKING:

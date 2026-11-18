@@ -1,13 +1,13 @@
 import math
 
 import pytest
-from sketcher.core.arrays import CircularArrayStrategy
-from sketcher.core.commands import CreateArrayCommand
-from sketcher.core.constraints import (
+from raygeo.sketch.constraints import (
     HorizontalConstraint,
     RadiusConstraint,
     VerticalConstraint,
 )
+from sketcher.core.arrays import CircularArrayStrategy
+from sketcher.core.commands import CreateArrayCommand
 from sketcher.core.entity_group import EntityGroup
 from sketcher.core.sketch import Sketch
 

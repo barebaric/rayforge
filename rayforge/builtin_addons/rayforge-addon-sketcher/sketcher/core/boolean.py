@@ -26,7 +26,7 @@ from raygeo.geo.shape.polygon import (
 )
 
 from .contour import chain_vertices, partition_components, walk_component
-from .entities.polygon import (
+from .polygon_entity import (
     PolygonEntity,
     group_rings_into_solids,
     rings_to_geometry,

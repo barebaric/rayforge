@@ -6,8 +6,9 @@ from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point as GeoPoint
 
-from ..entities import Bezier, Line, Point
-from ..entities.point import WaypointType
+from ..bezier_entity import Bezier
+from ..line_entity import Line
+from ..point_entity import Point, WaypointType
 from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData

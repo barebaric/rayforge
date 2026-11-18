@@ -10,8 +10,10 @@ from rayforge.ui_gtk.shared.piemenu import PieMenu, PieMenuItem
 from .tools import PIE_GROUPS, TOOL_REGISTRY
 
 if TYPE_CHECKING:
-    from ..core.constraints import Constraint
-    from ..core.entities import Entity, Point
+    from raygeo.sketch.constraints import Constraint
+    from raygeo.sketch.entities import Entity
+
+    from ..core.point_entity import Point
     from .sketchelement import SketchElement
 
 logger = logging.getLogger(__name__)

@@ -9,12 +9,12 @@ satisfied after every frame.
 import math
 
 import pytest
+from raygeo.sketch.constraints import CoincidentConstraint
 from sketcher.core.arrays import (
     CurveAlongArrayStrategy,
     resolve_template_center,
 )
 from sketcher.core.commands import CreateArrayCommand
-from sketcher.core.constraints import CoincidentConstraint
 from sketcher.core.params import ParameterContext
 from sketcher.core.sketch import Sketch
 

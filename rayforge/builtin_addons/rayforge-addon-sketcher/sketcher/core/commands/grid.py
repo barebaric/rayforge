@@ -3,8 +3,11 @@ from __future__ import annotations
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
-from ..constraints import HorizontalConstraint, VerticalConstraint
-from ..entities import Line, Point
+from raygeo.sketch.constraints import HorizontalConstraint, VerticalConstraint
+from raygeo.sketch.entities import Line as BaseLine
+
+from ..line_entity import Line
+from ..point_entity import Point
 from .base import SketchChangeCommand
 from .items import AddItemsCommand
 
@@ -87,7 +90,7 @@ class GridCommand(SketchChangeCommand):
         def get_point_id(row: int, col: int) -> int:
             return point_ids[row * cols + col]
 
-        entities: list[Line] = []
+        entities: list[BaseLine] = []
         constraints: list[Any] = []
 
         for row in range(rows):

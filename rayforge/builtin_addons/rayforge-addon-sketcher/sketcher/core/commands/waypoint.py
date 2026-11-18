@@ -7,13 +7,14 @@ from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point as GeoPoint
 
-from ..entities import Bezier, Line
-from ..entities.point import WaypointType
+from ..bezier_entity import Bezier
+from ..line_entity import Line
+from ..point_entity import WaypointType
 from ..types import EntityID
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
-    from ..entities.point import Point
+    from ..point_entity import Point
     from ..registry import EntityRegistry
     from ..sketch import Sketch
 

@@ -3,13 +3,16 @@ import math
 from gettext import gettext as _
 from typing import TYPE_CHECKING, ClassVar, Union
 
+from raygeo.sketch.constraints import AspectRatioConstraint
+from raygeo.sketch.entities import Entity
+
 from ...core.commands import AddItemsCommand
-from ...core.constraints import AspectRatioConstraint
-from ...core.entities import Entity, Line, Point
+from ...core.line_entity import Line
+from ...core.point_entity import Point
 from .base import SketchTool
 
 if TYPE_CHECKING:
-    from ...core.constraints import Constraint
+    from raygeo.sketch.constraints import Constraint
 
 logger = logging.getLogger(__name__)
 

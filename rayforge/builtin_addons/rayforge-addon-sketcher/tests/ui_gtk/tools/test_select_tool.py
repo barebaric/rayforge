@@ -2,7 +2,7 @@ from unittest.mock import Mock
 
 import cairo
 import pytest
-from sketcher.core.entities import Line
+from sketcher.core.line_entity import Line
 from sketcher.ui_gtk.tools.select_tool import SelectTool
 
 

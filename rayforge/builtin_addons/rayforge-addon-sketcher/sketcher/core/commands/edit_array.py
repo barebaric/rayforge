@@ -11,7 +11,7 @@ from ..arrays import (
     InstancePlacement,
     resolve_template_center,
 )
-from ..entities import Circle
+from ..circle_entity import Circle
 from ..entity_group import EntityGroup
 from ..params import ParameterContext
 from .base import SketchChangeCommand
@@ -19,7 +19,9 @@ from .create_array import CreateArrayCommand
 from .items import AddItemsCommand, RemoveItemsCommand
 
 if TYPE_CHECKING:
-    from ..entities import Entity, Point
+    from raygeo.sketch.entities import Entity
+
+    from ..point_entity import Point
     from ..registry import EntityRegistry
     from ..sketch import Sketch
 

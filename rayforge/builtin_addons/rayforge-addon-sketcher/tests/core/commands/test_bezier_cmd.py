@@ -1,8 +1,8 @@
 from unittest.mock import Mock
 
 from sketcher.core import Sketch
+from sketcher.core.bezier_entity import Bezier
 from sketcher.core.commands import BezierCommand, BezierPreviewState
-from sketcher.core.entities import Bezier
 
 
 def test_bezier_command_preserves_control_points():

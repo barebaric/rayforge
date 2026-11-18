@@ -10,15 +10,17 @@ from gi.repository import Adw, Gtk
 
 from rayforge.ui_gtk.shared.pref_rows import LengthSpinRow, SpinRow
 
+from ...core.arc_entity import Arc
 from ...core.arrays import (
     CurveAlongArray,
     CurveAlongArrayStrategy,
     path_length,
     sample_path,
 )
+from ...core.bezier_entity import Bezier
 from ...core.commands import CreateArrayCommand
-from ...core.entities import Arc, Bezier, Line
 from ...core.entity_group import EntityGroup
+from ...core.line_entity import Line
 from .array_base import ArrayToolBase
 
 logger = logging.getLogger(__name__)

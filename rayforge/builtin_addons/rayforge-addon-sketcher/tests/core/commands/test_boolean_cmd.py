@@ -6,8 +6,9 @@ import pytest
 from raygeo.geo.shape.polygon import get_polygon_signed_area
 from sketcher.core import Sketch
 from sketcher.core.boolean import BooleanOp
+from sketcher.core.circle_entity import Circle
 from sketcher.core.commands import BooleanCommand
-from sketcher.core.entities import Circle, PolygonEntity
+from sketcher.core.polygon_entity import PolygonEntity
 from sketcher.core.sketch import Fill
 
 from rayforge.image.structures import FillStyle

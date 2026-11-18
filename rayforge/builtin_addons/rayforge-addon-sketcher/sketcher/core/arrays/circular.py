@@ -3,9 +3,11 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING, Any
 
-from ..constraints import RadiusConstraint
-from ..entities import Circle, Point
+from raygeo.sketch.constraints import RadiusConstraint
+
+from ..circle_entity import Circle
 from ..entity_group import EntityGroup
+from ..point_entity import Point
 from .base import (
     Array,
     ArrayStrategy,
@@ -14,8 +16,9 @@ from .base import (
 )
 
 if TYPE_CHECKING:
-    from ..constraints import Constraint
-    from ..entities import Entity
+    from raygeo.sketch.constraints import Constraint
+    from raygeo.sketch.entities import Entity
+
     from ..registry import EntityRegistry
 
 

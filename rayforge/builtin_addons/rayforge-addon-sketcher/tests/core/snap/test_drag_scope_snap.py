@@ -1,6 +1,6 @@
 from unittest.mock import Mock
 
-from sketcher.core.constraints import CoincidentConstraint
+from raygeo.sketch.constraints import CoincidentConstraint
 from sketcher.core.sketch import Sketch
 from sketcher.core.snap.producers import OnEntityProducer
 from sketcher.core.snap.types import DragContext

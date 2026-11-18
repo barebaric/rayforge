@@ -5,20 +5,21 @@ from typing import TYPE_CHECKING, Any
 
 from raygeo.geo.shape.text import FontConfig
 from raygeo.geo.types import Point as GeoPoint
-
-from ..constraints import (
+from raygeo.sketch.constraints import (
     AspectRatioConstraint,
     DistanceConstraint,
     EqualLengthConstraint,
 )
-from ..entities.line import Line
-from ..entities.point import Point
-from ..entities.text_box import TextBoxEntity
+
+from ..line_entity import Line
+from ..point_entity import Point
+from ..text_box_entity import TextBoxEntity
 from ..types import EntityID
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
-    from ..constraints import Constraint
+    from raygeo.sketch.constraints import Constraint
+
     from ..sketch import Sketch
 
 

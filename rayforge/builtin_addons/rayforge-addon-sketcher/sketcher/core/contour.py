@@ -14,7 +14,9 @@ import logging
 from collections import defaultdict
 from typing import TYPE_CHECKING
 
-from .entities import Entity, PolygonOutline
+from raygeo.sketch.entities import Entity
+
+from .polygon_entity import PolygonOutline
 
 if TYPE_CHECKING:
     from .sketch import Sketch

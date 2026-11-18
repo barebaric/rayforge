@@ -4,15 +4,15 @@ from typing import Any
 from raygeo.geo.shape.text import FontConfig
 from raygeo.geo.types import Point as GeoPoint
 
-from .entities.arc import Arc
-from .entities.bezier import Bezier
-from .entities.circle import Circle
-from .entities.ellipse import Ellipse
-from .entities.entity import Entity
-from .entities.line import Line
-from .entities.point import Point
-from .entities.polygon import PolygonEntity
-from .entities.text_box import TextBoxEntity
+from .arc_entity import Arc
+from .bezier_entity import Bezier
+from .circle_entity import Circle
+from .ellipse_entity import Ellipse
+from .entity_ops import Entity
+from .line_entity import Line
+from .point_entity import Point
+from .polygon_entity import PolygonEntity
+from .text_box_entity import TextBoxEntity
 from .types import EntityID
 
 _ENTITY_CLASSES = {

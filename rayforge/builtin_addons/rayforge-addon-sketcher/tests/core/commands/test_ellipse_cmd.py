@@ -1,7 +1,9 @@
+from raygeo.sketch.constraints import EqualDistanceConstraint
 from sketcher.core import Sketch
 from sketcher.core.commands import EllipseCommand, EllipsePreviewState
-from sketcher.core.constraints import EqualDistanceConstraint
-from sketcher.core.entities import Ellipse, Line, Point
+from sketcher.core.ellipse_entity import Ellipse
+from sketcher.core.line_entity import Line
+from sketcher.core.point_entity import Point
 
 
 def test_ellipse_command_execute_no_snap():

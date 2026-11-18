@@ -8,28 +8,18 @@ from raygeo.geo.shape.line import (
     get_line_segment_closest_point,
 )
 from raygeo.geo.types import Polygon, Rect
+from raygeo.sketch.entities import Line as _CompiledLine
 
-from ..types import EntityID
-from .entity import Entity
+from .entity_ops import EntityOps
+from .types import EntityID
 
 if TYPE_CHECKING:
-    from ..constraints import Constraint
-    from ..registry import EntityRegistry
+    from raygeo.sketch.constraints import Constraint
+
+    from .registry import EntityRegistry
 
 
-class Line(Entity):
-    def __init__(
-        self,
-        id: EntityID,
-        p1_idx: EntityID,
-        p2_idx: EntityID,
-        construction: bool = False,
-    ):
-        super().__init__(id, construction)
-        self.p1_idx: EntityID = p1_idx
-        self.p2_idx: EntityID = p2_idx
-        self.type = "line"
-
+class Line(EntityOps, _CompiledLine):
     def get_point_ids(self) -> list[EntityID]:
         return [self.p1_idx, self.p2_idx]
 

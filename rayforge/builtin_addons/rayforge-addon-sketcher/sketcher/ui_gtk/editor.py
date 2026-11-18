@@ -2,13 +2,14 @@ import logging
 from typing import TYPE_CHECKING
 
 from gi.repository import Gdk, GLib, Gtk
+from raygeo.sketch.constraints import Constraint
+from raygeo.sketch.entities import Entity
 
 from rayforge.core.undo import HistoryManager
 from rayforge.ui_gtk.canvas.cursor import get_tool_cursor
 from rayforge.ui_gtk.shared.keyboard import is_primary_modifier
 
-from ..core.constraints import Constraint
-from ..core.entities import Entity, Point
+from ..core.point_entity import Point
 from .piemenu import SketchPieMenu
 from .tools import KEY_TO_TOOL, SelectTool, TextBoxTool
 from .tools.base import SketcherKey

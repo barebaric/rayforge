@@ -10,29 +10,19 @@ from raygeo.geo.shape.circle import (
 from raygeo.geo.shape.polygon import get_circle_polygon
 from raygeo.geo.types import Point as GeoPoint
 from raygeo.geo.types import Rect
+from raygeo.sketch.entities import Circle as _CompiledCircle
 
-from ..types import EntityID
-from .entity import _MIN_OFFSET_RADIUS, Entity, OffsetPlan
+from .entity_ops import _MIN_OFFSET_RADIUS, EntityOps, OffsetPlan
+from .types import EntityID
 
 if TYPE_CHECKING:
-    from ..constraints import Constraint
-    from ..registry import EntityRegistry
-    from ..sketch import Sketch
+    from raygeo.sketch.constraints import Constraint
+
+    from .registry import EntityRegistry
+    from .sketch import Sketch
 
 
-class Circle(Entity):
-    def __init__(
-        self,
-        id: EntityID,
-        center_idx: EntityID,
-        radius_pt_idx: EntityID,
-        construction: bool = False,
-    ):
-        super().__init__(id, construction)
-        self.center_idx: EntityID = center_idx
-        self.radius_pt_idx: EntityID = radius_pt_idx
-        self.type = "circle"
-
+class Circle(EntityOps, _CompiledCircle):
     def get_point_ids(self) -> list[EntityID]:
         return [self.center_idx, self.radius_pt_idx]
 

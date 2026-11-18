@@ -13,7 +13,7 @@ from sketcher.core.arrays import (
     PlacementKind,
     find_array_for_entity,
 )
-from sketcher.core.entities import Circle
+from sketcher.core.circle_entity import Circle
 
 
 def test_full_circle_rotation_placements():

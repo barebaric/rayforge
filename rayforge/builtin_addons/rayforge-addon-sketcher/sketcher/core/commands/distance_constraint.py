@@ -4,11 +4,11 @@ import math
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from ..entities import Line
+from ..line_entity import Line
 from ..types import EntityID
 
 if TYPE_CHECKING:
-    from ..entities import Point
+    from ..point_entity import Point
     from ..registry import EntityRegistry
 
 

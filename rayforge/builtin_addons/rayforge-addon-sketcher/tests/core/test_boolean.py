@@ -10,7 +10,8 @@ from sketcher.core.boolean import (
     apply_boolean,
     build_boolean_regions,
 )
-from sketcher.core.entities import Circle, PolygonEntity
+from sketcher.core.circle_entity import Circle
+from sketcher.core.polygon_entity import PolygonEntity
 
 
 def _square_sketch(sketch, x=0.0, y=0.0, size=20.0):

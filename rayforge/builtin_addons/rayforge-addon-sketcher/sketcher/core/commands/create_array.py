@@ -13,15 +13,18 @@ from ..arrays import (
     InstancePlacement,
     resolve_template_center,
 )
-from ..entities import Bezier, Circle
-from ..entities import Point as SketchPoint
+from ..bezier_entity import Bezier
+from ..circle_entity import Circle
 from ..entity_group import EntityGroup, remap_point_refs
+from ..point_entity import Point as SketchPoint
 from .base import SketchChangeCommand
 from .items import AddItemsCommand
 
 if TYPE_CHECKING:
-    from ..constraints import Constraint
-    from ..entities import Entity, Point
+    from raygeo.sketch.constraints import Constraint
+    from raygeo.sketch.entities import Entity
+
+    from ..point_entity import Point
     from ..registry import EntityRegistry
     from ..sketch import Sketch
 

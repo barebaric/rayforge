@@ -9,37 +9,22 @@ from raygeo.geo.shape.line import (
     get_line_segment_closest_point,
 )
 from raygeo.geo.shape.rect import does_rect_contain_rect
-from raygeo.geo.types import Point as GeoPoint
 from raygeo.geo.types import Polygon, Rect
+from raygeo.sketch.entities import Bezier as _CompiledBezier
 
-from ..types import EntityID
-from .entity import Entity, quantize
+from .entity_ops import Entity, EntityOps, quantize
+from .types import EntityID
 
 if TYPE_CHECKING:
-    from ..commands.mirror import MirrorAxis
-    from ..constraints import Constraint
-    from ..entity_group import PlacementTransform
-    from ..registry import EntityRegistry
-    from .point import Point
+    from raygeo.sketch.constraints import Constraint
+
+    from .commands.mirror import MirrorAxis
+    from .entity_group import PlacementTransform
+    from .point_entity import Point
+    from .registry import EntityRegistry
 
 
-class Bezier(Entity):
-    def __init__(
-        self,
-        id: EntityID,
-        start_idx: EntityID,
-        end_idx: EntityID,
-        construction: bool = False,
-        cp1: GeoPoint | None = None,
-        cp2: GeoPoint | None = None,
-    ):
-        super().__init__(id, construction)
-        self.start_idx: EntityID = start_idx
-        self.end_idx: EntityID = end_idx
-        self.type = "bezier"
-        self.cp1 = cp1
-        self.cp2 = cp2
-
+class Bezier(EntityOps, _CompiledBezier):
     def get_state(self) -> dict[str, Any] | None:
         state = super().get_state() or {}
         state["cp1"] = self.cp1
@@ -89,7 +74,7 @@ class Bezier(Entity):
         control-point offsets, which shape the curve without moving
         any defining point."""
         return (
-            *super().geometry_signature(registry),
+            *self._signature_tuple(super().geometry_signature(registry)),
             (
                 (quantize(self.cp1[0]), quantize(self.cp1[1]))
                 if self.cp1 is not None

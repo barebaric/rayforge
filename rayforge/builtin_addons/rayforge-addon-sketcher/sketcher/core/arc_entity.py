@@ -12,20 +12,22 @@ from raygeo.geo.shape.arc import (
 from raygeo.geo.shape.rect import does_rect_contain_rect
 from raygeo.geo.types import Point as GeoPoint
 from raygeo.geo.types import Polygon, Rect
+from raygeo.sketch.entities import Arc as _CompiledArc
 
-from ..types import EntityID
-from .entity import _MIN_OFFSET_RADIUS, Entity, OffsetPlan
+from .entity_ops import _MIN_OFFSET_RADIUS, EntityOps, OffsetPlan
+from .types import EntityID
 
 if TYPE_CHECKING:
-    from ..commands.mirror import MirrorAxis
-    from ..constraints import Constraint
-    from ..registry import EntityRegistry
-    from ..sketch import Sketch
+    from raygeo.sketch.constraints import Constraint
+
+    from .commands.mirror import MirrorAxis
+    from .registry import EntityRegistry
+    from .sketch import Sketch
 
 
-class Arc(Entity):
-    def __init__(
-        self,
+class Arc(EntityOps, _CompiledArc):
+    def __new__(
+        cls,
         id: EntityID,
         start_idx: EntityID,
         end_idx: EntityID,
@@ -33,12 +35,15 @@ class Arc(Entity):
         clockwise: bool = False,
         construction: bool = False,
     ):
-        super().__init__(id, construction)
-        self.start_idx: EntityID = start_idx
-        self.end_idx: EntityID = end_idx
-        self.center_idx: EntityID = center_idx
-        self.clockwise = clockwise
-        self.type = "arc"
+        return super().__new__(
+            cls,
+            id,
+            start_idx,
+            end_idx,
+            center_idx,
+            bool(clockwise),
+            construction,
+        )
 
     def get_state(self) -> dict[str, Any] | None:
         state = super().get_state() or {}
@@ -58,7 +63,10 @@ class Arc(Entity):
     def geometry_signature(self, registry: "EntityRegistry") -> tuple:
         """Extends the point signature with the arc's chirality, which
         changes the shape without moving any defining point."""
-        return (*super().geometry_signature(registry), self.clockwise)
+        return (
+            *self._signature_tuple(super().geometry_signature(registry)),
+            self.clockwise,
+        )
 
     def get_point_ids(self) -> list[EntityID]:
         return [self.start_idx, self.end_idx, self.center_idx]

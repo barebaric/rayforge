@@ -1,6 +1,6 @@
 import pytest
 from raygeo.geo import Geometry
-from sketcher.core.entities import Ellipse
+from sketcher.core.ellipse_entity import Ellipse
 from sketcher.core.registry import EntityRegistry
 
 

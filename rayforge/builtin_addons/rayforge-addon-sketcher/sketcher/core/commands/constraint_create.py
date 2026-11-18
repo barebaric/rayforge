@@ -4,20 +4,25 @@ import math
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
-from rayforge.core.undo.command import Command
-
-from ..constraints import (
+from raygeo.sketch.constraints import (
     DiameterConstraint,
     DistanceConstraint,
     RadiusConstraint,
 )
-from ..entities import Arc, Circle, Entity, Line
+from raygeo.sketch.entities import Entity
+
+from rayforge.core.undo.command import Command
+
+from ..arc_entity import Arc
+from ..circle_entity import Circle
+from ..line_entity import Line
 from .base import SketchChangeCommand
 from .constraint import ModifyConstraintCommand
 from .items import AddItemsCommand
 
 if TYPE_CHECKING:
-    from ..constraints import Constraint
+    from raygeo.sketch.constraints import Constraint
+
     from ..sketch import Sketch
 
 

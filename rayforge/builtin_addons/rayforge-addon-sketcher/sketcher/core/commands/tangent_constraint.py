@@ -3,7 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from ..entities import Arc, Circle, Line
+from ..arc_entity import Arc
+from ..circle_entity import Circle
+from ..line_entity import Line
 from ..types import EntityID
 
 if TYPE_CHECKING:

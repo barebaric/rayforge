@@ -4,8 +4,7 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
 from raygeo.geo.types import Point as GeoPoint
-
-from ..constraints import (
+from raygeo.sketch.constraints import (
     DistanceConstraint,
     EqualDistanceConstraint,
     EqualLengthConstraint,
@@ -14,7 +13,10 @@ from ..constraints import (
     TangentConstraint,
     VerticalConstraint,
 )
-from ..entities import Arc, Line, Point
+
+from ..arc_entity import Arc
+from ..line_entity import Line
+from ..point_entity import Point
 from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData

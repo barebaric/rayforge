@@ -1,8 +1,7 @@
 import math
 
-from sketcher.core.entities import Point
-from sketcher.core.entities.bezier import Bezier
-from sketcher.core.entities.point import WaypointType
+from sketcher.core.bezier_entity import Bezier
+from sketcher.core.point_entity import Point, WaypointType
 from sketcher.core.registry import EntityRegistry
 
 

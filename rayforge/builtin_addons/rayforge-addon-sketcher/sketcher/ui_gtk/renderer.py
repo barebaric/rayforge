@@ -9,30 +9,28 @@ from gi.repository import PangoCairo
 from raygeo.geo import Geometry, Matrix
 from raygeo.geo.shape.text import text_to_geometry
 from raygeo.geo.types import Point as GeoPoint
+from raygeo.sketch.constraints import (
+    CoincidentConstraint,
+    PointOnCurveConstraint,
+    PointOnLineConstraint,
+)
+from raygeo.sketch.entities import Entity
 
 from rayforge.image.geo_renderer import geometry_to_cairo
 from rayforge.ui_gtk.canvas import WorldSurface
 from rayforge.ui_gtk.shared.text import create_text_layout
 
+from ..core.arc_entity import Arc
+from ..core.bezier_entity import Bezier
+from ..core.circle_entity import Circle
 from ..core.commands import BezierPreviewState
 from ..core.commands.dimension import DimensionData
-from ..core.constraints import (
-    CoincidentConstraint,
-    PointOnCurveConstraint,
-    PointOnLineConstraint,
-)
-from ..core.entities import (
-    Arc,
-    Bezier,
-    Circle,
-    Ellipse,
-    Entity,
-    Line,
-    Point,
-    PolygonEntity,
-    TextBoxEntity,
-)
+from ..core.ellipse_entity import Ellipse
+from ..core.line_entity import Line
+from ..core.point_entity import Point
+from ..core.polygon_entity import PolygonEntity
 from ..core.sketch import FillStyle
+from ..core.text_box_entity import TextBoxEntity
 from ..core.types import EntityID
 from .tools import PathTool, TextBoxTool
 

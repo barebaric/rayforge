@@ -1,19 +1,21 @@
 import math
 
 import pytest
-from sketcher.core.arrays import (
-    CurveAlongArray,
-    CurveAlongArrayStrategy,
-    find_array_for_entity,
-)
-from sketcher.core.commands import CreateArrayCommand, EditArrayCommand
-from sketcher.core.constraints import (
+from raygeo.sketch.constraints import (
     CoincidentConstraint,
     HorizontalConstraint,
     TangentConstraint,
     VerticalConstraint,
 )
-from sketcher.core.entities import Bezier, Ellipse, Line
+from sketcher.core.arrays import (
+    CurveAlongArray,
+    CurveAlongArrayStrategy,
+    find_array_for_entity,
+)
+from sketcher.core.bezier_entity import Bezier
+from sketcher.core.commands import CreateArrayCommand, EditArrayCommand
+from sketcher.core.ellipse_entity import Ellipse
+from sketcher.core.line_entity import Line
 from sketcher.core.sketch import Sketch
 
 
@@ -536,7 +538,7 @@ def test_template_extraction_severs_guide_links(sketch_with_template_and_path):
     cloned, external constraints are erased, and applying the array
     never moves the guide.
     """
-    from sketcher.core.constraints import DistanceConstraint
+    from raygeo.sketch.constraints import DistanceConstraint
 
     sketch, seed, path = sketch_with_template_and_path
     registry = sketch.registry

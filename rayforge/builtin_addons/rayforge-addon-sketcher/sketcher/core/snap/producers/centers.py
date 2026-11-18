@@ -3,7 +3,9 @@ from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point as GeoPoint
 
-from ...entities import Arc, Circle, Ellipse
+from ...arc_entity import Arc
+from ...circle_entity import Circle
+from ...ellipse_entity import Ellipse
 from ..engine import SnapLineProducer
 from ..types import DragContext, SnapLine, SnapLineType, SnapPoint
 

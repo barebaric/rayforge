@@ -10,7 +10,9 @@ import math
 
 import pytest
 from raygeo.geo.shape.text import FontConfig
+from raygeo.sketch.constraints import ParallelogramConstraint
 from sketcher.core.arrays import CircularArrayStrategy, CurveAlongArrayStrategy
+from sketcher.core.circle_entity import Circle
 from sketcher.core.commands import (
     CreateArrayCommand,
     EditArrayCommand,
@@ -18,11 +20,11 @@ from sketcher.core.commands import (
     TextBoxCommand,
 )
 from sketcher.core.commands.duplicate import DuplicateCommand
-from sketcher.core.constraints import ParallelogramConstraint
-from sketcher.core.entities import Circle, Line, TextBoxEntity
+from sketcher.core.line_entity import Line
 from sketcher.core.params import ParameterContext
 from sketcher.core.selection import SketchSelection
 from sketcher.core.sketch import Sketch
+from sketcher.core.text_box_entity import TextBoxEntity
 
 
 def ui_delete(sketch, entity_ids):

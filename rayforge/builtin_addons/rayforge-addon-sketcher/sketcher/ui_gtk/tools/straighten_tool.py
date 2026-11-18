@@ -1,12 +1,15 @@
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Union
 
+from raygeo.sketch.entities import Entity
+
+from ...core.bezier_entity import Bezier
 from ...core.commands import StraightenBezierCommand
-from ...core.entities import Bezier, Entity, Point
+from ...core.point_entity import Point
 from .base import SketchTool
 
 if TYPE_CHECKING:
-    from ...core.constraints import Constraint
+    from raygeo.sketch.constraints import Constraint
 
 
 class StraightenTool(SketchTool):

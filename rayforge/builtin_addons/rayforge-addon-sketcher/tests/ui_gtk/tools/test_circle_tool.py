@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from sketcher.core.commands.ellipse import EllipsePreviewState
-from sketcher.core.entities import Point as SketchPoint
+from sketcher.core.point_entity import Point as SketchPoint
 from sketcher.core.snap import SnapLineType
 from sketcher.ui_gtk.tools.base import SketcherKey
 from sketcher.ui_gtk.tools.circle_tool import CircleTool

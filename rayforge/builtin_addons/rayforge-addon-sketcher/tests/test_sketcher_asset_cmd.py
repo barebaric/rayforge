@@ -3,7 +3,7 @@ from typing import cast
 import pytest
 from sketcher.core import Sketch
 from sketcher.core.commands import TextBoxCommand
-from sketcher.core.entities import TextBoxEntity
+from sketcher.core.text_box_entity import TextBoxEntity
 
 from rayforge.core.doc import Doc
 from rayforge.core.workpiece import WorkPiece

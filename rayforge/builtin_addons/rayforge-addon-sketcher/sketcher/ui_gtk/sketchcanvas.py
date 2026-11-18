@@ -5,6 +5,7 @@ from typing import cast
 
 from gi.repository import Adw, Gdk, Gtk
 from raygeo.geo import Matrix
+from raygeo.sketch.constraints import Constraint
 
 from rayforge.camera.controller import CameraController
 from rayforge.context import get_context
@@ -15,7 +16,6 @@ from rayforge.ui_gtk.canvas2d.elements.camera_image import CameraImageElement
 from rayforge.ui_gtk.shared.expression_entry import ExpressionEntry
 
 from ..core.commands import ModifyConstraintCommand
-from ..core.constraints import Constraint
 from ..core.sketch import Sketch
 from .editor import SketchEditor
 from .sketchelement import SketchElement

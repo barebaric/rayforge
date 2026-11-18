@@ -9,13 +9,13 @@ and hit-testing treats them as derived geometry.
 """
 
 import pytest
+from raygeo.sketch.constraints import SymmetryConstraint
 from sketcher.core.arrays import CurveAlongArrayStrategy
 from sketcher.core.commands import (
     CreateArrayCommand,
     EditArrayCommand,
     RemoveItemsCommand,
 )
-from sketcher.core.constraints import SymmetryConstraint
 from sketcher.core.params import ParameterContext
 from sketcher.core.sketch import Sketch
 

@@ -21,17 +21,19 @@ from raygeo.geo.shape.polygon import (
     offset_polyline,
 )
 from raygeo.geo.types import Rect
+from raygeo.sketch.entities import Polygon as _CompiledPolygon
 
-from ..types import EntityID
-from .entity import Entity, OffsetPlan, quantize
+from .entity_ops import Entity, EntityOps, OffsetPlan, quantize
+from .types import EntityID
 
 if TYPE_CHECKING:
-    from ..commands.mirror import MirrorAxis
-    from ..constraints import Constraint
-    from ..entity_group import PlacementTransform
-    from ..registry import EntityRegistry
-    from ..sketch import Sketch
-    from .point import Point
+    from raygeo.sketch.constraints import Constraint
+
+    from .commands.mirror import MirrorAxis
+    from .entity_group import PlacementTransform
+    from .point_entity import Point
+    from .registry import EntityRegistry
+    from .sketch import Sketch
 
 
 @dataclass
@@ -65,7 +67,8 @@ class PolygonOutline:
         carries its world geometry) and exists only to keep the offset
         protocol uniform with entities.
         """
-        plan = OffsetPlan(removed_entity_ids=list(self.source_ids))
+        plan = OffsetPlan()
+        plan.removed_entity_ids = list(self.source_ids)
         for vertices, closed in offset_outline(
             self.vertices, self.closed, offset
         ):
@@ -306,7 +309,7 @@ def offset_outline(
     return [(list(poly), True) for poly in grown]
 
 
-class PolygonEntity(Entity):
+class PolygonEntity(EntityOps, _CompiledPolygon):
     """
     A closed or open outline stored as one atomic shape.
 
@@ -339,17 +342,9 @@ class PolygonEntity(Entity):
         construction: bool = False,
         rings: Sequence[Sequence[Sequence[float]]] | None = None,
     ):
-        super().__init__(id, construction)
-        self.center_idx: EntityID = center_idx
-        self.handle_idx: EntityID = handle_idx
-        self.closed: bool = closed
-        if rings:
-            self.rings: list[list[tuple[float, float]]] = [
-                [(float(u), float(v)) for u, v in ring] for ring in rings
-            ]
-        else:
-            self.rings = [[(float(u), float(v)) for u, v in vertices]]
-        self.type = "polygon"
+        # The compiled constructor has already stored the defining
+        # fields; this mirrors the reference post-construction step:
+        # enforcing the winding convention on the stored rings.
         self._normalize_ring_winding()
 
     @property
@@ -367,11 +362,17 @@ class PolygonEntity(Entity):
         winding matches world winding."""
         if not self.closed:
             return
-        if self.rings[0] and get_polygon_signed_area(self.rings[0]) < 0:
-            self.rings[0].reverse()
-        for ring in self.rings[1:]:
+        rings = self.rings
+        changed = False
+        if rings[0] and get_polygon_signed_area(rings[0]) < 0:
+            rings[0].reverse()
+            changed = True
+        for ring in rings[1:]:
             if ring and get_polygon_signed_area(ring) > 0:
                 ring.reverse()
+                changed = True
+        if changed:
+            self.rings = rings
 
     @staticmethod
     def _placement_flips_chirality(
@@ -421,14 +422,14 @@ class PolygonEntity(Entity):
         outline. Hole rings are normalized into the same frame.
         Returns (center_point, handle_point, entity).
         """
-        from .point import Point
+        from .point_entity import Point
 
         center_pt = Point(center_id, center[0], center[1])
         handle_pt = Point(handle_id, handle[0], handle[1])
         vertices = cls.normalize_vertices(center, handle, world_vertices)
-        rings: list[list[tuple[float, float]]] | None = None
+        holes: list[list[tuple[float, float]]] | None = None
         if world_holes:
-            rings = [vertices] + [
+            holes = [
                 cls.normalize_vertices(center, handle, hole)
                 for hole in world_holes
             ]
@@ -439,7 +440,7 @@ class PolygonEntity(Entity):
             vertices,
             closed=closed,
             construction=construction,
-            rings=rings,
+            rings=holes,
         )
         return center_pt, handle_pt, entity
 
@@ -530,7 +531,8 @@ class PolygonEntity(Entity):
         solids = self._offset_solids(registry, offset)
         if not solids:
             return None
-        plan = OffsetPlan(removed_entity_ids=[self.id])
+        plan = OffsetPlan()
+        plan.removed_entity_ids = [self.id]
         for outer, holes in solids:
             center_pt, handle_pt, entity = outline_item(
                 outer, True, allocate_id, holes
@@ -587,7 +589,7 @@ class PolygonEntity(Entity):
 
     def geometry_signature(self, registry: "EntityRegistry") -> tuple:
         return (
-            *super().geometry_signature(registry),
+            *self._signature_tuple(super().geometry_signature(registry)),
             tuple(
                 tuple((quantize(u), quantize(v)) for u, v in ring)
                 for ring in self.rings
@@ -784,15 +786,18 @@ class PolygonEntity(Entity):
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "PolygonEntity":
         holes = data.get("rings")
-        rings = [data["vertices"], *holes] if holes else None
+
+        def to_tuples(ring: list) -> list[tuple]:
+            return [tuple(v) for v in ring]
+
         return cls(
             id=data["id"],
             center_idx=data["center_idx"],
             handle_idx=data["handle_idx"],
-            vertices=data["vertices"],
+            vertices=to_tuples(data["vertices"]),
             closed=data.get("closed", False),
             construction=data.get("construction", False),
-            rings=rings,
+            rings=[to_tuples(ring) for ring in holes] if holes else None,
         )
 
     def __repr__(self) -> str:

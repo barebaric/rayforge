@@ -3,7 +3,7 @@ from typing import cast
 
 from raygeo.geo.shape.text import FontConfig
 from sketcher.core import Sketch
-from sketcher.core.entities.text_box import TextBoxEntity
+from sketcher.core.text_box_entity import TextBoxEntity
 
 from rayforge.core.varset import FloatVar, Var
 

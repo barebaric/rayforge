@@ -1,9 +1,9 @@
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+from raygeo.sketch.constraints import HorizontalConstraint, VerticalConstraint
 from sketcher.core.commands.bezier import BezierPreviewState
-from sketcher.core.constraints import HorizontalConstraint, VerticalConstraint
-from sketcher.core.entities import Point as SketchPoint
+from sketcher.core.point_entity import Point as SketchPoint
 from sketcher.core.snap.types import SnapLine, SnapLineType, SnapResult
 from sketcher.ui_gtk.tools.path_tool import PathTool
 

@@ -5,11 +5,13 @@ import math
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
-from ..constraints import (
+from raygeo.sketch.constraints import (
     CollinearConstraint,
     EqualDistanceConstraint,
 )
-from ..entities import Line, Point
+
+from ..line_entity import Line
+from ..point_entity import Point
 from ..types import EntityID
 from .base import SketchChangeCommand
 from .items import AddItemsCommand, RemoveItemsCommand

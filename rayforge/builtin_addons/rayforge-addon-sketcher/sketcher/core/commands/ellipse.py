@@ -4,13 +4,15 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point as GeoPoint
-
-from ..constraints import (
+from raygeo.sketch.constraints import (
     Constraint,
     EqualDistanceConstraint,
     PerpendicularConstraint,
 )
-from ..entities import Ellipse, Line, Point
+
+from ..ellipse_entity import Ellipse
+from ..line_entity import Line
+from ..point_entity import Point
 from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .items import AddItemsCommand

@@ -6,8 +6,10 @@ from raygeo.geo.shape.polygon import (
     is_point_inside_polygon,
 )
 from sketcher.core import Sketch
+from sketcher.core.circle_entity import Circle
 from sketcher.core.commands import OffsetCommand
-from sketcher.core.entities import Circle, Ellipse, PolygonEntity
+from sketcher.core.ellipse_entity import Ellipse
+from sketcher.core.polygon_entity import PolygonEntity
 
 
 def _circle_sketch():

@@ -1,9 +1,10 @@
 import pytest
+from raygeo.sketch.constraints import DistanceConstraint
 from sketcher.core import Sketch
 from sketcher.core.commands import AddItemsCommand
 from sketcher.core.commands.items import RemoveItemsCommand
-from sketcher.core.constraints import DistanceConstraint
-from sketcher.core.entities import Line, Point
+from sketcher.core.line_entity import Line
+from sketcher.core.point_entity import Point
 
 
 @pytest.fixture

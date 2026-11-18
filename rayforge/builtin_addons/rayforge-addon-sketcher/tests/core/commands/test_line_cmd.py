@@ -2,7 +2,8 @@ import math
 
 from sketcher.core import Sketch
 from sketcher.core.commands import LineCommand, LinePreviewState
-from sketcher.core.entities import Line, Point
+from sketcher.core.line_entity import Line
+from sketcher.core.point_entity import Point
 
 
 def test_line_command_execute_no_snap():

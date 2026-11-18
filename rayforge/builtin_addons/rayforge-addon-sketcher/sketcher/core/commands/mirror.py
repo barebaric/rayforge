@@ -11,7 +11,8 @@ from ..types import EntityID
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
-    from ..constraints import Constraint
+    from raygeo.sketch.constraints import Constraint
+
     from ..selection import SketchSelection
     from ..sketch import Sketch
 

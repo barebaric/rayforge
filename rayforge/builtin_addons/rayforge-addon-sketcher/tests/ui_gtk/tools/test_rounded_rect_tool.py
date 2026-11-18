@@ -5,7 +5,7 @@ from sketcher.core.commands import (
     RoundedRectCommand,
     RoundedRectPreviewState,
 )
-from sketcher.core.entities import Point
+from sketcher.core.point_entity import Point
 from sketcher.ui_gtk.tools import RoundedRectTool
 
 

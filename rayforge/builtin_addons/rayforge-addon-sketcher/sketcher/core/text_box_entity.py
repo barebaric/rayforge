@@ -9,44 +9,47 @@ from raygeo.geo.shape.line import does_line_segment_intersect_rect
 from raygeo.geo.shape.polygon import is_point_inside_polygon
 from raygeo.geo.shape.text import FontConfig, text_to_geometry
 from raygeo.geo.types import Rect
+from raygeo.sketch.entities import TextBox as _CompiledTextBox
 
 from rayforge.core.color import ColorRGBA
 
-from ..types import EntityID
-from .entity import Entity
-from .line import Line
+from .entity_ops import Entity, EntityOps
+from .line_entity import Line
+from .types import EntityID
 
 if TYPE_CHECKING:
-    from ..constraints import Constraint
-    from ..entity_group import PlacementTransform
-    from ..registry import EntityRegistry
+    from raygeo.sketch.constraints import Constraint
+
+    from .entity_group import PlacementTransform
+    from .registry import EntityRegistry
 
 logger = logging.getLogger(__name__)
 
 
-class TextBoxEntity(Entity):
-    def __init__(
-        self,
+class TextBoxEntity(EntityOps, _CompiledTextBox):
+    def __new__(
+        cls,
         id: EntityID,
         origin_id: EntityID,
         width_id: EntityID,
         height_id: EntityID,
         content: str = "",
-        font_config: FontConfig | None = None,
+        font_config=None,
         construction: bool = False,
         construction_line_ids: list[EntityID] | None = None,
     ):
-        super().__init__(id, construction)
-        self.origin_id: EntityID = origin_id
-        self.width_id: EntityID = width_id
-        self.height_id: EntityID = height_id
-        self.content = content
-        self.font_config = font_config or FontConfig()
-        self.construction_line_ids: list[EntityID] = (
-            construction_line_ids or []
+        box = super().__new__(
+            cls,
+            id,
+            origin_id,
+            width_id,
+            height_id,
+            content,
+            font_config,
+            construction,
         )
-        self.fill_color: ColorRGBA | None = None
-        self.type = "text_box"
+        box.construction_line_ids = construction_line_ids or []
+        return box
 
     def get_point_ids(self) -> list[EntityID]:
         return [self.origin_id, self.width_id, self.height_id]
@@ -200,7 +203,7 @@ class TextBoxEntity(Entity):
         """Extends the point signature with the content and font,
         which shape the rendered glyphs without moving the frame."""
         font = self.font_config
-        return super().geometry_signature(registry) + (
+        return self._signature_tuple(super().geometry_signature(registry)) + (
             self.content,
             font.family,
             font.size,

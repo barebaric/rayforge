@@ -4,16 +4,17 @@ from typing import TYPE_CHECKING, ClassVar, Union
 
 import cairo
 from gi.repository import Adw, Gtk
+from raygeo.sketch.entities import Entity
 
 from rayforge.ui_gtk.shared.pref_rows import SpinRow
 
 from ...core.commands import OffsetCommand
 from ...core.contour import build_offset_items
-from ...core.entities import Entity, Point
+from ...core.point_entity import Point
 from .base import SketchTool
 
 if TYPE_CHECKING:
-    from ...core.constraints import Constraint
+    from raygeo.sketch.constraints import Constraint
 
 logger = logging.getLogger(__name__)
 

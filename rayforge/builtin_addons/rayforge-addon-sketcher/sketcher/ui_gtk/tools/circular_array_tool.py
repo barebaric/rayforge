@@ -17,8 +17,8 @@ from ...core.arrays import (
     CircularArray,
     CircularArrayStrategy,
 )
+from ...core.circle_entity import Circle
 from ...core.commands import CreateArrayCommand
-from ...core.entities import Circle
 from ...core.entity_group import EntityGroup
 from .array_base import ArrayToolBase
 

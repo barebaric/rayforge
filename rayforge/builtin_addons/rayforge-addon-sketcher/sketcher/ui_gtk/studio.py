@@ -12,8 +12,8 @@ from rayforge.ui_gtk.shared.status_bar import StatusBar
 from rayforge.ui_gtk.shared.undo_button import RedoButton, UndoButton
 from rayforge.ui_gtk.varset.varset_editor import VarSetEditorWidget
 
-from ..core.entities.text_box import TextBoxEntity
 from ..core.sketch import DEFAULT_FILL_COLOR, Sketch
+from ..core.text_box_entity import TextBoxEntity
 from .conflicts_widget import ConflictingConstraintsWidget
 from .font_properties import FontPropertiesWidget
 from .menu import SketchMenu

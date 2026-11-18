@@ -5,7 +5,8 @@ from blinker import Signal
 from .types import EntityID
 
 if TYPE_CHECKING:
-    from .entities import Entity
+    from raygeo.sketch.entities import Entity
+
     from .registry import EntityRegistry
 
 

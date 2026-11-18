@@ -6,14 +6,19 @@ from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point as GeoPoint
 
-from ..entities import Arc, Bezier, Circle, Line, Point
+from ..arc_entity import Arc
+from ..bezier_entity import Bezier
+from ..circle_entity import Circle
+from ..line_entity import Line
+from ..point_entity import Point
 from ..types import EntityID
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
+    from raygeo.sketch.constraints import Constraint
+
     from rayforge.core.undo.command import Command
 
-    from ..constraints import Constraint
     from ..sketch import Sketch
 
 logger = logging.getLogger(__name__)

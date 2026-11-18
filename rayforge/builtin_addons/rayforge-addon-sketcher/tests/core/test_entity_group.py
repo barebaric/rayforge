@@ -2,8 +2,8 @@ import math
 from typing import Any
 
 import pytest
+from raygeo.sketch.constraints import RadiusConstraint
 from sketcher.core.arrays import InstancePlacement, PlacementKind
-from sketcher.core.constraints import RadiusConstraint
 from sketcher.core.entity_group import (
     EntityGroup,
     points_bbox_center,

@@ -5,10 +5,10 @@ from unittest.mock import MagicMock
 import cairo
 import numpy as np
 import pytest
+from raygeo.sketch.constraints import EqualLengthConstraint
 from scipy.optimize import check_grad
 from sketcher.core import Sketch
 from sketcher.core.components import get_referenced_points
-from sketcher.core.constraints import EqualLengthConstraint
 from sketcher.core.params import ParameterContext
 from sketcher.core.registry import EntityRegistry
 from sketcher.core.selection import SketchSelection

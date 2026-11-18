@@ -4,33 +4,19 @@ from typing import TYPE_CHECKING, Any
 
 from raygeo.geo import Geometry
 from raygeo.geo.types import Point, Rect
+from raygeo.sketch.entities import Ellipse as _CompiledEllipse
 
-from ..types import EntityID
-from .entity import Entity, OffsetPlan
+from .entity_ops import EntityOps, OffsetPlan
+from .types import EntityID
 
 if TYPE_CHECKING:
-    from ..constraints import Constraint
-    from ..registry import EntityRegistry
-    from ..sketch import Sketch
+    from raygeo.sketch.constraints import Constraint
+
+    from .registry import EntityRegistry
+    from .sketch import Sketch
 
 
-class Ellipse(Entity):
-    def __init__(
-        self,
-        id: EntityID,
-        center_idx: EntityID,
-        radius_x_pt_idx: EntityID,
-        radius_y_pt_idx: EntityID,
-        construction: bool = False,
-        helper_line_ids: list[EntityID] | None = None,
-    ):
-        super().__init__(id, construction)
-        self.center_idx: EntityID = center_idx
-        self.radius_x_pt_idx: EntityID = radius_x_pt_idx
-        self.radius_y_pt_idx: EntityID = radius_y_pt_idx
-        self.helper_line_ids: list[EntityID] = helper_line_ids or []
-        self.type = "ellipse"
-
+class Ellipse(EntityOps, _CompiledEllipse):
     def get_point_ids(self) -> list[EntityID]:
         return [self.center_idx, self.radius_x_pt_idx, self.radius_y_pt_idx]
 

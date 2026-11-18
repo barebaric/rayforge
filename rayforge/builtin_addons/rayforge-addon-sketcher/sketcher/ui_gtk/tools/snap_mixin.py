@@ -4,15 +4,18 @@ from typing import TYPE_CHECKING, Any
 
 import cairo
 from raygeo.geo.types import Point as GeoPoint
-
-from ...core.constraints import (
+from raygeo.sketch.constraints import (
     CoincidentConstraint,
     HorizontalConstraint,
     PointOnLineConstraint,
     SymmetryConstraint,
     VerticalConstraint,
 )
-from ...core.entities import Arc, Circle, Line, Point
+
+from ...core.arc_entity import Arc
+from ...core.circle_entity import Circle
+from ...core.line_entity import Line
+from ...core.point_entity import Point
 from ...core.snap import (
     SNAP_LINE_STYLES,
     DragContext,
@@ -438,7 +441,7 @@ class SnapMixin:
         to_screen,
     ) -> None:
         """Draw the indicator for the primary snap point."""
-        from ...core.constraints.symmetry import draw_symmetry_arrows
+        from raygeo.sketch.constraints.symmetry import draw_symmetry_arrows
 
         if not self.current_snap_result:
             return

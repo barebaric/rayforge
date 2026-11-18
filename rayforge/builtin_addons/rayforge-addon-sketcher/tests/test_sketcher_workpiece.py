@@ -5,7 +5,7 @@ import pytest
 from raygeo.geo import Geometry, Matrix
 from raygeo.geo.shape.text import FontConfig
 from sketcher.core import Sketch
-from sketcher.core.entities import TextBoxEntity
+from sketcher.core.text_box_entity import TextBoxEntity
 
 from rayforge.core.doc import Doc
 from rayforge.core.source_asset_segment import SourceAssetSegment

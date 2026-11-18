@@ -20,7 +20,7 @@ gi.require_version("Adw", "1")
 
 from sketcher.core import Sketch
 from sketcher.core.commands import ChamferCommand, FilletCommand
-from sketcher.core.entities import Line
+from sketcher.core.line_entity import Line
 from sketcher.ui_gtk.sketchelement import SketchElement
 
 

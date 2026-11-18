@@ -2,9 +2,10 @@ import math
 from unittest.mock import MagicMock
 
 import pytest
+from raygeo.sketch.constraints import RadiusConstraint
 from sketcher.core import Sketch
-from sketcher.core.constraints import RadiusConstraint
-from sketcher.core.entities import Circle, Line
+from sketcher.core.circle_entity import Circle
+from sketcher.core.line_entity import Line
 from sketcher.ui_gtk.tools import PolygonTool
 from sketcher.ui_gtk.tools.base import SketcherKey
 

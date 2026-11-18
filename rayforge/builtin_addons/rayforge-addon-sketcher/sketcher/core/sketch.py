@@ -17,26 +17,15 @@ from raygeo.geo import Geometry
 from raygeo.geo import Line as GeoLine
 from raygeo.geo import Move as GeoMove
 from raygeo.geo.shape.polygon import is_point_inside_polygon
-
-from rayforge.core.asset import IAsset
-from rayforge.core.color import ColorRGBA
-from rayforge.core.expression import ExpressionMap
-from rayforge.core.geometry_provider import IGeometryProvider
-from rayforge.core.varset import VarSet
-from rayforge.image.geo_renderer import render_geometry_to_png
-from rayforge.image.structures import FillRenderData, FillStyle
-
-from .arrays import Array
-from .components import get_referenced_points
-from .constraints import (
+from raygeo.sketch.constraints import (
     AngleConstraint,
     AspectRatioConstraint,
     CoincidentConstraint,
     CollinearConstraint,
     Constraint,
-    ConstraintStatus,
     DiameterConstraint,
     DistanceConstraint,
+    DragConstraint,
     EqualDistanceConstraint,
     EqualLengthConstraint,
     HorizontalConstraint,
@@ -50,14 +39,28 @@ from .constraints import (
     TangentConstraint,
     VerticalConstraint,
 )
-from .constraints.drag import DragConstraint
-from .entities import Arc, Bezier, Entity, Line, TextBoxEntity
-from .entities.point import Point, WaypointType
+from raygeo.sketch.entities import Entity
+
+from rayforge.core.asset import IAsset
+from rayforge.core.color import ColorRGBA
+from rayforge.core.expression import ExpressionMap
+from rayforge.core.geometry_provider import IGeometryProvider
+from rayforge.core.varset import VarSet
+from rayforge.image.geo_renderer import render_geometry_to_png
+from rayforge.image.structures import FillRenderData, FillStyle
+
+from .arc_entity import Arc
+from .arrays import Array
+from .bezier_entity import Bezier
+from .components import get_referenced_points
+from .line_entity import Line
 from .params import ParameterContext
+from .point_entity import Point, WaypointType
 from .registry import EntityRegistry
 from .solver import Solver
 from .template_functions import get_template_functions
-from .types import EntityID
+from .text_box_entity import TextBoxEntity
+from .types import ConstraintStatus, EntityID
 
 DEFAULT_FILL_COLOR: ColorRGBA = (0.85, 0.85, 0.85, 0.7)
 FORMAT_VERSION = 1
