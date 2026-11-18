@@ -878,14 +878,14 @@ class GrblNetworkDriver(Driver):
             return None
 
     async def run_probe_cycle(
-        self, axis: Axis, max_travel: float, feed_rate: int
+        self, axis: Axis, target: float, feed_rate: int
     ) -> Pos | None:
         assert axis.name, "Probing requires a single, named axis."
         axis_letter = axis.name.upper()
         dialect = self.dialect
         cmd = dialect.probe_cycle.format(
             axis_letter=axis_letter,
-            max_travel=self._to_machine_length(max_travel),
+            max_travel=self._to_machine_length(target),
             feed_rate=self._to_machine_speed(feed_rate),
         )
 

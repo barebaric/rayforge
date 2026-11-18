@@ -539,13 +539,13 @@ class GrblSerialSimpleDriver(Driver):
             return None
 
     async def run_probe_cycle(
-        self, axis: Axis, max_travel: float, feed_rate: int
+        self, axis: Axis, target: float, feed_rate: int
     ) -> Pos | None:
         session = self._require_session()
         assert axis.name, "Probing requires a single, named axis."
         return await session.run_probe_cycle(
             axis.name.upper(),
-            self._to_machine_length(max_travel),
+            self._to_machine_length(target),
             self._to_machine_speed(feed_rate),
         )
 

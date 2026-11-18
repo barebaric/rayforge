@@ -478,7 +478,7 @@ class SmoothieDriver(Driver):
         )
 
     async def run_probe_cycle(
-        self, axis: Axis, max_travel: float, feed_rate: int
+        self, axis: Axis, target: float, feed_rate: int
     ) -> Pos | None:
         """
         Probing is not implemented due to difficulty in reliably capturing

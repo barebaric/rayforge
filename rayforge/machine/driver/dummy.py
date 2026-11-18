@@ -241,7 +241,7 @@ class NoDeviceDriver(Driver):
         return self._machine.active_wcs
 
     async def run_probe_cycle(
-        self, axis: Axis, max_travel: float, feed_rate: int
+        self, axis: Axis, target: float, feed_rate: int
     ) -> Pos | None:
         """
         Dummy implementation, simulates a successful probe after a short delay.
