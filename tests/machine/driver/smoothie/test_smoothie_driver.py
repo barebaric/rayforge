@@ -48,6 +48,10 @@ class StateAwaiter:
         self._signal = driver.state_changed.connect(
             self._on_state_changed, weak=False
         )
+        # The driver may already have reached the expected state before the
+        # awaiter was created, so do not rely on the next signal alone.
+        if driver.state.status == self.expected_status:
+            self.event.set()
 
     def _on_state_changed(self, sender, **kwargs):
         state = kwargs.get("state")
