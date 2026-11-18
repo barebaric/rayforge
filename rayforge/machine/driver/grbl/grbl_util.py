@@ -2,49 +2,9 @@ import logging
 from copy import deepcopy
 from gettext import gettext as _
 
-from raydriver.grbl.parser import parse_msg, parse_ver
-
 from ....core.varset import Var, VarSet
 
 logger = logging.getLogger(__name__)
-
-
-def parse_board(line: str) -> str | None:
-    """Parse grblHAL's ``[BOARD:...]`` build-info line."""
-    if not line.startswith("[BOARD:"):
-        return None
-    board = line[7:].rstrip("]").strip()
-    return board or None
-
-
-def extract_device_name(build_info: list[str]) -> str:
-    """
-    Extract a human-readable device name from build info lines.
-
-    Checks ``[MSG:machine:...]`` / ``[MSG:mechine:...]`` lines first,
-    then grblHAL's ``[BOARD:...]`` line, and finally the VER line's
-    build-info field (e.g. ``[VER:1.1h.ORTUR:]`` → ``"ORTUR"``).
-
-    Raydriver's parser has no ``[BOARD:...]`` support yet, so this
-    small wrapper stays Rayforge-side until it lands upstream.
-    """
-    for line in build_info:
-        msg = parse_msg(line)
-        if msg is not None:
-            key, value = msg
-            if key.lower() in ("machine", "mechine"):
-                return value
-    for line in build_info:
-        board = parse_board(line)
-        if board is not None:
-            return board
-    for line in build_info:
-        ver = parse_ver(line)
-        if ver is not None:
-            _, build_name = ver
-            if build_name:
-                return build_name
-    return "Unknown Grbl Device"
 
 
 # GRBL Typed Settings Definitions

@@ -10,6 +10,7 @@ from typing import (
 
 from blinker import Signal
 from raydriver.grbl.parser import (
+    extract_device_name,
     parse_grbl_settings,
     parse_opt_flags,
     parse_opt_info,
@@ -21,7 +22,6 @@ from ...models.dialect.grbl import GRBL_DIALECT
 from ...models.dialect.grbl_dynamic import GRBL_DYNAMIC_DIALECT
 from ...transport import TransportStatus
 from .grbl_dialect_detect import detect_grbl_dialect
-from .grbl_util import extract_device_name
 
 if TYPE_CHECKING:
     from ....context import RayforgeContext
