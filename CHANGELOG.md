@@ -32,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   protocol stack in Rust through the raydriver library. Class names,
   setup settings and existing machine configurations stay unchanged;
   commands and responses move to the Rust HTTP/WebSocket transport,
-  and jobs are uploaded and executed as before (raydriver 1.9.0)
+  and jobs are uploaded and executed as before (raydriver 1.10.0)
 - Optimize: raster scan lines stay in emission order by default.
   Reordering them makes the machine reverse and hop its Y axis
   between rows, and the mechanical play taken up on every reversal
@@ -47,7 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   square cells, while power-modulated modes keep half the spot
   width, where finer sampling smooths the power ramp (discussion
   #686)
-- Dependencies: raygeo upgraded to 1.76.0, raydriver to 1.9.0
+- Dependencies: raygeo upgraded to 1.76.0, raydriver to 1.10.0
 
 ### Fixed
 

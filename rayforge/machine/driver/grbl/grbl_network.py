@@ -3,7 +3,7 @@ from gettext import gettext as _
 from typing import Any, cast
 
 from raydriver.core.discovery.spec import DiscoverySpec, MdnsRecognizer
-from raydriver.esp3d import Esp3dSession
+from raydriver.esp3d import Esp3dConfig, Esp3dSession
 
 from ....core.varset import ChoiceVar, HostnameVar, PortVar, VarSet
 from ....core.varset.hostnamevar import is_valid_hostname_or_ip
@@ -93,14 +93,13 @@ class GrblNetworkDriver(GrblSerialDriver):
         if not host:
             raise DriverSetupError(_("Hostname must be configured."))
 
-        config = {
-            "host": host,
-            "http_port": int(port),
-            "ws_port": int(ws_port),
-            "protocol": protocol,
-        }
         self._session = Esp3dSession(
-            config=config,
+            config=Esp3dConfig(
+                host=host,
+                http_port=int(port),
+                ws_port=int(ws_port),
+                protocol=protocol,
+            ),
             dialect=self._dialect_templates(),
             event_callback=self._on_session_event,
         )
