@@ -1033,6 +1033,7 @@ class TestFrameOverscan:
             mocker,
             include_overscan=False,
         )
+        await doc_editor.wait_until_settled()
 
         xs = [corner[0] for corner in corners]
         assert min(xs) == pytest.approx(10.0)
@@ -1049,6 +1050,7 @@ class TestFrameOverscan:
             mocker,
             include_overscan=True,
         )
+        await doc_editor.wait_until_settled()
 
         xs = [corner[0] for corner in corners]
         assert min(xs) == pytest.approx(10.0)
