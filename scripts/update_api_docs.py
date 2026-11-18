@@ -1,7 +1,7 @@
-"""Download and sync raygeo API docs from the GitHub source archive.
+"""Download and sync third-party API docs from GitHub source archives.
 
-Reads the pinned raygeo version from requirements.txt, downloads the
-matching source tarball from GitHub, and syncs docs/api/ into the
+Reads the pinned version of each package from requirements.txt, downloads the
+matching source tarball from GitHub, and syncs its docs/api/ directory into the
 website tree.
 """
 
@@ -11,19 +11,45 @@ import sys
 import tarfile
 import tempfile
 import urllib.request
+from dataclasses import dataclass
 from pathlib import Path
 
-REPO_URL = "https://github.com/barebaric/raygeo"
 REQUIREMENTS = Path("requirements.txt")
-OUTPUT_DIR = Path("website/docs/developer/raygeo-api")
 
 
-def _get_raygeo_version() -> str:
+@dataclass(frozen=True)
+class ApiDocsPackage:
+    name: str
+    repo_url: str
+    output_dir: Path
+    fallback_ref: str | None = None
+
+
+PACKAGES = (
+    ApiDocsPackage(
+        name="raygeo",
+        repo_url="https://github.com/barebaric/raygeo",
+        output_dir=Path("website/docs/developer/raygeo-api"),
+    ),
+    ApiDocsPackage(
+        name="raydriver",
+        repo_url="https://github.com/barebaric/raydriver",
+        output_dir=Path("website/docs/developer/raydriver-api"),
+        # The pinned release predates docs generation; use the default
+        # branch until a release contains docs/api/.
+        fallback_ref="main",
+    ),
+)
+
+
+def _get_version(package: str) -> str:
     text = REQUIREMENTS.read_text()
-    match = re.search(r"^raygeo==([\d.]+)", text, re.MULTILINE)
+    match = re.search(
+        rf"^{re.escape(package)}==" + r"([^\s#]+)", text, re.MULTILINE
+    )
     if not match:
         print(
-            f"Could not find pinned raygeo version in {REQUIREMENTS}.",
+            f"Could not find pinned {package} version in {REQUIREMENTS}.",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -70,36 +96,58 @@ def _sync_dir(src: Path, dst: Path) -> None:
             dst_path.unlink()
 
 
-def main() -> int:
-    version = _get_raygeo_version()
-    tar_url = f"{REPO_URL}/archive/refs/tags/v{version}.tar.gz"
+def _extract_docs(package: ApiDocsPackage, ref: str, tmp: str) -> Path:
+    kind = "tags" if ref.startswith("v") else "heads"
+    tar_url = f"{package.repo_url}/archive/refs/{kind}/{ref}.tar.gz"
+    archive_path = Path(tmp) / f"{package.name}-{ref}.tar.gz"
+
+    print(f"Downloading {package.name} {ref} source...")
+    urllib.request.urlretrieve(tar_url, archive_path)
+
+    print(f"Extracting {package.name} docs/api from archive...")
+    with tarfile.open(archive_path, "r:gz") as tar:
+        tar.extractall(path=tmp, filter="data")
+
+    prefix = f"{package.name}-{ref.removeprefix('v')}"
+    return Path(tmp) / prefix / "docs" / "api"
+
+
+def _sync_package(package: ApiDocsPackage) -> int:
+    version = _get_version(package.name)
+    ref = f"v{version}"
 
     with tempfile.TemporaryDirectory() as tmp:
-        archive_path = Path(tmp) / "raygeo.tar.gz"
-        print(f"Downloading raygeo v{version} source...")
-        urllib.request.urlretrieve(tar_url, archive_path)
+        docs_src = _extract_docs(package, ref, tmp)
 
-        prefix = f"raygeo-{version}"
-        docs_src = Path(tmp) / prefix / "docs" / "api"
-
-        print("Extracting docs/api from archive...")
-        with tarfile.open(archive_path, "r:gz") as tar:
-            tar.extractall(path=tmp, filter="data")
+        if not docs_src.exists() and package.fallback_ref is not None:
+            print(
+                f"docs/api/ not found in {package.name} {ref}; "
+                f"using {package.fallback_ref} docs instead.",
+                file=sys.stderr,
+            )
+            docs_src = _extract_docs(package, package.fallback_ref, tmp)
 
         if not docs_src.exists():
             print(
-                f"docs/api/ not found in the v{version} archive.",
+                f"docs/api/ not found in the {package.name} {ref} archive.",
                 file=sys.stderr,
             )
             return 1
 
-        if not _needs_update(docs_src, OUTPUT_DIR):
-            print("API docs are up to date.")
+        if not _needs_update(docs_src, package.output_dir):
+            print(f"{package.name} API docs are up to date.")
             return 0
 
-        print("Syncing raygeo API docs...")
-        _sync_dir(docs_src, OUTPUT_DIR)
+        print(f"Syncing {package.name} API docs...")
+        _sync_dir(docs_src, package.output_dir)
 
+    return 0
+
+
+def main() -> int:
+    for package in PACKAGES:
+        if _sync_package(package):
+            return 1
     return 0
 
 
