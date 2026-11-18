@@ -23,8 +23,6 @@ from rayforge.machine.driver.xtool import XtoolM2Driver
 from rayforge.machine.models.laser import Laser
 from rayforge.pipeline.encoder.base import EncodedOutput, MachineCodeOpMap
 
-pytestmark = pytest.mark.asyncio
-
 
 class TestRegistry:
     def test_driver_registered(self):
@@ -39,6 +37,7 @@ class TestRegistry:
         assert XtoolM2Driver.uses_gcode is False
         assert XtoolM2Driver.supports_probing is False
 
+    @pytest.mark.asyncio
     async def test_machine_space_wcs(self, context_initializer, machine):
         drv = XtoolM2Driver(context_initializer, machine)
         assert drv.machine_space_wcs == "G53"
@@ -132,6 +131,7 @@ class TestEventTranslation:
         assert ("job_finished", {}) in recorder.events
 
 
+@pytest.mark.asyncio
 class TestUnsupportedOperations:
     async def test_run_raises_explaining_no_streaming(
         self, context_initializer, machine

@@ -51,8 +51,8 @@ L'assistant peut découvrir les appareils pour vous au lieu de vous demander de 
 départ et de tout remplir à la main :
 
 - **Périphériques série USB** sont listés au fur et à mesure qu'ils apparaissent.
-- **Appareils réseau** sont découverts via mDNS : les serveurs OctoPrint et les cartes ESP3D
-  apparaissent aux côtés des périphériques série USB.
+- **Appareils réseau** sont découverts via mDNS : les serveurs OctoPrint, les cartes ESP3D et les
+  cartes grblHAL qui annoncent `_telnet._tcp` apparaissent aux côtés des périphériques série USB.
 - Les appareils découverts sont **associés aux profils intégrés** lorsqu'une correspondance fiable
   est trouvée, vous pouvez donc souvent simplement confirmer les paramètres détectés au lieu de les
   saisir.
@@ -61,9 +61,10 @@ départ et de tout remplir à la main :
 - Les appareils que vous avez déjà configurés sont affichés en **lecture seule** pour que vous ne
   créiez pas accidentellement des doublons.
 
-- **Les cartes grblHAL via telnet** ne s'annoncent pas via mDNS, donc un scan de sous-réseau
-  restreint (port telnet uniquement, concurrence limitée) s'exécute avec les scans série et mDNS ;
-  Rayforge confirme chaque contrôleur qui répond avant de le lister.
+- **Les cartes grblHAL via telnet** sont confirmées avec la commande d'informations de compilation
+  `$I` avant d'être listées. Les cartes dont le firmware ne s'annonce pas via mDNS sont trouvées par
+  un scan de sous-réseau restreint (port telnet uniquement, concurrence limitée) exécuté avec les
+  scans série et mDNS.
 
 ![Assistant — Découverte des appareils](/screenshots/config-wizard-discover.webp)
 

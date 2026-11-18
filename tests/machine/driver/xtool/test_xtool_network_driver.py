@@ -18,8 +18,6 @@ from rayforge.machine.driver.xtool import (
 )
 from rayforge.pipeline.encoder.base import EncodedOutput, MachineCodeOpMap
 
-pytestmark = pytest.mark.asyncio
-
 FAST_CONFIG = {
     "host": "127.0.0.1",
     "request_timeout": 2.0,
@@ -172,11 +170,13 @@ class TestRegistry:
         assert "Hostname" in drv.state.error.title
         assert drv.resource_uri is None
 
+    @pytest.mark.asyncio
     async def test_machine_space_wcs(self, context_initializer, machine):
         drv = XtoolNetworkDriver(context_initializer, machine)
         assert drv.machine_space_wcs == "G53"
 
 
+@pytest.mark.asyncio
 class TestConnection:
     async def test_connect_reports_connected(
         self, context_initializer, machine
@@ -214,6 +214,7 @@ class TestConnection:
             await emulator.stop()
 
 
+@pytest.mark.asyncio
 class TestCommands:
     async def test_interactive_command_acknowledged(self, connected_driver):
         drv, emulator, recorder = connected_driver
@@ -273,6 +274,7 @@ class TestCommands:
             await drv.set_wcs_offset("G54", 1, 2, None)
 
 
+@pytest.mark.asyncio
 class TestJobs:
     async def test_run_uploads_and_completes(self, connected_driver):
         drv, emulator, recorder = connected_driver
@@ -322,6 +324,7 @@ class TestJobs:
         await asyncio.wait_for(task, 5.0)
 
 
+@pytest.mark.asyncio
 class TestProbe:
     async def test_probe_builds_profile_from_machine_type(
         self, context_initializer
@@ -358,6 +361,7 @@ class TestProbe:
             )
 
 
+@pytest.mark.asyncio
 class TestEvents:
     async def test_safety_alarm_surfaces_in_state(self, connected_driver):
         drv, emulator, _ = connected_driver

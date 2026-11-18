@@ -1,6 +1,6 @@
 asyncudp==0.11.0
 pyvips==3.2.0
-raydriver==1.7.1
+raydriver==1.9.0
 raygeo==1.78.2
 ruida-pa==0.24.0
 trimesh==5.2.1

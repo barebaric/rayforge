@@ -83,40 +83,40 @@ class TestStartDelegation:
         """A protocol argument must reach the wrapped RdDriver."""
         driver = RpaDirectDriver()
         mock_driver = Mock(spec=RdDriver)
-        mock_driver.start.return_value = True
+        mock_driver.connect.return_value = True
         driver._driver = mock_driver
 
         result = driver.start("192.168.1.10", None, None, "tcp")
 
         assert result is True
-        mock_driver.start.assert_called_once_with(
-            udp_host="192.168.1.10", usb_device=None, protocol="tcp"
+        mock_driver.connect.assert_called_once_with(
+            network_host="192.168.1.10", usb_device=None, protocol="tcp"
         )
 
     def test_start_omits_protocol_when_none(self):
         """Without a protocol the wrapped driver keeps its previous one."""
         driver = RpaDirectDriver()
         mock_driver = Mock(spec=RdDriver)
-        mock_driver.start.return_value = True
+        mock_driver.connect.return_value = True
         driver._driver = mock_driver
 
         driver.start("192.168.1.10", None)
 
-        mock_driver.start.assert_called_once_with(
-            udp_host="192.168.1.10", usb_device=None
+        mock_driver.connect.assert_called_once_with(
+            network_host="192.168.1.10", usb_device=None
         )
 
     def test_start_forwards_magic_and_protocol_together(self):
         """magic and protocol are independent optional kwargs."""
         driver = RpaDirectDriver()
         mock_driver = Mock(spec=RdDriver)
-        mock_driver.start.return_value = True
+        mock_driver.connect.return_value = True
         driver._driver = mock_driver
 
         driver.start("192.168.1.10", None, 0x88, "udp")
 
-        mock_driver.start.assert_called_once_with(
-            udp_host="192.168.1.10",
+        mock_driver.connect.assert_called_once_with(
+            network_host="192.168.1.10",
             usb_device=None,
             magic=0x88,
             protocol="udp",
