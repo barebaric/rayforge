@@ -51,6 +51,8 @@ while IFS= read -r line || [[ -n "$line" ]]; do
         --dest "${TMP_SRC_DIR}/vendor/sdist" \
         --no-deps \
         --prefer-binary \
+        --retries 5 \
+        --timeout 30 \
         "$line"
 
 done < "$REQUIREMENTS_FILE"

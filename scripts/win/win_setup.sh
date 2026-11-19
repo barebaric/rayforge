@@ -96,6 +96,8 @@ if [[ "$1" == "pacman" || -z "$1" ]]; then
     echo "export PKG_CONFIG_PATH=$MSYS2_PATH/ucrt64/lib/pkgconfig" >> .msys2_env
     echo "export GI_TYPELIB_PATH=$MSYS2_PATH/ucrt64/lib/girepository-1.0" >> .msys2_env
     echo "export LD_LIBRARY_PATH=$MSYS2_PATH/ucrt64/lib" >> .msys2_env
+    echo "export PIP_CACHE_DIR=$PWD/.cache/pip" >> .msys2_env
+    echo "export CARGO_HOME=$PWD/.cache/cargo" >> .msys2_env
     
     # --- Permissions Check ---
     # We skip this check in CI because the runner user usually has sufficient privileges.
@@ -230,15 +232,15 @@ if [[ "$1" == "pip" || -z "$1" ]]; then
     echo "Installing/updating pip packages..."
     retry $PYTHON_BIN_PATH -m pip install --upgrade pip --break-system-packages
 
-    retry $PYTHON_BIN_PATH -m pip install --no-cache-dir --no-build-isolation \
+    retry $PYTHON_BIN_PATH -m pip install --no-build-isolation \
         "asyncudp$(req_version asyncudp)" \
         "semver$(req_version semver)" \
         "vtracer$(req_version vtracer)" \
         "GitPython$(req_version GitPython)" \
         --break-system-packages
 
-    retry $PYTHON_BIN_PATH -m pip install --no-cache-dir pygobject-stubs --break-system-packages
-    retry $PYTHON_BIN_PATH -m pip install --no-cache-dir --no-build-isolation --no-deps \
+    retry $PYTHON_BIN_PATH -m pip install pygobject-stubs --break-system-packages
+    retry $PYTHON_BIN_PATH -m pip install --no-build-isolation --no-deps \
         "pyvips$(req_version pyvips)" \
         --break-system-packages
 
@@ -247,7 +249,7 @@ if [[ "$1" == "pip" || -z "$1" ]]; then
     # platform overrides together with --target, which therefore must point
     # at the real site-packages so cv2 stays importable.
     echo "Installing pinned OpenCV wheel for Windows..."
-    retry $PYTHON_BIN_PATH -m pip install --no-cache-dir \
+    retry $PYTHON_BIN_PATH -m pip install \
         --only-binary=:all: --platform win_amd64 --no-deps \
         --target="$MSYS2_PATH/ucrt64/lib/$PYTHON_VERSION/site-packages" \
         "opencv-python==4.10.0.84" \
@@ -271,7 +273,7 @@ new = b"python3.dll\x00\x00\x00\x00"
 open(path, "wb").write(bytes(data.replace(old, new)))
 EOF
 
-    retry $PYTHON_BIN_PATH -m pip install --no-cache-dir \
+    retry $PYTHON_BIN_PATH -m pip install \
         "pyserial$(req_version pyserial)" \
         "raygeo$(req_version raygeo)" \
         "raydriver$(req_version raydriver)" \
@@ -280,6 +282,7 @@ EOF
         "trimesh$(req_version trimesh)" \
         "zeroconf$(req_version zeroconf)" \
         "ruida-pa$(req_version ruida-pa)" \
+        "pytest-xdist==3.8.0" \
         --break-system-packages
 
     echo "✅ Windows MSYS2 dependency setup complete."

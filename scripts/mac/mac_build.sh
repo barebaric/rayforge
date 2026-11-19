@@ -154,11 +154,6 @@ if [ "$(uname -s)" = "Darwin" ]; then
 fi
 
 "$VENV_PY" -m pip install -r "$TMP_REQUIREMENTS"
-if [ "$(uname -s)" = "Darwin" ]; then
-    "$VENV_PY" -m pip install --upgrade --force-reinstall \
-        --only-binary=:all: \
-        "numpy==$MACOS_NUMPY_VERSION" "scipy==$MACOS_SCIPY_VERSION"
-fi
 rm -f "$TMP_REQUIREMENTS"
 trap - EXIT
 "$VENV_PY" -m pip install PyOpenGL_accelerate==3.1.10 || \
