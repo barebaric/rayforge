@@ -48,41 +48,12 @@ jobs:
           key: snapcraft-${{ runner.os }}-${{ hashFiles('snap/snapcraft.yaml') }}
           restore-keys: snapcraft-${{ runner.os }}-
 
-      - name: Cache snapcraft snap
-        uses: actions/cache@v4
-        with:
-          path: ~/snapcraft-cache
-          key: snapcraft-snap-${{ runner.os }}-stable
-          restore-keys: snapcraft-snap-${{ runner.os }}-
-
-      - name: Install snapcraft
-        run: |
-          if command -v snapcraft >/dev/null 2>&1; then
-            echo "Snapcraft is already installed."
-            exit 0
-          fi
-          mkdir -p "$HOME/snapcraft-cache"
-          if ! ls "$HOME/snapcraft-cache"/*.snap >/dev/null 2>&1; then
-            rm -f "$HOME/snapcraft-cache"/*
-            (cd "$HOME/snapcraft-cache" && \
-              snap download snapcraft --channel=stable)
-          fi
-          SNAP_PATH=$(ls -t "$HOME/snapcraft-cache"/*.snap | sed -n '1p')
-          sudo snap install "$SNAP_PATH" --classic --dangerous
-
       - name: Build snap
+        uses: snapcore/action-build@v1
         id: build
         env:
           SNAPCRAFT_DEBUG: "1"
         continue-on-error: true
-        run: |
-          sudo snapcraft --destructive-mode
-          SNAP_FILE=$(find . -maxdepth 1 -name '*.snap' -print -quit)
-          if [ -z "$SNAP_FILE" ]; then
-            echo "No snap file produced"
-            exit 1
-          fi
-          echo "snap=$SNAP_FILE" >> "$GITHUB_OUTPUT"
 
       - name: Capture snapcraft logs on failure
         if: steps.build.outcome == 'failure'
