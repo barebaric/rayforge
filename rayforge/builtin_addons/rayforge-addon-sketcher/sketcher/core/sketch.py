@@ -54,7 +54,6 @@ from rayforge.image.structures import FillRenderData, FillStyle
 from .arrays import Array
 from .components import get_referenced_points
 from .params import ParameterContext
-from .registry_utils import require_point
 from .solver import Solver
 from .template_functions import get_template_functions
 from .types import ConstraintStatus, EntityID, WaypointType
@@ -312,7 +311,7 @@ class Sketch(IAsset, IGeometryProvider):
         solver anchor, so geometry constrained to it stays registered
         when parameters change.
         """
-        origin = require_point(self.registry, self.origin_id)
+        origin = self.registry.get_point(self.origin_id)
         return (origin.x, origin.y)
 
     def get_geometry(
@@ -726,7 +725,7 @@ class Sketch(IAsset, IGeometryProvider):
                 # Standalone Point (e.g. rectangle center) – include
                 # its ID so its constraints count as internal.
                 try:
-                    require_point(self.registry, eid)
+                    self.registry.get_point(eid)
                     group_pids.add(eid)
                 except IndexError:
                     pass
@@ -843,12 +842,12 @@ class Sketch(IAsset, IGeometryProvider):
                 cp1_x, cp1_y, _ = cmd.control1
                 cp2_x, cp2_y, _ = cmd.control2
 
-                start_pt = require_point(sketch.registry, current_pid)
+                start_pt = sketch.registry.get_point(current_pid)
                 if start_pt:
                     start_pt.waypoint_type = WaypointType.SMOOTH
 
                 end_pid = get_or_add_point(end_x, end_y)
-                end_pt = require_point(sketch.registry, end_pid)
+                end_pt = sketch.registry.get_point(end_pid)
                 if end_pt:
                     end_pt.waypoint_type = WaypointType.SMOOTH
 
@@ -1059,7 +1058,7 @@ class Sketch(IAsset, IGeometryProvider):
 
         for eid, fwd in loop:
             try:
-                pt = require_point(self.registry, curr_p_id)
+                pt = self.registry.get_point(curr_p_id)
                 points.append((pt.x, pt.y))
                 ent = self.registry.get_entity(eid)
                 if not ent:
@@ -1081,9 +1080,9 @@ class Sketch(IAsset, IGeometryProvider):
             ent = self.registry.get_entity(eid)
             if isinstance(ent, Arc):
                 # Calculate area of the circular segment
-                start = require_point(self.registry, ent.start_idx)
-                end = require_point(self.registry, ent.end_idx)
-                center = require_point(self.registry, ent.center_idx)
+                start = self.registry.get_point(ent.start_idx)
+                end = self.registry.get_point(ent.end_idx)
+                center = self.registry.get_point(ent.center_idx)
 
                 # Vectors from center
                 r_vec_start = (start.x - center.x, start.y - center.y)
@@ -1376,7 +1375,7 @@ class Sketch(IAsset, IGeometryProvider):
         Returns True if the point was moved, False if it is locked/constrained.
         """
         try:
-            p = require_point(self.registry, pid)
+            p = self.registry.get_point(pid)
         except IndexError:
             return False
 
@@ -1828,7 +1827,7 @@ class Sketch(IAsset, IGeometryProvider):
             p_ids = first_e.get_endpoint_ids()
             s_id = p_ids[0] if first_fwd else p_ids[1]
 
-            start_pt = require_point(self.registry, s_id)
+            start_pt = self.registry.get_point(s_id)
             geo.move_to(start_pt.x, start_pt.y)
 
             for ent, fwd in final_chain:
@@ -1917,7 +1916,7 @@ class Sketch(IAsset, IGeometryProvider):
 
             p_ids = first_ent.get_endpoint_ids()
             start_pid = p_ids[0] if first_fwd else p_ids[1]
-            start_pt = require_point(self.registry, start_pid)
+            start_pt = self.registry.get_point(start_pid)
 
             geo = Geometry()
             geo.move_to(start_pt.x, start_pt.y)

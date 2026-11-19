@@ -5,7 +5,6 @@ from typing import ClassVar
 import cairo
 
 from ...core.commands import ArcCommand, ArcPreviewState
-from ...core.registry_utils import require_point
 from .base import SketcherKey, SketchTool
 from .dimension_input import DimensionInputHandler
 from .snap_mixin import SnapMixin
@@ -121,8 +120,8 @@ class ArcTool(SnapMixin, SketchTool):
 
         if self._preview_state is not None:
             try:
-                require_point(
-                    self.element.sketch.registry, self._preview_state.center_id
+                self.element.sketch.registry.get_point(
+                    self._preview_state.center_id
                 )
             except IndexError:
                 self.on_deactivate()
@@ -288,8 +287,8 @@ class ArcTool(SnapMixin, SketchTool):
         start_temp = self._preview_state.start_temp
 
         try:
-            end_pt = require_point(
-                self.element.sketch.registry, self._preview_state.temp_end_id
+            end_pt = self.element.sketch.registry.get_point(
+                self._preview_state.temp_end_id
             )
         except IndexError:
             self._preview_state = None

@@ -2,7 +2,6 @@ from typing import TYPE_CHECKING
 
 from blinker import Signal
 
-from .registry_utils import connected_entity_ids
 from .types import EntityID
 
 if TYPE_CHECKING:
@@ -128,7 +127,7 @@ class SketchSelection:
             entity_id: The ID of the starting entity.
             registry: The EntityRegistry to query for connected entities.
         """
-        connected_ids = connected_entity_ids(registry, entity_id)
+        connected_ids = registry.connected_entity_ids(entity_id)
         for eid in connected_ids:
             if eid not in self.entity_ids:
                 self.entity_ids.append(eid)

@@ -29,7 +29,6 @@ from ...core.commands import (
     MovePointCommand,
 )
 from ...core.components import compute_constraint_components
-from ...core.registry_utils import connected_entity_ids, require_point
 from ...core.snap import DragContext
 from ...core.types import EntityID
 from .base import SketcherKey, SketchTool
@@ -181,7 +180,7 @@ class SelectTool(SnapMixin, SketchTool):
             entity_ids.clear()
             for entity in registry.entities():
                 if pid in entity.get_point_ids():
-                    connected = connected_entity_ids(registry, entity.id)
+                    connected = registry.connected_entity_ids(entity.id)
                     entity_ids.extend(connected)
             entity_ids[:] = list(set(entity_ids))
             self.element.selection.point_ids.clear()
@@ -1087,7 +1086,7 @@ class SelectTool(SnapMixin, SketchTool):
             if pid in exclude:
                 continue
             try:
-                p = require_point(registry, pid)
+                p = registry.get_point(pid)
             except IndexError:
                 self.drag_hold_positions.pop(pid, None)
                 continue
@@ -1097,7 +1096,7 @@ class SelectTool(SnapMixin, SketchTool):
 
     def _safe_get_point(self, pid: EntityID):
         try:
-            return require_point(self.element.sketch.registry, pid)
+            return self.element.sketch.registry.get_point(pid)
         except IndexError:
             return None
 

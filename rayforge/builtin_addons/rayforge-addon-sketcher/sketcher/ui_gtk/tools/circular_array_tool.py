@@ -20,7 +20,6 @@ from ...core.arrays import (
 )
 from ...core.commands import CreateArrayCommand
 from ...core.entity_group import EntityGroup
-from ...core.registry_utils import require_point
 from .array_base import ArrayToolBase
 
 logger = logging.getLogger(__name__)
@@ -73,8 +72,8 @@ class CircularArrayTool(ArrayToolBase):
         radius = 10.0
         if isinstance(circle, Circle):
             try:
-                center_pt = require_point(registry, circle.center_idx)
-                radius_pt = require_point(registry, circle.radius_pt_idx)
+                center_pt = registry.get_point(circle.center_idx)
+                radius_pt = registry.get_point(circle.radius_pt_idx)
                 center = (center_pt.x, center_pt.y)
                 radius = math.hypot(
                     radius_pt.x - center_pt.x, radius_pt.y - center_pt.y

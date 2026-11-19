@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 from raygeo.geo.types import Point as GeoPoint
 from raygeo.sketch.entities import Arc, Circle, Line
 
-from ...registry_utils import require_point
 from ..engine import SnapLineProducer
 from ..types import DragContext, SnapLine, SnapLineType, SnapPoint
 
@@ -72,8 +71,8 @@ class OnEntityProducer(SnapLineProducer):
         y: float,
         threshold: float,
     ) -> GeoPoint | None:
-        p1 = require_point(registry, line.p1_idx)
-        p2 = require_point(registry, line.p2_idx)
+        p1 = registry.get_point(line.p1_idx)
+        p2 = registry.get_point(line.p2_idx)
         if not p1 or not p2:
             return None
 
@@ -106,8 +105,8 @@ class OnEntityProducer(SnapLineProducer):
         y: float,
         threshold: float,
     ) -> GeoPoint | None:
-        center = require_point(registry, arc.center_idx)
-        start = require_point(registry, arc.start_idx)
+        center = registry.get_point(arc.center_idx)
+        start = registry.get_point(arc.start_idx)
         if not center or not start:
             return None
 
@@ -140,8 +139,8 @@ class OnEntityProducer(SnapLineProducer):
         y: float,
         threshold: float,
     ) -> GeoPoint | None:
-        center = require_point(registry, circle.center_idx)
-        radius_pt = require_point(registry, circle.radius_pt_idx)
+        center = registry.get_point(circle.center_idx)
+        radius_pt = registry.get_point(circle.radius_pt_idx)
         if not center or not radius_pt:
             return None
 

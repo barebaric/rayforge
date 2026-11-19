@@ -16,7 +16,6 @@ from ..core.commands import (
     DuplicateCommand,
     MoveEntitiesCommand,
 )
-from ..core.registry_utils import require_point
 from ..core.selection import SketchSelection
 from ..core.sketch import Sketch
 from ..core.snap import SnapEngine
@@ -417,7 +416,7 @@ class SketchElement(CanvasElement):
         movable: dict[EntityID, Point] = {}
         for pid in point_ids:
             try:
-                p = require_point(registry, pid)
+                p = registry.get_point(pid)
             except IndexError:
                 continue
             if not p.fixed:
@@ -492,10 +491,10 @@ class SketchElement(CanvasElement):
         target_type = None
 
         if sel.junction_pid is not None:
-            target = require_point(self.sketch.registry, sel.junction_pid)
+            target = self.sketch.registry.get_point(sel.junction_pid)
             target_type = "junction"
         elif sel.point_ids:
-            target = require_point(self.sketch.registry, sel.point_ids[0])
+            target = self.sketch.registry.get_point(sel.point_ids[0])
             target_type = "point"
         elif sel.entity_ids:
             target = self.sketch.registry.get_entity(sel.entity_ids[0])

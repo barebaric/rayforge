@@ -17,8 +17,6 @@ from typing import TYPE_CHECKING, Any, Protocol
 
 from raygeo.sketch.entities import Circle, Ellipse
 
-from .registry_utils import replace_entity_in_order, require_point
-
 if TYPE_CHECKING:
     from raygeo.sketch.entities import Entity
     from raygeo.sketch.entities import SketchPoint as Point
@@ -106,7 +104,7 @@ class EntityGroup:
 
     def _get_point(self, pid: int) -> Point | None:
         try:
-            return require_point(self.registry, pid)
+            return self.registry.get_point(pid)
         except IndexError:
             return None
 
@@ -152,11 +150,11 @@ class EntityGroup:
             if pt is not None:
                 old[pid] = (pt.x, pt.y)
         for pid, (x, y) in old.items():
-            pt = require_point(self.registry, pid)
+            pt = self.registry.get_point(pid)
             pt.x, pt.y = placement.transform_point(x, y)
         for entity in self.entities():
             entity.transform_offsets(placement)
-            replace_entity_in_order(self.registry, entity.id, entity)
+            self.registry.replace_entity(entity.id, entity)
 
     def apply_rigid_motion(self, motion: PlacementTransform) -> None:
         """
@@ -237,7 +235,7 @@ class EntityGroup:
                 )
                 applied.append((copy_pt, copy_pt.x, copy_pt.y))
             copy_entity.rewrite_offsets_from(tpl_entity, placement)
-            replace_entity_in_order(self.registry, copy_entity.id, copy_entity)
+            self.registry.replace_entity(copy_entity.id, copy_entity)
         for tpl_pid, copy_pid in extra_point_pairs:
             tpl_pt = self._get_point(tpl_pid)
             copy_pt = copy._get_point(copy_pid)
@@ -323,4 +321,4 @@ class EntityGroup:
         given map (used when the group's points are re-owned)."""
         for entity in self.entities():
             remap_point_refs(entity, pid_map)
-            replace_entity_in_order(self.registry, entity.id, entity)
+            self.registry.replace_entity(entity.id, entity)

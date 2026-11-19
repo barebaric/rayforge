@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 from raygeo.sketch.constraints import EqualDistanceConstraint
 from raygeo.sketch.entities import Arc
 
-from ..registry_utils import next_temp_id
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
@@ -45,7 +44,7 @@ class AddItemsCommand(SketchChangeCommand):
         for p in self.points:
             old_id = p.id
             # Assign a real ID if it's a temp ID (negative or >= counter)
-            if p.id < 0 or p.id >= next_temp_id(registry):
+            if p.id < 0 or p.id >= registry.next_id():
                 p.id = registry.allocate_id()
             if old_id != p.id:
                 id_map[old_id] = p.id
@@ -55,7 +54,7 @@ class AddItemsCommand(SketchChangeCommand):
         new_entities = []
         for e in self.entities:
             old_id = e.id
-            if e.id < 0 or e.id >= next_temp_id(registry):
+            if e.id < 0 or e.id >= registry.next_id():
                 e.id = registry.allocate_id()
             if old_id != e.id:
                 id_map[old_id] = e.id

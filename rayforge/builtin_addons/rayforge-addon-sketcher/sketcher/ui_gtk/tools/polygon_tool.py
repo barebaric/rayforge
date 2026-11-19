@@ -11,7 +11,6 @@ from ...core.commands.polygon import (
     DEFAULT_STAR_RATIO,
     check_shape,
 )
-from ...core.registry_utils import require_point
 from .base import SketcherKey, SketchTool
 from .dimension_input import DimensionInputHandler
 from .snap_mixin import SnapMixin
@@ -185,7 +184,7 @@ class PolygonTool(SnapMixin, SketchTool):
             return
         registry = self.element.sketch.registry
         try:
-            first = require_point(registry, state.radius_id)
+            first = registry.get_point(state.radius_id)
         except IndexError:
             self.on_deactivate()
             return

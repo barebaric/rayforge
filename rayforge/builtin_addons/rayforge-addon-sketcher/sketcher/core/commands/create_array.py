@@ -16,7 +16,6 @@ from ..arrays import (
     resolve_template_center,
 )
 from ..entity_group import EntityGroup, remap_point_refs
-from ..registry_utils import require_point
 from .base import SketchChangeCommand
 from .items import AddItemsCommand
 
@@ -110,9 +109,7 @@ class CreateArrayCommand(SketchChangeCommand):
         if not template_pids or len(template_entity_ids) < 1:
             return None
 
-        template_points = [
-            require_point(registry, pid) for pid in template_pids
-        ]
+        template_points = [registry.get_point(pid) for pid in template_pids]
         # For circles and ellipses, the template center is the shape's
         # explicit center point, not the bbox midpoint of all defining
         # points which would offset every copy.
@@ -418,12 +415,10 @@ class CreateArrayCommand(SketchChangeCommand):
                 continue
             for pid in entity.get_point_ids():
                 if pid in template_pids and pid not in self._clone_pid_map:
-                    pt = require_point(registry, pid)
+                    pt = registry.get_point(pid)
                     clone_pid = registry.add_point(pt.x, pt.y)
                     self._clone_pid_map[pid] = clone_pid
-                    self._cloned_points.append(
-                        require_point(registry, clone_pid)
-                    )
+                    self._cloned_points.append(registry.get_point(clone_pid))
         if self._clone_pid_map:
             extraction_group = EntityGroup(
                 registry,
@@ -500,7 +495,7 @@ class CreateArrayCommand(SketchChangeCommand):
         self._pre_place_snapshot = placement_group.snapshot_positions()
         for pid in self._extra_template_pids:
             try:
-                pt = require_point(registry, pid)
+                pt = registry.get_point(pid)
             except IndexError:
                 continue
             self._pre_place_snapshot.append((pt, pt.x, pt.y))
@@ -540,7 +535,7 @@ class CreateArrayCommand(SketchChangeCommand):
             placement_group.apply_placement(self._template_placement)
             for pid in self._extra_template_pids:
                 try:
-                    pt = require_point(registry, pid)
+                    pt = registry.get_point(pid)
                 except IndexError:
                     continue
                 pt.x, pt.y = self._template_placement.transform_point(

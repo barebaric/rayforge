@@ -7,7 +7,6 @@ from raygeo.sketch.entities import Entity, Line
 from raygeo.sketch.entities import SketchPoint as Point
 
 from ...core.commands import FilletCommand
-from ...core.registry_utils import require_point
 from ...core.types import EntityID
 from .base import SketchTool
 
@@ -58,7 +57,7 @@ class FilletTool(SketchTool):
 
     def _get_default_radius(self, corner_pid: EntityID) -> float:
         sketch = self.element.sketch
-        corner_point = require_point(sketch.registry, corner_pid)
+        corner_point = sketch.registry.get_point(corner_pid)
         if not corner_point:
             return 10.0
 
@@ -74,8 +73,8 @@ class FilletTool(SketchTool):
             line2.p2_idx if line2.p1_idx == corner_pid else line2.p1_idx
         )
 
-        other1_pt = require_point(sketch.registry, other1_pid)
-        other2_pt = require_point(sketch.registry, other2_pid)
+        other1_pt = sketch.registry.get_point(other1_pid)
+        other2_pt = sketch.registry.get_point(other2_pid)
 
         if not other1_pt or not other2_pt:
             return 10.0

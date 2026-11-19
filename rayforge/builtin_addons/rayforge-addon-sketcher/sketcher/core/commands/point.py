@@ -8,7 +8,6 @@ from raygeo.geo.types import Point as GeoPoint
 from raygeo.sketch.entities import Arc, Bezier, Circle, Line
 from raygeo.sketch.entities import SketchPoint as Point
 
-from ..registry_utils import require_point
 from ..types import EntityID
 from .base import SketchChangeCommand
 
@@ -55,9 +54,7 @@ class MovePointCommand(SketchChangeCommand):
             return self._point_ref
         # Find in registry if not cached or mismatched
         try:
-            self._point_ref = require_point(
-                self.sketch.registry, self.point_id
-            )
+            self._point_ref = self.sketch.registry.get_point(self.point_id)
             return self._point_ref
         except IndexError:
             return None
@@ -162,9 +159,7 @@ class UnstickJunctionCommand(SketchChangeCommand):
 
     def _do_execute(self) -> None:
         try:
-            junction_pt = require_point(
-                self.sketch.registry, self.junction_pid
-            )
+            junction_pt = self.sketch.registry.get_point(self.junction_pid)
         except IndexError:
             return
 
@@ -191,7 +186,7 @@ class UnstickJunctionCommand(SketchChangeCommand):
 
         # Create a new point, add it to the registry, and store it
         new_pid = self.sketch.add_point(junction_pt.x, junction_pt.y)
-        self.new_point = require_point(self.sketch.registry, new_pid)
+        self.new_point = self.sketch.registry.get_point(new_pid)
 
         # Keep the first entity, modify the rest
         is_first = True
@@ -263,7 +258,7 @@ class MoveEntitiesCommand(SketchChangeCommand):
         registry = self.sketch.registry
         for pid, (x, y) in positions.items():
             try:
-                p = require_point(registry, pid)
+                p = registry.get_point(pid)
                 p.x = x
                 p.y = y
             except IndexError:

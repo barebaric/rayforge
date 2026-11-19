@@ -4,7 +4,6 @@ from raygeo.sketch.entities import Arc, Circle, Line
 from raygeo.sketch.entities import SketchPoint as Point
 from raygeo.sketch.entities import TextBox as TextBoxEntity
 from raygeo.sketch.registry import EntityRegistry
-from sketcher.core.registry_utils import connected_entity_ids
 
 
 @pytest.fixture
@@ -240,7 +239,7 @@ def test_single_entity_returns_self():
     p2 = registry.add_point(10, 0)
     l1 = registry.add_line(p1, p2)
 
-    connected = connected_entity_ids(registry, l1)
+    connected = registry.connected_entity_ids(l1)
     assert connected == {l1}
 
 
@@ -253,10 +252,10 @@ def test_two_connected_lines():
     l1 = registry.add_line(p1, p2)
     l2 = registry.add_line(p2, p3)
 
-    connected_from_l1 = connected_entity_ids(registry, l1)
+    connected_from_l1 = registry.connected_entity_ids(l1)
     assert connected_from_l1 == {l1, l2}
 
-    connected_from_l2 = connected_entity_ids(registry, l2)
+    connected_from_l2 = registry.connected_entity_ids(l2)
     assert connected_from_l2 == {l1, l2}
 
 
@@ -271,7 +270,7 @@ def test_chain_of_connected_entities():
     l2 = registry.add_line(p2, p3)
     l3 = registry.add_line(p3, p4)
 
-    connected = connected_entity_ids(registry, l1)
+    connected = registry.connected_entity_ids(l1)
     assert connected == {l1, l2, l3}
 
 
@@ -285,10 +284,10 @@ def test_disconnected_entities():
     l1 = registry.add_line(p1, p2)
     l2 = registry.add_line(p3, p4)
 
-    connected_l1 = connected_entity_ids(registry, l1)
+    connected_l1 = registry.connected_entity_ids(l1)
     assert connected_l1 == {l1}
 
-    connected_l2 = connected_entity_ids(registry, l2)
+    connected_l2 = registry.connected_entity_ids(l2)
     assert connected_l2 == {l2}
 
 
@@ -303,7 +302,7 @@ def test_star_topology():
     l2 = registry.add_line(center, p2)
     l3 = registry.add_line(center, p3)
 
-    connected = connected_entity_ids(registry, l1)
+    connected = registry.connected_entity_ids(l1)
     assert connected == {l1, l2, l3}
 
 
@@ -319,7 +318,7 @@ def test_mixed_entity_types():
     l2 = registry.add_line(p2, p3)
     arc = registry.add_arc(p1, p3, center)
 
-    connected = connected_entity_ids(registry, l1)
+    connected = registry.connected_entity_ids(l1)
     assert connected == {l1, l2, arc}
 
 
@@ -330,7 +329,7 @@ def test_circle_is_standalone():
     radius_pt = registry.add_point(10, 0)
     circle = registry.add_circle(center, radius_pt)
 
-    connected = connected_entity_ids(registry, circle)
+    connected = registry.connected_entity_ids(circle)
     assert connected == {circle}
 
 
@@ -344,14 +343,14 @@ def test_circle_connected_via_shared_point():
     l1 = registry.add_line(p1, center)
     circle = registry.add_circle(center, radius_pt)
 
-    connected = connected_entity_ids(registry, l1)
+    connected = registry.connected_entity_ids(l1)
     assert connected == {l1, circle}
 
 
 def test_invalid_entity_id_returns_empty():
     """Invalid entity ID should return empty set."""
     registry = EntityRegistry()
-    connected = connected_entity_ids(registry, 999)
+    connected = registry.connected_entity_ids(999)
     assert connected == set()
 
 

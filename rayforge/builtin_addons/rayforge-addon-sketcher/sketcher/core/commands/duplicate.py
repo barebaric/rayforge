@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 from raygeo.sketch.entities import SketchPoint as Point
 
 from ..entity_group import EntityGroup
-from ..registry_utils import require_point
 from ..types import EntityID
 from .base import SketchChangeCommand
 
@@ -121,7 +120,7 @@ class DuplicateCommand(SketchChangeCommand):
         id_map: dict[EntityID, EntityID] = {}
 
         for pid in sorted(point_ids):
-            p = require_point(registry, pid)
+            p = registry.get_point(pid)
             if not p:
                 continue
             clone = Point.from_dict(p.to_dict())

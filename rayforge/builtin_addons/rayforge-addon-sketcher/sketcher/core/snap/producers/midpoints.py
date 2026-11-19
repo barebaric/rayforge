@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING
 from raygeo.geo.types import Point as GeoPoint
 from raygeo.sketch.entities import Arc, Line
 
-from ...registry_utils import require_point
 from ..engine import SnapLineProducer
 from ..types import DragContext, SnapLine, SnapLineType, SnapPoint
 
@@ -65,8 +64,8 @@ class MidpointsProducer(SnapLineProducer):
     def _line_midpoint(
         self, line: Line, registry: "EntityRegistry"
     ) -> GeoPoint | None:
-        p1 = require_point(registry, line.p1_idx)
-        p2 = require_point(registry, line.p2_idx)
+        p1 = registry.get_point(line.p1_idx)
+        p2 = registry.get_point(line.p2_idx)
         if p1 and p2:
             return ((p1.x + p2.x) / 2, (p1.y + p2.y) / 2)
         return None

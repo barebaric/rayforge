@@ -11,7 +11,6 @@ from raygeo.sketch.constraints import EqualDistanceConstraint, RadiusConstraint
 from raygeo.sketch.entities import Arc
 from raygeo.sketch.entities import SketchPoint as Point
 
-from ..registry_utils import next_temp_id, require_point
 from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData
@@ -74,9 +73,9 @@ class ArcPreviewState(PreviewState):
         self.locked_radius = radius
 
         try:
-            center = require_point(registry, self.center_id)
-            start = require_point(registry, self.start_id)
-            end = require_point(registry, self.temp_end_id)
+            center = registry.get_point(self.center_id)
+            start = registry.get_point(self.start_id)
+            end = registry.get_point(self.temp_end_id)
         except IndexError:
             return
 
@@ -101,9 +100,9 @@ class ArcPreviewState(PreviewState):
         if self.start_id is None or self.temp_end_id is None:
             return []
         try:
-            center = require_point(registry, self.center_id)
-            start = require_point(registry, self.start_id)
-            end = require_point(registry, self.temp_end_id)
+            center = registry.get_point(self.center_id)
+            start = registry.get_point(self.start_id)
+            end = registry.get_point(self.temp_end_id)
         except IndexError:
             return []
         radius = math.hypot(start.x - center.x, start.y - center.y)
@@ -306,9 +305,9 @@ class ArcCommand(SketchChangeCommand):
             return
 
         try:
-            center = require_point(registry, preview_state.center_id)
-            start = require_point(registry, preview_state.start_id)
-            end = require_point(registry, preview_state.temp_end_id)
+            center = registry.get_point(preview_state.center_id)
+            start = registry.get_point(preview_state.start_id)
+            end = registry.get_point(preview_state.temp_end_id)
             arc_ent = registry.get_entity(preview_state.temp_entity_id)
         except IndexError:
             return
@@ -393,15 +392,15 @@ class ArcCommand(SketchChangeCommand):
         registry = self.sketch.registry
 
         try:
-            center_p = require_point(registry, self.center_id)
-            start_p = require_point(registry, self.start_id)
+            center_p = registry.get_point(self.center_id)
+            start_p = registry.get_point(self.start_id)
         except IndexError:
             return
 
         final_x, final_y = self.end_pos
         if self.end_pid is not None:
             try:
-                end_p = require_point(registry, self.end_pid)
+                end_p = registry.get_point(self.end_pid)
                 final_x, final_y = end_p.x, end_p.y
             except IndexError:
                 pass
@@ -417,7 +416,7 @@ class ArcCommand(SketchChangeCommand):
             if projected:
                 final_x, final_y = projected
 
-            temp_id = next_temp_id(registry)
+            temp_id = registry.next_id()
             end_pid = temp_id
             new_point = Point(temp_id, final_x, final_y)
 
@@ -428,7 +427,7 @@ class ArcCommand(SketchChangeCommand):
                 self.sketch.remove_point_if_unused(self.start_id)
             return
 
-        temp_arc_id = next_temp_id(registry) + (1 if new_point else 0)
+        temp_arc_id = registry.next_id() + (1 if new_point else 0)
         new_arc = Arc(
             temp_arc_id,
             self.start_id,
@@ -452,7 +451,7 @@ class ArcCommand(SketchChangeCommand):
 
         if self.is_center_temp:
             try:
-                p = require_point(registry, self.center_id)
+                p = registry.get_point(self.center_id)
                 registry.remove_points([p.id])
                 points_to_add.append(p)
             except (IndexError, ValueError):
@@ -460,7 +459,7 @@ class ArcCommand(SketchChangeCommand):
 
         if self.is_start_temp:
             try:
-                p = require_point(registry, self.start_id)
+                p = registry.get_point(self.start_id)
                 registry.remove_points([p.id])
                 points_to_add.append(p)
             except (IndexError, ValueError):

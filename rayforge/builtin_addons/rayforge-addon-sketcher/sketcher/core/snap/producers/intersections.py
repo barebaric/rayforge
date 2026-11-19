@@ -10,7 +10,6 @@ from raygeo.geo.shape.line import get_line_segment_intersection
 from raygeo.geo.types import Point as GeoPoint
 from raygeo.sketch.entities import Arc, Circle, Line
 
-from ...registry_utils import require_point
 from ..engine import SnapLineProducer
 from ..types import DragContext, SnapLine, SnapLineType, SnapPoint
 
@@ -94,7 +93,7 @@ class IntersectionsProducer(SnapLineProducer):
             if not self._include_construction and entity.construction:
                 continue
             for pid in entity.get_point_ids():
-                point = require_point(registry, pid)
+                point = registry.get_point(pid)
                 positions.append((round(point.x, 6), round(point.y, 6)))
         return (
             registry.entity_version(),
@@ -144,10 +143,10 @@ class IntersectionsProducer(SnapLineProducer):
         line2: Line,
         registry: "EntityRegistry",
     ) -> Iterator[GeoPoint]:
-        p1 = require_point(registry, line1.p1_idx)
-        p2 = require_point(registry, line1.p2_idx)
-        p3 = require_point(registry, line2.p1_idx)
-        p4 = require_point(registry, line2.p2_idx)
+        p1 = registry.get_point(line1.p1_idx)
+        p2 = registry.get_point(line1.p2_idx)
+        p3 = registry.get_point(line2.p1_idx)
+        p4 = registry.get_point(line2.p2_idx)
 
         if not all([p1, p2, p3, p4]):
             return
@@ -167,10 +166,10 @@ class IntersectionsProducer(SnapLineProducer):
         arc: Arc,
         registry: "EntityRegistry",
     ) -> Iterator[GeoPoint]:
-        p1 = require_point(registry, line.p1_idx)
-        p2 = require_point(registry, line.p2_idx)
-        center = require_point(registry, arc.center_idx)
-        start = require_point(registry, arc.start_idx)
+        p1 = registry.get_point(line.p1_idx)
+        p2 = registry.get_point(line.p2_idx)
+        center = registry.get_point(arc.center_idx)
+        start = registry.get_point(arc.start_idx)
 
         if not all([p1, p2, center, start]):
             return
@@ -195,10 +194,10 @@ class IntersectionsProducer(SnapLineProducer):
         circle: Circle,
         registry: "EntityRegistry",
     ) -> Iterator[GeoPoint]:
-        p1 = require_point(registry, line.p1_idx)
-        p2 = require_point(registry, line.p2_idx)
-        center = require_point(registry, circle.center_idx)
-        radius_pt = require_point(registry, circle.radius_pt_idx)
+        p1 = registry.get_point(line.p1_idx)
+        p2 = registry.get_point(line.p2_idx)
+        center = registry.get_point(circle.center_idx)
+        radius_pt = registry.get_point(circle.radius_pt_idx)
 
         if not all([p1, p2, center, radius_pt]):
             return
@@ -220,10 +219,10 @@ class IntersectionsProducer(SnapLineProducer):
         arc2: Arc,
         registry: "EntityRegistry",
     ) -> Iterator[GeoPoint]:
-        c1 = require_point(registry, arc1.center_idx)
-        s1 = require_point(registry, arc1.start_idx)
-        c2 = require_point(registry, arc2.center_idx)
-        s2 = require_point(registry, arc2.start_idx)
+        c1 = registry.get_point(arc1.center_idx)
+        s1 = registry.get_point(arc1.start_idx)
+        c2 = registry.get_point(arc2.center_idx)
+        s2 = registry.get_point(arc2.start_idx)
 
         if not all([c1, s1, c2, s2]):
             return
@@ -247,10 +246,10 @@ class IntersectionsProducer(SnapLineProducer):
         circle2: Circle,
         registry: "EntityRegistry",
     ) -> Iterator[GeoPoint]:
-        c1 = require_point(registry, circle1.center_idx)
-        r1_pt = require_point(registry, circle1.radius_pt_idx)
-        c2 = require_point(registry, circle2.center_idx)
-        r2_pt = require_point(registry, circle2.radius_pt_idx)
+        c1 = registry.get_point(circle1.center_idx)
+        r1_pt = registry.get_point(circle1.radius_pt_idx)
+        c2 = registry.get_point(circle2.center_idx)
+        r2_pt = registry.get_point(circle2.radius_pt_idx)
 
         if not all([c1, r1_pt, c2, r2_pt]):
             return

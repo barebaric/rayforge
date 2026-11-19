@@ -12,7 +12,6 @@ from raygeo.sketch.constraints import (
 from raygeo.sketch.entities import Line
 from raygeo.sketch.entities import SketchPoint as Point
 
-from ..registry_utils import require_point
 from ..types import EntityID
 from .base import SketchChangeCommand
 from .items import AddItemsCommand, RemoveItemsCommand
@@ -65,15 +64,15 @@ class ChamferCommand(SketchChangeCommand):
             return None
 
         try:
-            corner_point = require_point(reg, corner_pid)
+            corner_point = reg.get_point(corner_pid)
             other1_pid = (
                 line1.p2_idx if line1.p1_idx == corner_pid else line1.p1_idx
             )
             other2_pid = (
                 line2.p2_idx if line2.p1_idx == corner_pid else line2.p1_idx
             )
-            other1_pt = require_point(reg, other1_pid)
-            other2_pt = require_point(reg, other2_pid)
+            other1_pt = reg.get_point(other1_pid)
+            other2_pt = reg.get_point(other2_pid)
         except IndexError:
             return None
 

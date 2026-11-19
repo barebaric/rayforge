@@ -7,7 +7,6 @@ from ...core.commands import (
     RoundedRectCommand,
     RoundedRectPreviewState,
 )
-from ...core.registry_utils import require_point
 from .base import SketcherKey, SketchTool
 from .dimension_input import DimensionInputHandler
 
@@ -113,8 +112,8 @@ class RoundedRectTool(SketchTool):
 
         mx, my = 0.0, 0.0
         try:
-            end_p = require_point(
-                self.element.sketch.registry, self._preview_state.p_end_id
+            end_p = self.element.sketch.registry.get_point(
+                self._preview_state.p_end_id
             )
             mx, my = end_p.x, end_p.y
         except IndexError:
@@ -318,8 +317,8 @@ class RoundedRectTool(SketchTool):
             else self._preview_state.radius
         )
         try:
-            end_pt = require_point(
-                self.element.sketch.registry, self._preview_state.p_end_id
+            end_pt = self.element.sketch.registry.get_point(
+                self._preview_state.p_end_id
             )
         except IndexError:
             self._preview_state = None

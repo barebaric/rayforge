@@ -15,7 +15,6 @@ from ..arrays import (
 )
 from ..entity_group import EntityGroup
 from ..params import ParameterContext
-from ..registry_utils import require_point
 from .base import SketchChangeCommand
 from .create_array import CreateArrayCommand
 from .items import AddItemsCommand, RemoveItemsCommand
@@ -306,7 +305,7 @@ class EditArrayCommand(SketchChangeCommand):
                 if pid in known or pid in used_by_remaining:
                     continue
                 try:
-                    pt = require_point(registry, pid)
+                    pt = registry.get_point(pid)
                 except IndexError:
                     continue
                 if pt.fixed:
@@ -317,7 +316,7 @@ class EditArrayCommand(SketchChangeCommand):
                 if pid in known:
                     continue
                 try:
-                    pt = require_point(registry, pid)
+                    pt = registry.get_point(pid)
                 except IndexError:
                     continue
                 points.append(pt)
@@ -498,7 +497,7 @@ class EditArrayCommand(SketchChangeCommand):
         snapshot = template_group.with_helpers().snapshot_positions()
         for pid in self._template_standalone:
             try:
-                pt = require_point(registry, pid)
+                pt = registry.get_point(pid)
             except IndexError:
                 continue
             snapshot.append((pt, pt.x, pt.y))

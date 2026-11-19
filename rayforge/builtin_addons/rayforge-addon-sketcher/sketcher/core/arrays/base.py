@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING, Any, ClassVar
 from raygeo.sketch.entities import Circle
 
 from ..entity_group import EntityGroup
-from ..registry_utils import require_point
 
 if TYPE_CHECKING:
     from raygeo.sketch.constraints import Constraint
@@ -633,7 +632,7 @@ def find_array_for_entity(arrays: list[Array], entity_id: int) -> Array | None:
 
 def _point_exists(registry: EntityRegistry, pid: int) -> bool:
     try:
-        require_point(registry, pid)
+        registry.get_point(pid)
     except IndexError:
         return False
     return True

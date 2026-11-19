@@ -12,7 +12,6 @@ from raygeo.sketch.constraints import (
 from raygeo.sketch.entities import Ellipse, Line
 from raygeo.sketch.entities import SketchPoint as Point
 
-from ..registry_utils import require_point
 from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .items import AddItemsCommand
@@ -149,10 +148,10 @@ class EllipseCommand(SketchChangeCommand):
             raise TypeError("Expected EllipsePreviewState")
 
         try:
-            start_p = require_point(registry, preview_state.start_id)
-            center_p = require_point(registry, preview_state.center_id)
-            radius_x_p = require_point(registry, preview_state.radius_x_id)
-            radius_y_p = require_point(registry, preview_state.radius_y_id)
+            start_p = registry.get_point(preview_state.start_id)
+            center_p = registry.get_point(preview_state.center_id)
+            radius_x_p = registry.get_point(preview_state.radius_x_id)
+            radius_y_p = registry.get_point(preview_state.radius_y_id)
         except IndexError:
             return
 
@@ -191,14 +190,14 @@ class EllipseCommand(SketchChangeCommand):
         registry = self.sketch.registry
 
         try:
-            start_p = require_point(registry, self.start_id)
+            start_p = registry.get_point(self.start_id)
         except IndexError:
             return
 
         final_x, final_y = self.end_pos
         if self.end_pid is not None:
             try:
-                end_p = require_point(registry, self.end_pid)
+                end_p = registry.get_point(self.end_pid)
                 final_x, final_y = end_p.x, end_p.y
             except IndexError:
                 pass

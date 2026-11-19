@@ -12,8 +12,6 @@ from raygeo.sketch.entities import TextBox as TextBoxEntity
 
 from rayforge.ui_gtk.canvas.worldsurface import WorldSurface
 
-from ..core.registry_utils import require_point
-
 logger = logging.getLogger(__name__)
 
 OVERLAY_HIT_THRESHOLD = 13.0
@@ -194,10 +192,8 @@ class SketchHitTester:
                 )
         for entity in element.sketch.registry.entities():
             if isinstance(entity, Bezier):
-                start_pt = require_point(
-                    element.sketch.registry, entity.start_idx
-                )
-                end_pt = require_point(element.sketch.registry, entity.end_idx)
+                start_pt = element.sketch.registry.get_point(entity.start_idx)
+                end_pt = element.sketch.registry.get_point(entity.end_idx)
                 if start_pt is None or end_pt is None:
                     continue
                 if entity.cp1 is not None:

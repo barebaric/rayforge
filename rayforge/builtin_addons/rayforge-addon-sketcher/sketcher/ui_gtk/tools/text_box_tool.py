@@ -23,7 +23,6 @@ from rayforge.image.geo_renderer import geometry_to_cairo
 from ...core.commands import TextBoxCommand
 from ...core.commands.live_text_edit import LiveTextEditCommand
 from ...core.commands.text_property import ModifyTextPropertyCommand
-from ...core.registry_utils import require_point
 from ...core.types import EntityID
 from .base import SketcherKey, SketchTool
 
@@ -639,13 +638,9 @@ class TextBoxTool(SketchTool):
             line = self.element.sketch.registry.get_entity(eid)
             if isinstance(line, Line):
                 if line.p1_idx == p_w and line.p2_idx != text_entity.origin_id:
-                    return require_point(
-                        self.element.sketch.registry, line.p2_idx
-                    )
+                    return self.element.sketch.registry.get_point(line.p2_idx)
                 if line.p2_idx == p_w and line.p1_idx != text_entity.origin_id:
-                    return require_point(
-                        self.element.sketch.registry, line.p1_idx
-                    )
+                    return self.element.sketch.registry.get_point(line.p1_idx)
         return None
 
     def _resize_box_to_fit_text(self):
@@ -663,13 +658,9 @@ class TextBoxTool(SketchTool):
             self.text_buffer
         )
 
-        p_origin = require_point(
-            self.element.sketch.registry, entity.origin_id
-        )
-        p_width = require_point(self.element.sketch.registry, entity.width_id)
-        p_height = require_point(
-            self.element.sketch.registry, entity.height_id
-        )
+        p_origin = self.element.sketch.registry.get_point(entity.origin_id)
+        p_width = self.element.sketch.registry.get_point(entity.width_id)
+        p_height = self.element.sketch.registry.get_point(entity.height_id)
 
         # Determine the sign of the width/height directions
         dx = p_width.x - p_origin.x
@@ -736,7 +727,7 @@ class TextBoxTool(SketchTool):
         # p4 = width + height - origin
         p4_id = entity.get_fourth_corner_id(self.element.sketch.registry)
         if p4_id is not None:
-            p4 = require_point(self.element.sketch.registry, p4_id)
+            p4 = self.element.sketch.registry.get_point(p4_id)
             p4.x = p_width.x + p_height.x - p_origin.x
             p4.y = p_width.y + p_height.y - p_origin.y
 
@@ -766,13 +757,9 @@ class TextBoxTool(SketchTool):
         if not isinstance(entity, TextBoxEntity):
             return
 
-        p_origin = require_point(
-            self.element.sketch.registry, entity.origin_id
-        )
-        p_width = require_point(self.element.sketch.registry, entity.width_id)
-        p_height = require_point(
-            self.element.sketch.registry, entity.height_id
-        )
+        p_origin = self.element.sketch.registry.get_point(entity.origin_id)
+        p_width = self.element.sketch.registry.get_point(entity.width_id)
+        p_height = self.element.sketch.registry.get_point(entity.height_id)
 
         # 1. Project the click point onto the width vector (u) of the box.
         # This handles rotated and scaled text boxes correctly.
@@ -898,13 +885,9 @@ class TextBoxTool(SketchTool):
         if not entity:
             return
 
-        p_origin = require_point(
-            self.element.sketch.registry, entity.origin_id
-        )
-        p_width = require_point(self.element.sketch.registry, entity.width_id)
-        p_height = require_point(
-            self.element.sketch.registry, entity.height_id
-        )
+        p_origin = self.element.sketch.registry.get_point(entity.origin_id)
+        p_width = self.element.sketch.registry.get_point(entity.width_id)
+        p_height = self.element.sketch.registry.get_point(entity.height_id)
 
         natural_geo = text_to_geometry(
             self.text_buffer, font_config=entity.font_config
@@ -1050,13 +1033,9 @@ class TextBoxTool(SketchTool):
         if not isinstance(entity, TextBoxEntity):
             return
 
-        p_origin = require_point(
-            self.element.sketch.registry, entity.origin_id
-        )
-        p_width = require_point(self.element.sketch.registry, entity.width_id)
-        p_height = require_point(
-            self.element.sketch.registry, entity.height_id
-        )
+        p_origin = self.element.sketch.registry.get_point(entity.origin_id)
+        p_width = self.element.sketch.registry.get_point(entity.width_id)
+        p_height = self.element.sketch.registry.get_point(entity.height_id)
 
         start, end = self._get_selection_range()
         if start == end:

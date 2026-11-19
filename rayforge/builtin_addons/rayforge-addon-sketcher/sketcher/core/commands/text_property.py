@@ -14,7 +14,6 @@ from raygeo.sketch.entities import Line
 from raygeo.sketch.entities import SketchPoint as Point
 from raygeo.sketch.entities import TextBox as TextBoxEntity
 
-from ..registry_utils import require_point
 from ..types import EntityID
 from .base import SketchChangeCommand
 
@@ -109,8 +108,8 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
 
         self.old_content = text_entity.content
         self.old_font_config = text_entity.font_config.copy()
-        p_width = require_point(self.sketch.registry, text_entity.width_id)
-        p_height = require_point(self.sketch.registry, text_entity.height_id)
+        p_width = self.sketch.registry.get_point(text_entity.width_id)
+        p_height = self.sketch.registry.get_point(text_entity.height_id)
         self.old_point_positions = {
             text_entity.width_id: (p_width.x, p_width.y),
             text_entity.height_id: (p_height.x, p_height.y),
@@ -209,15 +208,15 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
             self._removed_entities = []
             self._removed_constraints = []
 
-        p_origin = require_point(registry, text_entity.origin_id)
-        p_width = require_point(registry, text_entity.width_id)
-        p_height = require_point(registry, text_entity.height_id)
+        p_origin = registry.get_point(text_entity.origin_id)
+        p_width = registry.get_point(text_entity.width_id)
+        p_height = registry.get_point(text_entity.height_id)
 
         self._removed_points = [p_origin, p_width, p_height]
 
         p4_id = text_entity.get_fourth_corner_id(registry)
         if p4_id:
-            p4 = require_point(registry, p4_id)
+            p4 = registry.get_point(p4_id)
             self._removed_points.append(p4)
 
         for eid in text_entity.construction_line_ids:
@@ -268,7 +267,7 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
             text_entity.font_config = self.old_font_config.copy()
 
         for pid, (x, y) in self.old_point_positions.items():
-            p = require_point(self.sketch.registry, pid)
+            p = self.sketch.registry.get_point(pid)
             p.x = x
             p.y = y
 

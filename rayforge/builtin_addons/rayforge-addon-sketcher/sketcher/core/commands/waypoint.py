@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 from raygeo.geo.types import Point as GeoPoint
 from raygeo.sketch.entities import Bezier, Line
 
-from ..registry_utils import require_point
 from ..types import EntityID, WaypointType
 from .base import SketchChangeCommand
 
@@ -72,7 +71,7 @@ class SetWaypointTypeCommand(SketchChangeCommand):
         for entity in registry.entities():
             if isinstance(entity, Line):
                 if entity.p2_idx in point_ids:
-                    p1 = require_point(registry, entity.p1_idx)
+                    p1 = registry.get_point(entity.p1_idx)
                     if p1:
                         dx = waypoint.x - p1.x
                         dy = waypoint.y - p1.y
@@ -80,7 +79,7 @@ class SetWaypointTypeCommand(SketchChangeCommand):
                         if length > 1e-9:
                             incoming_dir = (dx / length, dy / length)
                 elif entity.p1_idx in point_ids:
-                    p2 = require_point(registry, entity.p2_idx)
+                    p2 = registry.get_point(entity.p2_idx)
                     if p2:
                         dx = p2.x - waypoint.x
                         dy = p2.y - waypoint.y
@@ -100,7 +99,7 @@ class SetWaypointTypeCommand(SketchChangeCommand):
                         if length > 1e-9:
                             incoming_dir = (dx / length, dy / length)
                     else:
-                        start = require_point(registry, entity.start_idx)
+                        start = registry.get_point(entity.start_idx)
                         if start:
                             dx = waypoint.x - start.x
                             dy = waypoint.y - start.y
@@ -119,7 +118,7 @@ class SetWaypointTypeCommand(SketchChangeCommand):
                         if length > 1e-9:
                             outgoing_dir = (dx / length, dy / length)
                     else:
-                        end = require_point(registry, entity.end_idx)
+                        end = registry.get_point(entity.end_idx)
                         if end:
                             dx = end.x - waypoint.x
                             dy = end.y - waypoint.y
@@ -188,7 +187,7 @@ class SetWaypointTypeCommand(SketchChangeCommand):
     def _do_execute(self) -> None:
         registry = self.sketch.registry
         try:
-            waypoint = require_point(registry, self.waypoint_id)
+            waypoint = registry.get_point(self.waypoint_id)
         except IndexError:
             return
 
@@ -257,7 +256,7 @@ class SetWaypointTypeCommand(SketchChangeCommand):
 
         registry = self.sketch.registry
         try:
-            waypoint = require_point(registry, self.waypoint_id)
+            waypoint = registry.get_point(self.waypoint_id)
         except IndexError:
             return
 

@@ -10,7 +10,6 @@ from rayforge.core.undo import HistoryManager
 from rayforge.ui_gtk.canvas.cursor import get_tool_cursor
 from rayforge.ui_gtk.shared.keyboard import is_primary_modifier
 
-from ..core.registry_utils import require_point
 from .piemenu import SketchPieMenu
 from .tools import KEY_TO_TOOL, SelectTool, TextBoxTool
 from .tools.base import SketcherKey
@@ -201,7 +200,7 @@ class SketchEditor:
         if hit_type == "point":
             assert isinstance(hit_obj, int)
             pid = hit_obj
-            target = require_point(sketch_element.sketch.registry, pid)
+            target = sketch_element.sketch.registry.get_point(pid)
 
             # Check if this point is a valid chamfer corner (2 lines). If so,
             # select it as a junction instead of a point.
@@ -217,7 +216,7 @@ class SketchEditor:
         elif hit_type == "junction":
             assert isinstance(hit_obj, int)
             pid = hit_obj
-            target = require_point(sketch_element.sketch.registry, pid)
+            target = sketch_element.sketch.registry.get_point(pid)
             if sel.junction_pid != pid:
                 sketch_element.selection.select_junction(pid, is_multi=False)
 

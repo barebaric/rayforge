@@ -25,7 +25,6 @@ from rayforge.ui_gtk.shared.text import create_text_layout
 
 from ..core.commands import BezierPreviewState
 from ..core.commands.dimension import DimensionData
-from ..core.registry_utils import require_point
 from ..core.sketch import FillStyle
 from ..core.types import EntityID
 from .tools import PathTool, TextBoxTool
@@ -211,7 +210,7 @@ class SketchRenderer:
 
             p_ids = first_ent.get_endpoint_ids()
             start_pid = p_ids[0] if first_fwd else p_ids[1]
-            start_pt = require_point(self.element.sketch.registry, start_pid)
+            start_pt = self.element.sketch.registry.get_point(start_pid)
 
             geo = Geometry()
             geo.move_to(start_pt.x, start_pt.y)
@@ -463,7 +462,7 @@ class SketchRenderer:
 
     def _safe_get_point(self, pid: EntityID) -> Point | None:
         try:
-            return require_point(self.element.sketch.registry, pid)
+            return self.element.sketch.registry.get_point(pid)
         except IndexError:
             return None
 
@@ -1014,11 +1013,11 @@ class SketchRenderer:
             return
 
         try:
-            start_pt = require_point(
-                self.element.sketch.registry, preview_state.start_id
+            start_pt = self.element.sketch.registry.get_point(
+                preview_state.start_id
             )
-            end_pt = require_point(
-                self.element.sketch.registry, preview_state.end_id
+            end_pt = self.element.sketch.registry.get_point(
+                preview_state.end_id
             )
         except IndexError:
             return

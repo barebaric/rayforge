@@ -17,7 +17,6 @@ from raygeo.sketch.constraints import (
 from raygeo.sketch.entities import Circle, Entity, Line
 from raygeo.sketch.entities import SketchPoint as Point
 
-from ..registry_utils import require_point
 from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData
@@ -103,8 +102,8 @@ class PolygonPreviewState(PreviewState):
         return {self.radius_id, *self.corner_ids}
 
     def _vertices(self, registry: EntityRegistry) -> list[GeoPoint]:
-        center = require_point(registry, self.center_id)
-        first = require_point(registry, self.radius_id)
+        center = registry.get_point(self.center_id)
+        first = registry.get_point(self.radius_id)
         return polygon_vertices(
             (center.x, center.y),
             (first.x, first.y),
@@ -133,7 +132,7 @@ class PolygonPreviewState(PreviewState):
             self.rebuild(registry)
             return
         for pid, (x, y) in zip(self.corner_ids, self._vertices(registry)[1:]):
-            point = require_point(registry, pid)
+            point = registry.get_point(pid)
             point.x, point.y = x, y
 
     def set_shape(
@@ -148,16 +147,16 @@ class PolygonPreviewState(PreviewState):
     def set_radius(self, registry: EntityRegistry, radius: float) -> None:
         """Locks the circumradius from numeric input."""
         self.locked_radius = radius
-        center = require_point(registry, self.center_id)
-        first = require_point(registry, self.radius_id)
+        center = registry.get_point(self.center_id)
+        first = registry.get_point(self.radius_id)
         first.x, first.y = _at_radius(center, first.x, first.y, radius)
         self.reposition(registry)
 
     def get_dimensions(self, registry: EntityRegistry) -> list[DimensionData]:
         """Radius, corner count and star ratio, in dimension-field order."""
         try:
-            center = require_point(registry, self.center_id)
-            first = require_point(registry, self.radius_id)
+            center = registry.get_point(self.center_id)
+            first = registry.get_point(self.radius_id)
         except IndexError:
             return []
         radius = math.hypot(first.x - center.x, first.y - center.y)
@@ -253,8 +252,8 @@ class PolygonCommand(SketchChangeCommand):
         if not isinstance(preview_state, PolygonPreviewState):
             raise TypeError("Expected PolygonPreviewState")
         try:
-            center = require_point(registry, preview_state.center_id)
-            first = require_point(registry, preview_state.radius_id)
+            center = registry.get_point(preview_state.center_id)
+            first = registry.get_point(preview_state.radius_id)
         except IndexError:
             return
         if preview_state.locked_radius is not None:
@@ -280,7 +279,7 @@ class PolygonCommand(SketchChangeCommand):
     def _first_corner(self, center: Point) -> GeoPoint:
         x, y = self.end_pos
         if self.end_pid is not None:
-            end = require_point(self.sketch.registry, self.end_pid)
+            end = self.sketch.registry.get_point(self.end_pid)
             x, y = end.x, end.y
         if self.fixed_radius is not None:
             return _at_radius(center, x, y, self.fixed_radius)
@@ -331,7 +330,7 @@ class PolygonCommand(SketchChangeCommand):
             return self.add_cmd._do_execute()
         registry = self.sketch.registry
         try:
-            center = require_point(registry, self.center_id)
+            center = registry.get_point(self.center_id)
             first = self._first_corner(center)
         except IndexError:
             return

@@ -16,7 +16,6 @@ from raygeo.sketch.constraints import (
 from raygeo.sketch.entities import Arc, Line
 from raygeo.sketch.entities import SketchPoint as Point
 
-from ..registry_utils import require_point
 from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData
@@ -89,8 +88,8 @@ class RoundedRectPreviewState(PreviewState):
             self.radius = radius
 
         try:
-            start_p = require_point(registry, self.start_id)
-            end_p = require_point(registry, self.p_end_id)
+            start_p = registry.get_point(self.start_id)
+            end_p = registry.get_point(self.p_end_id)
         except IndexError:
             return
 
@@ -147,8 +146,8 @@ class RoundedRectPreviewState(PreviewState):
             List containing DimensionData for width, height, and corner radius.
         """
         try:
-            p1 = require_point(registry, self.start_id)
-            p2 = require_point(registry, self.p_end_id)
+            p1 = registry.get_point(self.start_id)
+            p2 = registry.get_point(self.p_end_id)
         except IndexError:
             return []
         if self.center_on_start:
@@ -243,7 +242,7 @@ class RoundedRectCommand(SketchChangeCommand):
         The smaller extent wins; the direction of each axis is kept.
         """
         try:
-            start_p = require_point(registry, start_id)
+            start_p = registry.get_point(start_id)
         except IndexError:
             return x, y
 
@@ -450,8 +449,8 @@ class RoundedRectCommand(SketchChangeCommand):
             Dict of preview IDs, or None if geometry is invalid.
         """
         try:
-            start_p = require_point(registry, start_pid)
-            end_p = require_point(registry, end_pid)
+            start_p = registry.get_point(start_pid)
+            end_p = registry.get_point(end_pid)
         except IndexError:
             return None
 
@@ -536,7 +535,7 @@ class RoundedRectCommand(SketchChangeCommand):
         else:
             # Update existing preview geometry
             for name, (px, py) in coords.items():
-                p = require_point(registry, preview_ids[name])
+                p = registry.get_point(preview_ids[name])
                 p.x, p.y = px, py
 
             # Update arc directions
@@ -630,8 +629,8 @@ class RoundedRectCommand(SketchChangeCommand):
         preview_state.center_on_start = center_on_start
 
         try:
-            p_end = require_point(registry, preview_state.p_end_id)
-            p_start = require_point(registry, preview_state.start_id)
+            p_end = registry.get_point(preview_state.p_end_id)
+            p_start = registry.get_point(preview_state.start_id)
         except IndexError:
             return
 
@@ -707,7 +706,7 @@ class RoundedRectCommand(SketchChangeCommand):
 
         reg = self.sketch.registry
         try:
-            start_p = require_point(reg, self.start_pid)
+            start_p = reg.get_point(self.start_pid)
         except IndexError:
             return
 
