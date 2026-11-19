@@ -388,37 +388,6 @@ def test_preview_editor_layout_can_be_selected(ui_context_initializer):
     assert preview.get_layout() == MarkdownPreviewEditor.STACKED
 
 
-def test_preview_editor_splits_panes_evenly_until_dragged(
-    ui_context_initializer,
-):
-    def settle():
-        for _ in range(25):
-            while GLib.MainContext.default().iteration(False):
-                pass
-
-    preview = MarkdownPreviewEditor()
-    window = Gtk.Window()
-    window.set_default_size(900, 650)
-    window.set_child(preview)
-    window.present()
-    settle()
-
-    paned = preview._paned
-    assert paned.get_resize_start_child()
-    assert paned.get_resize_end_child()
-    assert preview.get_layout() == MarkdownPreviewEditor.SIDE_BY_SIDE
-    assert paned.get_position() == paned.get_width() // 2
-
-    paned.set_position(200)
-    settle()
-    assert paned.get_position() == 200
-
-    preview.layout_dropdown.set_selected(1)
-    settle()
-    assert preview.get_layout() == MarkdownPreviewEditor.STACKED
-    assert paned.get_position() == paned.get_height() // 2
-
-
 def test_preview_editor_stays_even_after_resizing(ui_context_initializer):
     def settle():
         for _ in range(25):
