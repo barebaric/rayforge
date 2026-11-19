@@ -76,6 +76,7 @@ jobs:
         env:
           GPG_PASSPHRASE: ${{ secrets.PPA_GPG_PASSPHRASE }}
           GPG_PRIVATE_KEY: ${{ secrets.PPA_GPG_PRIVATE_KEY }}
+        shell: bash
         run: |
           echo "$GPG_PASSPHRASE" | gpg --batch --yes --pinentry-mode=loopback --passphrase-fd 0 --import <(echo "$GPG_PRIVATE_KEY" | base64 --decode)
           KEY_FINGERPRINT=$(gpg --list-secret-keys --with-colons | grep '^fpr' | head -n 1 | awk -F: '{print $10}')
