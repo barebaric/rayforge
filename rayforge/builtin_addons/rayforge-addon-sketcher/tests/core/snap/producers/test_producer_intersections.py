@@ -535,3 +535,25 @@ def test_arc_intersection_outside_sweep(producer, registry, drag_context):
     )
 
     assert len(snap_points) == 0
+
+
+def test_cache_key_ignores_dragged_entity_movement(producer, registry):
+    """Preview edits to excluded geometry must not invalidate the cache."""
+    p1 = registry.add_point(0.0, 0.0)
+    p2 = registry.add_point(10.0, 0.0)
+    registry.add_line(p1, p2)
+
+    p3 = registry.add_point(0.0, 10.0)
+    p4 = registry.add_point(10.0, 10.0)
+    registry.add_line(p3, p4)
+
+    context = DragContext(dragged_point_ids={p3})
+    first = producer._geometry_key(registry, context)
+
+    registry.get_point(p3).x = 5.0
+    second = producer._geometry_key(registry, context)
+    assert first == second
+
+    registry.get_point(p1).x = 1.0
+    third = producer._geometry_key(registry, context)
+    assert second != third
