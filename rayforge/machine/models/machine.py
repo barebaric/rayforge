@@ -1445,44 +1445,6 @@ class Machine:
             off_y += dy
         return (off_x, off_y, off_z)
 
-    def get_command_offset(self, head: LaserHead | None = None) -> Point3D:
-        """
-        The offset from MACHINE to COMMAND coordinates for aiming.
-
-        Unlike :meth:`get_command_wcs_offset`, this includes the
-        workarea-origin offset when the WCS origin is the workarea
-        origin. While pointer alignment is on, the pointer offset is
-        added so subtracting this offset from a machine-space target
-        shifts the issued command so the pointer dot lands on the
-        target.
-        """
-        offset = self.panel.get_command_offset(
-            wcs_offset=self.get_active_wcs_offset(),
-            wcs_is_workarea_origin=self.wcs_origin_is_workarea_origin,
-        )
-        if not self.pointer_alignment_enabled:
-            return offset
-        dx, dy = self.get_pointer_offset(head)
-        return (offset[0] + dx, offset[1] + dy, offset[2])
-
-    def get_job_command_offset(self, wcs_offset: Point3D) -> Point3D:
-        """
-        The offset from MACHINE to COMMAND coordinates for job output.
-
-        The given WCS offset is used unless the workarea origin is the
-        active reference. While a pointer dry-run is requested, the
-        pointer offset is added so the pointer dot traces the toolpath
-        instead of the beam.
-        """
-        offset = self.panel.get_command_offset(
-            wcs_offset=wcs_offset,
-            wcs_is_workarea_origin=self.wcs_origin_is_workarea_origin,
-        )
-        if not self.pointer_job_shift_enabled:
-            return offset
-        dx, dy = self.get_pointer_offset()
-        return (offset[0] + dx, offset[1] + dy, offset[2])
-
     def get_job_wcs_offset(self, wcs_offset: Point3D) -> Point3D:
         """
         The WCS offset to use when generating job output.

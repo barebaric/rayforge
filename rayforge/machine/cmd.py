@@ -292,10 +292,16 @@ class MachineCmd:
 
         _warn_if_frame_exceeds_travel(self._editor, machine, frame_ops.rect())
 
-        off_x, off_y, _ = machine.get_command_offset()
-        to_command = np.identity(4, dtype=np.float64)
-        to_command[0, 3] = -off_x
-        to_command[1, 3] = -off_y
+        pointer_offset = (
+            machine.get_pointer_offset()
+            if machine.pointer_alignment_enabled
+            else (0.0, 0.0)
+        )
+        to_command = space.get_machine_to_command_matrix(
+            wcs_offset=machine.get_active_wcs_offset(),
+            wcs_is_workarea_origin=machine.wcs_origin_is_workarea_origin,
+            extra_offset=pointer_offset,
+        )
         frame_ops.transform(to_command)
 
         # AXIS_REPLACEMENT modules encode the rotary degrees into the

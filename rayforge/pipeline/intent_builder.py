@@ -1327,16 +1327,27 @@ class IntentBuilder:
         # Default WCS command offset. While a pointer dry-run is
         # requested, the pointer offset is included so the pointer dot
         # traces the toolpath instead of the beam.
+        pointer_offset = (
+            machine.get_pointer_offset()
+            if machine.pointer_job_shift_enabled
+            else (0.0, 0.0)
+        )
         default_wcs_offset = list(
-            machine.get_job_command_offset(machine.get_active_wcs_offset())
+            space.get_command_offset(
+                wcs_offset=machine.get_active_wcs_offset(),
+                wcs_is_workarea_origin=machine.wcs_origin_is_workarea_origin,
+                extra_offset=pointer_offset,
+            )
         )
 
         # Per-layer WCS offsets.
         layer_wcs_offsets: list[tuple[str, list[float]]] = []
         for layer in doc.layers:
             effective_wcs = layer.get_effective_wcs(machine)
-            cmd_offset = machine.get_job_command_offset(
-                machine.get_wcs_offset(effective_wcs)
+            cmd_offset = space.get_command_offset(
+                wcs_offset=machine.get_wcs_offset(effective_wcs),
+                wcs_is_workarea_origin=machine.wcs_origin_is_workarea_origin,
+                extra_offset=pointer_offset,
             )
             layer_wcs_offsets.append((layer.uid, list(cmd_offset)))
 
