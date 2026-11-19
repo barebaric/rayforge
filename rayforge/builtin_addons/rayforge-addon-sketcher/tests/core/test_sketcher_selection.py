@@ -5,8 +5,8 @@ from sketcher.core.selection import SketchSelection
 class TestClear:
     def test_clears_all_selections(self):
         selection = SketchSelection()
-        selection.point_ids.extend([1, 2])
-        selection.entity_ids.extend([3, 4])
+        selection.point_ids = [1, 2]
+        selection.entity_ids = [3, 4]
         selection.constraint_idx = 5
         selection.junction_pid = 6
 
@@ -34,8 +34,8 @@ class TestClear:
 class TestCopy:
     def test_creates_shallow_copy(self):
         selection = SketchSelection()
-        selection.point_ids.extend([1, 2])
-        selection.entity_ids.extend([3, 4])
+        selection.point_ids = [1, 2]
+        selection.entity_ids = [3, 4]
         selection.constraint_idx = 5
         selection.junction_pid = 6
 
@@ -49,12 +49,12 @@ class TestCopy:
 
     def test_copy_is_independent(self):
         selection = SketchSelection()
-        selection.point_ids.append(1)
-        selection.entity_ids.append(2)
+        selection.add_point(1)
+        selection.add_entity(2)
 
         copy = selection.copy()
-        copy.point_ids.append(3)
-        copy.entity_ids.append(4)
+        copy.add_point(3)
+        copy.add_entity(4)
 
         assert 3 not in selection.point_ids
         assert 4 not in selection.entity_ids
@@ -63,8 +63,8 @@ class TestCopy:
 class TestSelectConstraint:
     def test_selects_constraint_single_mode(self):
         selection = SketchSelection()
-        selection.point_ids.append(1)
-        selection.entity_ids.append(2)
+        selection.add_point(1)
+        selection.add_entity(2)
         selection.junction_pid = 3
 
         selection.select_constraint(5, is_multi=False)
@@ -76,8 +76,8 @@ class TestSelectConstraint:
 
     def test_selects_constraint_multi_mode(self):
         selection = SketchSelection()
-        selection.point_ids.append(1)
-        selection.entity_ids.append(2)
+        selection.add_point(1)
+        selection.add_entity(2)
         selection.junction_pid = 3
 
         selection.select_constraint(5, is_multi=True)
@@ -103,8 +103,8 @@ class TestSelectConstraint:
 class TestSelectJunction:
     def test_selects_junction_single_mode(self):
         selection = SketchSelection()
-        selection.point_ids.append(1)
-        selection.entity_ids.append(2)
+        selection.add_point(1)
+        selection.add_entity(2)
         selection.constraint_idx = 3
 
         selection.select_junction(5, is_multi=False)
@@ -116,8 +116,8 @@ class TestSelectJunction:
 
     def test_selects_junction_multi_mode(self):
         selection = SketchSelection()
-        selection.point_ids.append(1)
-        selection.entity_ids.append(2)
+        selection.add_point(1)
+        selection.add_entity(2)
         selection.constraint_idx = 3
 
         selection.select_junction(5, is_multi=True)
@@ -143,7 +143,7 @@ class TestSelectJunction:
 class TestSelectPoint:
     def test_selects_point_single_mode(self):
         selection = SketchSelection()
-        selection.entity_ids.append(2)
+        selection.add_entity(2)
         selection.constraint_idx = 3
         selection.junction_pid = 4
 
@@ -199,7 +199,7 @@ class TestSelectEntity:
         assert line is not None
 
         selection = SketchSelection()
-        selection.point_ids.append(1)
+        selection.add_point(1)
         selection.constraint_idx = 2
         selection.junction_pid = 3
 
@@ -283,8 +283,8 @@ class TestSelectConnected:
         l3 = registry.add_line(p3, p4)
 
         selection = SketchSelection()
-        selection.entity_ids.append(l3)
-        selection.point_ids.append(p1)
+        selection.add_entity(l3)
+        selection.add_point(p1)
 
         selection.select_connected_entities(l1, registry)
 
@@ -327,48 +327,6 @@ class TestSelectConnected:
         assert signal_received[0] is selection
 
 
-class TestUpdateList:
-    def test_single_mode_adds_if_not_present(self):
-        selection = SketchSelection()
-        collection = []
-
-        selection._update_list(collection, 1, is_multi=False)
-
-        assert collection == [1]
-
-    def test_single_mode_no_change_if_already_present(self):
-        selection = SketchSelection()
-        collection = [1]
-
-        selection._update_list(collection, 1, is_multi=False)
-
-        assert collection == [1]
-
-    def test_single_mode_replaces_with_new_item(self):
-        selection = SketchSelection()
-        collection = [1, 2, 3]
-
-        selection._update_list(collection, 4, is_multi=False)
-
-        assert collection == [4]
-
-    def test_multi_mode_adds_if_not_present(self):
-        selection = SketchSelection()
-        collection = [1]
-
-        selection._update_list(collection, 2, is_multi=True)
-
-        assert collection == [1, 2]
-
-    def test_multi_mode_removes_if_present(self):
-        selection = SketchSelection()
-        collection = [1, 2, 3]
-
-        selection._update_list(collection, 2, is_multi=True)
-
-        assert collection == [1, 3]
-
-
 class TestIsEmpty:
     def test_empty_selection_returns_true(self):
         selection = SketchSelection()
@@ -376,12 +334,12 @@ class TestIsEmpty:
 
     def test_with_point_returns_false(self):
         selection = SketchSelection()
-        selection.point_ids.append(1)
+        selection.add_point(1)
         assert selection.is_empty() is False
 
     def test_with_entity_returns_false(self):
         selection = SketchSelection()
-        selection.entity_ids.append(1)
+        selection.add_entity(1)
         assert selection.is_empty() is False
 
     def test_with_constraint_returns_false(self):
@@ -396,8 +354,8 @@ class TestIsEmpty:
 
     def test_after_clear_returns_true(self):
         selection = SketchSelection()
-        selection.point_ids.append(1)
-        selection.entity_ids.append(2)
+        selection.add_point(1)
+        selection.add_entity(2)
         selection.constraint_idx = 0
         selection.junction_pid = 3
         selection.clear()
