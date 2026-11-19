@@ -1,15 +1,14 @@
 import math
 
 import pytest
+from raygeo.sketch import solve_registry
 from raygeo.sketch.constraints import (
     DistanceConstraint,
     DragConstraint,
     PerpendicularConstraint,
 )
 from raygeo.sketch.entities import Arc, Circle, Ellipse, Line
-from raygeo.sketch.params import ParameterContext
 from raygeo.sketch.registry import EntityRegistry
-from sketcher.core.solver import Solver
 
 
 def build_ellipse(reg: EntityRegistry):
@@ -86,7 +85,6 @@ def build_rotation_drag_constraints(
     solver can only reach the target by moving the center - unless the
     center is pinned."""
     c, r1, r2, l1, l2, _ellipse = build_ellipse(reg)
-    params = ParameterContext()
     constraints = [
         PerpendicularConstraint(l1, l2),
         DistanceConstraint(c, r1, 10.0),
@@ -99,8 +97,7 @@ def build_rotation_drag_constraints(
             DragConstraint(r1, 15.0, 0.0, weight=0.1),
         ]
     )
-    solver = Solver(reg, params, constraints)
-    solver.solve()
+    solve_registry(reg, constraints)
     return reg.get_point(c), reg.get_point(r1)
 
 

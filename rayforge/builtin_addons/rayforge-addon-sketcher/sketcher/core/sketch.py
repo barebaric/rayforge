@@ -9,7 +9,6 @@ from gettext import gettext as _
 from pathlib import Path
 from typing import Any, ClassVar
 
-import numpy as np
 from blinker import Signal
 from raygeo.geo import Arc as GeoArc
 from raygeo.geo import Bezier as GeoBezier
@@ -17,6 +16,7 @@ from raygeo.geo import Geometry
 from raygeo.geo import Line as GeoLine
 from raygeo.geo import Move as GeoMove
 from raygeo.geo.shape.polygon import is_point_inside_polygon
+from raygeo.sketch import conflicting_constraints, solve_registry
 from raygeo.sketch.constraints import (
     AngleConstraint,
     AspectRatioConstraint,
@@ -54,7 +54,6 @@ from rayforge.image.structures import FillRenderData, FillStyle
 
 from .arrays import Array
 from .components import get_referenced_points
-from .solver import Solver
 from .template_functions import get_template_functions
 from .types import ConstraintStatus, EntityID, WaypointType
 
@@ -1438,8 +1437,8 @@ class Sketch(IAsset, IGeometryProvider):
         solve_started = time.perf_counter()
         params_done = prep_done = solver_done = arrays_done = solve_started
         success = False
-        solver: Solver | None = None
         all_constraints: list[Constraint] = []
+        solved_constraint_ids: set[int] = set()
         update_status = False
         solve_completed = False
         scope = point_scope
@@ -1542,19 +1541,19 @@ class Sketch(IAsset, IGeometryProvider):
 
             # Step 5: Run the solver with the disposable, correctly
             # evaluated context.
-            solver = Solver(
+            update_status = update_constraint_status and scope is None
+            success = solve_registry(
                 self.registry,
-                solve_params,
                 all_constraints,
                 auxiliary_constraints=stabilizer_constraints,
-                point_filter=scope,
+                point_filter=list(scope) if scope is not None else None,
+                update_dof=update_status,
             )
-            update_status = update_constraint_status and scope is None
-            success = solver.solve(update_dof=update_status)
+            solved_constraint_ids = {id(c) for c in all_constraints}
             solve_completed = True
             solver_done = time.perf_counter()
 
-        except (np.linalg.LinAlgError, ValueError):
+        except ValueError:
             logger.exception("Sketch solve failed")
             success = False
 
@@ -1573,17 +1572,19 @@ class Sketch(IAsset, IGeometryProvider):
         # AFTER the array sync: re-anchoring an array template can
         # violate constraints the solver had just satisfied (the
         # template's placement belongs to the array), so residuals are
-        # evaluated against the final geometry. Solver indices are
+        # evaluated against the final geometry. Conflict indices are
         # mapped back by constraint identity, since sync_arrays may
         # have changed self.constraints.
-        if solve_completed and update_status and solver is not None:
-            conflicting = solver.get_conflicting_constraints()
+        if solve_completed and update_status:
+            active = [
+                c for c in self.constraints if id(c) in solved_constraint_ids
+            ]
+            conflicting = conflicting_constraints(self.registry, active)
             index_of = {id(c): i for i, c in enumerate(self.constraints)}
             mapped = {
-                index_of[id(all_constraints[i])]
+                index_of[id(active[i])]
                 for i in conflicting
-                if 0 <= i < len(all_constraints)
-                and id(all_constraints[i]) in index_of
+                if 0 <= i < len(active) and id(active[i]) in index_of
             }
             self._apply_conflict_status(mapped)
 

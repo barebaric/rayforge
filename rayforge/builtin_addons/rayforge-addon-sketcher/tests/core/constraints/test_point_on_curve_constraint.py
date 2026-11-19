@@ -2,6 +2,7 @@ from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
+from raygeo.sketch import solve_registry
 from raygeo.sketch.constraints import PointOnCurveConstraint
 from raygeo.sketch.constraints.point_on_curve import closest_point_on_bezier
 from raygeo.sketch.params import ParameterContext
@@ -9,7 +10,6 @@ from raygeo.sketch.registry import EntityRegistry
 from scipy.optimize import check_grad
 from sketcher.core import Sketch
 from sketcher.core.selection import SketchSelection
-from sketcher.core.solver import Solver
 
 # Hump-shaped curve: (0,0) -> (10,0) with both control points pulling
 # the curve up to an apex of (5, 7.5).
@@ -124,8 +124,7 @@ def test_point_on_curve_pulls_point_onto_curve(setup_env):
     pt = reg.add_point(5.0, 6.0)
 
     constraints = [PointOnCurveConstraint(pt, bez_id)]
-    solver = Solver(reg, ParameterContext(), constraints)
-    solver.solve()
+    solve_registry(reg, constraints)
 
     c = PointOnCurveConstraint(pt, bez_id)
     assert c.error(reg, ParameterContext()) < 1e-4
@@ -137,8 +136,7 @@ def test_point_on_curve_pulls_curve_to_anchor(setup_env):
     anchor = reg.add_point(5.0, 6.5, fixed=True)
 
     constraints = [PointOnCurveConstraint(anchor, bez_id)]
-    solver = Solver(reg, ParameterContext(), constraints)
-    solver.solve()
+    solve_registry(reg, constraints)
 
     c = PointOnCurveConstraint(anchor, bez_id)
     assert c.error(reg, ParameterContext()) < 1e-4
