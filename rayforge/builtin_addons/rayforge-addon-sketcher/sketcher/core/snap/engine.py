@@ -4,7 +4,6 @@ from collections.abc import Iterator
 from raygeo.geo.types import Point as GeoPoint
 from raygeo.sketch.registry import EntityRegistry
 
-from ..types import EntityID
 from .spatial import SnapLineIndex
 from .types import (
     DragContext,
@@ -20,6 +19,54 @@ def _source_key(source):
     """Stable key for a snap source (compiled views are new objects)."""
     source_id = getattr(source, "id", None)
     return ("id", source_id) if source_id is not None else ("obj", id(source))
+
+
+def geometry_key(
+    registry: EntityRegistry,
+    drag_context: DragContext | None = None,
+    include_construction: bool = True,
+    include_points: bool = True,
+) -> tuple:
+    """Stable identity of the geometry a snap index depends on.
+
+    Compiled entity views are snapshots, so identity and the global
+    registry version are not usable here. The key is built from the
+    actual geometry: per-entity signatures plus point positions, with
+    dragged geometry excluded for creation/drag queries.
+    """
+    dragged_points = drag_context.dragged_point_ids if drag_context else set()
+    dragged_entities = (
+        drag_context.dragged_entity_ids if drag_context else set()
+    )
+
+    entities = []
+    for entity in registry.entities():
+        if entity.id in dragged_entities:
+            continue
+        point_ids = entity.get_point_ids()
+        if any(pid in dragged_points for pid in point_ids):
+            continue
+        if not include_construction and entity.construction:
+            continue
+        entities.append(
+            (
+                entity.id,
+                entity.type,
+                entity.construction,
+                entity.invisible,
+                entity.geometry_signature(registry),
+            )
+        )
+
+    if not include_points:
+        return (tuple(entities),)
+
+    points = tuple(
+        (p.id, round(p.x, 6), round(p.y, 6))
+        for p in registry.points()
+        if p.id not in dragged_points
+    )
+    return (tuple(entities), points)
 
 
 class SnapLineProducer:
@@ -93,32 +140,18 @@ class SnapEngine:
     @staticmethod
     def _geometry_fingerprint(
         registry: EntityRegistry,
-        skip_point_ids: set[EntityID] | None = None,
+        drag_context: DragContext | None = None,
     ) -> tuple:
-        """
-        Cheap identity of the geometry the snap index was built from.
+        """Cheap identity of the geometry the snap index was built from.
 
-        Structural changes bump the registry version, but solving,
-        drags and array syncs also move points IN PLACE without any
-        version signal; only the positions themselves detect that.
-        The O(n) fingerprint is compared on every query so the
-        expensive producer run only happens when geometry changed.
-        Positions are quantized to 6 decimals: the solver leaves
-        residual noise of roughly 1e-9 on every solve, which must not
-        count as a geometry change.
-
-        Points listed in skip_point_ids are ignored. Producers exclude
-        dragged geometry from their output, so moving dragged points
-        cannot make the index stale and must not trigger a rebuild.
+        Uses actual geometry signatures rather than the registry's
+        global mutation counter: entity property write-backs bump that
+        counter even when only a preview entity changed, which would
+        rebuild the O(n^2) intersection index on every cursor move.
+        Dragged geometry is excluded so dragging it cannot invalidate
+        the index.
         """
-        return (
-            registry.entity_version(),
-            tuple(
-                (round(p.x, 6), round(p.y, 6))
-                for p in registry.points()
-                if skip_point_ids is None or p.id not in skip_point_ids
-            ),
-        )
+        return geometry_key(registry, drag_context)
 
     def rebuild_index(
         self,
@@ -126,9 +159,7 @@ class SnapEngine:
         drag_position: GeoPoint,
         drag_context: DragContext,
     ) -> None:
-        fingerprint = self._geometry_fingerprint(
-            registry, drag_context.dragged_point_ids
-        )
+        fingerprint = self._geometry_fingerprint(registry, drag_context)
         drag_key = (
             frozenset(drag_context.dragged_point_ids),
             frozenset(drag_context.dragged_entity_ids),
