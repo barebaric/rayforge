@@ -12,7 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Machine: grblHAL controllers are identified by their `[BOARD:...]`
   name during probing instead of falling back to the firmware build
   field
-- Dependencies: raydriver upgraded to 1.11.0
+- Machine: the device census behind GRBL and Marlin probing
+  (firmware identity, motion limits, unit reporting) is computed by
+  the raydriver library now; Rayforge only maps the result onto its
+  device profiles
+- Dependencies: raydriver upgraded to 1.12.0
 
 ## 1.14.0
 

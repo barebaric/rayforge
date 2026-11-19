@@ -32,6 +32,8 @@ from .session_driver import SessionDriverBase
 from .session_state import error_from_session_state
 
 if TYPE_CHECKING:
+    from raydriver.remote.client import RemoteSession
+
     from ..device.profile import DeviceProfile
     from ..models.machine import Machine
 
@@ -69,6 +71,11 @@ class RaydriverRemoteDriver(SessionDriverBase):
         super().__init__(context, machine)
         self._device: str | None = None
         self._endpoint: dict[str, Any] = {}
+
+    @property
+    def session(self) -> "RemoteSession | None":
+        """The remote session proxy, if set up."""
+        return self._session
 
     # -- capabilities from daemon metadata -----------------------------
 
