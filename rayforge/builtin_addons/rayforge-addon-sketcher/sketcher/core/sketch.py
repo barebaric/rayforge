@@ -40,13 +40,13 @@ from raygeo.sketch.constraints import (
     TangentConstraint,
     VerticalConstraint,
 )
+from raygeo.sketch.document import Fill
 from raygeo.sketch.entities import Arc, Bezier, Entity, Line
 from raygeo.sketch.entities import TextBox as TextBoxEntity
 from raygeo.sketch.params import ParameterContext
 from raygeo.sketch.registry import EntityRegistry
 
 from rayforge.core.asset import IAsset
-from rayforge.core.color import ColorRGBA
 from rayforge.core.expression import ExpressionMap
 from rayforge.core.geometry_provider import IGeometryProvider
 from rayforge.core.varset import VarSet
@@ -57,7 +57,7 @@ from .arrays import Array
 from .template_functions import get_template_functions
 from .types import ConstraintStatus, EntityID, WaypointType
 
-DEFAULT_FILL_COLOR: ColorRGBA = (0.85, 0.85, 0.85, 0.7)
+DEFAULT_FILL_COLOR = (0.85, 0.85, 0.85, 0.7)
 FORMAT_VERSION = 1
 _DEFAULT_VARSET_TITLE = _("Sketch Parameters")
 _DEFAULT_VARSET_DESCRIPTION = _(
@@ -87,61 +87,6 @@ _CONSTRAINT_CLASSES = {
     "TangentConstraint": TangentConstraint,
     "VerticalConstraint": VerticalConstraint,
 }
-
-
-class Fill:
-    """Represents a filled area bounded by sketch entities."""
-
-    def __init__(
-        self,
-        uid: str,
-        boundary: list[tuple[EntityID, bool]],
-        style: FillStyle = FillStyle.SOLID,
-        color: ColorRGBA = DEFAULT_FILL_COLOR,
-        gradient_stops: list[tuple[float, ColorRGBA]] | None = None,
-        gradient_angle: float = 0.0,
-    ):
-        self.uid = uid
-        self.boundary: list[tuple[EntityID, bool]] = boundary
-        self.style = style
-        self.color = color
-        self.gradient_stops = gradient_stops or []
-        self.gradient_angle = gradient_angle
-
-    def to_dict(self) -> dict[str, Any]:
-        data = {
-            "uid": self.uid,
-            "boundary": [list(item) for item in self.boundary],
-            "style": self.style.value,
-            "color": list(self.color),
-        }
-        if self.gradient_stops:
-            data["gradient_stops"] = [
-                [pos, list(c)] for pos, c in self.gradient_stops
-            ]
-        if self.gradient_angle != 0.0:
-            data["gradient_angle"] = self.gradient_angle
-        return data
-
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "Fill":
-        boundary = [tuple(item) for item in data["boundary"]]
-        style = FillStyle(data.get("style", "solid"))
-        color = tuple(data.get("color", list(DEFAULT_FILL_COLOR)))
-        gradient_stops = None
-        if "gradient_stops" in data:
-            gradient_stops = [
-                (pos, tuple(c)) for pos, c in data["gradient_stops"]
-            ]
-        gradient_angle = data.get("gradient_angle", 0.0)
-        return cls(
-            uid=data.get("uid", str(uuid.uuid4())),
-            boundary=boundary,
-            style=style,
-            color=color,
-            gradient_stops=gradient_stops,
-            gradient_angle=gradient_angle,
-        )
 
 
 class Sketch(IAsset, IGeometryProvider):
