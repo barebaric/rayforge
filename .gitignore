@@ -9,6 +9,7 @@ build
 /media
 *.egg-info
 .msys2_env
+.cache
 .DS_Store
 
 .flatpak-builder

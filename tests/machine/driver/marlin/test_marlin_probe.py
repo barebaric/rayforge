@@ -1,31 +1,35 @@
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 import pytest
-from blinker import Signal
+from raydriver.marlin.probe import describe
 
-from rayforge.machine.driver.marlin.marlin_probe import build_marlin_profile
+from rayforge.machine.driver.marlin.marlin_probe import (
+    build_marlin_profile,
+)
 from rayforge.machine.driver.marlin.marlin_serial import MarlinSerialDriver
 from rayforge.machine.transport import TransportStatus
 from rayforge.shared.units.system import UnitSystem
 
+FULL_M115_LINES = [
+    ("FIRMWARE_NAME:Marlin 2.1.2.7 MACHINE_TYPE:CustomLaser EXTRUDER_COUNT:1")
+]
+FULL_M211_LINES = ["X: 400.00 Y: 300.00 Z: 200.00 S: 1 (Enabled)"]
+FULL_M503_LINES = [
+    "echo: M203 X300.00 Y300.00 Z5.00 E25.00",
+    "echo: M204 S3000.00 T3000.00",
+]
+
 
 class TestBuildMarlinProfile:
     def test_full_profile(self):
-        m115_lines = [
-            (
-                "FIRMWARE_NAME:Marlin 2.1.2.7 "
-                "MACHINE_TYPE:CustomLaser EXTRUDER_COUNT:1"
-            )
-        ]
-        m211_lines = ["X: 400.00 Y: 300.00 Z: 200.00 S: 1 (Enabled)"]
-        m503_lines = [
-            "echo: M203 X300.00 Y300.00 Z5.00 E25.00",
-            "echo: M204 S3000.00 T3000.00",
-        ]
-        boot_lines = ["Marlin 2.1.2.7"]
-        profile, warnings = build_marlin_profile(
-            m115_lines, m211_lines, m503_lines, [], boot_lines
+        info = describe(
+            FULL_M115_LINES,
+            FULL_M211_LINES,
+            FULL_M503_LINES,
+            [],
+            ["Marlin 2.1.2.7"],
         )
+        profile, warnings = build_marlin_profile(info)
         assert profile.meta.name == "CustomLaser"
         assert profile.machine_config.driver is None
         dc = profile.machine_config.driver_config
@@ -41,7 +45,7 @@ class TestBuildMarlinProfile:
         assert warnings == []
 
     def test_minimal_profile(self):
-        profile, _warnings = build_marlin_profile([], [], [], [])
+        profile, _warnings = build_marlin_profile(describe([], [], [], []))
         assert profile.meta.name == "Unknown Marlin Device"
         assert profile.machine_config.axis_extents is None
         assert profile.machine_config.max_travel_speed is None
@@ -52,38 +56,31 @@ class TestBuildMarlinProfile:
         m503_lines = [
             "echo: M203 X500.00 Y300.00 Z5.00 E25.00",
         ]
-        profile, _ = build_marlin_profile([], [], m503_lines, [])
+        info = describe([], [], m503_lines, [])
+        profile, _ = build_marlin_profile(info)
         assert profile.machine_config.max_travel_speed == 18000
 
     def test_no_boot_lines(self):
         m115_lines = ["FIRMWARE_NAME:Marlin 2.1.2.7 MACHINE_TYPE:TestDevice"]
-        profile, _ = build_marlin_profile(m115_lines, [], [], [], None)
+        info = describe(m115_lines, [], [], [], None)
+        profile, _ = build_marlin_profile(info)
         assert profile.meta.name == "TestDevice"
 
     def test_unit_system_metric(self):
         m149_lines = ["echo: M149 Units in mm"]
-        profile, _ = build_marlin_profile([], [], [], m149_lines)
+        info = describe([], [], [], m149_lines)
+        profile, _ = build_marlin_profile(info)
         assert profile.machine_config.unit_system == UnitSystem.METRIC
 
     def test_unit_system_imperial(self):
         m149_lines = ["echo: M149 Units in inches"]
-        profile, _ = build_marlin_profile([], [], [], m149_lines)
+        info = describe([], [], [], m149_lines)
+        profile, _ = build_marlin_profile(info)
         assert profile.machine_config.unit_system == UnitSystem.IMPERIAL
 
     def test_unit_system_unknown_defaults_to_metric(self):
-        profile, _ = build_marlin_profile([], [], [], [])
+        profile, _ = build_marlin_profile(describe([], [], [], []))
         assert profile.machine_config.unit_system == UnitSystem.METRIC
-
-
-def _make_mock_serial():
-    mock = MagicMock()
-    mock.connect = AsyncMock()
-    mock.disconnect = AsyncMock()
-    mock.send = AsyncMock()
-    mock.received = Signal()
-    mock.status_changed = Signal()
-    mock.is_connected = True
-    return mock
 
 
 class TestDriverProbe:
@@ -91,28 +88,7 @@ class TestDriverProbe:
     async def test_probe_connects_and_queries(
         self, context_initializer, mocker
     ):
-        m115_lines = [
-            (
-                "FIRMWARE_NAME:Marlin 2.1.2.7 "
-                "MACHINE_TYPE:CustomLaser EXTRUDER_COUNT:1"
-            )
-        ]
-        m211_lines = ["X: 400.00 Y: 300.00 Z: 200.00 S: 1 (Enabled)"]
-        m503_lines = [
-            "echo: M203 X300.00 Y300.00 Z5.00 E25.00",
-            "echo: M204 S3000.00 T3000.00",
-        ]
-
-        async def fake_interactive(self, command):
-            if command == "M115":
-                return m115_lines
-            if command == "M211":
-                return m211_lines
-            if command == "M503":
-                return m503_lines
-            if command == "M149":
-                return ["echo: M149 Units in mm"]
-            return []
+        m149_lines = ["echo: M149 Units in mm"]
 
         def fake_setup(self, **kwargs):
             self.did_setup = True
@@ -130,13 +106,25 @@ class TestDriverProbe:
             "_connect_implementation",
             fake_connect,
         )
-        mocker.patch.object(
-            MarlinSerialDriver,
-            "execute_interactive_command",
-            fake_interactive,
-        )
         mock_cleanup = AsyncMock()
         mocker.patch.object(MarlinSerialDriver, "cleanup", mock_cleanup)
+        fake_session = mocker.MagicMock()
+        mocker.patch.object(
+            MarlinSerialDriver,
+            "session",
+            new_callable=mocker.PropertyMock,
+            return_value=fake_session,
+        )
+        info = describe(
+            FULL_M115_LINES,
+            FULL_M211_LINES,
+            FULL_M503_LINES,
+            m149_lines,
+        )
+        probe_mock = mocker.patch(
+            "rayforge.machine.driver.marlin.marlin_probe.probe_device",
+            AsyncMock(return_value=info),
+        )
 
         profile, _warnings = await MarlinSerialDriver.probe(
             context_initializer,
@@ -144,6 +132,9 @@ class TestDriverProbe:
             baudrate=115200,
         )
 
+        probe_mock.assert_awaited_once()
+        assert probe_mock.await_args.args[0] is fake_session
+        assert probe_mock.await_args.kwargs["boot_lines"] == []
         assert profile.meta.name == "CustomLaser"
         driver_config = profile.machine_config.driver_config
         assert driver_config is not None

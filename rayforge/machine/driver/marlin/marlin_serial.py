@@ -108,6 +108,11 @@ class MarlinSerialDriver(Driver):
         return self._session.resource_uri
 
     @property
+    def session(self) -> MarlinSession | None:
+        """The underlying raydriver session, if set up."""
+        return self._session
+
+    @property
     def boot_lines(self) -> list[str]:
         """Boot banner lines received from the device, used by the
         probe for device naming."""

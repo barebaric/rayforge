@@ -12,7 +12,7 @@ import asyncio
 import logging
 from collections.abc import Awaitable, Callable
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 from raydriver.core import SessionEvent
 
@@ -40,6 +40,74 @@ if TYPE_CHECKING:
     from ..models.machine import Machine
 
 logger = logging.getLogger(__name__)
+
+
+@runtime_checkable
+class SessionLike(Protocol):
+    """The protocol-neutral session surface the base drives.
+
+    The local Rust sessions and the remote daemon proxy expose it.
+    Individual sessions may omit members (the xTool sessions carry
+    no settings or probing, the M2 no G-code jobs); those base
+    methods are overridden by the drivers for such sessions.
+    """
+
+    state: "SessionDeviceState"
+    resource_uri: str | None
+
+    def update_dialect(self, dialect: dict[str, Any]) -> None: ...
+
+    async def connect(self) -> None: ...
+
+    async def disconnect(self) -> None: ...
+
+    async def execute_interactive_command(self, command: str) -> list[str]: ...
+
+    async def execute_command(self, command: str) -> list[str]: ...
+
+    async def run(
+        self,
+        gcode: str,
+        op_line_map: dict[int, int] | None = None,
+        op_estimates: list[float] | None = None,
+        progress_callback: Callable[[int], None] | None = None,
+    ) -> None: ...
+
+    async def run_raw(self, machine_code: str) -> None: ...
+
+    async def cancel(self, emergency: bool = False) -> None: ...
+
+    async def set_hold(self, hold: bool = True) -> None: ...
+
+    async def home(
+        self, axes: list[str] | None = None, active_wcs: str = "G54"
+    ) -> None: ...
+
+    async def jog(
+        self, speed: int, deltas: list[tuple[str, float]] | None = None
+    ) -> None: ...
+
+    async def select_tool(self, tool_number: int) -> None: ...
+
+    async def set_power(self, power: float | None = None) -> None: ...
+
+    async def set_focus_power(self, power: float | None = None) -> None: ...
+
+    async def clear_alarm(self) -> None: ...
+
+    async def detect_unit_system(self) -> str | None: ...
+
+    async def set_wcs_offset(
+        self, wcs_slot: str, x: float, y: float, z: float | None
+    ) -> None: ...
+
+    async def read_wcs_offsets(self) -> dict[str, tuple]: ...
+
+    async def read_parser_state(self) -> str | None: ...
+
+    async def run_probe_cycle(
+        self, axis_letter: str, max_travel: float, feed_rate: int
+    ) -> Any: ...
 
 
 class SessionDriverBase(Driver):
@@ -70,6 +138,11 @@ class SessionDriverBase(Driver):
         if self._session is None:
             return None
         return self._session.resource_uri
+
+    @property
+    def session(self) -> SessionLike | None:
+        """The underlying raydriver session, if set up."""
+        return self._session
 
     def _require_session(self) -> Any:
         if self._session is None:

@@ -12,7 +12,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Machine: grblHAL controllers are identified by their `[BOARD:...]`
   name during probing instead of falling back to the firmware build
   field
-- Dependencies: raydriver upgraded to 1.11.0
+- Machine: the device census behind GRBL and Marlin probing
+  (firmware identity, motion limits, unit reporting) is computed by
+  the raydriver library now; Rayforge only maps the result onto its
+  device profiles
+- Machine: network discovery of FluidNC/ESP3D devices and the xTool
+  machine-type query now use the raydriver library's HTTP probes
+  instead of local aiohttp code
+- Machine: the xTool drivers share the generic raydriver-session
+  base now; the xTool M2 console additionally shows connection and
+  raw traffic lines when verbose output is enabled
+- Dependencies: raydriver upgraded to 1.12.0
 
 ## 1.14.0
 

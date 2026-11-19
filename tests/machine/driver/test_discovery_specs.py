@@ -18,7 +18,10 @@ except ImportError:  # Windows has no termios/tty
 import pytest
 from raydriver.core.discovery import mdns_channel
 from raydriver.core.discovery.engine import find_all_devices
-from raydriver.core.discovery.fingerprints import TcpFingerprint
+from raydriver.core.discovery.fingerprints import (
+    HttpFingerprint,
+    TcpFingerprint,
+)
 from raydriver.core.discovery.mdns_channel import find_network_devices
 from raydriver.core.discovery.mdns_scan import MDNSService
 from raydriver.core.discovery.spec import DiscoverySpec, MdnsRecognizer
@@ -30,9 +33,6 @@ from rayforge.machine.driver import (
     MarlinSerialDriver,
     OctoPrintDriver,
     drivers,
-)
-from rayforge.machine.driver.grbl.grbl_fingerprint import (
-    fingerprint_grbl_http,
 )
 
 SCULPFUN_ICUBE_BANNER = (
@@ -251,7 +251,10 @@ def test_builtin_mdns_declarations():
     assert octo_spec.mdns.txt_map == {"path": "path"}
     grbl_net_spec = GrblNetworkDriver.DISCOVERY
     assert grbl_net_spec is not None and grbl_net_spec.mdns is not None
-    assert grbl_net_spec.mdns.fingerprint is fingerprint_grbl_http
+    fingerprint = grbl_net_spec.mdns.fingerprint
+    assert isinstance(fingerprint, HttpFingerprint)
+    assert fingerprint.path == "/command?plain=%5BESP800%5D&PAGEID="
+    assert fingerprint.match_regex == r"\b(fluidnc|esp3d|grblhal|grbl)\b"
     assert grbl_net_spec.mdns.fingerprint_services == ("_http._tcp",)
     telnet_spec = GrblTelnetDriver.DISCOVERY
     assert telnet_spec is not None and telnet_spec.mdns is not None
