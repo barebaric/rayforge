@@ -574,6 +574,38 @@ class TestJobMonitorAddonHooks:
         monitor.set_paused(True)
         monitor.end(JobOutcome.COMPLETED)
 
+    def test_inhibits_sleep_while_job_runs(
+        self, simple_ops, machine, context, monkeypatch
+    ):
+        context.config.prevent_sleep_while_working = True
+        inhibitor = MagicMock()
+        monkeypatch.setattr(
+            "rayforge.machine.job_monitor.sleep_inhibitor", inhibitor
+        )
+        monitor = self.make_monitor(simple_ops, machine, context)
+
+        monitor.begin()
+        inhibitor.acquire.assert_called_once_with()
+
+        monitor.end(JobOutcome.COMPLETED)
+        inhibitor.release.assert_called_once_with()
+
+    def test_no_sleep_inhibition_when_disabled(
+        self, simple_ops, machine, context, monkeypatch
+    ):
+        context.config.prevent_sleep_while_working = False
+        inhibitor = MagicMock()
+        monkeypatch.setattr(
+            "rayforge.machine.job_monitor.sleep_inhibitor", inhibitor
+        )
+        monitor = self.make_monitor(simple_ops, machine, context)
+
+        monitor.begin()
+        monitor.end(JobOutcome.COMPLETED)
+
+        inhibitor.acquire.assert_not_called()
+        inhibitor.release.assert_not_called()
+
     def test_addon_exception_is_isolated(self, simple_ops, machine, context):
         recorder = HookRecorder(fail_on="on_job_updated")
         plugin_mgr = pluggy.PluginManager("rayforge")

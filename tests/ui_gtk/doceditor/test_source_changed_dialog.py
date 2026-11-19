@@ -242,3 +242,14 @@ class TestWatchPreference:
         mon.tick()
 
         watcher.poll.assert_not_called()
+
+
+class TestSleepPreference:
+    def test_switch_reflects_and_updates_config(self, context_initializer):
+        config = get_context().config
+        page = GeneralPreferencesPage()
+        assert page.prevent_sleep_row.get_active() is True
+
+        page.prevent_sleep_row.set_active(False)
+
+        assert config.prevent_sleep_while_working is False

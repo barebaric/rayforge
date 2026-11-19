@@ -351,6 +351,19 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         )
         startup_group.add(self.watch_sources_row)
 
+        self.prevent_sleep_row = Adw.SwitchRow(
+            title=_("Prevent sleep during jobs"),
+            subtitle=_(
+                "Block automatic system sleep while a job is running "
+                "so the connection to the machine is not dropped"
+            ),
+        )
+        self.prevent_sleep_row.set_active(config.prevent_sleep_while_working)
+        self.prevent_sleep_row.connect(
+            "notify::active", self.on_prevent_sleep_changed
+        )
+        startup_group.add(self.prevent_sleep_row)
+
         # Startup behavior selector
         self.startup_behavior_row = Adw.ComboRow(
             title=_("Startup behavior"),
@@ -628,3 +641,8 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         """Called when the user toggles watching imported files."""
         enabled = switch_row.get_active()
         get_context().config.set_watch_source_files(enabled)
+
+    def on_prevent_sleep_changed(self, switch_row, _):
+        """Called when the user toggles sleep prevention during jobs."""
+        enabled = switch_row.get_active()
+        get_context().config.set_prevent_sleep_while_working(enabled)
