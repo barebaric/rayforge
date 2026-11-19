@@ -62,24 +62,18 @@ class IntersectionsProducer(SnapLineProducer):
     def _get_intersections_cached(
         self, registry: "EntityRegistry", drag_context: DragContext
     ) -> list[GeoPoint]:
-        key = self._geometry_key(registry, drag_context)
+        key = geometry_key(
+            registry,
+            drag_context,
+            self._include_construction,
+            include_points=False,
+        )
         if key != self._cache_key:
             self._cached_intersections = list(
                 self._get_all_intersections(registry, drag_context)
             )
             self._cache_key = key
         return self._cached_intersections
-
-    def _geometry_key(
-        self, registry: "EntityRegistry", drag_context: DragContext
-    ) -> tuple:
-        """Identity of the geometry the intersections depend on."""
-        return geometry_key(
-            registry,
-            drag_context,
-            self._include_construction,
-            include_points=False,
-        )
 
     def _get_all_intersections(
         self, registry: "EntityRegistry", drag_context: DragContext

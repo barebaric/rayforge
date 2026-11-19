@@ -1,5 +1,6 @@
 import pytest
 from raygeo.sketch.registry import EntityRegistry
+from sketcher.core.snap.engine import geometry_key
 from sketcher.core.snap.producers.intersections import IntersectionsProducer
 from sketcher.core.snap.types import DragContext
 
@@ -548,12 +549,12 @@ def test_cache_key_ignores_dragged_entity_movement(producer, registry):
     registry.add_line(p3, p4)
 
     context = DragContext(dragged_point_ids={p3})
-    first = producer._geometry_key(registry, context)
+    first = geometry_key(registry, context, include_points=False)
 
     registry.get_point(p3).x = 5.0
-    second = producer._geometry_key(registry, context)
+    second = geometry_key(registry, context, include_points=False)
     assert first == second
 
     registry.get_point(p1).x = 1.0
-    third = producer._geometry_key(registry, context)
+    third = geometry_key(registry, context, include_points=False)
     assert second != third
