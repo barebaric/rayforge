@@ -7,6 +7,7 @@ from typing import ClassVar
 
 from gi.repository import Adw, Gtk
 from raygeo.sketch.entities import Circle
+from raygeo.sketch.entity_group import EntityGroup
 
 from rayforge.ui_gtk.shared.pref_rows import (
     AngleSpinRow,
@@ -19,7 +20,6 @@ from ...core.arrays import (
     CircularArrayStrategy,
 )
 from ...core.commands import CreateArrayCommand
-from ...core.entity_group import EntityGroup
 from .array_base import ArrayToolBase
 
 logger = logging.getLogger(__name__)

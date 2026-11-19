@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 import cairo
 from gi.repository import Adw, Gtk
+from raygeo.sketch.entity_group import EntityGroup
 
 from ...core.arrays import (
     CircularArray,
@@ -15,7 +16,6 @@ from ...core.arrays import (
     InstancePlacement,
 )
 from ...core.commands import CreateArrayCommand, EditArrayCommand
-from ...core.entity_group import EntityGroup
 from .base import SketcherKey, SketchTool
 
 logger = logging.getLogger(__name__)

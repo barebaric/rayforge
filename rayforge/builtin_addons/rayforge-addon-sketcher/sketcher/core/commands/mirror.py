@@ -6,7 +6,8 @@ from enum import Enum
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
-from ..entity_group import EntityGroup, points_bbox_center
+from raygeo.sketch.entity_group import EntityGroup, points_bbox_center
+
 from ..types import EntityID
 from .base import SketchChangeCommand
 
