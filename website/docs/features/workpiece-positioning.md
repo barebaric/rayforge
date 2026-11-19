@@ -111,8 +111,8 @@ ask again"). You can choose:
 - **Dry-Run with Pointer**: the job runs with the pointer offset applied, so the pointer dot traces
   the toolpath while the beam runs displaced by the offset. The laser still fires at job power —
   make sure the displaced beam cannot hit anything it should not.
-- **Turn Off and Burn**: alignment is switched off and the job burns normally with the beam at the
-  WCS positions.
+- **Burn with Beam**: the job burns normally with the beam at the WCS positions. Pointer alignment
+  stays on, so you can keep aiming with the pointer dot after the job.
 - **Cancel**.
 
 Jog moves and jobs are never shifted by the toggle: jog is relative, and regular G-code output is
