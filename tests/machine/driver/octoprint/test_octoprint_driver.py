@@ -16,6 +16,7 @@ from rayforge.machine.driver.driver import (
 from rayforge.machine.driver.octoprint import OctoPrintDriver
 from rayforge.machine.driver.octoprint.octoprint_driver import (
     _STATE_MAP,
+    OctoPrintHTTPError,
 )
 from rayforge.machine.models.dialect_manager import DialectManager
 from rayforge.machine.models.machine import Machine
@@ -24,6 +25,64 @@ from rayforge.pipeline.encoder.gcode import GcodeEncoder
 
 def _api_key_json(key="test-api-key-123"):
     return json.dumps({"api_key": key})
+
+
+def _text_frame(data: str) -> MagicMock:
+    msg = MagicMock()
+    msg.type = aiohttp.WSMsgType.TEXT
+    msg.data = data
+    return msg
+
+
+class _FakeWebSocket:
+    def __init__(self, messages=()):
+        self._messages = list(messages)
+        self.sent: list[str] = []
+
+    async def send_str(self, data: str) -> None:
+        self.sent.append(data)
+
+    def __aiter__(self):
+        return self._iter_messages()
+
+    async def _iter_messages(self):
+        for message in self._messages:
+            yield message
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *exc_info):
+        return False
+
+
+def _patch_websocket(mocker, websocket):
+    mock_session = MagicMock()
+    mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+    mock_session.__aexit__ = AsyncMock(return_value=False)
+    mock_session.ws_connect = MagicMock(return_value=websocket)
+    return mocker.patch(
+        "rayforge.machine.driver.octoprint.octoprint_driver"
+        ".aiohttp.ClientSession",
+        return_value=mock_session,
+    )
+
+
+def _http_error_response(status: int) -> AsyncMock:
+    mock_response = AsyncMock()
+    mock_response.status = status
+    mock_response.content_type = "application/json"
+    mock_response.json = AsyncMock(return_value={})
+    mock_response.text = AsyncMock(return_value="")
+    mock_response.raise_for_status = MagicMock(
+        side_effect=aiohttp.ClientResponseError(
+            request_info=MagicMock(),
+            history=(),
+            status=status,
+            message="error",
+        )
+    )
+    return mock_response
 
 
 @pytest.fixture
@@ -315,21 +374,46 @@ class TestApiRequest:
             path="/octoprint",
         )
 
-        msg = MagicMock()
-        msg.type = aiohttp.WSMsgType.TEXT
-        msg.data = 'c[3000,"Server closed"]'
+        ws = _FakeWebSocket([_text_frame('c[3000,"Server closed"]')])
+        patch = _patch_websocket(mocker, ws)
 
-        ws = AsyncMock()
-        ws.receive = AsyncMock(return_value=msg)
+        with pytest.raises(DeviceConnectionError, match="closed"):
+            await driver._run_websocket()
+        ws_call = patch.return_value.ws_connect.call_args
+        ws_url = ws_call[0][0]
+        assert ws_url == "ws://host:80/octoprint/sockjs/websocket"
 
-        ws_cm = AsyncMock()
-        ws_cm.__aenter__ = AsyncMock(return_value=ws)
-        ws_cm.__aexit__ = AsyncMock(return_value=False)
+    @pytest.mark.asyncio
+    async def test_websocket_authenticates_immediately(
+        self, setup_driver, mocker
+    ):
+        """The raw SockJS WebSocket sends no ``o`` open frame, so the
+        auth message must be sent right after connecting. Otherwise
+        OctoPrint withholds status updates and the UI stays stuck."""
+        setup_driver._session_key = "session"
+        setup_driver._user_name = "user"
+        ws = _FakeWebSocket()
+        _patch_websocket(mocker, ws)
+
+        await setup_driver._run_websocket()
+
+        assert ws.sent == [json.dumps({"auth": "user:session"})]
+
+    @pytest.mark.asyncio
+    async def test_api_request_http_error_is_not_a_connection_error(
+        self, setup_driver, mocker
+    ):
+        """An HTTP error means the server answered, so it must not be
+        reported as a network connection failure."""
+        response = _http_error_response(409)
+        mock_ctx = AsyncMock()
+        mock_ctx.__aenter__ = AsyncMock(return_value=response)
+        mock_ctx.__aexit__ = AsyncMock(return_value=False)
 
         mock_session = MagicMock()
+        mock_session.request = MagicMock(return_value=mock_ctx)
         mock_session.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session.__aexit__ = AsyncMock(return_value=False)
-        mock_session.ws_connect = MagicMock(return_value=ws_cm)
 
         mocker.patch(
             "rayforge.machine.driver.octoprint.octoprint_driver"
@@ -337,11 +421,11 @@ class TestApiRequest:
             return_value=mock_session,
         )
 
-        with pytest.raises(DeviceConnectionError, match="closed"):
-            await driver._run_websocket()
-        ws_call = mock_session.ws_connect.call_args
-        ws_url = ws_call[0][0]
-        assert ws_url == "ws://host:80/octoprint/sockjs/websocket"
+        with pytest.raises(OctoPrintHTTPError) as exc_info:
+            await setup_driver._api_request("POST", "/api/job")
+
+        assert exc_info.value.status == 409
+        assert "Could not connect" not in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_api_request_403_raises(self, setup_driver, mocker):
@@ -582,6 +666,23 @@ class TestSockJSProcessing:
         assert setup_driver.state.status == DeviceStatus.IDLE
         assert setup_driver._job_active is False
 
+    def test_raw_json_frame_parsed(self, setup_driver):
+        """The raw SockJS WebSocket transport delivers message
+        objects as plain JSON text (no ``a[...]`` batch)."""
+        state_data = {
+            "text": "Operational",
+            "flags": {
+                "operational": True,
+                "printing": False,
+                "paused": False,
+                "error": False,
+                "closedOrError": False,
+            },
+        }
+        frame = json.dumps({"current": {"state": state_data}})
+        setup_driver._process_sockjs_frame(frame)
+        assert setup_driver.state.status == DeviceStatus.IDLE
+
     def test_unknown_frame_ignored(self, setup_driver):
         setup_driver._process_sockjs_frame("x[123]")
 
@@ -710,6 +811,39 @@ class TestHoldCancel:
         )
         tracker.assert_called_once_with(setup_driver)
         assert setup_driver._job_active is False
+
+    @pytest.mark.asyncio
+    async def test_cancel_ignores_conflict(self, setup_driver, mocker):
+        """OctoPrint answers 409 when there is no job to cancel. That
+        is not a connection error and must not surface as one."""
+        mocker.patch.object(
+            setup_driver,
+            "_api_request",
+            new_callable=AsyncMock,
+            side_effect=OctoPrintHTTPError(409, "conflict"),
+        )
+        tracker = MagicMock()
+        setup_driver.job_finished.send = tracker
+        setup_driver._job_active = True
+
+        await setup_driver.cancel()
+
+        tracker.assert_called_once_with(setup_driver)
+        assert setup_driver._job_active is False
+
+    @pytest.mark.asyncio
+    async def test_cancel_reraises_other_http_errors(
+        self, setup_driver, mocker
+    ):
+        mocker.patch.object(
+            setup_driver,
+            "_api_request",
+            new_callable=AsyncMock,
+            side_effect=OctoPrintHTTPError(500, "server error"),
+        )
+
+        with pytest.raises(OctoPrintHTTPError):
+            await setup_driver.cancel()
 
 
 class TestHoming:
