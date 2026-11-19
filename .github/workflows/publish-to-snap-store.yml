@@ -22,7 +22,7 @@ jobs:
   build-publish-snap:
     name: Build and Publish Snap
     needs: [lint-test]  # Run only if tests pass
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
         with:
