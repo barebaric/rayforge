@@ -915,6 +915,7 @@ class TestMachine:
             assert oy == pytest.approx(by - 60.0)
 
     @pytest.mark.asyncio
+    @pytest.mark.parametrize("workarea_origin", [False, True])
     async def test_frame_job_shifts_with_pointer_alignment(
         self,
         doc: Doc,
@@ -924,6 +925,7 @@ class TestMachine:
         lite_context,
         task_mgr: TaskManager,
         contour_step_class,
+        workarea_origin: bool,
     ):
         """
         While pointer alignment is on, the frame outline is traced by
@@ -941,7 +943,7 @@ class TestMachine:
 
         machine.set_axis_extents(200.0, 200.0)
         machine.set_origin(Origin.BOTTOM_LEFT)
-        machine.wcs_origin_is_workarea_origin = False
+        machine.set_wcs_origin_is_workarea_origin(workarea_origin)
         machine.active_wcs = "G56"
         machine.update_wcs_offset("G56", (0.0, 0.0, 0.0))
 

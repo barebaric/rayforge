@@ -279,7 +279,7 @@ class MachineCmd:
         # the active WCS origin because the controller adds the WCS
         # offset back (issue #362). The regular send path performs the
         # same adjustment in the machine-transform stage. While
-        # pointer alignment is on, the command WCS offset includes the
+        # pointer alignment is on, the command offset includes the
         # pointer offset, so the frame outline is traced by the
         # pointer dot rather than the cutting beam.
         space = MachineSpace.from_machine(machine)
@@ -292,9 +292,15 @@ class MachineCmd:
 
         _warn_if_frame_exceeds_travel(self._editor, machine, frame_ops.rect())
 
+        pointer_offset = (
+            machine.get_pointer_offset()
+            if machine.pointer_alignment_enabled
+            else (0.0, 0.0)
+        )
         to_command = space.get_machine_to_command_matrix(
-            wcs_offset=machine.get_command_wcs_offset(),
+            wcs_offset=machine.get_active_wcs_offset(),
             wcs_is_workarea_origin=machine.wcs_origin_is_workarea_origin,
+            extra_offset=pointer_offset,
         )
         frame_ops.transform(to_command)
 
