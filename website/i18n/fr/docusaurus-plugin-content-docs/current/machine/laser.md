@@ -83,6 +83,8 @@ La taille physique de ton faisceau laser focalisé en millimètres.
 
 - Entre les dimensions X et Y
 - La plupart des lasers ont un spot circulaire (ex : 0.1 x 0.1)
+- Définit la compensation de kerf par défaut du contour : le décalage X utilise la moitié de la
+  taille du spot X et le décalage Y la moitié de la taille du spot Y
 - Affecte les calculs de qualité de gravure
 
 <!-- prettier-ignore-start -->

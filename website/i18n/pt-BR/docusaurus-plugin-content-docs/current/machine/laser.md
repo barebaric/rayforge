@@ -83,6 +83,8 @@ O tamanho físico do seu feixe de laser focalizado em milímetros.
 
 - Digite ambas as dimensões X e Y
 - A maioria dos lasers tem um ponto circular (ex: 0,1 x 0,1)
+- Define a compensação de kerf padrão do contorno: o deslocamento X usa metade do tamanho do ponto X
+  e o deslocamento Y usa metade do tamanho do ponto Y
 - Afeta cálculos de qualidade de gravação
 
 <!-- prettier-ignore-start -->

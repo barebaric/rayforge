@@ -84,6 +84,8 @@ The physical size of your focused laser beam in millimeters.
 
 - Enter both X and Y dimensions
 - Most lasers have a circular spot (e.g., 0.1 x 0.1)
+- Seeds the default contour kerf compensation: Offset X uses half the X spot size, and Offset Y uses
+  half the Y spot size
 - Affects engraving quality calculations
 
 <!-- prettier-ignore-start -->

@@ -40,6 +40,17 @@ Le laser suit :      carré de 50.4mm
 Après coupe :        La pièce mesure 50.0mm (parfait !)
 ```
 
+## Tailles de spot X et Y différentes
+
+Si le spot du faisceau n'est pas circulaire, Rayforge initialise les décalages du contour à partir
+de la taille du spot par axe :
+
+- **Décalage X** utilise par défaut la moitié de la largeur du spot
+- **Décalage Y** utilise par défaut la moitié de la hauteur du spot
+
+Les deux valeurs restent modifiables après avoir mesuré le kerf réel sur des coupes d'essai.
+Utilisez-les indépendamment lorsque le faisceau enlève plus de matière sur un axe que sur l'autre.
+
 ---
 
 ## Mesurer le Kerf

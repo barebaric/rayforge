@@ -83,6 +83,8 @@ Die physische Größe deines fokussierten Laserstrahls in Millimetern.
 
 - Gib sowohl X- als auch Y-Abmessungen ein
 - Die meisten Laser haben einen runden Punkt (z.B. 0.1 x 0.1)
+- Legt die Standard-Schnittbreitenkompensation der Kontur fest: Offset X verwendet die halbe
+  X-Punktgröße, Offset Y die halbe Y-Punktgröße
 - Beeinflusst Gravurqualitäts-Berechnungen
 
 <!-- prettier-ignore-start -->

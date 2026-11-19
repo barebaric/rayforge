@@ -44,6 +44,16 @@ Laser follows:  50.4mm square
 After cutting:  Part measures 50.0mm (perfect!)
 ```
 
+## Different X and Y Spot Sizes
+
+If the beam spot is not circular, Rayforge seeds the contour offsets from the spot size per axis:
+
+- **Offset X** defaults to half the spot width
+- **Offset Y** defaults to half the spot height
+
+Both values remain editable after measuring the actual kerf on test cuts. Use them independently
+when the beam removes more material along one axis than the other.
+
 ---
 
 ## Measuring Kerf

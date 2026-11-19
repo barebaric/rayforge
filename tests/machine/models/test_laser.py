@@ -1,5 +1,7 @@
 from unittest.mock import MagicMock
 
+import pytest
+
 from rayforge.core.capability import MachineCapability
 from rayforge.machine.driver.driver import PWMParams
 from rayforge.machine.models.head import Head
@@ -24,6 +26,21 @@ def test_laser_initialization():
     assert laser.focus_power_percent == 0
     assert laser.spot_size_mm == (0.1, 0.1)
     assert laser.uid is not None
+
+
+def test_kerf_xy_mm_uses_per_axis_spot_size():
+    laser = Laser()
+    laser.spot_size_mm = (0.1, 0.3)
+
+    assert laser.kerf_xy_mm == (pytest.approx(0.05), pytest.approx(0.15))
+    assert laser.kerf_mm == pytest.approx(0.05)
+
+
+def test_kerf_xy_mm_handles_unset_spot_size():
+    laser = Laser()
+    laser.spot_size_mm = (0.0, 0.0)
+
+    assert laser.kerf_xy_mm == (pytest.approx(0.0), pytest.approx(0.0))
 
 
 def test_effective_focal_distance_uses_configured_value():
