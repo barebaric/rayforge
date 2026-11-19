@@ -2,7 +2,7 @@ import pytest
 from raygeo.geo import Geometry
 from raygeo.geo.shape.text import FontConfig
 from raygeo.sketch.entities import TextBox as TextBoxEntity
-from sketcher.core.registry import EntityRegistry
+from raygeo.sketch.registry import EntityRegistry
 
 
 @pytest.fixture
@@ -18,12 +18,7 @@ def test_text_box_serialization_round_trip():
         width_id=2,
         height_id=3,
         content="Hello World",
-        font_config=FontConfig(
-            family="sans-serif",
-            size=10.0,
-            bold=False,
-            italic=False,
-        ),
+        font_config=FontConfig(family="sans-serif", size=10.0),
     )
 
     data = original_box.to_dict()
@@ -56,7 +51,9 @@ def test_text_box_get_point_ids(registry):
     p2 = registry.add_point(10, 0)
     p3 = registry.add_point(0, 10)
     box = registry.get_entity(
-        registry.add_text_box(p1, p2, p3, "Test", FontConfig())
+        registry.add_text_box(
+            p1, p2, p3, "Test", "sans-serif", 10.0, False, False
+        )
     )
     assert set(box.get_point_ids()) == {p1, p2, p3}
 
@@ -67,7 +64,9 @@ def test_text_box_get_endpoint_ids(registry):
     p2 = registry.add_point(10, 0)
     p3 = registry.add_point(0, 10)
     box = registry.get_entity(
-        registry.add_text_box(p1, p2, p3, "Test", FontConfig())
+        registry.add_text_box(
+            p1, p2, p3, "Test", "sans-serif", 10.0, False, False
+        )
     )
     assert box.get_endpoint_ids() == []
 
@@ -78,7 +77,9 @@ def test_text_box_get_junction_point_ids(registry):
     p2 = registry.add_point(10, 0)
     p3 = registry.add_point(0, 10)
     box = registry.get_entity(
-        registry.add_text_box(p1, p2, p3, "Test", FontConfig())
+        registry.add_text_box(
+            p1, p2, p3, "Test", "sans-serif", 10.0, False, False
+        )
     )
     assert set(box.get_junction_point_ids()) == {p1, p2, p3}
 
@@ -89,7 +90,9 @@ def test_text_box_hit_test(registry):
     p2 = registry.add_point(10, 0)
     p3 = registry.add_point(0, 10)
     box = registry.get_entity(
-        registry.add_text_box(p1, p2, p3, "Test", FontConfig())
+        registry.add_text_box(
+            p1, p2, p3, "Test", "sans-serif", 10.0, False, False
+        )
     )
     threshold = 5.0
 
@@ -109,7 +112,9 @@ def test_text_box_get_all_frame_point_ids(registry):
     p2 = registry.add_point(10, 0)
     p3 = registry.add_point(0, 10)
     box = registry.get_entity(
-        registry.add_text_box(p1, p2, p3, "Test", FontConfig())
+        registry.add_text_box(
+            p1, p2, p3, "Test", "sans-serif", 10.0, False, False
+        )
     )
 
     assert set(box.get_all_frame_point_ids(registry)) == {p1, p2, p3}
@@ -127,7 +132,9 @@ def test_text_box_update_constrained_status(registry):
     p2 = registry.add_point(10, 0)
     p3 = registry.add_point(0, 10)
     box = registry.get_entity(
-        registry.add_text_box(p1, p2, p3, "Test", FontConfig())
+        registry.add_text_box(
+            p1, p2, p3, "Test", "sans-serif", 10.0, False, False
+        )
     )
 
     pt1 = registry.get_point(p1)
@@ -167,7 +174,9 @@ def selection_setup(registry):
     p_in2 = registry.add_point(70, 30)
     p_in3 = registry.add_point(30, 70)
     box_in = registry.get_entity(
-        registry.add_text_box(p_in1, p_in2, p_in3, "Inside", {})
+        registry.add_text_box(
+            p_in1, p_in2, p_in3, "Inside", "sans-serif", 10.0, False, False
+        )
     )
 
     # Text box intersecting
@@ -175,7 +184,16 @@ def selection_setup(registry):
     p_cross2 = registry.add_point(90, 50)
     p_cross3 = registry.add_point(10, 90)
     box_cross = registry.get_entity(
-        registry.add_text_box(p_cross1, p_cross2, p_cross3, "Crossing", {})
+        registry.add_text_box(
+            p_cross1,
+            p_cross2,
+            p_cross3,
+            "Crossing",
+            "sans-serif",
+            10.0,
+            False,
+            False,
+        )
     )
 
     # Text box outside
@@ -183,7 +201,9 @@ def selection_setup(registry):
     p_out2 = registry.add_point(10, 0)
     p_out3 = registry.add_point(0, 10)
     box_out = registry.get_entity(
-        registry.add_text_box(p_out1, p_out2, p_out3, "Outside", {})
+        registry.add_text_box(
+            p_out1, p_out2, p_out3, "Outside", "sans-serif", 10.0, False, False
+        )
     )
 
     return (
@@ -219,7 +239,9 @@ def test_text_box_to_geometry(registry):
     p2 = registry.add_point(10, 0)
     p3 = registry.add_point(0, 10)
     box = registry.get_entity(
-        registry.add_text_box(p1, p2, p3, "Test", FontConfig())
+        registry.add_text_box(
+            p1, p2, p3, "Test", "sans-serif", 10.0, False, False
+        )
     )
     geo = box.to_geometry(registry)
     assert isinstance(geo, Geometry)
@@ -231,7 +253,11 @@ def test_text_box_get_set_state(registry):
     p1 = registry.add_point(0, 0)
     p2 = registry.add_point(10, 0)
     p3 = registry.add_point(0, 10)
-    tb = registry.get_entity(registry.add_text_box(p1, p2, p3, "Test", {}))
+    tb = registry.get_entity(
+        registry.add_text_box(
+            p1, p2, p3, "Test", "sans-serif", 10.0, False, False
+        )
+    )
 
     # Verify initial state (Inherited from Entity)
     state = tb.get_state()
@@ -262,7 +288,7 @@ def test_text_box_get_fourth_corner_id(registry):
         content="Test",
         construction_line_ids=[line2],
     )
-    registry.entities.append(box)
+    registry.append_entity(box)
 
     result = box.get_fourth_corner_id(registry)
 
@@ -286,7 +312,7 @@ def test_text_box_get_fourth_corner_id_from_reverse_line(registry):
         content="Test",
         construction_line_ids=[line2],
     )
-    registry.entities.append(box)
+    registry.append_entity(box)
 
     result = box.get_fourth_corner_id(registry)
 
@@ -307,7 +333,7 @@ def test_text_box_get_fourth_corner_id_no_construction_lines(registry):
         content="Test",
         construction_line_ids=[],
     )
-    registry.entities.append(box)
+    registry.append_entity(box)
 
     result = box.get_fourth_corner_id(registry)
 
@@ -331,7 +357,7 @@ def test_text_box_get_fourth_corner_id_wrong_line(registry):
         content="Test",
         construction_line_ids=[wrong_line],
     )
-    registry.entities.append(box)
+    registry.append_entity(box)
 
     result = box.get_fourth_corner_id(registry)
 
@@ -355,7 +381,7 @@ def test_text_box_get_fourth_corner_id_ignores_origin_and_height(registry):
         content="Test",
         construction_line_ids=[line_to_origin, line_to_height],
     )
-    registry.entities.append(box)
+    registry.append_entity(box)
 
     result = box.get_fourth_corner_id(registry)
 
@@ -366,7 +392,9 @@ def _make_text_box(registry, content="Hello"):
     p1 = registry.add_point(0, 0)
     p2 = registry.add_point(10, 0)
     p3 = registry.add_point(0, 10)
-    box_id = registry.add_text_box(p1, p2, p3, content, FontConfig())
+    box_id = registry.add_text_box(
+        p1, p2, p3, content, "sans-serif", 10.0, False, False
+    )
     return registry.get_entity(box_id)
 
 

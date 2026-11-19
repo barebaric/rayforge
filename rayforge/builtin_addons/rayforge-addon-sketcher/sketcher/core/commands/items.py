@@ -44,9 +44,8 @@ class AddItemsCommand(SketchChangeCommand):
         for p in self.points:
             old_id = p.id
             # Assign a real ID if it's a temp ID (negative or >= counter)
-            if p.id < 0 or p.id >= registry._id_counter:
-                p.id = registry._id_counter
-                registry._id_counter += 1
+            if p.id < 0 or p.id >= registry.next_id():
+                p.id = registry.allocate_id()
             if old_id != p.id:
                 id_map[old_id] = p.id
             new_points.append(p)
@@ -55,9 +54,8 @@ class AddItemsCommand(SketchChangeCommand):
         new_entities = []
         for e in self.entities:
             old_id = e.id
-            if e.id < 0 or e.id >= registry._id_counter:
-                e.id = registry._id_counter
-                registry._id_counter += 1
+            if e.id < 0 or e.id >= registry.next_id():
+                e.id = registry.allocate_id()
             if old_id != e.id:
                 id_map[old_id] = e.id
             new_entities.append(e)
@@ -65,14 +63,13 @@ class AddItemsCommand(SketchChangeCommand):
         # Update point references within the entity
         for e in new_entities:
             e.remap_references(id_map)
-        registry.entities.extend(new_entities)
+        for e in new_entities:
+            registry.append_entity(e)
 
         # Update point and entity references within constraints
         for c in self.constraints:
             c.remap_references(id_map)
 
-        # Rebuild entity map after adding
-        registry._entity_map = {e.id: e for e in registry.entities}
         self.sketch.constraints.extend(self.constraints)
 
     def _do_undo(self) -> None:
@@ -80,11 +77,8 @@ class AddItemsCommand(SketchChangeCommand):
         point_ids = {p.id for p in self.points}
         entity_ids = {e.id for e in self.entities}
 
-        registry.remove_points(point_ids)
-        registry.entities = [
-            e for e in registry.entities if e.id not in entity_ids
-        ]
-        registry._entity_map = {e.id: e for e in registry.entities}
+        registry.remove_points(list(point_ids))
+        registry.remove_entities(list(entity_ids))
         for c in self.constraints:
             if c in self.sketch.constraints:
                 self.sketch.constraints.remove(c)
@@ -134,7 +128,7 @@ class RemoveItemsCommand(SketchChangeCommand):
             num_entities_before = len(to_delete_entity_ids)
 
             # A. Unity Logic for compound objects like TextBoxEntity
-            all_entities = list(sketch.registry.entities)
+            all_entities = list(sketch.registry.entities())
             for e in all_entities:
                 helper_ids = e.get_helper_ids()
 
@@ -152,7 +146,7 @@ class RemoveItemsCommand(SketchChangeCommand):
                         to_delete_point_ids.update(e.get_point_ids())
 
             # B. Cascading: If points are deleted, find entities that use them
-            for e in sketch.registry.entities:
+            for e in sketch.registry.entities():
                 if e.id in to_delete_entity_ids:
                     continue
                 p_ids: list[int] = e.get_point_ids()
@@ -164,7 +158,7 @@ class RemoveItemsCommand(SketchChangeCommand):
                 used_points_by_remaining = set()
                 points_of_deleted_entities = set()
 
-                for e in sketch.registry.entities:
+                for e in sketch.registry.entities():
                     p_ids = e.get_point_ids()
                     if e.id in to_delete_entity_ids:
                         points_of_deleted_entities.update(p_ids)
@@ -181,7 +175,7 @@ class RemoveItemsCommand(SketchChangeCommand):
                 break  # Stable state reached
 
         # 2.5. Cleanup Implicit Constraints for Deleted Entities (Arc geometry)
-        entity_map = {e.id: e for e in sketch.registry.entities}
+        entity_map = {e.id: e for e in sketch.registry.entities()}
         for eid in to_delete_entity_ids:
             e = entity_map.get(eid)
             if isinstance(e, Arc):
@@ -229,7 +223,7 @@ class RemoveItemsCommand(SketchChangeCommand):
                     if isinstance(pid, int):
                         used_points_by_surviving.add(pid)
 
-        for e in sketch.registry.entities:
+        for e in sketch.registry.entities():
             if e.id not in to_delete_entity_ids:
                 used_points_by_surviving.update(e.get_point_ids())
 
@@ -245,12 +239,14 @@ class RemoveItemsCommand(SketchChangeCommand):
         # sketch origin, which survives entity cascades.
         final_points = [
             p
-            for p in sketch.registry.points
+            for p in sketch.registry.points()
             if p.id in to_delete_point_ids
             and (not p.fixed or p.id != sketch.origin_id)
         ]
         final_entities = [
-            e for e in sketch.registry.entities if e.id in to_delete_entity_ids
+            e
+            for e in sketch.registry.entities()
+            if e.id in to_delete_entity_ids
         ]
 
         return final_points, final_entities, to_delete_constraints
@@ -264,11 +260,8 @@ class RemoveItemsCommand(SketchChangeCommand):
         registry = self.sketch.registry
         point_ids = {p.id for p in self.points}
         entity_ids = {e.id for e in self.entities}
-        registry.remove_points(point_ids)
-        registry.entities = [
-            e for e in registry.entities if e.id not in entity_ids
-        ]
-        registry._entity_map = {e.id: e for e in registry.entities}
+        registry.remove_points(list(point_ids))
+        registry.remove_entities(list(entity_ids))
         for c in self.constraints:
             if c in self.sketch.constraints:
                 self.sketch.constraints.remove(c)
@@ -280,8 +273,8 @@ class RemoveItemsCommand(SketchChangeCommand):
     def _do_undo(self) -> None:
         registry = self.sketch.registry
         registry.add_points(self.points)
-        registry.entities.extend(self.entities)
-        registry._entity_map = {e.id: e for e in registry.entities}
+        for e in self.entities:
+            registry.append_entity(e)
         self.sketch.constraints.extend(self.constraints)
 
     @classmethod

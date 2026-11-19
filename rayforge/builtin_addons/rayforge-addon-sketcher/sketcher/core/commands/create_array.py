@@ -23,8 +23,8 @@ if TYPE_CHECKING:
     from raygeo.sketch.constraints import Constraint
     from raygeo.sketch.entities import Entity
     from raygeo.sketch.entities import SketchPoint as Point
+    from raygeo.sketch.registry import EntityRegistry
 
-    from ..registry import EntityRegistry
     from ..sketch import Sketch
 
 logger = logging.getLogger(__name__)
@@ -410,7 +410,7 @@ class CreateArrayCommand(SketchChangeCommand):
         # sketch; internal constraints and helper geometry follow the
         # template to the clones.
         self._clone_pid_map = {}
-        for entity in registry.entities:
+        for entity in registry.entities():
             if entity.id in template:
                 continue
             for pid in entity.get_point_ids():
@@ -444,7 +444,9 @@ class CreateArrayCommand(SketchChangeCommand):
                 | set(self._extra_template_pids)
             ):
                 remap_point_refs(constr, inverse)
-            self.sketch.registry.remove_points(self._clone_pid_map.values())
+            self.sketch.registry.remove_points(
+                list(self._clone_pid_map.values())
+            )
         if self._erased_constraints:
             self.sketch.constraints.extend(self._erased_constraints)
 

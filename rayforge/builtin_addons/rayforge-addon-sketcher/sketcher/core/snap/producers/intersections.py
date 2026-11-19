@@ -10,11 +10,11 @@ from raygeo.geo.shape.line import get_line_segment_intersection
 from raygeo.geo.types import Point as GeoPoint
 from raygeo.sketch.entities import Arc, Circle, Line
 
-from ..engine import SnapLineProducer
+from ..engine import SnapLineProducer, geometry_key
 from ..types import DragContext, SnapLine, SnapLineType, SnapPoint
 
 if TYPE_CHECKING:
-    from ...registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
 
 
 class IntersectionsProducer(SnapLineProducer):
@@ -62,7 +62,12 @@ class IntersectionsProducer(SnapLineProducer):
     def _get_intersections_cached(
         self, registry: "EntityRegistry", drag_context: DragContext
     ) -> list[GeoPoint]:
-        key = self._geometry_key(registry, drag_context)
+        key = geometry_key(
+            registry,
+            drag_context,
+            self._include_construction,
+            include_points=False,
+        )
         if key != self._cache_key:
             self._cached_intersections = list(
                 self._get_all_intersections(registry, drag_context)
@@ -70,44 +75,12 @@ class IntersectionsProducer(SnapLineProducer):
             self._cache_key = key
         return self._cached_intersections
 
-    def _geometry_key(
-        self, registry: "EntityRegistry", drag_context: DragContext
-    ) -> tuple:
-        """
-        Identity of the geometry the intersections depend on: the
-        positions of all points of non-dragged entities, plus the
-        dragged sets that define that exclusion. Positions are
-        quantized like the engine fingerprint so solver residual
-        noise does not invalidate the cache; dragged geometry moves
-        on every drag solve and is excluded from the computation
-        anyway.
-        """
-        dragged_points = drag_context.dragged_point_ids
-        dragged_entities = drag_context.dragged_entity_ids
-        positions: list[tuple[float, float]] = []
-        for entity in registry.entities:
-            if entity.id in dragged_entities or any(
-                pid in dragged_points for pid in entity.get_point_ids()
-            ):
-                continue
-            if not self._include_construction and entity.construction:
-                continue
-            for pid in entity.get_point_ids():
-                point = registry.get_point(pid)
-                positions.append((round(point.x, 6), round(point.y, 6)))
-        return (
-            registry._entity_version,
-            tuple(positions),
-            frozenset(dragged_points),
-            frozenset(dragged_entities),
-        )
-
     def _get_all_intersections(
         self, registry: "EntityRegistry", drag_context: DragContext
     ) -> Iterator[GeoPoint]:
         entities = [
             e
-            for e in registry.entities
+            for e in registry.entities()
             if not drag_context.is_entity_dragged(e.id)
             and not any(
                 drag_context.is_point_dragged(pid) for pid in e.get_point_ids()

@@ -4,12 +4,12 @@ from raygeo.sketch.constraints import (
     DragConstraint,
     TangentConstraint,
 )
+from raygeo.sketch.registry import EntityRegistry
 from sketcher.core.components import (
     compute_constraint_components,
     get_referenced_points,
 )
 from sketcher.core.params import ParameterContext
-from sketcher.core.registry import EntityRegistry
 from sketcher.core.sketch import Sketch
 from sketcher.core.solver import Solver
 

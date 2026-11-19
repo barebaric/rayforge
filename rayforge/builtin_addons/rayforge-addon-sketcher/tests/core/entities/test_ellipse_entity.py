@@ -1,7 +1,7 @@
 import pytest
 from raygeo.geo import Geometry
 from raygeo.sketch.entities import Ellipse
-from sketcher.core.registry import EntityRegistry
+from raygeo.sketch.registry import EntityRegistry
 
 
 @pytest.fixture

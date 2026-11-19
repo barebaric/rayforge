@@ -164,7 +164,7 @@ class UnstickJunctionCommand(SketchChangeCommand):
             return
 
         entities_at_junction = []
-        for e in self.sketch.registry.entities:
+        for e in self.sketch.registry.entities():
             if isinstance(e, Line):
                 if self.junction_pid in [e.p1_idx, e.p2_idx]:
                     entities_at_junction.append(e)

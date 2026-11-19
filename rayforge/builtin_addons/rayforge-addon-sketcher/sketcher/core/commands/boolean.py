@@ -126,7 +126,7 @@ class BooleanCommand(SketchChangeCommand):
         order)."""
         z_of = {
             entity.id: i
-            for i, entity in enumerate(self.sketch.registry.entities)
+            for i, entity in enumerate(self.sketch.registry.entities())
         }
         affected = [
             (index, fill)

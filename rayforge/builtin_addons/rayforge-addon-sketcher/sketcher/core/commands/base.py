@@ -6,7 +6,8 @@ from typing import TYPE_CHECKING
 from rayforge.core.undo.command import Command
 
 if TYPE_CHECKING:
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
+
     from ..sketch import Sketch
     from .dimension import DimensionData
 

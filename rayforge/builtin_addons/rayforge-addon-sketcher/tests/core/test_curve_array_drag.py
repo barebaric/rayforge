@@ -40,7 +40,7 @@ def _build_sketch():
     p2 = sketch.registry.add_point(3.0, -2.0)
     p3 = sketch.registry.add_point(6.0, -2.0)
     line1 = sketch.registry.add_line(p0, p1)
-    arc = sketch.registry.add_arc(a0, a1, center, cw=False)
+    arc = sketch.registry.add_arc(a0, a1, center, clockwise=False)
     line2 = sketch.registry.add_line(p2, p3)
     sketch.constrain_coincident(p1, a0)
     sketch.constrain_coincident(p2, a1)

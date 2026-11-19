@@ -119,7 +119,7 @@ class TextBoxCommand(SketchChangeCommand):
         self.add_cmd._do_execute()
 
         # After execution, the temporary ID is resolved. Find the new ID.
-        for entity in reversed(self.sketch.registry.entities):
+        for entity in reversed(self.sketch.registry.entities()):
             if isinstance(entity, TextBoxEntity):
                 self.text_box_id = entity.id
                 break

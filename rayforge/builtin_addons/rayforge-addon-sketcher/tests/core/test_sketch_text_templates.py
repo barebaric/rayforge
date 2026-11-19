@@ -1,7 +1,6 @@
 from datetime import datetime, timezone
 from typing import cast
 
-from raygeo.geo.shape.text import FontConfig
 from raygeo.sketch.entities import TextBox as TextBoxEntity
 from sketcher.core import Sketch
 
@@ -16,7 +15,7 @@ def _add_text_box(
     width_pt = sketch.add_point(x + 10, y)
     height_pt = sketch.add_point(x, y + 10)
     box_id = sketch.registry.add_text_box(
-        origin, width_pt, height_pt, content, FontConfig()
+        origin, width_pt, height_pt, content, "sans-serif", 10.0
     )
     return cast(TextBoxEntity, sketch.registry.get_entity(box_id))
 
@@ -186,10 +185,10 @@ def test_uuid4_consistent_across_stroke_and_fill():
     s.solve()
 
     stroke_resolved = s._resolve_text_content(
-        next(e for e in s.registry.entities if isinstance(e, TextBoxEntity))
+        next(e for e in s.registry.entities() if isinstance(e, TextBoxEntity))
     )
     fill_resolved = s._resolve_text_content(
-        next(e for e in s.registry.entities if isinstance(e, TextBoxEntity))
+        next(e for e in s.registry.entities() if isinstance(e, TextBoxEntity))
     )
     assert stroke_resolved == fill_resolved
 

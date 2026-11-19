@@ -23,7 +23,8 @@ from .dimension import DimensionData
 from .items import AddItemsCommand
 
 if TYPE_CHECKING:
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
+
     from ..sketch import Sketch
 
 MIN_SIDES = 3
@@ -112,8 +113,8 @@ class PolygonPreviewState(PreviewState):
 
     def _remove_outline(self, registry: EntityRegistry) -> None:
         corners = set(self.corner_ids)
-        registry.remove_entities_by_id(self.line_ids)
-        registry.remove_points(corners)
+        registry.remove_entities(self.line_ids)
+        registry.remove_points(list(corners))
         self.line_ids = []
         self.corner_ids = []
 

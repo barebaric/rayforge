@@ -1,4 +1,4 @@
-from sketcher.core.registry import EntityRegistry
+from raygeo.sketch.registry import EntityRegistry
 from sketcher.core.selection import SketchSelection
 
 

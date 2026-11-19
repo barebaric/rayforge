@@ -22,7 +22,8 @@ from .dimension import DimensionData
 from .items import AddItemsCommand
 
 if TYPE_CHECKING:
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
+
     from ..sketch import Sketch
 
 
@@ -511,25 +512,25 @@ class RoundedRectCommand(SketchChangeCommand):
                 preview_ids["t8"],
                 preview_ids["t1"],
                 preview_ids["c1"],
-                cw=is_cw,
+                clockwise=is_cw,
             )
             preview_ids["arc2"] = registry.add_arc(
                 preview_ids["t2"],
                 preview_ids["t3"],
                 preview_ids["c2"],
-                cw=is_cw,
+                clockwise=is_cw,
             )
             preview_ids["arc3"] = registry.add_arc(
                 preview_ids["t4"],
                 preview_ids["t5"],
                 preview_ids["c3"],
-                cw=is_cw,
+                clockwise=is_cw,
             )
             preview_ids["arc4"] = registry.add_arc(
                 preview_ids["t6"],
                 preview_ids["t7"],
                 preview_ids["c4"],
-                cw=is_cw,
+                clockwise=is_cw,
             )
         else:
             # Update existing preview geometry
@@ -692,12 +693,12 @@ class RoundedRectCommand(SketchChangeCommand):
 
         entity_ids_to_remove = {
             e.id
-            for e in registry.entities
+            for e in registry.entities()
             if any(pid in point_ids for pid in e.get_point_ids())
         }
-        registry.remove_entities_by_id(list(entity_ids_to_remove))
+        registry.remove_entities(list(entity_ids_to_remove))
 
-        registry.remove_points(point_ids)
+        registry.remove_points(list(point_ids))
 
     def _do_execute(self) -> None:
         if self.add_cmd:

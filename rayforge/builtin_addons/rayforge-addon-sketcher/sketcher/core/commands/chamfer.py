@@ -17,7 +17,8 @@ from .base import SketchChangeCommand
 from .items import AddItemsCommand, RemoveItemsCommand
 
 if TYPE_CHECKING:
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
+
     from ..sketch import Sketch
 
 logger = logging.getLogger(__name__)

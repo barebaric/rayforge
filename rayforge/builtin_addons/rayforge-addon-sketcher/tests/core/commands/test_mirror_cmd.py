@@ -191,7 +191,7 @@ class TestMirrorExecute:
 
     def test_no_new_points_created(self, sketch_with_l):
         s, entity_ids, _point_ids = sketch_with_l
-        original_point_count = len(s.registry.points)
+        original_point_count = len(s.registry.points())
 
         sel = SketchSelection()
         sel.entity_ids = entity_ids
@@ -200,7 +200,7 @@ class TestMirrorExecute:
         cmd.capture_undo_state()
         cmd._do_execute()
 
-        assert len(s.registry.points) == original_point_count
+        assert len(s.registry.points()) == original_point_count
 
     def test_arc_clockwise_toggled(self):
         s = Sketch()

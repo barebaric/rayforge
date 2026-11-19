@@ -3,7 +3,7 @@ from raygeo.geo import Bezier as GeoBezier
 from raygeo.geo import Geometry, Move
 from raygeo.geo import Line as GeoLine
 from raygeo.sketch.entities import Bezier
-from sketcher.core.registry import EntityRegistry
+from raygeo.sketch.registry import EntityRegistry
 
 
 @pytest.fixture

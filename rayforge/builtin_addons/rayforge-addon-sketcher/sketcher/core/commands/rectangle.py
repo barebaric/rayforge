@@ -18,7 +18,8 @@ from .dimension import DimensionData
 from .items import AddItemsCommand
 
 if TYPE_CHECKING:
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
+
     from ..sketch import Sketch
 
 
@@ -735,13 +736,13 @@ class RectangleCommand(SketchChangeCommand):
         # Remove entities that reference the preview points
         entity_ids_to_remove = {
             e.id
-            for e in registry.entities
+            for e in registry.entities()
             if any(pid in point_ids for pid in e.get_point_ids())
         }
-        registry.remove_entities_by_id(list(entity_ids_to_remove))
+        registry.remove_entities(list(entity_ids_to_remove))
 
         # Remove only the preview-derived points (not start/end)
-        registry.remove_points(point_ids)
+        registry.remove_points(list(point_ids))
 
         preview_state.center_on_start = center_on_start
         preview_state.preview_ids = (
@@ -780,13 +781,13 @@ class RectangleCommand(SketchChangeCommand):
         # Find and remove entities that use these points
         entity_ids_to_remove = {
             e.id
-            for e in registry.entities
+            for e in registry.entities()
             if any(pid in point_ids for pid in e.get_point_ids())
         }
-        registry.remove_entities_by_id(list(entity_ids_to_remove))
+        registry.remove_entities(list(entity_ids_to_remove))
 
         # Remove points
-        registry.remove_points(point_ids)
+        registry.remove_points(list(point_ids))
 
     def _do_execute(self) -> None:
         if self.add_cmd:

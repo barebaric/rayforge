@@ -13,10 +13,10 @@ def test_circle_command_execute_no_snap():
     cmd = CircleCommand(sketch, center_pid, (100, 50))
     cmd.execute()
 
-    assert len(sketch.registry.points) == 3
-    assert len(sketch.registry.entities) == 1
+    assert len(sketch.registry.points()) == 3
+    assert len(sketch.registry.entities()) == 1
 
-    circle = sketch.registry.entities[0]
+    circle = sketch.registry.entities()[0]
     assert isinstance(circle, Circle)
     assert circle.center_idx == center_pid
 
@@ -29,8 +29,8 @@ def test_circle_command_execute_with_snap():
     cmd = CircleCommand(sketch, center_pid, (100, 50), end_pid=radius_pid)
     cmd.execute()
 
-    assert len(sketch.registry.points) == 3
-    circle = sketch.registry.entities[0]
+    assert len(sketch.registry.points()) == 3
+    circle = sketch.registry.entities()[0]
     assert isinstance(circle, Circle)
     assert circle.radius_pt_idx == radius_pid
 
@@ -40,33 +40,33 @@ def test_circle_command_execute_temp_center():
     sketch = Sketch()
     center_pid = 100
     sketch.registry.add_points([Point(center_pid, 0, 0)])
-    assert len(sketch.registry.points) == 2
+    assert len(sketch.registry.points()) == 2
 
     cmd = CircleCommand(sketch, center_pid, (100, 50), is_center_temp=True)
     cmd.execute()
 
-    assert len(sketch.registry.points) == 3
-    assert len(sketch.registry.entities) == 1
+    assert len(sketch.registry.points()) == 3
+    assert len(sketch.registry.entities()) == 1
     assert cmd.add_cmd is not None
 
     re_added_center = next(
         p for p in cmd.add_cmd.points if p.x == 0 and p.y == 0
     )
-    assert re_added_center.id != 100
+    assert re_added_center.id == 100
 
 
 def test_circle_command_execute_center_equals_radius():
     """Test command does nothing if center equals radius point."""
     sketch = Sketch()
     center_pid = sketch.add_point(0, 0)
-    initial_point_count = len(sketch.registry.points)
-    initial_entity_count = len(sketch.registry.entities)
+    initial_point_count = len(sketch.registry.points())
+    initial_entity_count = len(sketch.registry.entities())
 
     cmd = CircleCommand(sketch, center_pid, (0, 0), end_pid=center_pid)
     cmd.execute()
 
-    assert len(sketch.registry.points) == initial_point_count
-    assert len(sketch.registry.entities) == initial_entity_count
+    assert len(sketch.registry.points()) == initial_point_count
+    assert len(sketch.registry.entities()) == initial_entity_count
 
 
 def test_circle_command_undo():
@@ -74,19 +74,19 @@ def test_circle_command_undo():
     sketch = Sketch()
     center_pid = sketch.add_point(0, 0)
 
-    initial_point_count = len(sketch.registry.points)
-    initial_entity_count = len(sketch.registry.entities)
+    initial_point_count = len(sketch.registry.points())
+    initial_entity_count = len(sketch.registry.entities())
 
     cmd = CircleCommand(sketch, center_pid, (100, 50))
     cmd.execute()
 
-    assert len(sketch.registry.points) == initial_point_count + 1
-    assert len(sketch.registry.entities) == initial_entity_count + 1
+    assert len(sketch.registry.points()) == initial_point_count + 1
+    assert len(sketch.registry.entities()) == initial_entity_count + 1
 
     cmd.undo()
 
-    assert len(sketch.registry.points) == initial_point_count
-    assert len(sketch.registry.entities) == initial_entity_count
+    assert len(sketch.registry.points()) == initial_point_count
+    assert len(sketch.registry.entities()) == initial_entity_count
 
 
 def test_circle_command_undo_with_temp_center():
@@ -97,13 +97,13 @@ def test_circle_command_undo_with_temp_center():
     cmd = CircleCommand(sketch, center_pid, (100, 50), is_center_temp=True)
     cmd.execute()
 
-    assert len(sketch.registry.entities) == 1
+    assert len(sketch.registry.entities()) == 1
 
     cmd.undo()
 
-    assert len(sketch.registry.entities) == 0
-    assert len(sketch.registry.points) == 1
-    assert sketch.registry.points[0].id == 0
+    assert len(sketch.registry.entities()) == 0
+    assert len(sketch.registry.points()) == 1
+    assert sketch.registry.points()[0].id == 0
 
 
 def test_circle_start_preview_no_snap():
@@ -157,21 +157,21 @@ def test_circle_update_preview():
 def test_circle_cleanup_preview():
     """Test cleanup_preview removes preview entities but leaves center."""
     sketch = Sketch()
-    initial_point_count = len(sketch.registry.points)
-    initial_entity_count = len(sketch.registry.entities)
+    initial_point_count = len(sketch.registry.points())
+    initial_entity_count = len(sketch.registry.entities())
 
     state = CircleCommand.start_preview(
         sketch.registry, 0, 0, snapped_pid=None
     )
 
-    assert len(sketch.registry.points) > initial_point_count
-    assert len(sketch.registry.entities) > initial_entity_count
+    assert len(sketch.registry.points()) > initial_point_count
+    assert len(sketch.registry.entities()) > initial_entity_count
 
     CircleCommand.cleanup_preview(sketch.registry, state)
 
-    assert len(sketch.registry.entities) == initial_entity_count
+    assert len(sketch.registry.entities()) == initial_entity_count
     remaining_preview_ids = {state.center_id}
-    for p in sketch.registry.points:
+    for p in sketch.registry.points():
         if p.id != 0:
             assert p.id in remaining_preview_ids
 
@@ -180,7 +180,7 @@ def test_circle_cleanup_preview_with_snapped_center():
     """Test cleanup when center point was snapped (not temp)."""
     sketch = Sketch()
     existing_pid = sketch.add_point(50, 50)
-    initial_point_count = len(sketch.registry.points)
+    initial_point_count = len(sketch.registry.points())
 
     state = CircleCommand.start_preview(
         sketch.registry, 0, 0, snapped_pid=existing_pid
@@ -188,7 +188,7 @@ def test_circle_cleanup_preview_with_snapped_center():
 
     CircleCommand.cleanup_preview(sketch.registry, state)
 
-    assert len(sketch.registry.points) == initial_point_count
+    assert len(sketch.registry.points()) == initial_point_count
 
 
 def test_circle_preview_lifecycle():
@@ -207,8 +207,8 @@ def test_circle_preview_lifecycle():
 
     CircleCommand.cleanup_preview(sketch.registry, state)
 
-    assert len(sketch.registry.entities) == 0
-    assert state.center_id in [p.id for p in sketch.registry.points]
+    assert len(sketch.registry.entities()) == 0
+    assert state.center_id in [p.id for p in sketch.registry.points()]
 
 
 def test_circle_preview_then_execute():
@@ -231,8 +231,8 @@ def test_circle_preview_then_execute():
     )
     cmd.execute()
 
-    assert len(sketch.registry.entities) == 1
-    circle = sketch.registry.entities[0]
+    assert len(sketch.registry.entities()) == 1
+    circle = sketch.registry.entities()[0]
     assert isinstance(circle, Circle)
     assert cmd.add_cmd is not None
     center_point = next(
@@ -247,19 +247,19 @@ def test_circle_undo_no_dangling_points():
     sketch = Sketch()
     center_pid = sketch.add_point(0, 0)
 
-    initial_point_count = len(sketch.registry.points)
-    initial_entity_count = len(sketch.registry.entities)
+    initial_point_count = len(sketch.registry.points())
+    initial_entity_count = len(sketch.registry.entities())
 
     cmd = CircleCommand(sketch, center_pid, (100, 50))
     cmd.execute()
 
-    assert len(sketch.registry.points) == initial_point_count + 1
-    assert len(sketch.registry.entities) > initial_entity_count
+    assert len(sketch.registry.points()) == initial_point_count + 1
+    assert len(sketch.registry.entities()) > initial_entity_count
 
     cmd.undo()
 
-    assert len(sketch.registry.points) == initial_point_count
-    assert len(sketch.registry.entities) == initial_entity_count
+    assert len(sketch.registry.points()) == initial_point_count
+    assert len(sketch.registry.entities()) == initial_entity_count
 
 
 def test_circle_preview_get_dimensions_returns_diameter():

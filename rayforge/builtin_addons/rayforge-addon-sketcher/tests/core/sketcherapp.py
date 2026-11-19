@@ -182,8 +182,8 @@ class SketcherApp(Adw.Application):
 
         # Add a construction line for reference
         mid_p = sketch.add_point(100, 0)
-        if sketch.registry.entities:
-            line_id = sketch.registry.entities[0].id
+        if sketch.registry.entities():
+            line_id = sketch.registry.entities()[0].id
             sketch.constrain_point_on_line(mid_p, line_id)
 
         sketch.add_line(mid_p, p3, construction=True)
@@ -197,7 +197,7 @@ class SketcherApp(Adw.Application):
     def on_studio_finished(self, sender, sketch):
         print(
             "Studio Finished! Sketch has "
-            f"{len(sketch.registry.entities)} entities."
+            f"{len(sketch.registry.entities())} entities."
         )
 
         if not self.studio:

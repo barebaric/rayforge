@@ -60,7 +60,7 @@ class FillTool(SketchTool):
         registry = self.element.sketch.registry
         surface = cairo.RecordingSurface(cairo.CONTENT_COLOR_ALPHA, None)
         ctx = cairo.Context(surface)
-        for entity in registry.entities:
+        for entity in registry.entities():
             if not isinstance(entity, TextBoxEntity):
                 continue
             if entity.construction or not entity.content:

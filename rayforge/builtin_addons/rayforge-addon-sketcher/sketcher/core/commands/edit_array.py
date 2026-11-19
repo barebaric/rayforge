@@ -22,8 +22,8 @@ from .items import AddItemsCommand, RemoveItemsCommand
 if TYPE_CHECKING:
     from raygeo.sketch.entities import Entity
     from raygeo.sketch.entities import SketchPoint as Point
+    from raygeo.sketch.registry import EntityRegistry
 
-    from ..registry import EntityRegistry
     from ..sketch import Sketch
 
 logger = logging.getLogger(__name__)
@@ -292,7 +292,7 @@ class EditArrayCommand(SketchChangeCommand):
         registry = sketch.registry
         used_by_remaining = {
             pid
-            for e in registry.entities
+            for e in registry.entities()
             if e.id not in removed
             for pid in e.get_point_ids()
         }

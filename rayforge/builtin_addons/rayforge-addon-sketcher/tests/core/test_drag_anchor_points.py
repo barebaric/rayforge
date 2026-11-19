@@ -7,8 +7,8 @@ from raygeo.sketch.constraints import (
     PerpendicularConstraint,
 )
 from raygeo.sketch.entities import Arc, Circle, Ellipse, Line
+from raygeo.sketch.registry import EntityRegistry
 from sketcher.core.params import ParameterContext
-from sketcher.core.registry import EntityRegistry
 from sketcher.core.solver import Solver
 
 

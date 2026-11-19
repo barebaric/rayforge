@@ -8,7 +8,7 @@ from ..engine import SnapLineProducer
 from ..types import DragContext, SnapLine, SnapLineType, SnapPoint
 
 if TYPE_CHECKING:
-    from ...registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
 
 
 class MidpointsProducer(SnapLineProducer):
@@ -29,7 +29,7 @@ class MidpointsProducer(SnapLineProducer):
         threshold: float,
     ) -> Iterator[SnapPoint]:
         x, y = drag_position
-        for entity in registry.entities:
+        for entity in registry.entities():
             if drag_context.is_entity_dragged(entity.id):
                 continue
             entity_points = entity.get_point_ids()

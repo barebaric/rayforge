@@ -9,7 +9,7 @@ drag to its own start position.
 """
 
 import pytest
-from sketcher.core.registry import EntityRegistry
+from raygeo.sketch.registry import EntityRegistry
 from sketcher.core.snap.engine import SnapEngine
 from sketcher.core.snap.producers.centers import CentersProducer
 from sketcher.core.snap.producers.entity_points import EntityPointsProducer
@@ -42,7 +42,8 @@ def test_coincident_point_axis_lines_are_suppressed(registry):
     endpoint_lines = [
         sl
         for sl in snap_lines
-        if sl.source is endpoint or sl.coordinate in (endpoint.x, endpoint.y)
+        if (sl.source is not None and sl.source.id == endpoint.id)
+        or sl.coordinate in (endpoint.x, endpoint.y)
     ]
     assert endpoint_lines == []
 
@@ -70,7 +71,10 @@ def test_nearby_point_still_produces_snap_lines(registry):
 
     snap_lines = list(producer.produce(registry, (10.0, 5.0), context, 5.0))
 
-    assert any(sl.source is neighbour for sl in snap_lines)
+    assert any(
+        sl.source is not None and sl.source.id == neighbour.id
+        for sl in snap_lines
+    )
 
 
 def test_drag_near_coincident_guide_point_does_not_snap(registry, engine):

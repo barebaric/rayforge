@@ -6,12 +6,12 @@ import numpy as np
 import scipy.linalg
 from raygeo.sketch.constraints import Constraint
 from raygeo.sketch.entities import SketchPoint as Point
+from raygeo.sketch.registry import EntityRegistry
 from scipy.optimize import least_squares
 from threadpoolctl import ThreadpoolController
 
 from .components import compute_constraint_components, get_referenced_points
 from .params import ParameterContext
-from .registry import EntityRegistry
 from .types import EntityID
 
 CONFLICT_ERROR_THRESHOLD = 1e-3
@@ -69,7 +69,7 @@ class Solver:
         keep their positions.
         """
         if update_dof:
-            for p in self.registry.points:
+            for p in self.registry.points():
                 p.constrained = p.fixed
 
         if self.point_filter is None:
@@ -166,7 +166,7 @@ class Solver:
 
         mutable_points: list[Point] = [
             p
-            for p in self.registry.points
+            for p in self.registry.points()
             if not p.fixed
             and p.id in touched
             and (self.point_filter is None or p.id in self.point_filter)
@@ -370,8 +370,18 @@ class Solver:
         An entity is constrained only if all its defining points are
         constrained.
         """
-        for entity in self.registry.entities:
-            entity.update_constrained_status(self.registry, self.constraints)
+        radius_ids = []
+        for entity_id in self.registry.entity_ids():
+            for constraint in self.constraints:
+                constrains_radius = getattr(
+                    constraint, "constrains_radius", None
+                )
+                if constrains_radius is not None and constrains_radius(
+                    self.registry, entity_id
+                ):
+                    radius_ids.append(entity_id)
+                    break
+        self.registry.update_constrained_status(radius_ids)
 
     def get_conflicting_constraints(
         self, threshold: float = CONFLICT_ERROR_THRESHOLD

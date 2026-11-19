@@ -7,7 +7,7 @@ from ..engine import SnapLineProducer
 from ..types import DragContext, SnapLine, SnapLineType, SnapPoint
 
 if TYPE_CHECKING:
-    from ...registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
 
 
 class EquidistantLinesProducer(SnapLineProducer):
@@ -83,7 +83,7 @@ class EquidistantLinesProducer(SnapLineProducer):
         coords: list[float] = []
         axis_values: list[float] = []
 
-        for point in registry.points:
+        for point in registry.points():
             if drag_context.is_point_dragged(point.id):
                 continue
 

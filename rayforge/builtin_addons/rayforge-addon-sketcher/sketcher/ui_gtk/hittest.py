@@ -115,12 +115,12 @@ class SketchHitTester:
         rect = (min_x, min_y, max_x, max_y)
 
         # 1. Check Points
-        for p in registry.points:
+        for p in registry.points():
             if p.is_in_rect(rect):
                 points_inside.append(p.id)
 
         # 2. Check Entities
-        for e in registry.entities:
+        for e in registry.entities():
             if e.invisible:
                 continue
             is_match = False
@@ -155,7 +155,7 @@ class SketchHitTester:
         )
         threshold = element.point_radius + 2.0
 
-        points = element.sketch.registry.points or []
+        points = element.sketch.registry.points() or []
         derived = element.sketch.get_derived_point_ids()
 
         def closest(predicate) -> int | None:
@@ -185,12 +185,12 @@ class SketchHitTester:
         )
         constraints = element.sketch.constraints or []
         text_box_point_ids = set()
-        for entity in element.sketch.registry.entities:
+        for entity in element.sketch.registry.entities():
             if isinstance(entity, TextBoxEntity):
                 text_box_point_ids.update(
                     entity.get_all_frame_point_ids(element.sketch.registry)
                 )
-        for entity in element.sketch.registry.entities:
+        for entity in element.sketch.registry.entities():
             if isinstance(entity, Bezier):
                 start_pt = element.sketch.registry.get_point(entity.start_idx)
                 end_pt = element.sketch.registry.get_point(entity.end_idx)
@@ -262,7 +262,7 @@ class SketchHitTester:
         threshold = self.snap_distance / scale
 
         registry = element.sketch.registry
-        entities = registry.entities or []
+        entities = registry.entities() or []
         for entity in reversed(entities):
             if entity.invisible:
                 continue

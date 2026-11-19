@@ -250,7 +250,7 @@ def test_edit_after_deletion_recreates_members(app_flow):
     members_consistent(sketch, array)
 
     # Exactly one master, still found by double-click.
-    circles = [e for e in sketch.registry.entities if e.type == "circle"]
+    circles = [e for e in sketch.registry.entities() if e.type == "circle"]
     assert len(circles) == 1
     assert find_array_for_entity(sketch.arrays, array.guide_circle_id) is array
 
@@ -262,7 +262,7 @@ def test_repeated_edit_cycles_are_stable(app_flow):
         sketch.solve()
         assert len(array.living_entity_ids(sketch.registry)) == count
 
-    circles = [e for e in sketch.registry.entities if e.type == "circle"]
+    circles = [e for e in sketch.registry.entities() if e.type == "circle"]
     assert len(circles) == 1
     radius_constraints = [
         c for c in sketch.constraints if type(c).__name__ == "RadiusConstraint"

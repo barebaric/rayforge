@@ -17,7 +17,8 @@ from .base import PreviewState, SketchChangeCommand
 from .items import AddItemsCommand
 
 if TYPE_CHECKING:
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
+
     from ..sketch import Sketch
 
 
@@ -173,17 +174,14 @@ class EllipseCommand(SketchChangeCommand):
             raise TypeError("Expected EllipsePreviewState")
 
         if preview_state.entity_id is not None:
-            registry.entities = [
-                e for e in registry.entities if e.id != preview_state.entity_id
-            ]
-            registry._entity_map = {e.id: e for e in registry.entities}
+            registry.remove_entities([preview_state.entity_id])
 
         point_ids = {
             preview_state.center_id,
             preview_state.radius_x_id,
             preview_state.radius_y_id,
         }
-        registry.remove_points(point_ids)
+        registry.remove_points(list(point_ids))
 
     def _do_execute(self) -> None:
         if self.add_cmd:

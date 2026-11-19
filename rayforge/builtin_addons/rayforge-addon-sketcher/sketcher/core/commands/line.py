@@ -15,7 +15,8 @@ from .dimension import DimensionData
 from .items import AddItemsCommand
 
 if TYPE_CHECKING:
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
+
     from ..sketch import Sketch
 
 
@@ -213,14 +214,7 @@ class LineCommand(SketchChangeCommand):
             raise TypeError("Expected LinePreviewState")
 
         if preview_state.entity_id is not None:
-            registry.entities = [
-                e for e in registry.entities if e.id != preview_state.entity_id
-            ]
-            registry._entity_map = {
-                k: v
-                for k, v in registry._entity_map.items()
-                if k != preview_state.entity_id
-            }
+            registry.remove_entities([preview_state.entity_id])
 
         if preview_state.end_id is not None:
             registry.remove_points([preview_state.end_id])
@@ -248,7 +242,7 @@ class LineCommand(SketchChangeCommand):
         end_pid = self.end_pid
 
         if end_pid is None:
-            temp_id = registry._id_counter
+            temp_id = registry.next_id()
             end_pid = temp_id
             new_point = Point(temp_id, final_x, final_y)
 
@@ -257,7 +251,7 @@ class LineCommand(SketchChangeCommand):
                 self.sketch.remove_point_if_unused(self.start_id)
             return
 
-        temp_line_id = registry._id_counter + (1 if new_point else 0)
+        temp_line_id = registry.next_id() + (1 if new_point else 0)
         new_line = Line(temp_line_id, self.start_id, end_pid)
 
         points_to_add: list[Point] = [new_point] if new_point else []

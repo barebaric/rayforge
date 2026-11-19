@@ -27,8 +27,7 @@ def _sketch_with_polygon(
         PolygonEntity.normalize_vertices((0.0, 0.0), (5.0, 0.0), SQUARE),
         closed=closed,
     )
-    sketch.registry.entities.append(polygon)
-    sketch.registry._entity_map[polygon.id] = polygon
+    sketch.registry.append_entity(polygon)
     return sketch, cast(PolygonEntity, polygon)
 
 
@@ -258,8 +257,7 @@ def _build_solid_sketch():
         world_holes=[[(5.0, 5.0), (5.0, 9.0), (9.0, 9.0), (9.0, 5.0)]],
     )
     sketch.registry.add_points([center_pt, handle_pt])
-    sketch.registry.entities.append(polygon)
-    sketch.registry._entity_map[polygon.id] = polygon
+    sketch.registry.append_entity(polygon)
     return sketch, polygon
 
 

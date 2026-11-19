@@ -51,7 +51,7 @@ class FilletTool(SketchTool):
         sketch = self.element.sketch
         return [
             e
-            for e in sketch.registry.entities
+            for e in sketch.registry.entities()
             if isinstance(e, Line) and pid in (e.p1_idx, e.p2_idx)
         ]
 

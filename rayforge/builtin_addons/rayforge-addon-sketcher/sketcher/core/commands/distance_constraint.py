@@ -10,8 +10,7 @@ from ..types import EntityID
 
 if TYPE_CHECKING:
     from raygeo.sketch.entities import SketchPoint as Point
-
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
 
 
 @dataclass

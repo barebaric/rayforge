@@ -4,10 +4,10 @@ import numpy as np
 import pytest
 from raygeo.sketch.constraints import PointOnCurveConstraint
 from raygeo.sketch.constraints.point_on_curve import closest_point_on_bezier
+from raygeo.sketch.registry import EntityRegistry
 from scipy.optimize import check_grad
 from sketcher.core import Sketch
 from sketcher.core.params import ParameterContext
-from sketcher.core.registry import EntityRegistry
 from sketcher.core.selection import SketchSelection
 from sketcher.core.solver import Solver
 
@@ -149,7 +149,7 @@ def test_point_on_curve_can_apply_to():
     p_start = sketch.add_point(0, 0)
     p_end = sketch.add_point(10, 0)
     bez_id = sketch.registry.add_bezier(
-        start_idx=p_start, end_idx=p_end, cp1=(0.0, 5.0)
+        start=p_start, end=p_end, cp1=(0.0, 5.0)
     )
     free_pt = sketch.add_point(5, 8)
     line_id = sketch.registry.add_line(p_start, p_end)
@@ -239,8 +239,8 @@ def test_point_on_curve_sketch_end_to_end():
     p_start = sketch.add_point(0, 0, fixed=True)
     p_end = sketch.add_point(10, 0, fixed=True)
     bez_id = sketch.registry.add_bezier(
-        start_idx=p_start,
-        end_idx=p_end,
+        start=p_start,
+        end=p_end,
         cp1=(0.0, 10.0),
         cp2=(0.0, 10.0),
     )

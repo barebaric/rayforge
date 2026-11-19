@@ -12,7 +12,7 @@ from raygeo.sketch.entities import Line
 from ..types import EntityID
 
 if TYPE_CHECKING:
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
 
 logger = logging.getLogger(__name__)
 

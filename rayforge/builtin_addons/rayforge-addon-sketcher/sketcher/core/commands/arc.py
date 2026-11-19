@@ -17,7 +17,8 @@ from .dimension import DimensionData
 from .items import AddItemsCommand
 
 if TYPE_CHECKING:
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
+
     from ..sketch import Sketch
 
 
@@ -362,12 +363,7 @@ class ArcCommand(SketchChangeCommand):
             except IndexError:
                 pass
 
-            registry.entities = [
-                e
-                for e in registry.entities
-                if e.id != preview_state.temp_entity_id
-            ]
-            registry._entity_map = {e.id: e for e in registry.entities}
+            registry.remove_entities([preview_state.temp_entity_id])
 
         if preview_state.temp_end_id is not None:
             registry.remove_points([preview_state.temp_end_id])
@@ -420,7 +416,7 @@ class ArcCommand(SketchChangeCommand):
             if projected:
                 final_x, final_y = projected
 
-            temp_id = registry._id_counter
+            temp_id = registry.next_id()
             end_pid = temp_id
             new_point = Point(temp_id, final_x, final_y)
 
@@ -431,7 +427,7 @@ class ArcCommand(SketchChangeCommand):
                 self.sketch.remove_point_if_unused(self.start_id)
             return
 
-        temp_arc_id = registry._id_counter + (1 if new_point else 0)
+        temp_arc_id = registry.next_id() + (1 if new_point else 0)
         new_arc = Arc(
             temp_arc_id,
             self.start_id,

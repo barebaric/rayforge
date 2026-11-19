@@ -18,8 +18,7 @@ from .base import (
 if TYPE_CHECKING:
     from raygeo.sketch.constraints import Constraint
     from raygeo.sketch.entities import Entity
-
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
 
 
 class CircularArrayStrategy(ArrayStrategy):

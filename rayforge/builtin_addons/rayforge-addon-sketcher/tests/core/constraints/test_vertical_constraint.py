@@ -4,10 +4,10 @@ from unittest.mock import MagicMock
 import numpy as np
 import pytest
 from raygeo.sketch.constraints import VerticalConstraint
+from raygeo.sketch.registry import EntityRegistry
 from scipy.optimize import check_grad
 from sketcher.core import Sketch
 from sketcher.core.params import ParameterContext
-from sketcher.core.registry import EntityRegistry
 from sketcher.core.selection import SketchSelection
 
 

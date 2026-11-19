@@ -120,7 +120,7 @@ class MirrorCommand(SketchChangeCommand):
         changed = True
         while changed:
             changed = False
-            for e in registry.entities:
+            for e in registry.entities():
                 helper_ids = e.get_helper_ids()
 
                 if helper_ids and (
@@ -206,6 +206,7 @@ class MirrorCommand(SketchChangeCommand):
         # Mirror entity-specific state
         for e in group.entities():
             e.mirror(axis)
+            registry.replace_entity(e.id, e)
 
         # Mirror internal constraints (e.g. negate angle values)
         # Constraints that were dropped are skipped.

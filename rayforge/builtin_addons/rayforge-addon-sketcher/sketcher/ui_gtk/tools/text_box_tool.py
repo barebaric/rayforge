@@ -289,7 +289,7 @@ class TextBoxTool(SketchTool):
         return is_point_inside_polygon((mx, my), polygon)
 
     def _is_point_inside_any_text_box(self, mx: float, my: float) -> bool:
-        for entity in self.element.sketch.registry.entities:
+        for entity in self.element.sketch.registry.entities():
             if isinstance(
                 entity, TextBoxEntity
             ) and self._is_point_inside_entity_box(entity, mx, my):
@@ -297,7 +297,7 @@ class TextBoxTool(SketchTool):
         return False
 
     def _find_text_box_at_point(self, mx: float, my: float) -> int | None:
-        for entity in reversed(self.element.sketch.registry.entities):
+        for entity in reversed(self.element.sketch.registry.entities()):
             if isinstance(
                 entity, TextBoxEntity
             ) and self._is_point_inside_entity_box(entity, mx, my):

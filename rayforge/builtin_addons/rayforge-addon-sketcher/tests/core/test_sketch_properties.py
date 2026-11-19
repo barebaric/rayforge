@@ -26,9 +26,9 @@ class TestIsFullyConstrained:
         p2 = sketch.add_point(10, 0, fixed=True)
         sketch.add_line(p1, p2)
 
-        for pt in sketch.registry.points:
+        for pt in sketch.registry.points():
             pt.constrained = True
-        for ent in sketch.registry.entities:
+        for ent in sketch.registry.entities():
             ent.constrained = True
 
         assert sketch.is_fully_constrained is True
@@ -44,7 +44,7 @@ class TestIsFullyConstrained:
         pt1 = sketch.registry.get_point(p1)
         pt1.constrained = True
 
-        for ent in sketch.registry.entities:
+        for ent in sketch.registry.entities():
             ent.constrained = True
 
         assert sketch.is_fully_constrained is False

@@ -22,9 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 def _allocate_id(registry) -> EntityID:
-    new_id = registry._id_counter
-    registry._id_counter += 1
-    return new_id
+    return registry.allocate_id()
 
 
 class DuplicateCommand(SketchChangeCommand):
@@ -77,7 +75,7 @@ class DuplicateCommand(SketchChangeCommand):
         changed = True
         while changed:
             changed = False
-            for e in registry.entities:
+            for e in registry.entities():
                 helper_ids = e.get_helper_ids()
 
                 if helper_ids and (
@@ -147,8 +145,8 @@ class DuplicateCommand(SketchChangeCommand):
             obj.remap_references(id_map)
 
         registry.add_points(self.created_points)
-        registry.entities.extend(self.created_entities)
-        registry._entity_map = {e.id: e for e in registry.entities}
+        for entity in self.created_entities:
+            registry.append_entity(entity)
         self.sketch.constraints.extend(self.created_constraints)
 
         self.new_entity_ids = [e.id for e in self.created_entities]
@@ -161,11 +159,8 @@ class DuplicateCommand(SketchChangeCommand):
         point_ids = {p.id for p in self.created_points}
         entity_ids = {e.id for e in self.created_entities}
 
-        registry.remove_points(point_ids)
-        registry.entities = [
-            e for e in registry.entities if e.id not in entity_ids
-        ]
-        registry._entity_map = {e.id: e for e in registry.entities}
+        registry.remove_points(list(point_ids))
+        registry.remove_entities(list(entity_ids))
         for c in self.created_constraints:
             if c in self.sketch.constraints:
                 self.sketch.constraints.remove(c)

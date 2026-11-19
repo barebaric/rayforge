@@ -56,7 +56,7 @@ def test_creates_static_copies_along_path(sketch_with_template_and_path):
     )
     cmd.execute()
 
-    copies = [e for e in sketch.registry.entities if e.array_copy]
+    copies = [e for e in sketch.registry.entities() if e.array_copy]
     # count=4 members: the template (the seed, left in place) plus
     # 3 copies on the path.
     assert len(copies) == 3
@@ -65,7 +65,7 @@ def test_creates_static_copies_along_path(sketch_with_template_and_path):
     assert array.mode == "curve_along"
     # The guide entity is the pre-existing path, not a new circle.
     assert array.guide_circle_id == path
-    circles = [e for e in sketch.registry.entities if e.type == "circle"]
+    circles = [e for e in sketch.registry.entities() if e.type == "circle"]
     assert circles == []
     # The template member is the original seed entity, unmoved.
     assert array.living_members(sketch.registry)[0] == (0, [seed])
@@ -253,8 +253,8 @@ def test_dragging_bezier_endpoint_redistributes_copies():
 
 def test_undo_removes_copies_and_array(sketch_with_template_and_path):
     sketch, seed, path = sketch_with_template_and_path
-    n_entities = len(sketch.registry.entities)
-    n_points = len(sketch.registry.points)
+    n_entities = len(sketch.registry.entities())
+    n_points = len(sketch.registry.points())
 
     cmd = CreateArrayCommand(
         sketch,
@@ -265,8 +265,8 @@ def test_undo_removes_copies_and_array(sketch_with_template_and_path):
     assert len(sketch.arrays) == 1
 
     cmd.undo()
-    assert len(sketch.registry.entities) == n_entities
-    assert len(sketch.registry.points) == n_points
+    assert len(sketch.registry.entities()) == n_entities
+    assert len(sketch.registry.points()) == n_points
     assert sketch.arrays == []
 
 
@@ -281,7 +281,7 @@ def test_redo_restores_array(sketch_with_template_and_path):
     cmd.undo()
     cmd.execute()
     # count=4 members: template (in place) + 3 copies.
-    assert len([e for e in sketch.registry.entities if e.array_copy]) == 3
+    assert len([e for e in sketch.registry.entities() if e.array_copy]) == 3
     assert len(sketch.arrays) == 1
 
 
@@ -359,7 +359,7 @@ def test_solver_keeps_geometry_stable_after_apply(
         [seed],
     )
     cmd.execute()
-    before = [(p.id, p.x, p.y) for p in sketch.registry.points]
+    before = [(p.id, p.x, p.y) for p in sketch.registry.points()]
     sketch.solve()
     for pid, x, y in before:
         pt = sketch.registry.get_point(pid)
@@ -385,7 +385,7 @@ def test_edit_fills_missing_slots(sketch_with_template_and_path):
 
     # Delete two non-template members.
     victims = [eid for _slot, eids in array.members[1:3] for eid in eids]
-    sketch.registry.remove_entities_by_id(victims)
+    sketch.registry.remove_entities(victims)
     sketch.prune_arrays()
     assert len(array.living_members(sketch.registry)) == 4
 
@@ -465,7 +465,7 @@ def test_deleting_path_dissolves_array(sketch_with_template_and_path):
     )
     cmd.execute()
 
-    sketch.registry.remove_entities_by_id([path])
+    sketch.registry.remove_entities([path])
     sketch.prune_arrays()
     assert sketch.arrays == []
 
@@ -481,7 +481,7 @@ def test_edit_with_arc_path_aligns_copies():
     c = sketch.registry.add_point(0.0, 0.0)
     s = sketch.registry.add_point(10.0, 0.0)
     e = sketch.registry.add_point(0.0, 10.0)
-    arc = sketch.registry.add_arc(s, e, c, cw=False)
+    arc = sketch.registry.add_arc(s, e, c, clockwise=False)
 
     cmd = CreateArrayCommand(
         sketch,
@@ -545,7 +545,7 @@ def test_template_extraction_severs_guide_links(sketch_with_template_and_path):
     # point.
     path_entity = registry.get_entity(path)
     shared_pid = path_entity.p1_idx
-    registry.remove_entities_by_id([seed])
+    registry.remove_entities([seed])
     seed_p2 = registry.add_point(10.0, 5.0)
     seed = registry.add_line(shared_pid, seed_p2)
     foreign = registry.add_point(30.0, 20.0)
@@ -743,8 +743,8 @@ def test_reapply_does_not_leak_fixed_copy_points():
 
     array = sketch.arrays[0]
     registry = sketch.registry
-    n_points = len(registry.points)
-    n_entities = len(registry.entities)
+    n_points = len(registry.points())
+    n_entities = len(registry.entities())
 
     # Copies are fixed and unconstrained.
     for slot, eids in array.living_members(registry)[1:]:
@@ -762,8 +762,8 @@ def test_reapply_does_not_leak_fixed_copy_points():
     for _ in range(10):
         dragged.x += 0.5
         sketch.solve()
-        assert len(registry.points) == n_points
-        assert len(registry.entities) == n_entities
+        assert len(registry.points()) == n_points
+        assert len(registry.entities()) == n_entities
 
 
 def test_ellipse_helper_lines_follow_the_template():
