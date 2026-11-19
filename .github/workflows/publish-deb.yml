@@ -46,6 +46,21 @@ jobs:
       - name: Configure fast APT mirror
         uses: vegardit/fast-apt-mirror.sh@v1
 
+      - name: Cache APT archives
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/apt-archives
+          key: apt-${{ runner.os }}-${{ hashFiles('debian/control', 'debian/requirements-bundle.txt') }}
+          restore-keys: apt-${{ runner.os }}-
+
+      - name: Keep downloaded APT packages
+        run: |
+          mkdir -p "$HOME/.cache/apt-archives"
+          sudo tee /etc/apt/apt.conf.d/99ci-cache >/dev/null <<EOF
+          Dir::Cache::archives "$HOME/.cache/apt-archives";
+          APT::Keep-Downloaded-Packages "true";
+          EOF
+
       - name: Install build dependencies
         run: >
           sudo apt-get update -o Acquire::Retries=5
