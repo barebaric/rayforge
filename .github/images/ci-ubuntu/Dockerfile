@@ -6,9 +6,20 @@ FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update -o Acquire::Retries=5 \
+# The default archive.ubuntu.com hosts are frequently unreachable from
+# GitHub's Docker builders; the Azure mirror is local to the runners.
+RUN sed -i \
+        -e 's|http://archive.ubuntu.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' \
+        -e 's|http://security.ubuntu.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' \
+        /etc/apt/sources.list.d/ubuntu.sources \
+    && apt-get update \
+        -o Acquire::Retries=8 \
+        -o Acquire::http::Timeout=30 \
+        -o Acquire::https::Timeout=30 \
     && apt-get install -y --no-install-recommends \
-        -o Acquire::Retries=5 \
+        -o Acquire::Retries=8 \
+        -o Acquire::http::Timeout=30 \
+        -o Acquire::https::Timeout=30 \
         build-essential \
         ca-certificates \
         cargo \
