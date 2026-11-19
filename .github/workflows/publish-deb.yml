@@ -36,9 +36,18 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
+      - name: Cache pip wheels
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: deb-pip-${{ hashFiles('debian/requirements-bundle.txt') }}
+          restore-keys: deb-pip-
+
       - name: Install build dependencies
         run: >
-          sudo apt-get update && sudo apt-get install -y
+          sudo apt-get update -o Acquire::Retries=5 &&
+          sudo apt-get install -y --no-install-recommends
+          -o Acquire::Retries=5
           build-essential
           cargo
           cython3
@@ -96,11 +105,13 @@ jobs:
 
       - name: Install runtime dependencies for testing
         run: |
-          sudo mk-build-deps --install --tool="apt-get -y" debian/control
+          sudo mk-build-deps --install \
+            --tool="apt-get -y --no-install-recommends" debian/control
 
       - name: Test package installation
         run: |
-          sudo apt-get install -y ./${{ steps.build_test_packages.outputs.deb_file_path }}
+          sudo apt-get install -y --no-install-recommends \
+            ./${{ steps.build_test_packages.outputs.deb_file_path }}
 
       - name: Verify translated catalogs are shipped
         run: |
@@ -129,7 +140,7 @@ jobs:
           # This simple command proves the installation was successful.
           rayforge --version
           # Try running the app and immediately exiting again.
-          sudo apt-get install -y xvfb
+          sudo apt-get install -y --no-install-recommends xvfb
           xvfb-run rayforge --exit
 
       - name: Sign source package
