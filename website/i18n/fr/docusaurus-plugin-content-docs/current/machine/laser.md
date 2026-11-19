@@ -203,8 +203,8 @@ Le flux de travail typique :
 5. Lorsque vous appuyez sur **Envoyer**, un avertissement apparaît : un job normal brûle avec le
    faisceau aux positions du SCF. Vous pouvez exécuter une **Simulation avec pointeur** (le job
    s'exécute avec le décalage du pointeur appliqué, si bien que le point du pointeur trace le
-   parcours tandis que le faisceau court décalé — il tire toujours à la puissance du job),
-   désactiver l'alignement et graver, ou annuler.
+   parcours tandis que le faisceau court décalé — il tire toujours à la puissance du job), **Graver
+   avec le faisceau** (l'alignement reste actif pour viser après le job), ou annuler.
 
 Deux choses ne sont jamais décalées : le **jog** (un mouvement relatif ne nécessite aucune
 compensation) et les **jobs** — la coupe se fait toujours avec le faisceau aux positions du SCF,

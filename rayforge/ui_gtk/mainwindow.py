@@ -2591,7 +2591,6 @@ class MainWindow(Adw.ApplicationWindow):
             if machine.pointer_alignment_enabled:
                 dialog = PointerAlignmentDialog(
                     parent=self,
-                    machine=machine,
                     on_proceed=_proceed,
                 )
                 dialog.present()
