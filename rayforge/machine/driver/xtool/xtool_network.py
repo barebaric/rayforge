@@ -1,5 +1,4 @@
 import asyncio
-import json
 import logging
 from collections.abc import Awaitable, Callable
 from gettext import gettext as _
@@ -9,9 +8,8 @@ from typing import (
     cast,
 )
 
-import aiohttp
 from raydriver.core import SessionEvent
-from raydriver.xtool import XtoolSession
+from raydriver.xtool import XtoolSession, query_machine_type
 
 from ....context import RayforgeContext
 from ....core.varset import HostnameVar, PortVar, VarSet
@@ -47,47 +45,6 @@ logger = logging.getLogger(__name__)
 # API).
 DEFAULT_HTTP_PORT = 8080
 DEFAULT_WS_PORT = 8081
-
-XTOOL_MACHINE_TYPE_URL = "/getmachinetype"
-
-
-async def fetch_xtool_machine_type(
-    host: str, port: int, timeout: float = 2.0
-) -> str | None:
-    """
-    GETs the xTool machine-type endpoint and returns the reported
-    machine type (e.g. ``"xTool D1Pro"``) when the device identifies
-    itself as an xTool machine, ``None`` otherwise.  Never raises.
-    """
-    url = f"http://{host}:{port}{XTOOL_MACHINE_TYPE_URL}"
-    try:
-        async with (
-            aiohttp.ClientSession() as session,
-            session.get(
-                url, timeout=aiohttp.ClientTimeout(total=timeout)
-            ) as response,
-        ):
-            if response.status != 200:
-                return None
-            text = await response.text()
-    except Exception:
-        logger.debug(
-            "xTool machine-type query of %s:%s failed",
-            host,
-            port,
-            exc_info=True,
-        )
-        return None
-    try:
-        payload = json.loads(text)
-    except ValueError:
-        return None
-    if not isinstance(payload, dict):
-        return None
-    machine_type = str(payload.get("type") or "")
-    if "xtool" in machine_type.lower():
-        return machine_type
-    return None
 
 
 class XtoolNetworkDriver(Driver):
@@ -200,11 +157,9 @@ class XtoolNetworkDriver(Driver):
         kwargs = dict(kwargs)
         host = cast(str, kwargs.get("host", ""))
         port = cast(int, kwargs.get("http_port", DEFAULT_HTTP_PORT))
-        machine_type = await fetch_xtool_machine_type(host, port)
+        machine_type = await query_machine_type(host, port)
         if machine_type is None and port != DEFAULT_HTTP_PORT:
-            machine_type = await fetch_xtool_machine_type(
-                host, DEFAULT_HTTP_PORT
-            )
+            machine_type = await query_machine_type(host, DEFAULT_HTTP_PORT)
             if machine_type is not None:
                 kwargs["http_port"] = DEFAULT_HTTP_PORT
         if machine_type is None:

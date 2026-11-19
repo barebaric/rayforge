@@ -2,13 +2,13 @@ import logging
 from gettext import gettext as _
 from typing import Any, cast
 
+from raydriver.core.discovery.fingerprints import HttpFingerprint
 from raydriver.core.discovery.spec import DiscoverySpec, MdnsRecognizer
 from raydriver.esp3d import Esp3dConfig, Esp3dSession
 
 from ....core.varset import ChoiceVar, HostnameVar, PortVar, VarSet
 from ....core.varset.hostnamevar import is_valid_hostname_or_ip
 from ..driver import DriverPrecheckError, DriverSetupError
-from .grbl_fingerprint import fingerprint_grbl_http
 from .grbl_serial import GrblSerialDriver
 
 logger = logging.getLogger(__name__)
@@ -36,7 +36,10 @@ class GrblNetworkDriver(GrblSerialDriver):
     DISCOVERY = DiscoverySpec(
         mdns=MdnsRecognizer(
             services=("_esp3d._tcp.local.",),
-            fingerprint=fingerprint_grbl_http,
+            fingerprint=HttpFingerprint(
+                path="/command?plain=%5BESP800%5D&PAGEID=",
+                match_regex=r"\b(fluidnc|esp3d|grblhal|grbl)\b",
+            ),
         )
     )
 
