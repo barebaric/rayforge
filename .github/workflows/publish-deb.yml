@@ -86,6 +86,17 @@ jobs:
           echo "Found key fingerprint: $KEY_FINGERPRINT"
           echo "KEY_ID=$KEY_FINGERPRINT" >> $GITHUB_ENV
 
+      - name: Mark workspace as safe
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Install distro info
+        run: |
+          sudo apt-get update -o Acquire::Retries=5 \
+            -o Acquire::http::Timeout=15
+          sudo apt-get install -y --no-install-recommends \
+            -o Acquire::Retries=5 -o Acquire::http::Timeout=15 \
+            libdistro-info-perl
+
       - name: Build Packages for Testing
         id: build_test_packages
         env:
