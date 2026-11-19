@@ -8,36 +8,29 @@ from typing import (
     cast,
 )
 
-from raydriver.core import SessionEvent
 from raydriver.xtool import XtoolSession, query_machine_type
 
 from ....context import RayforgeContext
 from ....core.varset import HostnameVar, PortVar, VarSet
 from ....core.varset.hostnamevar import is_valid_hostname_or_ip
-from ....pipeline.encoder.base import EncodedOutput, OpsEncoder
-from ....pipeline.encoder.gcode import GcodeEncoder
+from ....pipeline.encoder.base import EncodedOutput
 from ....shared.units.system import UnitSystem
 from ...transport import TransportStatus
 from ..driver import (
     Axis,
     DeviceConnectionError,
-    DeviceError,
-    Driver,
     DriverMaturity,
     DriverPrecheckError,
     DriverSetupError,
     Pos,
 )
-from ..session_state import from_session_state
+from ..session_driver import SessionDriverBase
 
 if TYPE_CHECKING:
-    from raydriver.core.types import DeviceState as SessionDeviceState
     from raygeo.ops import Ops
 
     from ....core.doc import Doc
     from ...device.profile import DeviceProfile
-    from ...models.laser import Laser
-    from ...models.machine import Machine
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +40,7 @@ DEFAULT_HTTP_PORT = 8080
 DEFAULT_WS_PORT = 8081
 
 
-class XtoolNetworkDriver(Driver):
+class XtoolNetworkDriver(SessionDriverBase):
     """
     Driver for xTool D-series machines (D1, D1 Pro, …) over their
     proprietary WiFi API, with the entire protocol stack running in
@@ -72,23 +65,10 @@ class XtoolNetworkDriver(Driver):
     supports_unit_detection = True
     DISCOVERY = None
 
-    def __init__(self, context: RayforgeContext, machine: "Machine"):
-        super().__init__(context, machine)
-        self._session: XtoolSession | None = None
-
     @property
-    def machine_space_wcs(self) -> str:
-        return "G53"
-
-    @property
-    def machine_space_wcs_display_name(self) -> str:
-        return _("Machine Coordinates (G53)")
-
-    @property
-    def resource_uri(self) -> str | None:
-        if self._session is None:
-            return None
-        return self._session.resource_uri
+    def session(self) -> XtoolSession | None:
+        """The underlying raydriver session, if set up."""
+        return self._session
 
     def _require_session(self) -> XtoolSession:
         """Returns the session, raising a descriptive error when the
@@ -132,12 +112,6 @@ class XtoolNetworkDriver(Driver):
                 ),
             ]
         )
-
-    @classmethod
-    def create_encoder(cls, machine: "Machine") -> "OpsEncoder":
-        """Returns a GcodeEncoder configured for the machine's dialect."""
-        assert machine.dialect is not None
-        return GcodeEncoder(machine.dialect)
 
     @classmethod
     async def probe(
@@ -217,53 +191,6 @@ class XtoolNetworkDriver(Driver):
             event_callback=self._on_session_event,
         )
 
-    def _on_session_event(self, event: SessionEvent) -> None:
-        """Re-emit Rust session events as Rayforge blinker signals."""
-        match event:
-            case SessionEvent.StateChanged():
-                self._on_state_changed(event.state)
-            case SessionEvent.ConnectionStatusChanged():
-                self._on_connection_status_changed(event.status, event.message)
-            case SessionEvent.CommandStatusChanged():
-                self.command_status_changed.send(
-                    self,
-                    status=TransportStatus[event.status],
-                    message=event.message,
-                )
-            case SessionEvent.JobFinished():
-                self.job_finished.send(self)
-            case SessionEvent.RawRx():
-                self._log_raw_line(event.line, received=True)
-            case SessionEvent.RawTx():
-                self._log_raw_line(event.line, received=False)
-            case _:
-                logger.debug(f"Ignoring session event: {event!r}")
-
-    def _on_state_changed(self, session_state: "SessionDeviceState") -> None:
-        state = from_session_state(session_state)
-        old_status = self.state.status
-        self.state = state
-        if state.status != old_status:
-            logger.info(
-                f"Device state changed: {state.status.name}",
-                extra=self._log_extra("STATE_CHANGE"),
-            )
-        self.state_changed.send(self, state=state)
-
-    def _on_connection_status_changed(
-        self, status_str: str, message: str | None
-    ) -> None:
-        logger.info(
-            f"Connection status: {status_str}"
-            + (f" - {message}" if message else ""),
-            extra=self._log_extra("MACHINE_EVENT"),
-        )
-        self.connection_status_changed.send(
-            self,
-            status=TransportStatus[status_str],
-            message=message,
-        )
-
     def _log_raw_line(self, line: str, received: bool) -> None:
         """Log a raw line from the session's communication so the
         console (with 'Show verbose' enabled) shows the full
@@ -277,14 +204,6 @@ class XtoolNetworkDriver(Driver):
         else:
             category = "RAW_IO"
         logger.info(line, extra=self._log_extra(category))
-
-    async def cleanup(self):
-        logger.debug("Cleanup initiated.")
-        if self._session is not None:
-            await self._session.disconnect()
-            self._session = None
-        await super().cleanup()
-        logger.debug("Cleanup completed.")
 
     async def _connect_implementation(self):
         """Launches the Rust connection loop and returns, allowing the
@@ -302,17 +221,9 @@ class XtoolNetworkDriver(Driver):
             return
         await self._session.connect()
 
-    async def execute_interactive_command(self, command: str) -> list[str]:
-        """Send a command and await the device's HTTP acknowledgement.
-
-        The xTool protocol has no per-line response text, so the
-        result is always empty."""
-        return await self._require_session().execute_interactive_command(
-            command
-        )
-
-    def get_setting_vars(self) -> list["VarSet"]:
-        return []
+    async def read_parser_state(self) -> str | None:
+        """The xTool API exposes no G-code parser state."""
+        return None
 
     async def run(
         self,
@@ -340,23 +251,8 @@ class XtoolNetworkDriver(Driver):
         except Exception:
             logger.exception("Job terminated with unexpected error")
 
-    async def run_raw(self, machine_code: str) -> None:
-        session = self._require_session()
-        try:
-            await session.run_raw(machine_code)
-        except DeviceConnectionError as e:
-            logger.warning(
-                f"Raw G-code terminated due to device error: {e}. "
-                "Connection remains active."
-            )
-        except Exception:
-            logger.exception("Raw G-code terminated with unexpected error")
-
     async def cancel(self, emergency: bool = False) -> None:
         await self._require_session().cancel(emergency)
-
-    async def set_hold(self, hold: bool = True) -> None:
-        await self._require_session().set_hold(hold)
 
     def can_home(self, axis: Axis | None = None) -> bool:
         """The xTool firmware only offers an all-axis homing cycle."""
@@ -385,18 +281,6 @@ class XtoolNetworkDriver(Driver):
             None if speed is None else self._to_machine_speed(speed),
         )
 
-    def can_jog(self, axis: Axis | None = None) -> bool:
-        """Jogging works in relative moves for all axes."""
-        return True
-
-    async def jog(self, speed: int, **deltas: float) -> None:
-        session = self._require_session()
-        converted = [
-            (name, self._to_machine_length(distance))
-            for name, distance in deltas.items()
-        ]
-        await session.jog(self._to_machine_speed(speed), converted)
-
     async def select_tool(self, tool_number: int) -> None:
         """Sends a tool change command for the given tool number."""
         dialect = self.dialect
@@ -409,16 +293,6 @@ class XtoolNetworkDriver(Driver):
         # error state is cleared.
         self.state.error = None
         self.state_changed.send(self, state=self.state)
-
-    async def set_power(self, head: "Laser", percent: float) -> None:
-        """Sets the laser power (0.0-1.0 of max power)."""
-        power = percent * head.max_power if percent > 0 else None
-        await self._require_session().set_power(power)
-
-    async def set_focus_power(self, head: "Laser", percent: float) -> None:
-        """Sets the laser power for focus mode."""
-        power = percent * head.max_power if percent > 0 else None
-        await self._require_session().set_focus_power(power)
 
     async def detect_unit_system(self) -> UnitSystem | None:
         """The xTool dialect works in millimeters."""
@@ -451,6 +325,3 @@ class XtoolNetworkDriver(Driver):
         self, axis: Axis, max_travel: float, feed_rate: int
     ) -> Pos | None:
         raise DeviceConnectionError(_("This device does not support probing."))
-
-    def get_error(self, error_code: str) -> DeviceError | None:
-        return None

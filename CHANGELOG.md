@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Machine: network discovery of FluidNC/ESP3D devices and the xTool
   machine-type query now use the raydriver library's HTTP probes
   instead of local aiohttp code
+- Machine: the xTool drivers share the generic raydriver-session
+  base now; the xTool M2 console additionally shows connection and
+  raw traffic lines when verbose output is enabled
 - Dependencies: raydriver upgraded to 1.12.0
 
 ## 1.14.0
