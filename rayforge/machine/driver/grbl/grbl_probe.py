@@ -15,6 +15,7 @@ from ....shared.units.system import UnitSystem
 from ...models.dialect.grbl import GRBL_DIALECT
 from ...models.dialect.grbl_dynamic import GRBL_DYNAMIC_DIALECT
 from ...transport import TransportStatus
+from ..driver import DeviceConnectionError
 
 if TYPE_CHECKING:
     from ....context import RayforgeContext
@@ -22,6 +23,13 @@ if TYPE_CHECKING:
     from ...models.machine import Machine
 
 logger = logging.getLogger(__name__)
+
+
+@runtime_checkable
+class _ProbeSession(Protocol):
+    """The session surface the device census needs."""
+
+    async def execute_interactive_command(self, command: str) -> list[str]: ...
 
 
 @runtime_checkable
@@ -34,7 +42,8 @@ class _GrblProbeDriver(Protocol):
 
     connection_status_changed: Signal
 
-    session: Any
+    @property
+    def session(self) -> _ProbeSession | None: ...
 
     def __init__(
         self,
@@ -80,7 +89,10 @@ async def probe_grbl_device(
         # bootloader-delayed first handshake plus one retry cycle
         # (HANDSHAKE_TIMEOUT + reconnect sleep + HANDSHAKE_TIMEOUT).
         await asyncio.wait_for(connected.wait(), timeout=30.0)
-        info = await probe_device(driver.session)
+        session = driver.session
+        if session is None:
+            raise DeviceConnectionError(_("Driver is not connected."))
+        info = await probe_device(session)
     finally:
         driver.connection_status_changed.disconnect(_on_status)
         await driver.cleanup()

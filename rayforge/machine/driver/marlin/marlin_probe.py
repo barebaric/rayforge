@@ -13,6 +13,7 @@ from raydriver.marlin.probe import MarlinDeviceInfo, probe_device
 
 from ....shared.units.system import UnitSystem
 from ...transport import TransportStatus
+from ..driver import DeviceConnectionError
 
 if TYPE_CHECKING:
     from ....context import RayforgeContext
@@ -20,6 +21,13 @@ if TYPE_CHECKING:
     from ...models.machine import Machine
 
 logger = logging.getLogger(__name__)
+
+
+@runtime_checkable
+class _ProbeSession(Protocol):
+    """The session surface the device census needs."""
+
+    async def execute_interactive_command(self, command: str) -> list[str]: ...
 
 
 @runtime_checkable
@@ -31,7 +39,8 @@ class _MarlinProbeDriver(Protocol):
 
     connection_status_changed: Signal
 
-    session: Any
+    @property
+    def session(self) -> _ProbeSession | None: ...
 
     def __init__(
         self,
@@ -77,7 +86,10 @@ async def probe_marlin_device(
     try:
         await driver.connect()
         await asyncio.wait_for(connected.wait(), timeout=15.0)
-        info = await probe_device(driver.session, boot_lines=driver.boot_lines)
+        session = driver.session
+        if session is None:
+            raise DeviceConnectionError(_("Driver is not connected."))
+        info = await probe_device(session, boot_lines=driver.boot_lines)
     finally:
         driver.connection_status_changed.disconnect(_on_status)
         await driver.cleanup()

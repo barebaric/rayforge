@@ -108,13 +108,20 @@ class TestDriverProbe:
         )
         mock_cleanup = AsyncMock()
         mocker.patch.object(MarlinSerialDriver, "cleanup", mock_cleanup)
+        fake_session = mocker.MagicMock()
+        mocker.patch.object(
+            MarlinSerialDriver,
+            "session",
+            new_callable=mocker.PropertyMock,
+            return_value=fake_session,
+        )
         info = describe(
             FULL_M115_LINES,
             FULL_M211_LINES,
             FULL_M503_LINES,
             m149_lines,
         )
-        mocker.patch(
+        probe_mock = mocker.patch(
             "rayforge.machine.driver.marlin.marlin_probe.probe_device",
             AsyncMock(return_value=info),
         )
@@ -125,6 +132,9 @@ class TestDriverProbe:
             baudrate=115200,
         )
 
+        probe_mock.assert_awaited_once()
+        assert probe_mock.await_args.args[0] is fake_session
+        assert probe_mock.await_args.kwargs["boot_lines"] == []
         assert profile.meta.name == "CustomLaser"
         driver_config = profile.machine_config.driver_config
         assert driver_config is not None
