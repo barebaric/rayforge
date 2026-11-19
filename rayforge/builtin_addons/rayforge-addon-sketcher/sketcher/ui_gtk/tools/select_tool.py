@@ -12,6 +12,7 @@ from typing import (
 import cairo
 from raygeo.geo import Matrix
 from raygeo.geo.types import Point as GeoPoint
+from raygeo.sketch.components import compute_constraint_components
 from raygeo.sketch.constraints import (
     AngleConstraint,
     DiameterConstraint,
@@ -28,7 +29,6 @@ from ...core.commands import (
     MoveEntitiesCommand,
     MovePointCommand,
 )
-from ...core.components import compute_constraint_components
 from ...core.snap import DragContext
 from ...core.types import EntityID
 from .base import SketcherKey, SketchTool

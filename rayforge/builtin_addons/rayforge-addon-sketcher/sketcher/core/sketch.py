@@ -17,6 +17,7 @@ from raygeo.geo import Line as GeoLine
 from raygeo.geo import Move as GeoMove
 from raygeo.geo.shape.polygon import is_point_inside_polygon
 from raygeo.sketch import conflicting_constraints, solve_registry
+from raygeo.sketch.components import get_referenced_points
 from raygeo.sketch.constraints import (
     AngleConstraint,
     AspectRatioConstraint,
@@ -53,7 +54,6 @@ from rayforge.image.geo_renderer import render_geometry_to_png
 from rayforge.image.structures import FillRenderData, FillStyle
 
 from .arrays import Array
-from .components import get_referenced_points
 from .template_functions import get_template_functions
 from .types import ConstraintStatus, EntityID, WaypointType
 
@@ -1492,7 +1492,7 @@ class Sketch(IAsset, IGeometryProvider):
                 all_constraints = [
                     c
                     for c in all_constraints
-                    if get_referenced_points(self.registry, c) & scope
+                    if set(get_referenced_points(self.registry, c)) & scope
                 ]
             if extra_constraints:
                 extra = list(extra_constraints)
@@ -1500,7 +1500,7 @@ class Sketch(IAsset, IGeometryProvider):
                     extra = [
                         c
                         for c in extra
-                        if get_referenced_points(self.registry, c) & scope
+                        if set(get_referenced_points(self.registry, c)) & scope
                     ]
                 all_constraints = all_constraints + extra
             for c in all_constraints:
@@ -1517,7 +1517,7 @@ class Sketch(IAsset, IGeometryProvider):
             # would only grow the solver's state vector.
             touched: set[EntityID] = set()
             for c in all_constraints:
-                touched |= get_referenced_points(self.registry, c)
+                touched |= set(get_referenced_points(self.registry, c))
             stabilizer_constraints = []
             hold_weight = 1e-4
             for p in self.registry.points():

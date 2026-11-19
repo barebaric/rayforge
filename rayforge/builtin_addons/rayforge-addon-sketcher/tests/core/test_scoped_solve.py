@@ -1,15 +1,15 @@
 import pytest
 from raygeo.sketch import solve_registry
+from raygeo.sketch.components import (
+    compute_constraint_components,
+    get_referenced_points,
+)
 from raygeo.sketch.constraints import (
     Constraint,
     DragConstraint,
     TangentConstraint,
 )
 from raygeo.sketch.registry import EntityRegistry
-from sketcher.core.components import (
-    compute_constraint_components,
-    get_referenced_points,
-)
 from sketcher.core.sketch import Sketch
 
 
@@ -97,7 +97,7 @@ def test_entity_level_constraint_couples_points():
     line = registry.add_line(lp1, lp2)
     constraint = TangentConstraint(line, circle)
 
-    assert get_referenced_points(registry, constraint) == {
+    assert set(get_referenced_points(registry, constraint)) == {
         center,
         radius_pt,
         lp1,
