@@ -1,0 +1,13 @@
+name: dragknife
+display_name: "Drag Knife"
+description: "Drag knife and tangential knife cutting steps"
+maturity: experimental
+api_version: 21
+author:
+  name: "Rayforge Team"
+  email: "noreply@rayforge.org"
+provides:
+  worker: "dragknife.worker"
+  frontend: "dragknife.frontend"
+license:
+  name: "MIT"

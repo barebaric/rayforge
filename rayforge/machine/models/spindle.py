@@ -5,7 +5,7 @@ from typing import Any
 from raygeo.ops.state import CoolantMode
 
 from ...core.capability import MachineCapability
-from .head import _HEAD_SERIALIZED_KEYS, Head
+from .head import HEAD_SERIALIZED_KEYS, Head
 
 _COOLANT_MODE_BY_NAME = {
     mode.name: mode for mode in (CoolantMode.FLOOD, CoolantMode.MIST)
@@ -79,7 +79,7 @@ class SpindleHead(Head):
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "SpindleHead":
-        known_keys = _HEAD_SERIALIZED_KEYS | {
+        known_keys = HEAD_SERIALIZED_KEYS | {
             "max_rpm",
             "min_rpm",
             "cooling_methods",
