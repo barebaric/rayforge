@@ -44,6 +44,9 @@ class LinePreviewState(PreviewState):
         """
         return {self.end_id}
 
+    def get_preview_entity_ids(self) -> set[EntityID]:
+        return {self.entity_id}
+
     def set_length(self, registry: EntityRegistry, length: float) -> None:
         """
         Sets the line length from numeric input.

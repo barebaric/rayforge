@@ -59,6 +59,11 @@ class BezierPreviewState(PreviewState):
             result.add(self.end_id)
         return result
 
+    def get_preview_entity_ids(self) -> set[EntityID]:
+        if self.temp_entity_id is None:
+            return set()
+        return {self.temp_entity_id}
+
     def get_virtual_cp_absolute(
         self, registry: EntityRegistry
     ) -> GeoPoint | None:

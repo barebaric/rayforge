@@ -54,6 +54,11 @@ class ArcPreviewState(PreviewState):
             result.add(self.temp_end_id)
         return result
 
+    def get_preview_entity_ids(self) -> set[EntityID]:
+        if self.temp_entity_id is None:
+            return set()
+        return {self.temp_entity_id}
+
     @property
     def has_start_point(self) -> bool:
         """Returns True if start point has been set."""

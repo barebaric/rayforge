@@ -44,6 +44,9 @@ class EllipsePreviewState(PreviewState):
     def get_preview_point_ids(self) -> set[EntityID]:
         return {self.center_id, self.radius_x_id, self.radius_y_id}
 
+    def get_preview_entity_ids(self) -> set[EntityID]:
+        return {self.entity_id}
+
     def get_hidden_point_ids(self) -> set[EntityID]:
         return {self.start_id}
 

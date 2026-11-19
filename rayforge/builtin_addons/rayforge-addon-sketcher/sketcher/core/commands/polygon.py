@@ -101,6 +101,9 @@ class PolygonPreviewState(PreviewState):
         """The preview's own points, which must not be snapped to."""
         return {self.radius_id, *self.corner_ids}
 
+    def get_preview_entity_ids(self) -> set[EntityID]:
+        return set(self.line_ids)
+
     def _vertices(self, registry: EntityRegistry) -> list[GeoPoint]:
         center = registry.get_point(self.center_id)
         first = registry.get_point(self.radius_id)

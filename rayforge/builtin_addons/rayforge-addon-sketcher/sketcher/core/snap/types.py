@@ -170,11 +170,16 @@ class DragContext:
         self,
         dragged_point_ids: set[EntityID] | None = None,
         dragged_entity_ids: set[EntityID] | None = None,
+        preview_entity_ids: set[EntityID] | None = None,
         initial_positions: dict[EntityID, GeoPoint] | None = None,
         suppress_coincident_points: bool = True,
     ):
         self.dragged_point_ids: set[EntityID] = dragged_point_ids or set()
         self.dragged_entity_ids: set[EntityID] = dragged_entity_ids or set()
+        # Geometry created by a creation tool's preview. It is excluded
+        # from the cached snap index, but its points may still be live
+        # snap candidates via the per-query point producers.
+        self.preview_entity_ids: set[EntityID] = preview_entity_ids or set()
         self.initial_positions: dict[EntityID, GeoPoint] = (
             initial_positions or {}
         )
@@ -191,6 +196,9 @@ class DragContext:
 
     def is_entity_dragged(self, entity_id: EntityID) -> bool:
         return entity_id in self.dragged_entity_ids
+
+    def is_preview_entity(self, entity_id: EntityID) -> bool:
+        return entity_id in self.preview_entity_ids
 
     def coincides_with_dragged(
         self,
