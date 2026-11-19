@@ -97,7 +97,7 @@ def test_nudge_skips_fixed_points(element_with_line):
     element, sketch, p1, p2, _, _ = element_with_line
     registry = sketch.registry
     registry.get_point(p1).fixed = True
-    element.selection.point_ids.extend([p1, p2])
+    element.selection.point_ids = [p1, p2]
 
     assert element.nudge_selection(1.0, 1.0) is True
     assert (registry.get_point(p1).x, registry.get_point(p1).y) == (

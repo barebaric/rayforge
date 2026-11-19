@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING
 
 from blinker import Signal
+from raygeo.sketch.selection import Selection
 
 from .types import EntityID
 
@@ -13,37 +14,59 @@ class SketchSelection:
     """Manages the selection state of the sketch editor."""
 
     def __init__(self):
-        self.point_ids: list[EntityID] = []
-        self.entity_ids: list[EntityID] = []
-        self.constraint_idx: int | None = None
-        self.junction_pid: EntityID | None = None
+        self._selection = Selection()
         self.changed = Signal()
+
+    @property
+    def point_ids(self) -> list[EntityID]:
+        """The selected point IDs."""
+        return self._selection.point_ids
+
+    @point_ids.setter
+    def point_ids(self, value: list[EntityID]):
+        self._selection.point_ids = list(value)
+
+    @property
+    def entity_ids(self) -> list[EntityID]:
+        """The selected entity IDs."""
+        return self._selection.entity_ids
+
+    @entity_ids.setter
+    def entity_ids(self, value: list[EntityID]):
+        self._selection.entity_ids = list(value)
+
+    @property
+    def constraint_idx(self) -> int | None:
+        """The selected constraint index, if any."""
+        return self._selection.constraint_idx
+
+    @constraint_idx.setter
+    def constraint_idx(self, value: int | None):
+        self._selection.constraint_idx = value
+
+    @property
+    def junction_pid(self) -> EntityID | None:
+        """The selected implicit junction point, if any."""
+        return self._selection.junction_pid
+
+    @junction_pid.setter
+    def junction_pid(self, value: EntityID | None):
+        self._selection.junction_pid = value
 
     def clear(self):
         """Clears all selections."""
-        self.point_ids.clear()
-        self.entity_ids.clear()
-        self.constraint_idx = None
-        self.junction_pid = None
+        self._selection.clear()
         self.changed.send(self)
 
     def copy(self) -> "SketchSelection":
         """Creates a shallow copy of the selection state."""
         new_sel = SketchSelection()
-        new_sel.point_ids = self.point_ids[:]
-        new_sel.entity_ids = self.entity_ids[:]
-        new_sel.constraint_idx = self.constraint_idx
-        new_sel.junction_pid = self.junction_pid
+        new_sel._selection = self._selection.copy()
         return new_sel
 
     def is_empty(self) -> bool:
         """Returns True if nothing is selected."""
-        return (
-            not self.point_ids
-            and not self.entity_ids
-            and self.constraint_idx is None
-            and self.junction_pid is None
-        )
+        return self._selection.is_empty()
 
     def resolve_entities(
         self, registry: "EntityRegistry | None"
@@ -62,76 +85,53 @@ class SketchSelection:
 
     def select_constraint(self, idx: int, is_multi: bool):
         """Selects a constraint by index."""
-        self.constraint_idx = idx
-        if not is_multi:
-            self.point_ids.clear()
-            self.entity_ids.clear()
-            self.junction_pid = None
+        self._selection.select_constraint(idx, is_multi)
         self.changed.send(self)
 
     def select_junction(self, pid: EntityID, is_multi: bool):
         """Selects an implicit junction point."""
-        self.junction_pid = pid
-        if not is_multi:
-            self.point_ids.clear()
-            self.entity_ids.clear()
-            self.constraint_idx = None
+        self._selection.select_junction(pid, is_multi)
         self.changed.send(self)
 
     def select_point(self, pid: EntityID, is_multi: bool):
         """Selects a point by ID."""
-        self._update_list(self.point_ids, pid, is_multi)
-        if not is_multi:
-            self.entity_ids.clear()
-            self.constraint_idx = None
-            self.junction_pid = None
+        self._selection.select_point(pid, is_multi)
         self.changed.send(self)
 
     def select_entity(self, entity, is_multi: bool):
         """Selects a geometric entity (Line or Arc)."""
-        self._update_list(self.entity_ids, entity.id, is_multi)
-
-        # Note: We do NOT select the control points here anymore.
-        # This prevents deletion of an entity from cascading to its points
-        # and destroying shared geometry.
+        # We do NOT select the control points here: deleting an entity
+        # must not cascade to its points and destroy shared geometry.
         # Visual highlighting is handled by the renderer.
-
-        if not is_multi:
-            self.point_ids.clear()
-            self.constraint_idx = None
-            self.junction_pid = None
+        self._selection.select_entity(entity.id, is_multi)
         self.changed.send(self)
-
-    def _update_list(
-        self, collection: list[EntityID], item_id: EntityID, is_multi: bool
-    ):
-        """Helper to handle toggle vs replace selection logic."""
-        if is_multi:
-            if item_id in collection:
-                collection.remove(item_id)
-            else:
-                collection.append(item_id)
-        else:
-            if item_id not in collection:
-                collection.clear()
-                collection.append(item_id)
 
     def select_connected_entities(
         self, entity_id: EntityID, registry: "EntityRegistry"
     ):
         """
-        Adds all entities connected to the given entity through shared points
-        to the current selection.
+        Adds all entities connected to the given entity through shared
+        points to the current selection.
 
         Args:
             entity_id: The ID of the starting entity.
             registry: The EntityRegistry to query for connected entities.
         """
-        connected_ids = registry.connected_entity_ids(entity_id)
-        for eid in connected_ids:
-            if eid not in self.entity_ids:
-                self.entity_ids.append(eid)
-        self.point_ids.clear()
-        self.constraint_idx = None
-        self.junction_pid = None
+        self._selection.select_connected_entities(entity_id, registry)
         self.changed.send(self)
+
+    def add_point(self, pid: EntityID):
+        """Adds one point without emitting the changed signal."""
+        self._selection.add_point(pid)
+
+    def add_entity(self, entity_id: EntityID):
+        """Adds one entity without emitting the changed signal."""
+        self._selection.add_entity(entity_id)
+
+    def clear_points(self):
+        """Clears the selected points without emitting the changed signal."""
+        self._selection.clear_points()
+
+    def clear_entities(self):
+        """Clears the selected entities without emitting the changed signal."""
+        self._selection.clear_entities()

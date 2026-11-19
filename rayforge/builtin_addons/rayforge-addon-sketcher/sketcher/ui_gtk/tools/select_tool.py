@@ -183,7 +183,7 @@ class SelectTool(SnapMixin, SketchTool):
                     connected = registry.connected_entity_ids(entity.id)
                     entity_ids.extend(connected)
             entity_ids[:] = list(set(entity_ids))
-            self.element.selection.point_ids.clear()
+            self.element.selection.clear_points()
             self.element.selection.constraint_idx = None
             self.element.selection.junction_pid = None
             self.element.selection.changed.send(self.element.selection)
@@ -576,11 +576,11 @@ class SelectTool(SnapMixin, SketchTool):
             # Add newly found items
             for pid in points_hit:
                 if pid not in self.element.selection.point_ids:
-                    self.element.selection.point_ids.append(pid)
+                    self.element.selection.add_point(pid)
 
             for eid in entities_hit:
                 if eid not in self.element.selection.entity_ids:
-                    self.element.selection.entity_ids.append(eid)
+                    self.element.selection.add_entity(eid)
         else:
             # Not additive, so the selection is exactly what's in the box
             self.element.selection.point_ids = points_hit
