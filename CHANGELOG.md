@@ -16,8 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (firmware identity, motion limits, unit reporting) is computed by
   the raydriver library now; Rayforge only maps the result onto its
   device profiles
-- Dependencies: raydriver upgraded to 1.11.0, pinned to a git
-  revision pending the 1.12.0 release
+- Dependencies: raydriver upgraded to 1.12.0
 
 ## 1.14.0
 

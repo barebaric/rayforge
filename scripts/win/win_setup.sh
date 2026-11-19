@@ -30,10 +30,9 @@ retry() {
 }
 
 # Read the version spec for a package from requirements.txt.
-# Handles "pkg==ver", "pkg>=ver", "pkg~=ver", "pkg @ url", and bare
-# "pkg".
+# Handles "pkg==ver", "pkg>=ver", "pkg~=ver", and bare "pkg".
 # Usage:  pkg_ver=$(req_version raygeo)
-# Output: "==0.14.0"  or  " @ git+https://…"  or  ""  (empty if no pin)
+# Output: "==0.14.0"  or  ">=3.5"  or  ""  (empty if no pin)
 req_version() {
     local pkg="$1"
     local line
@@ -41,17 +40,10 @@ req_version() {
     if [ -n "$line" ]; then
         # Strip the package name and keep the version comparator
         echo "$line" | sed "s/^${pkg}//I"
-        return
+    else
+        # Bare entry with no version pin
+        echo ""
     fi
-    # A direct-URL requirement carries its own spec; pass it through
-    # so pip builds the package from that source.
-    line=$(grep -i "^${pkg}[[:space:]]*@" "$REQUIREMENTS_FILE" 2>/dev/null | head -1)
-    if [ -n "$line" ]; then
-        echo "$line" | sed "s/^${pkg}//I"
-        return
-    fi
-    # Bare entry with no version pin
-    echo ""
 }
 
 # This logic handles both CI/CD environments (where MSYS2_PATH may be pre-set)
