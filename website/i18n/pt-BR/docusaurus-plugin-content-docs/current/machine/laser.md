@@ -198,8 +198,8 @@ O fluxo de trabalho típico:
 5. Ao pressionar **Enviar**, aparece um aviso: um trabalho normal grava com o feixe nas posições do
    SCT. Você pode executar uma **Simulação com ponteiro** (o trabalho é executado com o deslocamento
    do ponteiro aplicado, de modo que o ponto do ponteiro traga o trajeto enquanto o feixe corre
-   deslocado — ele continua disparando na potência do trabalho), desativar o alinhamento e gravar,
-   ou cancelar.
+   deslocado — ele continua disparando na potência do trabalho), **Gravar com o feixe** (o
+   alinhamento permanece ativado para mirar depois do trabalho), ou cancelar.
 
 Duas coisas nunca são deslocadas: o **jog** (um movimento relativo não precisa de compensação) e os
 **trabalhos** — o corte sempre acontece com o feixe nas posições do SCT, então sua saída G-code é

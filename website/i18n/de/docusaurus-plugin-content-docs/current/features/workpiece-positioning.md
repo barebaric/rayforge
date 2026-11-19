@@ -110,8 +110,9 @@ gibt kein „nicht mehr fragen“). Du kannst wählen:
   Werkzeugpfad nachzeichnet, während der Strahl um den Offset verschoben läuft. Der Laser brennt
   weiterhin mit Job-Leistung — stelle sicher, dass der verschobene Strahl nichts treffen kann, was
   er nicht soll.
-- **Ausschalten und Brennen**: Die Ausrichtung wird ausgeschaltet und der Job brennt normal mit dem
-  Strahl an den WKS-Positionen.
+- **Mit Strahl brennen**: Der Job brennt normal mit dem Strahl an den WKS-Positionen. Die
+  Zeigerausrichtung bleibt aktiv, sodass du nach dem Job weiter mit dem Zeigerpunkt anvisieren
+  kannst.
 - **Abbrechen**.
 
 Jog-Bewegungen und Jobs werden vom Schalter nie verschoben: Jog ist relativ, und die G-Code-Ausgabe

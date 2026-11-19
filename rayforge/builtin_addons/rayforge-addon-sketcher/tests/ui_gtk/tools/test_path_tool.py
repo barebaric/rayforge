@@ -16,7 +16,7 @@ def mock_element():
     element.sketch.registry = Mock()
     element.sketch.registry.points.return_value = []
     element.sketch.registry.entities.return_value = []
-    element.sketch.registry.to_dict.return_value = {"id_counter": 0}
+    element.sketch.registry.next_id.return_value = 0
 
     element.sketch.registry.add_point = Mock(return_value=0)
     element.sketch.registry.add_line = Mock(return_value=0)
@@ -337,7 +337,7 @@ def _setup_line_finalization(path_tool, mock_element, start_id=0):
         return end_pt
 
     mock_element.sketch.registry.get_point.side_effect = get_point
-    mock_element.sketch.registry.to_dict.return_value = {"id_counter": 10}
+    mock_element.sketch.registry.next_id.return_value = 10
     mock_element.sketch.constraints = []
     return start_pt
 

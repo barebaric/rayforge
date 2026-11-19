@@ -10,6 +10,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from rayforge.machine.models.machine import Origin
 from rayforge.machine.models.machine_panel import PanelOrientation
 
 
@@ -473,6 +474,21 @@ class TestPointerAlignmentShifts:
         # the beam one offset behind so the pointer marks the corner.
         move_popover.machine_cmd.move_to.assert_called_once_with(
             move_popover.machine, 90.0, 30.0, speed=None
+        )
+
+    @pytest.mark.ui
+    def test_corner_shortcut_shifted_in_workarea_mode(self, move_popover):
+        """The corner shortcuts keep the pointer shift when the
+        workarea origin is the active reference."""
+        enable_pointer_alignment(move_popover.machine, 10.0, 20.0)
+        move_popover.machine.set_origin(Origin.BOTTOM_LEFT)
+        move_popover.machine.set_work_margins(5.0, 7.0, 0.0, 0.0)
+        move_popover.machine.set_wcs_origin_is_workarea_origin(True)
+
+        move_popover._on_move_to_position(None, "ll")
+
+        move_popover.machine_cmd.move_to.assert_called_once_with(
+            move_popover.machine, 85.0, 30.0, speed=None
         )
 
     @pytest.mark.ui

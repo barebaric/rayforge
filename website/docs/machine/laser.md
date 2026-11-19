@@ -197,7 +197,7 @@ The typical workflow:
 5. When you press **Send**, a warning appears: a regular job burns with the beam at the WCS
    positions. You can run a **Dry-Run with Pointer** (the job runs with the pointer offset applied,
    so the pointer dot traces the toolpath while the beam is displaced — it still fires at job
-   power), turn alignment off and burn, or cancel.
+   power), **Burn with Beam** (alignment stays on for aiming after the job), or cancel.
 
 Two things are never shifted by an ordinary send: **jog** (a relative move needs no compensation)
 and **jobs** — cutting always happens with the beam at the WCS positions, so your G-code output is

@@ -405,10 +405,11 @@ class MoveToPopover(Gtk.Popover):
             return
 
         machine_x, machine_y = panel.panel_point_to_machine(panel_x, panel_y)
-        wcs_offset = self.machine.get_command_wcs_offset()
+        pointer_offset = self._get_pointer_shift()
         x_off, y_off, _ = panel.get_command_offset(
-            wcs_offset=wcs_offset,
+            wcs_offset=self.machine.get_active_wcs_offset(),
             wcs_is_workarea_origin=self.machine.wcs_origin_is_workarea_origin,
+            extra_offset=pointer_offset,
         )
         cmd_x, cmd_y = self._clamp_command_to_travel(
             machine_x - x_off, machine_y - y_off

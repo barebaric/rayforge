@@ -108,8 +108,9 @@ chaque envoi (pas d'option « ne plus demander »). Vous pouvez choisir :
 - **Simulation avec pointeur** : le job s'exécute avec le décalage du pointeur appliqué, si bien que
   le point du pointeur trace le parcours tandis que le faisceau court décalé. Le laser tire toujours
   à la puissance du job — assurez-vous que le faisceau décalé ne peut rien toucher d'interdit.
-- **Désactiver et graver** : l'alignement est désactivé et le job grave normalement avec le faisceau
-  aux positions du SCF.
+- **Graver avec le faisceau** : le job grave normalement avec le faisceau aux positions du SCF.
+  L'alignement du pointeur reste actif, vous pouvez donc continuer à viser avec le point du pointeur
+  après le job.
 - **Annuler**.
 
 Les mouvements de jog et les jobs ne sont jamais décalés par l'interrupteur : le jog est relatif, et
