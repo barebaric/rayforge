@@ -65,6 +65,11 @@ class XtoolNetworkDriver(SessionDriverBase):
     supports_unit_detection = True
     DISCOVERY = None
 
+    @property
+    def session(self) -> XtoolSession | None:
+        """The underlying raydriver session, if set up."""
+        return self._session
+
     def _require_session(self) -> XtoolSession:
         """Returns the session, raising a descriptive error when the
         driver was never set up (e.g. no host configured)."""
