@@ -76,7 +76,7 @@ jobs:
           SNAPCRAFT_DEBUG: "1"
         continue-on-error: true
         run: |
-          snapcraft --destructive-mode
+          sudo snapcraft --destructive-mode
           SNAP_FILE=$(find . -maxdepth 1 -name '*.snap' -print -quit)
           if [ -z "$SNAP_FILE" ]; then
             echo "No snap file produced"
