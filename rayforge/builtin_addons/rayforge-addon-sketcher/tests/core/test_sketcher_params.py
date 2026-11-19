@@ -1,8 +1,7 @@
-import logging
 import math
 
 import pytest
-from sketcher.core.params import ParameterContext
+from raygeo.sketch.params import ParameterContext
 
 
 @pytest.fixture
@@ -166,23 +165,20 @@ def test_evaluate_uses_shared_safe_evaluator(params):
         params.evaluate("().__class__.__bases__")
 
 
-def test_evaluate_all_logs_typo(params, caplog):
-    """evaluate_all() must log unresolved typos so they are not silently
-    hidden, while still leaving the value unresolved (issue 6)."""
+def test_evaluate_all_reports_unresolved_typo(params):
+    """Unresolved expressions are available to the host for reporting."""
     params.set("good", 10)
     params.set("typo", "widht + 5")
-    with caplog.at_level(logging.WARNING, logger="sketcher.core.params"):
-        params.evaluate_all()
+    params.evaluate_all()
     assert params.get("typo") == 0.0
-    assert any("typo" in r.message for r in caplog.records)
+    assert "typo" in params.unresolved_errors()
 
 
-def test_evaluate_all_keeps_forward_reference_retry(params, caplog):
+def test_evaluate_all_keeps_forward_reference_retry(params):
     """A forward reference (a name defined later in set() order) must still
-    resolve via the multi-pass solver; it must not be logged as an error."""
+    resolve via the multi-pass solver and not be reported as an error."""
     params.set("b", "a * 2")
     params.set("a", 10)
-    with caplog.at_level(logging.WARNING, logger="sketcher.core.params"):
-        params.evaluate_all()
+    params.evaluate_all()
     assert params.get("b") == 20.0
-    assert not caplog.records
+    assert params.unresolved_errors() == {}

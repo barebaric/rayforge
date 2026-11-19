@@ -41,6 +41,7 @@ from raygeo.sketch.constraints import (
 )
 from raygeo.sketch.entities import Arc, Bezier, Entity, Line
 from raygeo.sketch.entities import TextBox as TextBoxEntity
+from raygeo.sketch.params import ParameterContext
 from raygeo.sketch.registry import EntityRegistry
 
 from rayforge.core.asset import IAsset
@@ -53,7 +54,6 @@ from rayforge.image.structures import FillRenderData, FillStyle
 
 from .arrays import Array
 from .components import get_referenced_points
-from .params import ParameterContext
 from .solver import Solver
 from .template_functions import get_template_functions
 from .types import ConstraintStatus, EntityID, WaypointType
@@ -1470,7 +1470,7 @@ class Sketch(IAsset, IGeometryProvider):
             # Step 3: Evaluate all expressions from scratch using the temporary
             # context, seeded with the combined values.
             solve_params.evaluate_all(initial_values=initial_values)
-            ctx = solve_params.get_all_values()
+            ctx: dict[str, Any] = dict(solve_params.get_all_values())
 
             # Cache the solved context (with template functions) for
             # reuse by _resolve_text_content, avoiding redundant
@@ -1653,7 +1653,7 @@ class Sketch(IAsset, IGeometryProvider):
                 if not initial_values and self.input_parameters:
                     initial_values.update(self.input_parameters.get_values())
                 solve_params.evaluate_all(initial_values=initial_values)
-                ctx = solve_params.get_all_values()
+                ctx: dict[str, Any] = dict(solve_params.get_all_values())
                 ctx.update(get_template_functions())
 
             expr_map = ExpressionMap(ctx)
