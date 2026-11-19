@@ -8,6 +8,7 @@ from typing import ClassVar
 import cairo
 from gi.repository import Adw, Gtk
 from raygeo.sketch.entities import Arc, Bezier, Line
+from raygeo.sketch.entity_group import EntityGroup
 
 from rayforge.ui_gtk.shared.pref_rows import LengthSpinRow, SpinRow
 
@@ -18,7 +19,6 @@ from ...core.arrays import (
     sample_path,
 )
 from ...core.commands import CreateArrayCommand
-from ...core.entity_group import EntityGroup
 from .array_base import ArrayToolBase
 
 logger = logging.getLogger(__name__)

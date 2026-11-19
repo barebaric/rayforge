@@ -5,12 +5,12 @@ from unittest.mock import MagicMock
 import cairo
 import numpy as np
 import pytest
+from raygeo.sketch.components import get_referenced_points
 from raygeo.sketch.constraints import EqualLengthConstraint
 from raygeo.sketch.params import ParameterContext
 from raygeo.sketch.registry import EntityRegistry
 from scipy.optimize import check_grad
 from sketcher.core import Sketch
-from sketcher.core.components import get_referenced_points
 from sketcher.core.selection import SketchSelection
 
 
@@ -521,4 +521,4 @@ def test_equal_length_reports_referenced_entities():
     c = EqualLengthConstraint([l1, l2])
 
     assert c.get_referenced_entity_ids() == {l1, l2}
-    assert get_referenced_points(reg, c) == {p1, p2, p3, p4}
+    assert set(get_referenced_points(reg, c)) == {p1, p2, p3, p4}

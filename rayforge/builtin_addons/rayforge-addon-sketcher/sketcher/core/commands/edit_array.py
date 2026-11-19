@@ -6,6 +6,7 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
 from raygeo.sketch.entities import Circle
+from raygeo.sketch.entity_group import EntityGroup
 from raygeo.sketch.params import ParameterContext
 
 from ..arrays import (
@@ -14,7 +15,6 @@ from ..arrays import (
     InstancePlacement,
     resolve_template_center,
 )
-from ..entity_group import EntityGroup
 from .base import SketchChangeCommand
 from .create_array import CreateArrayCommand
 from .items import AddItemsCommand, RemoveItemsCommand

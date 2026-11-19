@@ -6,8 +6,8 @@ from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
 from raygeo.sketch.entities import Arc, Bezier, Line
+from raygeo.sketch.entity_group import EntityGroup
 
-from ..entity_group import EntityGroup
 from .base import (
     Array,
     ArrayStrategy,

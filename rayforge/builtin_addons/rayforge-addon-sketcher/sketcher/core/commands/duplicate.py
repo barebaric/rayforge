@@ -6,8 +6,8 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING
 
 from raygeo.sketch.entities import SketchPoint as Point
+from raygeo.sketch.entity_group import EntityGroup
 
-from ..entity_group import EntityGroup
 from ..types import EntityID
 from .base import SketchChangeCommand
 

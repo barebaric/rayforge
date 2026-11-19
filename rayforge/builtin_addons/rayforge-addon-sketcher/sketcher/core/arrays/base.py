@@ -9,8 +9,7 @@ from enum import Enum, auto
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from raygeo.sketch.entities import Circle
-
-from ..entity_group import EntityGroup
+from raygeo.sketch.entity_group import EntityGroup
 
 if TYPE_CHECKING:
     from raygeo.sketch.constraints import Constraint

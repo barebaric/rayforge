@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING, Any
 from raygeo.sketch.constraints import RadiusConstraint
 from raygeo.sketch.entities import Circle
 from raygeo.sketch.entities import SketchPoint as Point
+from raygeo.sketch.entity_group import EntityGroup
 
-from ..entity_group import EntityGroup
 from .base import (
     Array,
     ArrayStrategy,

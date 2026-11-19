@@ -7,6 +7,7 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
 from raygeo.sketch.entities import Bezier, Circle, SketchPoint
+from raygeo.sketch.entity_group import EntityGroup, remap_point_refs
 
 from ..arrays import (
     Array,
@@ -15,7 +16,6 @@ from ..arrays import (
     InstancePlacement,
     resolve_template_center,
 )
-from ..entity_group import EntityGroup, remap_point_refs
 from .base import SketchChangeCommand
 from .items import AddItemsCommand
 
