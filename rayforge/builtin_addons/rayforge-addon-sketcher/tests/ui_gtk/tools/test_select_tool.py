@@ -167,7 +167,7 @@ def _mock_point_drag_state(mock_element):
     constraints and all registry points/entities."""
     mock_element.sketch.get_coincident_points.return_value = set()
     mock_element.sketch.constraints = []
-    mock_element.sketch.registry.get_rigidly_connected_points.return_value = []
+    mock_element.sketch.registry.rigidly_connected_points.return_value = []
     mock_element.sketch.registry.points.return_value = []
     mock_element.sketch.registry.entities.return_value = []
 

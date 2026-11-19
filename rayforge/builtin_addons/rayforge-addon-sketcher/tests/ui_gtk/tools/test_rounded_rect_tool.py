@@ -14,7 +14,7 @@ def mock_element():
     """Create a mock SketchElement for testing tools."""
     element = MagicMock()
     element.sketch = MagicMock()
-    element.sketch.registry.to_dict.return_value = {"id_counter": 0}
+    element.sketch.registry.next_id.return_value = 0
     element.hittester.get_hit_data.return_value = (None, None)
     element.execute_command = MagicMock()
     return element

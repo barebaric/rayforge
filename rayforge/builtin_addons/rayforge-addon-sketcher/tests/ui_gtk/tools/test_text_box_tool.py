@@ -18,7 +18,7 @@ def mock_element():
     """Create a mock SketchElement for testing tools."""
     element = Mock()
     element.sketch = Mock()
-    element.sketch.registry.to_dict.return_value = {"id_counter": 0}
+    element.sketch.registry.next_id.return_value = 0
     element.sketch.registry.entities.return_value = []
     element.sketch.registry.points.return_value = []
     element.sketch.constraints = []
