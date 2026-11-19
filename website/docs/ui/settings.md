@@ -48,6 +48,10 @@ With **Watch imported files** enabled, Rayforge monitors the files behind import
 offers to reload them when they change on disk. See
 [Keeping Imported Files in Sync](../files/importing.md#keeping-imported-files-in-sync) for details.
 
+With **Prevent sleep during jobs** enabled, Rayforge blocks automatic system sleep while a job is
+running, so the connection to the machine is not dropped. An explicit suspend or closing the lid
+still works.
+
 You can also configure **Startup behavior** — start with an empty workspace, reopen your last
 project, or always open a specific project file. Note that files specified on the command line will
 always override these settings.

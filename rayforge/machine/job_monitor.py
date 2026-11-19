@@ -10,6 +10,7 @@ from raygeo.geo.types import Point3D
 from raygeo.ops.types import CommandCategory
 
 from ..shared.tasker import task_mgr
+from ..shared.util.sleep_inhibitor import sleep_inhibitor
 from .driver.driver import DeviceStatus
 from .job_status import JobKind, JobOutcome, JobPhase, JobStatus
 
@@ -125,6 +126,7 @@ class JobMonitor:
         self._started_wall = time.time()
         self._last_hook_time = 0.0
         self._active = False
+        self._sleep_inhibited = False
 
         # Modeled execution time (seconds) of the commands up to and
         # including the last acknowledged one.
@@ -187,6 +189,9 @@ class JobMonitor:
         self._active = True
         self._started_wall = time.time()
         self._last_hook_time = self._clock() - PROGRESS_HOOK_INTERVAL_SECONDS
+        if self._should_inhibit_sleep():
+            sleep_inhibitor.acquire()
+            self._sleep_inhibited = True
         if self.machine is not None:
             self.machine.state_changed.connect(self._on_machine_state_changed)
             self.machine.set_current_job(self)
@@ -211,6 +216,9 @@ class JobMonitor:
         if not self._active:
             return
         self._active = False
+        if self._sleep_inhibited:
+            self._sleep_inhibited = False
+            sleep_inhibitor.release()
         if self.machine is not None:
             self.machine.state_changed.disconnect(
                 self._on_machine_state_changed
@@ -224,6 +232,13 @@ class JobMonitor:
             outcome=outcome,
             message=message,
         )
+
+    def _should_inhibit_sleep(self) -> bool:
+        """Whether this job should block automatic system sleep."""
+        if self._context is None:
+            return False
+        config = getattr(self._context, "config", None)
+        return getattr(config, "prevent_sleep_while_working", False) is True
 
     def set_paused(self, paused: bool) -> None:
         """

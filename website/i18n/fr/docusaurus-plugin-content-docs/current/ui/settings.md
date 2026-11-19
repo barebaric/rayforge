@@ -45,6 +45,10 @@ les pièces importées et propose de les recharger lorsqu'ils changent sur le di
 [Garder les fichiers importés synchronisés](../files/importing.md#garder-les-fichiers-importés-synchronisés)
 pour plus de détails.
 
+Lorsque **Empêcher la mise en veille pendant les tâches** est activé, Rayforge bloque la mise en
+veille automatique du système pendant l'exécution d'une tâche, afin que la connexion à la machine ne
+soit pas perdue. Une mise en veille explicite ou la fermeture du capot fonctionnent toujours.
+
 Tu peux aussi configurer le **Comportement au démarrage** — démarrer avec un espace de travail vide,
 rouvrir le dernier projet ou toujours ouvrir un fichier de projet spécifique. Note que les fichiers
 spécifiés en ligne de commande remplaceront toujours ces paramètres.

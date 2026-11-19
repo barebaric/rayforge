@@ -45,6 +45,10 @@ Werkstücken und bietet an, sie neu zu laden, wenn sie sich auf der Festplatte �
 findest du unter
 [Importierte Dateien synchron halten](../files/importing.md#importierte-dateien-synchron-halten).
 
+Mit **Schlaf während Jobs verhindern** blockiert Rayforge den automatischen Systemschlaf, während
+ein Job läuft, damit die Verbindung zur Maschine nicht getrennt wird. Ein manuelles Suspendieren
+oder das Schließen des Deckels funktioniert weiterhin.
+
 Du kannst auch das **Startverhalten** konfigurieren — mit einem leeren Arbeitsbereich starten, das
 letzte Projekt erneut öffnen oder immer eine bestimmte Projektdatei öffnen. Beachte, dass auf der
 Kommandozeile angegebene Dateien diese Einstellungen immer außer Kraft setzen.
