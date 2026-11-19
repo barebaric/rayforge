@@ -43,11 +43,16 @@ jobs:
           key: deb-pip-${{ hashFiles('debian/requirements-bundle.txt') }}
           restore-keys: deb-pip-
 
+      - name: Configure fast APT mirror
+        uses: vegardit/fast-apt-mirror.sh@v1
+
       - name: Install build dependencies
         run: >
-          sudo apt-get update -o Acquire::Retries=5 &&
+          sudo apt-get update -o Acquire::Retries=5
+          -o Acquire::http::Timeout=15 -o Acquire::https::Timeout=15 &&
           sudo apt-get install -y --no-install-recommends
           -o Acquire::Retries=5
+          -o Acquire::http::Timeout=15 -o Acquire::https::Timeout=15
           build-essential
           cargo
           cython3
@@ -106,11 +111,13 @@ jobs:
       - name: Install runtime dependencies for testing
         run: |
           sudo mk-build-deps --install \
-            --tool="apt-get -y --no-install-recommends" debian/control
+            --tool="apt-get -y --no-install-recommends -o Acquire::Retries=5 -o Acquire::http::Timeout=15" \
+            debian/control
 
       - name: Test package installation
         run: |
           sudo apt-get install -y --no-install-recommends \
+            -o Acquire::Retries=5 -o Acquire::http::Timeout=15 \
             ./${{ steps.build_test_packages.outputs.deb_file_path }}
 
       - name: Verify translated catalogs are shipped
@@ -140,7 +147,8 @@ jobs:
           # This simple command proves the installation was successful.
           rayforge --version
           # Try running the app and immediately exiting again.
-          sudo apt-get install -y --no-install-recommends xvfb
+          sudo apt-get install -y --no-install-recommends \
+            -o Acquire::Retries=5 -o Acquire::http::Timeout=15 xvfb
           xvfb-run rayforge --exit
 
       - name: Sign source package
