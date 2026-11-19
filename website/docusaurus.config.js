@@ -1,21 +1,3 @@
-const webpack = require('webpack');
-
-function rayforgeVersionPlugin() {
-  return {
-    name: 'rayforge-version-plugin',
-    configureWebpack() {
-      return {
-        plugins: [
-          new webpack.DefinePlugin({
-            RAYFORGE_VERSION: JSON.stringify(process.env.RAYFORGE_VERSION || '0.0.0'),
-            IS_PRERELEASE: JSON.stringify(process.env.IS_PRERELEASE || 'false'),
-          }),
-        ],
-      };
-    },
-  };
-}
-
 module.exports = {
   title: 'Rayforge',
   tagline: 'Free open-source laser cutter software — the LightBurn alternative for GRBL-based laser cutting and engraving',
@@ -35,6 +17,23 @@ module.exports = {
   i18n: {
     defaultLocale: 'en',
     locales: ['en', 'pt-BR', 'es', 'fr', 'hi', 'de', 'zh-CN', 'uk'],
+    localeConfigs: {
+      en: { baseUrl: '/' },
+      'pt-BR': { baseUrl: '/pt-BR/' },
+      es: { baseUrl: '/es/' },
+      fr: { baseUrl: '/fr/' },
+      hi: { baseUrl: '/hi/' },
+      de: { baseUrl: '/de/' },
+      'zh-CN': { baseUrl: '/zh-CN/' },
+      uk: { baseUrl: '/uk/' },
+    },
+  },
+
+  future: {
+    v4: {
+      removeLegacyPostBuildHeadAttribute: true,
+    },
+    faster: true,
   },
 
   presets: [
@@ -68,7 +67,6 @@ module.exports = {
   ],
 
   plugins: [
-    rayforgeVersionPlugin,
     [
       require.resolve("@easyops-cn/docusaurus-search-local"),
       {
