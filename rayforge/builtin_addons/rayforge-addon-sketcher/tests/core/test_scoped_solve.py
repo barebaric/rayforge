@@ -1,17 +1,16 @@
 import pytest
+from raygeo.sketch import solve_registry
 from raygeo.sketch.constraints import (
     Constraint,
     DragConstraint,
     TangentConstraint,
 )
-from raygeo.sketch.params import ParameterContext
 from raygeo.sketch.registry import EntityRegistry
 from sketcher.core.components import (
     compute_constraint_components,
     get_referenced_points,
 )
 from sketcher.core.sketch import Sketch
-from sketcher.core.solver import Solver
 
 
 def add_rect(sketch, x, y, w, h, anchored=True):
@@ -110,21 +109,27 @@ def test_entity_level_constraint_couples_points():
 
 def test_solver_point_filter_ignores_other_points():
     registry = EntityRegistry()
-    params = ParameterContext()
     p1 = registry.add_point(0, 0)
     p2 = registry.add_point(10, 0)
 
-    solver = Solver(registry, params, [], point_filter={p1})
-    assert solver.solve(update_dof=False) is True
+    assert (
+        solve_registry(registry, [], point_filter=[p1], update_dof=False)
+        is True
+    )
 
     assert registry.get_point(p1).x == pytest.approx(0.0)
     assert registry.get_point(p1).y == pytest.approx(0.0)
     assert registry.get_point(p2).x == 10.0
 
-    solver = Solver(
-        registry, params, [DragConstraint(p1, 5.0, 5.0)], point_filter={p1}
+    assert (
+        solve_registry(
+            registry,
+            [DragConstraint(p1, 5.0, 5.0)],
+            point_filter=[p1],
+            update_dof=False,
+        )
+        is True
     )
-    assert solver.solve(update_dof=False) is True
 
     assert registry.get_point(p1).x == pytest.approx(5.0, abs=1e-4)
     assert registry.get_point(p2).x == 10.0
