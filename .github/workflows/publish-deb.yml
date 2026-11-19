@@ -14,6 +14,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  packages: read
+
 jobs:
   lint-test:
     if: github.repository == 'barebaric/rayforge'
@@ -30,6 +34,11 @@ jobs:
         distro:
           - { name: "Ubuntu 24.04", codename: "noble", runner: "ubuntu-24.04" }
     runs-on: ${{ matrix.distro.runner }}
+    container:
+      image: ghcr.io/barebaric/rayforge-ci:55cd9b91e4f01e2f372497c27f761dfd1df3eb24
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -60,34 +69,6 @@ jobs:
           Dir::Cache::archives "$HOME/.cache/apt-archives";
           APT::Keep-Downloaded-Packages "true";
           EOF
-
-      - name: Install build dependencies
-        run: >
-          sudo apt-get update -o Acquire::Retries=5
-          -o Acquire::http::Timeout=15 -o Acquire::https::Timeout=15 &&
-          sudo apt-get install -y --no-install-recommends
-          -o Acquire::Retries=5
-          -o Acquire::http::Timeout=15 -o Acquire::https::Timeout=15
-          build-essential
-          cargo
-          cython3
-          devscripts
-          debhelper
-          dh-python
-          gettext
-          dput
-          equivs
-          jq
-          python3-all
-          python3-maturin
-          python3-numpy
-          pybuild-plugin-pyproject
-          python3-pip
-          python3-poetry-core
-          python3-pyclipper
-          cython3
-          pkg-config
-          rustc
 
       - name: Import GPG key
         # Run on tags OR main branch push
