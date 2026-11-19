@@ -96,9 +96,20 @@ class SnapMixin:
             self.current_snap_result = None
             return (model_x, model_y)
 
+        get_preview_state = getattr(self, "get_preview_state", None)
+        preview_state = (
+            get_preview_state() if get_preview_state is not None else None
+        )
+        preview_entities = (
+            preview_state.get_preview_entity_ids()
+            if preview_state is not None
+            else set()
+        )
+
         context = DragContext(
             dragged_point_ids=exclude_points or set(),
             dragged_entity_ids=set(),
+            preview_entity_ids=preview_entities,
             initial_positions={},
             suppress_coincident_points=False,
         )

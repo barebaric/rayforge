@@ -8,6 +8,7 @@ from .spatial import SnapLineIndex
 from .types import (
     DragContext,
     SnapLine,
+    SnapLineType,
     SnapPoint,
     SnapResult,
 )
@@ -38,13 +39,22 @@ def geometry_key(
     dragged_entities = (
         drag_context.dragged_entity_ids if drag_context else set()
     )
+    preview_entities = (
+        drag_context.preview_entity_ids if drag_context else set()
+    )
+    excluded_entities = dragged_entities | preview_entities
+    excluded_points = set(dragged_points)
+    for entity_id in excluded_entities:
+        point_ids = registry.entity_point_ids(entity_id)
+        if point_ids:
+            excluded_points.update(point_ids)
 
     entities = []
     for entity in registry.entities():
-        if entity.id in dragged_entities:
+        if entity.id in excluded_entities:
             continue
         point_ids = entity.get_point_ids()
-        if any(pid in dragged_points for pid in point_ids):
+        if any(pid in excluded_points for pid in point_ids):
             continue
         if not include_construction and entity.construction:
             continue
@@ -64,7 +74,7 @@ def geometry_key(
     points = tuple(
         (p.id, round(p.x, 6), round(p.y, 6))
         for p in registry.points()
-        if p.id not in dragged_points
+        if p.id not in excluded_points
     )
     return (tuple(entities), points)
 
@@ -153,16 +163,80 @@ class SnapEngine:
         """
         return geometry_key(registry, drag_context)
 
+    @staticmethod
+    def _static_drag_context(
+        registry: EntityRegistry, drag_context: DragContext
+    ) -> DragContext:
+        """Context for building the cached index: no preview geometry."""
+        preview_entities = set(drag_context.preview_entity_ids)
+        dragged_entities = (
+            set(drag_context.dragged_entity_ids) | preview_entities
+        )
+        dragged_points = set(drag_context.dragged_point_ids)
+        for entity_id in preview_entities:
+            point_ids = registry.entity_point_ids(entity_id)
+            if point_ids:
+                dragged_points.update(point_ids)
+        return DragContext(
+            dragged_point_ids=dragged_points,
+            dragged_entity_ids=dragged_entities,
+            preview_entity_ids=set(),
+            initial_positions=drag_context.initial_positions,
+            suppress_coincident_points=drag_context.suppress_coincident_points,
+        )
+
+    def _dynamic_snap_lines(
+        self,
+        registry: EntityRegistry,
+        drag_context: DragContext,
+    ) -> list[SnapLine]:
+        """Live axis guides for preview points.
+
+        Preview geometry is kept out of the cached index, but its
+        points that are still valid snap targets need axis guides.
+        This is intentionally O(number of preview points).
+        """
+        lines: list[SnapLine] = []
+        for entity_id in drag_context.preview_entity_ids:
+            entity = registry.get_entity(entity_id)
+            if entity is None:
+                continue
+            for point_id in entity.get_point_ids():
+                if drag_context.is_point_dragged(point_id):
+                    continue
+                try:
+                    point = registry.get_point(point_id)
+                except IndexError:
+                    continue
+                lines.append(
+                    SnapLine(
+                        is_horizontal=False,
+                        coordinate=point.x,
+                        line_type=SnapLineType.ENTITY_POINT,
+                        source=point,
+                    )
+                )
+                lines.append(
+                    SnapLine(
+                        is_horizontal=True,
+                        coordinate=point.y,
+                        line_type=SnapLineType.ENTITY_POINT,
+                        source=point,
+                    )
+                )
+        return lines
+
     def rebuild_index(
         self,
         registry: EntityRegistry,
         drag_position: GeoPoint,
         drag_context: DragContext,
     ) -> None:
-        fingerprint = self._geometry_fingerprint(registry, drag_context)
+        static_context = self._static_drag_context(registry, drag_context)
+        fingerprint = self._geometry_fingerprint(registry, static_context)
         drag_key = (
-            frozenset(drag_context.dragged_point_ids),
-            frozenset(drag_context.dragged_entity_ids),
+            frozenset(static_context.dragged_point_ids),
+            frozenset(static_context.dragged_entity_ids),
         )
         if (
             fingerprint == self._cached_fingerprint
@@ -178,7 +252,7 @@ class SnapEngine:
                     producer.produce(
                         registry,
                         drag_position,
-                        drag_context,
+                        static_context,
                         self._threshold,
                     )
                 )
@@ -224,6 +298,7 @@ class SnapEngine:
             drag_context = DragContext()
 
         self.rebuild_index(registry, position, drag_context)
+        dynamic_lines = self._dynamic_snap_lines(registry, drag_context)
 
         # The result is computed against the current registry even when
         # the index rebuild early-returned (producers read live point
@@ -243,13 +318,17 @@ class SnapEngine:
         point_result = self._find_nearest_snap_point(x, y, snap_points)
         if point_result is not None:
             snap_point, dist = point_result
-            crossing_lines = self._find_crossing_lines(x, y, snap_point)
+            crossing_lines = self._find_crossing_lines(
+                x, y, snap_point, dynamic_lines
+            )
             self._last_primary = snap_point
             return SnapResult.from_snap_point(snap_point, dist, crossing_lines)
 
         self._last_primary = None
 
-        best_h, best_v = self._find_best_lines_for_both_axes(x, y)
+        best_h, best_v = self._find_best_lines_for_both_axes(
+            x, y, dynamic_lines
+        )
         if best_h is not None or best_v is not None:
             snap_x = best_v.coordinate if best_v else x
             snap_y = best_h.coordinate if best_h else y
@@ -290,7 +369,10 @@ class SnapEngine:
         )
 
     def _find_best_lines_for_both_axes(
-        self, x: float, y: float
+        self,
+        x: float,
+        y: float,
+        extra_lines: list[SnapLine] | None = None,
     ) -> tuple[SnapLine | None, SnapLine | None]:
         best_h: SnapLine | None = None
         best_h_dist: float = self._threshold
@@ -312,6 +394,18 @@ class SnapEngine:
             if dist < best_v_dist:
                 best_v_dist = dist
                 best_v = indexed.snap_line
+
+        for line in extra_lines or ():
+            if line.is_horizontal:
+                dist = abs(y - line.coordinate)
+                if dist < best_h_dist:
+                    best_h_dist = dist
+                    best_h = line
+            else:
+                dist = abs(x - line.coordinate)
+                if dist < best_v_dist:
+                    best_v_dist = dist
+                    best_v = line
 
         return (best_h, best_v)
 
@@ -374,10 +468,14 @@ class SnapEngine:
         return None
 
     def _find_crossing_lines(
-        self, x: float, y: float, snap_point: SnapPoint
+        self,
+        x: float,
+        y: float,
+        snap_point: SnapPoint,
+        extra_lines: list[SnapLine] | None = None,
     ) -> list[SnapLine]:
         crossing: list[SnapLine] = []
-        for sl in self._get_all_lines():
+        for sl in self._get_all_lines(extra_lines):
             if (
                 sl.is_horizontal
                 and abs(sl.coordinate - snap_point.y) < 1e-6
@@ -389,8 +487,10 @@ class SnapEngine:
                 crossing.append(sl)
         return crossing
 
-    def _get_all_lines(self) -> list[SnapLine]:
-        lines: list[SnapLine] = []
+    def _get_all_lines(
+        self, extra_lines: list[SnapLine] | None = None
+    ) -> list[SnapLine]:
+        lines: list[SnapLine] = list(extra_lines or ())
         for indexed in self._index._horizontal:
             if indexed.snap_line is not None:
                 lines.append(indexed.snap_line)
@@ -412,8 +512,9 @@ class SnapEngine:
             drag_context = DragContext()
 
         self.rebuild_index(registry, position, drag_context)
+        dynamic_lines = self._dynamic_snap_lines(registry, drag_context)
 
-        return self._get_all_lines()
+        return self._get_all_lines(dynamic_lines)
 
     def invalidate_index(self) -> None:
         """Drops the cached snap line index so the next query rebuilds

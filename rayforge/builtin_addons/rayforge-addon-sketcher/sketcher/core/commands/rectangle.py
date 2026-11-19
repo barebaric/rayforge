@@ -56,6 +56,13 @@ class RectanglePreviewState(PreviewState):
                 result.add(pid)
         return result
 
+    def get_preview_entity_ids(self) -> set[EntityID]:
+        return {
+            value
+            for key, value in self.preview_ids.items()
+            if key.startswith("line")
+        }
+
     def set_dimensions(
         self,
         registry: EntityRegistry,

@@ -44,6 +44,9 @@ class CirclePreviewState(PreviewState):
         """
         return {self.radius_id}
 
+    def get_preview_entity_ids(self) -> set[EntityID]:
+        return {self.entity_id}
+
     def set_diameter(self, registry: EntityRegistry, diameter: float) -> None:
         """
         Sets the circle diameter from numeric input.

@@ -37,6 +37,16 @@ class PreviewState:
         """
         return set()
 
+    def get_preview_entity_ids(self) -> set[int]:
+        """
+        Returns IDs of entities created for the preview.
+
+        These entities are kept out of the cached snap index so their
+        geometry can follow the cursor without rebuilding all static
+        snap lines. Their points can still be live snap candidates.
+        """
+        return set()
+
     def get_hidden_point_ids(self) -> set[int]:
         """
         Returns IDs of points that should be hidden during preview.

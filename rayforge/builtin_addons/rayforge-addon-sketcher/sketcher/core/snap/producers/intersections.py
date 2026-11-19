@@ -82,6 +82,7 @@ class IntersectionsProducer(SnapLineProducer):
             e
             for e in registry.entities()
             if not drag_context.is_entity_dragged(e.id)
+            and not drag_context.is_preview_entity(e.id)
             and not any(
                 drag_context.is_point_dragged(pid) for pid in e.get_point_ids()
             )
