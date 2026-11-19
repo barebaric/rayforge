@@ -43,6 +43,10 @@ trabalho importadas e oferece recarregá-los quando eles mudam no disco. Veja
 [Mantendo os arquivos importados sincronizados](../files/importing.md#mantendo-os-arquivos-importados-sincronizados)
 para mais detalhes.
 
+Com **Evitar suspensão durante trabalhos** ativado, o Rayforge bloqueia a suspensão automática do
+sistema enquanto um trabalho está em execução, para que a conexão com a máquina não seja perdida.
+Uma suspensão explícita ou fechar a tampa continuam funcionando.
+
 Você também pode configurar o **Comportamento de inicialização** — iniciar com um espaço de trabalho
 vazio, reabrir o último projeto ou sempre abrir um arquivo de projeto específico. Note que arquivos
 especificados na linha de comando sempre substituirão essas configurações.

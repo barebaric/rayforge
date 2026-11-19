@@ -291,8 +291,10 @@ class IntentController:
 
         If a rebuild is already running on the background thread, the
         in-flight run is signalled to cancel so the next generation
-        starts as soon as possible.
+        starts as soon as possible. An explicit rebuild also clears any
+        pending stale state, as the fresh result will replace it.
         """
+        self._data_stale_flag = False
         if self._rebuild_timer is not None:
             self._rebuild_timer.cancel()
             self._rebuild_timer = None

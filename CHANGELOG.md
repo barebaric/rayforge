@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## UNRELEASED
 
+### Added
+
+- Machine: automatic system sleep is inhibited while a job is running,
+  so the connection to the machine is not dropped when the computer
+  goes idle. The new "Prevent sleep during jobs" option on the General
+  settings page can disable it
+
 ### Changed
 
 - Machine: grblHAL controllers are identified by their `[BOARD:...]`
