@@ -111,7 +111,7 @@ workdir = "."
 
 [tasks]
 pre-commit-install = "pre-commit install"
-lint = { depends-on = ["ruff", "flake", "pyflakes", "pyright", "validate-metainfo"] }
+lint = { depends-on = ["format"], cmd = "bash scripts/lint.sh" }
 update-translations = "bash scripts/update_translations.sh"
 compile-translations = "bash scripts/update_translations.sh --compile-only"
 print-untranslated = "bash scripts/print_untranslated.sh"
@@ -131,24 +131,22 @@ cmd = "ruff format rayforge tests scripts && ruff check --select I --fix rayforg
 
 [tasks.flake]
 depends-on = ["format"]
-cmd = "flake8 --ignore=E127,E128,E121,E123,E126,E203,E226,E24,E704,W503,W504 --builtins=_ rayforge tests"
+cmd = "bash scripts/lint.sh flake"
 
 [tasks.ruff]
 depends-on = ["format"]
-cmd = "ruff check rayforge tests scripts"
+cmd = "bash scripts/lint.sh ruff"
 
 [tasks.pyflakes]
 depends-on = ["format"]
-env = { PYFLAKES_BUILTINS = "_" }
-cmd = "pyflakes rayforge tests"
+cmd = "bash scripts/lint.sh pyflakes"
 
 [tasks.pyright]
 depends-on = ["format"]
-env = { VIRTUAL_ENV = ".pixi/envs/default" }
-cmd = "pyright"
+cmd = "bash scripts/lint.sh pyright"
 
 [tasks.validate-metainfo]
-cmd = "appstreamcli validate --no-net data/org.rayforge.rayforge.metainfo.xml"
+cmd = "bash scripts/lint.sh validate-metainfo"
 
 [tasks.rayforge]
 env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0)"}
