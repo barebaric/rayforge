@@ -7,8 +7,8 @@ from raygeo.sketch.constraints import (
     HorizontalConstraint,
     VerticalConstraint,
 )
+from raygeo.sketch.params import ParameterContext
 from raygeo.sketch.registry import EntityRegistry
-from sketcher.core.params import ParameterContext
 from sketcher.core.sketch import Sketch
 from sketcher.core.solver import Solver
 

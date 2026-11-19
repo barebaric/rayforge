@@ -13,6 +13,7 @@ from raygeo.geo.shape.text import FontConfig
 from raygeo.sketch.constraints import ParallelogramConstraint
 from raygeo.sketch.entities import Circle, Line
 from raygeo.sketch.entities import TextBox as TextBoxEntity
+from raygeo.sketch.params import ParameterContext
 from sketcher.core.arrays import CircularArrayStrategy, CurveAlongArrayStrategy
 from sketcher.core.commands import (
     CreateArrayCommand,
@@ -21,7 +22,6 @@ from sketcher.core.commands import (
     TextBoxCommand,
 )
 from sketcher.core.commands.duplicate import DuplicateCommand
-from sketcher.core.params import ParameterContext
 from sketcher.core.selection import SketchSelection
 from sketcher.core.sketch import Sketch
 

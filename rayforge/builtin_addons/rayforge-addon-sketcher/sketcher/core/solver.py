@@ -6,12 +6,12 @@ import numpy as np
 import scipy.linalg
 from raygeo.sketch.constraints import Constraint
 from raygeo.sketch.entities import SketchPoint as Point
+from raygeo.sketch.params import ParameterContext
 from raygeo.sketch.registry import EntityRegistry
 from scipy.optimize import least_squares
 from threadpoolctl import ThreadpoolController
 
 from .components import compute_constraint_components, get_referenced_points
-from .params import ParameterContext
 from .types import EntityID
 
 CONFLICT_ERROR_THRESHOLD = 1e-3

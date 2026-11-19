@@ -6,10 +6,10 @@ from raygeo.sketch.constraints import (
     DistanceConstraint,
     HorizontalConstraint,
 )
+from raygeo.sketch.params import ParameterContext
 from raygeo.sketch.registry import EntityRegistry
 from sketcher.core.arrays import CurveAlongArrayStrategy
 from sketcher.core.commands import CreateArrayCommand
-from sketcher.core.params import ParameterContext
 from sketcher.core.sketch import Sketch
 from sketcher.core.solver import CONFLICT_ERROR_THRESHOLD, Solver
 from sketcher.core.types import ConstraintStatus
