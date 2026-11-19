@@ -22,7 +22,7 @@ jobs:
   build-publish-snap:
     name: Build and Publish Snap
     needs: [lint-test]  # Run only if tests pass
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
         with:
@@ -32,21 +32,12 @@ jobs:
       - name: Install Pixi
         uses: prefix-dev/setup-pixi@v0.11.3
         with:
-          pixi-version: v0.68.1
+          pixi-version: latest
           frozen: true
-          cache: true
-          cache-key: pixi-${{ runner.os }}-${{ hashFiles('pixi.lock') }}
           environments: build
 
       - name: Compile Translations
         run: pixi run --frozen -e build compile-translations
-
-      - name: Cache snapcraft state
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/snapcraft
-          key: snapcraft-${{ runner.os }}-${{ hashFiles('snap/snapcraft.yaml') }}
-          restore-keys: snapcraft-${{ runner.os }}-
 
       - name: Build snap
         uses: snapcore/action-build@v1
