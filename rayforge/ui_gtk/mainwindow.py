@@ -810,12 +810,7 @@ class MainWindow(Adw.ApplicationWindow):
         if not machine:
             return
 
-        panel = machine.panel
-        wcs_offset = machine.get_command_wcs_offset()
-        x_off, y_off, _ = panel.get_command_offset(
-            wcs_offset=wcs_offset,
-            wcs_is_workarea_origin=machine.wcs_origin_is_workarea_origin,
-        )
+        x_off, y_off, _ = machine.get_command_offset()
         self.machine_cmd.move_to(
             machine,
             round(x - x_off, machine.gcode_precision),
@@ -2512,12 +2507,7 @@ class MainWindow(Adw.ApplicationWindow):
             return
 
         machine_x, machine_y = pos
-        panel = machine.panel
-        wcs_offset = machine.get_command_wcs_offset()
-        x_off, y_off, _ = panel.get_command_offset(
-            wcs_offset=wcs_offset,
-            wcs_is_workarea_origin=machine.wcs_origin_is_workarea_origin,
-        )
+        x_off, y_off, _ = machine.get_command_offset()
         self.machine_cmd.move_to(
             machine,
             machine_x - x_off,

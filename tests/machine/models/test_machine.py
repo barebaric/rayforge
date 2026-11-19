@@ -915,6 +915,7 @@ class TestMachine:
             assert oy == pytest.approx(by - 60.0)
 
     @pytest.mark.asyncio
+    @pytest.mark.parametrize("workarea_origin", [False, True])
     async def test_frame_job_shifts_with_pointer_alignment(
         self,
         doc: Doc,
@@ -924,6 +925,7 @@ class TestMachine:
         lite_context,
         task_mgr: TaskManager,
         contour_step_class,
+        workarea_origin: bool,
     ):
         """
         While pointer alignment is on, the frame outline is traced by
@@ -941,7 +943,7 @@ class TestMachine:
 
         machine.set_axis_extents(200.0, 200.0)
         machine.set_origin(Origin.BOTTOM_LEFT)
-        machine.wcs_origin_is_workarea_origin = False
+        machine.set_wcs_origin_is_workarea_origin(workarea_origin)
         machine.active_wcs = "G56"
         machine.update_wcs_offset("G56", (0.0, 0.0, 0.0))
 
@@ -2897,6 +2899,77 @@ class TestPointerAlignment:
         head.set_pointer_offset_enabled(False)
 
         assert machine.get_command_wcs_offset() == (10.0, 20.0, 5.0)
+
+    def test_get_command_offset_includes_workarea_origin(
+        self, isolated_machine: Machine
+    ):
+        """Aiming offsets honor the workarea origin when it is the
+        active reference, ignoring the WCS offset."""
+        machine = isolated_machine
+        machine.set_axis_extents(400.0, 300.0)
+        machine.set_origin(Origin.BOTTOM_LEFT)
+        machine.set_work_margins(10.0, 20.0, 30.0, 40.0)
+        machine.set_wcs_origin_is_workarea_origin(True)
+        machine.update_wcs_offset("G54", (999.0, 999.0, 0.0))
+
+        assert machine.get_command_offset() == pytest.approx((10.0, 40.0, 0.0))
+
+    def test_get_command_offset_adds_pointer_while_aiming(
+        self, isolated_machine: Machine
+    ):
+        """The aim offset includes the pointer offset in either origin
+        mode."""
+        machine = isolated_machine
+        machine.set_axis_extents(400.0, 300.0)
+        machine.set_origin(Origin.BOTTOM_LEFT)
+        machine.set_work_margins(10.0, 20.0, 30.0, 40.0)
+        head = machine.get_default_laser_head()
+        assert head is not None
+        head.set_pointer_offset(12.0, -3.5)
+        head.set_pointer_offset_enabled(True)
+        machine.set_pointer_alignment(True)
+
+        machine.set_wcs_origin_is_workarea_origin(False)
+        machine.update_wcs_offset("G54", (10.0, 20.0, 5.0))
+        assert machine.get_command_offset() == pytest.approx((22.0, 16.5, 0.0))
+
+        machine.set_wcs_origin_is_workarea_origin(True)
+        assert machine.get_command_offset() == pytest.approx((22.0, 36.5, 0.0))
+
+    def test_get_job_command_offset_includes_workarea_origin(
+        self, isolated_machine: Machine
+    ):
+        """Job offsets honor the workarea origin when it is the active
+        reference, ignoring the given layer WCS offset."""
+        machine = isolated_machine
+        machine.set_axis_extents(400.0, 300.0)
+        machine.set_origin(Origin.BOTTOM_LEFT)
+        machine.set_work_margins(10.0, 20.0, 30.0, 40.0)
+        machine.set_wcs_origin_is_workarea_origin(True)
+
+        assert machine.get_job_command_offset(
+            (999.0, 999.0, 0.0)
+        ) == pytest.approx((10.0, 40.0, 0.0))
+
+    def test_get_job_command_offset_adds_pointer_for_dry_run(
+        self, isolated_machine: Machine
+    ):
+        """A pointer dry-run shifts job output by the pointer offset in
+        either origin mode."""
+        machine = isolated_machine
+        machine.set_axis_extents(400.0, 300.0)
+        machine.set_origin(Origin.BOTTOM_LEFT)
+        machine.set_work_margins(10.0, 20.0, 30.0, 40.0)
+        head = machine.get_default_laser_head()
+        assert head is not None
+        head.set_pointer_offset(12.0, -3.5)
+        head.set_pointer_offset_enabled(True)
+        machine.set_wcs_origin_is_workarea_origin(True)
+        machine.pointer_job_shift_enabled = True
+
+        assert machine.get_job_command_offset(
+            (999.0, 999.0, 0.0)
+        ) == pytest.approx((22.0, 36.5, 0.0))
 
     def test_get_job_wcs_offset_unchanged_by_default(
         self, isolated_machine: Machine

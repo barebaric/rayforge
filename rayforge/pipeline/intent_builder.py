@@ -1328,24 +1328,15 @@ class IntentBuilder:
         # requested, the pointer offset is included so the pointer dot
         # traces the toolpath instead of the beam.
         default_wcs_offset = list(
-            space.get_command_offset(
-                wcs_offset=machine.get_job_wcs_offset(
-                    machine.get_active_wcs_offset()
-                ),
-                wcs_is_workarea_origin=machine.wcs_origin_is_workarea_origin,
-            )
+            machine.get_job_command_offset(machine.get_active_wcs_offset())
         )
 
         # Per-layer WCS offsets.
         layer_wcs_offsets: list[tuple[str, list[float]]] = []
         for layer in doc.layers:
             effective_wcs = layer.get_effective_wcs(machine)
-            wcs_off = machine.get_job_wcs_offset(
+            cmd_offset = machine.get_job_command_offset(
                 machine.get_wcs_offset(effective_wcs)
-            )
-            cmd_offset = space.get_command_offset(
-                wcs_offset=wcs_off,
-                wcs_is_workarea_origin=machine.wcs_origin_is_workarea_origin,
             )
             layer_wcs_offsets.append((layer.uid, list(cmd_offset)))
 
