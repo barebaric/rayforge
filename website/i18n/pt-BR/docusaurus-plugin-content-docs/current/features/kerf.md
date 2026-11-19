@@ -40,6 +40,17 @@ Laser segue:       quadrado de 50.4mm
 Após o corte:      Peça mede 50.0mm (perfeito!)
 ```
 
+## Tamanhos de ponto X e Y diferentes
+
+Se o ponto do feixe não for circular, o Rayforge deriva os deslocamentos do contorno do tamanho do
+ponto por eixo:
+
+- **Deslocamento X** usa por padrão metade da largura do ponto
+- **Deslocamento Y** usa por padrão metade da altura do ponto
+
+Ambos os valores permanecem editáveis após medir o kerf real em cortes de teste. Use-os
+independentemente quando o feixe remover mais material em um eixo do que no outro.
+
 ---
 
 ## Medindo o Kerf

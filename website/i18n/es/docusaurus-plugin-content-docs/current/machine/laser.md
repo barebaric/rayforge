@@ -83,6 +83,8 @@ El tamaño físico de tu haz láser enfocado en milímetros.
 
 - Ingresa ambas dimensiones X e Y
 - La mayoría de los láseres tienen un punto circular (ej., 0.1 x 0.1)
+- Define la compensación de kerf predeterminada del contorno: el desplazamiento X usa la mitad del
+  tamaño de punto X y el desplazamiento Y usa la mitad del tamaño de punto Y
 - Afecta los cálculos de calidad de grabado
 
 <!-- prettier-ignore-start -->

@@ -153,6 +153,7 @@ def build_part_vector(
     override_threshold: bool = False,
     threshold: float = 0.5,
     normalize_windings: bool = False,
+    offset_xy: tuple[float, float] | None = None,
 ) -> Part | None:
     """Build a ``Part`` carrying vector geometry for an assembler.
 
@@ -163,11 +164,8 @@ def build_part_vector(
     Resolution order:
 
     1. **Vector source** — if the workpiece has boundaries and
-       ``override_threshold`` is False, use ``workpiece.to_part()``.
-       When ``normalize_windings`` is True (e.g. WavefrontStep),
-       the geometry is re-scaled manually so that
-       ``normalize_winding_orders()`` can be applied before
-       constructing the Part.
+       ``override_threshold`` is False, scale them to mm-space and
+       build a multi-face Part.
 
     2. **Raster fallback** — if a ``surface`` is available (either
        because there are no boundaries or because
@@ -185,23 +183,25 @@ def build_part_vector(
         normalize_windings: If True, normalize winding orders
             (outer CCW, inner CW) on the scaled geometry.  Required
             by wavefront/pocketing assemblers.
+        offset_xy: Optional ``(x, y)`` offset applied to the mm-space
+            geometry before constructing the Part.  Used for
+            direction-dependent kerf compensation.
     """
     boundaries = workpiece.boundaries
     has_vector_source = boundaries is not None and not boundaries.is_empty()
 
     # 1. Vector source — preferred path.
     if has_vector_source and not override_threshold:
+        assert boundaries is not None
+        w, h = workpiece.size
+        geo = boundaries.copy()
+        if w > 0 and h > 0:
+            geo.transform(Matrix.scale(w, h))
+        if offset_xy is not None:
+            geo.grow_xy(offset_xy[0], offset_xy[1])
         if normalize_windings:
-            assert boundaries is not None
-            scaled = boundaries.copy()
-            w, h = workpiece.size
-            if w > 0 and h > 0:
-                scaled.transform(Matrix.scale(w, h))
-            scaled.normalize_winding_orders()
-            return Part.from_geometry_multi_face(
-                geometry=scaled, size_mm=(w, h)
-            )
-        return workpiece.to_part()
+            geo.normalize_winding_orders()
+        return Part.from_geometry_multi_face(geometry=geo, size_mm=(w, h))
 
     # 2. Raster fallback — trace the surface.
     if surface is not None:
@@ -212,6 +212,8 @@ def build_part_vector(
             auto_threshold=not override_threshold,
         )
         if geo is not None and not geo.is_empty():
+            if offset_xy is not None:
+                geo.grow_xy(offset_xy[0], offset_xy[1])
             if normalize_windings:
                 geo.normalize_winding_orders()
                 return Part.from_geometry_multi_face(
@@ -232,6 +234,7 @@ def build_part_vector_with_raster_fallback(
     override_threshold: bool = False,
     threshold: float = 0.5,
     normalize_windings: bool = False,
+    offset_xy: tuple[float, float] | None = None,
 ) -> Part:
     """Build a vector :class:`Part`, rendering the workpiece source to a
     raster surface and tracing it when no vector boundaries are
@@ -244,6 +247,11 @@ def build_part_vector_with_raster_fallback(
     Returns a :class:`Part` with at least ``size_mm`` set.  The
     geometry may be empty (``None``) if neither the vector source
     nor the raster trace yields any contours.
+
+    Args:
+        offset_xy: Optional ``(x, y)`` offset applied to the mm-space
+            geometry before constructing the Part.  Used for
+            direction-dependent kerf compensation.
     """
     boundaries = workpiece.boundaries
     has_vector = boundaries is not None and not boundaries.is_empty()
@@ -253,6 +261,7 @@ def build_part_vector_with_raster_fallback(
             surface=None,
             override_threshold=False,
             normalize_windings=normalize_windings,
+            offset_xy=offset_xy,
         )
         if part is not None and part.has_geometry():
             return part
@@ -282,6 +291,7 @@ def build_part_vector_with_raster_fallback(
         override_threshold=True,
         threshold=threshold,
         normalize_windings=normalize_windings,
+        offset_xy=offset_xy,
     )
     if part is not None:
         return part

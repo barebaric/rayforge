@@ -134,15 +134,25 @@ class LaserHead(Head):
         return MachineCapability.LASER
 
     @property
-    def kerf_mm(self) -> float:
-        """The kerf-compensation displacement for this head, in mm.
+    def kerf_xy_mm(self) -> tuple[float, float]:
+        """The X/Y kerf-compensation displacements for this head, in mm.
 
         Derived from the beam spot size: the path is shifted by half
-        the spot width so the cut part comes out dimensionally
-        accurate. Read-only; change ``spot_size_mm`` to alter it.
+        the spot width per axis so the cut part comes out
+        dimensionally accurate. Read-only; change ``spot_size_mm`` to
+        alter it.
         """
-        spot_x = self.spot_size_mm[0]
-        return spot_x / 2.0
+        spot_x, spot_y = self.spot_size_mm
+        return max(spot_x, 0.0) / 2.0, max(spot_y, 0.0) / 2.0
+
+    @property
+    def kerf_mm(self) -> float:
+        """The X-axis kerf-compensation displacement for this head, in mm.
+
+        Kept for callers that only model a single offset distance.
+        Use :attr:`kerf_xy_mm` when the beam is not circular.
+        """
+        return self.kerf_xy_mm[0]
 
     @staticmethod
     def get_spot_size(head: Optional["LaserHead"]) -> tuple[float, float]:

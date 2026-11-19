@@ -519,6 +519,7 @@ def test_contour_spec_reflects_step_params(
     step = contour_step_class.create(context, name="cut")
     step.cut_side = "outside"
     step.offset_mm = 0.5
+    step.offset_y_mm = 0.5
     wp = WorkPiece(name="wp")
     doc = _make_doc(step, wp)
 

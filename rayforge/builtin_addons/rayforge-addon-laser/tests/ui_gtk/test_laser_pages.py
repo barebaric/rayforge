@@ -61,7 +61,13 @@ def test_contour_page_composes_step_and_laser_rows(
     assert isinstance(page, Adw.PreferencesPage)
     assert isinstance(laser_page, StepSettingsPage)
 
-    for key in ("cut_side", "offset_mm", "cut_order", "overcut"):
+    for key in (
+        "cut_side",
+        "offset_mm",
+        "offset_y_mm",
+        "cut_order",
+        "overcut",
+    ):
         _row(page, key)
     for key in (
         "selected_head_uid",
