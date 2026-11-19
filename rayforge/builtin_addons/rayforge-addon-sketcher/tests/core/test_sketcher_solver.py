@@ -1,3 +1,4 @@
+import itertools
 import math
 
 import pytest
@@ -258,6 +259,24 @@ def test_solver_dof_flags_for_unreferenced_points():
     assert reg.get_point(free).constrained is False
 
 
+def test_solver_updates_entity_constrained_status():
+    """A global solve refreshes the constrained flags on entities."""
+    reg = EntityRegistry()
+    p1 = reg.add_point(0, 0, fixed=True)
+    p2 = reg.add_point(10, 0, fixed=True)
+    line = reg.add_line(p1, p2)
+    entity = reg.get_entity(line)
+    assert entity is not None
+    assert entity.constrained is False
+
+    solver = Solver(reg, ParameterContext(), [])
+    assert solver.solve() is True
+
+    entity = reg.get_entity(line)
+    assert entity is not None
+    assert entity.constrained is True
+
+
 def test_sketch_solve_with_unconstrained_geometry():
     """Imported geometry without constraints solves trivially: nothing
     moves and no point gets flagged as constrained."""
@@ -274,9 +293,8 @@ def test_sketch_solve_with_unconstrained_geometry():
         assert point.constrained is False
 
 
-def test_partition_constraints_separates_islands():
-    """Global solves split into one sub-problem per connected
-    constraint island."""
+def test_solver_separates_independent_islands():
+    """Both disconnected constraint islands are solved in one call."""
     reg = EntityRegistry()
     p1 = reg.add_point(0, 0, fixed=True)
     p2 = reg.add_point(5, 0)
@@ -288,22 +306,20 @@ def test_partition_constraints_separates_islands():
         ParameterContext(),
         [DistanceConstraint(p1, p2, 10.0), DistanceConstraint(p3, p4, 50.0)],
     )
+    assert solver.solve() is True
 
-    parts = solver._partition_constraints()
-    point_sets = sorted(sorted(part[2]) for part in parts)
-    assert point_sets == [
-        sorted({p1, p2}),
-        sorted({p3, p4}),
-    ]
+    a, b = reg.get_point(p1), reg.get_point(p2)
+    c, d = reg.get_point(p3), reg.get_point(p4)
+    assert ((b.x - a.x) ** 2 + (b.y - a.y) ** 2) ** 0.5 == pytest.approx(10.0)
+    assert ((d.x - c.x) ** 2 + (d.y - c.y) ** 2) ** 0.5 == pytest.approx(50.0)
 
 
-def test_partition_constraints_merges_bridged_islands():
-    """A constraint coupling two islands merges them into one
-    sub-problem."""
+def test_solver_merges_bridged_islands():
+    """A constraint coupling two islands makes both move consistently."""
     reg = EntityRegistry()
     p1 = reg.add_point(0, 0, fixed=True)
     p2 = reg.add_point(5, 0)
-    p3 = reg.add_point(200, 0, fixed=True)
+    p3 = reg.add_point(200, 0)
     p4 = reg.add_point(205, 0)
 
     solver = Solver(
@@ -312,13 +328,19 @@ def test_partition_constraints_merges_bridged_islands():
         [
             DistanceConstraint(p1, p2, 10.0),
             DistanceConstraint(p3, p4, 50.0),
-            DistanceConstraint(p1, p3, 200.0),
+            DistanceConstraint(p2, p3, 100.0),
         ],
     )
+    assert solver.solve() is True
 
-    parts = solver._partition_constraints()
-    assert len(parts) == 1
-    assert parts[0][2] == {p1, p2, p3, p4}
+    points = [reg.get_point(pid) for pid in (p1, p2, p3, p4)]
+    distances = [
+        ((b.x - a.x) ** 2 + (b.y - a.y) ** 2) ** 0.5
+        for a, b in itertools.pairwise(points)
+    ]
+    assert distances[0] == pytest.approx(10.0)
+    assert distances[1] == pytest.approx(100.0)
+    assert distances[2] == pytest.approx(50.0)
 
 
 def test_solver_conflict_isolated_to_its_island():

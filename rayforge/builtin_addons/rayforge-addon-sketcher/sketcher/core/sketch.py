@@ -9,7 +9,6 @@ from gettext import gettext as _
 from pathlib import Path
 from typing import Any, ClassVar
 
-import numpy as np
 from blinker import Signal
 from raygeo.geo import Arc as GeoArc
 from raygeo.geo import Bezier as GeoBezier
@@ -1554,7 +1553,7 @@ class Sketch(IAsset, IGeometryProvider):
             solve_completed = True
             solver_done = time.perf_counter()
 
-        except (np.linalg.LinAlgError, ValueError):
+        except ValueError:
             logger.exception("Sketch solve failed")
             success = False
 
