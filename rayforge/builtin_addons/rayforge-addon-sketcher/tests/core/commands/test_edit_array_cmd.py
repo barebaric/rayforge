@@ -1,9 +1,9 @@
 import math
 
 import pytest
+from raygeo.sketch.arrays import CircularArrayStrategy
 from raygeo.sketch.constraints import RadiusConstraint, RotationalConstraint
 from raygeo.sketch.params import ParameterContext
-from sketcher.core.arrays import CircularArrayStrategy
 from sketcher.core.commands import CreateArrayCommand, EditArrayCommand
 from sketcher.core.sketch import Sketch
 

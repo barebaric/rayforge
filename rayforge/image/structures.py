@@ -1,9 +1,9 @@
 from dataclasses import dataclass, field
-from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 from raygeo.geo import Geometry, Matrix
 from raygeo.geo.types import Rect
+from raygeo.sketch.document import FillStyle
 
 from ..core.color import ColorRGBA
 
@@ -11,14 +11,6 @@ if TYPE_CHECKING:
     from ..core.asset import IAsset
     from ..core.item import DocItem
     from ..core.source_asset import SourceAsset
-
-
-class FillStyle(Enum):
-    """Fill rendering style."""
-
-    SOLID = "solid"
-    LINEAR_GRADIENT = "linear_gradient"
-    RADIAL_GRADIENT = "radial_gradient"
 
 
 @dataclass

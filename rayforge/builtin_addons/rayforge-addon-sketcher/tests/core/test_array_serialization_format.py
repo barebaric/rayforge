@@ -1,4 +1,4 @@
-from sketcher.core.arrays import (
+from raygeo.sketch.arrays import (
     Array,
     CircularArray,
     CurveAlongArray,

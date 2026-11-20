@@ -1,4 +1,3 @@
-import copy
 import json
 import logging
 import math
@@ -17,6 +16,7 @@ from raygeo.geo import Line as GeoLine
 from raygeo.geo import Move as GeoMove
 from raygeo.geo.shape.polygon import is_point_inside_polygon
 from raygeo.sketch import conflicting_constraints, solve_registry
+from raygeo.sketch.arrays import Array
 from raygeo.sketch.components import get_referenced_points
 from raygeo.sketch.constraints import (
     AngleConstraint,
@@ -40,24 +40,24 @@ from raygeo.sketch.constraints import (
     TangentConstraint,
     VerticalConstraint,
 )
-from raygeo.sketch.entities import Arc, Bezier, Entity, Line
+from raygeo.sketch.document import DocumentMeta, Fill
+from raygeo.sketch.entities import Arc, Entity
 from raygeo.sketch.entities import TextBox as TextBoxEntity
+from raygeo.sketch.geometry import document_geometry
 from raygeo.sketch.params import ParameterContext
 from raygeo.sketch.registry import EntityRegistry
 
 from rayforge.core.asset import IAsset
-from rayforge.core.color import ColorRGBA
 from rayforge.core.expression import ExpressionMap
 from rayforge.core.geometry_provider import IGeometryProvider
 from rayforge.core.varset import VarSet
 from rayforge.image.geo_renderer import render_geometry_to_png
 from rayforge.image.structures import FillRenderData, FillStyle
 
-from .arrays import Array
 from .template_functions import get_template_functions
 from .types import ConstraintStatus, EntityID, WaypointType
 
-DEFAULT_FILL_COLOR: ColorRGBA = (0.85, 0.85, 0.85, 0.7)
+DEFAULT_FILL_COLOR = (0.85, 0.85, 0.85, 0.7)
 FORMAT_VERSION = 1
 _DEFAULT_VARSET_TITLE = _("Sketch Parameters")
 _DEFAULT_VARSET_DESCRIPTION = _(
@@ -89,61 +89,6 @@ _CONSTRAINT_CLASSES = {
 }
 
 
-class Fill:
-    """Represents a filled area bounded by sketch entities."""
-
-    def __init__(
-        self,
-        uid: str,
-        boundary: list[tuple[EntityID, bool]],
-        style: FillStyle = FillStyle.SOLID,
-        color: ColorRGBA = DEFAULT_FILL_COLOR,
-        gradient_stops: list[tuple[float, ColorRGBA]] | None = None,
-        gradient_angle: float = 0.0,
-    ):
-        self.uid = uid
-        self.boundary: list[tuple[EntityID, bool]] = boundary
-        self.style = style
-        self.color = color
-        self.gradient_stops = gradient_stops or []
-        self.gradient_angle = gradient_angle
-
-    def to_dict(self) -> dict[str, Any]:
-        data = {
-            "uid": self.uid,
-            "boundary": [list(item) for item in self.boundary],
-            "style": self.style.value,
-            "color": list(self.color),
-        }
-        if self.gradient_stops:
-            data["gradient_stops"] = [
-                [pos, list(c)] for pos, c in self.gradient_stops
-            ]
-        if self.gradient_angle != 0.0:
-            data["gradient_angle"] = self.gradient_angle
-        return data
-
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "Fill":
-        boundary = [tuple(item) for item in data["boundary"]]
-        style = FillStyle(data.get("style", "solid"))
-        color = tuple(data.get("color", list(DEFAULT_FILL_COLOR)))
-        gradient_stops = None
-        if "gradient_stops" in data:
-            gradient_stops = [
-                (pos, tuple(c)) for pos, c in data["gradient_stops"]
-            ]
-        gradient_angle = data.get("gradient_angle", 0.0)
-        return cls(
-            uid=data.get("uid", str(uuid.uuid4())),
-            boundary=boundary,
-            style=style,
-            color=color,
-            gradient_stops=gradient_stops,
-            gradient_angle=gradient_angle,
-        )
-
-
 class Sketch(IAsset, IGeometryProvider):
     """
     A parametric sketcher that allows defining geometry via constraints
@@ -167,8 +112,7 @@ class Sketch(IAsset, IGeometryProvider):
     _solving: bool = False
 
     def __init__(self, name: str = "New Sketch") -> None:
-        self._uid: str = str(uuid.uuid4())
-        self._name = name
+        self._meta = DocumentMeta(str(uuid.uuid4()), name)
         self.params = ParameterContext()
         self.registry = EntityRegistry()
         self.constraints: list[Constraint] = []
@@ -179,7 +123,6 @@ class Sketch(IAsset, IGeometryProvider):
             description=_DEFAULT_VARSET_DESCRIPTION,
         )
         self._updated = Signal()
-        self._hidden: bool = False
         self._last_solve_values: dict[str, Any] = {}
         self._resolved_text_cache: dict[EntityID, tuple[str, str | None]] = {}
         self._solved_ctx: dict[str, Any] | None = None
@@ -190,9 +133,7 @@ class Sketch(IAsset, IGeometryProvider):
         self._coincident_dirty: bool = False
 
         # Initialize the Origin Point (Fixed Anchor)
-        self.origin_id: EntityID = self.registry.add_point(
-            0.0, 0.0, fixed=True
-        )
+        self._meta.origin_id = self.registry.add_point(0.0, 0.0, fixed=True)
 
     def notify_update(self):
         """Public method to signal that the sketch has been modified."""
@@ -265,12 +206,21 @@ class Sketch(IAsset, IGeometryProvider):
     @property
     def uid(self) -> str:
         """The unique identifier of the asset instance."""
-        return self._uid
+        return self._meta.uid
 
     @uid.setter
     def uid(self, value: str) -> None:
         """Set the unique identifier. Used for deserialization."""
-        self._uid = value
+        self._meta.uid = value
+
+    @property
+    def origin_id(self) -> EntityID:
+        """Id of the fixed origin point."""
+        return self._meta.origin_id
+
+    @origin_id.setter
+    def origin_id(self, value: EntityID) -> None:
+        self._meta.origin_id = value
 
     @property
     def updated(self) -> "Signal":
@@ -280,13 +230,13 @@ class Sketch(IAsset, IGeometryProvider):
     @property
     def name(self) -> str:
         """The user-facing name of the asset."""
-        return self._name
+        return self._meta.name
 
     @name.setter
     def name(self, value: str):
         """Sets the asset name and sends an update signal if changed."""
-        if self._name != value:
-            self._name = value
+        if self._meta.name != value:
+            self._meta.name = value
             self._updated.send(self)
 
     @property
@@ -370,10 +320,7 @@ class Sketch(IAsset, IGeometryProvider):
         original sketch's registry.
         """
         clone = Sketch.__new__(Sketch)
-        clone._uid = self._uid
-        clone._name = self._name
-        clone._hidden = self._hidden
-        clone.origin_id = self.origin_id
+        clone._meta = self._meta.copy()
         # Fresh signal: the clone must not trigger the original's
         # subscribers (solve/repaint) mid-clone-solve.
         clone._updated = Signal()
@@ -387,7 +334,7 @@ class Sketch(IAsset, IGeometryProvider):
         # Copy containers and definitions that a solve may mutate
         # (removals/extensions during an array re-apply).
         clone.constraints = list(self.constraints)
-        clone.arrays = copy.deepcopy(self.arrays)
+        clone.arrays = [array.copy() for array in self.arrays]
         # Share references to data not mutated by solve.
         clone.fills = self.fills
         clone.input_parameters = self.input_parameters
@@ -405,13 +352,13 @@ class Sketch(IAsset, IGeometryProvider):
     @property
     def hidden(self) -> bool:
         """Indicates if this asset should be hidden from the UI."""
-        return self._hidden
+        return self._meta.hidden
 
     @hidden.setter
     def hidden(self, value: bool):
         """Sets the hidden state and sends an update signal if changed."""
-        if self._hidden != value:
-            self._hidden = value
+        if self._meta.hidden != value:
+            self._meta.hidden = value
             self._updated.send(self)
 
     def set_hidden(self, value: bool):
@@ -495,7 +442,7 @@ class Sketch(IAsset, IGeometryProvider):
     def to_dict(self, include_input_values: bool = False) -> dict[str, Any]:
         """Serializes the Sketch to a dictionary."""
         return {
-            "version": FORMAT_VERSION,
+            "version": self._meta.format_version,
             "uid": self.uid,
             "type": self.asset_type_name,
             "name": self.name,
@@ -507,8 +454,8 @@ class Sketch(IAsset, IGeometryProvider):
             "constraints": [c.to_dict() for c in self.constraints],
             "fills": [f.to_dict() for f in self.fills],
             "arrays": [p.to_dict() for p in self.arrays],
-            "origin_id": self.origin_id,
-            "hidden": self._hidden,
+            "origin_id": self._meta.origin_id,
+            "hidden": self._meta.hidden,
         }
 
     @classmethod
@@ -533,8 +480,7 @@ class Sketch(IAsset, IGeometryProvider):
             )
 
         new_sketch = cls()
-        new_sketch._uid = data.get("uid", str(uuid.uuid4()))
-        new_sketch.name = data.get("name", "")
+        new_sketch._meta = DocumentMeta.from_dict(data)
 
         # Handle backward compatibility for input_parameters
         if "input_parameters" in data:
@@ -550,7 +496,6 @@ class Sketch(IAsset, IGeometryProvider):
 
         new_sketch.params = ParameterContext.from_dict(data["params"])
         new_sketch.registry = EntityRegistry.from_dict(data["registry"])
-        new_sketch.origin_id = data["origin_id"]
         new_sketch.constraints = []
         for c_data in data["constraints"]:
             c_type = c_data.get("type")
@@ -566,7 +511,6 @@ class Sketch(IAsset, IGeometryProvider):
             Array.from_dict(p_data) for p_data in data.get("arrays", [])
         ]
 
-        new_sketch._hidden = data.get("hidden", False)
         # Build coincident cache from loaded constraints.
         new_sketch._build_coincident_cache()
         return new_sketch
@@ -1684,157 +1628,13 @@ class Sketch(IAsset, IGeometryProvider):
         Converts the solved sketch into a Geometry object.
         Links separate entities into continuous paths where possible.
         """
-        geo = Geometry()
-
-        # 1. Identify chainable vs standalone
-        chainable = []
-        standalone = []
-
-        for e in self.registry.entities():
-            if e.construction:
-                continue
-            if e.invisible:
-                continue
-            if isinstance(e, (Line, Arc, Bezier)):
-                chainable.append(e)
-            else:
-                standalone.append(e)
-
-        # 2. Add standalone geometry (Circles, Text)
-        for e in standalone:
-            if isinstance(e, TextBoxEntity):
-                resolved = self._resolve_text_content(e)
-                geo.extend(
-                    e.to_geometry(self.registry, resolved_content=resolved)
-                )
-            else:
-                geo.extend(e.to_geometry(self.registry))
-
-        if not chainable:
-            return geo
-
-        # 3. Build Connectivity Graph for Lines/Arcs
-        # Use simple Union-Find to group coincident points
-        parent = {p.id: p.id for p in self.registry.points()}
-
-        def find(i):
-            path = []
-            while parent[i] != i:
-                path.append(i)
-                i = parent[i]
-            for node in path:
-                parent[node] = i
-            return i
-
-        def union(i, j):
-            root_i = find(i)
-            root_j = find(j)
-            if root_i != root_j:
-                parent[root_i] = root_j
-
-        # Apply Coincident Constraints
-        for c in self.constraints:
-            if (
-                isinstance(c, CoincidentConstraint)
-                and c.p1 in parent
-                and c.p2 in parent
-            ):
-                # Points exist (sanity check)
-                union(c.p1, c.p2)
-
-        adj = defaultdict(list)
-        for e in chainable:
-            p_ids = e.get_endpoint_ids()
-            if len(p_ids) != 2:
-                continue
-            u, v = p_ids[0], p_ids[1]
-
-            root_u = find(u)
-            root_v = find(v)
-            adj[root_u].append((e, root_v))
-            adj[root_v].append((e, root_u))
-
-        # 4. Traverse Graph to build continuous paths
-        visited = set()
-
-        # Helper to get start/end group IDs
-        def get_endpoints(ent):
-            p_ids = ent.get_endpoint_ids()
-            if len(p_ids) != 2:
-                return -1, -1
-            return find(p_ids[0]), find(p_ids[1])
-
-        for start_e in chainable:
-            if start_e.id in visited:
-                continue
-
-            # Start a new chain
-            visited.add(start_e.id)
-
-            # Seed direction
-            u, v = get_endpoints(start_e)
-
-            # Grow Right (from v)
-            right_list = []
-            curr = v
-            while True:
-                found = None
-                for cand, neighbor in adj[curr]:
-                    if cand.id not in visited:
-                        found = (cand, neighbor)
-                        break
-                if found:
-                    cand, next_node = found
-                    visited.add(cand.id)
-                    # Direction check: if c_u == curr, then Forward (u->v)
-                    c_u, _ = get_endpoints(cand)
-                    is_fwd = c_u == curr
-                    right_list.append((cand, is_fwd))
-                    curr = next_node
-                else:
-                    break
-
-            # Grow Left (from u)
-            left_list = []
-            curr = u
-            while True:
-                found = None
-                for cand, neighbor in adj[curr]:
-                    if cand.id not in visited:
-                        found = (cand, neighbor)
-                        break
-                if found:
-                    cand, next_node = found
-                    visited.add(cand.id)
-                    # We are growing backwards from u.
-                    # cand connects next_node <-> curr(u).
-                    # We want flow: next_node -> curr.
-                    # If cand is Forward (c_u -> c_v), then c_u must be
-                    # next_node.
-                    c_u, _ = get_endpoints(cand)
-                    is_fwd = c_u == next_node
-                    left_list.append((cand, is_fwd))
-                    curr = next_node
-                else:
-                    break
-
-            # Assemble: Reversed(Left) -> Seed -> Right
-            final_chain = (
-                list(reversed(left_list)) + [(start_e, True)] + right_list
-            )
-
-            # Generate Geometry
-            first_e, first_fwd = final_chain[0]
-            p_ids = first_e.get_endpoint_ids()
-            s_id = p_ids[0] if first_fwd else p_ids[1]
-
-            start_pt = self.registry.get_point(s_id)
-            geo.move_to(start_pt.x, start_pt.y)
-
-            for ent, fwd in final_chain:
-                ent.append_to_geometry(geo, self.registry, fwd)
-
-        return geo
+        resolved_text: dict[EntityID, str | None] = {}
+        for entity in self.registry.entities():
+            if isinstance(entity, TextBoxEntity):
+                resolved_text[entity.id] = self._resolve_text_content(entity)
+        return document_geometry(
+            self.registry, self.constraints, resolved_text
+        )
 
     def get_fill_render_data(
         self, exclude_ids: set[EntityID] | None = None
@@ -1934,3 +1734,11 @@ class Sketch(IAsset, IGeometryProvider):
 
         except (IndexError, AttributeError):
             return None
+
+
+def find_array_for_entity(arrays: list[Array], entity_id: int) -> Array | None:
+    """Returns the array whose master entity is the given one."""
+    for arr in arrays:
+        if arr.guide_entity_id == entity_id:
+            return arr
+    return None

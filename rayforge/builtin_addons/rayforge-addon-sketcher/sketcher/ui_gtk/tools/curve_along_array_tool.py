@@ -7,17 +7,17 @@ from typing import ClassVar
 
 import cairo
 from gi.repository import Adw, Gtk
-from raygeo.sketch.entities import Arc, Bezier, Line
-from raygeo.sketch.entity_group import EntityGroup
-
-from rayforge.ui_gtk.shared.pref_rows import LengthSpinRow, SpinRow
-
-from ...core.arrays import (
+from raygeo.sketch.arrays import (
     CurveAlongArray,
     CurveAlongArrayStrategy,
     path_length,
     sample_path,
 )
+from raygeo.sketch.entities import Arc, Bezier, Line
+from raygeo.sketch.entity_group import EntityGroup
+
+from rayforge.ui_gtk.shared.pref_rows import LengthSpinRow, SpinRow
+
 from ...core.commands import CreateArrayCommand
 from .array_base import ArrayToolBase
 
@@ -40,6 +40,12 @@ def _entity_label(entity) -> str:
 
 
 class CurveAlongArrayTool(ArrayToolBase):
+    @property
+    def _active_strategy(self) -> CurveAlongArrayStrategy:
+        strategy = self._strategy
+        assert isinstance(strategy, CurveAlongArrayStrategy)
+        return strategy
+
     """
     Creates and edits "array along curve" arrays.
 
@@ -93,7 +99,7 @@ class CurveAlongArrayTool(ArrayToolBase):
 
     def _make_strategy_from_target(self) -> CurveAlongArrayStrategy:
         assert self._edit_target is not None
-        assert isinstance(self._edit_target, CurveAlongArray)
+        assert self._edit_target.mode == "curve_along"
         self._path_entity_id = self._edit_target.path_entity_id
         return CurveAlongArrayStrategy(
             count=self._edit_target.count,
@@ -133,7 +139,7 @@ class CurveAlongArrayTool(ArrayToolBase):
     # ------------------------------------------------------------------
 
     def _build_mode_rows(self, group: Adw.PreferencesGroup):
-        strategy = self._strategy
+        strategy = self._active_strategy
         registry = self.element.sketch.registry
 
         # Guide path (read-only summary of the first selected entity).
@@ -210,12 +216,14 @@ class CurveAlongArrayTool(ArrayToolBase):
         """Editing count clears spacing (count takes over)."""
         if self._updating_rows or self._strategy is None:
             return
-        self._strategy.spacing = 0.0
-        self._strategy.count = self._count_row.get_int_value()
-        self._strategy.offset_to_start = (
+        self._active_strategy.spacing = 0.0
+        self._active_strategy.count = self._count_row.get_int_value()
+        self._active_strategy.offset_to_start = (
             self._offset_row.get_value_in_base_units()
         )
-        self._strategy.align_to_tangent = self._align_switch.get_active()
+        self._active_strategy.align_to_tangent = (
+            self._align_switch.get_active()
+        )
         self._updating_rows = True
         try:
             self._spacing_row.set_value_in_base_units(0.0)
@@ -228,43 +236,53 @@ class CurveAlongArrayTool(ArrayToolBase):
         if self._updating_rows or self._strategy is None:
             return
         # Sync spacing/offset into params first, then derive count.
-        self._strategy.spacing = self._spacing_row.get_value_in_base_units()
-        self._strategy.offset_to_start = (
+        self._active_strategy.spacing = (
+            self._spacing_row.get_value_in_base_units()
+        )
+        self._active_strategy.offset_to_start = (
             self._offset_row.get_value_in_base_units()
         )
         if (
-            self._strategy.spacing > 1e-9
-            and self._strategy.path_entity_id >= 0
+            self._active_strategy.spacing > 1e-9
+            and self._active_strategy.path_entity_id >= 0
         ):
             total = path_length(
-                self.element.sketch.registry, self._strategy.path_entity_id
+                self.element.sketch.registry,
+                self._active_strategy.path_entity_id,
             )
-            offset = min(self._strategy.offset_to_start, total)
+            offset = min(self._active_strategy.offset_to_start, total)
             usable = max(total - offset, 0.0)
             if usable > 0.0:
                 count = max(
-                    1, min(360, int(usable / self._strategy.spacing) + 1)
+                    1,
+                    min(360, int(usable / self._active_strategy.spacing) + 1),
                 )
             else:
                 count = 1
-            self._strategy.count = count
+            self._active_strategy.count = count
             self._updating_rows = True
             try:
                 self._count_row.set_value(count)
             finally:
                 self._updating_rows = False
-        self._strategy.align_to_tangent = self._align_switch.get_active()
+        self._active_strategy.align_to_tangent = (
+            self._align_switch.get_active()
+        )
         self.element.mark_dirty()
 
     def _sync_params(self):
         if self._updating_rows or self._strategy is None:
             return
-        self._strategy.count = self._count_row.get_int_value()
-        self._strategy.spacing = self._spacing_row.get_value_in_base_units()
-        self._strategy.offset_to_start = (
+        self._active_strategy.count = self._count_row.get_int_value()
+        self._active_strategy.spacing = (
+            self._spacing_row.get_value_in_base_units()
+        )
+        self._active_strategy.offset_to_start = (
             self._offset_row.get_value_in_base_units()
         )
-        self._strategy.align_to_tangent = self._align_switch.get_active()
+        self._active_strategy.align_to_tangent = (
+            self._align_switch.get_active()
+        )
         self.element.mark_dirty()
 
     # ------------------------------------------------------------------
@@ -272,7 +290,7 @@ class CurveAlongArrayTool(ArrayToolBase):
     # ------------------------------------------------------------------
 
     def _make_create_command(self) -> CreateArrayCommand | None:
-        if self._strategy is None or self._strategy.path_entity_id < 0:
+        if self._strategy is None or self._active_strategy.path_entity_id < 0:
             return None
         return CreateArrayCommand(
             self.element.sketch,
@@ -286,10 +304,10 @@ class CurveAlongArrayTool(ArrayToolBase):
 
     def _draw_guide(self, ctx: cairo.Context, model_to_screen, strategy):
         """Highlights the selected guide path on top of the canvas."""
-        if self._strategy is None or self._strategy.path_entity_id < 0:
+        if self._strategy is None or self._active_strategy.path_entity_id < 0:
             return
         registry = self.element.sketch.registry
-        entity = registry.get_entity(self._strategy.path_entity_id)
+        entity = registry.get_entity(self._active_strategy.path_entity_id)
         if entity is None:
             return
         polyline = self._path_polyline(registry, entity)
@@ -314,15 +332,15 @@ class CurveAlongArrayTool(ArrayToolBase):
             int(
                 self._count_row.get_int_value()
                 if self._count_row is not None
-                else self._strategy.count
+                else self._active_strategy.count
             ),
             1,
         )
         samples = sample_path(
             registry,
-            self._strategy.path_entity_id,
+            self._active_strategy.path_entity_id,
             count,
-            self._strategy.offset_to_start,
+            self._active_strategy.offset_to_start,
         )
         ctx.set_dash([])
         ctx.set_line_width(1.0)

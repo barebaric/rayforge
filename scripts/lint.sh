@@ -21,7 +21,9 @@ run_pyflakes() {
 run_pyright() {
     local threads
     threads=$(python -c 'import os; print(min(os.cpu_count() or 1, 8))')
-    VIRTUAL_ENV=.pixi/envs/default pyright --threads "$threads" "$@"
+    VIRTUAL_ENV=.pixi/envs/default pyright \
+        --pythonpath .pixi/envs/default/bin/python \
+        --threads "$threads" "$@"
 }
 
 run_validate_metainfo() {

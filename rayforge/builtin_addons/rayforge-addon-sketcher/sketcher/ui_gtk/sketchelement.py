@@ -9,7 +9,6 @@ from raygeo.sketch.entities import SketchPoint as Point
 
 from rayforge.ui_gtk.canvas import CanvasElement
 
-from ..core.arrays import find_array_for_entity
 from ..core.boolean import BooleanOp
 from ..core.commands import (
     BooleanCommand,
@@ -17,7 +16,7 @@ from ..core.commands import (
     MoveEntitiesCommand,
 )
 from ..core.selection import SketchSelection
-from ..core.sketch import Sketch
+from ..core.sketch import Sketch, find_array_for_entity
 from ..core.snap import SnapEngine
 from ..core.snap.producers import (
     CentersProducer,

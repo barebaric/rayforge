@@ -3,12 +3,12 @@ Tests for constraint conflict detection in the sketcher.
 """
 
 from raygeo.sketch import conflicting_constraints, solve_registry
+from raygeo.sketch.arrays import CurveAlongArrayStrategy
 from raygeo.sketch.constraints import (
     DistanceConstraint,
     HorizontalConstraint,
 )
 from raygeo.sketch.registry import EntityRegistry
-from sketcher.core.arrays import CurveAlongArrayStrategy
 from sketcher.core.commands import CreateArrayCommand
 from sketcher.core.sketch import Sketch
 from sketcher.core.types import ConstraintStatus
