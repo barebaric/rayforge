@@ -75,13 +75,7 @@ class SketchSelection:
         unavailable or an entity cannot be found."""
         if registry is None:
             return None
-        entities: list[Entity] = []
-        for eid in self.entity_ids:
-            entity = registry.get_entity(eid)
-            if entity is None:
-                return None
-            entities.append(entity)
-        return entities
+        return self._selection.resolve_entities(registry)
 
     def select_constraint(self, idx: int, is_multi: bool):
         """Selects a constraint by index."""
