@@ -61,6 +61,7 @@ parts:
       - python3-pip
       - python3-setuptools
       - libvips-dev
+      - libgirepository-2.0-dev
       - git # Required for git describe
       - gtk-update-icon-cache
     stage-packages:
