@@ -15,6 +15,7 @@ from raygeo.sketch.constraints import RadiusConstraint
 from raygeo.sketch.entities import Bezier, Circle, SketchPoint
 from raygeo.sketch.entity_group import EntityGroup, remap_point_refs
 
+from ..array_types import ArrayStrategy
 from .base import SketchChangeCommand
 from .items import AddItemsCommand
 
@@ -43,7 +44,7 @@ class CreateArrayCommand(SketchChangeCommand):
     def __init__(
         self,
         sketch: Sketch,
-        strategy: Any,
+        strategy: ArrayStrategy,
         template_entity_ids: list[int],
         name: str | None = None,
     ):
@@ -70,7 +71,7 @@ class CreateArrayCommand(SketchChangeCommand):
     @staticmethod
     def calculate_geometry(
         registry: EntityRegistry,
-        strategy: Any,
+        strategy: ArrayStrategy,
         template_entity_ids: list[int],
         center_pid: int | None = None,
         create_master: bool = True,

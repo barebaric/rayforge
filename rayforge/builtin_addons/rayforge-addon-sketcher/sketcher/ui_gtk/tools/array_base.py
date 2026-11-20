@@ -4,13 +4,14 @@ import logging
 import math
 from collections.abc import Callable
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, ClassVar, Generic
 
 import cairo
 from gi.repository import Adw, Gtk
 from raygeo.sketch.arrays import InstancePlacement
 from raygeo.sketch.entity_group import EntityGroup
 
+from ...core.array_types import StrategyT
 from ...core.commands import CreateArrayCommand, EditArrayCommand
 from .base import SketcherKey, SketchTool
 
@@ -20,7 +21,7 @@ if TYPE_CHECKING:
     from raygeo.sketch.arrays import Array
 
 
-class ArrayToolBase(SketchTool):
+class ArrayToolBase(SketchTool, Generic[StrategyT]):
     """
     Base class for array tools.
 
@@ -47,7 +48,7 @@ class ArrayToolBase(SketchTool):
     def __init__(self, element):
         super().__init__(element)
         self._dialog: Adw.Window | None = None
-        self._strategy: Any = None
+        self._strategy: StrategyT | None = None
         self._edit_target: Array | None = None
         self._template_entity_ids: list[int] = []
         self._updating_rows = False
@@ -122,6 +123,11 @@ class ArrayToolBase(SketchTool):
         return EntityGroup(registry, self._template_entity_ids).center()
 
     @property
+    def _active_strategy(self) -> StrategyT:
+        assert self._strategy is not None
+        return self._strategy
+
+    @property
     def _is_editing(self) -> bool:
         return self._edit_target is not None
 
@@ -129,11 +135,11 @@ class ArrayToolBase(SketchTool):
     # Subclass hooks
     # ------------------------------------------------------------------
 
-    def _make_default_strategy(self) -> Any:
+    def _make_default_strategy(self) -> StrategyT:
         """Creates initial parameters for creating a new array."""
         raise NotImplementedError
 
-    def _make_strategy_from_target(self) -> Any:
+    def _make_strategy_from_target(self) -> StrategyT:
         """Creates initial parameters from the current edit target."""
         raise NotImplementedError
 
@@ -141,7 +147,7 @@ class ArrayToolBase(SketchTool):
         raise NotImplementedError
 
     def _sync_params_from_rows(self) -> None:
-        """Reads current widget values into self._strategy."""
+        """Reads current widget values into self._active_strategy."""
 
     def _make_create_command(self) -> CreateArrayCommand | None:
         raise NotImplementedError
@@ -352,19 +358,27 @@ class ArrayToolBase(SketchTool):
         assert self._strategy is not None
         if target is None:
             return False
-        if self._strategy.count != target.count:
+        if self._active_strategy.count != target.count:
             return True
-        if target.mode == "circular":
+        from raygeo.sketch.arrays import (
+            CircularArrayStrategy,
+            CurveAlongArrayStrategy,
+        )
+
+        if isinstance(self._active_strategy, CircularArrayStrategy):
             return (
-                self._strategy.rotate_copies != target.rotate_copies
-                or self._strategy.total_angle_deg != target.total_angle_deg
+                self._active_strategy.rotate_copies != target.rotate_copies
+                or self._active_strategy.total_angle_deg
+                != target.total_angle_deg
             )
-        if target.mode == "curve_along":
+        if isinstance(self._active_strategy, CurveAlongArrayStrategy):
             return (
-                self._strategy.path_entity_id != target.path_entity_id
-                or self._strategy.align_to_tangent != target.align_to_tangent
-                or self._strategy.offset_to_start != target.offset_to_start
-                or self._strategy.spacing != target.spacing
+                self._active_strategy.path_entity_id != target.path_entity_id
+                or self._active_strategy.align_to_tangent
+                != target.align_to_tangent
+                or self._active_strategy.offset_to_start
+                != target.offset_to_start
+                or self._active_strategy.spacing != target.spacing
             )
         return False
 

@@ -25,7 +25,7 @@ from .array_base import ArrayToolBase
 logger = logging.getLogger(__name__)
 
 
-class CircularArrayTool(ArrayToolBase):
+class CircularArrayTool(ArrayToolBase[CircularArrayStrategy]):
     """
     Creates and edits circular (polar) arrays of sketch entities.
 
@@ -114,7 +114,7 @@ class CircularArrayTool(ArrayToolBase):
         return radius if radius > 1e-6 else 10.0
 
     def _build_mode_rows(self, group: Adw.PreferencesGroup):
-        strategy = self._strategy
+        strategy = self._active_strategy
 
         self._count_row = SpinRow(
             _("Count"),
@@ -184,24 +184,26 @@ class CircularArrayTool(ArrayToolBase):
     def _sync_params(self):
         if self._updating_rows or self._strategy is None:
             return
-        self._strategy.count = self._count_row.get_int_value()
-        self._strategy.total_angle_deg = self._angle_row.get_value()
+        self._active_strategy.count = self._count_row.get_int_value()
+        self._active_strategy.total_angle_deg = self._angle_row.get_value()
         cx = self._center_x_row.get_value_in_base_units()
         cy = self._center_y_row.get_value_in_base_units()
-        self._strategy.center = (cx, cy)
-        self._strategy.radius = self._radius_row.get_value_in_base_units()
+        self._active_strategy.center = (cx, cy)
+        self._active_strategy.radius = (
+            self._radius_row.get_value_in_base_units()
+        )
         if not self._is_editing:
             # At creation the circle always passes through the template's
             # anchor point; keep the row in sync so preview matches
             # the applied result exactly.
             derived = self._default_radius((cx, cy))
-            self._strategy.radius = derived
+            self._active_strategy.radius = derived
             self._updating_rows = True
             try:
                 self._radius_row.set_value_in_base_units(derived)
             finally:
                 self._updating_rows = False
-        self._strategy.rotate_copies = self._rotate_switch.get_active()
+        self._active_strategy.rotate_copies = self._rotate_switch.get_active()
         self.element.mark_dirty()
 
     def _make_create_command(self) -> CreateArrayCommand | None:

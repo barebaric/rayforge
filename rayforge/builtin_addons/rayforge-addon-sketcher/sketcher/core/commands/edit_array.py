@@ -15,6 +15,7 @@ from raygeo.sketch.entities import Circle
 from raygeo.sketch.entity_group import EntityGroup
 from raygeo.sketch.params import ParameterContext
 
+from ..array_types import ArrayStrategy
 from .base import SketchChangeCommand
 from .create_array import CreateArrayCommand
 from .items import AddItemsCommand, RemoveItemsCommand
@@ -46,7 +47,7 @@ class EditArrayCommand(SketchChangeCommand):
         self,
         sketch: Sketch,
         array_def: Array,
-        strategy: Any,
+        strategy: ArrayStrategy,
         force_full_regen: bool = False,
         capture_snapshot: bool = True,
         old_frame: tuple[tuple[float, float], float] | None = None,
