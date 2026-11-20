@@ -82,10 +82,6 @@ def build_offset_items(
             vertices = chain_vertices(
                 registry, edges, closed, _SAMPLE_TOLERANCE
             )
-            if not closed and vertices:
-                vertices = _orient_to_first_endpoint(
-                    sketch, chainable, component, vertices
-                )
             if len(vertices) >= 2:
                 items.append(
                     PolygonOutline(
@@ -95,28 +91,3 @@ def build_offset_items(
                     )
                 )
     return items or None
-
-
-def _orient_to_first_endpoint(
-    sketch: Sketch,
-    selection_order: list[int],
-    component: list[int],
-    vertices: list[tuple[float, float]],
-) -> list[tuple[float, float]]:
-    """Keeps the chain start tied to the first selected entity."""
-    component_ids = set(component)
-    first_eid = next(
-        (eid for eid in selection_order if eid in component_ids), None
-    )
-    if first_eid is None:
-        return vertices
-    entity = sketch.registry.get_entity(first_eid)
-    if entity is None:
-        return vertices
-    endpoints = entity.get_endpoint_ids()
-    if not endpoints:
-        return vertices
-    start = sketch.registry.get_point(endpoints[0])
-    if vertices[-1] == (start.x, start.y):
-        return list(reversed(vertices))
-    return vertices
