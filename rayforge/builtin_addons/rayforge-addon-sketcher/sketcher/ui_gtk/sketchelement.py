@@ -4,12 +4,12 @@ from typing import TYPE_CHECKING, cast
 import cairo
 from blinker import Signal
 from raygeo.geo import Matrix
+from raygeo.sketch.boolean import BooleanOp
 from raygeo.sketch.entities import Entity, Line
 from raygeo.sketch.entities import SketchPoint as Point
 
 from rayforge.ui_gtk.canvas import CanvasElement
 
-from ..core.boolean import BooleanOp
 from ..core.commands import (
     BooleanCommand,
     DuplicateCommand,
@@ -373,8 +373,8 @@ class SketchElement(CanvasElement):
         selection cannot be combined.
         """
         try:
-            op = BooleanOp(op_name)
-        except ValueError:
+            op = getattr(BooleanOp, op_name.upper())
+        except AttributeError:
             return False
         entity_ids = list(self.selection.entity_ids)
         if len(entity_ids) < 2:
