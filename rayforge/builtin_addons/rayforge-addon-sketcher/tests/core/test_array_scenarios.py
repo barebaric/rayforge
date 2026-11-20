@@ -375,3 +375,11 @@ def test_edit_undo_restores_geometry_and_membership(app_flow):
     edit_cmd.undo()
     assert array.members == members_before
     assert len(array.living_members(sketch.registry)) == 3
+
+
+def test_geometry_clone_handles_rust_arrays(app_flow):
+    """get_geometry clones the sketch; Rust arrays must copy cleanly."""
+    sketch, array = app_flow
+    geometry, _fills = sketch.get_geometry()
+    assert geometry is not None
+    assert len(array.living_members(sketch.registry)) > 1

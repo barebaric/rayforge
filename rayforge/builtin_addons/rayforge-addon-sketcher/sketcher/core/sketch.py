@@ -1,4 +1,3 @@
-import copy
 import json
 import logging
 import math
@@ -335,7 +334,7 @@ class Sketch(IAsset, IGeometryProvider):
         # Copy containers and definitions that a solve may mutate
         # (removals/extensions during an array re-apply).
         clone.constraints = list(self.constraints)
-        clone.arrays = copy.deepcopy(self.arrays)
+        clone.arrays = [array.copy() for array in self.arrays]
         # Share references to data not mutated by solve.
         clone.fills = self.fills
         clone.input_parameters = self.input_parameters
