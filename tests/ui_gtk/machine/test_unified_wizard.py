@@ -1,12 +1,15 @@
 """UI tests for the Unified Machine Configuration Wizard."""
 
 import asyncio
+import time
 from unittest.mock import MagicMock, patch
 
 import pytest
-from gi.repository import Adw, Gtk
+from gi.repository import Adw, GLib, Gtk
 from raydriver.core.discovery import DeviceIdentity
 
+from rayforge.camera.models.source_type import CameraSourceType
+from rayforge.camera.remote import RemoteCamera
 from rayforge.machine.device.matching import (
     CONFIDENCE_CERTAIN,
     CONFIDENCE_VENDOR_TOKENS,
@@ -78,6 +81,17 @@ def _profile(driver=None):
         machine_config=MachineConfig(driver=driver),
         dialect_config={},
     )
+
+
+def _pump_until(condition, timeout: float = 2.0) -> bool:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        while GLib.MainContext.default().iteration(False):
+            pass
+        if condition():
+            return True
+        time.sleep(0.01)
+    return condition()
 
 
 def _make_wizard(ui_context_initializer):
@@ -760,6 +774,53 @@ def test_camera_page_selected_device_ids(ui_context_initializer):
     assert len(switches) == 2
     switches[1].set_active(True)
     assert page.selected_device_ids() == [fake_devices[1]]
+
+
+@pytest.mark.ui
+def test_camera_page_lists_daemon_cameras(ui_context_initializer):
+    wizard = _make_wizard(ui_context_initializer)
+    wizard._navigate_to("camera")
+    page = wizard._get_page("camera")
+    assert isinstance(page, CameraPage)
+
+    remote_camera = RemoteCamera(
+        name="Enclosure",
+        uri="http://pi.local:8080/stream",
+        source_type=CameraSourceType.HTTP_STREAM,
+    )
+    profile = _profile(driver="RaydriverRemoteDriver")
+    profile.machine_config.driver_args = {
+        "remote_host": "pi.local",
+        "remote_port": 8765,
+    }
+
+    async def fake_fetch(driver_args):
+        assert driver_args["remote_host"] == "pi.local"
+        return [remote_camera]
+
+    with (
+        patch(_CAMERA_PATCH_TARGET, return_value=[]),
+        patch(
+            "rayforge.ui_gtk.machine.wizard_pages.camera_page."
+            "fetch_remote_cameras",
+            fake_fetch,
+        ),
+    ):
+        page.enter(profile)
+        assert _pump_until(lambda: bool(page._remote_cameras))
+        switches = [
+            row for row in page._switch_rows if isinstance(row, Adw.SwitchRow)
+        ]
+        assert len(switches) == 1
+        switches[0].set_active(True)
+        assert page.selected_remote_cameras() == [remote_camera]
+        assert page.apply_to_profile(profile)
+
+    cameras = profile.machine_config.cameras
+    assert cameras is not None
+    assert cameras[0]["source_type"] == "http_stream"
+    assert cameras[0]["source_config"] == {"uri": remote_camera.uri}
+    assert cameras[0]["enabled"] is True
 
 
 @pytest.mark.ui

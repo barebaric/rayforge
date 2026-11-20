@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import threading
 from gettext import gettext as _
@@ -6,6 +7,7 @@ from gi.repository import Adw, Gdk, Gtk
 
 from ...camera.controller import CameraController
 from ...camera.models.camera import Camera, CameraSourceType
+from ...camera.remote import RemoteCamera, fetch_remote_cameras
 from ...camera.source import list_local_device_ids, validate_source_uri
 from ...camera.v4l import display_name
 from ...context import get_context
@@ -23,6 +25,8 @@ class CameraSelectionDialog(Adw.MessageDialog):
         parent,
         active_controllers: list[CameraController] | None = None,
         mode: str = "new",
+        driver_args: dict | None = None,
+        remote_cameras: list[RemoteCamera] | None = None,
         **kwargs,
     ):
         super().__init__(
@@ -52,6 +56,7 @@ class CameraSelectionDialog(Adw.MessageDialog):
         # Discards stale preview results from a superseded selection.
         self._preview_generation = 0
         self._available_devices: list[str] = []
+        self._remote_cameras: list[RemoteCamera] = []
         self._preview_pixbuf = None
         self._build_ui()
         self.add_response("cancel", _("Cancel"))
@@ -60,6 +65,9 @@ class CameraSelectionDialog(Adw.MessageDialog):
         )
         self.set_response_enabled("select", False)
         self.type_row.connect("notify::selected", self._on_type_changed)
+        self.daemon_row.connect(
+            "notify::selected", self._on_daemon_camera_changed
+        )
         self.device_row.connect("notify::selected", self._on_form_changed)
         self.uri_entry.connect("changed", self._on_form_changed)
         self.connect("response", self._on_response)
@@ -71,6 +79,10 @@ class CameraSelectionDialog(Adw.MessageDialog):
             self._load_configured_cameras()
         else:
             self._start_device_scan()
+            if remote_cameras is not None:
+                self.set_remote_cameras(remote_cameras)
+            elif driver_args:
+                self._start_remote_camera_scan(driver_args)
 
     def _build_ui(self) -> None:
         box = Gtk.Box(
@@ -107,6 +119,14 @@ class CameraSelectionDialog(Adw.MessageDialog):
             ),
         )
         source_group.add(self.type_row)
+
+        self.daemon_row = Adw.ComboRow(
+            title=_("Daemon camera"),
+            subtitle=_("A stream advertised by the device host"),
+            model=Gtk.StringList.new([_("Choose a daemon camera")]),
+        )
+        self.daemon_row.set_visible(False)
+        source_group.add(self.daemon_row)
 
         self.device_row = Adw.ComboRow(
             title=_("Device"),
@@ -159,6 +179,7 @@ class CameraSelectionDialog(Adw.MessageDialog):
             controller.config.id for controller in controllers
         ]
         self.type_row.set_visible(False)
+        self.daemon_row.set_visible(False)
         self.device_row.set_model(
             Gtk.StringList.new(
                 [controller.config.name for controller in controllers]
@@ -169,6 +190,50 @@ class CameraSelectionDialog(Adw.MessageDialog):
         self.preview_group.set_visible(False)
         self.uri_row.set_visible(False)
         self._on_form_changed()
+
+    def set_remote_cameras(self, cameras: list[RemoteCamera]) -> None:
+        """Show the cameras advertised by the remote machine's daemon."""
+        if self._closed or self.mode == "configured":
+            return
+        self._remote_cameras = list(cameras)
+        if not self._remote_cameras:
+            self.daemon_row.set_visible(False)
+            return
+        self.daemon_row.set_model(
+            Gtk.StringList.new(
+                [_("Choose a daemon camera")]
+                + [camera.name for camera in self._remote_cameras]
+            )
+        )
+        self.daemon_row.set_selected(0)
+        self.daemon_row.set_visible(True)
+
+    def _start_remote_camera_scan(self, driver_args: dict) -> None:
+        args = dict(driver_args)
+
+        def worker() -> None:
+            try:
+                cameras = asyncio.run(fetch_remote_cameras(args))
+            except Exception:
+                logger.exception("Error scanning remote camera endpoints")
+                cameras = []
+            idle_add(self.set_remote_cameras, cameras)
+
+        threading.Thread(
+            target=worker, name="RemoteCameraScan", daemon=True
+        ).start()
+
+    def _on_daemon_camera_changed(self, *args) -> None:
+        index = self.daemon_row.get_selected()
+        if index <= 0 or index - 1 >= len(self._remote_cameras):
+            return
+        camera = self._remote_cameras[index - 1]
+        try:
+            type_index = self.type_values.index(camera.source_type)
+        except ValueError:
+            return
+        self.uri_entry.set_text(camera.uri)
+        self.type_row.set_selected(type_index)
 
     def _selected_source_type(self):
         idx = self.type_row.get_selected()

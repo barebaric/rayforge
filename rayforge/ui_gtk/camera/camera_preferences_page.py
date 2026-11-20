@@ -1,5 +1,5 @@
 from gettext import gettext as _
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 from blinker import Signal
 from gi.repository import Adw, Gtk
@@ -7,6 +7,7 @@ from gi.repository import Adw, Gtk
 from ...camera.controller import CameraController
 from ...camera.models.camera import Camera, CameraSourceType
 from ...camera.v4l import display_name
+from ...context import get_context
 from ..icons import get_icon
 from ..shared.preferences_group import PreferencesGroupWithButton
 from ..shared.preferences_page import TrackedPreferencesPage
@@ -14,6 +15,9 @@ from ..shared.slider import create_slider
 from .outside_view_widget import CameraOutsideViewGroup
 from .properties_widget import CameraProperties
 from .selection_dialog import CameraSelectionDialog
+
+if TYPE_CHECKING:
+    from ...machine.models.machine import Machine
 
 
 class CameraRow(Gtk.Box):
@@ -310,7 +314,8 @@ class CameraPreferencesPage(TrackedPreferencesPage):
     key = "camera"
     path_prefix = "/machine-settings/"
 
-    def __init__(self, **kwargs):
+    def __init__(self, machine: "Machine | None" = None, **kwargs):
+        self._machine = machine
         super().__init__(
             title=_("Camera"), icon_name="camera-on-symbolic", **kwargs
         )
@@ -366,9 +371,14 @@ class CameraPreferencesPage(TrackedPreferencesPage):
 
     def on_add_camera(self, sender):
         """Show a dialog to select a new camera device."""
+        machine = self._machine or get_context().machine
+        driver_args = (
+            dict(machine.driver_args) if machine is not None else None
+        )
         dialog = CameraSelectionDialog(
             self.get_ancestor(Gtk.Window),
             active_controllers=self._controllers,
+            driver_args=driver_args,
         )
         dialog.present()
         dialog.connect("response", self.on_camera_selection_dialog_response)

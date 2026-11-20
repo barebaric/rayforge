@@ -14,6 +14,7 @@ from gi.repository import GLib
 
 from rayforge.camera.controller import CameraController
 from rayforge.camera.models.camera import Camera, CameraSourceType
+from rayforge.camera.remote import RemoteCamera
 from rayforge.ui_gtk.camera.selection_dialog import CameraSelectionDialog
 
 
@@ -215,6 +216,66 @@ def test_configured_mode_selects_existing_camera(
         assert dialog.selected_device_id == camera.id
         assert dialog.camera_payload == {"camera_id": camera.id}
         assert dialog.get_response_enabled("select") is True
+
+    dialog.destroy()
+    _pump(time.monotonic() + 0.2)
+
+
+@pytest.mark.ui
+def test_daemon_camera_prefills_network_source(ui_context_initializer):
+    camera = RemoteCamera(
+        name="Enclosure",
+        uri="http://pi.local:8080/stream",
+        source_type=CameraSourceType.HTTP_STREAM,
+    )
+    with patch(
+        "rayforge.ui_gtk.camera.selection_dialog.list_local_device_ids",
+        return_value=[],
+    ):
+        dialog = CameraSelectionDialog(None, remote_cameras=[camera])
+        assert _pump_until(lambda: dialog.daemon_row.get_visible())
+        assert dialog.daemon_row.get_selected() == 0
+
+        dialog.daemon_row.set_selected(1)
+
+        assert _pump_until(lambda: dialog.uri_entry.get_text() == camera.uri)
+        assert dialog.type_row.get_selected() == 3
+        assert dialog.camera_payload == {
+            "name": camera.uri,
+            "source_type": "http_stream",
+            "source_config": {"uri": camera.uri},
+        }
+
+    dialog.destroy()
+    _pump(time.monotonic() + 0.2)
+
+
+@pytest.mark.ui
+def test_daemon_camera_scan_reads_driver_args(ui_context_initializer):
+    camera = RemoteCamera(
+        name="Bed",
+        uri="http://pi.local:8080/bed",
+        source_type=CameraSourceType.HTTP_SNAPSHOT,
+    )
+
+    async def fake_fetch(driver_args):
+        assert driver_args["remote_host"] == "pi.local"
+        return [camera]
+
+    with (
+        patch(
+            "rayforge.ui_gtk.camera.selection_dialog.list_local_device_ids",
+            return_value=[],
+        ),
+        patch(
+            "rayforge.ui_gtk.camera.selection_dialog.fetch_remote_cameras",
+            fake_fetch,
+        ),
+    ):
+        dialog = CameraSelectionDialog(
+            None, driver_args={"remote_host": "pi.local"}
+        )
+        assert _pump_until(lambda: dialog.daemon_row.get_visible())
 
     dialog.destroy()
     _pump(time.monotonic() + 0.2)
