@@ -6,6 +6,8 @@ Targets:
   remote machine (daemon endpoint + device picker).
 * ``machine-settings:remote`` — machine settings (General) for a
   remote machine.
+* ``machine-settings:remote:camera`` — adding a camera advertised by
+  a raydriver daemon.
 """
 
 import logging
@@ -20,6 +22,8 @@ from utils import (
     take_screenshot,
 )
 
+from rayforge.camera.models.source_type import CameraSourceType
+from rayforge.camera.remote import RemoteCamera, RemoteDaemon
 from rayforge.machine.device.profile import (
     DeviceMeta,
     DeviceProfile,
@@ -61,7 +65,7 @@ def main():
     set_window_size(win, 1400, 1000)
     time.sleep(0.25)
 
-    if target == "machine-settings:remote":
+    if target in ("machine-settings:remote", "machine-settings:remote:camera"):
         from rayforge.context import get_context
 
         def setup_machine():
@@ -72,9 +76,55 @@ def main():
 
         run_on_main_thread(setup_machine)
         time.sleep(0.5)
-        open_machine_settings(win, "general")
-        time.sleep(0.5)
-        take_screenshot()
+        if target == "machine-settings:remote:camera":
+            from rayforge.ui_gtk.camera import selection_dialog
+
+            async def fake_cameras(driver_args):
+                return [
+                    RemoteCamera(
+                        name="Enclosure",
+                        uri="http://pi.local:8080/stream",
+                        source_type=CameraSourceType.HTTP_STREAM,
+                    ),
+                    RemoteCamera(
+                        name="Bed",
+                        uri="http://pi.local:8080/bed",
+                        source_type=CameraSourceType.HTTP_SNAPSHOT,
+                    ),
+                ]
+
+            selection_dialog.fetch_remote_cameras = fake_cameras
+            selection_dialog.list_local_device_ids = list
+            settings = open_machine_settings(win, "camera")
+            time.sleep(0.5)
+
+            def open_camera_dialog():
+                dialog = selection_dialog.CameraSelectionDialog(
+                    settings,
+                    remote_daemons=[
+                        RemoteDaemon(
+                            label="Workshop (pi.local:8765)",
+                            host="pi.local",
+                        )
+                    ],
+                )
+                dialog.present()
+                dialog.type_row.set_selected(
+                    dialog.type_values.index("daemon")
+                )
+                return dialog
+
+            dialog = run_on_main_thread(open_camera_dialog)
+            time.sleep(0.75)
+            run_on_main_thread(lambda: dialog.daemon_row.set_selected(1))
+            time.sleep(0.5)
+            take_screenshot()
+            time.sleep(0.25)
+            run_on_main_thread(dialog.destroy)
+        else:
+            open_machine_settings(win, "general")
+            time.sleep(0.5)
+            take_screenshot()
         time.sleep(0.25)
         app.quit_idle()
         return

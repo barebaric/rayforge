@@ -42,12 +42,14 @@ Rayforge supports four kinds of camera sources:
 | Source Type       | Use For                                                          |
 | ----------------- | ---------------------------------------------------------------- |
 | **Local camera**  | USB webcams, laptop built-in cameras, any V4L2/DirectShow device |
+| **Daemon camera** | A camera advertised by a remote raydriver daemon                 |
 | **HTTP snapshot** | Endpoints that return one still image per request                |
 | **HTTP stream**   | Continuous HTTP/HTTPS video, e.g. MJPEG-over-HTTP                |
 | **RTSP**          | RTSP network cameras                                             |
 
 Local cameras are auto-detected and selected from a list. Network cameras (HTTP snapshot, HTTP
-stream, RTSP) are added by entering the camera's URL directly.
+stream, RTSP) are added by entering the camera's URL directly. **Daemon camera** lists the cameras
+advertised by a remote raydriver daemon; see [Remote Devices](remote.md) for setting up the daemon.
 
 ### Hardware Requirements
 
@@ -121,6 +123,22 @@ network. Commit the valid URL with **Enter** or by leaving the field, then enabl
 If your camera's IP address changes later (for example after a reconnect or router reboot), you
 don't need to re-add the camera or redo calibration — see
 [Updating a Network Camera's URL](#updating-a-network-cameras-url) below.
+
+### Adding a Daemon Camera
+
+Use this when the camera is connected to the computer running a raydriver daemon rather than to your
+computer.
+
+1. Open **Machine → Machine Settings → Camera**.
+2. Click **+** and choose **Daemon camera** as the source type.
+3. Select the daemon. The list contains the remote machines configured in Rayforge.
+4. Select one of the cameras the daemon advertises. Rayforge fills in the URL and the matching
+   network source type.
+5. Enable the camera.
+
+If no daemons are listed, configure the remote machine first; see [Remote Devices](remote.md).
+
+![Adding a daemon camera](/screenshots/machine-settings-remote-camera.webp)
 
 ### Updating a Network Camera's URL
 

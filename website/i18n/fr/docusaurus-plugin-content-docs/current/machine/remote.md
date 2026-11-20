@@ -93,8 +93,11 @@ Rayforge avec un flux accessible sur l'hôte de l'appareil :
 - **Caméra USB sur l'hôte de l'appareil** : exécutez un streamer standard tel que `ustreamer` et
   ajoutez son URL MJPEG comme caméra de flux HTTP.
 
-Le démon annonce les points de terminaison de caméra configurés afin que l'assistant puisse
-préremplir l'URL.
+Le démon annonce les points de terminaison de caméra configurés. Lors de l'ajout d'une caméra,
+choisis **Daemon camera** comme type de source, sélectionne le démon, puis la caméra annoncée ;
+Rayforge remplit l'URL et le type de source.
+
+![Ajouter une caméra du démon](/screenshots/machine-settings-remote-camera.webp)
 
 ## Notes de sécurité
 

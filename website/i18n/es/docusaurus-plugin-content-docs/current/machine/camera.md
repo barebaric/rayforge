@@ -448,7 +448,8 @@ sudo lsof /dev/video0
 
 Rayforge admite cámaras locales y cámaras de red mediante instantáneas HTTP, transmisiones
 HTTP/MJPEG y RTSP. Las cámaras locales se detectan automáticamente; las cámaras de red se añaden
-introduciendo directamente su URL.
+introduciendo directamente su URL. **Daemon camera** enumera las cámaras anunciadas por un demonio
+raydriver remoto; consulta [Dispositivos remotos](remote.md) para configurar el demonio.
 
 ### Añadir una cámara de red
 
@@ -472,6 +473,23 @@ la URL, la cámara se desactiva inmediatamente. El interruptor de activación pe
 hasta que se aplique una URL válida; después, vuelve a activar la cámara manualmente. Rayforge
 comprueba que el esquema de la URL coincida con el tipo de fuente (`http://`, `https://`, `rtsp://`
 o `rtsps://`).
+
+### Añadir una cámara del demonio
+
+Usa esta opción cuando la cámara esté conectada al ordenador que ejecuta el demonio raydriver en
+lugar de a tu ordenador.
+
+1. Abre **Máquina → Ajustes de Máquina → Cámara**.
+2. Haz clic en **+** y elige **Daemon camera** como tipo de fuente.
+3. Selecciona el demonio. La lista contiene las máquinas remotas configuradas en Rayforge.
+4. Selecciona una de las cámaras que anuncia el demonio. Rayforge rellena la URL y el tipo de fuente
+   de red correspondiente.
+5. Activa la cámara.
+
+Si no aparece ningún demonio, configura primero la máquina remota; consulta
+[Dispositivos remotos](remote.md).
+
+![Añadir una cámara del demonio](/screenshots/machine-settings-remote-camera.webp)
 
 ### Problemas de conexión
 
