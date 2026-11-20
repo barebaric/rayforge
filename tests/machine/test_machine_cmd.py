@@ -508,6 +508,7 @@ class TestMachineCmdPointerDryRun:
     async def test_dry_run_shifts_only_during_generation(
         self,
         machine_cmd,
+        doc_editor,
         machine,
         job_artifact,
         pipeline_mocks,
@@ -548,6 +549,11 @@ class TestMachineCmdPointerDryRun:
         assert invalidate_spy.call_count == 2
         assert actions == [job_artifact]
 
+        # Enabling the pointer offset emits machine.changed, which arms
+        # a debounced rebuild. Settle the editor so no rebuild task
+        # lingers into teardown.
+        await doc_editor.wait_until_settled()
+
     @pytest.mark.asyncio
     async def test_dry_run_ignored_without_pointer_offset(
         self, machine_cmd, machine, job_artifact, pipeline_mocks, mocker
@@ -584,7 +590,13 @@ class TestMachineCmdPointerDryRun:
 
     @pytest.mark.asyncio
     async def test_regular_send_never_shifts(
-        self, machine_cmd, machine, job_artifact, pipeline_mocks, mocker
+        self,
+        machine_cmd,
+        doc_editor,
+        machine,
+        job_artifact,
+        pipeline_mocks,
+        mocker,
     ):
         self._enable_pointer_offset(machine)
         pipeline, invalidate_spy = pipeline_mocks
@@ -610,6 +622,11 @@ class TestMachineCmdPointerDryRun:
 
         assert machine.pointer_job_shift_enabled is False
         assert invalidate_spy.call_count == 0
+
+        # Enabling the pointer offset emits machine.changed, which arms
+        # a debounced rebuild. Settle the editor so no rebuild task
+        # lingers into teardown.
+        await doc_editor.wait_until_settled()
 
     @staticmethod
     def _enable_pointer_offset(machine):
