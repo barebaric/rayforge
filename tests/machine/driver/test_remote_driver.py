@@ -7,6 +7,7 @@ daemon + GRBL firmware emulator over loopback.
 """
 
 import asyncio
+import time
 
 import pytest
 import pytest_asyncio
@@ -17,7 +18,9 @@ raydriver_client = pytest.importorskip("raydriver.remote.client")
 from raydriver.core.transport import MockTransport  # noqa: E402
 from raydriver.grbl import GrblSession  # noqa: E402
 from raydriver.grbl.emulator import GrblEmulator  # noqa: E402
+from raygeo.ops import Ops  # noqa: E402
 
+from rayforge.core.doc import Doc  # noqa: E402
 from rayforge.machine.driver.grbl import GrblSerialDriver  # noqa: E402
 from rayforge.machine.driver.remote_driver import (  # noqa: E402
     RaydriverRemoteDriver,
@@ -39,6 +42,42 @@ FAST_CONFIG = {
 }
 
 DEVICE = "/dev/ttyUSB0"
+
+
+def _slow_job(lines: int = 80) -> str:
+    return "".join(f"G0 X{i}\n" for i in range(lines))
+
+
+async def _wait_until(predicate, timeout: float = 10.0) -> None:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if predicate():
+            return
+        await asyncio.sleep(0.01)
+    raise AssertionError("condition not met")
+
+
+def _drop_connection(session) -> None:
+    drop = getattr(session, "drop_connection", None)
+    if drop is not None:
+        drop()
+        return
+    assert session._writer is not None
+    session._writer.close()
+
+
+async def _wait_connected(driver, timeout: float = 10.0) -> None:
+    connected = asyncio.Event()
+
+    def on_status(sender, status=None, **kwargs):
+        if status is not None and status.name == "CONNECTED":
+            connected.set()
+
+    driver.connection_status_changed.connect(on_status)
+    try:
+        await asyncio.wait_for(connected.wait(), timeout)
+    finally:
+        driver.connection_status_changed.disconnect(on_status)
 
 
 @pytest_asyncio.fixture
@@ -175,3 +214,105 @@ async def test_probe_over_remote(context_initializer, daemon_port):
     assert profile.machine_config.driver == "RaydriverRemoteDriver"
     assert profile.machine_config.driver_args is not None
     assert profile.machine_config.driver_args["device"] == DEVICE
+
+
+@pytest.mark.asyncio
+async def test_remote_run_progress_and_finish(
+    context_initializer, machine, daemon_port
+):
+    drv = RaydriverRemoteDriver(context_initializer, machine)
+    drv.setup(**_remote_kwargs(daemon_port))
+    job_finished = asyncio.Event()
+
+    def on_job_finished(sender, **kwargs):
+        job_finished.set()
+
+    drv.job_finished.connect(on_job_finished)
+    try:
+        await drv.connect()
+        await _wait_connected(drv)
+
+        ops = Ops()
+        ops.set_power(1.0)
+        ops.move_to(0, 0, 0)
+        ops.line_to(10, 0, 0)
+        doc = Doc()
+        encoded = drv.get_encoder().encode(ops, drv._machine, doc)
+        progress: list[int] = []
+
+        await asyncio.wait_for(
+            drv.run(encoded, doc, ops, progress.append), timeout=20.0
+        )
+        await asyncio.wait_for(job_finished.wait(), timeout=10.0)
+
+        assert progress
+    finally:
+        drv.job_finished.disconnect(on_job_finished)
+        await drv.cleanup()
+
+
+@pytest.mark.asyncio
+async def test_remote_cancel_stops_job(
+    context_initializer, machine, daemon_port
+):
+    drv = RaydriverRemoteDriver(context_initializer, machine)
+    drv.setup(**_remote_kwargs(daemon_port))
+    try:
+        await drv.connect()
+        await _wait_connected(drv)
+
+        op_map = {i: i for i in range(300)}
+        job = asyncio.ensure_future(
+            drv._session.run(_slow_job(300), op_line_map=op_map)
+        )
+        await _wait_until(lambda: drv._session.job_running)
+
+        await drv.cancel()
+        await asyncio.wait_for(job, timeout=10.0)
+
+        assert not drv._session.job_running
+    finally:
+        await drv.cleanup()
+
+
+@pytest.mark.asyncio
+async def test_remote_disconnect_sleeping_and_attach(
+    context_initializer, machine, daemon_port
+):
+    drv = RaydriverRemoteDriver(context_initializer, machine)
+    drv.setup(**_remote_kwargs(daemon_port))
+    sleeping = asyncio.Event()
+    job_finished = asyncio.Event()
+
+    def on_status(sender, status=None, **kwargs):
+        if status is not None and status.name == "SLEEPING":
+            sleeping.set()
+
+    def on_job_finished(sender, **kwargs):
+        job_finished.set()
+
+    drv.connection_status_changed.connect(on_status)
+    drv.job_finished.connect(on_job_finished)
+    try:
+        await drv.connect()
+        await _wait_connected(drv)
+
+        op_map = {i: i for i in range(500)}
+        job = asyncio.ensure_future(
+            drv._session.run(_slow_job(500), op_line_map=op_map)
+        )
+        await _wait_until(lambda: drv._session.job_running)
+
+        _drop_connection(drv._session)
+        with pytest.raises(ConnectionError):
+            await asyncio.wait_for(job, timeout=10.0)
+        await asyncio.wait_for(sleeping.wait(), timeout=5.0)
+
+        await drv._session.attach()
+        await asyncio.wait_for(job_finished.wait(), timeout=20.0)
+
+        assert not drv._session.job_running
+    finally:
+        drv.connection_status_changed.disconnect(on_status)
+        drv.job_finished.disconnect(on_job_finished)
+        await drv.cleanup()
