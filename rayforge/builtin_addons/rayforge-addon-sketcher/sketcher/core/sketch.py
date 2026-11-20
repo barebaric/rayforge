@@ -10,7 +10,7 @@ from raygeo.geo import Bezier as GeoBezier
 from raygeo.geo import Geometry
 from raygeo.geo import Line as GeoLine
 from raygeo.geo import Move as GeoMove
-from raygeo.sketch import SketchDocument
+from raygeo.sketch import Sketch as RaygeoSketch
 from raygeo.sketch.document import Fill
 from raygeo.sketch.entities import TextBox as TextBoxEntity
 
@@ -57,7 +57,7 @@ class Sketch(IAsset, IGeometryProvider):
 
     def __init__(self, name: str = "New Sketch") -> None:
         self._updated = Signal()
-        self.document = SketchDocument(name)
+        self.document = RaygeoSketch(name)
         self.input_parameters = VarSet(
             title=_DEFAULT_VARSET_TITLE,
             description=_DEFAULT_VARSET_DESCRIPTION,
@@ -248,7 +248,7 @@ class Sketch(IAsset, IGeometryProvider):
             )
         sketch = cls.__new__(cls)
         sketch._updated = Signal()
-        sketch.document = SketchDocument.from_dict(data)
+        sketch.document = RaygeoSketch.from_dict(data)
         sketch.input_parameters = VarSet(
             title=_DEFAULT_VARSET_TITLE,
             description=_DEFAULT_VARSET_DESCRIPTION,
