@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 from raygeo.sketch.arrays import (
     Array,
+    ArrayStrategy,
     CircularArrayStrategy,
     InstancePlacement,
 )
@@ -15,7 +16,6 @@ from raygeo.sketch.entities import Circle
 from raygeo.sketch.entity_group import EntityGroup
 from raygeo.sketch.params import ParameterContext
 
-from ..array_types import ArrayStrategy
 from .base import SketchChangeCommand
 from .create_array import CreateArrayCommand
 from .items import AddItemsCommand, RemoveItemsCommand

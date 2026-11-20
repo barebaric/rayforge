@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 
 from raygeo.sketch.arrays import (
     Array,
+    ArrayStrategy,
     CircularArrayStrategy,
     InstancePlacement,
 )
@@ -15,7 +16,6 @@ from raygeo.sketch.constraints import RadiusConstraint
 from raygeo.sketch.entities import Bezier, Circle, SketchPoint
 from raygeo.sketch.entity_group import EntityGroup, remap_point_refs
 
-from ..array_types import ArrayStrategy
 from .base import SketchChangeCommand
 from .items import AddItemsCommand
 

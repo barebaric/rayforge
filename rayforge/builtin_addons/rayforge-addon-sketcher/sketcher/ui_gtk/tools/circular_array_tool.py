@@ -25,7 +25,13 @@ from .array_base import ArrayToolBase
 logger = logging.getLogger(__name__)
 
 
-class CircularArrayTool(ArrayToolBase[CircularArrayStrategy]):
+class CircularArrayTool(ArrayToolBase):
+    @property
+    def _active_strategy(self) -> CircularArrayStrategy:
+        strategy = self._strategy
+        assert isinstance(strategy, CircularArrayStrategy)
+        return strategy
+
     """
     Creates and edits circular (polar) arrays of sketch entities.
 

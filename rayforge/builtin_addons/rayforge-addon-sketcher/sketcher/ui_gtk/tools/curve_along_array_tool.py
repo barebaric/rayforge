@@ -39,7 +39,13 @@ def _entity_label(entity) -> str:
     return type(entity).__name__
 
 
-class CurveAlongArrayTool(ArrayToolBase[CurveAlongArrayStrategy]):
+class CurveAlongArrayTool(ArrayToolBase):
+    @property
+    def _active_strategy(self) -> CurveAlongArrayStrategy:
+        strategy = self._strategy
+        assert isinstance(strategy, CurveAlongArrayStrategy)
+        return strategy
+
     """
     Creates and edits "array along curve" arrays.
 

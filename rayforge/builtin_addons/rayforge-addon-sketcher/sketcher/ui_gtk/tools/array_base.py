@@ -4,14 +4,13 @@ import logging
 import math
 from collections.abc import Callable
 from gettext import gettext as _
-from typing import TYPE_CHECKING, ClassVar, Generic
+from typing import TYPE_CHECKING, ClassVar
 
 import cairo
 from gi.repository import Adw, Gtk
-from raygeo.sketch.arrays import InstancePlacement
+from raygeo.sketch.arrays import ArrayStrategy, InstancePlacement
 from raygeo.sketch.entity_group import EntityGroup
 
-from ...core.array_types import StrategyT
 from ...core.commands import CreateArrayCommand, EditArrayCommand
 from .base import SketcherKey, SketchTool
 
@@ -21,7 +20,7 @@ if TYPE_CHECKING:
     from raygeo.sketch.arrays import Array
 
 
-class ArrayToolBase(SketchTool, Generic[StrategyT]):
+class ArrayToolBase(SketchTool):
     """
     Base class for array tools.
 
@@ -48,7 +47,7 @@ class ArrayToolBase(SketchTool, Generic[StrategyT]):
     def __init__(self, element):
         super().__init__(element)
         self._dialog: Adw.Window | None = None
-        self._strategy: StrategyT | None = None
+        self._strategy: ArrayStrategy | None = None
         self._edit_target: Array | None = None
         self._template_entity_ids: list[int] = []
         self._updating_rows = False
@@ -123,7 +122,7 @@ class ArrayToolBase(SketchTool, Generic[StrategyT]):
         return EntityGroup(registry, self._template_entity_ids).center()
 
     @property
-    def _active_strategy(self) -> StrategyT:
+    def _active_strategy(self) -> ArrayStrategy:
         assert self._strategy is not None
         return self._strategy
 
@@ -135,11 +134,11 @@ class ArrayToolBase(SketchTool, Generic[StrategyT]):
     # Subclass hooks
     # ------------------------------------------------------------------
 
-    def _make_default_strategy(self) -> StrategyT:
+    def _make_default_strategy(self) -> ArrayStrategy:
         """Creates initial parameters for creating a new array."""
         raise NotImplementedError
 
-    def _make_strategy_from_target(self) -> StrategyT:
+    def _make_strategy_from_target(self) -> ArrayStrategy:
         """Creates initial parameters from the current edit target."""
         raise NotImplementedError
 
