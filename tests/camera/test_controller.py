@@ -675,6 +675,39 @@ def test_device_id_change_restarts_capture_stream_while_running():
     assert calls[:2] == ["stop", "start"]
 
 
+def test_source_uri_change_restarts_capture_stream_while_running():
+    """Editing a network stream URL must reopen the stream. Sources
+    freeze their URI at construction time, so the already-open stream
+    would otherwise keep reading from the old URL.
+    """
+    camera = Camera(
+        "Network Camera",
+        source_type=CameraSourceType.HTTP_STREAM,
+        source_config={"uri": "https://example.com/old.mjpeg"},
+    )
+    camera.enabled = True
+    controller = CameraController(camera)
+
+    calls = []
+
+    def fake_stop():
+        calls.append("stop")
+
+    def fake_start():
+        calls.append("start")
+
+    controller._active_subscribers = 1
+    controller._running = True
+    with (
+        patch.object(controller, "_stop_capture_stream", fake_stop),
+        patch.object(controller, "_start_capture_stream", fake_start),
+    ):
+        camera.source_uri = "https://example.com/new.mjpeg"
+
+    assert calls.count("stop") == 1
+    assert calls[:2] == ["stop", "start"]
+
+
 def test_unrelated_setting_change_does_not_restart_capture_stream():
     """Changing a setting unrelated to the physical source (e.g. name)
     must not tear down and recreate the running capture stream.

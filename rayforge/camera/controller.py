@@ -124,12 +124,20 @@ class CameraController:
     def _source_key(self) -> tuple:
         """A tuple identifying which physical source is being captured.
 
-        Used to detect when the camera's source (e.g. its local device
-        ID) changed underneath a running capture stream, which requires
-        closing the old device and opening the new one rather than just
-        continuing to read from the already-open capture.
+        Used to detect when the camera's source changed underneath a
+        running capture stream, which requires closing the old source
+        and opening the new one rather than just continuing to read
+        from the already-open capture. The whole source configuration
+        participates, so a local device switch (``device_id``) and a
+        network stream URL edit (``uri``) both reopen the stream. The
+        latter matters because sources freeze their connection
+        parameters at construction time and cannot retarget an open
+        stream.
         """
-        return (self.config.source_type, self.config.device_id)
+        return (
+            self.config.source_type,
+            tuple(sorted(self.config.source_config.items())),
+        )
 
     def _on_config_changed(self, sender):
         """Reacts to changes in the data model."""
