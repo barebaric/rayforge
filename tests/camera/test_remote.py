@@ -1,9 +1,48 @@
 """Tests for daemon-advertised cameras."""
 
+from types import SimpleNamespace
+
 import pytest
 
 from rayforge.camera import remote
 from rayforge.camera.models.source_type import CameraSourceType
+
+
+def test_collect_remote_daemons_from_machines():
+    machines = [
+        SimpleNamespace(
+            name="Workshop",
+            driver_args={
+                "remote_host": "pi.local",
+                "remote_port": 8765,
+                "token": "secret",
+                "tls_ca": "/tmp/ca.pem",
+            },
+        ),
+        SimpleNamespace(
+            name="Workshop duplicate",
+            driver_args={
+                "remote_host": "pi.local",
+                "remote_port": 8765,
+                "token": "secret",
+                "tls_ca": "/tmp/ca.pem",
+            },
+        ),
+        SimpleNamespace(
+            name="Local",
+            driver_args={"port": "/dev/ttyUSB0"},
+        ),
+    ]
+    daemons = remote.collect_remote_daemons(machines)
+    assert daemons == [
+        remote.RemoteDaemon(
+            label="Workshop (pi.local:8765)",
+            host="pi.local",
+            port=8765,
+            token="secret",
+            tls_ca="/tmp/ca.pem",
+        )
+    ]
 
 
 @pytest.mark.asyncio

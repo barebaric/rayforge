@@ -7,7 +7,7 @@ advertisement into the camera model's source types.
 """
 
 import logging
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from typing import Any
 
@@ -30,12 +30,72 @@ _NETWORK_SOURCE_TYPES = frozenset(
 
 
 @dataclass(frozen=True)
+class RemoteDaemon:
+    """A raydriver daemon a camera can be selected from."""
+
+    label: str
+    host: str
+    port: int = 8765
+    token: str | None = None
+    tls_ca: str | None = None
+    tls_hostname: str | None = None
+
+    @property
+    def driver_args(self) -> dict[str, Any]:
+        args: dict[str, Any] = {
+            "remote_host": self.host,
+            "remote_port": self.port,
+        }
+        for key, value in (
+            ("token", self.token),
+            ("tls_ca", self.tls_ca),
+            ("tls_hostname", self.tls_hostname),
+        ):
+            if value:
+                args[key] = value
+        return args
+
+
+@dataclass(frozen=True)
 class RemoteCamera:
     """One camera endpoint advertised by a raydriver daemon."""
 
     name: str
     uri: str
     source_type: CameraSourceType
+
+
+def collect_remote_daemons(machines: Iterable[Any]) -> list[RemoteDaemon]:
+    """Remote daemons named by the configured machines, deduplicated."""
+    daemons: list[RemoteDaemon] = []
+    seen: set[tuple[Any, ...]] = set()
+    for machine in machines:
+        args = getattr(machine, "driver_args", None) or {}
+        host = args.get("remote_host")
+        if not host:
+            continue
+        port = int(args.get("remote_port") or 8765)
+        name = getattr(machine, "name", None)
+        daemon = RemoteDaemon(
+            label=f"{name} ({host}:{port})" if name else f"{host}:{port}",
+            host=str(host),
+            port=port,
+            token=args.get("token") or None,
+            tls_ca=args.get("tls_ca") or None,
+            tls_hostname=args.get("tls_hostname") or None,
+        )
+        key = (
+            daemon.host,
+            daemon.port,
+            daemon.token,
+            daemon.tls_ca,
+            daemon.tls_hostname,
+        )
+        if key in seen:
+            continue
+        seen.add(key)
+        daemons.append(daemon)
+    return daemons
 
 
 def is_remote_driver_args(driver_args: Mapping[str, Any] | None) -> bool:

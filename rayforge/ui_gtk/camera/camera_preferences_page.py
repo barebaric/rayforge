@@ -6,6 +6,7 @@ from gi.repository import Adw, Gtk
 
 from ...camera.controller import CameraController
 from ...camera.models.camera import Camera, CameraSourceType
+from ...camera.remote import collect_remote_daemons
 from ...camera.v4l import display_name
 from ...context import get_context
 from ..icons import get_icon
@@ -372,13 +373,13 @@ class CameraPreferencesPage(TrackedPreferencesPage):
     def on_add_camera(self, sender):
         """Show a dialog to select a new camera device."""
         machine = self._machine or get_context().machine
-        driver_args = (
-            dict(machine.driver_args) if machine is not None else None
-        )
+        machines = list(get_context().machine_mgr.get_machines())
+        if machine is not None and machine not in machines:
+            machines.append(machine)
         dialog = CameraSelectionDialog(
             self.get_ancestor(Gtk.Window),
             active_controllers=self._controllers,
-            driver_args=driver_args,
+            remote_daemons=collect_remote_daemons(machines),
         )
         dialog.present()
         dialog.connect("response", self.on_camera_selection_dialog_response)
