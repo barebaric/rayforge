@@ -1,10 +1,7 @@
 import math
-from types import SimpleNamespace
-from typing import Any, cast
 
 import pytest
-from raygeo.sketch.entities import Circle
-from sketcher.core.arrays import (
+from raygeo.sketch.arrays import (
     Array,
     CircularArray,
     CircularArrayStrategy,
@@ -14,6 +11,7 @@ from sketcher.core.arrays import (
     PlacementKind,
     find_array_for_entity,
 )
+from raygeo.sketch.registry import EntityRegistry
 
 
 def test_full_circle_rotation_placements():
@@ -133,23 +131,27 @@ def test_find_array_for_entity():
 
 
 def test_living_members_filters_deleted_and_keeps_groups():
-    class FakeRegistry:
-        def get_entity(self, eid):
-            return eid if eid in (1, 2, 5) else None
-
-    # Member at slot 1 lost one of its two entities but survives.
+    registry = EntityRegistry()
+    pts = [registry.add_point(float(i), 0.0, False) for i in range(6)]
+    e0 = registry.add_line(pts[0], pts[1], False)
+    e1 = registry.add_line(pts[1], pts[2], False)
+    e2 = registry.add_line(pts[2], pts[3], False)
+    e3 = registry.add_line(pts[3], pts[4], False)
+    e4 = registry.add_line(pts[4], pts[5], False)
+    registry.remove_entities([e1, e3])
     array = CircularArray(
         "x",
         9,
-        members=[(0, [1, 2]), (1, [3, 4]), (2, [5])],
+        members=[(0, [e0, e1]), (1, [e2, e3]), (2, [e4])],
         count=6,
     )
-    assert array.living_members(FakeRegistry()) == [
-        (0, [1, 2]),
-        (2, [5]),
+    assert array.living_members(registry) == [
+        (0, [e0]),
+        (1, [e2]),
+        (2, [e4]),
     ]
-    assert array.living_entity_ids(FakeRegistry()) == [1, 2, 5]
-    assert array.occupied_slots(FakeRegistry()) == {0, 2}
+    assert array.living_entity_ids(registry) == [e0, e2, e4]
+    assert array.occupied_slots(registry) == [0, 1, 2]
 
 
 def test_circular_template_placement_is_identity():
@@ -269,42 +271,6 @@ def test_curve_along_commit_and_params_changed():
 # ----------------------------------------------------------------------
 
 
-class _FakeRegistry:
-    """Minimal registry lookalike mapping ids to simple objects."""
-
-    def __init__(self):
-        self.entities = {}
-        self.points = {}
-
-    def add_point(self, x, y):
-        pid = len(self.points)
-        self.points[pid] = SimpleNamespace(id=pid, x=x, y=y)
-        return pid
-
-    def add_line(self, p1, p2):
-        eid = len(self.entities)
-        self.entities[eid] = SimpleNamespace(
-            id=eid, type="line", get_point_ids=lambda: [p1, p2]
-        )
-        return eid
-
-    def get_entity(self, eid):
-        return self.entities.get(eid)
-
-    def get_point(self, pid):
-        return self.points.get(pid)
-
-    def geometry_signature(self, entity_id):
-        entity = self.entities.get(entity_id)
-        if entity is None:
-            return None
-        return tuple(
-            (round(p.x, 6), round(p.y, 6))
-            for p in (self.points.get(pid) for pid in entity.get_point_ids())
-            if p is not None
-        )
-
-
 def test_signatures_changed_ignores_missing_caches():
     array = CircularArray("a", 11, [(0, [1])])
     assert array.signatures_changed(((1, 2),), ((3, 4),)) is False
@@ -315,48 +281,38 @@ def test_signatures_changed_ignores_missing_caches():
 
 
 def test_guide_and_template_signatures_from_registry():
-    registry = _FakeRegistry()
-    p0 = registry.add_point(0.0, 0.0)
-    p1 = registry.add_point(10.0, 0.0)
-    line = registry.add_line(p0, p1)
+    registry = EntityRegistry()
+    p0 = registry.add_point(0.0, 0.0, False)
+    p1 = registry.add_point(10.0, 0.0, False)
+    line = registry.add_line(p0, p1, False)
     array = CurveAlongArray("b", line, [(0, [line])])
-    reg = cast(Any, registry)
-    expected = ((0.0, 0.0), (10.0, 0.0))
-    assert array.guide_signature(reg) == expected
-    assert array.template_signature(reg) == (expected,)
+    expected = [[0.0, 0.0], [10.0, 0.0]]
+    assert array.guide_signature(registry) == expected
+    assert array.template_signature(registry) == [expected]
 
 
 def test_prune_drops_dead_entities_and_reports_dead_master():
-    class Registry:
-        def __init__(self, alive):
-            self.alive = set(alive)
-
-        def get_entity(self, eid):
-            return eid if eid in self.alive else None
-
-    array = CircularArray("a", 99, members=[(0, [1, 2]), (1, [3]), (2, [4])])
-    # Master (99) alive; member 1's only entity died.
-    assert array.prune(cast(Any, Registry(alive=[99, 1, 2, 4]))) is True
-    assert array.members == [(0, [1, 2]), (2, [4])]
-
-    # Master gone: the array reports itself as dead.
-    assert array.prune(cast(Any, Registry(alive=[1, 2, 4]))) is False
+    registry = EntityRegistry()
+    pts = [registry.add_point(float(i), 0.0, False) for i in range(6)]
+    guide = registry.add_circle(pts[0], pts[1], True)
+    e0 = registry.add_line(pts[0], pts[1], False)
+    e1 = registry.add_line(pts[1], pts[2], False)
+    e2 = registry.add_line(pts[2], pts[3], False)
+    registry.remove_entities([e1])
+    array = CircularArray("a", guide, members=[(0, [e0, e1]), (1, [e2])])
+    assert array.prune(registry) is True
+    assert array.members == [(0, [e0]), (1, [e2])]
+    registry.remove_entities([guide])
+    assert array.prune(registry) is False
 
 
 def test_is_guide_radius_point_only_for_circle_guides():
-    class Registry:
-        def __init__(self, entity):
-            self.entity = entity
-
-        def get_entity(self, eid):
-            return self.entity
-
-    circle = Circle(11, center_idx=1, radius_pt_idx=42)
-    array = CircularArray("a", 11, [(0, [1])])
-    reg = cast(Any, Registry(circle))
-    assert array.is_guide_radius_point(reg, 42) is True
-    assert array.is_guide_radius_point(reg, 43) is False
-    assert array.is_guide_radius_point(cast(Any, Registry(None)), 42) is False
-
-    curve = CurveAlongArray("b", 12, [(0, [1])])
-    assert curve.is_guide_radius_point(cast(Any, Registry(None)), 42) is False
+    registry = EntityRegistry()
+    center = registry.add_point(0.0, 0.0, False)
+    edge = registry.add_point(5.0, 0.0, False)
+    circle = registry.add_circle(center, edge, False)
+    array = CircularArray("a", circle, [(0, [circle])])
+    assert array.is_guide_radius_point(registry, edge) is True
+    assert array.is_guide_radius_point(registry, center) is False
+    curve = CurveAlongArray("b", circle, [(0, [circle])])
+    assert curve.is_guide_radius_point(registry, edge) is False

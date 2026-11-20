@@ -1,6 +1,11 @@
 import math
 
 import pytest
+from raygeo.sketch.arrays import (
+    CurveAlongArray,
+    CurveAlongArrayStrategy,
+    find_array_for_entity,
+)
 from raygeo.sketch.constraints import (
     CoincidentConstraint,
     HorizontalConstraint,
@@ -8,11 +13,6 @@ from raygeo.sketch.constraints import (
     VerticalConstraint,
 )
 from raygeo.sketch.entities import Bezier, Ellipse, Line
-from sketcher.core.arrays import (
-    CurveAlongArray,
-    CurveAlongArrayStrategy,
-    find_array_for_entity,
-)
 from sketcher.core.commands import CreateArrayCommand, EditArrayCommand
 from sketcher.core.sketch import Sketch
 

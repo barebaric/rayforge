@@ -8,20 +8,16 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 import cairo
 from gi.repository import Adw, Gtk
+from raygeo.sketch.arrays import InstancePlacement
 from raygeo.sketch.entity_group import EntityGroup
 
-from ...core.arrays import (
-    CircularArray,
-    CurveAlongArray,
-    InstancePlacement,
-)
 from ...core.commands import CreateArrayCommand, EditArrayCommand
 from .base import SketcherKey, SketchTool
 
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from ...core.arrays import Array
+    from raygeo.sketch.arrays import Array
 
 
 class ArrayToolBase(SketchTool):
@@ -311,7 +307,9 @@ class ArrayToolBase(SketchTool):
             if self._would_full_regen():
                 occupied_slots = {0}
             else:
-                occupied_slots = self._edit_target.occupied_slots(registry)
+                occupied_slots = set(
+                    self._edit_target.occupied_slots(registry)
+                )
 
         model_to_screen = self.element.hittester.get_model_to_screen_transform(
             self.element
@@ -356,12 +354,12 @@ class ArrayToolBase(SketchTool):
             return False
         if self._strategy.count != target.count:
             return True
-        if isinstance(target, CircularArray):
+        if target.mode == "circular":
             return (
                 self._strategy.rotate_copies != target.rotate_copies
                 or self._strategy.total_angle_deg != target.total_angle_deg
             )
-        if isinstance(target, CurveAlongArray):
+        if target.mode == "curve_along":
             return (
                 self._strategy.path_entity_id != target.path_entity_id
                 or self._strategy.align_to_tangent != target.align_to_tangent

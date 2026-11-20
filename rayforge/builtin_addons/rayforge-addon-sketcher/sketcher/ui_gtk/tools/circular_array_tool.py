@@ -6,6 +6,10 @@ from gettext import gettext as _
 from typing import ClassVar
 
 from gi.repository import Adw, Gtk
+from raygeo.sketch.arrays import (
+    CircularArray,
+    CircularArrayStrategy,
+)
 from raygeo.sketch.entities import Circle
 from raygeo.sketch.entity_group import EntityGroup
 
@@ -15,10 +19,6 @@ from rayforge.ui_gtk.shared.pref_rows import (
     SpinRow,
 )
 
-from ...core.arrays import (
-    CircularArray,
-    CircularArrayStrategy,
-)
 from ...core.commands import CreateArrayCommand
 from .array_base import ArrayToolBase
 
@@ -65,7 +65,7 @@ class CircularArrayTool(ArrayToolBase):
     def _make_strategy_from_target(self) -> CircularArrayStrategy:
         """Pre-fills parameters from the edit target's master geometry."""
         assert self._edit_target is not None
-        assert isinstance(self._edit_target, CircularArray)
+        assert self._edit_target.mode == "circular"
         registry = self.element.sketch.registry
         circle = registry.get_entity(self._edit_target.guide_circle_id)
         center = (0.0, 0.0)

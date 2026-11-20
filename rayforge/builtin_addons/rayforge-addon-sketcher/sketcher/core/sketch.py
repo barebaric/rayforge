@@ -17,6 +17,7 @@ from raygeo.geo import Line as GeoLine
 from raygeo.geo import Move as GeoMove
 from raygeo.geo.shape.polygon import is_point_inside_polygon
 from raygeo.sketch import conflicting_constraints, solve_registry
+from raygeo.sketch.arrays import Array
 from raygeo.sketch.components import get_referenced_points
 from raygeo.sketch.constraints import (
     AngleConstraint,
@@ -54,7 +55,6 @@ from rayforge.core.varset import VarSet
 from rayforge.image.geo_renderer import render_geometry_to_png
 from rayforge.image.structures import FillRenderData, FillStyle
 
-from .arrays import Array
 from .template_functions import get_template_functions
 from .types import ConstraintStatus, EntityID, WaypointType
 
@@ -1735,3 +1735,11 @@ class Sketch(IAsset, IGeometryProvider):
 
         except (IndexError, AttributeError):
             return None
+
+
+def find_array_for_entity(arrays: list[Array], entity_id: int) -> Array | None:
+    """Returns the array whose master entity is the given one."""
+    for arr in arrays:
+        if arr.guide_entity_id == entity_id:
+            return arr
+    return None

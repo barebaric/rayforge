@@ -1,15 +1,13 @@
 import math
 
 import pytest
-from sketcher.core.arrays import (
+from raygeo.sketch.arrays import (
     CurveAlongArrayStrategy,
     InstancePlacement,
     PlacementKind,
-    sample_path,
-)
-from sketcher.core.arrays.curve_along import (
     _cumulative_lengths,
     _point_at_arclength,
+    sample_path,
 )
 from sketcher.core.sketch import Sketch
 

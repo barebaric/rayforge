@@ -7,17 +7,17 @@ from typing import ClassVar
 
 import cairo
 from gi.repository import Adw, Gtk
-from raygeo.sketch.entities import Arc, Bezier, Line
-from raygeo.sketch.entity_group import EntityGroup
-
-from rayforge.ui_gtk.shared.pref_rows import LengthSpinRow, SpinRow
-
-from ...core.arrays import (
+from raygeo.sketch.arrays import (
     CurveAlongArray,
     CurveAlongArrayStrategy,
     path_length,
     sample_path,
 )
+from raygeo.sketch.entities import Arc, Bezier, Line
+from raygeo.sketch.entity_group import EntityGroup
+
+from rayforge.ui_gtk.shared.pref_rows import LengthSpinRow, SpinRow
+
 from ...core.commands import CreateArrayCommand
 from .array_base import ArrayToolBase
 
@@ -93,7 +93,7 @@ class CurveAlongArrayTool(ArrayToolBase):
 
     def _make_strategy_from_target(self) -> CurveAlongArrayStrategy:
         assert self._edit_target is not None
-        assert isinstance(self._edit_target, CurveAlongArray)
+        assert self._edit_target.mode == "curve_along"
         self._path_entity_id = self._edit_target.path_entity_id
         return CurveAlongArrayStrategy(
             count=self._edit_target.count,

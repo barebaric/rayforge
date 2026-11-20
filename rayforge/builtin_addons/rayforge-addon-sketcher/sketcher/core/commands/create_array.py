@@ -6,16 +6,15 @@ import uuid
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
+from raygeo.sketch.arrays import (
+    Array,
+    CircularArrayStrategy,
+    InstancePlacement,
+)
+from raygeo.sketch.constraints import RadiusConstraint
 from raygeo.sketch.entities import Bezier, Circle, SketchPoint
 from raygeo.sketch.entity_group import EntityGroup, remap_point_refs
 
-from ..arrays import (
-    Array,
-    ArrayStrategy,
-    CircularArrayStrategy,
-    InstancePlacement,
-    resolve_template_center,
-)
 from .base import SketchChangeCommand
 from .items import AddItemsCommand
 
@@ -44,7 +43,7 @@ class CreateArrayCommand(SketchChangeCommand):
     def __init__(
         self,
         sketch: Sketch,
-        strategy: ArrayStrategy,
+        strategy: Any,
         template_entity_ids: list[int],
         name: str | None = None,
     ):
@@ -71,7 +70,7 @@ class CreateArrayCommand(SketchChangeCommand):
     @staticmethod
     def calculate_geometry(
         registry: EntityRegistry,
-        strategy: ArrayStrategy,
+        strategy: Any,
         template_entity_ids: list[int],
         center_pid: int | None = None,
         create_master: bool = True,
@@ -113,9 +112,7 @@ class CreateArrayCommand(SketchChangeCommand):
         # For circles and ellipses, the template center is the shape's
         # explicit center point, not the bbox midpoint of all defining
         # points which would offset every copy.
-        template_center = resolve_template_center(
-            registry, template_entity_ids, template_points
-        )
+        template_center = EntityGroup(registry, template_entity_ids).center()
 
         temp_id = -1
 
@@ -208,16 +205,25 @@ class CreateArrayCommand(SketchChangeCommand):
             if strategy.radius > 0.0:
                 radius_pt_pid = next_temp_id()
 
-            master_points, master_entities, master_constraints = (
-                strategy.create_master_geometry(center_pid, radius_pt_pid)
-            )
-            points.extend(master_points)
-            entities.extend(master_entities)
-            constraints.extend(master_constraints)
-            guide_circle = next(
-                (e for e in master_entities if isinstance(e, Circle)),
-                None,
-            )
+            if radius_pt_pid is not None:
+                circle_temp_id = -(abs(radius_pt_pid) + 1)
+                guide_circle = Circle(
+                    circle_temp_id,
+                    center_idx=center_pid,
+                    radius_pt_idx=radius_pt_pid,
+                    construction=True,
+                )
+                points.append(
+                    SketchPoint(
+                        radius_pt_pid,
+                        strategy.center[0] + strategy.radius,
+                        strategy.center[1],
+                    )
+                )
+                entities.append(guide_circle)
+                constraints.append(
+                    RadiusConstraint(circle_temp_id, value=strategy.radius)
+                )
 
         return {
             "points": points,
@@ -328,7 +334,7 @@ class CreateArrayCommand(SketchChangeCommand):
                     (float(target[0]), float(target[1])),
                     float(self._template_placement.angle),
                 )
-            self.array = Array.from_strategy(
+            array: Array = Array.from_strategy(
                 self.strategy,
                 uid=str(uuid.uuid4()),
                 guide_circle_id=self.guide_circle_id,
@@ -336,15 +342,18 @@ class CreateArrayCommand(SketchChangeCommand):
                 count=count,
                 template_anchor=anchor,
             )
+            self.array = array
+        else:
+            array = self.array
         existing = next(
-            (p for p in self.sketch.arrays if p.uid == self.array.uid),
+            (p for p in self.sketch.arrays if p.uid == array.uid),
             None,
         )
         if existing is None:
-            self.sketch.arrays.append(self.array)
+            self.sketch.arrays.append(array)
             # The template's standalone points are member data of slot
             # 0; the copies' were resolved in _do_execute.
-            self.array.standalone_pids = {
+            array.standalone_pids = {
                 0: list(self._extra_template_pids),
                 **self._standalone_pids,
             }
@@ -484,9 +493,9 @@ class CreateArrayCommand(SketchChangeCommand):
         pts = template_group.points()
         if not pts:
             return
-        template_center = resolve_template_center(
-            registry, self.template_entity_ids, pts
-        )
+        template_center = EntityGroup(
+            registry, self.template_entity_ids
+        ).center()
         placement = strategy.template_placement(template_center, registry)
         # The helper geometry is placed with the member: a helper's
         # points complete the member's shape (a text box's fourth
