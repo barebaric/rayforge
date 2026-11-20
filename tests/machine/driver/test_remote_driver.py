@@ -57,16 +57,7 @@ async def _wait_until(predicate, timeout: float = 10.0) -> None:
     raise AssertionError("condition not met")
 
 
-def _drop_connection(session) -> None:
-    drop = getattr(session, "drop_connection", None)
-    if drop is not None:
-        drop()
-        return
-    assert session._writer is not None
-    session._writer.close()
-
-
-async def _wait_connected(driver, timeout: float = 10.0) -> None:
+async def _connect_and_wait(driver, timeout: float = 10.0) -> None:
     connected = asyncio.Event()
 
     def on_status(sender, status=None, **kwargs):
@@ -75,6 +66,7 @@ async def _wait_connected(driver, timeout: float = 10.0) -> None:
 
     driver.connection_status_changed.connect(on_status)
     try:
+        await driver.connect()
         await asyncio.wait_for(connected.wait(), timeout)
     finally:
         driver.connection_status_changed.disconnect(on_status)
@@ -229,8 +221,7 @@ async def test_remote_run_progress_and_finish(
 
     drv.job_finished.connect(on_job_finished)
     try:
-        await drv.connect()
-        await _wait_connected(drv)
+        await _connect_and_wait(drv)
 
         ops = Ops()
         ops.set_power(1.0)
@@ -258,8 +249,7 @@ async def test_remote_cancel_stops_job(
     drv = RaydriverRemoteDriver(context_initializer, machine)
     drv.setup(**_remote_kwargs(daemon_port))
     try:
-        await drv.connect()
-        await _wait_connected(drv)
+        await _connect_and_wait(drv)
 
         op_map = {i: i for i in range(300)}
         job = asyncio.ensure_future(
@@ -294,8 +284,7 @@ async def test_remote_disconnect_sleeping_and_attach(
     drv.connection_status_changed.connect(on_status)
     drv.job_finished.connect(on_job_finished)
     try:
-        await drv.connect()
-        await _wait_connected(drv)
+        await _connect_and_wait(drv)
 
         op_map = {i: i for i in range(500)}
         job = asyncio.ensure_future(
@@ -303,7 +292,7 @@ async def test_remote_disconnect_sleeping_and_attach(
         )
         await _wait_until(lambda: drv._session.job_running)
 
-        _drop_connection(drv._session)
+        drv._session.drop_connection()
         with pytest.raises(ConnectionError):
             await asyncio.wait_for(job, timeout=10.0)
         await asyncio.wait_for(sleeping.wait(), timeout=5.0)
