@@ -9,6 +9,8 @@ from raygeo.sketch.snap.types import SnapLine, SnapPoint
 
 
 class _CountingProducer(SnapLineProducer):
+    produce_calls: int
+
     def __init__(self) -> None:
         self.produce_calls = 0
 
@@ -48,12 +50,12 @@ def test_preview_movement_does_not_rebuild_static_index():
     context = DragContext(preview_entity_ids={preview_entity})
 
     engine.query(registry, (0.0, 0.0), context)
-    assert counting.produce_calls == 1
+    assert counting.produce_calls == 1  # type: ignore[attr-defined]
 
     registry.get_point(p3).x = 5.0
     engine.query(registry, (0.0, 0.0), context)
 
-    assert counting.produce_calls == 1
+    assert counting.produce_calls == 1  # type: ignore[attr-defined]
 
 
 def test_preview_points_still_produce_live_axis_lines():

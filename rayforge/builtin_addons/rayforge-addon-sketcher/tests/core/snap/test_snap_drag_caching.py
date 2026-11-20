@@ -8,6 +8,8 @@ from raygeo.sketch.snap.types import DragContext
 class CountingProducer(SnapLineProducer):
     """Records how often the index was rebuilt from it."""
 
+    produce_calls: int
+
     def __init__(self):
         self.produce_calls = 0
 
@@ -51,17 +53,17 @@ def test_index_not_rebuilt_while_only_dragged_points_move():
     drag_context = DragContext(dragged_point_ids={dragged})
 
     engine.query(registry, (0.0, 0.0), drag_context)
-    assert producer.produce_calls == 1
+    assert producer.produce_calls == 1  # type: ignore[attr-defined]
 
     point = registry.get_point(dragged)
     point.x = 1.0
     point.y = 1.0
     engine.query(registry, (1.0, 1.0), drag_context)
-    assert producer.produce_calls == 1
+    assert producer.produce_calls == 1  # type: ignore[attr-defined]
 
     registry.get_point(static).x = 51.0
     engine.query(registry, (1.0, 1.0), drag_context)
-    assert producer.produce_calls == 2
+    assert producer.produce_calls == 2  # type: ignore[attr-defined]
 
 
 def test_intersections_producer_caches_across_queries():

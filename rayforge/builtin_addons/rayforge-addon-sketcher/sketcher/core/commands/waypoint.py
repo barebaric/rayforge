@@ -247,7 +247,7 @@ class SetWaypointTypeCommand(SketchChangeCommand):
                 if b.end_idx in point_ids and b.cp2 is None:
                     b.cp2 = cp_in
 
-        waypoint.waypoint_type = self.new_type
+        waypoint.waypoint_type = self.new_type  # type: ignore[assignment]
         waypoint.enforce_constraint(registry, self.sketch)
 
     def _do_undo(self) -> None:
