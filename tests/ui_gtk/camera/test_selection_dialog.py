@@ -10,7 +10,7 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
 import pytest
-from gi.repository import GLib
+from gi.repository import GLib, Gtk
 
 from rayforge.camera.controller import CameraController
 from rayforge.camera.models.camera import Camera, CameraSourceType
@@ -51,6 +51,29 @@ class _FakeActiveController(CameraController):
     @property
     def raw_image_data(self):
         return self._frame
+
+
+def _type_labels(dialog) -> list[str]:
+    model = dialog.type_row.get_model()
+    assert isinstance(model, Gtk.StringList)
+    return [
+        label
+        for i in range(model.get_n_items())
+        if (label := model.get_string(i)) is not None
+    ]
+
+
+@pytest.mark.ui
+def test_local_machine_has_no_daemon_source(ui_context_initializer):
+    with patch(
+        "rayforge.ui_gtk.camera.selection_dialog.list_local_device_ids",
+        return_value=[],
+    ):
+        dialog = CameraSelectionDialog(None)
+        assert "Daemon camera" not in _type_labels(dialog)
+
+    dialog.destroy()
+    _pump(time.monotonic() + 0.2)
 
 
 @pytest.mark.ui
@@ -233,15 +256,21 @@ def test_daemon_camera_prefills_network_source(ui_context_initializer):
         return_value=[],
     ):
         dialog = CameraSelectionDialog(None, remote_cameras=[camera])
+        daemon_index = dialog.type_values.index("daemon")
+        assert "Daemon camera" in _type_labels(dialog)
+        assert dialog.daemon_row.get_visible() is False
+
+        dialog.type_row.set_selected(daemon_index)
         assert _pump_until(lambda: dialog.daemon_row.get_visible())
         assert dialog.daemon_row.get_selected() == 0
 
         dialog.daemon_row.set_selected(1)
 
         assert _pump_until(lambda: dialog.uri_entry.get_text() == camera.uri)
-        assert dialog.type_row.get_selected() == 3
+        assert dialog.type_row.get_selected() == daemon_index
+        assert dialog.uri_entry.get_editable() is False
         assert dialog.camera_payload == {
-            "name": camera.uri,
+            "name": camera.name,
             "source_type": "http_stream",
             "source_config": {"uri": camera.uri},
         }
@@ -275,6 +304,8 @@ def test_daemon_camera_scan_reads_driver_args(ui_context_initializer):
         dialog = CameraSelectionDialog(
             None, driver_args={"remote_host": "pi.local"}
         )
+        daemon_index = dialog.type_values.index("daemon")
+        dialog.type_row.set_selected(daemon_index)
         assert _pump_until(lambda: dialog.daemon_row.get_visible())
 
     dialog.destroy()

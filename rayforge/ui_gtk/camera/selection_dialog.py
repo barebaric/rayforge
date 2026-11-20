@@ -18,6 +18,9 @@ logger = logging.getLogger(__name__)
 
 _SCANNING_PLACEHOLDER = _("Scanning for devices\u2026")
 
+#: Pseudo source type selecting a camera advertised by the daemon.
+_DAEMON_SOURCE = "daemon"
+
 
 class CameraSelectionDialog(Adw.MessageDialog):
     def __init__(
@@ -41,6 +44,9 @@ class CameraSelectionDialog(Adw.MessageDialog):
         self.mode = mode
         if mode == "configured":
             self.set_heading(_("Select Camera"))
+        self._remote_enabled = mode != "configured" and bool(
+            driver_args or remote_cameras
+        )
         self.camera_payload: dict | None = None
         self.selected_device_id: str | None = None
         # Controllers already active elsewhere in the app (e.g. a camera
@@ -99,24 +105,31 @@ class CameraSelectionDialog(Adw.MessageDialog):
         source_group = Adw.PreferencesGroup()
         box.append(source_group)
 
-        self.type_values = [
+        self.type_values: list[CameraSourceType | str | None] = [
             None,
             CameraSourceType.LOCAL_DEVICE,
-            CameraSourceType.HTTP_SNAPSHOT,
-            CameraSourceType.HTTP_STREAM,
-            CameraSourceType.RTSP,
         ]
+        type_labels = [_("Choose source type"), _("Local camera")]
+        if self._remote_enabled:
+            self.type_values.append(_DAEMON_SOURCE)
+            type_labels.append(_("Daemon camera"))
+        self.type_values.extend(
+            [
+                CameraSourceType.HTTP_SNAPSHOT,
+                CameraSourceType.HTTP_STREAM,
+                CameraSourceType.RTSP,
+            ]
+        )
+        type_labels.extend(
+            [
+                _("HTTP snapshot URL"),
+                _("HTTP stream URL"),
+                _("RTSP stream"),
+            ]
+        )
         self.type_row = Adw.ComboRow(
             title=_("Source Type"),
-            model=Gtk.StringList.new(
-                [
-                    _("Choose source type"),
-                    _("Local camera"),
-                    _("HTTP snapshot URL"),
-                    _("HTTP stream URL"),
-                    _("RTSP stream"),
-                ]
-            ),
+            model=Gtk.StringList.new(type_labels),
         )
         source_group.add(self.type_row)
 
@@ -196,17 +209,20 @@ class CameraSelectionDialog(Adw.MessageDialog):
         if self._closed or self.mode == "configured":
             return
         self._remote_cameras = list(cameras)
-        if not self._remote_cameras:
-            self.daemon_row.set_visible(False)
-            return
-        self.daemon_row.set_model(
-            Gtk.StringList.new(
-                [_("Choose a daemon camera")]
-                + [camera.name for camera in self._remote_cameras]
+        if self._remote_cameras:
+            self.daemon_row.set_model(
+                Gtk.StringList.new(
+                    [_("Choose a daemon camera")]
+                    + [camera.name for camera in self._remote_cameras]
+                )
             )
-        )
-        self.daemon_row.set_selected(0)
-        self.daemon_row.set_visible(True)
+            self.daemon_row.set_selected(0)
+        else:
+            self.daemon_row.set_model(
+                Gtk.StringList.new([_("No daemon cameras advertised")])
+            )
+        self._update_visibility()
+        self._on_form_changed()
 
     def _start_remote_camera_scan(self, driver_args: dict) -> None:
         args = dict(driver_args)
@@ -223,19 +239,19 @@ class CameraSelectionDialog(Adw.MessageDialog):
             target=worker, name="RemoteCameraScan", daemon=True
         ).start()
 
-    def _on_daemon_camera_changed(self, *args) -> None:
+    def _selected_daemon_camera(self) -> RemoteCamera | None:
         index = self.daemon_row.get_selected()
         if index <= 0 or index - 1 >= len(self._remote_cameras):
-            return
-        camera = self._remote_cameras[index - 1]
-        try:
-            type_index = self.type_values.index(camera.source_type)
-        except ValueError:
-            return
-        self.uri_entry.set_text(camera.uri)
-        self.type_row.set_selected(type_index)
+            return None
+        return self._remote_cameras[index - 1]
 
-    def _selected_source_type(self):
+    def _on_daemon_camera_changed(self, *args) -> None:
+        camera = self._selected_daemon_camera()
+        if camera is not None:
+            self.uri_entry.set_text(camera.uri)
+        self._on_form_changed()
+
+    def _selected_source_type(self) -> CameraSourceType | str | None:
         idx = self.type_row.get_selected()
         if 0 <= idx < len(self.type_values):
             return self.type_values[idx]
@@ -244,17 +260,26 @@ class CameraSelectionDialog(Adw.MessageDialog):
     def _update_visibility(self) -> None:
         source_type = self._selected_source_type()
         is_local = source_type is CameraSourceType.LOCAL_DEVICE
+        is_daemon = source_type == _DAEMON_SOURCE
         self.device_row.set_visible(is_local)
         self.preview_group.set_visible(is_local)
+        self.daemon_row.set_visible(is_daemon and bool(self._remote_cameras))
         self.uri_row.set_visible(
-            source_type
+            is_daemon
+            or source_type
             in {
                 CameraSourceType.HTTP_SNAPSHOT,
                 CameraSourceType.HTTP_STREAM,
                 CameraSourceType.RTSP,
             }
         )
-        if not is_local:
+        self.uri_entry.set_editable(not is_daemon)
+        self.uri_row.set_subtitle(
+            _("Stream URL advertised by the device host")
+            if is_daemon
+            else _("Enter the snapshot or stream URL")
+        )
+        if not is_local and not is_daemon:
             self.preview_image.set_paintable(None)
             self._preview_pixbuf = None
 
@@ -262,6 +287,15 @@ class CameraSelectionDialog(Adw.MessageDialog):
         source_type = self._selected_source_type()
         if source_type is None:
             return None
+        if not isinstance(source_type, CameraSourceType):
+            camera = self._selected_daemon_camera()
+            if camera is None:
+                return None
+            return {
+                "name": camera.name,
+                "source_type": camera.source_type.value,
+                "source_config": {"uri": camera.uri},
+            }
         if self.mode == "configured":
             idx = self.device_row.get_selected()
             if idx < 0 or idx >= len(self._available_devices):
@@ -298,8 +332,8 @@ class CameraSelectionDialog(Adw.MessageDialog):
             self.set_response_enabled("select", payload is not None)
             return
         source_type = self._selected_source_type()
-        if source_type is not None and source_type is not (
-            CameraSourceType.LOCAL_DEVICE
+        if isinstance(source_type, CameraSourceType) and (
+            source_type is not CameraSourceType.LOCAL_DEVICE
         ):
             error = validate_source_uri(source_type, self.uri_entry.get_text())
             self.uri_entry.set_css_classes(["error"] if error else [])
