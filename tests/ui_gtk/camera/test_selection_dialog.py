@@ -53,8 +53,8 @@ class _FakeActiveController(CameraController):
         return self._frame
 
 
-def _type_labels(dialog) -> list[str]:
-    model = dialog.type_row.get_model()
+def _row_labels(row) -> list[str]:
+    model = row.get_model()
     assert isinstance(model, Gtk.StringList)
     return [
         label
@@ -63,14 +63,28 @@ def _type_labels(dialog) -> list[str]:
     ]
 
 
+def _type_labels(dialog) -> list[str]:
+    return _row_labels(dialog.type_row)
+
+
 @pytest.mark.ui
-def test_local_machine_has_no_daemon_source(ui_context_initializer):
+def test_daemon_source_is_listed_without_daemons(ui_context_initializer):
     with patch(
         "rayforge.ui_gtk.camera.selection_dialog.list_local_device_ids",
         return_value=[],
     ):
         dialog = CameraSelectionDialog(None)
-        assert "Daemon camera" not in _type_labels(dialog)
+        assert "Daemon camera" in _type_labels(dialog)
+
+        dialog.type_row.set_selected(dialog.type_values.index("daemon"))
+        assert dialog.daemon_picker.get_visible() is True
+        assert _row_labels(dialog.daemon_picker) == ["No daemons found"]
+        assert dialog.daemon_picker.get_sensitive() is False
+        assert _row_labels(dialog.daemon_row) == [
+            "No daemon cameras advertised"
+        ]
+        assert dialog.camera_payload is None
+        assert dialog.get_response_enabled("select") is False
 
     dialog.destroy()
     _pump(time.monotonic() + 0.2)

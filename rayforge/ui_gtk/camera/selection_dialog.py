@@ -44,9 +44,7 @@ class CameraSelectionDialog(Adw.MessageDialog):
         if mode == "configured":
             self.set_heading(_("Select Camera"))
         self._remote_daemons = list(remote_daemons or [])
-        self._remote_enabled = mode != "configured" and bool(
-            self._remote_daemons
-        )
+        self._remote_enabled = mode != "configured"
         self.camera_payload: dict | None = None
         self.selected_device_id: str | None = None
         # Controllers already active elsewhere in the app (e.g. a camera
@@ -134,11 +132,15 @@ class CameraSelectionDialog(Adw.MessageDialog):
         daemon_labels = (
             [daemon.label for daemon in self._remote_daemons]
             if self._remote_daemons
-            else [_("No remote daemons configured")]
+            else [_("No daemons found")]
         )
         self.daemon_picker = Adw.ComboRow(
             title=_("Daemon"),
-            subtitle=_("The computer running the raydriver daemon"),
+            subtitle=(
+                _("The computer running the raydriver daemon")
+                if self._remote_daemons
+                else _("No raydriver daemons were found")
+            ),
             model=Gtk.StringList.new(daemon_labels),
         )
         self.daemon_picker.set_sensitive(bool(self._remote_daemons))
@@ -302,10 +304,8 @@ class CameraSelectionDialog(Adw.MessageDialog):
         is_daemon = source_type == _DAEMON_SOURCE
         self.device_row.set_visible(is_local)
         self.preview_group.set_visible(is_local)
-        self.daemon_picker.set_visible(
-            is_daemon and bool(self._remote_daemons)
-        )
-        self.daemon_row.set_visible(is_daemon and bool(self._remote_daemons))
+        self.daemon_picker.set_visible(is_daemon)
+        self.daemon_row.set_visible(is_daemon)
         self.uri_row.set_visible(
             is_daemon
             or source_type
