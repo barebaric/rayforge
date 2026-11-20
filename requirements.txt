@@ -1,5 +1,5 @@
 raydriver==1.12.0
-raygeo @ git+https://github.com/barebaric/raygeo@1c532d93b46601c57fd1bf1ebdece1b9850882e5
+raygeo==1.86.0
 aiohttp==3.14.5
 asyncudp==0.11.0
 blinker==1.9.0
