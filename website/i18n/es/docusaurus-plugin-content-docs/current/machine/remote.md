@@ -94,7 +94,11 @@ stream accesible en el host del dispositivo:
 - **Cámara USB en el host del dispositivo**: ejecute un streamer estándar como `ustreamer` y añada
   su URL MJPEG como cámara de stream HTTP.
 
-El demonio anuncia los endpoints de cámara configurados para que el asistente pueda rellenar la URL.
+El demonio anuncia los endpoints de cámara configurados. Al añadir una cámara, elige **Daemon
+camera** como tipo de fuente, selecciona el demonio y luego la cámara anunciada; Rayforge rellena la
+URL y el tipo de fuente.
+
+![Añadir una cámara del demonio](/screenshots/machine-settings-remote-camera.webp)
 
 ## Notas de seguridad
 
