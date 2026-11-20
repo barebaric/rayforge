@@ -40,7 +40,7 @@ from raygeo.sketch.constraints import (
     TangentConstraint,
     VerticalConstraint,
 )
-from raygeo.sketch.document import Fill
+from raygeo.sketch.document import DocumentMeta, Fill
 from raygeo.sketch.entities import Arc, Bezier, Entity, Line
 from raygeo.sketch.entities import TextBox as TextBoxEntity
 from raygeo.sketch.params import ParameterContext
@@ -112,8 +112,7 @@ class Sketch(IAsset, IGeometryProvider):
     _solving: bool = False
 
     def __init__(self, name: str = "New Sketch") -> None:
-        self._uid: str = str(uuid.uuid4())
-        self._name = name
+        self._meta = DocumentMeta(str(uuid.uuid4()), name)
         self.params = ParameterContext()
         self.registry = EntityRegistry()
         self.constraints: list[Constraint] = []
@@ -124,7 +123,6 @@ class Sketch(IAsset, IGeometryProvider):
             description=_DEFAULT_VARSET_DESCRIPTION,
         )
         self._updated = Signal()
-        self._hidden: bool = False
         self._last_solve_values: dict[str, Any] = {}
         self._resolved_text_cache: dict[EntityID, tuple[str, str | None]] = {}
         self._solved_ctx: dict[str, Any] | None = None
@@ -135,9 +133,7 @@ class Sketch(IAsset, IGeometryProvider):
         self._coincident_dirty: bool = False
 
         # Initialize the Origin Point (Fixed Anchor)
-        self.origin_id: EntityID = self.registry.add_point(
-            0.0, 0.0, fixed=True
-        )
+        self._meta.origin_id = self.registry.add_point(0.0, 0.0, fixed=True)
 
     def notify_update(self):
         """Public method to signal that the sketch has been modified."""
@@ -210,12 +206,21 @@ class Sketch(IAsset, IGeometryProvider):
     @property
     def uid(self) -> str:
         """The unique identifier of the asset instance."""
-        return self._uid
+        return self._meta.uid
 
     @uid.setter
     def uid(self, value: str) -> None:
         """Set the unique identifier. Used for deserialization."""
-        self._uid = value
+        self._meta.uid = value
+
+    @property
+    def origin_id(self) -> EntityID:
+        """Id of the fixed origin point."""
+        return self._meta.origin_id
+
+    @origin_id.setter
+    def origin_id(self, value: EntityID) -> None:
+        self._meta.origin_id = value
 
     @property
     def updated(self) -> "Signal":
@@ -225,13 +230,13 @@ class Sketch(IAsset, IGeometryProvider):
     @property
     def name(self) -> str:
         """The user-facing name of the asset."""
-        return self._name
+        return self._meta.name
 
     @name.setter
     def name(self, value: str):
         """Sets the asset name and sends an update signal if changed."""
-        if self._name != value:
-            self._name = value
+        if self._meta.name != value:
+            self._meta.name = value
             self._updated.send(self)
 
     @property
@@ -315,10 +320,7 @@ class Sketch(IAsset, IGeometryProvider):
         original sketch's registry.
         """
         clone = Sketch.__new__(Sketch)
-        clone._uid = self._uid
-        clone._name = self._name
-        clone._hidden = self._hidden
-        clone.origin_id = self.origin_id
+        clone._meta = self._meta.copy()
         # Fresh signal: the clone must not trigger the original's
         # subscribers (solve/repaint) mid-clone-solve.
         clone._updated = Signal()
@@ -350,13 +352,13 @@ class Sketch(IAsset, IGeometryProvider):
     @property
     def hidden(self) -> bool:
         """Indicates if this asset should be hidden from the UI."""
-        return self._hidden
+        return self._meta.hidden
 
     @hidden.setter
     def hidden(self, value: bool):
         """Sets the hidden state and sends an update signal if changed."""
-        if self._hidden != value:
-            self._hidden = value
+        if self._meta.hidden != value:
+            self._meta.hidden = value
             self._updated.send(self)
 
     def set_hidden(self, value: bool):
@@ -440,7 +442,7 @@ class Sketch(IAsset, IGeometryProvider):
     def to_dict(self, include_input_values: bool = False) -> dict[str, Any]:
         """Serializes the Sketch to a dictionary."""
         return {
-            "version": FORMAT_VERSION,
+            "version": self._meta.format_version,
             "uid": self.uid,
             "type": self.asset_type_name,
             "name": self.name,
@@ -452,8 +454,8 @@ class Sketch(IAsset, IGeometryProvider):
             "constraints": [c.to_dict() for c in self.constraints],
             "fills": [f.to_dict() for f in self.fills],
             "arrays": [p.to_dict() for p in self.arrays],
-            "origin_id": self.origin_id,
-            "hidden": self._hidden,
+            "origin_id": self._meta.origin_id,
+            "hidden": self._meta.hidden,
         }
 
     @classmethod
@@ -478,8 +480,7 @@ class Sketch(IAsset, IGeometryProvider):
             )
 
         new_sketch = cls()
-        new_sketch._uid = data.get("uid", str(uuid.uuid4()))
-        new_sketch.name = data.get("name", "")
+        new_sketch._meta = DocumentMeta.from_dict(data)
 
         # Handle backward compatibility for input_parameters
         if "input_parameters" in data:
@@ -495,7 +496,6 @@ class Sketch(IAsset, IGeometryProvider):
 
         new_sketch.params = ParameterContext.from_dict(data["params"])
         new_sketch.registry = EntityRegistry.from_dict(data["registry"])
-        new_sketch.origin_id = data["origin_id"]
         new_sketch.constraints = []
         for c_data in data["constraints"]:
             c_type = c_data.get("type")
@@ -511,7 +511,6 @@ class Sketch(IAsset, IGeometryProvider):
             Array.from_dict(p_data) for p_data in data.get("arrays", [])
         ]
 
-        new_sketch._hidden = data.get("hidden", False)
         # Build coincident cache from loaded constraints.
         new_sketch._build_coincident_cache()
         return new_sketch
