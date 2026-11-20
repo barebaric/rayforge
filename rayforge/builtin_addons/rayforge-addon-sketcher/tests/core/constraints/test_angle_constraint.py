@@ -13,7 +13,7 @@ from raygeo.sketch.constraints.angle import ARC_RADIUS
 from raygeo.sketch.params import ParameterContext
 from raygeo.sketch.registry import EntityRegistry
 from sketcher.core import Sketch
-from sketcher.core.selection import SketchSelection
+from sketcher.selection import SketchSelection
 
 
 @pytest.fixture

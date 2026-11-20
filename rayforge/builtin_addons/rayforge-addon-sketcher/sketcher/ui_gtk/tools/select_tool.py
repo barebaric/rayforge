@@ -22,6 +22,8 @@ from raygeo.sketch.constraints import (
 )
 from raygeo.sketch.entities import Arc, Bezier, Circle, Entity, Line
 from raygeo.sketch.entities import TextBox as TextBoxEntity
+from raygeo.sketch.snap import DragContext
+from raygeo.sketch.types import EntityID
 
 from ...core.commands import (
     CreateOrEditConstraintCommand,
@@ -29,14 +31,12 @@ from ...core.commands import (
     MoveEntitiesCommand,
     MovePointCommand,
 )
-from ...core.snap import DragContext
-from ...core.types import EntityID
 from .base import SketcherKey, SketchTool
 from .snap_mixin import SnapMixin
 from .text_box_tool import TextBoxTool
 
 if TYPE_CHECKING:
-    from ...core.selection import SketchSelection
+    from ...selection import SketchSelection
 
 
 logger = logging.getLogger(__name__)

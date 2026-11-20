@@ -3,7 +3,7 @@ import math
 from raygeo.sketch.entities import Bezier
 from raygeo.sketch.entities import SketchPoint as Point
 from raygeo.sketch.registry import EntityRegistry
-from sketcher.core.types import WaypointType
+from raygeo.sketch.types import WaypointType
 
 
 def test_point_instantiation():

@@ -10,7 +10,7 @@ from raygeo.sketch.constraints import (
     RadiusConstraint,
 )
 from raygeo.sketch.registry import EntityRegistry
-from sketcher.core.types import ConstraintStatus
+from raygeo.sketch.types import ConstraintStatus
 
 
 @pytest.mark.parametrize(

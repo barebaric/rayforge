@@ -7,6 +7,16 @@ from raygeo.geo import Matrix
 from raygeo.sketch.boolean import BooleanOp
 from raygeo.sketch.entities import Entity, Line
 from raygeo.sketch.entities import SketchPoint as Point
+from raygeo.sketch.snap import SnapEngine
+from raygeo.sketch.snap.producers import (
+    CentersProducer,
+    EntityPointsProducer,
+    EquidistantLinesProducer,
+    IntersectionsProducer,
+    MidpointsProducer,
+    OnEntityProducer,
+)
+from raygeo.sketch.types import EntityID
 
 from rayforge.ui_gtk.canvas import CanvasElement
 
@@ -15,18 +25,8 @@ from ..core.commands import (
     DuplicateCommand,
     MoveEntitiesCommand,
 )
-from ..core.selection import SketchSelection
 from ..core.sketch import Sketch, find_array_for_entity
-from ..core.snap import SnapEngine
-from ..core.snap.producers import (
-    CentersProducer,
-    EntityPointsProducer,
-    EquidistantLinesProducer,
-    IntersectionsProducer,
-    MidpointsProducer,
-    OnEntityProducer,
-)
-from ..core.types import EntityID
+from ..selection import SketchSelection
 from .hittest import SketchHitTester
 from .renderer import SketchRenderer
 from .tools import TOOL_REGISTRY

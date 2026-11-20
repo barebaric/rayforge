@@ -8,7 +8,7 @@ from raygeo.sketch.params import ParameterContext
 from raygeo.sketch.registry import EntityRegistry
 from scipy.optimize import check_grad
 from sketcher.core import Sketch
-from sketcher.core.selection import SketchSelection
+from sketcher.selection import SketchSelection
 
 
 @pytest.fixture

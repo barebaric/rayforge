@@ -1,5 +1,5 @@
 import pytest
-from sketcher.core.snap.types import (
+from raygeo.sketch.snap.types import (
     SNAP_LINE_STYLES,
     DragContext,
     SnapLine,

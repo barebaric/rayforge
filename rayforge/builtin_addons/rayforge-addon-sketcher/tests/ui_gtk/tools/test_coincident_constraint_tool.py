@@ -8,8 +8,8 @@ from raygeo.sketch.constraints import (
 )
 from raygeo.sketch.params import ParameterContext
 from sketcher.core.commands import AddItemsCommand
-from sketcher.core.selection import SketchSelection
 from sketcher.core.sketch import Sketch
+from sketcher.selection import SketchSelection
 from sketcher.ui_gtk.tools import CoincidentConstraintTool
 
 

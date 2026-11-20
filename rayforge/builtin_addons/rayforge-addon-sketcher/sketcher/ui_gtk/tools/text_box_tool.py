@@ -17,13 +17,13 @@ from raygeo.sketch.constraints import (
 from raygeo.sketch.entities import Line
 from raygeo.sketch.entities import SketchPoint as Point
 from raygeo.sketch.entities import TextBox as TextBoxEntity
+from raygeo.sketch.types import EntityID
 
 from rayforge.image.geo_renderer import geometry_to_cairo
 
 from ...core.commands import TextBoxCommand
 from ...core.commands.live_text_edit import LiveTextEditCommand
 from ...core.commands.text_property import ModifyTextPropertyCommand
-from ...core.types import EntityID
 from .base import SketcherKey, SketchTool
 
 if TYPE_CHECKING:

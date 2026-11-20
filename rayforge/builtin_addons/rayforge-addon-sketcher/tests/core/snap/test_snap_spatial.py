@@ -1,6 +1,6 @@
 import pytest
-from sketcher.core.snap.spatial import IndexedLine, SnapLineIndex
-from sketcher.core.snap.types import SnapLine, SnapLineType
+from raygeo.sketch.snap.spatial import IndexedLine, SnapLineIndex
+from raygeo.sketch.snap.types import SnapLine, SnapLineType
 
 
 def test_indexed_line_creation():

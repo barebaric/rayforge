@@ -1,7 +1,7 @@
 import pytest
 from raygeo.sketch.registry import EntityRegistry
-from sketcher.core.snap.producers.midpoints import MidpointsProducer
-from sketcher.core.snap.types import DragContext, SnapLineType
+from raygeo.sketch.snap.producers.midpoints import MidpointsProducer
+from raygeo.sketch.snap.types import DragContext, SnapLineType
 
 
 @pytest.fixture

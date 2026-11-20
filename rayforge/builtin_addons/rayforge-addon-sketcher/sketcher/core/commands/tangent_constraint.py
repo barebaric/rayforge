@@ -4,8 +4,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from raygeo.sketch.entities import Arc, Circle, Line
-
-from ..types import EntityID
+from raygeo.sketch.types import EntityID
 
 if TYPE_CHECKING:
     from raygeo.sketch.registry import EntityRegistry

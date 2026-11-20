@@ -2,8 +2,8 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from raygeo.sketch.entities import SketchPoint
+from raygeo.sketch.snap import SnapLineType
 from sketcher.core.commands.ellipse import EllipsePreviewState
-from sketcher.core.snap import SnapLineType
 from sketcher.ui_gtk.tools.base import SketcherKey
 from sketcher.ui_gtk.tools.circle_tool import CircleTool
 

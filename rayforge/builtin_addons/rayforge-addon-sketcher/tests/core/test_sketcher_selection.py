@@ -1,5 +1,5 @@
 from raygeo.sketch.registry import EntityRegistry
-from sketcher.core.selection import SketchSelection
+from sketcher.selection import SketchSelection
 
 
 class TestClear:

@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point as GeoPoint
 from raygeo.sketch.entities import Bezier, Line
+from raygeo.sketch.types import EntityID, WaypointType
 
-from ..types import EntityID, WaypointType
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:

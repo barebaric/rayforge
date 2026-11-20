@@ -6,7 +6,7 @@ from raygeo.sketch.constraints import (
 from raygeo.sketch.entities import Arc, Line
 from sketcher.core import Sketch
 from sketcher.core.commands import DuplicateCommand
-from sketcher.core.selection import SketchSelection
+from sketcher.selection import SketchSelection
 
 
 @pytest.fixture

@@ -2,10 +2,10 @@ from collections.abc import Iterator
 
 from raygeo.geo.types import Point as GeoPoint
 from raygeo.sketch.registry import EntityRegistry
-from sketcher.core.snap import DragContext, SnapEngine
-from sketcher.core.snap.engine import SnapLineProducer
-from sketcher.core.snap.producers import EntityPointsProducer
-from sketcher.core.snap.types import SnapLine, SnapPoint
+from raygeo.sketch.snap import DragContext, SnapEngine
+from raygeo.sketch.snap.engine import SnapLineProducer
+from raygeo.sketch.snap.producers import EntityPointsProducer
+from raygeo.sketch.snap.types import SnapLine, SnapPoint
 
 
 class _CountingProducer(SnapLineProducer):

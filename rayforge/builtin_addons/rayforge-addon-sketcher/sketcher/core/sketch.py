@@ -13,6 +13,7 @@ from raygeo.geo import Move as GeoMove
 from raygeo.sketch import Sketch as RaygeoSketch
 from raygeo.sketch.document import Fill
 from raygeo.sketch.entities import TextBox as TextBoxEntity
+from raygeo.sketch.types import EntityID, WaypointType
 
 from rayforge.core.asset import IAsset
 from rayforge.core.expression import ExpressionMap
@@ -21,8 +22,7 @@ from rayforge.core.varset import VarSet
 from rayforge.image.geo_renderer import render_geometry_to_png
 from rayforge.image.structures import FillRenderData, FillStyle
 
-from .template_functions import get_template_functions
-from .types import EntityID, WaypointType
+from ..template_functions import get_template_functions
 
 DEFAULT_FILL_COLOR = (0.85, 0.85, 0.85, 0.7)
 FORMAT_VERSION = 1

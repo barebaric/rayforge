@@ -1,7 +1,7 @@
 import pytest
 from raygeo.sketch.registry import EntityRegistry
-from sketcher.core.snap.engine import SnapEngine, SnapLineProducer
-from sketcher.core.snap.types import (
+from raygeo.sketch.snap.engine import SnapEngine, SnapLineProducer
+from raygeo.sketch.snap.types import (
     DragContext,
     SnapLine,
     SnapLineType,

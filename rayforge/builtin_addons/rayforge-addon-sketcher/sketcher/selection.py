@@ -2,8 +2,7 @@ from typing import TYPE_CHECKING
 
 from blinker import Signal
 from raygeo.sketch.selection import Selection
-
-from .types import EntityID
+from raygeo.sketch.types import EntityID
 
 if TYPE_CHECKING:
     from raygeo.sketch.entities import Entity

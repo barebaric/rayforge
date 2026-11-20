@@ -11,8 +11,8 @@ from raygeo.sketch.constraints import (
 )
 from raygeo.sketch.entities import Ellipse, Line
 from raygeo.sketch.entities import SketchPoint as Point
+from raygeo.sketch.types import EntityID
 
-from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .items import AddItemsCommand
 

@@ -22,8 +22,8 @@ from sketcher.core.commands import (
     TextBoxCommand,
 )
 from sketcher.core.commands.duplicate import DuplicateCommand
-from sketcher.core.selection import SketchSelection
 from sketcher.core.sketch import Sketch
+from sketcher.selection import SketchSelection
 
 
 def ui_delete(sketch, entity_ids):

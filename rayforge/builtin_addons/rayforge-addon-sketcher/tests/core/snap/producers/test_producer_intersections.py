@@ -1,8 +1,8 @@
 import pytest
 from raygeo.sketch.registry import EntityRegistry
-from sketcher.core.snap.engine import geometry_key
-from sketcher.core.snap.producers.intersections import IntersectionsProducer
-from sketcher.core.snap.types import DragContext
+from raygeo.sketch.snap.engine import geometry_key
+from raygeo.sketch.snap.producers.intersections import IntersectionsProducer
+from raygeo.sketch.snap.types import DragContext
 
 
 @pytest.fixture
