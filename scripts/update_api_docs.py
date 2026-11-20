@@ -1,8 +1,8 @@
 """Download and sync third-party API docs from GitHub source archives.
 
-Reads the pinned version of each package from requirements.txt, downloads the
-matching source tarball from GitHub, and syncs its docs/api/ directory into the
-website tree.
+Reads the pinned version or git revision of each package from requirements.txt,
+downloads the matching source tarball from GitHub, and syncs its docs/api/
+directory into the website tree.
 """
 
 import re
@@ -25,6 +25,17 @@ class ApiDocsPackage:
     fallback_ref: str | None = None
 
 
+@dataclass(frozen=True)
+class PinnedRef:
+    ref: str
+    kind: str
+
+
+REQUIREMENT = re.compile(
+    r"^\s*(?P<name>[A-Za-z0-9][A-Za-z0-9._-]*)"
+    r"\s*(?:\[[^\]]*\])?\s*(?P<spec>==\S+|@\s*\S+)"
+)
+
 PACKAGES = (
     ApiDocsPackage(
         name="raygeo",
@@ -42,18 +53,39 @@ PACKAGES = (
 )
 
 
-def _get_version(package: str) -> str:
-    text = REQUIREMENTS.read_text()
-    match = re.search(
-        rf"^{re.escape(package)}==" + r"([^\s#]+)", text, re.MULTILINE
+def _parse_git_ref(spec: str) -> PinnedRef:
+    url = spec.removeprefix("git+").split("#", 1)[0]
+    if "@" not in url:
+        return PinnedRef("main", "branch")
+    _, ref = url.rsplit("@", 1)
+    if not ref:
+        return PinnedRef("main", "branch")
+    if ref.startswith("refs/tags/"):
+        return PinnedRef(ref.removeprefix("refs/tags/"), "tag")
+    if ref.startswith("refs/heads/"):
+        return PinnedRef(ref.removeprefix("refs/heads/"), "branch")
+    if re.fullmatch(r"[0-9a-f]{7,40}", ref):
+        return PinnedRef(ref, "commit")
+    if ref.startswith("v"):
+        return PinnedRef(ref, "tag")
+    return PinnedRef(ref, "branch")
+
+
+def _get_pinned_ref(package: str) -> PinnedRef:
+    for line in REQUIREMENTS.read_text().splitlines():
+        line = line.split("#", 1)[0].strip()
+        match = REQUIREMENT.match(line)
+        if not match or match.group("name") != package:
+            continue
+        spec = match.group("spec")
+        if spec.startswith("=="):
+            return PinnedRef(f"v{spec.removeprefix('==')}", "tag")
+        return _parse_git_ref(spec.removeprefix("@").strip())
+    print(
+        f"Could not find pinned {package} version in {REQUIREMENTS}.",
+        file=sys.stderr,
     )
-    if not match:
-        print(
-            f"Could not find pinned {package} version in {REQUIREMENTS}.",
-            file=sys.stderr,
-        )
-        sys.exit(1)
-    return match.group(1)
+    sys.exit(1)
 
 
 def _newest_mtime(files: list[Path]) -> float:
@@ -96,40 +128,54 @@ def _sync_dir(src: Path, dst: Path) -> None:
             dst_path.unlink()
 
 
-def _extract_docs(package: ApiDocsPackage, ref: str, tmp: str) -> Path:
-    kind = "tags" if ref.startswith("v") else "heads"
-    tar_url = f"{package.repo_url}/archive/refs/{kind}/{ref}.tar.gz"
-    archive_path = Path(tmp) / f"{package.name}-{ref}.tar.gz"
+def _archive_url(package: ApiDocsPackage, pinned: PinnedRef) -> str:
+    if pinned.kind == "commit":
+        return f"{package.repo_url}/archive/{pinned.ref}.tar.gz"
+    collection = "tags" if pinned.kind == "tag" else "heads"
+    return f"{package.repo_url}/archive/refs/{collection}/{pinned.ref}.tar.gz"
 
-    print(f"Downloading {package.name} {ref} source...")
+
+def _extract_docs(
+    package: ApiDocsPackage, pinned: PinnedRef, tmp: str
+) -> Path:
+    tar_url = _archive_url(package, pinned)
+    safe_ref = re.sub(r"[^A-Za-z0-9_.-]+", "-", pinned.ref)
+    archive_path = Path(tmp) / f"{package.name}-{safe_ref}.tar.gz"
+    extract_dir = Path(tmp) / f"{package.name}-{safe_ref}"
+    extract_dir.mkdir()
+
+    print(f"Downloading {package.name} {pinned.ref} source...")
     urllib.request.urlretrieve(tar_url, archive_path)
 
     print(f"Extracting {package.name} docs/api from archive...")
     with tarfile.open(archive_path, "r:gz") as tar:
-        tar.extractall(path=tmp, filter="data")
+        tar.extractall(path=extract_dir, filter="data")
 
-    prefix = f"{package.name}-{ref.removeprefix('v')}"
-    return Path(tmp) / prefix / "docs" / "api"
+    roots = [path for path in extract_dir.iterdir() if path.is_dir()]
+    if not roots:
+        return extract_dir / "docs" / "api"
+    return roots[0] / "docs" / "api"
 
 
 def _sync_package(package: ApiDocsPackage) -> int:
-    version = _get_version(package.name)
-    ref = f"v{version}"
+    pinned = _get_pinned_ref(package.name)
 
     with tempfile.TemporaryDirectory() as tmp:
-        docs_src = _extract_docs(package, ref, tmp)
+        docs_src = _extract_docs(package, pinned, tmp)
 
         if not docs_src.exists() and package.fallback_ref is not None:
             print(
-                f"docs/api/ not found in {package.name} {ref}; "
+                f"docs/api/ not found in {package.name} {pinned.ref}; "
                 f"using {package.fallback_ref} docs instead.",
                 file=sys.stderr,
             )
-            docs_src = _extract_docs(package, package.fallback_ref, tmp)
+            fallback = PinnedRef(package.fallback_ref, "branch")
+            docs_src = _extract_docs(package, fallback, tmp)
 
         if not docs_src.exists():
             print(
-                f"docs/api/ not found in the {package.name} {ref} archive.",
+                f"docs/api/ not found in the {package.name} "
+                f"{pinned.ref} archive.",
                 file=sys.stderr,
             )
             return 1
