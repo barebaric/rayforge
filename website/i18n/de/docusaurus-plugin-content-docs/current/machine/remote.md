@@ -93,7 +93,11 @@ Video wird nicht über die Steuerungsverbindung übertragen. Verwenden Sie Rayfo
 - **USB-Kamera am Geräte-Host**: Betreiben Sie einen Standard-Streamer wie `ustreamer` und fügen Sie
   seine MJPEG-URL als HTTP-Stream-Kamera hinzu.
 
-Der Daemon bewirbt konfigurierte Kamera-Endpunkte, sodass der Assistent die URL vorausfüllen kann.
+Der Daemon bewirbt konfigurierte Kamera-Endpunkte. Wähle beim Hinzufügen einer Kamera **Daemon
+camera** als Quelltyp, dann den Daemon und anschließend die angekündigte Kamera; Rayforge füllt URL
+und Quelltyp aus.
+
+![Daemon-Kamera hinzufügen](/screenshots/machine-settings-remote-camera.webp)
 
 ## Sicherheitshinweise
 

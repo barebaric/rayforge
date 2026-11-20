@@ -451,7 +451,8 @@ sudo lsof /dev/video0
 
 Rayforge prend en charge les caméras locales et les caméras réseau via des instantanés HTTP, des
 flux HTTP/MJPEG et RTSP. Les caméras locales sont détectées automatiquement ; les caméras réseau
-sont ajoutées en saisissant directement leur URL.
+sont ajoutées en saisissant directement leur URL. **Daemon camera** liste les caméras annoncées par
+un démon raydriver distant ; voir [Appareils distants](remote.md) pour configurer le démon.
 
 ### Ajouter une caméra réseau
 
@@ -473,6 +474,23 @@ Tu peux ensuite modifier le champ **Source** sans perdre le calibrage ni l'align
 l'URL désactive immédiatement la caméra. L'interrupteur reste indisponible jusqu'à ce qu'une URL
 valide soit appliquée ; réactive ensuite la caméra manuellement. Rayforge vérifie que le schéma de
 l'URL correspond au type de source (`http://`, `https://`, `rtsp://` ou `rtsps://`).
+
+### Ajouter une caméra du démon
+
+Utilise cette option lorsque la caméra est connectée à l'ordinateur qui exécute le démon raydriver
+plutôt qu'à ton ordinateur.
+
+1. Ouvre **Machine → Paramètres de la machine → Caméra**.
+2. Clique sur **+** et choisis **Daemon camera** comme type de source.
+3. Sélectionne le démon. La liste contient les machines distantes configurées dans Rayforge.
+4. Sélectionne l'une des caméras annoncées par le démon. Rayforge remplit l'URL et le type de source
+   réseau correspondant.
+5. Active la caméra.
+
+Si aucun démon n'est listé, configure d'abord la machine distante ; voir
+[Appareils distants](remote.md).
+
+![Ajouter une caméra du démon](/screenshots/machine-settings-remote-camera.webp)
 
 ### Problèmes de connexion
 

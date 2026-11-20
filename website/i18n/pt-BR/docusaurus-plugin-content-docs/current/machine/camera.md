@@ -441,7 +441,8 @@ sudo lsof /dev/video0
 
 O Rayforge é compatível com câmeras locais e câmeras de rede por meio de instantâneos HTTP, fluxos
 HTTP/MJPEG e RTSP. Câmeras locais são detectadas automaticamente; câmeras de rede são adicionadas
-informando diretamente a URL.
+informando diretamente a URL. **Daemon camera** lista as câmeras anunciadas por um daemon raydriver
+remoto; consulte [Dispositivos remotos](remote.md) para configurar o daemon.
 
 ### Adicionar uma câmera de rede
 
@@ -463,6 +464,23 @@ Depois, você pode editar o campo **Source** sem perder a calibração ou o alin
 URL, a câmera é desativada imediatamente. O botão de ativação permanece indisponível até que uma URL
 válida seja aplicada; depois, ative a câmera novamente manualmente. O Rayforge verifica se o esquema
 da URL corresponde ao tipo de fonte (`http://`, `https://`, `rtsp://` ou `rtsps://`).
+
+### Adicionar uma câmera do daemon
+
+Use esta opção quando a câmera estiver conectada ao computador que executa o daemon raydriver, e não
+ao seu computador.
+
+1. Abra **Máquina → Configurações da Máquina → Câmera**.
+2. Clique em **+** e escolha **Daemon camera** como tipo de fonte.
+3. Selecione o daemon. A lista contém as máquinas remotas configuradas no Rayforge.
+4. Selecione uma das câmeras anunciadas pelo daemon. O Rayforge preenche a URL e o tipo de fonte de
+   rede correspondente.
+5. Ative a câmera.
+
+Se nenhum daemon for listado, configure primeiro a máquina remota; consulte
+[Dispositivos remotos](remote.md).
+
+![Adicionar uma câmera do daemon](/screenshots/machine-settings-remote-camera.webp)
 
 ### Problemas de conexão
 

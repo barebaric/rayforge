@@ -378,7 +378,8 @@ sudo lsof /dev/video0
 
 ## 网络摄像头
 
-Rayforge 支持本地摄像头，以及通过 HTTP 快照、HTTP/MJPEG 流和 RTSP 连接的网络摄像头。本地摄像头会自动检测；网络摄像头可直接输入 URL 添加。
+Rayforge 支持本地摄像头，以及通过 HTTP 快照、HTTP/MJPEG 流和 RTSP 连接的网络摄像头。本地摄像头会自动检测；网络摄像头可直接输入 URL 添加。**Daemon
+camera** 会列出远程 raydriver 守护进程通告的摄像头；守护进程设置请参阅[远程设备](remote.md)。
 
 ### 添加网络摄像头
 
@@ -398,6 +399,20 @@ Creality Falcon A1 Pro 设备配置文件已包含一个预配置但默认禁用
 之后可以直接编辑 **Source**
 字段，而不会丢失校准或对齐数据。编辑 URL 会立即关闭摄像头；在有效 URL 应用之前，启用开关不可用。应用有效 URL 后，需要手动重新启用摄像头。Rayforge 会检查 URL 方案是否与来源类型匹配（`http://`、`https://`、`rtsp://`
 或 `rtsps://`）。
+
+### 添加守护进程摄像头
+
+当摄像头连接在运行 raydriver 守护进程的计算机上，而不是您的计算机上时，请使用此方式。
+
+1. 打开 **机器 → 机器设置 → 摄像头**。
+2. 点击 **+**，选择 **Daemon camera** 作为来源类型。
+3. 选择守护进程。列表包含 Rayforge 中配置的远程机器。
+4. 选择守护进程通告的某个摄像头。Rayforge 会填入 URL 和匹配的网络来源类型。
+5. 启用摄像头。
+
+如果没有列出守护进程，请先配置远程机器；请参阅[远程设备](remote.md)。
+
+![添加守护进程摄像头](/screenshots/machine-settings-remote-camera.webp)
 
 ### 连接问题
 
