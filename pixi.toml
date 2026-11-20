@@ -38,7 +38,7 @@ rust = "==1.100.0"
 patchelf = "==0.19.3"
 
 [feature.app.pypi-dependencies]
-raygeo = { git = "https://github.com/barebaric/raygeo", rev = "acebab7017d1e7ec86f815beb114b371da3ee39a" }
+raygeo = { git = "https://github.com/barebaric/raygeo", rev = "1c532d93b46601c57fd1bf1ebdece1b9850882e5" }
 raydriver = "==1.12.0"
 rayforge = { editable = true, path = "." }
 ruida-pa = "==0.24.0"

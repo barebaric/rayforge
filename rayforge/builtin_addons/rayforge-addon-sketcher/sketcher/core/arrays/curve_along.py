@@ -5,6 +5,7 @@ import math
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
+from raygeo.sketch.arrays import ArrayDefinition
 from raygeo.sketch.entities import Arc, Bezier, Line
 from raygeo.sketch.entity_group import EntityGroup
 
@@ -375,51 +376,59 @@ class CurveAlongArray(Array):
         spacing: float = 0.0,
         template_anchor: tuple[tuple[float, float], float] | None = None,
     ):
-        super().__init__(
+        self._def = ArrayDefinition.curve_along(
             uid,
             guide_circle_id,
             members=members,
             count=count,
             rotate_copies=rotate_copies,
+            path_entity_id=path_entity_id,
+            align_to_tangent=align_to_tangent,
+            offset_to_start=offset_to_start,
+            spacing=spacing,
+            template_anchor=template_anchor,
         )
-        self.path_entity_id = path_entity_id
-        self.align_to_tangent = align_to_tangent
-        self.offset_to_start = offset_to_start
-        self.spacing = spacing
-        self.template_anchor: tuple[tuple[float, float], float] | None = (
-            template_anchor
-        )
+        super().__init__()
 
-    def to_dict(self) -> dict[str, Any]:
-        data = super().to_dict()
-        data["path_entity_id"] = self.path_entity_id
-        data["align_to_tangent"] = self.align_to_tangent
-        data["offset_to_start"] = self.offset_to_start
-        data["spacing"] = self.spacing
-        if self.template_anchor is not None:
-            (ax, ay), angle = self.template_anchor
-            data["template_anchor"] = [
-                [ax, ay],
-                angle,
-            ]
-        return data
+    @property
+    def path_entity_id(self) -> int:
+        return self._def.path_entity_id
 
-    def snapshot(self) -> dict[str, Any]:
-        state = super().snapshot()
-        state["path_entity_id"] = self.path_entity_id
-        state["align_to_tangent"] = self.align_to_tangent
-        state["offset_to_start"] = self.offset_to_start
-        state["spacing"] = self.spacing
-        state["template_anchor"] = self.template_anchor
-        return state
+    @path_entity_id.setter
+    def path_entity_id(self, value: int):
+        self._def.path_entity_id = value
 
-    def restore(self, state: dict[str, Any]) -> None:
-        super().restore(state)
-        self.path_entity_id = state["path_entity_id"]
-        self.align_to_tangent = state["align_to_tangent"]
-        self.offset_to_start = state["offset_to_start"]
-        self.spacing = state["spacing"]
-        self.template_anchor = state["template_anchor"]
+    @property
+    def align_to_tangent(self) -> bool:
+        return self._def.align_to_tangent
+
+    @align_to_tangent.setter
+    def align_to_tangent(self, value: bool):
+        self._def.align_to_tangent = value
+
+    @property
+    def offset_to_start(self) -> float:
+        return self._def.offset_to_start
+
+    @offset_to_start.setter
+    def offset_to_start(self, value: float):
+        self._def.offset_to_start = value
+
+    @property
+    def spacing(self) -> float:
+        return self._def.spacing
+
+    @spacing.setter
+    def spacing(self, value: float):
+        self._def.spacing = value
+
+    @property
+    def template_anchor(self) -> tuple[tuple[float, float], float] | None:
+        return self._def.template_anchor
+
+    @template_anchor.setter
+    def template_anchor(self, value: tuple[tuple[float, float], float] | None):
+        self._def.template_anchor = value
 
     def commit(self, strategy: ArrayStrategy) -> None:
         assert isinstance(strategy, CurveAlongArrayStrategy)
@@ -440,31 +449,6 @@ class CurveAlongArray(Array):
             or strategy.align_to_tangent != self.align_to_tangent
             or strategy.offset_to_start != self.offset_to_start
             or strategy.spacing != self.spacing
-        )
-
-    @classmethod
-    def _from_dict(cls, data: dict[str, Any]) -> CurveAlongArray:
-        return cls(
-            uid=data["uid"],
-            guide_circle_id=data["guide_circle_id"],
-            members=cls._parse_members(data),
-            count=data.get("count", 6),
-            rotate_copies=data.get("rotate_copies", True),
-            path_entity_id=data.get("path_entity_id", -1),
-            align_to_tangent=data.get("align_to_tangent", True),
-            offset_to_start=data.get("offset_to_start", 0.0),
-            spacing=data.get("spacing", 0.0),
-            template_anchor=(
-                (
-                    (
-                        float(data["template_anchor"][0][0]),
-                        float(data["template_anchor"][0][1]),
-                    ),
-                    float(data["template_anchor"][1]),
-                )
-                if data.get("template_anchor") is not None
-                else None
-            ),
         )
 
     def make_strategy(

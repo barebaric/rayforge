@@ -41,8 +41,9 @@ from raygeo.sketch.constraints import (
     VerticalConstraint,
 )
 from raygeo.sketch.document import DocumentMeta, Fill
-from raygeo.sketch.entities import Arc, Bezier, Entity, Line
+from raygeo.sketch.entities import Arc, Entity
 from raygeo.sketch.entities import TextBox as TextBoxEntity
+from raygeo.sketch.geometry import document_geometry
 from raygeo.sketch.params import ParameterContext
 from raygeo.sketch.registry import EntityRegistry
 
@@ -1628,157 +1629,13 @@ class Sketch(IAsset, IGeometryProvider):
         Converts the solved sketch into a Geometry object.
         Links separate entities into continuous paths where possible.
         """
-        geo = Geometry()
-
-        # 1. Identify chainable vs standalone
-        chainable = []
-        standalone = []
-
-        for e in self.registry.entities():
-            if e.construction:
-                continue
-            if e.invisible:
-                continue
-            if isinstance(e, (Line, Arc, Bezier)):
-                chainable.append(e)
-            else:
-                standalone.append(e)
-
-        # 2. Add standalone geometry (Circles, Text)
-        for e in standalone:
-            if isinstance(e, TextBoxEntity):
-                resolved = self._resolve_text_content(e)
-                geo.extend(
-                    e.to_geometry(self.registry, resolved_content=resolved)
-                )
-            else:
-                geo.extend(e.to_geometry(self.registry))
-
-        if not chainable:
-            return geo
-
-        # 3. Build Connectivity Graph for Lines/Arcs
-        # Use simple Union-Find to group coincident points
-        parent = {p.id: p.id for p in self.registry.points()}
-
-        def find(i):
-            path = []
-            while parent[i] != i:
-                path.append(i)
-                i = parent[i]
-            for node in path:
-                parent[node] = i
-            return i
-
-        def union(i, j):
-            root_i = find(i)
-            root_j = find(j)
-            if root_i != root_j:
-                parent[root_i] = root_j
-
-        # Apply Coincident Constraints
-        for c in self.constraints:
-            if (
-                isinstance(c, CoincidentConstraint)
-                and c.p1 in parent
-                and c.p2 in parent
-            ):
-                # Points exist (sanity check)
-                union(c.p1, c.p2)
-
-        adj = defaultdict(list)
-        for e in chainable:
-            p_ids = e.get_endpoint_ids()
-            if len(p_ids) != 2:
-                continue
-            u, v = p_ids[0], p_ids[1]
-
-            root_u = find(u)
-            root_v = find(v)
-            adj[root_u].append((e, root_v))
-            adj[root_v].append((e, root_u))
-
-        # 4. Traverse Graph to build continuous paths
-        visited = set()
-
-        # Helper to get start/end group IDs
-        def get_endpoints(ent):
-            p_ids = ent.get_endpoint_ids()
-            if len(p_ids) != 2:
-                return -1, -1
-            return find(p_ids[0]), find(p_ids[1])
-
-        for start_e in chainable:
-            if start_e.id in visited:
-                continue
-
-            # Start a new chain
-            visited.add(start_e.id)
-
-            # Seed direction
-            u, v = get_endpoints(start_e)
-
-            # Grow Right (from v)
-            right_list = []
-            curr = v
-            while True:
-                found = None
-                for cand, neighbor in adj[curr]:
-                    if cand.id not in visited:
-                        found = (cand, neighbor)
-                        break
-                if found:
-                    cand, next_node = found
-                    visited.add(cand.id)
-                    # Direction check: if c_u == curr, then Forward (u->v)
-                    c_u, _ = get_endpoints(cand)
-                    is_fwd = c_u == curr
-                    right_list.append((cand, is_fwd))
-                    curr = next_node
-                else:
-                    break
-
-            # Grow Left (from u)
-            left_list = []
-            curr = u
-            while True:
-                found = None
-                for cand, neighbor in adj[curr]:
-                    if cand.id not in visited:
-                        found = (cand, neighbor)
-                        break
-                if found:
-                    cand, next_node = found
-                    visited.add(cand.id)
-                    # We are growing backwards from u.
-                    # cand connects next_node <-> curr(u).
-                    # We want flow: next_node -> curr.
-                    # If cand is Forward (c_u -> c_v), then c_u must be
-                    # next_node.
-                    c_u, _ = get_endpoints(cand)
-                    is_fwd = c_u == next_node
-                    left_list.append((cand, is_fwd))
-                    curr = next_node
-                else:
-                    break
-
-            # Assemble: Reversed(Left) -> Seed -> Right
-            final_chain = (
-                list(reversed(left_list)) + [(start_e, True)] + right_list
-            )
-
-            # Generate Geometry
-            first_e, first_fwd = final_chain[0]
-            p_ids = first_e.get_endpoint_ids()
-            s_id = p_ids[0] if first_fwd else p_ids[1]
-
-            start_pt = self.registry.get_point(s_id)
-            geo.move_to(start_pt.x, start_pt.y)
-
-            for ent, fwd in final_chain:
-                ent.append_to_geometry(geo, self.registry, fwd)
-
-        return geo
+        resolved_text: dict[EntityID, str | None] = {}
+        for entity in self.registry.entities():
+            if isinstance(entity, TextBoxEntity):
+                resolved_text[entity.id] = self._resolve_text_content(entity)
+        return document_geometry(
+            self.registry, self.constraints, resolved_text
+        )
 
     def get_fill_render_data(
         self, exclude_ids: set[EntityID] | None = None

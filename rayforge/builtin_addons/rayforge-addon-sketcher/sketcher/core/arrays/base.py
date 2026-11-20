@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Any, ClassVar
 
+from raygeo.sketch.arrays import ArrayDefinition
 from raygeo.sketch.entities import Circle
 from raygeo.sketch.entity_group import EntityGroup
 
@@ -270,6 +271,9 @@ class Array(ABC):
     #: The serialized mode discriminator of the concrete subclass.
     MODE: ClassVar[str]
 
+    #: Rust-backed persisted array state.
+    _def: ArrayDefinition
+
     #: The strategy class implementing this array kind.
     STRATEGY: ClassVar[type[ArrayStrategy]]
 
@@ -289,23 +293,7 @@ class Array(ABC):
         if "STRATEGY" in cls.__dict__:
             cls._STRATEGY_REGISTRY[cls.STRATEGY] = cls
 
-    def __init__(
-        self,
-        uid: str,
-        guide_circle_id: int,
-        members: list[tuple[int, list[int]]] | None = None,
-        count: int = 6,
-        rotate_copies: bool = True,
-    ):
-        self.uid = uid
-        self.mode = self.MODE
-        self.guide_circle_id = guide_circle_id
-        self.members: list[tuple[int, list[int]]] = [
-            (slot, list(eids)) for slot, eids in (members or [])
-        ]
-        self.standalone_pids: dict[int, list[int]] = {}
-        self.count = count
-        self.rotate_copies = rotate_copies
+    def __init__(self):
         # Transient caches for sync_arrays: store the guide's and the
         # template's geometry after each solve so changes can be
         # detected.
@@ -315,6 +303,62 @@ class Array(ABC):
             None
         )
 
+    @property
+    def uid(self) -> str:
+        return self._def.uid
+
+    @uid.setter
+    def uid(self, value: str):
+        self._def.uid = value
+
+    @property
+    def mode(self) -> str:
+        return self._def.mode
+
+    @property
+    def guide_circle_id(self) -> int:
+        return self._def.guide_circle_id
+
+    @guide_circle_id.setter
+    def guide_circle_id(self, value: int):
+        self._def.guide_circle_id = value
+
+    @property
+    def members(self) -> list[tuple[int, list[int]]]:
+        return [(slot, list(eids)) for slot, eids in self._def.members]
+
+    @members.setter
+    def members(self, value: list[tuple[int, list[int]]]):
+        self._def.members = [(int(slot), list(eids)) for slot, eids in value]
+
+    @property
+    def standalone_pids(self) -> dict[int, list[int]]:
+        return {
+            int(slot): list(pids) for slot, pids in self._def.standalone_pids
+        }
+
+    @standalone_pids.setter
+    def standalone_pids(self, value: dict[int, list[int]]):
+        self._def.standalone_pids = [
+            (int(slot), list(pids)) for slot, pids in value.items()
+        ]
+
+    @property
+    def count(self) -> int:
+        return self._def.count
+
+    @count.setter
+    def count(self, value: int):
+        self._def.count = value
+
+    @property
+    def rotate_copies(self) -> bool:
+        return self._def.rotate_copies
+
+    @rotate_copies.setter
+    def rotate_copies(self, value: bool):
+        self._def.rotate_copies = value
+
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Array:
         """Deserializes the concrete subclass registered for the
@@ -323,11 +367,9 @@ class Array(ABC):
         subclass = cls._MODE_REGISTRY.get(mode)
         if subclass is None:
             raise ValueError(f"Unsupported sketch array mode: {mode}")
-        array = subclass._from_dict(data)
-        array.standalone_pids = {
-            int(slot): [int(pid) for pid in pids]
-            for slot, pids in data.get("standalone_pids", [])
-        }
+        array = subclass.__new__(subclass)
+        array._def = ArrayDefinition.from_dict(data)
+        Array.__init__(array)
         return array
 
     @classmethod
@@ -378,20 +420,6 @@ class Array(ABC):
         ``from_strategy``."""
         raise NotImplementedError
 
-    @staticmethod
-    def _parse_members(data: dict[str, Any]) -> list[tuple[int, list[int]]]:
-        """Parses the member list."""
-        return [
-            (int(slot), [int(eid) for eid in eids])
-            for slot, eids in data.get("members", [])
-        ]
-
-    @classmethod
-    def _from_dict(cls, data: dict[str, Any]) -> Array:
-        """Deserializes the mode-specific fields. Implemented by each
-        concrete subclass; dispatched to by ``from_dict``."""
-        raise NotImplementedError
-
     # ------------------------------------------------------------------
     # Edit support: state transitions driven by EditArrayCommand.
     # The command stays generic; each concrete Array owns which fields
@@ -403,25 +431,14 @@ class Array(ABC):
         Returns a serializable snapshot of the array's editable state,
         for undo/redo. Mode-specific fields are added by subclasses.
         """
-        return {
-            "members": [(slot, list(eids)) for slot, eids in self.members],
-            "standalone_pids": [
-                (slot, list(pids))
-                for slot, pids in self.standalone_pids.items()
-            ],
-            "count": self.count,
-        }
+        return self._def.snapshot()
 
     def restore(self, state: dict[str, Any]) -> None:
         """
         Restores the array's state from a snapshot produced by
         ``snapshot``. Called on undo/redo.
         """
-        self.members = [(slot, list(eids)) for slot, eids in state["members"]]
-        self.standalone_pids = {
-            slot: list(pids) for slot, pids in state["standalone_pids"]
-        }
-        self.count = state["count"]
+        self._def.restore(state)
 
     def commit(self, strategy: ArrayStrategy) -> None:
         """
@@ -605,20 +622,8 @@ class Array(ABC):
         return {slot for slot, _eids in self.living_members(registry)}
 
     def to_dict(self) -> dict[str, Any]:
-        """Serializes the strategy-neutral fields. Mode-specific keys
-        are added by the concrete subclass."""
-        return {
-            "uid": self.uid,
-            "mode": self.mode,
-            "guide_circle_id": self.guide_circle_id,
-            "members": [[slot, list(eids)] for slot, eids in self.members],
-            "standalone_pids": [
-                [slot, list(pids)]
-                for slot, pids in self.standalone_pids.items()
-            ],
-            "count": self.count,
-            "rotate_copies": self.rotate_copies,
-        }
+        """Serializes the array definition."""
+        return self._def.to_dict()
 
 
 def find_array_for_entity(arrays: list[Array], entity_id: int) -> Array | None:

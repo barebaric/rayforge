@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING, Any
 
+from raygeo.sketch.arrays import ArrayDefinition
 from raygeo.sketch.constraints import RadiusConstraint
 from raygeo.sketch.entities import Circle
 from raygeo.sketch.entities import SketchPoint as Point
@@ -279,30 +280,23 @@ class CircularArray(Array):
         total_angle_deg: float = 360.0,
         rotate_copies: bool = True,
     ):
-        super().__init__(
+        self._def = ArrayDefinition.circular(
             uid,
             guide_circle_id,
             members=members,
             count=count,
+            total_angle_deg=total_angle_deg,
             rotate_copies=rotate_copies,
         )
-        self.total_angle_deg = total_angle_deg
+        super().__init__()
 
-    def to_dict(self) -> dict[str, Any]:
-        data = super().to_dict()
-        data["total_angle_deg"] = self.total_angle_deg
-        return data
+    @property
+    def total_angle_deg(self) -> float:
+        return self._def.total_angle_deg
 
-    def snapshot(self) -> dict[str, Any]:
-        state = super().snapshot()
-        state["total_angle_deg"] = self.total_angle_deg
-        state["rotate_copies"] = self.rotate_copies
-        return state
-
-    def restore(self, state: dict[str, Any]) -> None:
-        super().restore(state)
-        self.total_angle_deg = state["total_angle_deg"]
-        self.rotate_copies = state["rotate_copies"]
+    @total_angle_deg.setter
+    def total_angle_deg(self, value: float):
+        self._def.total_angle_deg = value
 
     def commit(self, strategy: ArrayStrategy) -> None:
         assert isinstance(strategy, CircularArrayStrategy)
@@ -316,17 +310,6 @@ class CircularArray(Array):
             super().params_changed(strategy)
             or strategy.rotate_copies != self.rotate_copies
             or strategy.total_angle_deg != self.total_angle_deg
-        )
-
-    @classmethod
-    def _from_dict(cls, data: dict[str, Any]) -> CircularArray:
-        return cls(
-            uid=data["uid"],
-            guide_circle_id=data["guide_circle_id"],
-            members=cls._parse_members(data),
-            count=data.get("count", 6),
-            total_angle_deg=data.get("total_angle_deg", 360.0),
-            rotate_copies=data.get("rotate_copies", True),
         )
 
     def make_strategy(self, registry: EntityRegistry) -> CircularArrayStrategy:
