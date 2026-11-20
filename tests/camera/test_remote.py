@@ -1,36 +1,47 @@
 """Tests for daemon-advertised cameras."""
 
 from types import SimpleNamespace
+from typing import cast
 
 import pytest
 
 from rayforge.camera import remote
 from rayforge.camera.models.source_type import CameraSourceType
+from rayforge.machine.models.machine import Machine
 
 
 def test_collect_remote_daemons_from_machines():
     machines = [
-        SimpleNamespace(
-            name="Workshop",
-            driver_args={
-                "remote_host": "pi.local",
-                "remote_port": 8765,
-                "token": "secret",
-                "tls_ca": "/tmp/ca.pem",
-            },
+        cast(
+            Machine,
+            SimpleNamespace(
+                name="Workshop",
+                driver_args={
+                    "remote_host": "pi.local",
+                    "remote_port": 8765,
+                    "token": "secret",
+                    "tls_ca": "/tmp/ca.pem",
+                },
+            ),
         ),
-        SimpleNamespace(
-            name="Workshop duplicate",
-            driver_args={
-                "remote_host": "pi.local",
-                "remote_port": 8765,
-                "token": "secret",
-                "tls_ca": "/tmp/ca.pem",
-            },
+        cast(
+            Machine,
+            SimpleNamespace(
+                name="Workshop duplicate",
+                driver_args={
+                    "remote_host": "pi.local",
+                    "remote_port": 8765,
+                    "token": "secret",
+                    "tls_ca": "/tmp/ca.pem",
+                },
+            ),
         ),
-        SimpleNamespace(
-            name="Local",
-            driver_args={"port": "/dev/ttyUSB0"},
+        cast(
+            Machine,
+            SimpleNamespace(
+                name="Local",
+                driver_args={"port": "/dev/ttyUSB0"},
+            ),
         ),
     ]
     daemons = remote.collect_remote_daemons(machines)

@@ -9,13 +9,16 @@ advertisement into the camera model's source types.
 import logging
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from raydriver.core.discovery.daemon import (
     list_cameras as daemon_list_cameras,
 )
 
 from .models.source_type import CameraSourceType
+
+if TYPE_CHECKING:
+    from ..machine.models.machine import Machine
 
 logger = logging.getLogger(__name__)
 
@@ -65,17 +68,19 @@ class RemoteCamera:
     source_type: CameraSourceType
 
 
-def collect_remote_daemons(machines: Iterable[Any]) -> list[RemoteDaemon]:
+def collect_remote_daemons(
+    machines: Iterable["Machine"],
+) -> list[RemoteDaemon]:
     """Remote daemons named by the configured machines, deduplicated."""
     daemons: list[RemoteDaemon] = []
     seen: set[tuple[Any, ...]] = set()
     for machine in machines:
-        args = getattr(machine, "driver_args", None) or {}
+        args = machine.driver_args or {}
         host = args.get("remote_host")
         if not host:
             continue
         port = int(args.get("remote_port") or 8765)
-        name = getattr(machine, "name", None)
+        name = machine.name
         daemon = RemoteDaemon(
             label=f"{name} ({host}:{port})" if name else f"{host}:{port}",
             host=str(host),
