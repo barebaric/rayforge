@@ -22,6 +22,7 @@ GRBL 设备可以通过 USB/串口或网络连接：
   — 带缓冲计数、死锁检测和 stall 恢复的驱动程序。其 GRBL 协议栈在 Rust 中运行。推荐用于大多数 GRBL 设备
 - **GRBL (USB/Serial — compatibility mode)**
   — 乒乓协议驱动程序。发送一行，等待 "ok"，再发送下一行。无缓冲管理，无死锁检测。仅当标准驱动程序导致误报或通信错误时才需要
+- **GRBL (Bluetooth)** — 用于操作系统中已配对控制器的蓝牙经典 SPP/RFCOMM 连接
 - **grblHAL (Telnet)** — 原始 TCP/telnet 连接，适用于联网的 grblHAL 控制器以及 ESP3D 的 telnet 桥接
 - **FluidNC / ESP3D (Web API)** — 用于 FluidNC 和 ESP3D
   v3 控制器的 HTTP/WebSocket 驱动程序，支持文件上传和设备设置
