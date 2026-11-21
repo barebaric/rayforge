@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Machine: the device census is fetched through each session's
+  `probe_device()` method now and returned as typed per-protocol
+  result objects, replacing raydriver's module-level probe helper
 - Machine: grblHAL controllers are identified by their `[BOARD:...]`
   name during probing instead of falling back to the firmware build
   field
