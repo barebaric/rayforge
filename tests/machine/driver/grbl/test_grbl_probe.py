@@ -163,8 +163,16 @@ class TestDriverProbe:
         mock_cleanup = AsyncMock()
         mocker.patch.object(GrblSerialDriver, "cleanup", mock_cleanup)
         info = describe(build_info, settings_lines)
-        mocker.patch(
-            "rayforge.machine.driver.grbl.grbl_probe.probe_device",
+        fake_session = mocker.MagicMock()
+        mocker.patch.object(
+            GrblSerialDriver,
+            "session",
+            new_callable=mocker.PropertyMock,
+            return_value=fake_session,
+        )
+        probe_mock = mocker.patch.object(
+            fake_session,
+            "probe_device",
             AsyncMock(return_value=info),
         )
 
@@ -174,6 +182,7 @@ class TestDriverProbe:
             baudrate=115200,
         )
 
+        probe_mock.assert_awaited_once()
         mock_cleanup.assert_awaited_once()
         assert profile.meta.name == "ORTUR"
         assert profile.machine_config.driver == ("GrblSerialDriver")

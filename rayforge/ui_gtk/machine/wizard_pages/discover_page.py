@@ -359,8 +359,9 @@ class DiscoverPage(WizardPage):
 def _row_subtitle(device: DiscoveredDevice) -> str:
     """The two-line description under a device row."""
     parts = [device.detail]
-    if device.probe_profile is not None:
-        extents = device.probe_profile.machine_config.axis_extents
+    probed = device.probe_profile
+    if isinstance(probed, DeviceProfile):
+        extents = probed.machine_config.axis_extents
         if extents is not None:
             width, height = extents
             parts.append(_("{w}×{h} mm work area").format(w=width, h=height))
