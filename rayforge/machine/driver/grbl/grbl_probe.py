@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from collections.abc import Awaitable
 from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
@@ -9,7 +10,10 @@ from typing import (
 )
 
 from blinker import Signal
-from raydriver.grbl.probe import GrblDeviceInfo, GrblFlavor, probe_device
+from raydriver.grbl.probe import GrblDeviceInfo, GrblFlavor
+from raydriver.marlin.probe import MarlinDeviceInfo
+from raydriver.octoprint.probe import OctoPrintDeviceInfo
+from raydriver.smoothie.probe import SmoothieDeviceInfo
 
 from ....shared.units.system import UnitSystem
 from ...models.dialect.grbl import GRBL_DIALECT
@@ -27,9 +31,17 @@ logger = logging.getLogger(__name__)
 
 @runtime_checkable
 class _ProbeSession(Protocol):
-    """The session surface the device census needs."""
+    """The session surface the device census needs; the concrete
+    census type depends on the session's protocol."""
 
-    async def execute_interactive_command(self, command: str) -> list[str]: ...
+    def probe_device(
+        self,
+    ) -> Awaitable[
+        GrblDeviceInfo
+        | MarlinDeviceInfo
+        | SmoothieDeviceInfo
+        | OctoPrintDeviceInfo
+    ]: ...
 
 
 @runtime_checkable
@@ -92,7 +104,9 @@ async def probe_grbl_device(
         session = driver.session
         if session is None:
             raise DeviceConnectionError(_("Driver is not connected."))
-        info = await probe_device(session)
+        info = await session.probe_device()
+        if not isinstance(info, GrblDeviceInfo):
+            raise DeviceConnectionError(_("Device is not a GRBL device."))
     finally:
         driver.connection_status_changed.disconnect(_on_status)
         await driver.cleanup()
@@ -160,7 +174,7 @@ def build_grbl_profile(
         )
 
     dialect_config: dict[str, Any] = {}
-    if info.flavor is GrblFlavor.STOCK:
+    if info.flavor == GrblFlavor.STOCK:
         dialect_config = GRBL_DIALECT.to_template_dict()
     elif info.flavor in (GrblFlavor.GRBLHAL, GrblFlavor.FLUIDNC):
         dialect_config = GRBL_DYNAMIC_DIALECT.to_template_dict()
