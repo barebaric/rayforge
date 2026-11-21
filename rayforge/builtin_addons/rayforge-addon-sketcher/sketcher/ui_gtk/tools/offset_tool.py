@@ -4,13 +4,13 @@ from typing import TYPE_CHECKING, ClassVar, Union
 
 import cairo
 from gi.repository import Adw, Gtk
+from raygeo.sketch.contour import build_offset_items
 from raygeo.sketch.entities import Entity
 from raygeo.sketch.entities import SketchPoint as Point
 
 from rayforge.ui_gtk.shared.pref_rows import SpinRow
 
 from ...core.commands import OffsetCommand
-from ...core.contour import build_offset_items
 from .base import SketchTool
 
 if TYPE_CHECKING:
@@ -55,7 +55,9 @@ class OffsetTool(SketchTool):
     def on_activate(self):
         sketch = self.element.sketch
         self._entity_ids = list(self.element.selection.entity_ids)
-        self._items = build_offset_items(sketch, self._entity_ids)
+        self._items = build_offset_items(
+            sketch.registry, self._entity_ids, sketch.constraints
+        )
         if not self._items:
             logger.warning(
                 "Selection cannot be offset; select simple connected contours."

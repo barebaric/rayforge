@@ -5,10 +5,14 @@ import uuid
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
+from raygeo.sketch.boolean import (
+    BooleanOp,
+    apply_boolean,
+    build_boolean_regions_from_constraints,
+)
+from raygeo.sketch.contour import build_outline_item
 from raygeo.sketch.entities import OffsetPlan
 
-from ..boolean import BooleanOp, apply_boolean, build_boolean_regions
-from ..offset import outline_item
 from ..sketch import Fill
 from .base import SketchChangeCommand
 from .items import AddItemsCommand, RemoveItemsCommand
@@ -65,7 +69,9 @@ class BooleanCommand(SketchChangeCommand):
         boolean result. Returns None when the operation cannot run or
         produces no geometry. No sketch state is modified.
         """
-        regions = build_boolean_regions(sketch, entity_ids)
+        regions = build_boolean_regions_from_constraints(
+            sketch.registry, entity_ids, sketch.constraints
+        )
         if regions is None:
             return None
         solids = apply_boolean(op, regions)
@@ -77,7 +83,9 @@ class BooleanCommand(SketchChangeCommand):
     def _prepare(self) -> bool:
         if self._prepared:
             return True
-        regions = build_boolean_regions(self.sketch, self.entity_ids)
+        regions = build_boolean_regions_from_constraints(
+            self.sketch.registry, self.entity_ids, self.sketch.constraints
+        )
         if regions is None:
             return False
         solids = apply_boolean(self.op, regions)
@@ -88,7 +96,7 @@ class BooleanCommand(SketchChangeCommand):
         allocate_id = self.sketch.registry.allocate_id
         plan = OffsetPlan()
         for solid in solids:
-            center_pt, handle_pt, entity = outline_item(
+            center_pt, handle_pt, entity = build_outline_item(
                 solid.outer, True, allocate_id, solid.holes
             )
             plan.points.extend((center_pt, handle_pt))
