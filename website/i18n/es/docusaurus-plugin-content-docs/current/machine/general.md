@@ -29,6 +29,7 @@ Los dispositivos GRBL pueden conectarse por USB/serie o por red:
 - **GRBL (USB/Serial — compatibility mode)** — Controlador de protocolo ping-pong. Envía una línea,
   espera "ok", envía la siguiente. Sin gestión de búfer ni detección de bloqueos. Solo necesario
   cuando el controlador estándar genera falsas alarmas o errores de comunicación
+- **GRBL (Bluetooth)** — Conexión Bluetooth Classic SPP/RFCOMM para controladores emparejados en el sistema operativo
 - **grblHAL (Telnet)** — Conexión TCP sin procesar (telnet) para controladores grblHAL en red y para
   el puente telnet de ESP3D
 - **FluidNC / ESP3D (Web API)** — Controlador HTTP/WebSocket para controladores FluidNC y ESP3D v3,

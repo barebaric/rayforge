@@ -13,6 +13,7 @@ Marlin, Smoothieware und andere Firmware-Typen.
 | Firmware         | Version | Status                  | Treiber                                  | Hinweise                   |
 | ---------------- | ------- | ----------------------- | ---------------------------------------- | -------------------------- |
 | **GRBL**         | 1.1+    | Vollständig unterstützt | GRBL (USB/Serial) (+ compatibility mode) | Empfohlen                  |
+| **GRBL**         | 1.1+    | Experimentell | GRBL (Bluetooth) | Gekoppelte Bluetooth-SPP-Geräte |
 | **grblHAL**      | 2023+   | Kompatibel              | GRBL (USB/Serial) / grblHAL (Telnet)     | Moderner GRBL-Fork         |
 | **GRBL**         | 0.9     | Eingeschränkt           | GRBL (USB/Serial)                        | Älter, kann Probleme haben |
 | **FluidNC**      | Alle    | Kompatibel              | FluidNC / ESP3D (Web API)                | ESP32-basiert              |
@@ -121,6 +122,23 @@ pufferzählende Treiber falsche Alarme oder Kommunikationsfehler verursacht.
   "ok"-Antworten ohne automatische Wiederherstellung stoppen
 
 ---
+
+## GRBL (Bluetooth)-Treiber
+
+**Status:** Experimentell **Firmware:** GRBL **Treiber:** GRBL (Bluetooth)
+
+Der GRBL (Bluetooth)-Treiber verbindet Controller über das Bluetooth-Classic-Serial-Port-Profil
+(SPP/RFCOMM), wie es viele ESP32-basierte Lasercontroller anbieten. Die Verbindung stellt das
+Betriebssystem direkt her; eine `/dev/rfcomm*`-Brücke oder ein ausgehender COM-Port ist nicht nötig.
+
+**GRBL (Bluetooth) verwenden:**
+
+1. **Controller koppeln** in den Bluetooth-Einstellungen des Betriebssystems
+2. **"GRBL (Bluetooth)"** in den Maschineneinstellungen auswählen
+3. **Gerät auswählen** oder die Adresse manuell eingeben
+4. **RFCOMM-Kanal 1 beibehalten**, sofern das Gerät keinen anderen Kanal verwendet
+
+Linux, macOS und Windows werden unterstützt. Bluetooth Low Energy (BLE) wird nicht unterstützt.
 
 ## grblHAL
 

@@ -13,6 +13,7 @@ charge Marlin, Smoothieware et d'autres types de firmware.
 | Firmware         | Version | Statut                     | Pilote                                   | Notes                            |
 | ---------------- | ------- | -------------------------- | ---------------------------------------- | -------------------------------- |
 | **GRBL**         | 1.1+    | Entièrement pris en charge | GRBL (USB/Serial) (+ compatibility mode) | Recommandé                       |
+| **GRBL**         | 1.1+    | Expérimental | GRBL (Bluetooth) | Appareils SPP Bluetooth appairés |
 | **grblHAL**      | 2023+   | Compatible                 | GRBL (USB/Serial) / grblHAL (Telnet)     | Fork GRBL moderne                |
 | **GRBL**         | 0.9     | Limité                     | GRBL (USB/Serial)                        | Ancien, peut avoir des problèmes |
 | **FluidNC**      | Tous    | Compatible                 | FluidNC / ESP3D (Web API)                | Basé sur ESP32                   |
@@ -120,6 +121,24 @@ tampon provoque de fausses alarmes ou des erreurs de communication.
   une réponse « ok » perdue sans récupération automatique
 
 ---
+
+## Pilote GRBL (Bluetooth)
+
+**Statut :** Expérimental **Firmware :** GRBL **Pilote :** GRBL (Bluetooth)
+
+Le pilote GRBL (Bluetooth) connecte les contrôleurs via le profil de port série Bluetooth Classic
+(SPP/RFCOMM), courant sur de nombreux contrôleurs laser basés sur ESP32. La connexion est établie
+directement par le système d'exploitation ; aucun pont `/dev/rfcomm*` ni port COM sortant n'est
+nécessaire.
+
+**Utilisation du pilote GRBL (Bluetooth) :**
+
+1. **Associez le contrôleur** dans les réglages Bluetooth du système d'exploitation
+2. **Sélectionnez « GRBL (Bluetooth) »** dans les réglages de la machine
+3. **Choisissez l'appareil** dans la liste ou saisissez son adresse manuellement
+4. **Conservez le canal RFCOMM 1** sauf si l'appareil en utilise un autre
+
+Linux, macOS et Windows sont pris en charge. Bluetooth Low Energy (BLE) n'est pas pris en charge.
 
 ## grblHAL
 

@@ -18,6 +18,7 @@ Smoothieware, and other firmware types.
 | Firmware         | Version | Status        | Driver                                   | Notes                   |
 | ---------------- | ------- | ------------- | ---------------------------------------- | ----------------------- |
 | **GRBL**         | 1.1+    | Compatible    | GRBL (USB/Serial) (+ compatibility mode) | Recommended             |
+| **GRBL**         | 1.1+    | Experimental  | GRBL (Bluetooth)                         | Paired Bluetooth SPP    |
 | **grblHAL**      | 2023+   | Compatible    | GRBL (USB/Serial) / grblHAL (Telnet)     | Modern GRBL fork        |
 | **GRBL**         | 0.9     | Limited       | GRBL (USB/Serial)                        | Older, may have issues  |
 | **FluidNC**      | All     | Compatible    | FluidNC / ESP3D (Web API)                | ESP32-based             |
@@ -31,8 +32,8 @@ Smoothieware, and other firmware types.
 
 ## GRBL Firmware
 
-**Status:** Fully Supported **Versions:** 1.1+ **Drivers:** GRBL (USB/Serial), GRBL (USB/Serial —
-compatibility mode)
+**Status:** Fully Supported **Versions:** 1.1+ **Drivers:** GRBL (USB/Serial), GRBL (Bluetooth),
+GRBL (USB/Serial — compatibility mode)
 
 ### GRBL 1.1 (Recommended)
 
@@ -124,6 +125,27 @@ causes false alarms or communication errors.
 - The standard GRBL (USB/Serial) driver works reliably for most devices
 - The simple driver lacks deadlock recovery, so jobs may stop on a lost "ok" response without
   automatic recovery
+
+---
+
+## GRBL (Bluetooth) Driver
+
+**Status:** Experimental **Firmware:** GRBL **Driver:** GRBL (Bluetooth)
+
+The GRBL (Bluetooth) driver connects to controllers that expose a Bluetooth Classic Serial Port
+Profile (SPP/RFCOMM), such as many ESP32-based laser controllers. The operating system makes the
+connection directly, so no `/dev/rfcomm*` bridge or outgoing COM port is needed.
+
+**Using the GRBL (Bluetooth) driver:**
+
+1. **Pair the controller** in the operating system's Bluetooth settings
+2. **Select "GRBL (Bluetooth)"** in machine settings
+3. **Pick the device** from the list, or enter its address manually
+4. **Keep the default RFCOMM channel 1** unless the device uses another channel
+
+The device list is populated from the operating system's paired devices. Linux, macOS and Windows
+are supported. Bluetooth Low Energy (BLE) devices are not supported. On macOS, Rayforge needs
+Bluetooth permission and must run from an app bundle that carries the Bluetooth entitlement.
 
 ---
 
