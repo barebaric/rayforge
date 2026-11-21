@@ -12,6 +12,7 @@ compatible con Marlin, Smoothieware y otros tipos de firmware.
 | Firmware         | Version | Estado                  | Controlador                              | Notas                          |
 | ---------------- | ------- | ----------------------- | ---------------------------------------- | ------------------------------ |
 | **GRBL**         | 1.1+    | Completamente soportado | GRBL (USB/Serial) (+ compatibility mode) | Recomendado                    |
+| **GRBL**         | 1.1+    | Experimental | GRBL (Bluetooth) | Dispositivos SPP Bluetooth emparejados |
 | **grblHAL**      | 2023+   | Compatible              | GRBL (USB/Serial) / grblHAL (Telnet)     | Fork moderno de GRBL           |
 | **GRBL**         | 0.9     | Limitado                | GRBL (USB/Serial)                        | Antiguo, puede tener problemas |
 | **FluidNC**      | Todos   | Compatible              | FluidNC / ESP3D (Web API)                | Basado en ESP32                |
@@ -120,6 +121,24 @@ con contador de búfer causa falsas alarmas o errores de comunicación.
   ante una respuesta "ok" perdida sin recuperación automática
 
 ---
+
+## Controlador GRBL (Bluetooth)
+
+**Estado:** Experimental **Firmware:** GRBL **Controlador:** GRBL (Bluetooth)
+
+El controlador GRBL (Bluetooth) conecta controladores mediante el perfil de puerto serie de
+Bluetooth Classic (SPP/RFCOMM), habitual en muchos controladores láser basados en ESP32. La conexión
+la realiza directamente el sistema operativo; no se necesita un puente `/dev/rfcomm*` ni un puerto
+COM saliente.
+
+**Uso del controlador GRBL (Bluetooth):**
+
+1. **Empareja el controlador** en los ajustes de Bluetooth del sistema operativo
+2. **Selecciona "GRBL (Bluetooth)"** en los ajustes de la máquina
+3. **Elige el dispositivo** de la lista o introduce su dirección manualmente
+4. **Mantén el canal RFCOMM 1** salvo que el dispositivo use otro
+
+Se admiten Linux, macOS y Windows. Bluetooth Low Energy (BLE) no es compatible.
 
 ## grblHAL
 

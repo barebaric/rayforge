@@ -28,6 +28,8 @@ GRBL devices can connect over USB/serial or over the network:
 - **GRBL (USB/Serial — compatibility mode)** — Ping-pong protocol driver. Sends one line, waits for
   "ok", sends the next. No buffer management, no deadlock detection. Only needed when the standard
   driver causes false alarms or communication errors
+- **GRBL (Bluetooth)** — Bluetooth Classic SPP/RFCOMM connection for controllers paired in the
+  operating system
 - **grblHAL (Telnet)** — Raw TCP/telnet connection for networked grblHAL controllers and for ESP3D's
   telnet bridge
 - **FluidNC / ESP3D (Web API)** — HTTP/WebSocket driver for FluidNC and ESP3D v3 controllers, with
