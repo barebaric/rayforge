@@ -7,14 +7,14 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING
 
 from raygeo.sketch.entity_group import EntityGroup, points_bbox_center
+from raygeo.sketch.types import EntityID
 
-from ..types import EntityID
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
     from raygeo.sketch.constraints import Constraint
 
-    from ..selection import SketchSelection
+    from ...selection import SketchSelection
     from ..sketch import Sketch
 
 logger = logging.getLogger(__name__)

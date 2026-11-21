@@ -9,9 +9,9 @@ from raygeo.sketch.constraints import (
     HorizontalConstraint,
 )
 from raygeo.sketch.registry import EntityRegistry
+from raygeo.sketch.types import ConstraintStatus
 from sketcher.core.commands import CreateArrayCommand
 from sketcher.core.sketch import Sketch
-from sketcher.core.types import ConstraintStatus
 
 
 class TestSolverConflictDetection:

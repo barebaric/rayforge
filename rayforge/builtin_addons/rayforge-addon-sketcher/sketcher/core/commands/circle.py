@@ -8,8 +8,8 @@ from raygeo.geo.types import Point as GeoPoint
 from raygeo.sketch.constraints import DiameterConstraint
 from raygeo.sketch.entities import Circle
 from raygeo.sketch.entities import SketchPoint as Point
+from raygeo.sketch.types import EntityID
 
-from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData
 from .items import AddItemsCommand

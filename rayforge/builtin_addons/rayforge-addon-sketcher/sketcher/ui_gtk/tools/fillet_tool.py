@@ -5,9 +5,9 @@ from typing import TYPE_CHECKING, ClassVar, Union
 
 from raygeo.sketch.entities import Entity, Line
 from raygeo.sketch.entities import SketchPoint as Point
+from raygeo.sketch.types import EntityID
 
 from ...core.commands import FilletCommand
-from ...core.types import EntityID
 from .base import SketchTool
 
 if TYPE_CHECKING:

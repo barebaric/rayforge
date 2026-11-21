@@ -10,8 +10,8 @@ from raygeo.geo.types import Point as GeoPoint
 from raygeo.sketch.constraints import EqualDistanceConstraint, RadiusConstraint
 from raygeo.sketch.entities import Arc
 from raygeo.sketch.entities import SketchPoint as Point
+from raygeo.sketch.types import EntityID
 
-from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData
 from .items import AddItemsCommand

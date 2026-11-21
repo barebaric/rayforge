@@ -7,7 +7,7 @@ from raygeo.sketch.constraints import (
 from raygeo.sketch.entities import Arc, Bezier
 from sketcher.core import Sketch
 from sketcher.core.commands import MirrorAxis, MirrorCommand, MirrorDirection
-from sketcher.core.selection import SketchSelection
+from sketcher.selection import SketchSelection
 
 
 @pytest.fixture

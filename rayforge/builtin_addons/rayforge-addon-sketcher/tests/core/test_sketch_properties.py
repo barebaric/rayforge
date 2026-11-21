@@ -1,6 +1,6 @@
 import pytest
+from raygeo.sketch.types import ConstraintStatus
 from sketcher.core import Sketch
-from sketcher.core.types import ConstraintStatus
 
 
 @pytest.fixture

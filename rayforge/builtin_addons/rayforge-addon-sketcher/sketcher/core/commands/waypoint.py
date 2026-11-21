@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point as GeoPoint
 from raygeo.sketch.entities import Bezier, Line
+from raygeo.sketch.types import EntityID, WaypointType
 
-from ..types import EntityID, WaypointType
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
@@ -247,7 +247,7 @@ class SetWaypointTypeCommand(SketchChangeCommand):
                 if b.end_idx in point_ids and b.cp2 is None:
                     b.cp2 = cp_in
 
-        waypoint.waypoint_type = self.new_type
+        waypoint.waypoint_type = self.new_type  # type: ignore[assignment]
         waypoint.enforce_constraint(registry, self.sketch)
 
     def _do_undo(self) -> None:

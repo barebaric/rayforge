@@ -7,15 +7,15 @@ from typing import TYPE_CHECKING
 
 from raygeo.sketch.entities import SketchPoint as Point
 from raygeo.sketch.entity_group import EntityGroup
+from raygeo.sketch.types import EntityID
 
-from ..types import EntityID
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
     from raygeo.sketch.constraints import Constraint
     from raygeo.sketch.entities import Entity
 
-    from ..selection import SketchSelection
+    from ...selection import SketchSelection
     from ..sketch import Sketch
 
 logger = logging.getLogger(__name__)

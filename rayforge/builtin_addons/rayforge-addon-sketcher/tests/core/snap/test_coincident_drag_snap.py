@@ -10,10 +10,10 @@ drag to its own start position.
 
 import pytest
 from raygeo.sketch.registry import EntityRegistry
-from sketcher.core.snap.engine import SnapEngine
-from sketcher.core.snap.producers.centers import CentersProducer
-from sketcher.core.snap.producers.entity_points import EntityPointsProducer
-from sketcher.core.snap.types import DragContext, SnapLineType
+from raygeo.sketch.snap.engine import SnapEngine
+from raygeo.sketch.snap.producers.centers import CentersProducer
+from raygeo.sketch.snap.producers.entity_points import EntityPointsProducer
+from raygeo.sketch.snap.types import DragContext, SnapLineType
 
 
 @pytest.fixture

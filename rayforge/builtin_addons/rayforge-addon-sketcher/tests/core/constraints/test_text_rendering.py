@@ -10,7 +10,7 @@ from raygeo.sketch.constraints import (
     RadiusConstraint,
 )
 from raygeo.sketch.registry import EntityRegistry
-from sketcher.core.types import ConstraintStatus
+from raygeo.sketch.types import ConstraintStatus
 
 
 @pytest.mark.parametrize(
@@ -24,7 +24,10 @@ from sketcher.core.types import ConstraintStatus
         ("equal_distance", "="),
     ],
 )
-@pytest.mark.parametrize("status", list(ConstraintStatus))
+@pytest.mark.parametrize(
+    "status",
+    list(ConstraintStatus),  # type: ignore[arg-type]
+)
 @pytest.mark.parametrize("selected, hovered", [(False, False), (True, True)])
 def test_constraint_text_uses_pango(
     mocker, kind, expected, status, selected, hovered

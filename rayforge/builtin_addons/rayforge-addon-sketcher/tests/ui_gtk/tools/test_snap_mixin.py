@@ -7,8 +7,8 @@ from raygeo.sketch.constraints import (
 )
 from raygeo.sketch.entities import Line
 from raygeo.sketch.entities import SketchPoint as Point
-from sketcher.core.snap import SnapLineType
-from sketcher.core.snap.types import SnapLine, SnapPoint, SnapResult
+from raygeo.sketch.snap import SnapLineType
+from raygeo.sketch.snap.types import SnapLine, SnapPoint, SnapResult
 from sketcher.ui_gtk.tools.snap_mixin import SnapMixin
 
 

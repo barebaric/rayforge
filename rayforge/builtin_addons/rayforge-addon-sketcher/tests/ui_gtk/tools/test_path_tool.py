@@ -3,8 +3,8 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 from raygeo.sketch.constraints import HorizontalConstraint, VerticalConstraint
 from raygeo.sketch.entities import SketchPoint
+from raygeo.sketch.snap.types import SnapLine, SnapLineType, SnapResult
 from sketcher.core.commands.bezier import BezierPreviewState
-from sketcher.core.snap.types import SnapLine, SnapLineType, SnapResult
 from sketcher.ui_gtk.tools.path_tool import PathTool
 
 
@@ -535,9 +535,8 @@ def test_auto_constraint_skips_self_constraint(path_tool, mock_element):
 
 def _real_sketch_element():
     """Mock element wiring a real Sketch and snap engine into the tool."""
-    from sketcher.core.sketch import Sketch
-    from sketcher.core.snap.engine import SnapEngine
-    from sketcher.core.snap.producers import (
+    from raygeo.sketch.snap.engine import SnapEngine
+    from raygeo.sketch.snap.producers import (
         CentersProducer,
         EntityPointsProducer,
         EquidistantLinesProducer,
@@ -545,6 +544,7 @@ def _real_sketch_element():
         MidpointsProducer,
         OnEntityProducer,
     )
+    from sketcher.core.sketch import Sketch
 
     sketch = Sketch("test")
     element = Mock()

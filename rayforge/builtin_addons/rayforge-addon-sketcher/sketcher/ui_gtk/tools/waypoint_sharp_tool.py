@@ -3,9 +3,9 @@ from typing import TYPE_CHECKING, Union
 
 from raygeo.sketch.entities import Bezier, Entity, Line
 from raygeo.sketch.entities import SketchPoint as Point
+from raygeo.sketch.types import EntityID, WaypointType
 
 from ...core.commands import SetWaypointTypeCommand
-from ...core.types import EntityID, WaypointType
 from .base import SketchTool
 
 if TYPE_CHECKING:

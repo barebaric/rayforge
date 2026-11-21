@@ -515,7 +515,7 @@ def test_rectangle_preview_get_dimensions_missing_point():
 def test_rectangle_delete_cleans_up_center_point():
     """Test that deleting a rectangle also removes its center point."""
     from sketcher.core.commands.items import RemoveItemsCommand
-    from sketcher.core.selection import SketchSelection
+    from sketcher.selection import SketchSelection
 
     sketch = Sketch()
     start_pid = sketch.add_point(0, 0)
