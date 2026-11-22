@@ -16,9 +16,7 @@ Application Settings (<kbd>ctrl+comma</kbd>).
 
 ## Adding a Machine
 
-The quickest way to add a machine is **Machine → Add Machine…** in the main window, which opens the
-configuration wizard directly. From the Machines page, click the **Add Machine** button at the
-bottom of the list, then:
+From the Machines page, click the **Add Machine** button at the bottom of the list, then:
 
 1. Select a device profile from the list to use as a template — each profile pre-configures the
    machine settings and G-code dialect

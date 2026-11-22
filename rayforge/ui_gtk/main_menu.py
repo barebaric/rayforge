@@ -215,13 +215,6 @@ class MainMenu(Gio.Menu):
         )
         machine_menu.append_submenu(_("Select Machine"), self.machines_submenu)
 
-        machine_management_group = Gio.Menu()
-        machine_management_group.append(_("Add Machine…"), "win.machine-add")
-        machine_management_group.append(
-            _("Manage Machines…"), "win.machine-manage"
-        )
-        machine_menu.append_section(None, machine_management_group)
-
         jog_group = Gio.Menu()
         jog_group.append(_("Home"), "win.machine-home")
         jog_group.append(_("Frame"), "win.machine-frame")
@@ -243,7 +236,10 @@ class MainMenu(Gio.Menu):
 
         machine_settings_group = Gio.Menu()
         machine_settings_group.append(
-            _("Machine Settings"), "win.machine-settings"
+            _("Manage Machines…"), "win.machine-manage"
+        )
+        machine_settings_group.append(
+            _("Current Machine Settings"), "win.machine-settings"
         )
         machine_menu.append_section(None, machine_settings_group)
 

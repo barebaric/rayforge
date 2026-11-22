@@ -12,12 +12,12 @@ description:
 
 从应用程序菜单启动 Rayforge，或在终端中运行
 `rayforge`。在首次启动时——当尚未配置任何真实机器时——配置向导会自动打开，以便您可以设置机器而无需在菜单中查找。（您始终可以稍后从
-**机器 → Add Machine…** 打开它。）
+**机器 → Manage Machines…** 并点击 **Add Machine** 打开它。）
 
 ## 第 2 步：使用向导创建机器
 
-打开主窗口的 **机器** 菜单并选择 **Add Machine…**。或者，选择 **机器 → Manage Machines…**（或按
-<kbd>ctrl+comma</kbd> 打开 **机器** 页面），然后点击 **Add Machine**。
+打开主窗口的 **机器 → Manage Machines…**（或按 <kbd>ctrl+comma</kbd> 打开 **机器** 页面），然后点击
+**Add Machine**。
 
 ![机器设置](/screenshots/app-settings-machines.webp)
 

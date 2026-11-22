@@ -286,7 +286,6 @@ class ActionManager:
         self._add_action("save_debug_log", self.win.on_save_debug_log)
         self._add_action("settings", self.win.show_settings)
         self._add_action("machine-settings", self.win.show_machine_settings)
-        self._add_action("machine-add", self.win.on_add_machine_clicked)
         self._add_action("machine-manage", self.win.on_manage_machines_clicked)
 
         # View Actions

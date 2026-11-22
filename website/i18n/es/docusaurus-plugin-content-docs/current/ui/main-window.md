@@ -15,7 +15,7 @@ Accede a todas las funciones de Rayforge a través de menús organizados:
 - **Editar**: Deshacer, rehacer, copiar, pegar, preferencias
 - **Ver**: Zoom, cuadrícula, reglas, paneles y modos de vista
 - **Objeto**: Añadir, editar y gestionar operaciones
-- **Máquina**: Seleccionar, añadir y gestionar máquinas; conectar, desplazar, origen,
+- **Máquina**: Seleccionar y gestionar máquinas; conectar, desplazar, origen,
   iniciar/detener trabajos
 - **Ayuda**: Acerca de, Donar, Guardar Registro de Depuración
 

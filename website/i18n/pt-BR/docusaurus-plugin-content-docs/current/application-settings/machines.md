@@ -17,9 +17,7 @@ Configurações da Aplicação (<kbd>ctrl+comma</kbd>).
 
 ## Adicionar uma Máquina
 
-A maneira mais rápida de adicionar uma máquina é **Máquina → Add Machine…** na janela principal, que
-abre o assistente de configuração diretamente. Na página Máquinas, clique no botão **Add Machine**
-na parte inferior da lista e então:
+Na página Máquinas, clique no botão **Add Machine** na parte inferior da lista e então:
 
 1. Selecione um perfil de dispositivo da lista para usar como modelo — cada perfil pré-configura as
    definições da máquina e o dialeto de G-code

@@ -14,13 +14,12 @@ you through creating your first machine with the configuration wizard and establ
 Start Rayforge from your application menu or by running `rayforge` in a terminal. On first launch —
 when no real machine has been configured yet — the configuration wizard opens automatically so you
 can set up your machine without hunting through menus. (You can always open it later from **Machine
-→ Add Machine…**.)
+→ Manage Machines…** by clicking **Add Machine**.)
 
 ## Step 2: Create a Machine with the Wizard
 
-Open the main window's **Machine** menu and choose **Add Machine…**. Alternatively, select **Machine
-→ Manage Machines…** (or press <kbd>ctrl+comma</kbd> and open the **Machines** page) and click **Add
-Machine**.
+Open the main window's **Machine → Manage Machines…** entry (or press <kbd>ctrl+comma</kbd> and open
+the **Machines** page), then click **Add Machine**.
 
 ![Machine Settings](/screenshots/app-settings-machines.webp)
 

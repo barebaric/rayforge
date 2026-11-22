@@ -15,7 +15,7 @@ Accédez à toutes les fonctions Rayforge via des menus organisés :
 - **Édition** : Annuler, rétablir, copier, coller, préférences
 - **Affichage** : Zoom, grille, règles, panneaux et modes d'affichage
 - **Opérations** : Ajouter, modifier et gérer les opérations
-- **Machine** : Sélectionner, ajouter et gérer les machines ; connecter, déplacer, mettre à
+- **Machine** : Sélectionner et gérer les machines ; connecter, déplacer, mettre à
   l'origine, démarrer/arrêter les travaux
 - **Aide** : À propos, Don, Enregistrer le journal de débogage
 

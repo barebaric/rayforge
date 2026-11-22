@@ -62,7 +62,7 @@ en un coup d'œil :
 1. **Connecte ta caméra** à ton ordinateur via USB
 
 2. **Ouvre les Paramètres Caméra :**
-   - Navigue vers **Machine → Paramètres de la machine → Caméra**
+   - Navigue vers **Machine → Paramètres actuels de la machine → Caméra**
 
 3. **Ajoute une nouvelle caméra :**
    - Clique sur le bouton "+" pour ajouter une caméra
@@ -456,7 +456,7 @@ un démon raydriver distant ; voir [Appareils distants](remote.md) pour configur
 
 ### Ajouter une caméra réseau
 
-1. Ouvre **Machine → Paramètres de la machine → Caméra**.
+1. Ouvre **Machine → Paramètres actuels de la machine → Caméra**.
 2. Clique sur **+** et choisis **HTTP snapshot URL**, **HTTP stream URL** ou **RTSP stream**.
 3. Saisis un nom et l'URL, par exemple :
    - Instantané HTTP : `http://192.168.1.50:8080/media/getCapturePhoto`
@@ -465,7 +465,7 @@ un démon raydriver distant ; voir [Appareils distants](remote.md) pour configur
 4. Active la caméra. Le flux devrait apparaître sur le canevas.
 
 Le profil de l'appareil Creality Falcon A1 Pro inclut une caméra HTTP snapshot préconfigurée et
-désactivée. Dans **Machine → Paramètres de la machine → Caméra**, sélectionne **Falcon A1 Pro
+désactivée. Dans **Machine → Paramètres actuels de la machine → Caméra**, sélectionne **Falcon A1 Pro
 Camera** et remplace `<laser-ip>` dans l'URL du champ **Source** par l'adresse IP accessible de la
 machine. Valide l'URL correcte avec **Entrée** ou en quittant le champ, puis active manuellement la
 caméra. Tu peux aussi utiliser l'adresse IP attribuée au Falcon sur ton réseau Wi-Fi.
@@ -480,7 +480,7 @@ l'URL correspond au type de source (`http://`, `https://`, `rtsp://` ou `rtsps:/
 Utilise cette option lorsque la caméra est connectée à l'ordinateur qui exécute le démon raydriver
 plutôt qu'à ton ordinateur.
 
-1. Ouvre **Machine → Paramètres de la machine → Caméra**.
+1. Ouvre **Machine → Paramètres actuels de la machine → Caméra**.
 2. Clique sur **+** et choisis **Daemon camera** comme type de source.
 3. Sélectionne le démon. La liste contient les machines distantes configurées dans Rayforge.
 4. Sélectionne l'une des caméras annoncées par le démon. Rayforge remplit l'URL et le type de source

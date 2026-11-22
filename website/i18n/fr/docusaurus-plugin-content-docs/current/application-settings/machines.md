@@ -17,9 +17,7 @@ Ouvrez la page depuis la fenêtre principale avec **Machine → Manage Machines�
 
 ## Ajouter une Machine
 
-Le moyen le plus rapide d'ajouter une machine est **Machine → Add Machine…** dans la fenêtre
-principale, qui ouvre directement l'assistant de configuration. Depuis la page Machines, cliquez sur
-le bouton **Add Machine** en bas de la liste, puis :
+Depuis la page Machines, cliquez sur le bouton **Add Machine** en bas de la liste, puis :
 
 1. Sélectionnez un profil d'appareil dans la liste comme modèle — chaque profil préconfigure les
    paramètres de la machine et le dialecte G-code

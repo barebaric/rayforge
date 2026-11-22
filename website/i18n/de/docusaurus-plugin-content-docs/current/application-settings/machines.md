@@ -17,9 +17,8 @@ Anwendungseinstellungen (<kbd>ctrl+comma</kbd>).
 
 ## Eine Maschine hinzufügen
 
-Der schnellste Weg, eine Maschine hinzuzufügen, ist **Maschine → Add Machine…** im Hauptfenster,
-wodurch der Konfigurations-Assistent direkt geöffnet wird. Klicke auf der Seite Maschinen auf die
-Schaltfläche **Add Machine** am unteren Ende der Liste und dann:
+Klicke auf der Seite Maschinen auf die Schaltfläche **Add Machine** am unteren Ende der Liste und
+dann:
 
 1. Wähle ein Geräteprofil aus der Liste als Vorlage — jedes Profil konfiguriert die
    Maschineneinstellungen und den G-Code-Dialekt vor

@@ -701,10 +701,6 @@ class MainWindow(Adw.ApplicationWindow):
     def _on_setup_banner_clicked(self, banner):
         self.present_setup_wizard()
 
-    def on_add_machine_clicked(self, action, param):
-        """Presents the machine wizard to add a new machine."""
-        self.present_setup_wizard()
-
     def _update_setup_banner(self):
         """Shows the banner only while a placeholder machine is active."""
         config = get_context().config

@@ -153,6 +153,29 @@ def test_machine_menu_has_select_machine_submenu():
 
 
 @pytest.mark.ui
+def test_machine_menu_management_entries():
+    menu = MainMenu()
+    machine_menu = _find_submenu(menu, "_Machine")
+    assert machine_menu is not None
+
+    popover = Gtk.PopoverMenu.new_from_model(machine_menu)
+    window = Gtk.Window()
+    window.set_child(popover)
+    window.present()
+    _pump_events()
+
+    try:
+        labels = _rendered_labels(popover)
+    finally:
+        window.close()
+
+    assert "Add Machine…" not in labels
+    assert labels.index("Manage Machines…") < labels.index(
+        "Current Machine Settings"
+    )
+
+
+@pytest.mark.ui
 def test_machine_menu_empty_state_is_disabled():
     menu = MainMenu()
     menu.update_machines_menu([])

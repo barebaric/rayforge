@@ -393,21 +393,6 @@ def test_machine_menu_selection_switches_active_machine(app_and_window):
 
 
 @pytest.mark.ui
-def test_machine_add_action_opens_wizard(app_and_window):
-    """The Machine menu's Add Machine entry opens the setup wizard."""
-    _app, win = app_and_window
-
-    win.action_manager.get_action("machine-add").activate(None)
-    process_events_for_duration(0.3)
-
-    try:
-        assert win._setup_wizard is not None
-    finally:
-        if win._setup_wizard is not None:
-            win._setup_wizard.close()
-
-
-@pytest.mark.ui
 def test_machine_manage_action_opens_machines_page(app_and_window, mocker):
     """The Manage Machines entry opens Settings on the Machines page."""
     _app, win = app_and_window

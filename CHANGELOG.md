@@ -10,9 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Machine: the Machine menu gains a "Select Machine" submenu listing all
-  configured machines, plus direct "Add Machine…" and "Manage Machines…"
-  entries so machines can be selected and managed without opening the
-  application settings first
+  configured machines, plus a "Manage Machines…" entry next to "Current
+  Machine Settings" so machines can be selected and managed without
+  opening the application settings first
 - Machine: automatic system sleep is inhibited while a job is running,
   so the connection to the machine is not dropped when the computer
   goes idle. The new "Prevent sleep during jobs" option on the General

@@ -60,7 +60,7 @@ Das Kameraeigenschaften-Panel zeigt Status-Symbole für Kalibrierung und Ausrich
 1. **Verbinde deine Kamera** über USB mit deinem Computer
 
 2. **Kameraeinstellungen öffnen:**
-   - Navigiere zu **Maschine → Maschineneinstellungen → Kamera**
+   - Navigiere zu **Maschine → Aktuelle Maschineneinstellungen → Kamera**
 
 3. **Eine neue Kamera hinzufügen:**
    - Klicke auf die "+"-Taste, um eine Kamera hinzuzufügen
@@ -448,7 +448,7 @@ ankündigt; siehe [Remote-Geräte](remote.md) für die Einrichtung des Daemons.
 
 ### Netzwerkkamera hinzufügen
 
-1. Öffne **Maschine → Maschineneinstellungen → Kamera**.
+1. Öffne **Maschine → Aktuelle Maschineneinstellungen → Kamera**.
 2. Klicke auf **+** und wähle **HTTP snapshot URL**, **HTTP stream URL** oder **RTSP stream**.
 3. Gib einen Namen und die URL ein, zum Beispiel:
    - HTTP-Schnappschuss: `http://192.168.1.50:8080/media/getCapturePhoto`
@@ -457,7 +457,7 @@ ankündigt; siehe [Remote-Geräte](remote.md) für die Einrichtung des Daemons.
 4. Aktiviere die Kamera. Der Live-Feed sollte auf der Arbeitsfläche erscheinen.
 
 Das Geräteprofil des Creality Falcon A1 Pro enthält bereits eine vorkonfigurierte, deaktivierte
-HTTP-Snapshot-Kamera. Wähle unter **Maschine → Maschineneinstellungen → Kamera** **Falcon A1 Pro
+HTTP-Snapshot-Kamera. Wähle unter **Maschine → Aktuelle Maschineneinstellungen → Kamera** **Falcon A1 Pro
 Camera** aus und ersetze `<laser-ip>` in der URL des Feldes **Source** durch die erreichbare
 IP-Adresse der Maschine. Übernimm die gültige URL mit **Enter** oder indem du das Feld verlässt, und
 aktiviere die Kamera anschließend manuell. Alternativ kannst du die IP-Adresse verwenden, die dem
@@ -473,7 +473,7 @@ ob das URL-Schema zum Quelltyp passt (`http://`, `https://`, `rtsp://` oder `rts
 Verwende dies, wenn die Kamera am Computer mit dem raydriver-Daemon statt an deinem Computer
 angeschlossen ist.
 
-1. Öffne **Maschine → Maschineneinstellungen → Kamera**.
+1. Öffne **Maschine → Aktuelle Maschineneinstellungen → Kamera**.
 2. Klicke auf **+** und wähle **Daemon camera** als Quelltyp.
 3. Wähle den Daemon. Die Liste enthält die in Rayforge konfigurierten Remote-Maschinen.
 4. Wähle eine der vom Daemon angekündigten Kameras. Rayforge trägt die URL und den passenden
