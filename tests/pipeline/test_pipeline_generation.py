@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import threading
 from pathlib import Path
 
 import pytest
@@ -15,6 +16,7 @@ from rayforge.core.workpiece import WorkPiece
 from rayforge.image import SVG_RENDERER
 from rayforge.machine.models.rotary_module import RotaryMode, RotaryModule
 from rayforge.pipeline.artifact import JobArtifact
+from rayforge.pipeline.intent_builder import IntentBuilder
 from rayforge.pipeline.pipeline import Pipeline
 
 logger = logging.getLogger(__name__)
@@ -335,6 +337,70 @@ class TestPipelineGeneration:
             await asyncio.wait_for(
                 pipeline.generate_job_artifact_async(), timeout=10
             )
+
+        await pipeline.wait_until_idle()
+        await asyncio.to_thread(task_mgr.wait_until_settled, 5000)
+
+    @pytest.mark.asyncio
+    async def test_stale_rebuild_finished_does_not_fail_job_request(
+        self,
+        doc,
+        real_workpiece,
+        task_mgr,
+        context_initializer,
+        contour_step_class,
+        monkeypatch,
+    ):
+        """A stale ``rebuild_finished`` from an earlier chain must not
+        fail a job request that just started a new rebuild.
+
+        Such a callback can still be queued on the main thread when the
+        request connects its fallback handler (observed on Windows),
+        and must not be mistaken for the new chain settling without a
+        job.
+        """
+        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
+        assert layer.workflow is not None
+        step = contour_step_class.create(context_initializer)
+        layer.workflow.add_step(step)
+
+        pipeline = Pipeline(
+            doc,
+            task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
+        first = await asyncio.wait_for(
+            pipeline.generate_job_artifact_async(), timeout=10
+        )
+        assert first is not None
+        await pipeline.wait_until_idle()
+        await asyncio.to_thread(task_mgr.wait_until_settled, 5000)
+
+        gate = threading.Event()
+
+        class _GatedBuilder(IntentBuilder):
+            def build(self, doc_arg):
+                gate.wait(timeout=10)
+                return super().build(doc_arg)
+
+        monkeypatch.setattr(
+            "rayforge.pipeline.intent_controller.IntentBuilder",
+            _GatedBuilder,
+        )
+        pipeline.invalidate_job_output()
+        stale_generation = pipeline._intent_ctl.generation_id
+
+        request = asyncio.create_task(pipeline.generate_job_artifact_async())
+        await asyncio.sleep(0)
+
+        # Replay the settle event of the chain that finished before
+        # this request started, while the request's rebuild is gated.
+        pipeline._intent_ctl._emit_rebuild_finished(stale_generation)
+        gate.set()
+
+        handle = await asyncio.wait_for(request, timeout=10)
+        assert handle is not None
 
         await pipeline.wait_until_idle()
         await asyncio.to_thread(task_mgr.wait_until_settled, 5000)
