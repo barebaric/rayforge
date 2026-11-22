@@ -141,6 +141,11 @@ class IntentController:
         self._rebuilding: bool = False
         self._rebuild_pending: bool = False
         self._rebuild_task: Any | None = None
+        # Generation of the most recently settled rebuild chain. A
+        # ``rebuild_finished`` callback may still be queued on the main
+        # thread when a new rebuild starts, so this lets job generation
+        # waiters tell stale settle events from their own chain.
+        self._settled_generation: int = -1
         self._pause_count: int = 0
         self._auto_rebuild: bool = True
         self._data_stale_flag: bool = False
@@ -186,6 +191,16 @@ class IntentController:
     @property
     def generation_id(self) -> int:
         return self._generation_id
+
+    @property
+    def settled_generation(self) -> int:
+        """Generation of the most recently settled rebuild chain.
+
+        Stale ``rebuild_finished`` events can arrive after a newer
+        rebuild has started; comparing this against the generation at
+        request time identifies events from earlier chains.
+        """
+        return self._settled_generation
 
     @property
     def is_paused(self) -> bool:
@@ -443,7 +458,7 @@ class IntentController:
                 self._rebuild()
             else:
                 self._task_manager.schedule_on_main_thread(
-                    self._emit_rebuild_finished
+                    self._emit_rebuild_finished, gen
                 )
 
         self._rebuild_task = self._task_manager.run_thread(
@@ -462,8 +477,9 @@ class IntentController:
             self, handle=None, task_status="failed"
         )
 
-    def _emit_rebuild_finished(self) -> None:
+    def _emit_rebuild_finished(self, generation_id: int) -> None:
         """Emit ``rebuild_finished`` on the main thread."""
+        self._settled_generation = max(self._settled_generation, generation_id)
         self.rebuild_finished.send(self)
 
     def _emit_pipeline_error(self, error_kind: ErrorKind) -> None:

@@ -564,6 +564,8 @@ class Pipeline:
             )
             return
 
+        request_generation = self._intent_ctl.generation_id
+
         def _on_finished(sender, *, handle, task_status):
             self._intent_ctl.rebuild_finished.disconnect(_on_settled)
             self.job_generation_finished.disconnect(_on_finished)
@@ -581,7 +583,12 @@ class Pipeline:
             # thread before it.  Reaching this without having received
             # job_generation_finished means this rebuild will never
             # produce a job, so fail the request instead of leaving
-            # send/frame wedged forever.
+            # send/frame wedged forever.  A settle event from an older
+            # chain may still be queued on the main thread when the
+            # request connects its handlers; ignore it, or the stale
+            # event would fail the request before its own rebuild runs.
+            if self._intent_ctl.settled_generation <= request_generation:
+                return
             if self._intent_ctl.has_pending_debounce():
                 return
             self._intent_ctl.rebuild_finished.disconnect(_on_settled)
