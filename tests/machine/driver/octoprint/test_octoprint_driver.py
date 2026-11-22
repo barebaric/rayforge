@@ -125,7 +125,7 @@ class TestClassAttributes:
         assert "OctoPrint" in OctoPrintDriver.subtitle
 
     def test_maturity(self):
-        assert OctoPrintDriver.maturity == DriverMaturity.UNTESTED
+        assert OctoPrintDriver.maturity == DriverMaturity.STABLE
 
     def test_uses_gcode(self):
         assert OctoPrintDriver.uses_gcode is True

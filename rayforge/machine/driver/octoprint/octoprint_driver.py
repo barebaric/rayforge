@@ -31,7 +31,6 @@ from ..driver import (
     DeviceError,
     DeviceStatus,
     Driver,
-    DriverMaturity,
     DriverPrecheckError,
     DriverSetupError,
     Pos,
@@ -112,7 +111,6 @@ class OctoPrintDriver(Driver):
     reports_granular_progress = False
     uses_gcode = True
     supports_probing = True
-    maturity = DriverMaturity.UNTESTED
     # Advertised by OctoPrint's discovery plugin; used for network
     # device discovery. The TXT record's ``path`` key (the URL
     # prefix the server is mounted under, e.g. ``/`` or

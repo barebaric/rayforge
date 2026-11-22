@@ -20,7 +20,7 @@ Marlin, Smoothieware und andere Firmware-Typen.
 | **Smoothieware** | Alle    | Kompatibel              | SmoothieDriver (Telnet)                  | Netzwerkbasiert            |
 | **Marlin**       | 2.0+    | Kompatibel              | Marlin Serial                            | Laser-Modus erforderlich   |
 | **ESP3D**        | Alle    | Kompatibel              | grblHAL (Telnet) / Web API               | v2: Telnet, v3: Web API    |
-| **OctoPrint**    | Alle    | Experimentell           | OctoPrint                                | Siehe Hinweise unten       |
+| **OctoPrint**    | Alle    | Kompatibel              | OctoPrint                                | Siehe Hinweise unten       |
 | **Andere**       | -       | Nicht unterstützt       | -                                        | Support anfordern          |
 
 ---
@@ -312,7 +312,6 @@ Marlin-Firmware kommuniziert. Marlin 2.0+ kann Laser steuern, wenn richtig konfi
 
 **Einschränkungen:**
 
-- Experimentell — Rückmeldungen willkommen
 - Lesen/Schreiben von Einstellungen (wie GRBLs `$$`) nicht unterstützt
 - Keine Netzwerkverbindung (nur USB)
 
@@ -388,7 +387,7 @@ Marlin-Firmware kommuniziert. Marlin 2.0+ kann Laser steuern, wenn richtig konfi
 | **Arduino CNC Shield** | GRBL 1.1          | Ausgezeichnet    |
 | **MKS DLC32**          | grblHAL           | Ausgezeichnet    |
 | **Ruida**              | Proprietär        | Experimentell    |
-| **OctoPrint (Pi)**     | Diverse           | Experimentell    |
+| **OctoPrint (Pi)**     | Diverse           | Gut              |
 
 ### Empfohlene Controller
 
@@ -590,11 +589,9 @@ CO2 bieten Ausgangspunkte für neue Maschinen.
 
 ---
 
-## Experimentelle Treiber
+## OctoPrint
 
-### OctoPrint
-
-Rayforge enthält einen experimentellen OctoPrint-Treiber, der G-Code direkt an einen
+Rayforge enthält einen OctoPrint-Treiber, der G-Code direkt an einen
 OctoPrint-Server über das Netzwerk sendet. Dies ist nützlich, wenn dein Laser mit einem Raspberry Pi
 oder einem anderen Rechner mit OctoPrint verbunden ist.
 
@@ -618,7 +615,6 @@ oder einem anderen Rechner mit OctoPrint verbunden ist.
 
 **Einschränkungen:**
 
-- Experimentell und auf echter Hardware ungetestet — Feedback willkommen
 - Firmware-Einstellungen können nicht über OctoPrint gelesen oder geschrieben werden
 - Messergebnisse werden von OctoPrint nicht gemeldet
 - WCS-Versatz-Lesezugriff wird nicht unterstützt
@@ -635,7 +631,7 @@ Benutzer haben Unterstützung angefordert für:
 
 **Status:** Derzeit nicht unterstützt. Funktionsanfragen auf GitHub willkommen.
 
-### Mitwirken
+## Mitwirken
 
 Um Firmware-Support hinzuzufügen:
 

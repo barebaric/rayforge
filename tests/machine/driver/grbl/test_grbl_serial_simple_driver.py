@@ -194,7 +194,7 @@ class TestRegistry:
     def test_metadata(self):
         assert GrblSerialSimpleDriver.machine_space_wcs
         assert GrblSerialSimpleDriver.supports_settings
-        assert GrblSerialSimpleDriver.maturity == DriverMaturity.EXPERIMENTAL
+        assert GrblSerialSimpleDriver.maturity == DriverMaturity.STABLE
 
     def test_setup_vars(self):
         varset = GrblSerialSimpleDriver.get_setup_vars()

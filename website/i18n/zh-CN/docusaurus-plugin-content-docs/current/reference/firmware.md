@@ -18,7 +18,7 @@ Rayforge 主要为**基于 GRBL 的控制器**设计，但也支持 Marlin、Smo
 | **Smoothieware** | 全部  | 兼容     | SmoothieDriver (Telnet)                  | 基于网络                |
 | **Marlin**       | 2.0+  | 兼容     | Marlin 串口                              | 需要激光模式            |
 | **ESP3D**        | 全部  | 兼容     | grblHAL (Telnet) / Web API               | v2: Telnet, v3: Web API |
-| **OctoPrint**    | 全部  | 实验性   | OctoPrint                                | 见下方说明              |
+| **OctoPrint**    | 全部  | 兼容     | OctoPrint                                | 见下方说明              |
 | **其他**         | -     | 不支持   | -                                        | 请求支持                |
 
 ---
@@ -299,7 +299,6 @@ Rayforge 包含一个专用的 MarlinSerialDriver，通过串口 (USB) 连接到
 
 **限制：**
 
-- 实验性 — 欢迎反馈
 - 不支持读取/写入设置（如 GRBL 的 `$$`）
 - 无网络连接（仅 USB）
 
@@ -375,7 +374,7 @@ Rayforge 包含一个专用的 MarlinSerialDriver，通过串口 (USB) 连接到
 | **Arduino CNC Shield** | GRBL 1.1 | 优秀          |
 | **MKS DLC32**          | grblHAL  | 优秀          |
 | **Ruida**              | 专有     | 实验性        |
-| **OctoPrint (Pi)**     | 多种     | 实验性        |
+| **OctoPrint (Pi)**     | 多种     | 良好          |
 
 ### 推荐控制器
 
@@ -568,11 +567,9 @@ RPC 连接。Generic Ruida RPA 和 Monport MP-570 60W CO2 设备配置文件为�
 
 ---
 
-## 实验性驱动程序
+## OctoPrint
 
-### OctoPrint
-
-Rayforge 包含一个实验性的 OctoPrint 驱动程序，可通过网络直接向 OctoPrint 服务器提交 G 代码。如果您的激光器连接到运行 OctoPrint 的 Raspberry
+Rayforge 包含一个 OctoPrint 驱动程序，可通过网络直接向 OctoPrint 服务器提交 G 代码。如果您的激光器连接到运行 OctoPrint 的 Raspberry
 Pi 或其他计算机上，这将非常有用。
 
 **功能：**
@@ -594,7 +591,6 @@ Pi 或其他计算机上，这将非常有用。
 
 **限制：**
 
-- 实验性，未在真实硬件上测试 — 欢迎反馈
 - 无法通过 OctoPrint 读取或写入固件设置
 - OctoPrint 不报告探针结果
 - 不支持读取 WCS 偏移
@@ -611,7 +607,7 @@ Pi 或其他计算机上，这将非常有用。
 
 **状态：** 目前不支持。欢迎在 GitHub 上提交功能请求。
 
-### 贡献
+## 贡献
 
 要添加固件支持：
 

@@ -25,7 +25,7 @@ Smoothieware, and other firmware types.
 | **Smoothieware** | All     | Compatible    | SmoothieDriver (Telnet)                  | Network-based           |
 | **Marlin**       | 2.0+    | Compatible    | Marlin Serial                            | Laser mode required     |
 | **ESP3D**        | All     | Compatible    | grblHAL (Telnet) / Web API               | v2: Telnet, v3: Web API |
-| **OctoPrint**    | All     | Experimental  | OctoPrint                                | See notes below         |
+| **OctoPrint**    | All     | Compatible    | OctoPrint                                | See notes below         |
 | **Other**        | -       | Not supported | -                                        | Request support         |
 
 ---
@@ -322,7 +322,6 @@ Marlin 2.0+ can control lasers when properly configured.
 
 **Limitations:**
 
-- Experimental — feedback welcome
 - Settings read/write (like GRBL's `$$`) not supported
 - No network connectivity (USB only)
 
@@ -398,7 +397,7 @@ Marlin 2.0+ can control lasers when properly configured.
 | **Arduino CNC Shield** | GRBL 1.1         | Excellent        |
 | **MKS DLC32**          | grblHAL          | Excellent        |
 | **Ruida**              | Proprietary      | Experimental     |
-| **OctoPrint (Pi)**     | Various          | Experimental     |
+| **OctoPrint (Pi)**     | Various          | Good             |
 
 ### Recommended Controllers
 
@@ -561,11 +560,9 @@ provide starting points for new machines.
 
 ---
 
-## Experimental Drivers
+## OctoPrint
 
-### OctoPrint
-
-Rayforge includes an experimental OctoPrint driver that submits G-code directly to an OctoPrint
+Rayforge includes an OctoPrint driver that submits G-code directly to an OctoPrint
 server over the network. This is useful if your laser is connected to a Raspberry Pi or other
 machine running OctoPrint.
 
@@ -588,14 +585,13 @@ machine running OctoPrint.
 
 **Limitations:**
 
-- Experimental and untested on real hardware -- feedback welcome
 - Cannot read or write firmware settings through OctoPrint
 - Probe results are not reported by OctoPrint
 - WCS offset reads are not supported
 
 ---
 
-### Contributing
+## Contributing
 
 To add firmware support:
 
