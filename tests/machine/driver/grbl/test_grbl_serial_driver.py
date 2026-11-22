@@ -21,6 +21,7 @@ from rayforge.machine.driver.driver import (
 )
 from rayforge.machine.driver.grbl import GrblSerialDriver
 from rayforge.machine.driver.session_state import from_session_state
+from rayforge.machine.models.machine import Machine
 from rayforge.pipeline.encoder.gcode import GcodeEncoder
 
 FAST_CONFIG = {
@@ -125,6 +126,33 @@ class SignalRecorder:
 
 def sent_text(mock) -> bytes:
     return b"".join(mock.sent())
+
+
+class TestHomingTimeoutEstimate:
+    def test_scales_with_the_longest_axis(self, lite_context):
+        machine = Machine(lite_context)
+        machine.max_travel_speed = 3000
+        x_axis = machine.axes.get(Axis.X)
+        y_axis = machine.axes.get(Axis.Y)
+        assert x_axis is not None
+        assert y_axis is not None
+        x_axis.extents = (0.0, 2208.0)
+        y_axis.extents = (0.0, 2335.0)
+        driver = GrblSerialDriver(lite_context, machine)
+
+        expected = 2335.0 / 3000.0 * 60.0 * 8.0
+        assert driver._estimate_homing_timeout() == pytest.approx(expected)
+
+    def test_has_a_minimum_budget(self, lite_context):
+        machine = Machine(lite_context)
+        machine.max_travel_speed = 3000
+        for axis in (Axis.X, Axis.Y, Axis.Z):
+            cfg = machine.axes.get(axis)
+            assert cfg is not None
+            cfg.extents = (0.0, 10.0)
+        driver = GrblSerialDriver(lite_context, machine)
+
+        assert driver._estimate_homing_timeout() == 30.0
 
 
 def make_driver(context, machine) -> tuple[GrblSerialDriver, MockTransport]:

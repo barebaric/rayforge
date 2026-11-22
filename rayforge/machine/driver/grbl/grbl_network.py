@@ -4,7 +4,7 @@ from typing import Any, cast
 
 from raydriver.core.discovery.fingerprints import HttpFingerprint
 from raydriver.core.discovery.spec import DiscoverySpec, MdnsRecognizer
-from raydriver.esp3d import Esp3dConfig, Esp3dSession
+from raydriver.esp3d import Esp3dSession
 
 from ....core.varset import (
     ChoiceVar,
@@ -125,12 +125,13 @@ class GrblNetworkDriver(GrblSerialDriver):
         )
 
         self._session = Esp3dSession(
-            config=Esp3dConfig(
-                host=host,
-                http_port=int(port),
-                ws_port=ws_port,
-                protocol=protocol,
-            ),
+            config={
+                "host": host,
+                "http_port": int(port),
+                "ws_port": ws_port,
+                "protocol": protocol,
+                "homing_timeout": self._estimate_homing_timeout(),
+            },
             dialect=self._dialect_templates(),
             event_callback=self._on_session_event,
         )

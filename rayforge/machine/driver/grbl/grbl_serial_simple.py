@@ -132,6 +132,7 @@ class GrblSerialSimpleDriver(SessionDriverBase):
             config={
                 "port": port,
                 "baudrate": int(baudrate),
+                "homing_timeout": self._estimate_homing_timeout(),
             },
             dialect=self._dialect_templates(),
             event_callback=self._on_session_event,

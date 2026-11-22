@@ -50,8 +50,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   lifts straight up before traveling between probe points
 - Machine: FluidNC devices use the HTTP port for the WebSocket when
   no WebSocket port is configured
-- Machine: homing no longer times out after 10 seconds on large
-  machines; the driver waits up to 10 minutes for the homing cycle
+- Machine: homing no longer times out on large machines; the wait is
+  derived from the longest axis travel and the configured travel speed
+  instead of the short interactive-command budget
 
 ## 1.14.0
 
