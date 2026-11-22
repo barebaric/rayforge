@@ -57,6 +57,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Machine: homing no longer times out on large machines; the wait is
   derived from the longest axis travel and the configured travel speed
   instead of the short interactive-command budget
+- Windows: the app starts on machines whose graphics driver crashes
+  GTK's OpenGL renderer. The cairo renderer is selected by default
+  there now, unless `GSK_RENDERER` is set explicitly (#684)
 
 ## 1.14.0
 

@@ -30,3 +30,30 @@ def test_app_does_not_set_gtk_input_module_on_other_platforms(monkeypatch):
     importlib.reload(app)
 
     assert "GTK_IM_MODULE" not in os.environ
+
+
+def test_app_uses_cairo_gsk_renderer_on_windows(monkeypatch):
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.delenv("GSK_RENDERER", raising=False)
+
+    importlib.reload(app)
+
+    assert os.environ["GSK_RENDERER"] == "cairo"
+
+
+def test_app_preserves_windows_gsk_renderer_override(monkeypatch):
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setenv("GSK_RENDERER", "gl")
+
+    importlib.reload(app)
+
+    assert os.environ["GSK_RENDERER"] == "gl"
+
+
+def test_app_does_not_set_gsk_renderer_on_other_platforms(monkeypatch):
+    monkeypatch.setattr(sys, "platform", "linux")
+    monkeypatch.delenv("GSK_RENDERER", raising=False)
+
+    importlib.reload(app)
+
+    assert "GSK_RENDERER" not in os.environ
