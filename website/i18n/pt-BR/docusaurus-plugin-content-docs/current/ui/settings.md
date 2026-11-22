@@ -85,7 +85,7 @@ O diálogo de configurações também inclui páginas para gerenciar outras part
 uma possui sua própria documentação:
 
 - [Máquinas](../application-settings/machines.md) — adicionar, remover e configurar suas cortadoras
-  a laser
+  a laser (também disponível em **Máquina → Manage Machines…**)
 - [Materiais](../application-settings/materials.md) — gerenciar suas bibliotecas de materiais
 - [Receitas](../application-settings/recipes.md) — gerenciar receitas de operações salvas
 - [Regras de Cor](../application-settings/color-rules.md) — mapear cores SVG para tipos de etapa

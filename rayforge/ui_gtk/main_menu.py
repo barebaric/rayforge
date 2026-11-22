@@ -1,7 +1,8 @@
 from gettext import gettext as _
 
-from gi.repository import Gio, Gtk
+from gi.repository import Gio, GLib, Gtk
 
+from ..machine.models.machine import Machine
 from ..machine.models.macro import Macro
 from .action_registry import action_registry
 
@@ -203,6 +204,24 @@ class MainMenu(Gio.Menu):
 
         # Machine Menu
         machine_menu = Gio.Menu()
+
+        # Configured machines, rebuilt dynamically whenever a machine
+        # is added, removed, renamed, or activated. Marking the active
+        # one is done by the stateful 'select-machine' action.
+        self.machines_submenu = Gio.Menu()
+        self.dynamic_machines_section = Gio.Menu()
+        self.machines_submenu.append_section(
+            None, self.dynamic_machines_section
+        )
+        machine_menu.append_submenu(_("Select Machine"), self.machines_submenu)
+
+        machine_management_group = Gio.Menu()
+        machine_management_group.append(_("Add Machine…"), "win.machine-add")
+        machine_management_group.append(
+            _("Manage Machines…"), "win.machine-manage"
+        )
+        machine_menu.append_section(None, machine_management_group)
+
         jog_group = Gio.Menu()
         jog_group.append(_("Home"), "win.machine-home")
         jog_group.append(_("Frame"), "win.machine-frame")
@@ -287,6 +306,28 @@ class MainMenu(Gio.Menu):
         for info in items:
             if info.label:
                 group.append(info.label, f"win.{info.action_name}")
+
+    def update_machines_menu(self, machines: list[Machine]):
+        """Clears and rebuilds the dynamic machine selection section.
+
+        Each entry targets the stateful ``win.select-machine`` action
+        with the machine ID, so the menu renders the active machine as
+        a checked radio item.
+        """
+        self.dynamic_machines_section.remove_all()
+
+        if not machines:
+            # Action is None, so it will appear insensitive
+            self.dynamic_machines_section.append(_("(No Machines)"), None)
+            return
+
+        for machine in machines:
+            label = _escape_menu_label(machine.name)
+            item = Gio.MenuItem.new(label, "win.select-machine")
+            item.set_action_and_target_value(
+                "win.select-machine", GLib.Variant.new_string(machine.id)
+            )
+            self.dynamic_machines_section.append_item(item)
 
     def update_macros_menu(self, macros: list[Macro]):
         """Clears and rebuilds the dynamic macro execution menu items."""

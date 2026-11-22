@@ -8,19 +8,25 @@ description:
 
 ![Paramètres des Machines](/screenshots/app-settings-machines.webp)
 
-La page Machines dans les Paramètres de l'Application affiche une liste de toutes les machines
-configurées. Chaque entrée affiche le nom de la machine et dispose de boutons pour la modifier ou la
-supprimer. La machine actuellement active est marquée d'une icône de coche.
+La page **Machines** affiche une liste de toutes les machines configurées. Chaque entrée affiche le
+nom de la machine et dispose de boutons pour la modifier ou la supprimer. La machine actuellement
+active est marquée d'une icône de coche.
+
+Ouvrez la page depuis la fenêtre principale avec **Machine → Manage Machines…**, ou sélectionnez
+**Machines** dans les Paramètres de l'Application (<kbd>ctrl+comma</kbd>).
 
 ## Ajouter une Machine
 
-1. Cliquez sur le bouton **Add Machine** en bas de la liste
-2. Sélectionnez un profil d'appareil dans la liste comme modèle — chaque profil préconfigure les
+Le moyen le plus rapide d'ajouter une machine est **Machine → Add Machine…** dans la fenêtre
+principale, qui ouvre directement l'assistant de configuration. Depuis la page Machines, cliquez sur
+le bouton **Add Machine** en bas de la liste, puis :
+
+1. Sélectionnez un profil d'appareil dans la liste comme modèle — chaque profil préconfigure les
    paramètres de la machine et le dialecte G-code
 
 ![Ajouter une Machine](/screenshots/app-settings-machines-add.webp)
 
-3. Le [dialogue de paramètres de machine](../machine/general.md) s'ouvre pour vous permettre
+2. Le [dialogue de paramètres de machine](../machine/general.md) s'ouvre pour vous permettre
    d'ajuster la configuration
 
 Alternativement :
@@ -52,8 +58,10 @@ sont pas remplacées lors de l'examen des mises à jour du profil.
 
 ## Changer la Machine Active
 
-Utilisez le menu déroulant des machines dans l'en-tête de la fenêtre principale pour basculer entre
-les machines configurées. La sélection est mémorisée entre les sessions.
+Le sous-menu **Machine → Select Machine** liste toutes les machines configurées ; la machine active
+porte une coche. Sélectionnez une autre entrée pour basculer vers elle. Vous pouvez également utiliser le menu
+déroulant des machines dans l'en-tête de la fenêtre principale. La sélection est mémorisée entre les
+sessions.
 
 ## Supprimer une Machine
 

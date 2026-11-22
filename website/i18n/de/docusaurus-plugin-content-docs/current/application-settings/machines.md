@@ -8,19 +8,25 @@ description:
 
 ![Maschinen-Einstellungen](/screenshots/app-settings-machines.webp)
 
-Die Maschinen-Seite in den Anwendungseinstellungen zeigt eine Liste aller konfigurierten Maschinen.
-Jeder Eintrag zeigt den Maschinennamen und hat Schaltflächen zum Bearbeiten oder Löschen. Die
-aktuell aktive Maschine ist mit einem Häkchen markiert.
+Die Seite **Maschinen** zeigt eine Liste aller konfigurierten Maschinen. Jeder Eintrag zeigt den
+Maschinennamen und hat Schaltflächen zum Bearbeiten oder Löschen. Die aktuell aktive Maschine ist
+mit einem Häkchen markiert.
+
+Öffne die Seite über **Maschine → Manage Machines…** im Hauptfenster oder wähle **Maschinen** in den
+Anwendungseinstellungen (<kbd>ctrl+comma</kbd>).
 
 ## Eine Maschine hinzufügen
 
-1. Klicke auf die Schaltfläche **Add Machine** am unteren Ende der Liste
-2. Wähle ein Geräteprofil aus der Liste als Vorlage — jedes Profil konfiguriert die
+Der schnellste Weg, eine Maschine hinzuzufügen, ist **Maschine → Add Machine…** im Hauptfenster,
+wodurch der Konfigurations-Assistent direkt geöffnet wird. Klicke auf der Seite Maschinen auf die
+Schaltfläche **Add Machine** am unteren Ende der Liste und dann:
+
+1. Wähle ein Geräteprofil aus der Liste als Vorlage — jedes Profil konfiguriert die
    Maschineneinstellungen und den G-Code-Dialekt vor
 
 ![Maschine hinzufügen](/screenshots/app-settings-machines-add.webp)
 
-3. Der [Maschineneinstellungen-Dialog](../machine/general.md) öffnet sich, in dem du die
+2. Der [Maschineneinstellungen-Dialog](../machine/general.md) öffnet sich, in dem du die
    Konfiguration anpassen kannst
 
 Alternativ:
@@ -51,8 +57,10 @@ der Überprüfung von Profilaktualisierungen nicht ersetzt.
 
 ## Aktive Maschine wechseln
 
-Verwende das Maschinen-Dropdown in der Kopfzeile des Hauptfensters, um zwischen konfigurierten
-Maschinen zu wechseln. Die Auswahl wird zwischen Sitzungen gespeichert.
+Das Untermenü **Maschine → Select Machine** listet alle konfigurierten Maschinen auf; die aktive
+Maschine ist mit einem Häkchen markiert. Wähle einen anderen Eintrag, um zu ihr zu wechseln. Du kannst auch das
+Maschinen-Dropdown in der Kopfzeile des Hauptfensters verwenden. Die Auswahl wird zwischen Sitzungen
+gespeichert.
 
 ## Eine Maschine löschen
 

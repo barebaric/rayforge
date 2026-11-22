@@ -16,17 +16,17 @@ l'établissement d'une connexion.
 Démarrez Rayforge depuis votre menu d'applications ou en exécutant `rayforge` dans un terminal. Au
 premier lancement — lorsqu'aucune machine réelle n'a encore été configurée — l'assistant de
 configuration s'ouvre automatiquement pour que vous puissiez configurer votre machine sans chercher
-dans les menus. (Vous pouvez toujours l'ouvrir plus tard depuis **Paramètres → Machines → Add
-Machine**.)
+dans les menus. (Vous pouvez toujours l'ouvrir plus tard depuis **Machine → Add Machine…**.)
 
 ## Étape 2 : Créer une Machine avec l'Assistant
 
-Naviguez vers **Paramètres → Machines** ou appuyez sur <kbd>ctrl+comma</kbd> pour ouvrir la boîte de
-dialogue des paramètres, puis sélectionnez la page **Machines**.
+Ouvrez le menu **Machine** de la fenêtre principale et choisissez **Add Machine…**. Vous pouvez
+également sélectionner **Machine → Manage Machines…** (ou appuyer sur <kbd>ctrl+comma</kbd> et
+ouvrir la page **Machines**) puis cliquer sur **Add Machine**.
 
 ![Paramètres Machine](/screenshots/app-settings-machines.webp)
 
-Cliquez sur **Add Machine** pour ouvrir le sélecteur de machine.
+Le sélecteur de machine s'ouvre avec les profils d'appareil intégrés.
 
 ![Boîte de dialogue Add Machine](/screenshots/app-settings-machines-add.webp)
 

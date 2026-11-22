@@ -68,6 +68,7 @@ Rayforge एप्लिकेशन सुधारने में मदद �
 समर्पित दस्तावेज़ीकरण है:
 
 - [मशीनें](../application-settings/machines.md) — अपने लेज़र कटर जोड़ें, हटाएँ, और कॉन्फ़िगर करें
+  (**Machine → Manage Machines…** से भी उपलब्ध)
 - [सामग्री](../application-settings/materials.md) - अपनी सामग्री लाइब्रेरी प्रबंधित करें
 - [रेसिपी](../application-settings/recipes.md) — सहेजी गई ऑपरेशन रेसिपियाँ प्रबंधित करें
 - [रंग नियम](../application-settings/color-rules.md) — SVG रंगों को स्टेप प्रकारों से मैप करें

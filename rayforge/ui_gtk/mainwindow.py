@@ -558,6 +558,11 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Set up config signals.
         config.changed.connect(self.on_config_changed)
+        # The machine menu lists every configured machine, so rebuild it
+        # whenever the set of machines or their names change.
+        context.machine_mgr.machine_added.connect(self._update_machines_menu)
+        context.machine_mgr.machine_removed.connect(self._update_machines_menu)
+        context.machine_mgr.machine_updated.connect(self._update_machines_menu)
         task_mgr.tasks_updated.connect(self.on_running_tasks_changed)
         self.needs_homing = (
             config.machine.home_on_start if config.machine else False
@@ -694,6 +699,10 @@ class MainWindow(Adw.ApplicationWindow):
                 manager.remove_machine(placeholder.id)
 
     def _on_setup_banner_clicked(self, banner):
+        self.present_setup_wizard()
+
+    def on_add_machine_clicked(self, action, param):
+        """Presents the machine wizard to add a new machine."""
         self.present_setup_wizard()
 
     def _update_setup_banner(self):
@@ -947,6 +956,20 @@ class MainWindow(Adw.ApplicationWindow):
     def load_project(self, file_path: Path):
         """Public method to load a project from a given path."""
         self.project_cmd.load_project(file_path)
+
+    def _update_machines_menu(self, *args, **kwargs):
+        """Rebuilds the machine selection menu and syncs its action state."""
+        context = get_context()
+        machines = context.machine_mgr.get_machines()
+        self.menu_model.update_machines_menu(machines)
+
+        active_machine = context.config.machine
+        action = self.action_manager.get_action("select-machine")
+        action.set_state(
+            GLib.Variant.new_string(
+                active_machine.id if active_machine else ""
+            )
+        )
 
     def _update_macros_menu(self, *args):
         """Rebuilds the dynamic 'Macros' menu."""
@@ -1385,6 +1408,24 @@ class MainWindow(Adw.ApplicationWindow):
         delegating the logic to the MachineManager.
         """
         context = get_context()
+        context.machine_mgr.set_active_machine(machine)
+
+    def on_machine_selected_by_menu(
+        self, action: Gio.SimpleAction, param: GLib.Variant | None
+    ):
+        """Handles the 'select-machine' action from the Machine menu.
+
+        The menu marks the active machine through the action's string
+        state. Updating it immediately keeps the checkmark responsive
+        while the machine manager performs the actual switch.
+        """
+        if param is None:
+            return
+        context = get_context()
+        machine = context.machine_mgr.machines.get(param.get_string())
+        if machine is None:
+            return
+        action.set_state(param)
         context.machine_mgr.set_active_machine(machine)
 
     def _on_machine_status_changed(self, machine: Machine, state: DeviceState):
@@ -1906,6 +1947,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.surface.update_from_doc()
         self._update_workflow_views()
         self._apply_right_panel_visibility()
+        self._update_machines_menu()
         self._update_macros_menu()
         self._update_setup_banner()
 
@@ -2779,7 +2821,14 @@ class MainWindow(Adw.ApplicationWindow):
         ).present()
 
     def show_settings(self, action, param):
-        dialog = SettingsWindow(transient_for=self)
+        self._present_settings_window()
+
+    def on_manage_machines_clicked(self, action, param):
+        """Opens the Machines page of the application settings."""
+        self._present_settings_window(initial_page="machines")
+
+    def _present_settings_window(self, initial_page: str = "general"):
+        dialog = SettingsWindow(initial_page=initial_page, transient_for=self)
         dialog.present()
         dialog.connect("close-request", self._on_settings_dialog_closed)
 

@@ -58,7 +58,8 @@ Rayforge 可以发送匿名使用数据以帮助改进应用程序。不会收�
 
 设置对话框还包含管理应用程序其他部分的页面。每个页面都有自己的专门文档：
 
-- [机器](../application-settings/machines.md) — 添加、移除和配置您的激光切割机
+- [机器](../application-settings/machines.md) — 添加、移除和配置您的激光切割机（也可以通过 **机器 →
+  Manage Machines…** 访问）
 - [材料](../application-settings/materials.md) — 管理您的材料库
 - [配方](../application-settings/recipes.md) — 管理保存的操作配方
 - [颜色规则](../application-settings/color-rules.md) — 将 SVG 颜色映射到步骤类型
