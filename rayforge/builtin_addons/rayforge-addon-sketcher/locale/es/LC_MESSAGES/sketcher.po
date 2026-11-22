@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-03 17:02+0100\n"
+"POT-Creation-Date: 2026-11-21 12:21+0100\n"
 "PO-Revision-Date: 2025-08-08 10:00+0200\n"
 "Last-Translator: Samuel Abels\n"
 "Language-Team: Spanish <LL@li.org>\n"
@@ -28,163 +28,6 @@ msgstr "Parámetros que controlan la geometría de este boceto"
 #: sketcher/core/sketch.py
 msgid "Sketch"
 msgstr "Boceto"
-
-#: sketcher/core/constraints/equal_length.py
-msgid "Equal Length"
-msgstr "Longitud Igual"
-
-#: sketcher/core/constraints/equal_length.py
-msgid "{} entities"
-msgstr "{} entidades"
-
-#: sketcher/core/constraints/parallelogram.py
-msgid "Parallelogram"
-msgstr "Paralelogramo"
-
-#: sketcher/core/constraints/parallelogram.py
-msgid "Origin at {}"
-msgstr "Origen en {}"
-
-#: sketcher/core/constraints/point_on_curve.py
-msgid "Point on Curve"
-msgstr "Punto en Curva"
-
-#: sketcher/core/constraints/point_on_curve.py
-#: sketcher/core/constraints/point_on_line.py
-msgid "Point at {}"
-msgstr "Punto en {}"
-
-#: sketcher/core/constraints/point_on_line.py
-msgid "Point on Line"
-msgstr "Punto en Línea"
-
-#: sketcher/core/constraints/collinear.py
-msgid "Collinear"
-msgstr "Colineal"
-
-#: sketcher/core/constraints/collinear.py
-msgid "{}, {}, {}"
-msgstr "{}, {}, {}"
-
-#: sketcher/core/constraints/tangent.py
-#: sketcher/ui_gtk/tools/tangent_constraint_tool.py
-msgid "Tangent"
-msgstr "Tangente"
-
-#: sketcher/core/constraints/tangent.py
-msgid "Line to {} at {}"
-msgstr "Línea a {} en {}"
-
-#: sketcher/core/constraints/rotational.py
-msgid "Rotational Array"
-msgstr "Matriz rotacional"
-
-#: sketcher/core/constraints/distance.py sketcher/ui_gtk/tools/offset_tool.py
-#: sketcher/ui_gtk/tools/distance_constraint_tool.py
-msgid "Distance"
-msgstr "Distancia"
-
-#: sketcher/core/constraints/distance.py sketcher/core/constraints/vertical.py
-#: sketcher/core/constraints/symmetry.py
-#: sketcher/core/constraints/horizontal.py
-#: sketcher/core/constraints/aspect_ratio.py
-msgid "From {} to {}"
-msgstr "De {} a {}"
-
-#: sketcher/core/constraints/distance.py sketcher/core/constraints/vertical.py
-#: sketcher/core/constraints/horizontal.py
-msgid "Enter length or expression."
-msgstr "Introduce la longitud o una expresión."
-
-#: sketcher/core/constraints/vertical.py
-#: sketcher/ui_gtk/tools/vertical_constraint_tool.py
-msgid "Vertical"
-msgstr "Vertical"
-
-#: sketcher/core/constraints/equal_distance.py
-msgid "Equal Distance"
-msgstr "Distancia Igual"
-
-#: sketcher/core/constraints/equal_distance.py
-msgid "{}-{} and {}-{}"
-msgstr "{}-{} y {}-{}"
-
-#: sketcher/core/constraints/perpendicular.py
-#: sketcher/ui_gtk/tools/perpendicular_constraint_tool.py
-msgid "Perpendicular"
-msgstr "Perpendicular"
-
-#: sketcher/core/constraints/perpendicular.py
-msgid "Between {} and {}"
-msgstr "Entre {} y {}"
-
-#: sketcher/core/constraints/symmetry.py
-#: sketcher/ui_gtk/tools/symmetry_constraint_tool.py
-msgid "Symmetry"
-msgstr "Simetría"
-
-#: sketcher/core/constraints/horizontal.py
-#: sketcher/ui_gtk/tools/horizontal_constraint_tool.py
-msgid "Horizontal"
-msgstr "Horizontal"
-
-#: sketcher/core/constraints/base.py
-msgid "Enter value or expression."
-msgstr "Introduce un valor o una expresión."
-
-#: sketcher/core/constraints/angle.py
-#: sketcher/ui_gtk/tools/angle_constraint_tool.py
-msgid "Angle"
-msgstr "Ángulo"
-
-#: sketcher/core/constraints/angle.py
-msgid "Between two lines"
-msgstr "Entre dos líneas"
-
-#: sketcher/core/constraints/angle.py
-msgid "Enter angle in degrees or expression."
-msgstr "Introduce el ángulo en grados o una expresión."
-
-#: sketcher/core/constraints/diameter.py
-#: sketcher/ui_gtk/tools/diameter_constraint_tool.py
-msgid "Diameter"
-msgstr "Diámetro"
-
-#: sketcher/core/constraints/diameter.py
-msgid "Circle at {}"
-msgstr "Círculo en {}"
-
-#: sketcher/core/constraints/diameter.py
-msgid "Enter diameter or expression."
-msgstr "Introduce el diámetro o una expresión."
-
-#: sketcher/core/constraints/coincident.py
-#: sketcher/ui_gtk/tools/coincident_constraint_tool.py
-msgid "Coincident"
-msgstr "Coincidente"
-
-#: sketcher/core/constraints/coincident.py
-msgid "At {}"
-msgstr "En {}"
-
-#: sketcher/core/constraints/radius.py
-#: sketcher/ui_gtk/tools/circular_array_tool.py
-#: sketcher/ui_gtk/tools/radius_constraint_tool.py
-msgid "Radius"
-msgstr "Radio"
-
-#: sketcher/core/constraints/radius.py
-msgid "{} at {}"
-msgstr "{} en {}"
-
-#: sketcher/core/constraints/radius.py
-msgid "Enter radius or expression (e.g. 'width/2')."
-msgstr "Introduce el radio o una expresión (p. ej., 'ancho/2')."
-
-#: sketcher/core/constraints/aspect_ratio.py
-#: sketcher/ui_gtk/tools/aspect_ratio_constraint_tool.py
-msgid "Aspect Ratio"
-msgstr "Relación de aspecto"
 
 #: sketcher/core/commands/circle.py
 msgid "Add Circle"
@@ -429,6 +272,10 @@ msgid "Symmetric"
 msgstr "Simétrico"
 
 #: sketcher/ui_gtk/tools/symmetry_constraint_tool.py
+msgid "Symmetry"
+msgstr "Simetría"
+
+#: sketcher/ui_gtk/tools/symmetry_constraint_tool.py
 msgid "Add Symmetry Constraint"
 msgstr "Añadir restricción de simetría"
 
@@ -535,8 +382,16 @@ msgid "Waypoint"
 msgstr "Punto de ruta"
 
 #: sketcher/ui_gtk/tools/aspect_ratio_constraint_tool.py
+msgid "Aspect Ratio"
+msgstr "Relación de aspecto"
+
+#: sketcher/ui_gtk/tools/aspect_ratio_constraint_tool.py
 msgid "Add Aspect Ratio Constraint"
 msgstr "Añadir restricción de relación de aspecto"
+
+#: sketcher/ui_gtk/tools/angle_constraint_tool.py
+msgid "Angle"
+msgstr "Ángulo"
 
 #: sketcher/ui_gtk/tools/angle_constraint_tool.py
 msgid "Add Angle Constraint"
@@ -576,6 +431,10 @@ msgid "Create"
 msgstr "Crear"
 
 #: sketcher/ui_gtk/tools/tangent_constraint_tool.py
+msgid "Tangent"
+msgstr "Tangente"
+
+#: sketcher/ui_gtk/tools/tangent_constraint_tool.py
 msgid "Add Tangent Constraint"
 msgstr "Añadir restricción de tangencia"
 
@@ -586,6 +445,10 @@ msgstr "Elipse"
 #: sketcher/ui_gtk/tools/circle_tool.py
 msgid "Constrain to circle"
 msgstr "Restringir a círculo"
+
+#: sketcher/ui_gtk/tools/vertical_constraint_tool.py
+msgid "Vertical"
+msgstr "Vertical"
 
 #: sketcher/ui_gtk/tools/vertical_constraint_tool.py
 msgid "Add Vertical Constraint"
@@ -623,6 +486,11 @@ msgstr "Centro X"
 #: sketcher/ui_gtk/tools/circular_array_tool.py
 msgid "Center Y"
 msgstr "Centro Y"
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+#: sketcher/ui_gtk/tools/radius_constraint_tool.py
+msgid "Radius"
+msgstr "Radio"
 
 #: sketcher/ui_gtk/tools/circular_array_tool.py
 msgid "Rotate copies"
@@ -731,9 +599,18 @@ msgstr ""
 "positivos agrandan los contornos cerrados; los contornos abiertos se "
 "convierten en ranuras."
 
+#: sketcher/ui_gtk/tools/offset_tool.py
+#: sketcher/ui_gtk/tools/distance_constraint_tool.py
+msgid "Distance"
+msgstr "Distancia"
+
 #: sketcher/ui_gtk/tools/text_box_tool.py
 msgid "Text Box"
 msgstr "Cuadro de texto"
+
+#: sketcher/ui_gtk/tools/diameter_constraint_tool.py
+msgid "Diameter"
+msgstr "Diámetro"
 
 #: sketcher/ui_gtk/tools/diameter_constraint_tool.py
 msgid "Add Diameter Constraint"
@@ -764,6 +641,10 @@ msgid "Smooth"
 msgstr "Suave"
 
 #: sketcher/ui_gtk/tools/coincident_constraint_tool.py
+msgid "Coincident"
+msgstr "Coincidente"
+
+#: sketcher/ui_gtk/tools/coincident_constraint_tool.py
 msgid "Add Coincident Constraint"
 msgstr "Añadir restricción de coincidencia"
 
@@ -776,8 +657,16 @@ msgid "Add Point On Shape"
 msgstr "Añadir punto en forma"
 
 #: sketcher/ui_gtk/tools/perpendicular_constraint_tool.py
+msgid "Perpendicular"
+msgstr "Perpendicular"
+
+#: sketcher/ui_gtk/tools/perpendicular_constraint_tool.py
 msgid "Add Perpendicular Constraint"
 msgstr "Añadir restricción perpendicular"
+
+#: sketcher/ui_gtk/tools/horizontal_constraint_tool.py
+msgid "Horizontal"
+msgstr "Horizontal"
 
 #: sketcher/ui_gtk/tools/horizontal_constraint_tool.py
 msgid "Add Horizontal Constraint"

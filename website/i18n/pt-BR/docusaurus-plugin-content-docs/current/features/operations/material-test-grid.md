@@ -17,8 +17,8 @@ nova camada com o nome do teste, com uma peça e uma operação correspondente, 
 configurações da grade aparecem em **Test Settings** no painel de propriedades à direita, de modo
 que a tela e a grade continuam visíveis enquanto você as altera. Cada alteração reconstrói a grade
 na hora, como um único passo que você pode desfazer. Selecione a grade novamente mais tarde para
-trazer as configurações dela de volta. Os [testes de intervalo e de
-foco](interval-and-focus-tests.md) funcionam da mesma forma.
+trazer as configurações dela de volta. Os
+[testes de intervalo e de foco](interval-and-focus-tests.md) funcionam da mesma forma.
 
 ![Configurações da Grade de Teste de Material](/screenshots/material-test.webp)
 

@@ -10,13 +10,11 @@ description: "Rayforge विकास वातावरण सेट करे
 
 ### पूर्वापेक्षाएँ
 
-Pixi इंस्टॉलेशन निर्देशों के लिए
-[इंस्टॉलेशन गाइड](../../getting-started/installation.mdx#linux-pixi) देखें.
+Pixi इंस्टॉलेशन निर्देशों के लिए [इंस्टॉलेशन गाइड](../../getting-started/installation.mdx#linux-pixi) देखें.
 
 ### Pre-commit हुक (वैकल्पिक)
 
-प्रत्येक कमिट से पहले अपना कोड स्वतः फ़ॉर्मेट और लिंट करने के लिए, आप pre-commit हुक इंस्टॉल कर सकते
-हैं:
+प्रत्येक कमिट से पहले अपना कोड स्वतः फ़ॉर्मेट और लिंट करने के लिए, आप pre-commit हुक इंस्टॉल कर सकते हैं:
 
 ```bash
 pixi run pre-commit-install
@@ -36,9 +34,8 @@ pixi run pre-commit-install
 
 ### पूर्वापेक्षाएँ
 
-Pixi इंस्टॉलेशन निर्देशों के लिए
-[इंस्टॉलेशन गाइड](../../getting-started/installation.mdx#linux-pixi) देखें. Pixi Apple Silicon
-(`osx-arm64`) पर macOS का समर्थन करता है.
+Pixi इंस्टॉलेशन निर्देशों के लिए [इंस्टॉलेशन गाइड](../../getting-started/installation.mdx#linux-pixi) देखें. Pixi
+Apple Silicon (`osx-arm64`) पर macOS का समर्थन करता है.
 
 ### उपयोगी कमांड
 
@@ -81,8 +78,8 @@ bash scripts/win/win_setup_dev.sh
 
 :::note
 
-Pre-commit हुक के लिए git कमांड MSYS2 UCRT64 शेल के भीतर से चलानी होती हैं, PowerShell या Command
-Prompt से नहीं.
+Pre-commit हुक के लिए git कमांड MSYS2 UCRT64 शेल के भीतर से चलानी होती हैं, PowerShell या Command Prompt से
+नहीं.
 
 :::
 

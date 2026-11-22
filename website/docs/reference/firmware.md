@@ -562,9 +562,9 @@ provide starting points for new machines.
 
 ## OctoPrint
 
-Rayforge includes an OctoPrint driver that submits G-code directly to an OctoPrint
-server over the network. This is useful if your laser is connected to a Raspberry Pi or other
-machine running OctoPrint.
+Rayforge includes an OctoPrint driver that submits G-code directly to an OctoPrint server over the
+network. This is useful if your laser is connected to a Raspberry Pi or other machine running
+OctoPrint.
 
 **Features:**
 

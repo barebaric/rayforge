@@ -17,8 +17,8 @@ cuadrícula en una capa nueva con el nombre de la prueba, con una pieza de traba
 correspondiente, y la selecciona. Los ajustes de la cuadrícula aparecen en **Test Settings** en el
 panel de propiedades a la derecha, de modo que el lienzo y la cuadrícula siguen a la vista mientras
 los cambias. Cada cambio reconstruye la cuadrícula al instante, como un solo paso que puedes
-deshacer. Vuelve a seleccionar la cuadrícula más tarde para recuperar sus ajustes. Las [pruebas de
-intervalo y de enfoque](interval-and-focus-tests.md) funcionan igual.
+deshacer. Vuelve a seleccionar la cuadrícula más tarde para recuperar sus ajustes. Las
+[pruebas de intervalo y de enfoque](interval-and-focus-tests.md) funcionan igual.
 
 ![Ajustes de Cuadrícula de Prueba de Material](/screenshots/material-test.webp)
 
@@ -54,8 +54,8 @@ modo que todas las celdas permanezcan visualmente comparables.
 
 ## Configurar la Cuadrícula
 
-La sección Test Settings muestra primero los ajustes de la cuadrícula, luego las etiquetas y
-después los rangos de parámetros. El cabezal láser y el posprocesado se quedan en los ajustes de la
+La sección Test Settings muestra primero los ajustes de la cuadrícula, luego las etiquetas y después
+los rangos de parámetros. El cabezal láser y el posprocesado se quedan en los ajustes de la
 operación.
 
 Los ajustes de **cuadrícula** controlan la prueba en sí. El tipo de prueba determina si cada celda

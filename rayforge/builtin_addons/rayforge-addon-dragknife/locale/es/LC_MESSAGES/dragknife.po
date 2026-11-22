@@ -1,0 +1,144 @@
+# Spanish translations for PACKAGE package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-11 00:59+0200\n"
+"PO-Revision-Date: 2026-09-11 00:59+0200\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: dragknife/widgets/pages.py
+msgid "Drag Knife"
+msgstr "Cuchilla de arrastre"
+
+#: dragknife/widgets/pages.py
+msgid "Cut the workpiece outline with a drag knife."
+msgstr "Corta el contorno de la pieza con una cuchilla de arrastre."
+
+#: dragknife/widgets/pages.py
+#: dragknife/transformers/tangential_knife_transformer.py
+msgid "Tangential Knife"
+msgstr "Cuchilla tangencial"
+
+#: dragknife/widgets/pages.py
+msgid ""
+"Cut the workpiece outline with a rotary knife that stays tangent to the path."
+msgstr ""
+"Corta el contorno de la pieza con una cuchilla giratoria que se mantiene "
+"tangente a la trayectoria."
+
+#: dragknife/transformers/drag_knife_transformer.py
+msgid "Drag Knife Compensation"
+msgstr "Compensación de cuchilla de arrastre"
+
+#: dragknife/transformers/drag_knife_transformer.py
+msgid ""
+"Compensates contours for the blade offset of a drag knife and pivots the "
+"blade around corners."
+msgstr ""
+"Compensa los contornos según el desplazamiento de la hoja de una cuchilla de "
+"arrastre y gira la hoja en las esquinas."
+
+#: dragknife/transformers/tangential_knife_transformer.py
+msgid ""
+"Rotates a tangential knife to stay tangent to the path and lifts it at sharp "
+"corners."
+msgstr ""
+"Gira una cuchilla tangencial para mantenerla tangente a la trayectoria y la "
+"levanta en las esquinas pronunciadas."
+
+#: dragknife/steps/tangential_knife_cut_step.py
+msgid "Tangential Knife Cut"
+msgstr "Corte con cuchilla tangencial"
+
+#: dragknife/steps/tangential_knife_cut_step.py
+msgid "Angle Tolerance"
+msgstr "Tolerancia de ángulo"
+
+#: dragknife/steps/tangential_knife_cut_step.py
+msgid ""
+"Maximum heading change rotated with the knife down; larger changes lift the "
+"knife"
+msgstr ""
+"Cambio máximo de rumbo que se gira con la cuchilla abajo; los cambios "
+"mayores levantan la cuchilla"
+
+#: dragknife/steps/tangential_knife_cut_step.py
+msgid "Radius Tolerance"
+msgstr "Tolerancia de radio"
+
+#: dragknife/steps/tangential_knife_cut_step.py
+msgid "Arcs tighter than this radius are cut with the knife lifted"
+msgstr ""
+"Los arcos más cerrados que este radio se cortan con la cuchilla levantada"
+
+#: dragknife/steps/tangential_knife_cut_step.py
+msgid "Spindle RPM"
+msgstr "RPM del husillo"
+
+#: dragknife/steps/tangential_knife_cut_step.py
+msgid "Blade motor speed (M3)"
+msgstr "Velocidad del motor de la hoja (M3)"
+
+#: dragknife/steps/knife_cut_step.py
+msgid ""
+"Knife head used for this step; the machine's first knife is used when unset"
+msgstr ""
+"Cabezal de cuchilla usado en este paso; si no se establece, se usa la "
+"primera cuchilla de la máquina"
+
+#: dragknife/steps/knife_cut_step.py
+msgid "Blade Offset"
+msgstr "Desplazamiento de la hoja"
+
+#: dragknife/steps/knife_cut_step.py
+msgid "Distance between the blade tip and the machine's pivot point"
+msgstr "Distancia entre la punta de la hoja y el punto de giro de la máquina"
+
+#: dragknife/steps/knife_cut_step.py
+msgid "Safe Z Height"
+msgstr "Altura Z segura"
+
+#: dragknife/steps/knife_cut_step.py
+msgid "Height to retract between moves"
+msgstr "Altura a la que retraerse entre movimientos"
+
+#: dragknife/steps/knife_cut_step.py
+msgid "Knife head, blade geometry, and retraction height for this operation."
+msgstr ""
+"Cabezal de cuchilla, geometría de la hoja y altura de retracción para esta "
+"operación."
+
+#: dragknife/steps/knife_cut_step.py dragknife/knife_head_var.py
+msgid "Knife"
+msgstr "Cuchilla"
+
+#: dragknife/steps/knife_cut_step.py
+msgid "Step Settings"
+msgstr "Ajustes del paso"
+
+#: dragknife/steps/drag_knife_cut_step.py
+msgid "Drag Knife Cut"
+msgstr "Corte con cuchilla de arrastre"
+
+#: dragknife/steps/drag_knife_cut_step.py
+msgid "Swivel Angle"
+msgstr "Ángulo de giro"
+
+#: dragknife/steps/drag_knife_cut_step.py
+msgid ""
+"Maximum corner angle pivoted with the blade down; sharper corners lift the "
+"knife first"
+msgstr ""
+"Ángulo máximo de esquina que se gira con la hoja abajo; las esquinas más "
+"agudas levantan la cuchilla primero"

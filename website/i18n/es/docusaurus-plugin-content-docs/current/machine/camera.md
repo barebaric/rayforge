@@ -462,11 +462,11 @@ raydriver remoto; consulta [Dispositivos remotos](remote.md) para configurar el 
 4. Activa la cámara. La transmisión debería aparecer en el lienzo.
 
 El perfil del dispositivo Creality Falcon A1 Pro incluye una cámara de instantáneas HTTP
-preconfigurada y desactivada. En **Máquina → Ajustes Actuales de Máquina → Cámara**, selecciona **Falcon A1
-Pro Camera** y sustituye `<laser-ip>` en la URL del campo **Source** por la dirección IP accesible
-de la máquina. Confirma la URL válida con **Enter** o haciendo clic fuera del campo y, después,
-activa la cámara manualmente. También puedes usar la dirección IP asignada al Falcon en tu red
-Wi-Fi.
+preconfigurada y desactivada. En **Máquina → Ajustes Actuales de Máquina → Cámara**, selecciona
+**Falcon A1 Pro Camera** y sustituye `<laser-ip>` en la URL del campo **Source** por la dirección IP
+accesible de la máquina. Confirma la URL válida con **Enter** o haciendo clic fuera del campo y,
+después, activa la cámara manualmente. También puedes usar la dirección IP asignada al Falcon en tu
+red Wi-Fi.
 
 Más adelante puedes editar el campo **Source** sin perder la calibración ni la alineación. Al editar
 la URL, la cámara se desactiva inmediatamente. El interruptor de activación permanece deshabilitado

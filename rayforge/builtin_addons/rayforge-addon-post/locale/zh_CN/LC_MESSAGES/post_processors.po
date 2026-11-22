@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 13:48+0100\n"
+"POT-Creation-Date: 2026-11-22 16:56+0100\n"
 "PO-Revision-Date: 2026-03-18 23:38+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -279,6 +279,41 @@ msgstr "线条被视为重叠的最大距离"
 msgid "Change merge tolerance"
 msgstr "更改合并容差"
 
+#: post_processors/widgets/mesh_correction_group.py
+msgid "Focus Offset"
+msgstr "焦点偏移"
+
+#: post_processors/widgets/mesh_correction_group.py
+msgid "Distance above the probed surface for the focus point"
+msgstr "焦点位于探测表面上方的距离"
+
+#: post_processors/widgets/mesh_correction_group.py
+msgid "Subdivide at Grid Lines"
+msgstr "在网格线上细分"
+
+#: post_processors/widgets/mesh_correction_group.py
+msgid ""
+"Split straight cuts at the mesh grid lines so Z follows the bed between "
+"probe points. This increases the number of commands, most noticeably for "
+"raster engraving."
+msgstr ""
+"在网格线上拆分直线切割，使 Z 在探测点之间跟随床面。这会增加指令数量，尤其是在"
+"光栅雕刻时。"
+
+#: post_processors/widgets/mesh_correction_group.py
+msgid ""
+"No bed mesh has been probed yet. Probe one on the Bed Mesh page in the "
+"machine settings."
+msgstr "尚未探测床面网格。请在机器设置的床面网格页面进行探测。"
+
+#: post_processors/widgets/mesh_correction_group.py
+msgid "Change Bed Mesh Focus Offset"
+msgstr "更改床面网格焦点偏移"
+
+#: post_processors/widgets/mesh_correction_group.py
+msgid "Toggle Mesh Subdivision"
+msgstr "切换网格细分"
+
 #: post_processors/transformers/lead_in_out_transformer.py
 msgid "Lead-In/Out"
 msgstr "导入/导出"
@@ -344,6 +379,15 @@ msgstr "裁剪到材料"
 #: post_processors/transformers/crop_transformer.py
 msgid "Crops cutting lines to stock boundary."
 msgstr "将切割线裁剪到材料边界。"
+
+#: post_processors/transformers/mesh_correction_transformer.py
+msgid "Bed Mesh Correction"
+msgstr "床面网格校正"
+
+#: post_processors/transformers/mesh_correction_transformer.py
+msgid ""
+"Compensates an uneven work surface using the machine's probed bed height map."
+msgstr "使用机器探测的床面高度图补偿不平整的工作表面。"
 
 #: post_processors/transformers/multipass_transformer.py
 msgid "Multi-Pass"

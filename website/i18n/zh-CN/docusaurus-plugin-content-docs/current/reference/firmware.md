@@ -11,7 +11,7 @@ Rayforge 主要为**基于 GRBL 的控制器**设计，但也支持 Marlin、Smo
 | 固件             | 版本  | 状态     | 驱动程序                                 | 备注                    |
 | ---------------- | ----- | -------- | ---------------------------------------- | ----------------------- |
 | **GRBL**         | 1.1+  | 完全支持 | GRBL (USB/Serial) (+ compatibility mode) | 推荐                    |
-| **GRBL**         | 1.1+    | 实验性   | GRBL (Bluetooth) | 已配对的蓝牙 SPP 设备 |
+| **GRBL**         | 1.1+  | 实验性   | GRBL (Bluetooth)                         | 已配对的蓝牙 SPP 设备   |
 | **grblHAL**      | 2023+ | 兼容     | GRBL (USB/Serial) / grblHAL (Telnet)     | 现代 GRBL 分支          |
 | **GRBL**         | 0.9   | 有限     | GRBL (USB/Serial)                        | 较旧，可能有问题        |
 | **FluidNC**      | 全部  | 兼容     | FluidNC / ESP3D (Web API)                | 基于 ESP32              |
@@ -121,7 +121,9 @@ Rayforge 包含第二个串行 GRBL 驱动程序，适用于标准缓冲计数�
 
 **状态：** 实验性 **固件：** GRBL **驱动程序：** GRBL (Bluetooth)
 
-GRBL (Bluetooth) 驱动程序通过蓝牙经典串口协议 (SPP/RFCOMM) 连接控制器，许多基于 ESP32 的激光控制器都提供该协议。连接由操作系统直接建立，因此不需要 `/dev/rfcomm*` 桥接或传出 COM 端口。
+GRBL
+(Bluetooth) 驱动程序通过蓝牙经典串口协议 (SPP/RFCOMM) 连接控制器，许多基于 ESP32 的激光控制器都提供该协议。连接由操作系统直接建立，因此不需要
+`/dev/rfcomm*` 桥接或传出 COM 端口。
 
 **使用 GRBL (Bluetooth) 驱动程序：**
 

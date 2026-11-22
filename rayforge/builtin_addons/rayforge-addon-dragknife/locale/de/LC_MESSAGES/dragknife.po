@@ -1,0 +1,142 @@
+# German translations for PACKAGE package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-11 00:59+0200\n"
+"PO-Revision-Date: 2026-09-11 00:59+0200\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: dragknife/widgets/pages.py
+msgid "Drag Knife"
+msgstr "Schleppmesser"
+
+#: dragknife/widgets/pages.py
+msgid "Cut the workpiece outline with a drag knife."
+msgstr "Schneidet den Werkstückumriss mit einem Schleppmesser."
+
+#: dragknife/widgets/pages.py
+#: dragknife/transformers/tangential_knife_transformer.py
+msgid "Tangential Knife"
+msgstr "Tangentialmesser"
+
+#: dragknife/widgets/pages.py
+msgid ""
+"Cut the workpiece outline with a rotary knife that stays tangent to the path."
+msgstr ""
+"Schneidet den Werkstückumriss mit einem rotierenden Messer, das tangential "
+"zum Pfad bleibt."
+
+#: dragknife/transformers/drag_knife_transformer.py
+msgid "Drag Knife Compensation"
+msgstr "Schleppmesser-Kompensation"
+
+#: dragknife/transformers/drag_knife_transformer.py
+msgid ""
+"Compensates contours for the blade offset of a drag knife and pivots the "
+"blade around corners."
+msgstr ""
+"Gleicht Konturen um den Klingenversatz eines Schleppmessers aus und dreht "
+"die Klinge um Ecken."
+
+#: dragknife/transformers/tangential_knife_transformer.py
+msgid ""
+"Rotates a tangential knife to stay tangent to the path and lifts it at sharp "
+"corners."
+msgstr ""
+"Dreht ein Tangentialmesser, damit es tangential zum Pfad bleibt, und hebt es "
+"an scharfen Ecken an."
+
+#: dragknife/steps/tangential_knife_cut_step.py
+msgid "Tangential Knife Cut"
+msgstr "Tangentialmesser-Schnitt"
+
+#: dragknife/steps/tangential_knife_cut_step.py
+msgid "Angle Tolerance"
+msgstr "Winkeltoleranz"
+
+#: dragknife/steps/tangential_knife_cut_step.py
+msgid ""
+"Maximum heading change rotated with the knife down; larger changes lift the "
+"knife"
+msgstr ""
+"Maximale Richtungsänderung, die mit abgesenktem Messer gedreht wird; größere "
+"Änderungen heben das Messer an"
+
+#: dragknife/steps/tangential_knife_cut_step.py
+msgid "Radius Tolerance"
+msgstr "Radiustoleranz"
+
+#: dragknife/steps/tangential_knife_cut_step.py
+msgid "Arcs tighter than this radius are cut with the knife lifted"
+msgstr ""
+"Bögen enger als dieser Radius werden mit angehobenem Messer geschnitten"
+
+#: dragknife/steps/tangential_knife_cut_step.py
+msgid "Spindle RPM"
+msgstr "Spindeldrehzahl"
+
+#: dragknife/steps/tangential_knife_cut_step.py
+msgid "Blade motor speed (M3)"
+msgstr "Drehzahl des Klingenmotors (M3)"
+
+#: dragknife/steps/knife_cut_step.py
+msgid ""
+"Knife head used for this step; the machine's first knife is used when unset"
+msgstr ""
+"Für diesen Schritt verwendeter Messerkopf; wenn nicht gesetzt, wird das "
+"erste Messer der Maschine verwendet"
+
+#: dragknife/steps/knife_cut_step.py
+msgid "Blade Offset"
+msgstr "Klingenversatz"
+
+#: dragknife/steps/knife_cut_step.py
+msgid "Distance between the blade tip and the machine's pivot point"
+msgstr "Abstand zwischen Klingenspitze und Drehpunkt der Maschine"
+
+#: dragknife/steps/knife_cut_step.py
+msgid "Safe Z Height"
+msgstr "Sichere Z-Höhe"
+
+#: dragknife/steps/knife_cut_step.py
+msgid "Height to retract between moves"
+msgstr "Höhe zum Zurückziehen zwischen Bewegungen"
+
+#: dragknife/steps/knife_cut_step.py
+msgid "Knife head, blade geometry, and retraction height for this operation."
+msgstr "Messerkopf, Klingengeometrie und Rückzughöhe für diese Operation."
+
+#: dragknife/steps/knife_cut_step.py dragknife/knife_head_var.py
+msgid "Knife"
+msgstr "Messer"
+
+#: dragknife/steps/knife_cut_step.py
+msgid "Step Settings"
+msgstr "Schritteinstellungen"
+
+#: dragknife/steps/drag_knife_cut_step.py
+msgid "Drag Knife Cut"
+msgstr "Schleppmesser-Schnitt"
+
+#: dragknife/steps/drag_knife_cut_step.py
+msgid "Swivel Angle"
+msgstr "Drehwinkel"
+
+#: dragknife/steps/drag_knife_cut_step.py
+msgid ""
+"Maximum corner angle pivoted with the blade down; sharper corners lift the "
+"knife first"
+msgstr ""
+"Maximaler Eckenwinkel, der mit abgesenkter Klinge gedreht wird; schärfere "
+"Ecken heben das Messer zuerst an"

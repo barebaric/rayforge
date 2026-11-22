@@ -27,6 +27,9 @@ GRBL 设备可以通过 USB/串口或网络连接：
 - **FluidNC / ESP3D (Web API)** — 用于 FluidNC 和 ESP3D
   v3 控制器的 HTTP/WebSocket 驱动程序，支持文件上传和设备设置
 
+通过 Wi-Fi 连接的 xTool 机器使用它们自己的实验性驱动程序；D1/D1 Pro 和 M2 请参阅
+[xTool Wi-Fi](xtool)。
+
 基于 Ruida 的控制器由 **Ruida RPA** 驱动程序支持，它可以直接通过 USB 或 UDP 连接，或通过 TUI
 RPC 经由 Ruida Protocol
 Analyzer 连接。它的 USB 字段提供已连接设备的下拉列表（带 VID:PID 匹配），并遵循每个步骤的 Power

@@ -57,9 +57,9 @@ sont pas remplacées lors de l'examen des mises à jour du profil.
 ## Changer la Machine Active
 
 Le sous-menu **Machine → Select Machine** liste toutes les machines configurées ; la machine active
-porte une coche. Sélectionnez une autre entrée pour basculer vers elle. Vous pouvez également utiliser le menu
-déroulant des machines dans l'en-tête de la fenêtre principale. La sélection est mémorisée entre les
-sessions.
+porte une coche. Sélectionnez une autre entrée pour basculer vers elle. Vous pouvez également
+utiliser le menu déroulant des machines dans l'en-tête de la fenêtre principale. La sélection est
+mémorisée entre les sessions.
 
 ## Supprimer une Machine
 

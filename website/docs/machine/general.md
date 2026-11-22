@@ -35,6 +35,9 @@ GRBL devices can connect over USB/serial or over the network:
 - **FluidNC / ESP3D (Web API)** — HTTP/WebSocket driver for FluidNC and ESP3D v3 controllers, with
   file upload and device settings support
 
+xTool machines on Wi-Fi use their own experimental drivers; see [xTool Wi-Fi](xtool) for the D1/D1
+Pro and the M2.
+
 Ruida-based controllers are supported by the **Ruida RPA** driver, which connects over USB or UDP
 directly, or via TUI RPC through the Ruida Protocol Analyzer. Its USB field offers a dropdown of
 connected devices with VID:PID matching, and it honors each step's Power Mode setting — Dynamic

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 13:48+0100\n"
+"POT-Creation-Date: 2026-11-22 16:56+0100\n"
 "PO-Revision-Date: 2026-03-18 23:38+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -293,6 +293,44 @@ msgstr "Distancia máxima para que las líneas se consideren superpuestas"
 msgid "Change merge tolerance"
 msgstr "Cambiar tolerancia de fusión"
 
+#: post_processors/widgets/mesh_correction_group.py
+msgid "Focus Offset"
+msgstr "Desplazamiento de enfoque"
+
+#: post_processors/widgets/mesh_correction_group.py
+msgid "Distance above the probed surface for the focus point"
+msgstr "Distancia sobre la superficie sondeada para el punto de enfoque"
+
+#: post_processors/widgets/mesh_correction_group.py
+msgid "Subdivide at Grid Lines"
+msgstr "Subdividir en las líneas de la cuadrícula"
+
+#: post_processors/widgets/mesh_correction_group.py
+msgid ""
+"Split straight cuts at the mesh grid lines so Z follows the bed between "
+"probe points. This increases the number of commands, most noticeably for "
+"raster engraving."
+msgstr ""
+"Divide los cortes rectos en las líneas de la cuadrícula de la malla para que "
+"Z siga la cama entre los puntos de sondeo. Aumenta el número de comandos, "
+"sobre todo en el grabado raster."
+
+#: post_processors/widgets/mesh_correction_group.py
+msgid ""
+"No bed mesh has been probed yet. Probe one on the Bed Mesh page in the "
+"machine settings."
+msgstr ""
+"Aún no se ha sondeado ninguna malla de la cama. Sondea una en la página "
+"Malla de la cama de los ajustes de la máquina."
+
+#: post_processors/widgets/mesh_correction_group.py
+msgid "Change Bed Mesh Focus Offset"
+msgstr "Cambiar el desplazamiento de enfoque de la malla de la cama"
+
+#: post_processors/widgets/mesh_correction_group.py
+msgid "Toggle Mesh Subdivision"
+msgstr "Alternar la subdivisión de la malla"
+
 #: post_processors/transformers/lead_in_out_transformer.py
 msgid "Lead-In/Out"
 msgstr "Entrada/Salida"
@@ -364,6 +402,17 @@ msgstr "Recortar al material"
 #: post_processors/transformers/crop_transformer.py
 msgid "Crops cutting lines to stock boundary."
 msgstr "Recorta líneas de corte al límite del material."
+
+#: post_processors/transformers/mesh_correction_transformer.py
+msgid "Bed Mesh Correction"
+msgstr "Corrección de malla de la cama"
+
+#: post_processors/transformers/mesh_correction_transformer.py
+msgid ""
+"Compensates an uneven work surface using the machine's probed bed height map."
+msgstr ""
+"Compensa una superficie de trabajo irregular usando el mapa de altura de la "
+"cama sondeado por la máquina."
 
 #: post_processors/transformers/multipass_transformer.py
 msgid "Multi-Pass"
