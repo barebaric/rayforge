@@ -6,12 +6,35 @@ from raydriver.core.discovery.fingerprints import HttpFingerprint
 from raydriver.core.discovery.spec import DiscoverySpec, MdnsRecognizer
 from raydriver.esp3d import Esp3dConfig, Esp3dSession
 
-from ....core.varset import ChoiceVar, HostnameVar, PortVar, VarSet
+from ....core.varset import (
+    ChoiceVar,
+    HostnameVar,
+    IntVar,
+    PortVar,
+    VarSet,
+)
 from ....core.varset.hostnamevar import is_valid_hostname_or_ip
 from ..driver import DriverPrecheckError, DriverSetupError
 from .grbl_serial import GrblSerialDriver
 
 logger = logging.getLogger(__name__)
+
+
+def _resolve_ws_port(port: int, ws_port: int, protocol: str) -> int:
+    """Resolve the WebSocket port for the ESP3D/FluidNC transport.
+
+    ``0`` means "use the HTTP port", which FluidNC v4 requires. An
+    explicitly configured positive port is preserved so existing
+    profiles (and split-port forks) keep working.
+    """
+    if ws_port <= 0:
+        return int(port)
+    if protocol == "FluidNC" and ws_port != int(port):
+        logger.warning(
+            f"FluidNC expects the WebSocket port to match the HTTP "
+            f"port ({port}); using {ws_port} as configured."
+        )
+    return ws_port
 
 
 class GrblNetworkDriver(GrblSerialDriver):
@@ -66,14 +89,17 @@ class GrblNetworkDriver(GrblSerialDriver):
                     description=_("The HTTP port for the device"),
                     default=80,
                 ),
-                PortVar(
+                IntVar(
                     key="ws_port",
                     label=_("WebSocket Port"),
                     description=_(
-                        "The WebSocket port for the device. For FluidNC,"
-                        " use the same port as HTTP (usually 80)."
+                        "The WebSocket port for the device. Leave at 0 "
+                        "to use the HTTP port (required for FluidNC v4); "
+                        "older ESP3D firmware uses 81."
                     ),
-                    default=81,
+                    default=0,
+                    min_val=0,
+                    max_val=65535,
                 ),
                 ChoiceVar(
                     key="protocol",
@@ -90,17 +116,19 @@ class GrblNetworkDriver(GrblSerialDriver):
 
     def _setup_implementation(self, **kwargs: Any) -> None:
         host = cast(str, kwargs.get("host", ""))
-        port = cast(int, kwargs.get("port", 80))
-        ws_port = cast(int, kwargs.get("ws_port", 81))
+        port = int(cast(int, kwargs.get("port", 80)))
         protocol = cast(str, kwargs.get("protocol", "ESP3D"))
         if not host:
             raise DriverSetupError(_("Hostname must be configured."))
+        ws_port = _resolve_ws_port(
+            port, int(kwargs.get("ws_port") or 0), protocol
+        )
 
         self._session = Esp3dSession(
             config=Esp3dConfig(
                 host=host,
                 http_port=int(port),
-                ws_port=int(ws_port),
+                ws_port=ws_port,
                 protocol=protocol,
             ),
             dialect=self._dialect_templates(),
