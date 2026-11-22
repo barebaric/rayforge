@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from collections.abc import Awaitable
 from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
@@ -9,7 +10,10 @@ from typing import (
 )
 
 from blinker import Signal
-from raydriver.marlin.probe import MarlinDeviceInfo, probe_device
+from raydriver.grbl.probe import GrblDeviceInfo
+from raydriver.marlin.probe import MarlinDeviceInfo
+from raydriver.octoprint.probe import OctoPrintDeviceInfo
+from raydriver.smoothie.probe import SmoothieDeviceInfo
 
 from ....shared.units.system import UnitSystem
 from ...transport import TransportStatus
@@ -25,9 +29,18 @@ logger = logging.getLogger(__name__)
 
 @runtime_checkable
 class _ProbeSession(Protocol):
-    """The session surface the device census needs."""
+    """The session surface the device census needs; the concrete
+    census type depends on the session's protocol."""
 
-    async def execute_interactive_command(self, command: str) -> list[str]: ...
+    def probe_device(
+        self,
+        boot_lines: list[str] | None = None,
+    ) -> Awaitable[
+        GrblDeviceInfo
+        | MarlinDeviceInfo
+        | SmoothieDeviceInfo
+        | OctoPrintDeviceInfo
+    ]: ...
 
 
 @runtime_checkable
@@ -89,7 +102,9 @@ async def probe_marlin_device(
         session = driver.session
         if session is None:
             raise DeviceConnectionError(_("Driver is not connected."))
-        info = await probe_device(session, boot_lines=driver.boot_lines)
+        info = await session.probe_device(driver.boot_lines)
+        if not isinstance(info, MarlinDeviceInfo):
+            raise DeviceConnectionError(_("Device is not a Marlin device."))
     finally:
         driver.connection_status_changed.disconnect(_on_status)
         await driver.cleanup()

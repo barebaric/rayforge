@@ -1,6 +1,7 @@
 from .anglevar import AngleVar
 from .appkeyvar import AppKeyVar
 from .baudratevar import BaudrateVar
+from .bluetoothaddressvar import BluetoothAddressVar
 from .boolvar import BoolVar
 from .choicevar import ChoiceVar
 from .codevar import CodeVar
@@ -24,6 +25,7 @@ __all__ = [
     "AngleVar",
     "AppKeyVar",
     "BaudrateVar",
+    "BluetoothAddressVar",
     "BoolVar",
     "ChoiceVar",
     "CodeVar",

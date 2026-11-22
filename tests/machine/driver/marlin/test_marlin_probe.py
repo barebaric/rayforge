@@ -121,8 +121,9 @@ class TestDriverProbe:
             FULL_M503_LINES,
             m149_lines,
         )
-        probe_mock = mocker.patch(
-            "rayforge.machine.driver.marlin.marlin_probe.probe_device",
+        probe_mock = mocker.patch.object(
+            fake_session,
+            "probe_device",
             AsyncMock(return_value=info),
         )
 
@@ -133,8 +134,7 @@ class TestDriverProbe:
         )
 
         probe_mock.assert_awaited_once()
-        assert probe_mock.await_args.args[0] is fake_session
-        assert probe_mock.await_args.kwargs["boot_lines"] == []
+        assert probe_mock.await_args.args == ([],)
         assert profile.meta.name == "CustomLaser"
         driver_config = profile.machine_config.driver_config
         assert driver_config is not None

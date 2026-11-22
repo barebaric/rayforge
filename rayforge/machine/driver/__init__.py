@@ -17,6 +17,7 @@ from .driver import (
 )
 from .dummy import NoDeviceDriver
 from .grbl import (
+    GrblBluetoothDriver,
     GrblNetworkDriver,
     GrblSerialDriver,
     GrblSerialSimpleDriver,
@@ -63,6 +64,7 @@ __all__ = [
     "DiscoveredDevice",
     "Driver",
     "DriverMaturity",
+    "GrblBluetoothDriver",
     "GrblNetworkDriver",
     "GrblSerialDriver",
     "GrblSerialSimpleDriver",
