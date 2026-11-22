@@ -24,10 +24,25 @@
   },
   "overrides": {
     "@mermaid-js/layout-elk": "^1.0.2",
-    "qs": "^6.16.0",
-    "serialize-javascript": "^7.0.5",
+    "body-parser": "^1.20.9",
+    "brace-expansion": "^1.1.22",
+    "compression": "^1.8.2",
+    "fast-uri": "^3.1.9",
+    "follow-redirects": "^1.16.3",
+    "image-size": "^2.1.0",
+    "joi": "^17.13.9",
+    "launch-editor": "^2.14.2",
+    "postcss-selector-parser@^6": "^6.1.6",
+    "postcss-selector-parser@^7": "^7.2.1",
+    "proxy-addr": "^2.0.8",
+    "qs": "^6.17.1",
+    "serialize-javascript": "^7.1.4",
+    "shell-quote": "^1.12.0",
     "sockjs": {
       "uuid": "^11.1.1"
-    }
+    },
+    "source-map-js": "^1.2.4",
+    "tinypool": "^2.2.0",
+    "undici": "^7.30.2"
   }
 }
