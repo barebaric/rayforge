@@ -10,7 +10,7 @@ try:
     import pymupdf
 except ImportError:
     import fitz as pymupdf
-from gi.repository import Adw, Gdk, GdkPixbuf, GLib, Gtk
+from gi.repository import Adw, GLib, Gtk
 
 from ....camera.calibration import (
     available_target_types,
@@ -33,7 +33,7 @@ from ....shared.units.formatter import format_value
 from ...shared.gtk import report_dialog_error
 from ...shared.pref_rows.base import SpinRow
 from ...shared.pref_rows.length_spin_row import LengthSpinRow
-from ..capture_surface import numpy_to_pixbuf
+from ..capture_surface import numpy_to_texture
 from .base_page import CameraWizardPage
 
 logger = logging.getLogger(__name__)
@@ -156,7 +156,6 @@ class CardPage(CameraWizardPage):
         self._origin_row: Adw.ComboRow | None = None
         self._order_row: Adw.ComboRow | None = None
         self._updating_id_rows = False
-        self._preview_pixbuf: GdkPixbuf.Pixbuf | None = None
 
         machine = get_context().machine
         if machine:
@@ -585,11 +584,9 @@ class CardPage(CameraWizardPage):
         )
         if image is None:
             return
-        pixbuf = numpy_to_pixbuf(image)
-        if pixbuf is None:
+        texture = numpy_to_texture(image)
+        if texture is None:
             return
-        self._preview_pixbuf = pixbuf
-        texture = Gdk.Texture.new_for_pixbuf(pixbuf)
         self.preview_image.set_paintable(texture)
 
     def _on_save_pdf(self, button) -> None:

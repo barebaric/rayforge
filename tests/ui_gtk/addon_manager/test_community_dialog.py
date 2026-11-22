@@ -62,8 +62,7 @@ def test_dialog_defaults_to_cancel():
 def test_dialog_requests_width_for_horizontal_responses():
     """libadwaita stacks responses below the requested width."""
     dialog = CommunityAddonDialog(addon_name="Test Addon")
-    width, _height = dialog.get_default_size()
-    assert width >= 480
+    assert dialog.get_content_width() >= 480
 
 
 def test_dialog_install_response_runs_callback():

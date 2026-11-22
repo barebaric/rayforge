@@ -20,7 +20,8 @@ from ..shared.text import draw_centered_text
 logger = logging.getLogger(__name__)
 
 
-def numpy_to_pixbuf(image: np.ndarray) -> GdkPixbuf.Pixbuf | None:
+def _to_rgb(image: np.ndarray) -> np.ndarray | None:
+    """Convert a gray, BGR, or BGRA camera frame to contiguous RGB."""
     if image is None:
         return None
     if len(image.shape) == 2:
@@ -30,6 +31,13 @@ def numpy_to_pixbuf(image: np.ndarray) -> GdkPixbuf.Pixbuf | None:
     elif image.shape[2] == 3:
         rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     else:
+        return None
+    return np.ascontiguousarray(rgb)
+
+
+def numpy_to_pixbuf(image: np.ndarray) -> GdkPixbuf.Pixbuf | None:
+    rgb = _to_rgb(image)
+    if rgb is None:
         return None
 
     height, width = rgb.shape[:2]
@@ -41,6 +49,22 @@ def numpy_to_pixbuf(image: np.ndarray) -> GdkPixbuf.Pixbuf | None:
         8,
         width,
         height,
+        width * 3,
+    )
+
+
+def numpy_to_texture(image: np.ndarray) -> Gdk.Texture | None:
+    """Create a paintable texture from a camera frame."""
+    rgb = _to_rgb(image)
+    if rgb is None:
+        return None
+
+    height, width = rgb.shape[:2]
+    return Gdk.MemoryTexture.new(
+        width,
+        height,
+        Gdk.MemoryFormat.R8G8B8,
+        GLib.Bytes.new(rgb.tobytes()),
         width * 3,
     )
 
@@ -154,4 +178,8 @@ class CalibrationCaptureSurface(Gtk.Widget):
         return None
 
 
-__all__ = ["CalibrationCaptureSurface", "numpy_to_pixbuf"]
+__all__ = [
+    "CalibrationCaptureSurface",
+    "numpy_to_pixbuf",
+    "numpy_to_texture",
+]

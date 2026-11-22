@@ -6,9 +6,9 @@ from ...context import get_context
 from ...usage import get_usage_tracker
 
 
-class UsageConsentDialog(Adw.MessageDialog):
-    def __init__(self, parent: Gtk.Window):
-        super().__init__(transient_for=parent, modal=True)
+class UsageConsentDialog(Adw.AlertDialog):
+    def __init__(self):
+        super().__init__()
         self.set_heading(_("Help me prioritize what to build"))
         self.set_body(
             _(

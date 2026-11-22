@@ -601,8 +601,8 @@ class MainWindow(Adw.ApplicationWindow):
         elif config.has_declined_tracking:
             pass  # Explicitly do nothing, respecting the user's choice
         else:
-            dialog = UsageConsentDialog(self)
-            dialog.present()
+            dialog = UsageConsentDialog()
+            dialog.present(self)
             # Avoid piling windows: open the first-run wizard only
             # after the consent dialog has been answered.
             dialog.connect("response", self._on_consent_responded)

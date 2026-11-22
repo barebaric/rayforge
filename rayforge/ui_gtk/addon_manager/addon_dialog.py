@@ -75,7 +75,7 @@ class AddonRegistryDialog(PatchedDialogWindow):
 
         self.list_box = Gtk.ListBox()
         self.list_box.set_selection_mode(Gtk.SelectionMode.NONE)
-        self.list_box.get_style_context().add_class("boxed-list")
+        self.list_box.add_css_class("boxed-list")
         self.list_box.connect("row-activated", self._on_row_activated)
 
         clamp.set_child(self.list_box)
@@ -90,7 +90,7 @@ class AddonRegistryDialog(PatchedDialogWindow):
             margin_top=12,
         )
         manual_btn = Gtk.Button(label=_("Install from URL..."))
-        manual_btn.get_style_context().add_class("flat")
+        manual_btn.add_css_class("flat")
         manual_btn.set_halign(Gtk.Align.CENTER)
         manual_btn.connect("clicked", self._on_manual_install_clicked)
         footer_box.append(manual_btn)
@@ -160,7 +160,7 @@ class AddonRegistryDialog(PatchedDialogWindow):
             author_name = addon.author.name
             if author_name:
                 lbl = Gtk.Label(label=f"by {author_name}")
-                lbl.get_style_context().add_class("dim-label")
+                lbl.add_css_class("dim-label")
                 row.add_suffix(lbl)
 
             btn = build_action_button(
@@ -184,8 +184,7 @@ class AddonRegistryDialog(PatchedDialogWindow):
             author=addon_meta.author.name or None,
             on_install=lambda: self._start_install(addon_meta),
         )
-        dialog.set_transient_for(self)
-        dialog.present()
+        dialog.present(self)
 
     def _on_row_activated(self, _list_box, row):
         """Opens the detail view when the user clicks an addon row."""
@@ -277,5 +276,4 @@ class AddonRegistryDialog(PatchedDialogWindow):
             repository_url=url,
             on_install=on_install,
         )
-        dialog.set_transient_for(self)
-        dialog.present()
+        dialog.present(self)
