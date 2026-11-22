@@ -1,6 +1,8 @@
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
+from gi.repository import Adw, GObject
+
 from rayforge.ui_gtk.doceditor.post_processor.groups import (
     ExpanderHost,
     TransformerSettingsGroup,
@@ -41,6 +43,21 @@ class MeshCorrectionSettingsGroup(TransformerSettingsGroup):
         )
         self.add(self.z_offset_row)
         self.z_offset_row.value_changed.connect(self._on_z_offset_changed)
+
+        self.subdivide_row = Adw.SwitchRow(
+            title=_("Subdivide at Grid Lines"),
+            subtitle=_(
+                "Split straight cuts at the mesh grid lines so Z follows "
+                "the bed between probe points. This increases the number "
+                "of commands, most noticeably for raster engraving."
+            ),
+        )
+        self.subdivide_row.set_active(transformer.subdivide)
+        self.add(self.subdivide_row)
+        self.subdivide_row.connect(
+            "notify::active", self._on_subdivide_toggled
+        )
+
         self._update_description()
         self._update_sensitivity()
 
@@ -64,9 +81,9 @@ class MeshCorrectionSettingsGroup(TransformerSettingsGroup):
     def _update_sensitivity(self) -> None:
         super()._update_sensitivity()
         if hasattr(self, "z_offset_row"):
-            self.z_offset_row.set_sensitive(
-                self._is_enabled() and self._has_mesh()
-            )
+            sensitive = self._is_enabled() and self._has_mesh()
+            self.z_offset_row.set_sensitive(sensitive)
+            self.subdivide_row.set_sensitive(sensitive)
 
     def _on_z_offset_changed(self, row: LengthSpinRow) -> None:
         self.param_changed.send(
@@ -74,4 +91,14 @@ class MeshCorrectionSettingsGroup(TransformerSettingsGroup):
             key="z_offset",
             value=row.get_value_in_base_units(),
             name=_("Change Bed Mesh Focus Offset"),
+        )
+
+    def _on_subdivide_toggled(
+        self, row: Adw.SwitchRow, _pspec: GObject.ParamSpec
+    ) -> None:
+        self.param_changed.send(
+            self,
+            key="subdivide",
+            value=row.get_active(),
+            name=_("Toggle Mesh Subdivision"),
         )

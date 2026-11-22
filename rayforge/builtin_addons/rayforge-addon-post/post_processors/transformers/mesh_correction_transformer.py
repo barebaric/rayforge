@@ -40,10 +40,17 @@ class MeshCorrectionTransformer(OpsTransformer):
     #: Applies to a layer's merged toolpath in machine space.
     LAYER_APPLICABLE = True
 
-    def __init__(self, enabled: bool = True, z_offset: float = 0.0):
+    def __init__(
+        self,
+        enabled: bool = True,
+        z_offset: float = 0.0,
+        subdivide: bool = False,
+    ):
         super().__init__(enabled=enabled)
         self._z_offset: float = 0.0
         self.z_offset = z_offset
+        self._subdivide: bool = False
+        self.subdivide = subdivide
 
     @property
     def z_offset(self) -> float:
@@ -53,6 +60,15 @@ class MeshCorrectionTransformer(OpsTransformer):
     @z_offset.setter
     def z_offset(self, value: float) -> None:
         self._z_offset = float(value)
+
+    @property
+    def subdivide(self) -> bool:
+        """Whether to split straight cuts at the mesh grid lines."""
+        return self._subdivide
+
+    @subdivide.setter
+    def subdivide(self, value: bool) -> None:
+        self._subdivide = bool(value)
 
     @property
     def label(self) -> str:
@@ -89,12 +105,15 @@ class MeshCorrectionTransformer(OpsTransformer):
             mesh.dy,
             heights,
             z_offset=self.z_offset - wcs_z,
+            subdivide=self.subdivide,
         )
 
     def to_dict(self) -> dict[str, Any]:
         data = {**super().to_dict()}
         if self.z_offset:
             data["z_offset"] = self.z_offset
+        if self.subdivide:
+            data["subdivide"] = True
         return data
 
     @classmethod
@@ -102,4 +121,5 @@ class MeshCorrectionTransformer(OpsTransformer):
         return cls(
             enabled=data.get("enabled", True),
             z_offset=data.get("z_offset", 0.0),
+            subdivide=data.get("subdivide", False),
         )

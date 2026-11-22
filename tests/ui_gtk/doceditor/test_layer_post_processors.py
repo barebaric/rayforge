@@ -111,6 +111,22 @@ def test_owned_entry_edits_in_place(ui_context_initializer):
 
 
 @pytest.mark.ui
+def test_subdivide_edit_is_persisted(ui_context_initializer):
+    machine = _make_machine()
+    _make_mesh(machine)
+    layer = Layer(name="l")
+    layer.post_processors_dicts = [{"name": MESH_NAME, "enabled": True}]
+    group = LayerPostProcessorGroup(layer, editor=None)
+
+    _mesh_widget(group).param_changed.send(
+        _mesh_widget(group), key="subdivide", value=True, name="test"
+    )
+    assert layer.post_processors_dicts == [
+        {"name": MESH_NAME, "enabled": True, "subdivide": True}
+    ]
+
+
+@pytest.mark.ui
 def test_reset_to_machine_default_removes_entry(ui_context_initializer):
     machine = _make_machine()
     _make_mesh(machine)

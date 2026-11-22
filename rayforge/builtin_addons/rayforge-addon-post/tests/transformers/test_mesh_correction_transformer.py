@@ -41,6 +41,22 @@ def test_serialization_round_trip():
     assert isinstance(recreated, MeshCorrectionTransformer)
     assert recreated.enabled is False
     assert recreated.z_offset == 3.5
+    assert recreated.subdivide is False
+
+
+def test_subdivide_serialization_round_trip():
+    original = MeshCorrectionTransformer(subdivide=True)
+    data = original.to_dict()
+    assert data["subdivide"] is True
+
+    recreated = MeshCorrectionTransformer.from_dict(data)
+    assert recreated.subdivide is True
+
+
+def test_subdivide_is_forwarded_to_spec(machine_with_mesh):
+    transformer = MeshCorrectionTransformer(subdivide=True)
+    spec = transformer.to_spec(None, None, cast(Machine, machine_with_mesh))
+    assert spec.subdivide is True
 
 
 def test_to_spec_raises_without_mesh(
@@ -76,6 +92,24 @@ def test_applies_mesh_to_ops(
     assert ops.endpoint(0) == (0.0, 0.0, 0.0)
     # Grid corner (100, 100) has height 3.0; added to the original z=1.
     assert ops.endpoint(1) == (100.0, 100.0, 4.0)
+
+
+def test_subdivide_splits_long_cuts_at_grid_lines(machine_with_mesh):
+    from raygeo.ops import Ops
+
+    transformer = MeshCorrectionTransformer(subdivide=True)
+    ops = Ops()
+    ops.move_to(0.0, 0.0, 0.0)
+    ops.line_to(200.0, 200.0, 0.0)
+
+    specs = [transformer.to_spec(None, None, cast(Machine, machine_with_mesh))]
+    Ops.apply_transformers(ops, specs, progress_cb=None)
+
+    assert ops.len() == 3
+    mid = ops.endpoint(1)
+    assert mid[:2] == (100.0, 100.0)
+    # The split lands on the (100, 100) grid corner, height 3.0.
+    assert mid[2] == 3.0
 
 
 def test_interpolation_midpoint_is_corner_average(
