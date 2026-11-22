@@ -8,19 +8,23 @@ description:
 
 ![Configurações de Máquinas](/screenshots/app-settings-machines.webp)
 
-A página Máquinas nas Configurações da Aplicação mostra uma lista de todas as máquinas configuradas.
-Cada entrada mostra o nome da máquina e possui botões para editá-la ou excluí-la. A máquina ativa no
-momento é marcada com um ícone de verificação.
+A página **Máquinas** mostra uma lista de todas as máquinas configuradas. Cada entrada mostra o nome
+da máquina e possui botões para editá-la ou excluí-la. A máquina ativa no momento é marcada com um
+ícone de verificação.
+
+Abra a página na janela principal com **Máquina → Manage Machines…**, ou selecione **Máquinas** nas
+Configurações da Aplicação (<kbd>ctrl+comma</kbd>).
 
 ## Adicionar uma Máquina
 
-1. Clique no botão **Add Machine** na parte inferior da lista
-2. Selecione um perfil de dispositivo da lista para usar como modelo — cada perfil pré-configura as
+Na página Máquinas, clique no botão **Add Machine** na parte inferior da lista e então:
+
+1. Selecione um perfil de dispositivo da lista para usar como modelo — cada perfil pré-configura as
    definições da máquina e o dialeto de G-code
 
 ![Adicionar Máquina](/screenshots/app-settings-machines-add.webp)
 
-3. O [diálogo de configurações da máquina](../machine/general.md) abre onde você pode ajustar a
+2. O [diálogo de configurações da máquina](../machine/general.md) abre onde você pode ajustar a
    configuração
 
 Alternativamente:
@@ -51,8 +55,9 @@ perfil.
 
 ## Alternar a Máquina Ativa
 
-Use o menu suspenso de máquinas no cabeçalho da janela principal para alternar entre as máquinas
-configuradas. A seleção é lembrada entre sessões.
+O submenu **Máquina → Select Machine** lista todas as máquinas configuradas; a máquina ativa tem uma
+marca de verificação. Selecione outra entrada para alternar para ela. Você também pode usar o menu suspenso
+de máquinas no cabeçalho da janela principal. A seleção é lembrada entre sessões.
 
 ## Excluir uma Máquina
 

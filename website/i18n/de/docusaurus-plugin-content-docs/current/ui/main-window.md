@@ -15,7 +15,8 @@ Zugriff auf alle Rayforge-Funktionen durch organisierte Menüs:
 - **Bearbeiten**: Rückgängig, wiederholen, kopieren, einfügen, Einstellungen
 - **Ansicht**: Zoom, Raster, Lineale, Panels und Ansichtsmodi
 - **Operationen**: Hinzufügen, bearbeiten und Operationen verwalten
-- **Maschine**: Verbinden, jogen, referenzieren, Aufträge starten/stoppen
+- **Maschine**: Maschinen auswählen und verwalten; verbinden, jogen, referenzieren,
+  Aufträge starten/stoppen
 - **Hilfe**: Über, Spenden, Debug-Protokoll speichern
 
 ### 2. Symbolleiste

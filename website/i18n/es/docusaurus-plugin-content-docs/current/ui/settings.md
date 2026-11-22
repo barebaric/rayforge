@@ -85,7 +85,7 @@ El diálogo de ajustes también incluye páginas para gestionar otras partes de 
 tiene su propia documentación:
 
 - [Máquinas](../application-settings/machines.md) — añadir, eliminar y configurar tus cortadores
-  láser
+  láser (también disponible en **Máquina → Manage Machines…**)
 - [Materiales](../application-settings/materials.md) — gestionar tus bibliotecas de materiales
 - [Recetas](../application-settings/recipes.md) — gestionar las recetas de operaciones guardadas
 - [Reglas de color](../application-settings/color-rules.md) — asignar los colores SVG a tipos de

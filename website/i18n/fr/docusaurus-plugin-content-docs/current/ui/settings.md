@@ -88,7 +88,7 @@ La boîte de dialogue des paramètres inclut également des pages pour gérer d'
 l'application. Chacune possède sa propre documentation :
 
 - [Machines](../application-settings/machines.md) — ajouter, supprimer et configurer tes découpeurs
-  laser
+  laser (également disponible dans **Machine → Manage Machines…**)
 - [Matériaux](../application-settings/materials.md) — gérer tes bibliothèques de matériaux
 - [Recettes](../application-settings/recipes.md) — gérer les recettes d'opérations enregistrées
 - [Règles de couleur](../application-settings/color-rules.md) — faire correspondre les couleurs SVG

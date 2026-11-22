@@ -61,7 +61,7 @@ vistazo:
 1. **Conecta tu cámara** a tu computadora vía USB
 
 2. **Abre Ajustes de Cámara:**
-   - Navega a **Máquina → Ajustes de Máquina → Cámara**
+   - Navega a **Máquina → Ajustes Actuales de Máquina → Cámara**
 
 3. **Añade una nueva cámara:**
    - Haz clic en el botón "+" para añadir una cámara
@@ -453,7 +453,7 @@ raydriver remoto; consulta [Dispositivos remotos](remote.md) para configurar el 
 
 ### Añadir una cámara de red
 
-1. Abre **Máquina → Ajustes de Máquina → Cámara**.
+1. Abre **Máquina → Ajustes Actuales de Máquina → Cámara**.
 2. Haz clic en **+** y elige **HTTP snapshot URL**, **HTTP stream URL** o **RTSP stream**.
 3. Introduce un nombre y la URL, por ejemplo:
    - Instantánea HTTP: `http://192.168.1.50:8080/media/getCapturePhoto`
@@ -462,7 +462,7 @@ raydriver remoto; consulta [Dispositivos remotos](remote.md) para configurar el 
 4. Activa la cámara. La transmisión debería aparecer en el lienzo.
 
 El perfil del dispositivo Creality Falcon A1 Pro incluye una cámara de instantáneas HTTP
-preconfigurada y desactivada. En **Máquina → Ajustes de Máquina → Cámara**, selecciona **Falcon A1
+preconfigurada y desactivada. En **Máquina → Ajustes Actuales de Máquina → Cámara**, selecciona **Falcon A1
 Pro Camera** y sustituye `<laser-ip>` en la URL del campo **Source** por la dirección IP accesible
 de la máquina. Confirma la URL válida con **Enter** o haciendo clic fuera del campo y, después,
 activa la cámara manualmente. También puedes usar la dirección IP asignada al Falcon en tu red
@@ -479,7 +479,7 @@ o `rtsps://`).
 Usa esta opción cuando la cámara esté conectada al ordenador que ejecuta el demonio raydriver en
 lugar de a tu ordenador.
 
-1. Abre **Máquina → Ajustes de Máquina → Cámara**.
+1. Abre **Máquina → Ajustes Actuales de Máquina → Cámara**.
 2. Haz clic en **+** y elige **Daemon camera** como tipo de fuente.
 3. Selecciona el demonio. La lista contiene las máquinas remotas configuradas en Rayforge.
 4. Selecciona una de las cámaras que anuncia el demonio. Rayforge rellena la URL y el tipo de fuente
