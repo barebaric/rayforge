@@ -23,6 +23,9 @@ for i, arg in enumerate(sys.argv):
 from rayforge.logging_setup import setup_logging
 
 if sys.platform == "win32":
+    # Some Windows graphics drivers crash GTK's OpenGL renderer, so
+    # default to the cairo renderer unless the user chose one.
+    os.environ.setdefault("GSK_RENDERER", "cairo")
     os.environ.setdefault("GTK_IM_MODULE", "simple")
 
 # ===================================================================

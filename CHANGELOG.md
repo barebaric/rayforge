@@ -41,6 +41,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   raw traffic lines when verbose output is enabled
 - Dependencies: raydriver upgraded to 1.12.0
 
+### Fixed
+
+- Windows: the app starts on machines whose graphics driver crashes
+  GTK's OpenGL renderer. The cairo renderer is selected by default
+  there now, unless `GSK_RENDERER` is set explicitly (#684)
+
 ## 1.14.0
 
 ### Added
