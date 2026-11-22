@@ -99,6 +99,47 @@ def multi_layer_dxf_importer():
     return DxfImporter(buffer.getvalue().encode("utf-8"))
 
 
+@pytest.fixture
+def block_layer_dxf_importer():
+    """A DXF with a block spanning two layers, where LAYER_B is used
+    only inside the block (mirrors issue #773)."""
+    doc = ezdxf.new()  # type: ignore
+    doc.header["$INSUNITS"] = 4  # Millimeters
+    doc.layers.new("LAYER_A")
+    doc.layers.new("LAYER_B")
+    block = doc.blocks.new("TestBlock")
+    block.add_lwpolyline(
+        [(0, 0), (10, 0), (10, 10), (0, 10)],
+        dxfattribs={"layer": "LAYER_A"},
+    )
+    block.add_circle(center=(20, 5), radius=5, dxfattribs={"layer": "LAYER_B"})
+    msp = doc.modelspace()
+    msp.add_line((0, 0), (5, 5), dxfattribs={"layer": "LAYER_A"})
+    msp.add_blockref("TestBlock", (50, 50))
+    buffer = io.StringIO()
+    doc.write(buffer)
+    return DxfImporter(buffer.getvalue().encode("utf-8"))
+
+
+@pytest.fixture
+def block_layer0_dxf_importer():
+    """A DXF whose block content sits on layer "0", so it inherits the
+    layer of the block insertion."""
+    doc = ezdxf.new()  # type: ignore
+    doc.header["$INSUNITS"] = 4  # Millimeters
+    doc.layers.new("LAYER_A")
+    block = doc.blocks.new("TestBlock")
+    block.add_lwpolyline(
+        [(0, 0), (10, 0), (10, 10), (0, 10)],
+        dxfattribs={"layer": "0"},
+    )
+    msp = doc.modelspace()
+    msp.add_blockref("TestBlock", (50, 50), dxfattribs={"layer": "LAYER_A"})
+    buffer = io.StringIO()
+    doc.write(buffer)
+    return DxfImporter(buffer.getvalue().encode("utf-8"))
+
+
 def _setup_workpiece_with_context(
     importer: DxfImporter,
 ) -> WorkPiece | None:
@@ -564,3 +605,45 @@ class TestDXFZFlattening:
         del legacy["flatten_z"]
         restored = PassthroughSpec.from_dict(legacy)
         assert restored.flatten_z is True
+
+
+class TestDXFBlockLayers:
+    def test_scan_counts_entities_inside_blocks(
+        self, block_layer_dxf_importer: DxfImporter
+    ):
+        manifest = block_layer_dxf_importer.scan()
+        counts = {layer.id: layer.feature_count for layer in manifest.layers}
+        assert counts["LAYER_A"] == 2
+        assert counts["LAYER_B"] == 1
+
+    def test_vectorize_imports_block_only_layer(
+        self, block_layer_dxf_importer: DxfImporter
+    ):
+        parse_result = block_layer_dxf_importer.parse()
+        assert parse_result is not None
+        spec = PassthroughSpec(
+            active_layer_ids=["LAYER_B"],
+            layer_import_mode=LayerImportMode.NEW_LAYERS,
+        )
+        vec_result = block_layer_dxf_importer.vectorize(parse_result, spec)
+        geo = vec_result.geometries_by_layer["LAYER_B"]
+        assert not geo.is_empty()
+        x1, _y1, x2, _y2 = geo.rect()
+        assert (x2 - x1) == pytest.approx(10.0)
+
+    def test_block_entities_on_layer_zero_inherit_insert_layer(
+        self, block_layer0_dxf_importer: DxfImporter
+    ):
+        manifest = block_layer0_dxf_importer.scan()
+        counts = {layer.id: layer.feature_count for layer in manifest.layers}
+        assert counts.get("LAYER_A") == 1
+
+        parse_result = block_layer0_dxf_importer.parse()
+        assert parse_result is not None
+        spec = PassthroughSpec(
+            active_layer_ids=["LAYER_A"],
+            layer_import_mode=LayerImportMode.NEW_LAYERS,
+        )
+        vec_result = block_layer0_dxf_importer.vectorize(parse_result, spec)
+        assert not vec_result.geometries_by_layer["LAYER_A"].is_empty()
+        assert "0" not in vec_result.geometries_by_layer
