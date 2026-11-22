@@ -221,6 +221,33 @@ class BedMeshPage(TrackedPreferencesPage):
         self._show_current_mesh()
         self._initializing = False
 
+    def _z_bounds_error(
+        self, machine: Machine, safe_z: float, travel: float
+    ) -> str | None:
+        """Check the probe heights against the machine's Z travel.
+
+        Safe Z and the lowest point the probe may reach are work-space
+        positions; the machine extents are machine coordinates.
+        """
+        extents = machine.z_extents
+        if extents is None:
+            return None
+        off_z = machine.get_active_wcs_offset()[2]
+        z_min = extents[0] - off_z
+        z_max = extents[1] - off_z
+        if not z_min <= safe_z <= z_max:
+            return _(
+                "Safe Z {safe_z:.2f} mm is outside the machine's Z "
+                "range of {z_min:.2f} to {z_max:.2f} mm."
+            ).format(safe_z=safe_z, z_min=z_min, z_max=z_max)
+        if safe_z - travel < z_min:
+            return _(
+                "Maximum Travel {travel:.2f} mm reaches below the "
+                "machine's Z minimum of {z_min:.2f} mm. Lower Safe Z "
+                "or reduce Maximum Travel."
+            ).format(travel=travel, z_min=z_min)
+        return None
+
     # ── Grid bookkeeping ──────────────────────────────────────────
 
     def _grid_params(self) -> dict:
@@ -313,6 +340,10 @@ class BedMeshPage(TrackedPreferencesPage):
         feed = int(self.feed_row.get_value())
         travel = self.travel_row.get_value_in_base_units()
         safe_z = self.safe_z_row.get_value_in_base_units()
+        bounds_error = self._z_bounds_error(machine, safe_z, travel)
+        if bounds_error is not None:
+            self.status_row.set_subtitle(bounds_error)
+            return
         driver = machine.driver
 
         self._heights = [[None] * params["nx"] for _ in range(params["ny"])]
@@ -385,6 +416,8 @@ class BedMeshPage(TrackedPreferencesPage):
                 return
 
             params = self._grid_params()
+            safe_z = self.safe_z_row.get_value_in_base_units()
+            off_z = self.machine.get_active_wcs_offset()[2]
             mesh = BedMesh()
             mesh.set_params(
                 x0=params["x0"],
@@ -399,7 +432,8 @@ class BedMeshPage(TrackedPreferencesPage):
                     "max_travel_mm": (
                         self.travel_row.get_value_in_base_units()
                     ),
-                    "safe_z_mm": self.safe_z_row.get_value_in_base_units(),
+                    "safe_z_mm": safe_z,
+                    "safe_z_machine_mm": safe_z + off_z,
                 },
             )
             self.machine.set_bed_mesh(mesh)

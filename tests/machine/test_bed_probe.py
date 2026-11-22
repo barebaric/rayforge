@@ -66,15 +66,21 @@ async def test_probes_all_points_in_serpentine_order():
             assert z == pytest.approx(driver.surface(i * 10.0, j * 10.0))
 
     # Serpentine: row 0 runs x ascending, row 1 descending, row 2
-    # ascending; every travel move happens at the safe Z height.
+    # ascending; the first point is approached with Z, later points
+    # travel in X/Y only at safe Z.
     probe_points = [
         (i * 10.0, j * 10.0)
         for j in range(3)
         for i in ([0, 1, 2] if j % 2 == 0 else [2, 1, 0])
     ]
-    travel_points = [(m[0], m[1]) for m in driver.moves]
-    assert travel_points[:9] == probe_points
-    assert all(m[2] == SAFE_Z for m in driver.moves)
+    assert driver.moves[0] == (*probe_points[0], SAFE_Z)
+    travels = [m for m in driver.moves if m[2] is None]
+    assert [(m[0], m[1]) for m in travels] == probe_points[1:]
+    # A commanded Z change never moves laterally: every lift happens
+    # straight up from the touched point.
+    for previous, move in zip(driver.moves, driver.moves[1:]):
+        if move[2] is not None:
+            assert (move[0], move[1]) == (previous[0], previous[1])
     # The probe targets an absolute Z below safe Z, not a relative
     # travel distance that would be sent as-is under G90.
     assert driver.probe_targets == [-5.0] * 9
@@ -95,10 +101,11 @@ async def test_retracts_to_safe_z_after_each_point():
         max_travel_mm=10.0,
         safe_z_mm=SAFE_Z,
     )
-    # move_to is only ever called with the safe Z travel height; the
-    # probe plunge/retract itself lives in run_probe_cycle.
-    assert len(driver.moves) == 5  # 4 points + final retract
-    assert all(m[2] == SAFE_Z for m in driver.moves)
+    # Each point is approached at safe Z (the first one including Z)
+    # and lifted straight up after the touch; the probe plunge itself
+    # lives in run_probe_cycle.
+    assert len(driver.moves) == 8
+    assert driver.moves[-1] == (0.0, 10.0, SAFE_Z)
 
 
 @pytest.mark.asyncio

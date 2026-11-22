@@ -69,9 +69,9 @@ async def probe_bed_mesh(
 
     For each point the head rapids to ``(x, y, safe_z)``, probes down
     along Z by at most *max_travel_mm* at *feed_rate_mm_min*, records
-    the trigger Z, and retracts to *safe_z_mm* before traveling on.
-    Serpentine ordering (alternating row direction) minimizes travel
-    between consecutive points.
+    the trigger Z, and retracts straight up to *safe_z_mm* before
+    traveling on. Serpentine ordering (alternating row direction)
+    minimizes travel between consecutive points.
 
     :returns: ``ny`` rows of ``nx`` probed Z values (machine
         coordinates).
@@ -100,7 +100,11 @@ async def probe_bed_mesh(
             x = x0 + i * dx
             y = y0 + j * dy
             try:
-                await _move(driver, x, y, safe_z_mm)
+                # The first point includes Z because the head's
+                # starting position is unknown. Every later point is
+                # approached from safe Z, so the travel keeps Z and
+                # moves in X/Y only.
+                await _move(driver, x, y, safe_z_mm if done == 0 else None)
                 # G38.2 targets an absolute Z in the active work
                 # coordinates. Aim max_travel_mm below safe Z so the
                 # probe moves down even when safe Z is negative.
@@ -129,12 +133,15 @@ async def probe_bed_mesh(
             z = pos[2]
             row[i] = z
             cur_x, cur_y = x, y
+            # Lift straight up from the touched point before any
+            # lateral travel, so a contact probe cannot drag along
+            # the bed.
+            await _move(driver, x, y, safe_z_mm)
             done += 1
             if on_progress is not None:
                 on_progress(done, total, x, y, z)
         heights.append(row)
 
-    await _retract(driver, cur_x, cur_y, safe_z_mm)
     return heights
 
 
@@ -215,7 +222,7 @@ async def _move(
     driver: Driver,
     x: float,
     y: float,
-    z: float,
+    z: float | None,
     speed: float | None = None,
 ) -> None:
     await driver.move_to(x, y, z, speed)
