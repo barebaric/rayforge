@@ -22,6 +22,8 @@ análisis de sitios web. Esto es lo que podemos ver:
 | Datos                   | Ejemplo                       |
 | ----------------------- | ----------------------------- |
 | Resolución de pantalla  | 1920x1080                     |
+| Versión de la app       | 1.15.0                        |
+| Sistema operativo       | linux/fedora/41               |
 | Tipo de máquina         | grbl, láser de diodo, 430x400 |
 | Configuración de idioma | es-ES                         |
 | Páginas/diálogos vistos | /machine-settings/general     |

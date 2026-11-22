@@ -22,6 +22,8 @@ können wir sehen:
 | Daten                    | Beispiel                   |
 | ------------------------ | -------------------------- |
 | Bildschirmauflösung      | 1920x1080                  |
+| App-Version              | 1.15.0                     |
+| Betriebssystem           | linux/fedora/41            |
 | Maschinentyp             | grbl, Diodenlaser, 430x400 |
 | Spracheinstellung        | de-DE                      |
 | Seiten/Dialoge angesehen | /machine-settings/general  |

@@ -28,6 +28,8 @@ we can see:
 | Data                 | Example                    |
 | -------------------- | -------------------------- |
 | Screen resolution    | 1920x1080                  |
+| App version          | 1.15.0                     |
+| Operating system     | linux/fedora/41            |
 | Machine type         | grbl, diode laser, 430x400 |
 | Language setting     | en-US                      |
 | Pages/dialogs viewed | /machine-settings/general  |

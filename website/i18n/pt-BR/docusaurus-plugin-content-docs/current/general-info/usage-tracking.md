@@ -22,6 +22,8 @@ sites. Aqui está o que podemos ver:
 | Dados                         | Exemplo                       |
 | ----------------------------- | ----------------------------- |
 | Resolução de tela             | 1920x1080                     |
+| Versão do aplicativo          | 1.15.0                        |
+| Sistema operacional           | linux/fedora/41               |
 | Tipo de máquina               | grbl, laser de diodo, 430x400 |
 | Configuração de idioma        | pt-BR                         |
 | Páginas/diálogos visualizados | /machine-settings/general     |

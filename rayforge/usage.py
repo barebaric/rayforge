@@ -167,6 +167,16 @@ class UsageTracker:
             payload["data"] = _get_machine_data(machine)
             self._send_event(payload)
 
+    def track_app(self):
+        """Reports the app version and host OS as a named event, so the
+        analytics dashboard can break usage down by version. The
+        dashboard only shows event data of named events, so sending
+        the version with page views is not enough."""
+        payload = self._base_payload("App", "/app")
+        payload["name"] = "app"
+        payload["data"] = {"app_version": self._version, "os": self._os}
+        self._send_event(payload)
+
     def _send_event(self, payload: dict):
         def _send():
             try:
