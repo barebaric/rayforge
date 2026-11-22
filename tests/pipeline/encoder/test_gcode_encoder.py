@@ -1,5 +1,6 @@
 from unittest.mock import MagicMock
 
+import pytest
 from raygeo.ops import Ops
 from raygeo.ops.convert import GcodeDialectSpec
 from raygeo.ops.state import AirAssistMode, PowerMode
@@ -7,6 +8,10 @@ from raygeo.ops.state import AirAssistMode, PowerMode
 from rayforge.machine.models.dialect.grbl import GRBL_DIALECT
 from rayforge.machine.models.laser import LaserHead
 from rayforge.pipeline.encoder.gcode import GcodeEncoder
+from rayforge.pipeline.encoder.rust_helpers import (
+    build_encode_context,
+    job_end_retract_z,
+)
 from rayforge.shared.units.system import UnitSystem
 
 
@@ -186,6 +191,79 @@ def test_rust_encode_no_z_machine_omits_z_from_moves():
 
     assert " Z" not in text, f"Z word found in no-Z output: {text!r}"
     assert "G1 X10 Y20" in text
+
+
+def _raygeo_emits_job_end_retract() -> bool:
+    """Whether the installed raygeo understands the retract field."""
+    ops = Ops()
+    ops.job_start()
+    ops.move_to(0.0, 0.0, 0.0)
+    ops.job_end()
+    context = _make_context(job_end_retract_z_mm=5.0)
+    text = ops.to_gcode(GcodeDialectSpec(), context)["text"]
+    return "G0 Z5" in text.splitlines()
+
+
+@pytest.mark.skipif(
+    not _raygeo_emits_job_end_retract(),
+    reason="installed raygeo lacks job_end_retract_z_mm",
+)
+def test_rust_encode_job_end_retract():
+    """A configured retract lifts Z before the postscript travel."""
+    ops = Ops()
+    ops.job_start()
+    ops.set_power(1.0)
+    ops.set_feed_rate(1000)
+    ops.move_to(0.0, 0.0, 0.0)
+    ops.line_to(10.0, 20.0, 0.0)
+    ops.job_end()
+
+    context = _make_context(job_end_retract_z_mm=5.0)
+    text = ops.to_gcode(GcodeDialectSpec(), context)["text"]
+    lines = text.splitlines()
+    assert lines[-3:] == ["M5", "G0 Z5", "M30"]
+
+
+def test_build_encode_context_carries_job_end_retract():
+    machine = _make_machine_mock()
+    machine.bed_mesh.probe_params = {"safe_z_machine_mm": 15.0}
+    machine.get_active_wcs_offset.return_value = (0.0, 0.0, 50.0)
+    ops = Ops()
+    ops.job_start()
+    ops.job_end()
+
+    context = build_encode_context(ops, machine, _make_doc_mock())
+    assert context["job_end_retract_z_mm"] == -35.0
+
+
+def test_job_end_retract_uses_machine_space_probe_safe_z():
+    machine = MagicMock()
+    machine.has_z_axis = True
+    machine.bed_mesh.probe_params = {
+        "safe_z_mm": -35.0,
+        "safe_z_machine_mm": 15.0,
+    }
+    machine.get_active_wcs_offset.return_value = (0.0, 0.0, 50.0)
+    assert job_end_retract_z(machine) == -35.0
+
+
+def test_job_end_retract_falls_back_to_legacy_safe_z():
+    machine = MagicMock()
+    machine.has_z_axis = True
+    machine.bed_mesh.probe_params = {"safe_z_mm": -35.0}
+    assert job_end_retract_z(machine) == -35.0
+
+
+def test_job_end_retract_absent_without_mesh_or_z_axis():
+    machine = MagicMock()
+    machine.has_z_axis = True
+    machine.bed_mesh = None
+    assert job_end_retract_z(machine) is None
+
+    machine = MagicMock()
+    machine.has_z_axis = False
+    machine.bed_mesh.probe_params = {"safe_z_machine_mm": 15.0}
+    assert job_end_retract_z(machine) is None
 
 
 def test_rust_encode_has_z_axis_defaults_true():

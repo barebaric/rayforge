@@ -83,7 +83,11 @@ from ..machine.models.dialect import GRBL_DIALECT
 from ..machine.models.laser import LaserHead
 from ..machine.models.rotary_module import RotaryMode, RotaryType
 from .encoder.base import EncodedOutput
-from .encoder.rust_helpers import build_encode_context, dialect_to_spec
+from .encoder.rust_helpers import (
+    build_encode_context,
+    dialect_to_spec,
+    job_end_retract_z,
+)
 from .transformer import OpsTransformer
 from .transformer.registry import transformer_registry
 
@@ -1691,6 +1695,7 @@ def _machine_token_payload(machine: Machine | None, doc: Doc) -> Any:
             else [0.0, 0.0]
         ),
         "pointer_job_power_cap": machine.get_job_power_cap(),
+        "job_end_retract_z_mm": job_end_retract_z(machine),
     }
 
 
