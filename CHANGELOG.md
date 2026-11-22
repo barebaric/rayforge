@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   so the connection to the machine is not dropped when the computer
   goes idle. The new "Prevent sleep during jobs" option on the General
   settings page can disable it
+- Machine: bed mesh probing. The Bed Mesh page probes the work
+  surface on a configurable grid, stores the height map with the
+  machine, and renders it as a 3D surface. A per-layer post processor
+  applies the bilinear height correction in machine space, optionally
+  subdividing cuts at grid lines so Z follows the bed between probe
+  points. The job-end return travel lifts to the probe's Safe Z first
 
 ### Changed
 
@@ -36,6 +42,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   base now; the xTool M2 console additionally shows connection and
   raw traffic lines when verbose output is enabled
 - Dependencies: raydriver upgraded to 1.12.0
+
+### Fixed
+
+- Machine: bed mesh probing refuses to start when Safe Z or the
+  probe's lowest reach lies outside the machine's Z travel, and it
+  lifts straight up before traveling between probe points
+- Machine: FluidNC devices use the HTTP port for the WebSocket when
+  no WebSocket port is configured
+- Machine: homing no longer times out after 10 seconds on large
+  machines; the driver waits up to 10 minutes for the homing cycle
 
 ## 1.14.0
 
