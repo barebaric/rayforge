@@ -286,6 +286,7 @@ class ActionManager:
         self._add_action("save_debug_log", self.win.on_save_debug_log)
         self._add_action("settings", self.win.show_settings)
         self._add_action("machine-settings", self.win.show_machine_settings)
+        self._add_action("machine-manage", self.win.on_manage_machines_clicked)
 
         # View Actions
         cv = get_context().config.canvas_view
@@ -499,6 +500,23 @@ class ActionManager:
             self.win.on_hold_state_change,
             GLib.Variant.new_boolean(False),
         )
+
+        # Stateful action backing the machine selection menu. Its
+        # string state is the active machine's ID, which lets the menu
+        # render the matching entry as a checked radio item.
+        active_machine = get_context().config.machine
+        select_machine_action = Gio.SimpleAction.new_stateful(
+            "select-machine",
+            GLib.VariantType.new("s"),
+            GLib.Variant.new_string(
+                active_machine.id if active_machine else ""
+            ),
+        )
+        select_machine_action.connect(
+            "activate", self.win.on_machine_selected_by_menu
+        )
+        self.win.add_action(select_machine_action)
+        self.actions["select-machine"] = select_machine_action
 
         self._add_stateful_action(
             "toggle-focus",

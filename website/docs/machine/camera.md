@@ -77,7 +77,7 @@ advertised by a remote raydriver daemon; see [Remote Devices](remote.md) for set
 1. **Connect your camera** to your computer via USB
 
 2. **Open Camera Settings:**
-   - Navigate to **Machine → Machine Settings → Camera**
+   - Navigate to **Machine → Current Machine Settings → Camera**
 
 3. **Add a new camera:**
    - Click the **+** button to add a camera
@@ -92,7 +92,7 @@ advertised by a remote raydriver daemon; see [Remote Devices](remote.md) for set
 ### Adding a Network Camera
 
 1. **Open Camera Settings:**
-   - Navigate to **Machine → Machine Settings → Camera**
+   - Navigate to **Machine → Current Machine Settings → Camera**
 
 2. **Add a new camera:**
    - Click the **+** button to add a camera
@@ -111,7 +111,7 @@ advertised by a remote raydriver daemon; see [Remote Devices](remote.md) for set
 <!-- prettier-ignore-start -->
 :::info[Creality Falcon A1 Pro]
 The Falcon A1 Pro device profile includes a preconfigured, disabled HTTP snapshot camera. In
-**Machine → Machine Settings → Camera**, select **Falcon A1 Pro Camera** and replace `<laser-ip>` in
+**Machine → Current Machine Settings → Camera**, select **Falcon A1 Pro Camera** and replace `<laser-ip>` in
 the **Source** URL with the machine's reachable IP address. The camera exposes a still-image
 endpoint at `http://<laser-ip>:8080/media/getCapturePhoto`. When connected via USB, the Falcon
 shares a network interface over USB; find the address from your USB network adapter or the machine's
@@ -129,7 +129,7 @@ don't need to re-add the camera or redo calibration — see
 Use this when the camera is connected to the computer running a raydriver daemon rather than to your
 computer.
 
-1. Open **Machine → Machine Settings → Camera**.
+1. Open **Machine → Current Machine Settings → Camera**.
 2. Click **+** and choose **Daemon camera** as the source type.
 3. Select the daemon. The list contains the remote machines configured in Rayforge.
 4. Select one of the cameras the daemon advertises. Rayforge fills in the URL and the matching

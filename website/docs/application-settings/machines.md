@@ -8,19 +8,22 @@ description:
 
 ![Machines Settings](/screenshots/app-settings-machines.webp)
 
-The Machines page in Application Settings shows a list of all configured machines. Each entry shows
-the machine name and has buttons to edit or delete it. The currently active machine is marked with a
-check icon.
+The Machines page shows a list of all configured machines. Each entry shows the machine name and has
+buttons to edit or delete it. The currently active machine is marked with a check icon.
+
+Open the page from the main window with **Machine → Manage Machines…**, or select **Machines** in
+Application Settings (<kbd>ctrl+comma</kbd>).
 
 ## Adding a Machine
 
-1. Click the **Add Machine** button at the bottom of the list
-2. Select a device profile from the list to use as a template — each profile pre-configures the
+From the Machines page, click the **Add Machine** button at the bottom of the list, then:
+
+1. Select a device profile from the list to use as a template — each profile pre-configures the
    machine settings and G-code dialect
 
 ![Add Machine Dialog](/screenshots/app-settings-machines-add.webp)
 
-3. The [machine settings dialog](../machine/general.md) opens where you can adjust the configuration
+2. The [machine settings dialog](../machine/general.md) opens where you can adjust the configuration
 
 Alternatively:
 
@@ -48,8 +51,9 @@ notes are saved per machine and are not replaced when reviewing profile updates.
 
 ## Switching the Active Machine
 
-Use the machine dropdown in the main window header to switch between configured machines. The
-selection is remembered between sessions.
+The **Machine → Select Machine** submenu lists every configured machine; the active machine has a
+checkmark. Select another entry to switch to it. You can also use the machine dropdown in the main
+window header. The selection is remembered between sessions.
 
 ## Deleting a Machine
 

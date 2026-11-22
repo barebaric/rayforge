@@ -77,7 +77,7 @@ Rayforge चार प्रकार के कैमरा स्रोत स
 1. **अपना कैमरा** USB से कंप्यूटर से जोड़ें
 
 2. **कैमरा सेटिंग्स खोलें:**
-   - **Machine → Machine Settings → Camera** पर जाएँ
+   - **Machine → Current Machine Settings → Camera** पर जाएँ
 
 3. **नया कैमरा जोड़ें:**
    - कैमरा जोड़ने के लिए **+** बटन पर क्लिक करें
@@ -92,7 +92,7 @@ Rayforge चार प्रकार के कैमरा स्रोत स
 ### नेटवर्क कैमरा जोड़ना {#adding-a-network-camera}
 
 1. **कैमरा सेटिंग्स खोलें:**
-   - **Machine → Machine Settings → Camera** पर जाएँ
+   - **Machine → Current Machine Settings → Camera** पर जाएँ
 
 2. **नया कैमरा जोड़ें:**
    - कैमरा जोड़ने के लिए **+** बटन पर क्लिक करें
@@ -111,7 +111,7 @@ Rayforge चार प्रकार के कैमरा स्रोत स
 <!-- prettier-ignore-start -->
 :::info[Creality Falcon A1 Pro]
 Falcon A1 Pro डिवाइस प्रोफ़ाइल में एक पूर्व-कॉन्फ़िगर, अक्षित HTTP स्नैपशॉट कैमरा शामिल है.
-**Machine → Machine Settings → Camera** में, **Falcon A1 Pro Camera** चुनें और **Source** URL
+**Machine → Current Machine Settings → Camera** में, **Falcon A1 Pro Camera** चुनें और **Source** URL
 में `<laser-ip>` को मशीन के पहुँच योग्य IP पते से बदलें. कैमरा `http://<laser-ip>:8080/media/getCapturePhoto`
 पर एक स्थिर-छवि एंडपॉइंट उजागर करता है. USB से जुड़े होने पर, Falcon USB के माध्यम से एक नेटवर्क
 इंटरफ़ेस साझा करता है; पता अपने USB नेटवर्क एडॉप्टर या मशीन की टचस्क्रीन नेटवर्क जानकारी से खोजें.
@@ -128,7 +128,7 @@ Falcon A1 Pro डिवाइस प्रोफ़ाइल में एक �
 
 इसका उपयोग तब करें जब कैमरा आपके कंप्यूटर के बजाय raydriver डेमन चलाने वाले कंप्यूटर से जुड़ा हो.
 
-1. **Machine → Machine Settings → Camera** खोलें.
+1. **Machine → Current Machine Settings → Camera** खोलें.
 2. **+** पर क्लिक करें और स्रोत प्रकार के रूप में **Daemon camera** चुनें.
 3. डेमन चुनें. सूची में Rayforge में कॉन्फ़िगर की गई रिमोट मशीनें शामिल हैं.
 4. डेमन द्वारा विज्ञापित किसी कैमरे का चयन करें. Rayforge URL और मिलान करने वाला नेटवर्क स्रोत

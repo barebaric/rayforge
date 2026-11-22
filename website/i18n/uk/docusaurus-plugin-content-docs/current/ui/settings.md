@@ -86,7 +86,7 @@ Rayforge може надсилати анонімні дані про викор
 документацію:
 
 - [Машини](../application-settings/machines.md) — додавати, видаляти та налаштовувати ваші лазерні
-  різаки
+  різаки (також доступно через **Машина → Manage Machines…**)
 - [Матеріали](../application-settings/materials.md) — керувати вашими бібліотеками матеріалів
 - [Рецепти](../application-settings/recipes.md) — керувати збереженими рецептами операцій
 - [Правила кольорів](../application-settings/color-rules.md) — зіставляти кольори SVG з типами

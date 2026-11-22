@@ -89,7 +89,7 @@ Der Einstellungsdialog enthält weitere Seiten zur Verwaltung anderer Teile der 
 verfügt über eine eigene Dokumentation:
 
 - [Maschinen](../application-settings/machines.md) — Maschinen hinzufügen, entfernen und
-  konfigurieren
+  konfigurieren (auch über **Maschine → Manage Machines…** erreichbar)
 - [Materialien](../application-settings/materials.md) — Materialbibliotheken verwalten
 - [Rezepte](../application-settings/recipes.md) — gespeicherte Operationsrezepte verwalten
 - [Farbregeln](../application-settings/color-rules.md) — SVG-Farben Schritttypen zuordnen

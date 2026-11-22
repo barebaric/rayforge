@@ -89,6 +89,7 @@ The settings dialog also includes pages for managing other parts of the applicat
 own dedicated documentation:
 
 - [Machines](../application-settings/machines.md) — add, remove, and configure your laser cutters
+  (also available from **Machine → Manage Machines…**)
 - [Materials](../application-settings/materials.md) — manage your material libraries
 - [Recipes](../application-settings/recipes.md) — manage saved operation recipes
 - [Color Rules](../application-settings/color-rules.md) — map SVG colors to step types

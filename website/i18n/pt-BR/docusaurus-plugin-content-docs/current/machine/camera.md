@@ -59,7 +59,7 @@ rapidamente:
 1. **Conecte sua câmera** ao computador via USB
 
 2. **Abra Configurações da Câmera:**
-   - Navegue até **Máquina → Configurações da Máquina → Câmera**
+   - Navegue até **Máquina → Configurações Atuais da Máquina → Câmera**
 
 3. **Adicione uma nova câmera:**
    - Clique no botão "+" para adicionar uma câmera
@@ -446,7 +446,7 @@ remoto; consulte [Dispositivos remotos](remote.md) para configurar o daemon.
 
 ### Adicionar uma câmera de rede
 
-1. Abra **Máquina → Configurações da Máquina → Câmera**.
+1. Abra **Máquina → Configurações Atuais da Máquina → Câmera**.
 2. Clique em **+** e escolha **HTTP snapshot URL**, **HTTP stream URL** ou **RTSP stream**.
 3. Informe um nome e a URL, por exemplo:
    - Instantâneo HTTP: `http://192.168.1.50:8080/media/getCapturePhoto`
@@ -455,7 +455,7 @@ remoto; consulte [Dispositivos remotos](remote.md) para configurar o daemon.
 4. Ative a câmera. O vídeo deverá aparecer na tela.
 
 O perfil do dispositivo Creality Falcon A1 Pro já inclui uma câmera de instantâneo HTTP
-pré-configurada e desativada. Em **Máquina → Configurações da Máquina → Câmera**, selecione **Falcon
+pré-configurada e desativada. Em **Máquina → Configurações Atuais da Máquina → Câmera**, selecione **Falcon
 A1 Pro Camera** e substitua `<laser-ip>` na URL do campo **Source** pelo endereço IP acessível da
 máquina. Confirme a URL válida com **Enter** ou clicando fora do campo e, em seguida, ative a câmera
 manualmente. Você também pode usar o endereço IP atribuído ao Falcon na sua rede Wi-Fi.
@@ -470,7 +470,7 @@ da URL corresponde ao tipo de fonte (`http://`, `https://`, `rtsp://` ou `rtsps:
 Use esta opção quando a câmera estiver conectada ao computador que executa o daemon raydriver, e não
 ao seu computador.
 
-1. Abra **Máquina → Configurações da Máquina → Câmera**.
+1. Abra **Máquina → Configurações Atuais da Máquina → Câmera**.
 2. Clique em **+** e escolha **Daemon camera** como tipo de fonte.
 3. Selecione o daemon. A lista contém as máquinas remotas configuradas no Rayforge.
 4. Selecione uma das câmeras anunciadas pelo daemon. O Rayforge preenche a URL e o tipo de fonte de
