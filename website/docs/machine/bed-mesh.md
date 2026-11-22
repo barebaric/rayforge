@@ -52,11 +52,17 @@ Probing only records the height map — applying it is controlled per job:
   into the layer, where you can adjust the **Focus Offset** (how far above the probed surface the
   focus point should be); disabling turns the correction off for that layer only. Removing the
   layer's entry falls back to the machine default.
+- **Subdivide at Grid Lines**: Enable this switch to split straight cuts at the mesh grid lines so Z
+  follows the bed between probe points. It generates more commands, most noticeably for raster
+  engraving.
 
 The correction applies to cutting moves and travel moves alike, and arcs stay arcs (they become
 helical). It runs on the final toolpath in machine coordinates and accounts for the active work
 coordinate system's Z offset, so a job at Z 0 follows the bed height at the focus offset rather than
 the raw probed machine Z.
+
+Before the job-end return-to-origin move, the head lifts to the Safe Z used for probing, so it does
+not travel home at the last cut height.
 
 ---
 

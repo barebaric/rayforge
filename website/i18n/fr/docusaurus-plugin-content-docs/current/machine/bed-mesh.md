@@ -57,12 +57,18 @@ Le sondage ne fait qu'enregistrer la carte de hauteur — son application se con
   **décalage de mise au point** (la distance au-dessus de la surface sondée à laquelle doit se
   trouver le point de mise au point) ; Désactiver coupe la correction pour ce calque uniquement.
   Supprimer l'entrée du calque ramène au réglage par défaut de la machine.
+- **Subdiviser aux lignes de la grille** : Activez cette option pour couper les traits rectilignes
+  aux lignes de la grille afin que Z suive le plateau entre les points de sondage. Cela génère plus
+  de commandes, surtout en gravure raster.
 
 La correction s'applique aussi bien aux mouvements de découpe qu'aux déplacements, et les arcs
 restent des arcs (ils deviennent hélicoïdaux). Elle s'exécute sur le parcours final en coordonnées
 machine et tient compte du décalage Z du système de coordonnées de travail actif : un travail à Z 0
 suit donc la hauteur du plateau plus le décalage de mise au point, et non la Z machine brute sondée.
-d'origine de la machine.
+
+Avant le retour à l'origine en fin de travail, la tête remonte à la Z de sécurité utilisée pendant
+le sondage, afin de ne pas revenir à l'origine à la hauteur de la dernière coupe. d'origine de la
+machine.
 
 ---
 

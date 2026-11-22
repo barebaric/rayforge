@@ -54,11 +54,17 @@ Das Aufnehmen des Netzes ändert nur die Höhenkarte — die Anwendung wird pro 
   kopiert die Korrektur in die Ebene, wo du den **Fokusversatz** ändern kannst (wie weit über der
   abgetasteten Oberfläche der Fokuspunkt liegen soll); Deaktivieren schaltet die Korrektur nur für
   diese Ebene aus. Entfernt man den Eintrag der Ebene, greift wieder der Maschinenstandard.
+- **Unterteilung an Rasterlinien**: Aktiviere diese Option, um gerade Schnitte an den Rasterlinien
+  des Netzes zu teilen, damit die Z-Achse auch zwischen den Abtastpunkten der Bettform folgt. Das
+  erzeugt mehr Befehle, besonders beim Rastergravieren.
 
 Die Korrektur gilt für Schneide- und Bewegungsbewegungen gleichermaßen, und Bögen bleiben Bögen (sie
 werden zu Helixbewegungen). Sie läuft auf dem fertigen Werkzeugweg in Maschinenkoordinaten und
 berücksichtigt den Z-Versatz des aktiven Arbeitskoordinatensystems, sodass ein Auftrag bei Z 0 der
 Betthöhe plus Fokusversatz folgt statt der rohen abgetasteten Maschinen-Z.
+
+Vor der Rückkehr zum Ursprung am Ende eines Auftrags hebt sich der Kopf auf das beim Abtasten
+verwendete Sicherheits-Z, damit er nicht auf der letzten Schnitthöhe nach Hause fährt.
 
 ---
 

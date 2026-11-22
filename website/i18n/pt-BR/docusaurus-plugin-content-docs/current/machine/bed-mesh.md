@@ -54,11 +54,17 @@ Medir apenas registra o mapa de altura — aplicá-lo é controlado por trabalho
   Personalizar copia a correção para a camada, onde você pode ajustar o **deslocamento de foco** (a
   que distância acima da superfície medida o ponto de foco deve ficar); desativar desliga a correção
   apenas para essa camada. Remover a entrada da camada volta ao padrão da máquina.
+- **Subdividir nas linhas da grade**: Ative esta opção para dividir cortes retos nas linhas da
+  grade, de modo que Z siga a mesa entre os pontos de medição. Isso gera mais comandos,
+  principalmente na gravação raster.
 
 A correção se aplica tanto a movimentos de corte quanto de deslocamento, e os arcos continuam arcos
 (tornam-se helicoidais). Ela roda no trajeto final em coordenadas da máquina e considera o
 deslocamento Z do sistema de coordenadas de trabalho ativo, de modo que um trabalho em Z 0 segue a
 altura da mesa mais o deslocamento de foco, em vez da Z de máquina medida bruta.
+
+Antes do movimento de retorno à origem no fim do trabalho, a cabeça sobe para a Z de segurança usada
+durante a medição, para não voltar à origem na altura do último corte.
 
 ---
 

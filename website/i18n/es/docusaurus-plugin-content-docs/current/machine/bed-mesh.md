@@ -54,11 +54,17 @@ Sondear solo registra el mapa de altura; aplicarlo se controla por trabajo:
   copia la corrección a la capa, donde puedes ajustar el **desfase de enfoque** (cuánto por encima
   de la superficie sondeada debe estar el punto de enfoque); desactivar apaga la corrección solo
   para esa capa. Al eliminar la entrada de la capa se vuelve al valor por defecto de la máquina.
+- **Subdividir en las líneas de la cuadrícula**: Activa esta opción para dividir los cortes rectos
+  en las líneas de la cuadrícula, de modo que Z siga la cama entre los puntos de sondeo. Genera más
+  comandos, sobre todo al grabar imágenes rasterizadas.
 
 La corrección se aplica por igual a los movimientos de corte y de desplazamiento, y los arcos siguen
 siendo arcos (se vuelven helicoidales). Se ejecuta sobre el trayecto final en coordenadas de máquina
 y tiene en cuenta el desfase Z del sistema de coordenadas de trabajo activo, de modo que un trabajo
 en Z 0 sigue la altura de la cama más el desfase de enfoque en lugar de la Z de máquina sondeada.
+
+Antes del movimiento de retorno al origen al final de un trabajo, la cabeza sube a la Z segura usada
+durante el sondeo, de modo que no vuelve al origen a la altura del último corte.
 
 ---
 
