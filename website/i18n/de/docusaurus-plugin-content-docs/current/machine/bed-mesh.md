@@ -63,8 +63,9 @@ werden zu Helixbewegungen). Sie läuft auf dem fertigen Werkzeugweg in Maschinen
 berücksichtigt den Z-Versatz des aktiven Arbeitskoordinatensystems, sodass ein Auftrag bei Z 0 der
 Betthöhe plus Fokusversatz folgt statt der rohen abgetasteten Maschinen-Z.
 
-Vor der Rückkehr zum Ursprung am Ende eines Auftrags hebt sich der Kopf auf das beim Abtasten
-verwendete Sicherheits-Z, damit er nicht auf der letzten Schnitthöhe nach Hause fährt.
+Wenn das Postskript deiner Maschine zum Ursprung zurückkehrt, füge vor dieser Bewegung ein Z-Anheben
+ein (zum Beispiel `G0 Z0` mit einer für deine Maschine sicheren Höhe), damit der Kopf nicht auf der
+letzten Schnitthöhe nach Hause fährt.
 
 ---
 

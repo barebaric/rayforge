@@ -63,8 +63,9 @@ A correção se aplica tanto a movimentos de corte quanto de deslocamento, e os 
 deslocamento Z do sistema de coordenadas de trabalho ativo, de modo que um trabalho em Z 0 segue a
 altura da mesa mais o deslocamento de foco, em vez da Z de máquina medida bruta.
 
-Antes do movimento de retorno à origem no fim do trabalho, a cabeça sobe para a Z de segurança usada
-durante a medição, para não voltar à origem na altura do último corte.
+Se o postscript da sua máquina retorna à origem, adicione uma subida em Z antes desse movimento (por
+exemplo `G0 Z0`, usando uma altura segura para a sua máquina) para que a cabeça não volte à origem
+na altura do último corte.
 
 ---
 

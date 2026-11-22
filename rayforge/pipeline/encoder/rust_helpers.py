@@ -204,24 +204,6 @@ def _build_layer_wcs(doc: "Doc", machine: "Machine") -> dict[str, str]:
 # ── Public entry points ──────────────────────────────────────────
 
 
-def job_end_retract_z(machine: "Machine") -> float | None:
-    """Return the Z a job should lift to before its postscript travel.
-
-    The bed-mesh probe stores Safe Z in machine coordinates so the
-    value stays valid across WCS changes; jobs are emitted in the
-    active work frame, so convert it back. Meshes probed before that
-    field existed fall back to their raw work-space value.
-    """
-    if not machine.has_z_axis or machine.bed_mesh is None:
-        return None
-    params = machine.bed_mesh.probe_params
-    machine_z = params.get("safe_z_machine_mm")
-    if machine_z is not None:
-        return float(machine_z) - machine.get_active_wcs_offset()[2]
-    safe_z = params.get("safe_z_mm")
-    return float(safe_z) if safe_z is not None else None
-
-
 def build_encode_context(ops: Ops, machine: "Machine", doc: "Doc") -> dict:
     """Build the EncodeContext dict for raygeo.ops.encode_gcode."""
     path_vars: dict[str, str] = {}
@@ -241,6 +223,5 @@ def build_encode_context(ops: Ops, machine: "Machine", doc: "Doc") -> dict:
         "layer_path_vars": _build_layer_path_vars_for_doc(doc, machine),
         "workpiece_path_vars": _build_workpiece_path_vars_for_doc(doc),
         "has_z_axis": machine.has_z_axis,
-        "job_end_retract_z_mm": job_end_retract_z(machine),
         "power_cap": machine.get_job_power_cap(),
     }

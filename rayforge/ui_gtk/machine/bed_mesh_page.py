@@ -417,7 +417,6 @@ class BedMeshPage(TrackedPreferencesPage):
 
             params = self._grid_params()
             safe_z = self.safe_z_row.get_value_in_base_units()
-            off_z = self.machine.get_active_wcs_offset()[2]
             mesh = BedMesh()
             mesh.set_params(
                 x0=params["x0"],
@@ -433,7 +432,6 @@ class BedMeshPage(TrackedPreferencesPage):
                         self.travel_row.get_value_in_base_units()
                     ),
                     "safe_z_mm": safe_z,
-                    "safe_z_machine_mm": safe_z + off_z,
                 },
             )
             self.machine.set_bed_mesh(mesh)

@@ -61,8 +61,9 @@ helical). It runs on the final toolpath in machine coordinates and accounts for 
 coordinate system's Z offset, so a job at Z 0 follows the bed height at the focus offset rather than
 the raw probed machine Z.
 
-Before the job-end return-to-origin move, the head lifts to the Safe Z used for probing, so it does
-not travel home at the last cut height.
+If your machine's postscript returns to the origin, add a Z lift before that move (for example
+`G0 Z0`, using a height that is safe on your machine) so the head does not travel home at the last
+cut height.
 
 ---
 

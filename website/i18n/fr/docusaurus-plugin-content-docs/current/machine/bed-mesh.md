@@ -66,9 +66,9 @@ restent des arcs (ils deviennent hélicoïdaux). Elle s'exécute sur le parcours
 machine et tient compte du décalage Z du système de coordonnées de travail actif : un travail à Z 0
 suit donc la hauteur du plateau plus le décalage de mise au point, et non la Z machine brute sondée.
 
-Avant le retour à l'origine en fin de travail, la tête remonte à la Z de sécurité utilisée pendant
-le sondage, afin de ne pas revenir à l'origine à la hauteur de la dernière coupe. d'origine de la
-machine.
+Si le postscript de votre machine revient à l'origine, ajoutez une remontée en Z avant ce mouvement
+(par exemple `G0 Z0`, avec une hauteur sûre pour votre machine) afin que la tête ne revienne pas à
+l'origine à la hauteur de la dernière coupe.
 
 ---
 

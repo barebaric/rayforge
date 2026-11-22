@@ -63,8 +63,9 @@ siendo arcos (se vuelven helicoidales). Se ejecuta sobre el trayecto final en co
 y tiene en cuenta el desfase Z del sistema de coordenadas de trabajo activo, de modo que un trabajo
 en Z 0 sigue la altura de la cama más el desfase de enfoque en lugar de la Z de máquina sondeada.
 
-Antes del movimiento de retorno al origen al final de un trabajo, la cabeza sube a la Z segura usada
-durante el sondeo, de modo que no vuelve al origen a la altura del último corte.
+Si el postscript de tu máquina vuelve al origen, añade una elevación en Z antes de ese movimiento
+(por ejemplo `G0 Z0`, con una altura segura para tu máquina) para que la cabeza no vuelva al origen
+a la altura del último corte.
 
 ---
 

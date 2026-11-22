@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   machine, and renders it as a 3D surface. A per-layer post processor
   applies the bilinear height correction in machine space, optionally
   subdividing cuts at grid lines so Z follows the bed between probe
-  points. The job-end return travel lifts to the probe's Safe Z first
+  points
 
 ### Changed
 
