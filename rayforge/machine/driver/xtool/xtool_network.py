@@ -17,6 +17,7 @@ from ....pipeline.encoder.base import EncodedOutput
 from ....shared.units.system import UnitSystem
 from ...transport import TransportStatus
 from ..driver import (
+    MOVE_TO_SPEED_MM_MIN,
     Axis,
     DeviceConnectionError,
     DriverMaturity,
@@ -251,9 +252,6 @@ class XtoolNetworkDriver(SessionDriverBase):
         except Exception:
             logger.exception("Job terminated with unexpected error")
 
-    async def cancel(self, emergency: bool = False) -> None:
-        await self._require_session().cancel(emergency)
-
     def can_home(self, axis: Axis | None = None) -> bool:
         """The xTool firmware only offers an all-axis homing cycle."""
         return axis is None
@@ -273,12 +271,14 @@ class XtoolNetworkDriver(SessionDriverBase):
         speed: float | None = None,
     ) -> None:
         session = self._require_session()
+        if speed is None:
+            speed = MOVE_TO_SPEED_MM_MIN
         z = self._to_machine_length(pos_z) if pos_z is not None else None
         await session.move_to(
+            self._to_machine_speed(speed),
             self._to_machine_length(float(pos_x)),
             self._to_machine_length(float(pos_y)),
             z,
-            None if speed is None else self._to_machine_speed(speed),
         )
 
     async def select_tool(self, tool_number: int) -> None:

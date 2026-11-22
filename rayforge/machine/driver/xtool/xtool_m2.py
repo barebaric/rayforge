@@ -210,9 +210,6 @@ class XtoolM2Driver(SessionDriverBase):
             )
         )
 
-    async def cancel(self, emergency: bool = False) -> None:
-        await self._require_session().cancel()
-
     def can_home(self, axis: Axis | None = None) -> bool:
         """The M2 homes all axes at once."""
         return axis is None
@@ -238,17 +235,20 @@ class XtoolM2Driver(SessionDriverBase):
         if speed is None:
             speed = self._machine.max_travel_speed
         await self._require_session().move_to(
+            self._to_machine_speed(speed),
             self._to_machine_length(float(pos_x)),
             self._to_machine_length(float(pos_y)),
-            self._to_machine_speed(speed),
+            None,
         )
 
     async def jog(self, speed: int, **deltas: float) -> None:
         await self._require_session().jog(
-            dx=self._to_machine_length(deltas.get("x", 0.0)),
-            dy=self._to_machine_length(deltas.get("y", 0.0)),
-            dz=self._to_machine_length(deltas.get("z", 0.0)),
-            speed=self._to_machine_speed(speed),
+            self._to_machine_speed(speed),
+            [
+                ("x", self._to_machine_length(deltas.get("x", 0.0))),
+                ("y", self._to_machine_length(deltas.get("y", 0.0))),
+                ("z", self._to_machine_length(deltas.get("z", 0.0))),
+            ],
         )
 
     async def select_tool(self, tool_number: int) -> None:
