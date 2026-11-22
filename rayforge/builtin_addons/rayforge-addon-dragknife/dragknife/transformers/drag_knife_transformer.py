@@ -76,7 +76,8 @@ class DragKnifeTransformer(OpsTransformer):
         self,
         workpiece: WorkPiece | None,
         stock_geometries: list[Geometry] | None,
-        settings: dict[str, Any] | None,
+        machine=None,
+        settings: dict[str, Any] | None = None,
     ) -> DragKnifeSpec:
         return DragKnifeSpec(
             offset_mm=self.offset_mm,

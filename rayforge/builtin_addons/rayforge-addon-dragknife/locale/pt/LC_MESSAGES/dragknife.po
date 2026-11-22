@@ -1,0 +1,142 @@
+# Portuguese translations for PACKAGE package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-11 00:59+0200\n"
+"PO-Revision-Date: 2026-09-11 00:59+0200\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: pt\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: dragknife/widgets/pages.py
+msgid "Drag Knife"
+msgstr "Faca de arrasto"
+
+#: dragknife/widgets/pages.py
+msgid "Cut the workpiece outline with a drag knife."
+msgstr "Corta o contorno da peça com uma faca de arrasto."
+
+#: dragknife/widgets/pages.py
+#: dragknife/transformers/tangential_knife_transformer.py
+msgid "Tangential Knife"
+msgstr "Faca tangencial"
+
+#: dragknife/widgets/pages.py
+msgid ""
+"Cut the workpiece outline with a rotary knife that stays tangent to the path."
+msgstr ""
+"Corta o contorno da peça com uma faca rotativa que permanece tangente à "
+"trajetória."
+
+#: dragknife/transformers/drag_knife_transformer.py
+msgid "Drag Knife Compensation"
+msgstr "Compensação de faca de arrasto"
+
+#: dragknife/transformers/drag_knife_transformer.py
+msgid ""
+"Compensates contours for the blade offset of a drag knife and pivots the "
+"blade around corners."
+msgstr ""
+"Compensa os contornos pelo deslocamento da lâmina de uma faca de arrasto e "
+"gira a lâmina nos cantos."
+
+#: dragknife/transformers/tangential_knife_transformer.py
+msgid ""
+"Rotates a tangential knife to stay tangent to the path and lifts it at sharp "
+"corners."
+msgstr ""
+"Gira uma faca tangencial para mantê-la tangente à trajetória e a levanta nos "
+"cantos fechados."
+
+#: dragknife/steps/tangential_knife_cut_step.py
+msgid "Tangential Knife Cut"
+msgstr "Corte com faca tangencial"
+
+#: dragknife/steps/tangential_knife_cut_step.py
+msgid "Angle Tolerance"
+msgstr "Tolerância de ângulo"
+
+#: dragknife/steps/tangential_knife_cut_step.py
+msgid ""
+"Maximum heading change rotated with the knife down; larger changes lift the "
+"knife"
+msgstr ""
+"Mudança máxima de direção girada com a faca abaixada; mudanças maiores "
+"levantam a faca"
+
+#: dragknife/steps/tangential_knife_cut_step.py
+msgid "Radius Tolerance"
+msgstr "Tolerância de raio"
+
+#: dragknife/steps/tangential_knife_cut_step.py
+msgid "Arcs tighter than this radius are cut with the knife lifted"
+msgstr "Arcos mais fechados que este raio são cortados com a faca levantada"
+
+#: dragknife/steps/tangential_knife_cut_step.py
+msgid "Spindle RPM"
+msgstr "RPM do spindle"
+
+#: dragknife/steps/tangential_knife_cut_step.py
+msgid "Blade motor speed (M3)"
+msgstr "Velocidade do motor da lâmina (M3)"
+
+#: dragknife/steps/knife_cut_step.py
+msgid ""
+"Knife head used for this step; the machine's first knife is used when unset"
+msgstr ""
+"Cabeçote de faca usado nesta etapa; se não definido, a primeira faca da "
+"máquina é usada"
+
+#: dragknife/steps/knife_cut_step.py
+msgid "Blade Offset"
+msgstr "Deslocamento da lâmina"
+
+#: dragknife/steps/knife_cut_step.py
+msgid "Distance between the blade tip and the machine's pivot point"
+msgstr "Distância entre a ponta da lâmina e o ponto de giro da máquina"
+
+#: dragknife/steps/knife_cut_step.py
+msgid "Safe Z Height"
+msgstr "Altura Z segura"
+
+#: dragknife/steps/knife_cut_step.py
+msgid "Height to retract between moves"
+msgstr "Altura para recuar entre movimentos"
+
+#: dragknife/steps/knife_cut_step.py
+msgid "Knife head, blade geometry, and retraction height for this operation."
+msgstr ""
+"Cabeçote de faca, geometria da lâmina e altura de recuo para esta operação."
+
+#: dragknife/steps/knife_cut_step.py dragknife/knife_head_var.py
+msgid "Knife"
+msgstr "Faca"
+
+#: dragknife/steps/knife_cut_step.py
+msgid "Step Settings"
+msgstr "Configurações da etapa"
+
+#: dragknife/steps/drag_knife_cut_step.py
+msgid "Drag Knife Cut"
+msgstr "Corte com faca de arrasto"
+
+#: dragknife/steps/drag_knife_cut_step.py
+msgid "Swivel Angle"
+msgstr "Ângulo de giro"
+
+#: dragknife/steps/drag_knife_cut_step.py
+msgid ""
+"Maximum corner angle pivoted with the blade down; sharper corners lift the "
+"knife first"
+msgstr ""
+"Ângulo máximo de canto girado com a lâmina abaixada; cantos mais fechados "
+"levantam a faca primeiro"

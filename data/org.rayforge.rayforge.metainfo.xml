@@ -77,6 +77,156 @@
   </screenshots>
 
   <releases>
+    <release version="1.15.0~beta1" date="2026-11-22">
+      <description>
+        <p>Bed mesh probing with per-layer Z compensation, drag and
+        tangential knife cutting, Interval and Focus Tests, Shop mode,
+        xTool Wi-Fi support, a GRBL Bluetooth driver, per-axis kerf
+        compensation, and a large raygeo/raydriver upgrade with faster
+        sketching and broader device support</p>
+        <p>New Features:</p>
+        <ul>
+          <li>Machine: bed mesh probing. The new Bed Mesh page probes
+          the work surface on a configurable grid, stores the height
+          map with the machine, and renders it as a colored 3D
+          surface. Invalid Safe Z and probe travel are rejected, the
+          head lifts straight up before traveling between points, and
+          a stopped or failed run saves nothing. A per-layer post
+          processor applies the bilinearly interpolated correction in
+          machine coordinates, optionally subdividing cuts at grid
+          lines so Z follows the bed between probe points; layers
+          follow the machine default or override the focus offset and
+          subdivision. Requires a Z axis and a probing driver</li>
+          <li>Machine: knife cutting (experimental). The built-in Drag
+          Knife addon adds Drag Knife Cut and Tangential Knife Cut
+          steps and Drag Knife and Tangential Knife heads. The drag
+          knife step compensates the blade offset, aligns the blade
+          with an arc-in, pivots corners within the swivel angle and
+          lifts at sharper corners; the tangential knife rotates the A
+          axis with the path heading and lifts beyond the configured
+          angle or radius tolerance. The steps only appear on machines
+          with a matching head</li>
+          <li>Tests: Tools → Create Interval Test and Tools → Create
+          Focus Test. The Interval Test engraves squares with
+          different line intervals, labelled in mm and LPI; the Focus
+          Test finds the sharpest height with Z axis steps, manual
+          pauses or a ramp on tilted material. Both use the same Test
+          Settings panel as the Material Test Grid and rebuild as one
+          undo step, keeping their corner and operations added to
+          their layer. The Material Test Grid's settings moved into
+          Test Settings as well</li>
+          <li>UI: Shop mode replaces the bottom panel's Controls tab
+          with large per-axis readouts, zero buttons, an offsets card,
+          oversized jog speed and step steppers, and large jog, home,
+          WCS, hold, cancel, frame and send buttons. Disabled by
+          default</li>
+          <li>Addons: clicking an addon row opens a detail view with a
+          screenshot carousel, a Markdown long description, author,
+          version, license, a repository link and the Install, Update
+          or Unlock action. Built-in addons ship descriptions and
+          screenshots</li>
+          <li>Contour: per-axis kerf compensation. Offset X and Offset
+          Y are seeded from the laser spot size per axis and stay
+          independently editable, so elliptical diode spots are
+          compensated correctly. Projects and LightBurn imports
+          without a Y value use the X value for both axes</li>
+          <li>Machine: xTool Wi-Fi drivers and profiles
+          (experimental). The xTool (Wi-Fi) driver drives D-series
+          machines such as the D1 and D1 Pro, including job upload and
+          start, homing, jogging, pause, resume and cancel. The xTool
+          M2 (Wi-Fi) driver monitors the M2 and controls homing,
+          jogging and pause, resume or cancel; the M2 network API
+          cannot receive G-code jobs yet</li>
+          <li>Machine: a GRBL (Bluetooth) driver connects over
+          Bluetooth Classic SPP/RFCOMM using devices paired in the
+          operating system, with a paired-device picker and manual
+          address fallback. Bluetooth Low Energy is not supported</li>
+          <li>Machine: automatic grblHAL discovery. Boards announcing
+          _telnet._tcp via mDNS are listed after their $I check, and
+          firmware announcing nothing is found by a narrow subnet scan
+          of the telnet port during machine setup</li>
+          <li>Machine: the Machine menu gains a Select Machine
+          submenu, Add Machine… and Manage Machines…, so machines can
+          be selected and managed without opening application
+          settings</li>
+          <li>Machine: automatic system sleep is inhibited while a job
+          is running, so the connection is not dropped. The
+          "Prevent sleep during jobs" option can disable it</li>
+          <li>Camera: cameras advertised by a remote raydriver daemon
+          can be added as a daemon camera; the URL and source type are
+          filled in. Network camera URLs can be edited without losing
+          calibration</li>
+        </ul>
+        <p>Changes:</p>
+        <ul>
+          <li>Layer settings gain a Post Processing section that
+          applies registered post processors to the merged toolpath in
+          machine coordinates. Layers follow the machine default or
+          hold their own settings; Bed Mesh Correction is the first
+          processor</li>
+          <li>Driver names now describe the connection: GRBL
+          (Serial) is GRBL (USB/Serial), GRBL (Serial Simple) is GRBL
+          (USB/Serial — compatibility mode), GRBL (Network) is
+          FluidNC / ESP3D (Web API), and GRBL (Telnet) is grblHAL
+          (Telnet). Existing configurations keep working</li>
+          <li>OctoPrint, Marlin (Serial) and the GRBL compatibility
+          mode driver are stable now; their experimental warning
+          banners are gone</li>
+          <li>grblHAL controllers are identified by their
+          [BOARD:...] name during probing instead of the firmware
+          build field</li>
+          <li>Sketcher: the constraint solver, snapping, selection,
+          arrays, document model, contour, offset and boolean
+          operations run in raygeo's Rust core, keeping large sketches
+          responsive. Snapping on a dense sketch dropped from about
+          40 ms to 28 ms per query, and stray constraint-label lines,
+          tangent constraints on clockwise arcs, ellipse centers and
+          closing a shape by clicking its start point are fixed
+          (raygeo 1.77.0–1.93.1)</li>
+          <li>Dependencies: raygeo 1.93.1 and raydriver 1.19.0.
+          raydriver adds discovery, Bluetooth, xTool and daemon-camera
+          support, reports daemon-side errors instead of timing out,
+          aborts the job when a run is cancelled, and derives homing
+          and stream timeouts from command estimates</li>
+        </ul>
+        <p>Bug Fixes:</p>
+        <ul>
+          <li>Import: SVG geometry outside named layers is offered as
+          an "Ungrouped" layer, enabled by default, so shapes visible
+          in the preview are no longer silently uncut</li>
+          <li>Import: DXF content inside INSERT blocks stays on
+          layers that are used only inside blocks, and entities on
+          layer "0" inherit the insertion layer</li>
+          <li>OctoPrint: Frame and Send no longer stay disabled. The
+          driver authenticates the raw SockJS socket immediately and
+          accepts plain JSON messages, so status updates arrive. HTTP
+          errors are no longer reported as connection failures, and
+          cancelling nothing no longer shows a false error</li>
+          <li>Camera: editing a network camera's URL reopens the
+          stream immediately instead of only after toggling Enabled</li>
+          <li>Pointer alignment: aiming offsets are honored with the
+          workarea origin in Click-to-Move, Move-Head-Here, corner
+          shortcuts, framing and dry-runs. Burning no longer turns
+          alignment off, and pointer dry-runs cap power at the framing
+          power</li>
+          <li>Machine: the GRBL network driver no longer starts
+          duplicate connection loops; FluidNC uses the HTTP port for
+          the WebSocket when none is configured; and homing no longer
+          times out after 10 seconds on large machines</li>
+          <li>Pipeline: Recalculate clears the stale state, so Export
+          and Send are enabled again with auto-update off, and a job
+          request ignores stale rebuild-finished events from an
+          earlier chain</li>
+          <li>Windows: the cairo renderer is the default when GTK's
+          OpenGL renderer crashes, and renaming a workflow no longer
+          crashes GTK's input method (#684, #720)</li>
+        </ul>
+        <p>New documentation covers bed meshing, the Interval and
+        Focus Tests, knife cutting, xTool Wi-Fi support, the addon
+        detail view, the new driver names and connections, Shop mode
+        and the sleep inhibitor</p>
+      </description>
+    </release>
     <release version="1.14.0" date="2026-11-14">
       <description>
         <p>Remote machines driven through raydriver daemons on the

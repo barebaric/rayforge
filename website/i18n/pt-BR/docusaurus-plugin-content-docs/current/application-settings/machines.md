@@ -56,8 +56,8 @@ perfil.
 ## Alternar a Máquina Ativa
 
 O submenu **Máquina → Select Machine** lista todas as máquinas configuradas; a máquina ativa tem uma
-marca de verificação. Selecione outra entrada para alternar para ela. Você também pode usar o menu suspenso
-de máquinas no cabeçalho da janela principal. A seleção é lembrada entre sessões.
+marca de verificação. Selecione outra entrada para alternar para ela. Você também pode usar o menu
+suspenso de máquinas no cabeçalho da janela principal. A seleção é lembrada entre sessões.
 
 ## Excluir uma Máquina
 

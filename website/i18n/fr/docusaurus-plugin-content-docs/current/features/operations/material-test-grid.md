@@ -18,8 +18,8 @@ nouveau calque portant le nom du test, avec une pièce et une opération corresp
 sélectionne. Les paramètres de la grille apparaissent sous **Test Settings** dans le panneau de
 propriétés à droite, si bien que le canevas et la grille restent visibles pendant que tu les
 modifies. Chaque modification reconstruit immédiatement la grille, en une seule étape que tu peux
-annuler. Sélectionne à nouveau la grille plus tard pour retrouver ses paramètres. Les [tests
-d'intervalle et de mise au point](interval-and-focus-tests.md) fonctionnent de la même façon.
+annuler. Sélectionne à nouveau la grille plus tard pour retrouver ses paramètres. Les
+[tests d'intervalle et de mise au point](interval-and-focus-tests.md) fonctionnent de la même façon.
 
 ![Paramètres de la Grille de Test de Matériau](/screenshots/material-test.webp)
 

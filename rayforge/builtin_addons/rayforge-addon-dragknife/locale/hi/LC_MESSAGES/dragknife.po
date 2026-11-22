@@ -1,0 +1,133 @@
+# Hindi translations for PACKAGE package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-11 00:59+0200\n"
+"PO-Revision-Date: 2026-09-11 00:59+0200\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: dragknife/widgets/pages.py
+msgid "Drag Knife"
+msgstr "ड्रैग नाइफ"
+
+#: dragknife/widgets/pages.py
+msgid "Cut the workpiece outline with a drag knife."
+msgstr "ड्रैग नाइफ से वर्कपीस की आउटलाइन काटें."
+
+#: dragknife/widgets/pages.py
+#: dragknife/transformers/tangential_knife_transformer.py
+msgid "Tangential Knife"
+msgstr "टैंजेंशियल नाइफ"
+
+#: dragknife/widgets/pages.py
+msgid ""
+"Cut the workpiece outline with a rotary knife that stays tangent to the path."
+msgstr "घूमने वाले नाइफ से वर्कपीस की आउटलाइन काटें जो पथ के स्पर्शरेखा में रहता है."
+
+#: dragknife/transformers/drag_knife_transformer.py
+msgid "Drag Knife Compensation"
+msgstr "ड्रैग नाइफ क्षतिपूर्ति"
+
+#: dragknife/transformers/drag_knife_transformer.py
+msgid ""
+"Compensates contours for the blade offset of a drag knife and pivots the "
+"blade around corners."
+msgstr ""
+"ड्रैग नाइफ के ब्लेड ऑफ़सेट के लिए कंटूर की क्षतिपूर्ति करता है और कोनों पर ब्लेड घुमाता है."
+
+#: dragknife/transformers/tangential_knife_transformer.py
+msgid ""
+"Rotates a tangential knife to stay tangent to the path and lifts it at sharp "
+"corners."
+msgstr ""
+"टैंजेंशियल नाइफ को पथ के स्पर्शरेखा में रखने के लिए घुमाता है और तीखे कोनों पर उसे उठाता है."
+
+#: dragknife/steps/tangential_knife_cut_step.py
+msgid "Tangential Knife Cut"
+msgstr "टैंजेंशियल नाइफ कट"
+
+#: dragknife/steps/tangential_knife_cut_step.py
+msgid "Angle Tolerance"
+msgstr "कोण सहनशीलता"
+
+#: dragknife/steps/tangential_knife_cut_step.py
+msgid ""
+"Maximum heading change rotated with the knife down; larger changes lift the "
+"knife"
+msgstr ""
+"नाइफ नीचे रखकर घुमाया जाने वाला अधिकतम दिशा परिवर्तन; बड़े परिवर्तन नाइफ को उठाते हैं"
+
+#: dragknife/steps/tangential_knife_cut_step.py
+msgid "Radius Tolerance"
+msgstr "त्रिज्या सहनशीलता"
+
+#: dragknife/steps/tangential_knife_cut_step.py
+msgid "Arcs tighter than this radius are cut with the knife lifted"
+msgstr "इस त्रिज्या से छोटे आर्क नाइफ उठाकर काटे जाते हैं"
+
+#: dragknife/steps/tangential_knife_cut_step.py
+msgid "Spindle RPM"
+msgstr "स्पिंडल RPM"
+
+#: dragknife/steps/tangential_knife_cut_step.py
+msgid "Blade motor speed (M3)"
+msgstr "ब्लेड मोटर गति (M3)"
+
+#: dragknife/steps/knife_cut_step.py
+msgid ""
+"Knife head used for this step; the machine's first knife is used when unset"
+msgstr ""
+"इस स्टेप के लिए उपयोग किया गया नाइफ हेड; सेट न होने पर मशीन का पहला नाइफ उपयोग "
+"होता है"
+
+#: dragknife/steps/knife_cut_step.py
+msgid "Blade Offset"
+msgstr "ब्लेड ऑफ़सेट"
+
+#: dragknife/steps/knife_cut_step.py
+msgid "Distance between the blade tip and the machine's pivot point"
+msgstr "ब्लेड की नोक और मशीन के पिवट पॉइंट के बीच की दूरी"
+
+#: dragknife/steps/knife_cut_step.py
+msgid "Safe Z Height"
+msgstr "सुरक्षित Z ऊँचाई"
+
+#: dragknife/steps/knife_cut_step.py
+msgid "Height to retract between moves"
+msgstr "मूव के बीच पीछे हटने की ऊँचाई"
+
+#: dragknife/steps/knife_cut_step.py
+msgid "Knife head, blade geometry, and retraction height for this operation."
+msgstr "इस ऑपरेशन के लिए नाइफ हेड, ब्लेड ज्यामिति और वापसी ऊँचाई."
+
+#: dragknife/steps/knife_cut_step.py dragknife/knife_head_var.py
+msgid "Knife"
+msgstr "नाइफ़"
+
+#: dragknife/steps/knife_cut_step.py
+msgid "Step Settings"
+msgstr "स्टेप सेटिंग्स"
+
+#: dragknife/steps/drag_knife_cut_step.py
+msgid "Drag Knife Cut"
+msgstr "ड्रैग नाइफ कट"
+
+#: dragknife/steps/drag_knife_cut_step.py
+msgid "Swivel Angle"
+msgstr "स्विवेल कोण"
+
+#: dragknife/steps/drag_knife_cut_step.py
+msgid ""
+"Maximum corner angle pivoted with the blade down; sharper corners lift the "
+"knife first"
+msgstr "ब्लेड नीचे रखकर घुमाया जाने वाला अधिकतम कोना; तीखे कोनों पर नाइफ पहले उठता है"

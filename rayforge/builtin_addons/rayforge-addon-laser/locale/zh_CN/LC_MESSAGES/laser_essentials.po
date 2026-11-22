@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 17:23+0100\n"
+"POT-Creation-Date: 2026-11-19 19:50+0100\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -16,6 +16,253 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
+
+#: laser_essentials/calibration/material_test_grid.py
+msgid "Diode Engrave"
+msgstr "二极管雕刻"
+
+#: laser_essentials/calibration/material_test_grid.py
+msgid "Diode Cut"
+msgstr "二极管切割"
+
+#: laser_essentials/calibration/material_test_grid.py
+msgid "CO2 Engrave"
+msgstr "CO2 雕刻"
+
+#: laser_essentials/calibration/material_test_grid.py
+msgid "CO2 Cut"
+msgstr "CO2 切割"
+
+#: laser_essentials/calibration/material_test_grid.py
+#: laser_essentials/steps/material_test.py
+msgid "Material Test Grid"
+msgstr "材料测试网格"
+
+#: laser_essentials/calibration/material_test_grid.py
+msgid "Presets"
+msgstr "预设"
+
+#: laser_essentials/calibration/material_test_grid.py
+msgid "Load common test configurations"
+msgstr "加载常用测试配置"
+
+#: laser_essentials/calibration/material_test_grid.py
+msgid "Select"
+msgstr "选择"
+
+#: laser_essentials/calibration/material_test_grid.py
+msgid ""
+"The laser head and the post-processing of the grid stay in the settings of "
+"its operation."
+msgstr "激光机头和网格的后处理保留在其操作的设置中。"
+
+#: laser_essentials/calibration/material_test_grid.py
+msgid "A Material Test Grid needs at least 2×2 cells."
+msgstr "材料测试网格至少需要 2×2 个单元格。"
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Z axis steps"
+msgstr "Z 轴步进"
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Manual (pause between lines)"
+msgstr "手动（行间暂停）"
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Ramp (tilted material)"
+msgstr "斜坡（倾斜材料）"
+
+#: laser_essentials/calibration/focus_test.py
+msgid ""
+"Focus the laser as usual first. The job moves the head to the first offset, "
+"engraves one line per offset and returns the head to the starting height. A "
+"positive offset means more distance between the head and the material."
+msgstr ""
+"先照常对焦激光。作业将机头移动到第一个偏移，每个偏移雕刻一条线，然后将机头返"
+"回到起始高度。正偏移表示机头与材料之间的距离更大。"
+
+#: laser_essentials/calibration/focus_test.py
+msgid ""
+"Focus the laser as usual first. The labels are engraved at that height. "
+"Before each line the job pauses: set the head to the first offset, then move "
+"it by one step at every following pause, and press Resume. A positive offset "
+"means more distance between the head and the material."
+msgstr ""
+"先照常对焦激光。标签在该高度雕刻。每条线之前作业会暂停：将机头设置到第一个偏"
+"移，之后每次暂停时移动一个步长，然后按继续。正偏移表示机头与材料之间的距离更"
+"大。"
+
+#: laser_essentials/calibration/focus_test.py
+msgid ""
+"Prop up one end of a flat strip so it rises evenly under the line. The "
+"thinnest part of the line marks the focus; the ticks show the distance along "
+"the line, so the height there follows from the rise."
+msgstr ""
+"垫高一端平直条带，使其在线下均匀升高。线最细的部分标记焦点；刻度显示沿线距"
+"离，因此该处的高度可由升高量推出。"
+
+#: laser_essentials/calibration/focus_test.py
+msgid "A Focus Test needs at least two lines."
+msgstr "焦点测试至少需要两条线。"
+
+#: laser_essentials/calibration/focus_test.py
+msgid "The focus step must not be zero."
+msgstr "焦点步长不能为零。"
+
+#: laser_essentials/calibration/focus_test.py
+#, python-brace-format
+msgid ""
+"The focus offsets must stay within ±{limit:g} mm of the starting height."
+msgstr "焦点偏移必须保持在起始高度的 ±{limit:g} mm 以内。"
+
+#: laser_essentials/calibration/focus_test.py
+#, python-brace-format
+msgid "Z to {offset} mm"
+msgstr "Z 到 {offset} mm"
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Z back to the starting height"
+msgstr "Z 返回起始高度"
+
+#: laser_essentials/calibration/focus_test.py
+#, python-brace-format
+msgid "Pause: set the head to {offset} mm from focus"
+msgstr "暂停：将机头设置到距焦点 {offset} mm"
+
+#: laser_essentials/calibration/focus_test.py
+#, python-brace-format
+msgid "Pause: move the head by {step} mm"
+msgstr "暂停：将机头移动 {step} mm"
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Focus Test"
+msgstr "焦点测试"
+
+#: laser_essentials/calibration/focus_test.py
+#, python-brace-format
+msgid ""
+"The method {method} is not available on this machine. Choose another method "
+"to rebuild the test."
+msgstr "此机器不支持方法 {method}。请选择其他方法以重建测试。"
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Method"
+msgstr "方法"
+
+#: laser_essentials/calibration/focus_test.py
+msgid "First Offset"
+msgstr "第一个偏移"
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Step"
+msgstr "步长"
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Number of Lines"
+msgstr "线条数"
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Line Length"
+msgstr "线条长度"
+
+#: laser_essentials/calibration/focus_test.py
+#: laser_essentials/calibration/interval_test.py
+#: laser_essentials/steps/material_test.py
+msgid "Spacing"
+msgstr "间距"
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Ramp Length"
+msgstr "斜坡长度"
+
+#: laser_essentials/calibration/focus_test.py
+#, python-brace-format
+msgid "This machine does not support the focus test mode {mode}."
+msgstr "此机器不支持焦点测试模式 {mode}。"
+
+#: laser_essentials/calibration/focus_test.py
+#, python-brace-format
+msgid "Focus {offset} mm"
+msgstr "焦点 {offset} mm"
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Focus ramp"
+msgstr "焦点斜坡"
+
+#: laser_essentials/calibration/common.py
+#: laser_essentials/widgets/raster_page.py laser_essentials/steps/laser_step.py
+msgid "Power"
+msgstr "功率"
+
+#: laser_essentials/calibration/common.py
+msgid "Speed"
+msgstr "速度"
+
+#: laser_essentials/calibration/common.py
+#: laser_essentials/steps/material_test.py
+msgid "Include Labels"
+msgstr "包含标签"
+
+#: laser_essentials/calibration/common.py
+msgid "Label Engrave Power (%)"
+msgstr "标签雕刻功率 (%)"
+
+#: laser_essentials/calibration/common.py
+#: laser_essentials/steps/material_test.py
+msgid "Label Engrave Speed"
+msgstr "标签雕刻速度"
+
+#: laser_essentials/calibration/common.py
+msgid "Labels"
+msgstr "标签"
+
+#: laser_essentials/calibration/builder.py
+msgid "Machine commands need the Automation addon."
+msgstr "机器指令需要 Automation 插件。"
+
+#: laser_essentials/calibration/interval_test.py
+msgid "An Interval Test needs at least two cells."
+msgstr "间隔测试至少需要两个单元格。"
+
+#: laser_essentials/calibration/interval_test.py
+msgid "The minimum line interval must be above zero and below the maximum."
+msgstr "最小线间隔必须大于零且小于最大值。"
+
+#: laser_essentials/calibration/interval_test.py
+msgid "Interval Test"
+msgstr "间隔测试"
+
+#: laser_essentials/calibration/interval_test.py
+msgid "Number of Cells"
+msgstr "单元格数量"
+
+#: laser_essentials/calibration/interval_test.py
+msgid "Smallest Interval"
+msgstr "最小间隔"
+
+#: laser_essentials/calibration/interval_test.py
+msgid "Largest Interval"
+msgstr "最大间隔"
+
+#: laser_essentials/calibration/interval_test.py
+msgid "Cell Size"
+msgstr "单元格尺寸"
+
+#: laser_essentials/calibration/interval_test.py
+msgid ""
+"Engraves a row of filled squares, each with its own line interval, at the "
+"same power and speed."
+msgstr "雕刻一排填充方块，每个都有自己的线间隔，功率和速度相同。"
+
+#: laser_essentials/calibration/interval_test.py
+#, python-brace-format
+msgid "Interval {interval:.2f} mm"
+msgstr "间隔 {interval:.2f} mm"
+
+#: laser_essentials/calibration/interval_test.py
+#, python-brace-format
+msgid "{lpi:.0f} LPI"
+msgstr "{lpi:.0f} LPI"
 
 #: laser_essentials/material_test_helpers.py
 msgid "Cut"
@@ -141,65 +388,21 @@ msgstr "几何"
 msgid "Cut a frame around the selected content."
 msgstr "在所选内容周围切割一个边框。"
 
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Grid"
-msgstr "网格"
+#: laser_essentials/widgets/calibration_provider.py
+msgid "Test Settings"
+msgstr "测试设置"
 
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Test cell dimensions, shape, and spacing."
-msgstr "测试单元的尺寸、形状和间距。"
+#: laser_essentials/widgets/calibration_provider.py
+msgid ""
+"Changing a setting rebuilds the test. The other settings of its operation "
+"stay."
+msgstr "更改设置会重建测试。其操作的其他设置保持不变。"
 
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Labels"
-msgstr "标签"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Speed/power annotations on the grid."
-msgstr "网格上的速度/功率标注。"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Parameters"
-msgstr "参数"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Define the parameter ranges for the test grid."
-msgstr "定义测试网格的参数范围。"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Diode Engrave"
-msgstr "二极管雕刻"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Diode Cut"
-msgstr "二极管切割"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "CO2 Engrave"
-msgstr "CO2 雕刻"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "CO2 Cut"
-msgstr "CO2 切割"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Select"
-msgstr "选择"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Preset"
-msgstr "预设"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Load common test configurations."
-msgstr "加载常用测试配置。"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Presets"
-msgstr "预设"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Load common test configurations"
-msgstr "加载常用测试配置"
+#: laser_essentials/widgets/calibration_provider.py
+msgid ""
+"Changing a setting rebuilds the test and replaces changes made to its "
+"operations."
+msgstr "更改设置会重建测试，并替换对其操作所做的更改。"
 
 #: laser_essentials/widgets/raster_power_widget.py
 msgid "Min Power (White)"
@@ -226,10 +429,6 @@ msgstr "雕刻速度"
 #: laser_essentials/widgets/raster_page.py
 msgid "Raster the image onto the material."
 msgstr "将图像栅格化到材料上。"
-
-#: laser_essentials/widgets/raster_page.py laser_essentials/steps/laser_step.py
-msgid "Power"
-msgstr "功率"
 
 #: laser_essentials/widgets/raster_page.py
 msgid "Power modulation and brightness range."
@@ -343,7 +542,6 @@ msgstr "切割侧"
 #: laser_essentials/steps/wavefront_step.py
 #: laser_essentials/steps/frame_step.py
 #: laser_essentials/steps/offset_fill_step.py
-#: laser_essentials/steps/contour_step.py
 msgid "Offset"
 msgstr "偏移"
 
@@ -598,11 +796,22 @@ msgid "Contour"
 msgstr "轮廓"
 
 #: laser_essentials/steps/contour_step.py
+msgid "Offset X"
+msgstr "X 偏移"
+
+#: laser_essentials/steps/contour_step.py
 msgid ""
-"Shifts the cut path inward/outward per Cut Side (none on Centerline). "
-"Defaults to kerf compensation for the head"
-msgstr ""
-"根据切割侧向内/向外偏移切割路径（中心线时无偏移）。默认根据机头进行切缝补偿"
+"Shifts the cut along X per Cut Side. Defaults to half the laser spot width"
+msgstr "根据切割侧沿 X 方向移动切割。默认值为激光光斑宽度的一半"
+
+#: laser_essentials/steps/contour_step.py
+msgid "Offset Y"
+msgstr "Y 偏移"
+
+#: laser_essentials/steps/contour_step.py
+msgid ""
+"Shifts the cut along Y per Cut Side. Defaults to half the laser spot height"
+msgstr "根据切割侧沿 Y 方向移动切割。默认值为激光光斑高度的一半"
 
 #: laser_essentials/steps/contour_step.py
 msgid "Cut Order"
@@ -642,11 +851,6 @@ msgid "Brightness level (0.0-1.0) to define edges"
 msgstr "定义边缘的亮度级别 (0.0-1.0)"
 
 #: laser_essentials/steps/material_test.py
-#: laser_essentials/commands/material_test_cmd.py
-msgid "Material Test Grid"
-msgstr "材料测试网格"
-
-#: laser_essentials/steps/material_test.py
 msgid "Test Type"
 msgstr "测试类型"
 
@@ -683,10 +887,6 @@ msgid "Size of each test square"
 msgstr "每个测试方块的大小"
 
 #: laser_essentials/steps/material_test.py
-msgid "Spacing"
-msgstr "间距"
-
-#: laser_essentials/steps/material_test.py
 msgid "Gap between test squares"
 msgstr "测试方块之间的间隙"
 
@@ -698,20 +898,12 @@ msgstr ""
 "扫描线之间的距离（以机器单位计，用于雕刻模式）。设为 0 则使用激光光斑尺寸"
 
 #: laser_essentials/steps/material_test.py
-msgid "Include Labels"
-msgstr "包含标签"
-
-#: laser_essentials/steps/material_test.py
 msgid "Add speed/power annotations to the grid"
 msgstr "向网格添加速度/功率注释"
 
 #: laser_essentials/steps/material_test.py
 msgid "Label Engrave Power"
 msgstr "标签雕刻功率"
-
-#: laser_essentials/steps/material_test.py
-msgid "Label Engrave Speed"
-msgstr "标签雕刻速度"
 
 #: laser_essentials/steps/material_test.py
 msgid "Speed for engraving labels"
@@ -822,6 +1014,14 @@ msgstr "切割速度（{value}）超过机器的最大值（{max}）。"
 msgid "Create Material Test Grid"
 msgstr "创建材料测试网格"
 
+#: laser_essentials/frontend.py
+msgid "Create Interval Test"
+msgstr "创建间隔测试"
+
+#: laser_essentials/frontend.py
+msgid "Create Focus Test"
+msgstr "创建焦点测试"
+
 #: laser_essentials/scan_angle_var.py
 msgid "Angle"
 msgstr "角度"
@@ -838,6 +1038,20 @@ msgstr "亮度范围"
 msgid "Laser Head"
 msgstr "激光头"
 
-#: laser_essentials/commands/material_test_cmd.py
-msgid "Add Material Test"
-msgstr "添加材料测试"
+#: laser_essentials/commands/calibration_cmd.py
+msgid "Select a machine first."
+msgstr "请先选择一台机器。"
+
+#: laser_essentials/commands/calibration_cmd.py
+#, python-brace-format
+msgid "Add {test}"
+msgstr "添加 {test}"
+
+#: laser_essentials/commands/calibration_cmd.py
+msgid "The layer of this test no longer exists."
+msgstr "此测试的图层已不存在。"
+
+#: laser_essentials/commands/calibration_cmd.py
+#, python-brace-format
+msgid "Change {test}"
+msgstr "更改 {test}"

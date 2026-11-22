@@ -29,11 +29,15 @@ GRBL-Geräte können über USB/Serial oder über das Netzwerk verbunden werden:
 - **GRBL (USB/Serial — compatibility mode)** — Ping-Pong-Protokoll-Treiber. Sendet eine Zeile,
   wartet auf "ok", sendet die nächste. Keine Pufferverwaltung, keine Deadlock-Erkennung. Nur nötig,
   wenn der Standardtreiber falsche Alarme oder Kommunikationsfehler auslöst
-- **GRBL (Bluetooth)** — Bluetooth-Classic-SPP/RFCOMM-Verbindung für im Betriebssystem gekoppelte Controller
+- **GRBL (Bluetooth)** — Bluetooth-Classic-SPP/RFCOMM-Verbindung für im Betriebssystem gekoppelte
+  Controller
 - **grblHAL (Telnet)** — Raw-TCP/Telnet-Verbindung für vernetzte grblHAL-Controller und für die
   Telnet-Bridge von ESP3D
 - **FluidNC / ESP3D (Web API)** — HTTP/WebSocket-Treiber für FluidNC- und ESP3D-v3-Controller, mit
   Datei-Upload und Unterstützung für Geräteeinstellungen
+
+xTool-Maschinen im WLAN nutzen eigene experimentelle Treiber; siehe [xTool über WLAN](xtool) für
+D1/D1 Pro und M2.
 
 Ruida-basierte Controller werden vom Treiber **Ruida RPA** unterstützt, der sich direkt über USB
 oder UDP verbindet oder per TUI-RPC über den Ruida Protocol Analyzer. Sein USB-Feld bietet eine

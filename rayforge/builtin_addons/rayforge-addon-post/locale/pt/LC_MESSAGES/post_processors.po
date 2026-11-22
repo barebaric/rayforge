@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 13:48+0100\n"
+"POT-Creation-Date: 2026-11-22 16:56+0100\n"
 "PO-Revision-Date: 2026-03-18 23:38+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -292,6 +292,44 @@ msgstr "Distância máxima para que as linhas sejam consideradas sobrepostas"
 msgid "Change merge tolerance"
 msgstr "Alterar tolerância de fusão"
 
+#: post_processors/widgets/mesh_correction_group.py
+msgid "Focus Offset"
+msgstr "Deslocamento de foco"
+
+#: post_processors/widgets/mesh_correction_group.py
+msgid "Distance above the probed surface for the focus point"
+msgstr "Distância acima da superfície medida para o ponto de foco"
+
+#: post_processors/widgets/mesh_correction_group.py
+msgid "Subdivide at Grid Lines"
+msgstr "Subdividir nas linhas da grade"
+
+#: post_processors/widgets/mesh_correction_group.py
+msgid ""
+"Split straight cuts at the mesh grid lines so Z follows the bed between "
+"probe points. This increases the number of commands, most noticeably for "
+"raster engraving."
+msgstr ""
+"Divide os cortes retos nas linhas da grade da malha para que Z siga a mesa "
+"entre os pontos de medição. Isso aumenta o número de comandos, especialmente "
+"na gravação raster."
+
+#: post_processors/widgets/mesh_correction_group.py
+msgid ""
+"No bed mesh has been probed yet. Probe one on the Bed Mesh page in the "
+"machine settings."
+msgstr ""
+"Nenhuma malha da mesa foi medida ainda. Meça uma na página Malha da mesa das "
+"configurações da máquina."
+
+#: post_processors/widgets/mesh_correction_group.py
+msgid "Change Bed Mesh Focus Offset"
+msgstr "Alterar o deslocamento de foco da malha da mesa"
+
+#: post_processors/widgets/mesh_correction_group.py
+msgid "Toggle Mesh Subdivision"
+msgstr "Alternar a subdivisão da malha"
+
 #: post_processors/transformers/lead_in_out_transformer.py
 msgid "Lead-In/Out"
 msgstr "Entrada/Saída"
@@ -362,6 +400,17 @@ msgstr "Recortar para Material"
 #: post_processors/transformers/crop_transformer.py
 msgid "Crops cutting lines to stock boundary."
 msgstr "Recorta linhas de corte para o limite do material."
+
+#: post_processors/transformers/mesh_correction_transformer.py
+msgid "Bed Mesh Correction"
+msgstr "Correção da malha da mesa"
+
+#: post_processors/transformers/mesh_correction_transformer.py
+msgid ""
+"Compensates an uneven work surface using the machine's probed bed height map."
+msgstr ""
+"Compensa uma superfície de trabalho irregular usando o mapa de altura da "
+"mesa medido pela máquina."
 
 #: post_processors/transformers/multipass_transformer.py
 msgid "Multi-Pass"

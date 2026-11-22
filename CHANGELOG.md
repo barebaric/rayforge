@@ -5,61 +5,203 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## UNRELEASED
+## 1.15.0-beta1
 
 ### Added
 
-- Machine: the Machine menu gains a "Select Machine" submenu listing all
-  configured machines, plus a "Manage Machines…" entry next to "Current
-  Machine Settings" so machines can be selected and managed without
-  opening the application settings first
-- Machine: automatic system sleep is inhibited while a job is running,
-  so the connection to the machine is not dropped when the computer
-  goes idle. The new "Prevent sleep during jobs" option on the General
-  settings page can disable it
-- Machine: bed mesh probing. The Bed Mesh page probes the work
-  surface on a configurable grid, stores the height map with the
-  machine, and renders it as a 3D surface. A per-layer post processor
-  applies the bilinear height correction in machine space, optionally
-  subdividing cuts at grid lines so Z follows the bed between probe
-  points
+- Machine: bed mesh probing. The new Bed Mesh page in the machine
+  settings probes the work surface on a configurable grid, stores
+  the height map with the machine, and renders it as a colored 3D
+  surface. The probe run validates Safe Z and the probe's lowest
+  reach against the machine's Z travel, lifts straight up before
+  traveling between points, and can be stopped at any time without
+  saving a partial mesh. A per-layer post processor applies the
+  bilinearly interpolated height correction in machine coordinates,
+  optionally subdividing straight cuts at the grid lines so Z
+  follows the bed between probe points. Layers follow the machine
+  default or override the focus offset and subdivision individually.
+  Requires a Z axis and a probing-capable driver
+- Machine: knife cutting (experimental). The built-in Drag Knife
+  addon adds the Drag Knife Cut and Tangential Knife Cut steps, and
+  machine settings gain Drag Knife and Tangential Knife heads with
+  their own knife properties. The drag knife step compensates the
+  blade's trailing offset, aligns the blade with an arc-in, pivots
+  corners within the swivel angle, and lifts at sharper corners; the
+  tangential knife step rotates the A axis to follow the path
+  heading and lifts for heading changes or arcs beyond the
+  configured tolerances. The steps only appear on machines with a
+  matching head, and recipes can choose the knife head
+- Tests: Tools → Create Interval Test and Tools → Create Focus Test.
+  The Interval Test engraves a row of filled squares, each with its
+  own line interval, labelled in millimeters and lines per inch; the
+  Focus Test finds the sharpest focus height with Z axis steps,
+  manual pauses between lines, or a ramp on tilted material. Both
+  tests, like the Material Test Grid, are added on a new layer with
+  their settings under Test Settings in the item properties panel;
+  every change there rebuilds the test as one undo step, keeps its
+  bottom-left corner, and preserves operations added to its layer.
+  The Material Test Grid's presets, grid, label and range settings
+  moved from its step dialog to Test Settings; existing grids can be
+  edited the same way and produce the same G-code
+- UI: Shop mode. The new Shop mode switch in Settings → General →
+  Appearance replaces the bottom panel's Controls tab with a
+  touch-friendly control surface: large per-axis position readouts
+  with zero buttons, an offsets card, oversized jog speed and step
+  steppers, and large jog, home, WCS, hold, cancel, frame and send
+  buttons. It is disabled by default
+- Addons: clicking an addon row in the installed addons list or the
+  Addon Registry opens a detail view with a screenshot carousel, the
+  addon's long description rendered as Markdown, author, version,
+  license, a repository link, and the Install, Update or Unlock
+  action. Built-in addons ship descriptions and screenshots, and
+  addon manifests accept `long_description` and `screenshots`
+- Contour: per-axis kerf compensation. Offset X and Offset Y are
+  seeded from the laser head's spot size on each axis and remain
+  editable independently, so machines with an elliptical diode spot
+  are compensated correctly. Existing projects and LightBurn imports
+  use the X value for both axes when no Y value is stored
+- Machine: xTool Wi-Fi drivers and profiles (experimental). The new
+  xTool (Wi-Fi) driver drives D-series machines such as the D1 and
+  D1 Pro over xTool's proprietary HTTP/WebSocket API, including job
+  upload and start, homing, jogging, pause, resume and cancel. The
+  xTool M2 (Wi-Fi) driver monitors the M2 and controls homing,
+  jogging and pause, resume or cancel of a job staged on the
+  machine; the M2 network API cannot receive G-code jobs yet, so
+  jobs are staged in xTool Studio
+- Machine: GRBL (Bluetooth) driver (experimental). It connects to
+  GRBL controllers over Bluetooth Classic SPP/RFCOMM using devices
+  paired in the operating system, with a paired-device picker and a
+  manual address fallback; no `/dev/rfcomm` bridge is needed.
+  Bluetooth Low Energy devices are not supported
+- Machine: automatic network discovery of grblHAL boards. Boards
+  that announce `_telnet._tcp` via mDNS are listed immediately after
+  their `$I` build-info check, and firmware that announces nothing
+  is found by a narrow subnet scan of the telnet port. The scan runs
+  automatically alongside serial and mDNS discovery during machine
+  setup
+- Machine: the Machine menu gains a Select Machine submenu with the
+  active machine checked, plus Add Machine… and Manage Machines…
+  entries, so machines can be selected and managed without opening
+  the application settings first
+- Machine: automatic system sleep is inhibited while a job is
+  running, so the connection to the machine is not dropped when the
+  computer goes idle. The new "Prevent sleep during jobs" option on
+  the General settings page can disable it
+- Camera: daemon camera source. Cameras advertised by a remote
+  raydriver daemon can be added by selecting the daemon and one of
+  its cameras; the URL and source type are filled in. The machine
+  wizard also lists the device host's cameras, and a network
+  camera's URL can be edited in place without losing calibration
 
 ### Changed
 
-- Machine: the GRBL, GRBL compatibility, Smoothie and Marlin drivers
-  build on the shared session driver now; their protocol-specific code
-  is limited to connection setup, device settings and probing
-- Machine: the device census is fetched through each session's
-  `probe_device()` method now and returned as typed per-protocol
-  result objects, replacing raydriver's module-level probe helper
+- Layer settings: a new Post Processing section applies registered
+  post processors to a layer's merged toolpath in machine
+  coordinates, after the machine transform. Layers follow the
+  machine default or hold their own settings, and the machine-level
+  group is editable in machine settings. The Bed Mesh Correction is
+  the first post processor
+- Machine: driver names describe the connection instead of
+  implementation details: GRBL (Serial) is GRBL (USB/Serial), GRBL
+  (Serial Simple) is GRBL (USB/Serial — compatibility mode), GRBL
+  (Network) is FluidNC / ESP3D (Web API), and GRBL (Telnet) is
+  grblHAL (Telnet). The address field is labelled "Hostname or IP
+  address". Existing machine configurations keep working
+- Machine: the OctoPrint, Marlin (Serial) and GRBL compatibility
+  mode drivers are stable now; their experimental warning banners
+  are gone
 - Machine: grblHAL controllers are identified by their `[BOARD:...]`
-  name during probing instead of falling back to the firmware build
-  field
-- Machine: the device census behind GRBL and Marlin probing
-  (firmware identity, motion limits, unit reporting) is computed by
-  the raydriver library now; Rayforge only maps the result onto its
-  device profiles
-- Machine: network discovery of FluidNC/ESP3D devices and the xTool
-  machine-type query now use the raydriver library's HTTP probes
-  instead of local aiohttp code
-- Machine: the xTool drivers share the generic raydriver-session
-  base now; the xTool M2 console additionally shows connection and
-  raw traffic lines when verbose output is enabled
-- Dependencies: raydriver upgraded to 1.12.0
+  name during probing, so the device list shows the board name
+  instead of the firmware build field
+- Sketcher: the constraint solver, snapping, selection, arrays, the
+  document model, and the contour, offset and boolean operations now
+  run in raygeo's Rust core, which keeps large sketches responsive.
+  Snapping on a dense sketch dropped from roughly 40 ms to 28 ms per
+  query, and the migration fixed a stray line drawn from constraint
+  labels, tangent constraints on clockwise arcs, ellipse center
+  handling, and a regression that prevented closing a shape by
+  clicking its start point (raygeo 1.77.0–1.93.1)
+- Dependencies: raygeo upgraded to 1.93.1 and raydriver to 1.19.0.
+  The Sketcher changes come from raygeo; raydriver brings the
+  discovery, Bluetooth, xTool and daemon-camera support described
+  above, plus remote sessions that report daemon-side errors
+  instead of timing out, a cancelled run that aborts the job and
+  runs the safety path, typed remote errors, native probe modules,
+  and homing and stream timeouts derived from command estimates
 
 ### Fixed
 
-- Machine: bed mesh probing refuses to start when Safe Z or the
-  probe's lowest reach lies outside the machine's Z travel, and it
-  lifts straight up before traveling between probe points
+- Import: SVG geometry that lives outside named layers is now
+  offered as an "Ungrouped" layer in the import dialog and enabled
+  by default, so shapes that were visible in the preview but
+  silently left uncut are imported and cut. Deselecting the layer
+  hides the geometry from both the preview and the toolpaths
+- Import: DXF content inside INSERT blocks no longer disappears
+  when its layer is used only inside blocks; entities on layer "0"
+  inside a block inherit the block insertion's layer as the DXF
+  specification requires
+- OctoPrint: Frame and Send no longer stay disabled after the first
+  attempt. The driver authenticates the raw SockJS WebSocket
+  immediately and accepts plain JSON messages as well as SockJS
+  batches, so status updates arrive and the printer leaves the
+  unknown state. HTTP errors are reported as HTTP errors instead of
+  connection failures, and cancelling with no running job no longer
+  shows a false "could not connect" error
+- Camera: editing a network camera's URL reopens the stream
+  immediately; previously the new URL only applied after toggling
+  Enabled
+- Pointer alignment: Click-to-Move, Move-Head-Here, the corner
+  shortcuts, framing and pointer dry-runs honor the pointer offset
+  when the workarea origin is the active reference, not only with a
+  work coordinate system
+- Pointer alignment: burning no longer turns alignment off. The
+  send dialog offers Burn with Beam, which burns at the WCS
+  positions and leaves aiming on for the next alignment; pointer
+  dry-runs cap laser power at the framing power so the trace does
+  not burn
+- Machine: the GRBL network driver reuses its active connection
+  loop, so a second connect request no longer starts a duplicate
+  WebSocket session
 - Machine: FluidNC devices use the HTTP port for the WebSocket when
-  no WebSocket port is configured
-- Machine: homing no longer times out on large machines; the wait is
-  derived from the longest axis travel and the configured travel speed
-  instead of the short interactive-command budget
+  no WebSocket port is configured, fixing jobs on FluidNC v4 where
+  the default was wrong
+- Machine: homing no longer times out after 10 seconds on large
+  machines; the wait is derived from the longest axis travel and
+  the configured travel speed instead of the short
+  interactive-command budget
+- Machine: bed mesh probing refuses to start when Safe Z or the
+  probe's lowest reach lies outside the machine's Z travel, lifts
+  straight up before traveling between points, and leaves the head
+  lifted when a probe point fails or the run is stopped
+- Pipeline: pressing Recalculate with "Auto-update operations" off
+  clears the stale state, so Export and Send are enabled again once
+  the fresh result is available
+- Pipeline: sending or framing a job no longer fails when an older
+  rebuild chain finishes at the same moment; the job request ignores
+  stale rebuild-finished events and waits for its own chain
 - Windows: the app starts on machines whose graphics driver crashes
   GTK's OpenGL renderer. The cairo renderer is selected by default
   there now, unless `GSK_RENDERER` is set explicitly (#684)
+- Windows: renaming a workflow no longer crashes GTK's input method;
+  the simple input module is the default unless `GTK_IM_MODULE` is
+  set explicitly (#720)
+
+### Documentation
+
+- A new Bed Mesh page describes probing the bed and applying the
+  height correction per machine and per layer, and a new Interval and
+  Focus Tests page covers the two calibration generators and the
+  shared Test Settings panel
+- A new Knife Cutting page covers the drag and tangential knife
+  steps, knife head setup, and the blade offset and tolerance
+  settings, and a new xTool Wi-Fi page covers the D1/D1 Pro and M2
+  drivers, their ports and their limitations
+- The firmware reference and machine settings docs describe the new
+  driver names, Bluetooth and grblHAL telnet connections and driver
+  maturity, and the settings and bottom panel docs describe Shop
+  mode, "Prevent sleep during jobs" and the daemon camera source
+- The addon manifest reference documents `long_description` and
+  `screenshots`, and the addons page describes the detail view
 
 ## 1.14.0
 

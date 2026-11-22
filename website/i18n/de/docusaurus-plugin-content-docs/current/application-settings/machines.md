@@ -57,9 +57,9 @@ der Überprüfung von Profilaktualisierungen nicht ersetzt.
 ## Aktive Maschine wechseln
 
 Das Untermenü **Maschine → Select Machine** listet alle konfigurierten Maschinen auf; die aktive
-Maschine ist mit einem Häkchen markiert. Wähle einen anderen Eintrag, um zu ihr zu wechseln. Du kannst auch das
-Maschinen-Dropdown in der Kopfzeile des Hauptfensters verwenden. Die Auswahl wird zwischen Sitzungen
-gespeichert.
+Maschine ist mit einem Häkchen markiert. Wähle einen anderen Eintrag, um zu ihr zu wechseln. Du
+kannst auch das Maschinen-Dropdown in der Kopfzeile des Hauptfensters verwenden. Die Auswahl wird
+zwischen Sitzungen gespeichert.
 
 ## Eine Maschine löschen
 

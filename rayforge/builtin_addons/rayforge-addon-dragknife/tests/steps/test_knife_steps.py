@@ -3,12 +3,17 @@
 from unittest.mock import MagicMock
 
 import pytest
+from dragknife import knife_head_var
 from dragknife.steps import DragKnifeCutStep, TangentialKnifeCutStep
 from dragknife.steps.knife_cut_step import KnifeCutStep
 from raygeo.ops.types import CommandType
 
 from rayforge.core.capability import MachineCapability
-from rayforge.machine.models.knife import DragKnifeHead
+from rayforge.core.varset import ChoiceVar
+from rayforge.machine.models.knife import (
+    DragKnifeHead,
+    TangentialKnifeHead,
+)
 
 
 @pytest.fixture
@@ -24,10 +29,12 @@ def machine():
     knife_head = DragKnifeHead()
     knife_head.uid = "knife-uid"
     knife_head.offset_mm = 0.8
+    tangential_head = TangentialKnifeHead()
+    tangential_head.uid = "tangential-uid"
     other_head = MagicMock()
     other_head.machine_capability = MachineCapability.LASER
     other_head.uid = "laser-uid"
-    m.heads = [other_head, knife_head]
+    m.heads = [other_head, knife_head, tangential_head]
     return m
 
 
@@ -97,6 +104,28 @@ class TestDragKnifeCutStep:
         for var in DragKnifeCutStep.recipe_varset():
             assert hasattr(drag_step, f"set_{var.key}"), var.key
 
+    def test_recipe_varset_groups_split_knife_settings(self):
+        groups = DragKnifeCutStep.recipe_varset_groups()
+        assert groups[0][0] == "Knife"
+        assert {var.key for var in groups[0][1]} == {
+            "selected_head_uid",
+            "offset_mm",
+            "safe_z",
+        }
+        assert {"cut_speed", "swivel_angle_deg"} <= {
+            var.key for var in groups[1][1]
+        }
+
+    def test_recipe_varset_offers_drag_knife_heads(self, context, monkeypatch):
+        monkeypatch.setattr(knife_head_var, "get_context", lambda: context)
+        head_var = next(
+            var
+            for var in DragKnifeCutStep.recipe_varset()
+            if var.key == "selected_head_uid"
+        )
+        assert isinstance(head_var, ChoiceVar)
+        assert head_var.choices == ["Drag Knife"]
+
 
 class TestTangentialKnifeCutStep:
     def test_capabilities(self, tan_step):
@@ -115,6 +144,33 @@ class TestTangentialKnifeCutStep:
         assert t_dict["angle_tolerance_deg"] == pytest.approx(15.0)
         assert t_dict["radius_tolerance_mm"] == pytest.approx(2.0)
         assert t_dict["safe_z"] == pytest.approx(4.0)
+
+    def test_recipe_varset_groups_split_knife_settings(self):
+        groups = TangentialKnifeCutStep.recipe_varset_groups()
+        assert groups[0][0] == "Knife"
+        assert {var.key for var in groups[0][1]} == {
+            "selected_head_uid",
+            "offset_mm",
+            "safe_z",
+        }
+        assert {
+            "cut_speed",
+            "angle_tolerance_deg",
+            "radius_tolerance_mm",
+            "spindle_rpm",
+        } <= {var.key for var in groups[1][1]}
+
+    def test_recipe_varset_offers_tangential_knife_heads(
+        self, context, monkeypatch
+    ):
+        monkeypatch.setattr(knife_head_var, "get_context", lambda: context)
+        head_var = next(
+            var
+            for var in TangentialKnifeCutStep.recipe_varset()
+            if var.key == "selected_head_uid"
+        )
+        assert isinstance(head_var, ChoiceVar)
+        assert head_var.choices == ["Tangential Knife"]
 
     def test_serialization_roundtrip(self, tan_step):
         tan_step.angle_tolerance_deg = 20.0

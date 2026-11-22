@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-03 17:02+0100\n"
+"POT-Creation-Date: 2026-11-21 12:21+0100\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: Ukrainian\n"
@@ -29,163 +29,6 @@ msgstr "Параметри, що керують геометрією цього 
 #: sketcher/core/sketch.py
 msgid "Sketch"
 msgstr "Ескіз"
-
-#: sketcher/core/constraints/equal_length.py
-msgid "Equal Length"
-msgstr "Рівна довжина"
-
-#: sketcher/core/constraints/equal_length.py
-msgid "{} entities"
-msgstr "{} об'єктів"
-
-#: sketcher/core/constraints/parallelogram.py
-msgid "Parallelogram"
-msgstr "Паралелограм"
-
-#: sketcher/core/constraints/parallelogram.py
-msgid "Origin at {}"
-msgstr "Початок у {}"
-
-#: sketcher/core/constraints/point_on_curve.py
-msgid "Point on Curve"
-msgstr "Точка на кривій"
-
-#: sketcher/core/constraints/point_on_curve.py
-#: sketcher/core/constraints/point_on_line.py
-msgid "Point at {}"
-msgstr "Точка у {}"
-
-#: sketcher/core/constraints/point_on_line.py
-msgid "Point on Line"
-msgstr "Точка на лінії"
-
-#: sketcher/core/constraints/collinear.py
-msgid "Collinear"
-msgstr "Колінеарність"
-
-#: sketcher/core/constraints/collinear.py
-msgid "{}, {}, {}"
-msgstr "{}, {}, {}"
-
-#: sketcher/core/constraints/tangent.py
-#: sketcher/ui_gtk/tools/tangent_constraint_tool.py
-msgid "Tangent"
-msgstr "Дотична"
-
-#: sketcher/core/constraints/tangent.py
-msgid "Line to {} at {}"
-msgstr "Лінія до {} у {}"
-
-#: sketcher/core/constraints/rotational.py
-msgid "Rotational Array"
-msgstr "Обертовий масив"
-
-#: sketcher/core/constraints/distance.py sketcher/ui_gtk/tools/offset_tool.py
-#: sketcher/ui_gtk/tools/distance_constraint_tool.py
-msgid "Distance"
-msgstr "Відстань"
-
-#: sketcher/core/constraints/distance.py sketcher/core/constraints/vertical.py
-#: sketcher/core/constraints/symmetry.py
-#: sketcher/core/constraints/horizontal.py
-#: sketcher/core/constraints/aspect_ratio.py
-msgid "From {} to {}"
-msgstr "Від {} до {}"
-
-#: sketcher/core/constraints/distance.py sketcher/core/constraints/vertical.py
-#: sketcher/core/constraints/horizontal.py
-msgid "Enter length or expression."
-msgstr "Введіть довжину або вираз."
-
-#: sketcher/core/constraints/vertical.py
-#: sketcher/ui_gtk/tools/vertical_constraint_tool.py
-msgid "Vertical"
-msgstr "Вертикаль"
-
-#: sketcher/core/constraints/equal_distance.py
-msgid "Equal Distance"
-msgstr "Рівна відстань"
-
-#: sketcher/core/constraints/equal_distance.py
-msgid "{}-{} and {}-{}"
-msgstr "{}-{} та {}-{}"
-
-#: sketcher/core/constraints/perpendicular.py
-#: sketcher/ui_gtk/tools/perpendicular_constraint_tool.py
-msgid "Perpendicular"
-msgstr "Перпендикуляр"
-
-#: sketcher/core/constraints/perpendicular.py
-msgid "Between {} and {}"
-msgstr "Між {} та {}"
-
-#: sketcher/core/constraints/symmetry.py
-#: sketcher/ui_gtk/tools/symmetry_constraint_tool.py
-msgid "Symmetry"
-msgstr "Симетрія"
-
-#: sketcher/core/constraints/horizontal.py
-#: sketcher/ui_gtk/tools/horizontal_constraint_tool.py
-msgid "Horizontal"
-msgstr "Горизонталь"
-
-#: sketcher/core/constraints/base.py
-msgid "Enter value or expression."
-msgstr "Введіть значення або вираз."
-
-#: sketcher/core/constraints/angle.py
-#: sketcher/ui_gtk/tools/angle_constraint_tool.py
-msgid "Angle"
-msgstr "Кут"
-
-#: sketcher/core/constraints/angle.py
-msgid "Between two lines"
-msgstr "Між двома лініями"
-
-#: sketcher/core/constraints/angle.py
-msgid "Enter angle in degrees or expression."
-msgstr "Введіть кут у градусах або вираз."
-
-#: sketcher/core/constraints/diameter.py
-#: sketcher/ui_gtk/tools/diameter_constraint_tool.py
-msgid "Diameter"
-msgstr "Діаметр"
-
-#: sketcher/core/constraints/diameter.py
-msgid "Circle at {}"
-msgstr "Коло у {}"
-
-#: sketcher/core/constraints/diameter.py
-msgid "Enter diameter or expression."
-msgstr "Введіть діаметр або вираз."
-
-#: sketcher/core/constraints/coincident.py
-#: sketcher/ui_gtk/tools/coincident_constraint_tool.py
-msgid "Coincident"
-msgstr "Співпадіння"
-
-#: sketcher/core/constraints/coincident.py
-msgid "At {}"
-msgstr "У {}"
-
-#: sketcher/core/constraints/radius.py
-#: sketcher/ui_gtk/tools/circular_array_tool.py
-#: sketcher/ui_gtk/tools/radius_constraint_tool.py
-msgid "Radius"
-msgstr "Радіус"
-
-#: sketcher/core/constraints/radius.py
-msgid "{} at {}"
-msgstr "{} у {}"
-
-#: sketcher/core/constraints/radius.py
-msgid "Enter radius or expression (e.g. 'width/2')."
-msgstr "Введіть радіус або вираз (напр. 'width/2')."
-
-#: sketcher/core/constraints/aspect_ratio.py
-#: sketcher/ui_gtk/tools/aspect_ratio_constraint_tool.py
-msgid "Aspect Ratio"
-msgstr "Співвідношення сторін"
 
 #: sketcher/core/commands/circle.py
 msgid "Add Circle"
@@ -430,6 +273,10 @@ msgid "Symmetric"
 msgstr "Симетрична"
 
 #: sketcher/ui_gtk/tools/symmetry_constraint_tool.py
+msgid "Symmetry"
+msgstr "Симетрія"
+
+#: sketcher/ui_gtk/tools/symmetry_constraint_tool.py
 msgid "Add Symmetry Constraint"
 msgstr "Додати обмеження симетрії"
 
@@ -536,8 +383,16 @@ msgid "Waypoint"
 msgstr "Опорна точка"
 
 #: sketcher/ui_gtk/tools/aspect_ratio_constraint_tool.py
+msgid "Aspect Ratio"
+msgstr "Співвідношення сторін"
+
+#: sketcher/ui_gtk/tools/aspect_ratio_constraint_tool.py
 msgid "Add Aspect Ratio Constraint"
 msgstr "Додати обмеження співвідношення сторін"
+
+#: sketcher/ui_gtk/tools/angle_constraint_tool.py
+msgid "Angle"
+msgstr "Кут"
 
 #: sketcher/ui_gtk/tools/angle_constraint_tool.py
 msgid "Add Angle Constraint"
@@ -577,6 +432,10 @@ msgid "Create"
 msgstr "Створити"
 
 #: sketcher/ui_gtk/tools/tangent_constraint_tool.py
+msgid "Tangent"
+msgstr "Дотична"
+
+#: sketcher/ui_gtk/tools/tangent_constraint_tool.py
 msgid "Add Tangent Constraint"
 msgstr "Додати обмеження дотику"
 
@@ -587,6 +446,10 @@ msgstr "Еліпс"
 #: sketcher/ui_gtk/tools/circle_tool.py
 msgid "Constrain to circle"
 msgstr "Обмежити до кола"
+
+#: sketcher/ui_gtk/tools/vertical_constraint_tool.py
+msgid "Vertical"
+msgstr "Вертикаль"
 
 #: sketcher/ui_gtk/tools/vertical_constraint_tool.py
 msgid "Add Vertical Constraint"
@@ -624,6 +487,11 @@ msgstr "Центр X"
 #: sketcher/ui_gtk/tools/circular_array_tool.py
 msgid "Center Y"
 msgstr "Центр Y"
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+#: sketcher/ui_gtk/tools/radius_constraint_tool.py
+msgid "Radius"
+msgstr "Радіус"
 
 #: sketcher/ui_gtk/tools/circular_array_tool.py
 msgid "Rotate copies"
@@ -730,9 +598,18 @@ msgstr ""
 "Замінює вибрані контури їх зміщенням. Додатні значення збільшують замкнуті "
 "контури; відкриті контури стають пазами."
 
+#: sketcher/ui_gtk/tools/offset_tool.py
+#: sketcher/ui_gtk/tools/distance_constraint_tool.py
+msgid "Distance"
+msgstr "Відстань"
+
 #: sketcher/ui_gtk/tools/text_box_tool.py
 msgid "Text Box"
 msgstr "Текстове поле"
+
+#: sketcher/ui_gtk/tools/diameter_constraint_tool.py
+msgid "Diameter"
+msgstr "Діаметр"
 
 #: sketcher/ui_gtk/tools/diameter_constraint_tool.py
 msgid "Add Diameter Constraint"
@@ -763,6 +640,10 @@ msgid "Smooth"
 msgstr "Плавна"
 
 #: sketcher/ui_gtk/tools/coincident_constraint_tool.py
+msgid "Coincident"
+msgstr "Співпадіння"
+
+#: sketcher/ui_gtk/tools/coincident_constraint_tool.py
 msgid "Add Coincident Constraint"
 msgstr "Додати обмеження збігу"
 
@@ -775,8 +656,16 @@ msgid "Add Point On Shape"
 msgstr "Додати точку на фігуру"
 
 #: sketcher/ui_gtk/tools/perpendicular_constraint_tool.py
+msgid "Perpendicular"
+msgstr "Перпендикуляр"
+
+#: sketcher/ui_gtk/tools/perpendicular_constraint_tool.py
 msgid "Add Perpendicular Constraint"
 msgstr "Додати перпендикулярне обмеження"
+
+#: sketcher/ui_gtk/tools/horizontal_constraint_tool.py
+msgid "Horizontal"
+msgstr "Горизонталь"
 
 #: sketcher/ui_gtk/tools/horizontal_constraint_tool.py
 msgid "Add Horizontal Constraint"

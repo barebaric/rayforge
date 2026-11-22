@@ -90,7 +90,8 @@ class TangentialKnifeTransformer(OpsTransformer):
         self,
         workpiece: WorkPiece | None,
         stock_geometries: list[Geometry] | None,
-        settings: dict[str, Any] | None,
+        machine=None,
+        settings: dict[str, Any] | None = None,
     ) -> TangentialKnifeSpec:
         return TangentialKnifeSpec(
             angle_tolerance_deg=self.angle_tolerance_deg,

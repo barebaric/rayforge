@@ -51,7 +51,7 @@ class DragKnifeCutStep(KnifeCutStep):
     def recipe_varset(cls) -> VarSet:
         return VarSet(
             vars=[
-                *KnifeCutStep.recipe_varset().vars,
+                *super().recipe_varset().vars,
                 AngleVar(
                     key="swivel_angle_deg",
                     label=_("Swivel Angle"),

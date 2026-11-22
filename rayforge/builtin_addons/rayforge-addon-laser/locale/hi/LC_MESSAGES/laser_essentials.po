@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 17:23+0100\n"
+"POT-Creation-Date: 2026-11-19 19:50+0100\n"
 "PO-Revision-Date: 2026-09-27 22:58\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -16,6 +16,257 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: laser_essentials/calibration/material_test_grid.py
+msgid "Diode Engrave"
+msgstr "डायोड उत्कीर्णन"
+
+#: laser_essentials/calibration/material_test_grid.py
+msgid "Diode Cut"
+msgstr "डायोड कट"
+
+#: laser_essentials/calibration/material_test_grid.py
+msgid "CO2 Engrave"
+msgstr "CO2 उत्कीर्णन"
+
+#: laser_essentials/calibration/material_test_grid.py
+msgid "CO2 Cut"
+msgstr "CO2 कट"
+
+#: laser_essentials/calibration/material_test_grid.py
+#: laser_essentials/steps/material_test.py
+msgid "Material Test Grid"
+msgstr "सामग्री परीक्षण ग्रिड"
+
+#: laser_essentials/calibration/material_test_grid.py
+msgid "Presets"
+msgstr "प्रीसेट"
+
+#: laser_essentials/calibration/material_test_grid.py
+msgid "Load common test configurations"
+msgstr "सामान्य परीक्षण कॉन्फ़िगरेशन लोड करें"
+
+#: laser_essentials/calibration/material_test_grid.py
+msgid "Select"
+msgstr "चुनें"
+
+#: laser_essentials/calibration/material_test_grid.py
+msgid ""
+"The laser head and the post-processing of the grid stay in the settings of "
+"its operation."
+msgstr "लेज़र हेड और ग्रिड की पोस्ट-प्रोसेसिंग उसके ऑपरेशन की सेटिंग्स में रहती हैं."
+
+#: laser_essentials/calibration/material_test_grid.py
+msgid "A Material Test Grid needs at least 2×2 cells."
+msgstr "मटीरियल टेस्ट ग्रिड के लिए कम से कम 2×2 सेल चाहिए."
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Z axis steps"
+msgstr "Z अक्ष चरण"
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Manual (pause between lines)"
+msgstr "मैनुअल (लाइनों के बीच विराम)"
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Ramp (tilted material)"
+msgstr "रैंप (झुकी सामग्री)"
+
+#: laser_essentials/calibration/focus_test.py
+msgid ""
+"Focus the laser as usual first. The job moves the head to the first offset, "
+"engraves one line per offset and returns the head to the starting height. A "
+"positive offset means more distance between the head and the material."
+msgstr ""
+"पहले लेज़र को सामान्य रूप से फोकस करें. जॉब हेड को पहले ऑफ़सेट पर ले जाता है, प्रत्येक ऑफ़सेट के "
+"लिए एक लाइन उत्कीर्ण करता है और हेड को प्रारंभिक ऊँचाई पर वापस लाता है. धनात्मक ऑफ़सेट "
+"का अर्थ है हेड और सामग्री के बीच अधिक दूरी."
+
+#: laser_essentials/calibration/focus_test.py
+msgid ""
+"Focus the laser as usual first. The labels are engraved at that height. "
+"Before each line the job pauses: set the head to the first offset, then move "
+"it by one step at every following pause, and press Resume. A positive offset "
+"means more distance between the head and the material."
+msgstr ""
+"पहले लेज़र को सामान्य रूप से फोकस करें. लेबल उस ऊँचाई पर उत्कीर्ण होते हैं. हर लाइन से पहले "
+"जॉब रुकता है: हेड को पहले ऑफ़सेट पर सेट करें, हर अगले विराम पर उसे एक कदम आगे बढ़ाएँ और "
+"रिज़्यूम दबाएँ. धनात्मक ऑफ़सेट का अर्थ है हेड और सामग्री के बीच अधिक दूरी."
+
+#: laser_essentials/calibration/focus_test.py
+msgid ""
+"Prop up one end of a flat strip so it rises evenly under the line. The "
+"thinnest part of the line marks the focus; the ticks show the distance along "
+"the line, so the height there follows from the rise."
+msgstr ""
+"एक सपाट पट्टी के एक सिरे को सहारा दें ताकि वह लाइन के नीचे समान रूप से उठे. लाइन का "
+"सबसे पतला भाग फोकस को दर्शाता है; निशान लाइन के साथ दूरी दिखाते हैं, इसलिए वहाँ की "
+"ऊँचाई उठान से निकलती है."
+
+#: laser_essentials/calibration/focus_test.py
+msgid "A Focus Test needs at least two lines."
+msgstr "फोकस टेस्ट के लिए कम से कम दो लाइनें चाहिए."
+
+#: laser_essentials/calibration/focus_test.py
+msgid "The focus step must not be zero."
+msgstr "फोकस चरण शून्य नहीं होना चाहिए."
+
+#: laser_essentials/calibration/focus_test.py
+#, python-brace-format
+msgid ""
+"The focus offsets must stay within ±{limit:g} mm of the starting height."
+msgstr "फोकस ऑफ़सेट प्रारंभिक ऊँचाई के ±{limit:g} मिमी के भीतर रहने चाहिए."
+
+#: laser_essentials/calibration/focus_test.py
+#, python-brace-format
+msgid "Z to {offset} mm"
+msgstr "Z {offset} मिमी पर"
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Z back to the starting height"
+msgstr "Z प्रारंभिक ऊँचाई पर वापस"
+
+#: laser_essentials/calibration/focus_test.py
+#, python-brace-format
+msgid "Pause: set the head to {offset} mm from focus"
+msgstr "विराम: हेड को फोकस से {offset} मिमी पर सेट करें"
+
+#: laser_essentials/calibration/focus_test.py
+#, python-brace-format
+msgid "Pause: move the head by {step} mm"
+msgstr "विराम: हेड को {step} मिमी आगे बढ़ाएँ"
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Focus Test"
+msgstr "फोकस टेस्ट"
+
+#: laser_essentials/calibration/focus_test.py
+#, python-brace-format
+msgid ""
+"The method {method} is not available on this machine. Choose another method "
+"to rebuild the test."
+msgstr "विधि {method} इस मशीन पर उपलब्ध नहीं है. टेस्ट बनाने के लिए दूसरी विधि चुनें."
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Method"
+msgstr "विधि"
+
+#: laser_essentials/calibration/focus_test.py
+msgid "First Offset"
+msgstr "पहला ऑफ़सेट"
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Step"
+msgstr "चरण"
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Number of Lines"
+msgstr "लाइनों की संख्या"
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Line Length"
+msgstr "लाइन की लंबाई"
+
+#: laser_essentials/calibration/focus_test.py
+#: laser_essentials/calibration/interval_test.py
+#: laser_essentials/steps/material_test.py
+msgid "Spacing"
+msgstr "स्पेसिंग"
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Ramp Length"
+msgstr "रैंप की लंबाई"
+
+#: laser_essentials/calibration/focus_test.py
+#, python-brace-format
+msgid "This machine does not support the focus test mode {mode}."
+msgstr "यह मशीन फोकस टेस्ट मोड {mode} का समर्थन नहीं करती."
+
+#: laser_essentials/calibration/focus_test.py
+#, python-brace-format
+msgid "Focus {offset} mm"
+msgstr "फोकस {offset} मिमी"
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Focus ramp"
+msgstr "फोकस रैंप"
+
+#: laser_essentials/calibration/common.py
+#: laser_essentials/widgets/raster_page.py laser_essentials/steps/laser_step.py
+msgid "Power"
+msgstr "शक्ति"
+
+#: laser_essentials/calibration/common.py
+msgid "Speed"
+msgstr "गति"
+
+#: laser_essentials/calibration/common.py
+#: laser_essentials/steps/material_test.py
+msgid "Include Labels"
+msgstr "लेबल शामिल करें"
+
+#: laser_essentials/calibration/common.py
+msgid "Label Engrave Power (%)"
+msgstr "लेबल उत्कीर्णन शक्ति (%)"
+
+#: laser_essentials/calibration/common.py
+#: laser_essentials/steps/material_test.py
+msgid "Label Engrave Speed"
+msgstr "लेबल उत्कीर्णन गति"
+
+#: laser_essentials/calibration/common.py
+msgid "Labels"
+msgstr "लेबल"
+
+#: laser_essentials/calibration/builder.py
+msgid "Machine commands need the Automation addon."
+msgstr "मशीन कमांड के लिए Automation ऐडऑन आवश्यक है."
+
+#: laser_essentials/calibration/interval_test.py
+msgid "An Interval Test needs at least two cells."
+msgstr "इंटरवल टेस्ट के लिए कम से कम दो सेल चाहिए."
+
+#: laser_essentials/calibration/interval_test.py
+msgid "The minimum line interval must be above zero and below the maximum."
+msgstr "न्यूनतम लाइन अंतराल शून्य से अधिक और अधिकतम से कम होना चाहिए."
+
+#: laser_essentials/calibration/interval_test.py
+msgid "Interval Test"
+msgstr "इंटरवल टेस्ट"
+
+#: laser_essentials/calibration/interval_test.py
+msgid "Number of Cells"
+msgstr "सेलों की संख्या"
+
+#: laser_essentials/calibration/interval_test.py
+msgid "Smallest Interval"
+msgstr "सबसे छोटा अंतराल"
+
+#: laser_essentials/calibration/interval_test.py
+msgid "Largest Interval"
+msgstr "सबसे बड़ा अंतराल"
+
+#: laser_essentials/calibration/interval_test.py
+msgid "Cell Size"
+msgstr "सेल का आकार"
+
+#: laser_essentials/calibration/interval_test.py
+msgid ""
+"Engraves a row of filled squares, each with its own line interval, at the "
+"same power and speed."
+msgstr ""
+"भरे हुए वर्गों की एक पंक्ति उत्कीर्ण करता है, प्रत्येक का अपना लाइन अंतराल, समान शक्ति और "
+"गति पर."
+
+#: laser_essentials/calibration/interval_test.py
+#, python-brace-format
+msgid "Interval {interval:.2f} mm"
+msgstr "अंतराल {interval:.2f} मिमी"
+
+#: laser_essentials/calibration/interval_test.py
+#, python-brace-format
+msgid "{lpi:.0f} LPI"
+msgstr "{lpi:.0f} LPI"
 
 #: laser_essentials/material_test_helpers.py
 msgid "Cut"
@@ -141,65 +392,22 @@ msgstr "ज्यामिति"
 msgid "Cut a frame around the selected content."
 msgstr "चयनित सामग्री के चारों ओर फ़्रेम काटें."
 
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Grid"
-msgstr "ग्रिड"
+#: laser_essentials/widgets/calibration_provider.py
+msgid "Test Settings"
+msgstr "टेस्ट सेटिंग्स"
 
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Test cell dimensions, shape, and spacing."
-msgstr "परीक्षण सेल विमाएँ, आकार, और स्पेसिंग."
+#: laser_essentials/widgets/calibration_provider.py
+msgid ""
+"Changing a setting rebuilds the test. The other settings of its operation "
+"stay."
+msgstr "सेटिंग बदलने पर टेस्ट फिर से बनता है. उसके ऑपरेशन की अन्य सेटिंग्स बनी रहती हैं."
 
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Labels"
-msgstr "लेबल"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Speed/power annotations on the grid."
-msgstr "ग्रिड पर गति/शक्ति एनोटेशन."
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Parameters"
-msgstr "पैरामीटर"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Define the parameter ranges for the test grid."
-msgstr "परीक्षण ग्रिड के लिए पैरामीटर सीमाएँ परिभाषित करें."
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Diode Engrave"
-msgstr "डायोड उत्कीर्णन"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Diode Cut"
-msgstr "डायोड कट"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "CO2 Engrave"
-msgstr "CO2 उत्कीर्णन"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "CO2 Cut"
-msgstr "CO2 कट"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Select"
-msgstr "चुनें"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Preset"
-msgstr "प्रीसेट"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Load common test configurations."
-msgstr "सामान्य परीक्षण कॉन्फ़िगरेशन लोड करें."
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Presets"
-msgstr "प्रीसेट"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Load common test configurations"
-msgstr "सामान्य परीक्षण कॉन्फ़िगरेशन लोड करें"
+#: laser_essentials/widgets/calibration_provider.py
+msgid ""
+"Changing a setting rebuilds the test and replaces changes made to its "
+"operations."
+msgstr ""
+"सेटिंग बदलने पर टेस्ट फिर से बनता है और उसके ऑपरेशन में किए गए बदलाव बदल दिए जाते हैं."
 
 #: laser_essentials/widgets/raster_power_widget.py
 msgid "Min Power (White)"
@@ -226,10 +434,6 @@ msgstr "उत्कीर्णन गति"
 #: laser_essentials/widgets/raster_page.py
 msgid "Raster the image onto the material."
 msgstr "छवि को सामग्री पर रास्टर करें."
-
-#: laser_essentials/widgets/raster_page.py laser_essentials/steps/laser_step.py
-msgid "Power"
-msgstr "शक्ति"
 
 #: laser_essentials/widgets/raster_page.py
 msgid "Power modulation and brightness range."
@@ -344,7 +548,6 @@ msgstr "कट पक्ष"
 #: laser_essentials/steps/wavefront_step.py
 #: laser_essentials/steps/frame_step.py
 #: laser_essentials/steps/offset_fill_step.py
-#: laser_essentials/steps/contour_step.py
 msgid "Offset"
 msgstr "ऑफ़सेट"
 
@@ -608,12 +811,24 @@ msgid "Contour"
 msgstr "कॉन्टूर"
 
 #: laser_essentials/steps/contour_step.py
+msgid "Offset X"
+msgstr "X ऑफ़सेट"
+
+#: laser_essentials/steps/contour_step.py
 msgid ""
-"Shifts the cut path inward/outward per Cut Side (none on Centerline). "
-"Defaults to kerf compensation for the head"
+"Shifts the cut along X per Cut Side. Defaults to half the laser spot width"
 msgstr ""
-"कट पक्ष के अनुसार कट पाथ को भीतर/बाहर खिसकाता है (केंद्र रेखा पर कोई नहीं). हेड के लिए "
-"कर्फ़ क्षतिपूर्ति डिफ़ॉल्ट है"
+"कट साइड के अनुसार कट को X के अनुदिश खिसकाता है. डिफ़ॉल्ट रूप से लेज़र स्पॉट की आधी चौड़ाई"
+
+#: laser_essentials/steps/contour_step.py
+msgid "Offset Y"
+msgstr "Y ऑफ़सेट"
+
+#: laser_essentials/steps/contour_step.py
+msgid ""
+"Shifts the cut along Y per Cut Side. Defaults to half the laser spot height"
+msgstr ""
+"कट साइड के अनुसार कट को Y के अनुदिश खिसकाता है. डिफ़ॉल्ट रूप से लेज़र स्पॉट की आधी ऊँचाई"
 
 #: laser_essentials/steps/contour_step.py
 msgid "Cut Order"
@@ -653,11 +868,6 @@ msgid "Brightness level (0.0-1.0) to define edges"
 msgstr "किनारे परिभाषित करने के लिए चमक स्तर (0.0-1.0)"
 
 #: laser_essentials/steps/material_test.py
-#: laser_essentials/commands/material_test_cmd.py
-msgid "Material Test Grid"
-msgstr "सामग्री परीक्षण ग्रिड"
-
-#: laser_essentials/steps/material_test.py
 msgid "Test Type"
 msgstr "परीक्षण प्रकार"
 
@@ -694,10 +904,6 @@ msgid "Size of each test square"
 msgstr "प्रत्येक परीक्षण वर्ग का आकार"
 
 #: laser_essentials/steps/material_test.py
-msgid "Spacing"
-msgstr "स्पेसिंग"
-
-#: laser_essentials/steps/material_test.py
 msgid "Gap between test squares"
 msgstr "परीक्षण वर्गों के बीच अंतर"
 
@@ -710,20 +916,12 @@ msgstr ""
 "करने के लिए 0 पर छोड़ें"
 
 #: laser_essentials/steps/material_test.py
-msgid "Include Labels"
-msgstr "लेबल शामिल करें"
-
-#: laser_essentials/steps/material_test.py
 msgid "Add speed/power annotations to the grid"
 msgstr "ग्रिड में गति/शक्ति एनोटेशन जोड़ें"
 
 #: laser_essentials/steps/material_test.py
 msgid "Label Engrave Power"
 msgstr "लेबल उत्कीर्णन शक्ति"
-
-#: laser_essentials/steps/material_test.py
-msgid "Label Engrave Speed"
-msgstr "लेबल उत्कीर्णन गति"
 
 #: laser_essentials/steps/material_test.py
 msgid "Speed for engraving labels"
@@ -834,6 +1032,14 @@ msgstr "कट गति ({value}) मशीन की अधिकतम ({max}
 msgid "Create Material Test Grid"
 msgstr "सामग्री परीक्षण ग्रिड बनाएँ"
 
+#: laser_essentials/frontend.py
+msgid "Create Interval Test"
+msgstr "इंटरवल टेस्ट बनाएँ"
+
+#: laser_essentials/frontend.py
+msgid "Create Focus Test"
+msgstr "फोकस टेस्ट बनाएँ"
+
 #: laser_essentials/scan_angle_var.py
 msgid "Angle"
 msgstr "कोण"
@@ -850,6 +1056,20 @@ msgstr "चमक सीमा"
 msgid "Laser Head"
 msgstr "लेज़र हेड"
 
-#: laser_essentials/commands/material_test_cmd.py
-msgid "Add Material Test"
-msgstr "सामग्री परीक्षण जोड़ें"
+#: laser_essentials/commands/calibration_cmd.py
+msgid "Select a machine first."
+msgstr "पहले एक मशीन चुनें."
+
+#: laser_essentials/commands/calibration_cmd.py
+#, python-brace-format
+msgid "Add {test}"
+msgstr "{test} जोड़ें"
+
+#: laser_essentials/commands/calibration_cmd.py
+msgid "The layer of this test no longer exists."
+msgstr "इस टेस्ट की परत अब मौजूद नहीं है."
+
+#: laser_essentials/commands/calibration_cmd.py
+#, python-brace-format
+msgid "Change {test}"
+msgstr "{test} बदलें"

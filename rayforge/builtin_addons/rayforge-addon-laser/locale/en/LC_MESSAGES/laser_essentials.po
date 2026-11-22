@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 17:23+0100\n"
+"POT-Creation-Date: 2026-11-19 19:50+0100\n"
 "PO-Revision-Date: 2026-03-01 19:25+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -16,6 +16,246 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: laser_essentials/calibration/material_test_grid.py
+msgid "Diode Engrave"
+msgstr ""
+
+#: laser_essentials/calibration/material_test_grid.py
+msgid "Diode Cut"
+msgstr ""
+
+#: laser_essentials/calibration/material_test_grid.py
+msgid "CO2 Engrave"
+msgstr ""
+
+#: laser_essentials/calibration/material_test_grid.py
+msgid "CO2 Cut"
+msgstr ""
+
+#: laser_essentials/calibration/material_test_grid.py
+#: laser_essentials/steps/material_test.py
+msgid "Material Test Grid"
+msgstr "Material Test Grid"
+
+#: laser_essentials/calibration/material_test_grid.py
+msgid "Presets"
+msgstr "Presets"
+
+#: laser_essentials/calibration/material_test_grid.py
+msgid "Load common test configurations"
+msgstr "Load common test configurations"
+
+#: laser_essentials/calibration/material_test_grid.py
+msgid "Select"
+msgstr ""
+
+#: laser_essentials/calibration/material_test_grid.py
+msgid ""
+"The laser head and the post-processing of the grid stay in the settings of "
+"its operation."
+msgstr ""
+
+#: laser_essentials/calibration/material_test_grid.py
+msgid "A Material Test Grid needs at least 2×2 cells."
+msgstr ""
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Z axis steps"
+msgstr ""
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Manual (pause between lines)"
+msgstr ""
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Ramp (tilted material)"
+msgstr ""
+
+#: laser_essentials/calibration/focus_test.py
+msgid ""
+"Focus the laser as usual first. The job moves the head to the first offset, "
+"engraves one line per offset and returns the head to the starting height. A "
+"positive offset means more distance between the head and the material."
+msgstr ""
+
+#: laser_essentials/calibration/focus_test.py
+msgid ""
+"Focus the laser as usual first. The labels are engraved at that height. "
+"Before each line the job pauses: set the head to the first offset, then move "
+"it by one step at every following pause, and press Resume. A positive offset "
+"means more distance between the head and the material."
+msgstr ""
+
+#: laser_essentials/calibration/focus_test.py
+msgid ""
+"Prop up one end of a flat strip so it rises evenly under the line. The "
+"thinnest part of the line marks the focus; the ticks show the distance along "
+"the line, so the height there follows from the rise."
+msgstr ""
+
+#: laser_essentials/calibration/focus_test.py
+msgid "A Focus Test needs at least two lines."
+msgstr ""
+
+#: laser_essentials/calibration/focus_test.py
+msgid "The focus step must not be zero."
+msgstr ""
+
+#: laser_essentials/calibration/focus_test.py
+#, python-brace-format
+msgid ""
+"The focus offsets must stay within ±{limit:g} mm of the starting height."
+msgstr ""
+
+#: laser_essentials/calibration/focus_test.py
+#, python-brace-format
+msgid "Z to {offset} mm"
+msgstr ""
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Z back to the starting height"
+msgstr ""
+
+#: laser_essentials/calibration/focus_test.py
+#, python-brace-format
+msgid "Pause: set the head to {offset} mm from focus"
+msgstr ""
+
+#: laser_essentials/calibration/focus_test.py
+#, python-brace-format
+msgid "Pause: move the head by {step} mm"
+msgstr ""
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Focus Test"
+msgstr ""
+
+#: laser_essentials/calibration/focus_test.py
+#, python-brace-format
+msgid ""
+"The method {method} is not available on this machine. Choose another method "
+"to rebuild the test."
+msgstr ""
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Method"
+msgstr ""
+
+#: laser_essentials/calibration/focus_test.py
+msgid "First Offset"
+msgstr ""
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Step"
+msgstr ""
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Number of Lines"
+msgstr ""
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Line Length"
+msgstr ""
+
+#: laser_essentials/calibration/focus_test.py
+#: laser_essentials/calibration/interval_test.py
+#: laser_essentials/steps/material_test.py
+msgid "Spacing"
+msgstr "Spacing"
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Ramp Length"
+msgstr ""
+
+#: laser_essentials/calibration/focus_test.py
+#, python-brace-format
+msgid "This machine does not support the focus test mode {mode}."
+msgstr ""
+
+#: laser_essentials/calibration/focus_test.py
+#, python-brace-format
+msgid "Focus {offset} mm"
+msgstr ""
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Focus ramp"
+msgstr ""
+
+#: laser_essentials/calibration/common.py
+#: laser_essentials/widgets/raster_page.py laser_essentials/steps/laser_step.py
+msgid "Power"
+msgstr ""
+
+#: laser_essentials/calibration/common.py
+msgid "Speed"
+msgstr ""
+
+#: laser_essentials/calibration/common.py
+#: laser_essentials/steps/material_test.py
+msgid "Include Labels"
+msgstr "Include Labels"
+
+#: laser_essentials/calibration/common.py
+msgid "Label Engrave Power (%)"
+msgstr ""
+
+#: laser_essentials/calibration/common.py
+#: laser_essentials/steps/material_test.py
+msgid "Label Engrave Speed"
+msgstr ""
+
+#: laser_essentials/calibration/common.py
+msgid "Labels"
+msgstr ""
+
+#: laser_essentials/calibration/builder.py
+msgid "Machine commands need the Automation addon."
+msgstr ""
+
+#: laser_essentials/calibration/interval_test.py
+msgid "An Interval Test needs at least two cells."
+msgstr ""
+
+#: laser_essentials/calibration/interval_test.py
+msgid "The minimum line interval must be above zero and below the maximum."
+msgstr ""
+
+#: laser_essentials/calibration/interval_test.py
+msgid "Interval Test"
+msgstr ""
+
+#: laser_essentials/calibration/interval_test.py
+msgid "Number of Cells"
+msgstr ""
+
+#: laser_essentials/calibration/interval_test.py
+msgid "Smallest Interval"
+msgstr ""
+
+#: laser_essentials/calibration/interval_test.py
+msgid "Largest Interval"
+msgstr ""
+
+#: laser_essentials/calibration/interval_test.py
+msgid "Cell Size"
+msgstr ""
+
+#: laser_essentials/calibration/interval_test.py
+msgid ""
+"Engraves a row of filled squares, each with its own line interval, at the "
+"same power and speed."
+msgstr ""
+
+#: laser_essentials/calibration/interval_test.py
+#, python-brace-format
+msgid "Interval {interval:.2f} mm"
+msgstr ""
+
+#: laser_essentials/calibration/interval_test.py
+#, python-brace-format
+msgid "{lpi:.0f} LPI"
+msgstr ""
 
 #: laser_essentials/material_test_helpers.py
 msgid "Cut"
@@ -141,65 +381,21 @@ msgstr ""
 msgid "Cut a frame around the selected content."
 msgstr ""
 
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Grid"
+#: laser_essentials/widgets/calibration_provider.py
+msgid "Test Settings"
 msgstr ""
 
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Test cell dimensions, shape, and spacing."
+#: laser_essentials/widgets/calibration_provider.py
+msgid ""
+"Changing a setting rebuilds the test. The other settings of its operation "
+"stay."
 msgstr ""
 
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Labels"
+#: laser_essentials/widgets/calibration_provider.py
+msgid ""
+"Changing a setting rebuilds the test and replaces changes made to its "
+"operations."
 msgstr ""
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Speed/power annotations on the grid."
-msgstr ""
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Parameters"
-msgstr ""
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Define the parameter ranges for the test grid."
-msgstr ""
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Diode Engrave"
-msgstr ""
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Diode Cut"
-msgstr ""
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "CO2 Engrave"
-msgstr ""
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "CO2 Cut"
-msgstr ""
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Select"
-msgstr ""
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Preset"
-msgstr ""
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Load common test configurations."
-msgstr ""
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Presets"
-msgstr "Presets"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Load common test configurations"
-msgstr "Load common test configurations"
 
 #: laser_essentials/widgets/raster_power_widget.py
 msgid "Min Power (White)"
@@ -225,10 +421,6 @@ msgstr ""
 
 #: laser_essentials/widgets/raster_page.py
 msgid "Raster the image onto the material."
-msgstr ""
-
-#: laser_essentials/widgets/raster_page.py laser_essentials/steps/laser_step.py
-msgid "Power"
 msgstr ""
 
 #: laser_essentials/widgets/raster_page.py
@@ -341,7 +533,6 @@ msgstr "Cut Side"
 #: laser_essentials/steps/wavefront_step.py
 #: laser_essentials/steps/frame_step.py
 #: laser_essentials/steps/offset_fill_step.py
-#: laser_essentials/steps/contour_step.py
 msgid "Offset"
 msgstr ""
 
@@ -592,9 +783,21 @@ msgid "Contour"
 msgstr "Contour"
 
 #: laser_essentials/steps/contour_step.py
+msgid "Offset X"
+msgstr ""
+
+#: laser_essentials/steps/contour_step.py
 msgid ""
-"Shifts the cut path inward/outward per Cut Side (none on Centerline). "
-"Defaults to kerf compensation for the head"
+"Shifts the cut along X per Cut Side. Defaults to half the laser spot width"
+msgstr ""
+
+#: laser_essentials/steps/contour_step.py
+msgid "Offset Y"
+msgstr ""
+
+#: laser_essentials/steps/contour_step.py
+msgid ""
+"Shifts the cut along Y per Cut Side. Defaults to half the laser spot height"
 msgstr ""
 
 #: laser_essentials/steps/contour_step.py
@@ -635,11 +838,6 @@ msgid "Brightness level (0.0-1.0) to define edges"
 msgstr "Brightness level (0.0-1.0) to define edges"
 
 #: laser_essentials/steps/material_test.py
-#: laser_essentials/commands/material_test_cmd.py
-msgid "Material Test Grid"
-msgstr "Material Test Grid"
-
-#: laser_essentials/steps/material_test.py
 msgid "Test Type"
 msgstr "Test Type"
 
@@ -676,10 +874,6 @@ msgid "Size of each test square"
 msgstr ""
 
 #: laser_essentials/steps/material_test.py
-msgid "Spacing"
-msgstr "Spacing"
-
-#: laser_essentials/steps/material_test.py
 msgid "Gap between test squares"
 msgstr ""
 
@@ -690,19 +884,11 @@ msgid ""
 msgstr ""
 
 #: laser_essentials/steps/material_test.py
-msgid "Include Labels"
-msgstr "Include Labels"
-
-#: laser_essentials/steps/material_test.py
 msgid "Add speed/power annotations to the grid"
 msgstr "Add speed/power annotations to the grid"
 
 #: laser_essentials/steps/material_test.py
 msgid "Label Engrave Power"
-msgstr ""
-
-#: laser_essentials/steps/material_test.py
-msgid "Label Engrave Speed"
 msgstr ""
 
 #: laser_essentials/steps/material_test.py
@@ -814,6 +1000,14 @@ msgstr ""
 msgid "Create Material Test Grid"
 msgstr "Create Material Test Grid"
 
+#: laser_essentials/frontend.py
+msgid "Create Interval Test"
+msgstr ""
+
+#: laser_essentials/frontend.py
+msgid "Create Focus Test"
+msgstr ""
+
 #: laser_essentials/scan_angle_var.py
 msgid "Angle"
 msgstr "Angle"
@@ -830,6 +1024,20 @@ msgstr "Brightness Range"
 msgid "Laser Head"
 msgstr ""
 
-#: laser_essentials/commands/material_test_cmd.py
-msgid "Add Material Test"
-msgstr "Add Material Test"
+#: laser_essentials/commands/calibration_cmd.py
+msgid "Select a machine first."
+msgstr ""
+
+#: laser_essentials/commands/calibration_cmd.py
+#, python-brace-format
+msgid "Add {test}"
+msgstr ""
+
+#: laser_essentials/commands/calibration_cmd.py
+msgid "The layer of this test no longer exists."
+msgstr ""
+
+#: laser_essentials/commands/calibration_cmd.py
+#, python-brace-format
+msgid "Change {test}"
+msgstr ""

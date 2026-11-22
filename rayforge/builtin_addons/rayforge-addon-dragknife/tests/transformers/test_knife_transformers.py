@@ -14,7 +14,7 @@ class TestDragKnifeTransformer:
         transformer = DragKnifeTransformer(
             offset_mm=0.8, swivel_angle_deg=60.0
         )
-        spec = transformer.to_spec(None, None, None)
+        spec = transformer.to_spec(None, None, machine=None, settings={})
         assert spec.offset_mm == pytest.approx(0.8)
         assert spec.swivel_angle_deg == pytest.approx(60.0)
 
@@ -65,7 +65,7 @@ class TestTangentialKnifeTransformer:
             radius_tolerance_mm=2.0,
             safe_z=3.0,
         )
-        spec = transformer.to_spec(None, None, None)
+        spec = transformer.to_spec(None, None, machine=None, settings={})
         assert spec.angle_tolerance_deg == pytest.approx(40.0)
         assert spec.radius_tolerance_mm == pytest.approx(2.0)
         assert spec.safe_z == pytest.approx(3.0)

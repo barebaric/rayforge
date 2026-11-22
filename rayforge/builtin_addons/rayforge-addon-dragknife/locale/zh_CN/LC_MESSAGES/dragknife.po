@@ -1,0 +1,128 @@
+# Chinese translations for PACKAGE package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-11 00:59+0200\n"
+"PO-Revision-Date: 2026-09-11 00:59+0200\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: dragknife/widgets/pages.py
+msgid "Drag Knife"
+msgstr "拖刀"
+
+#: dragknife/widgets/pages.py
+msgid "Cut the workpiece outline with a drag knife."
+msgstr "使用拖刀切割工件轮廓。"
+
+#: dragknife/widgets/pages.py
+#: dragknife/transformers/tangential_knife_transformer.py
+msgid "Tangential Knife"
+msgstr "切向刀"
+
+#: dragknife/widgets/pages.py
+msgid ""
+"Cut the workpiece outline with a rotary knife that stays tangent to the path."
+msgstr "使用保持与路径相切的旋转刀切割工件轮廓。"
+
+#: dragknife/transformers/drag_knife_transformer.py
+msgid "Drag Knife Compensation"
+msgstr "拖刀补偿"
+
+#: dragknife/transformers/drag_knife_transformer.py
+msgid ""
+"Compensates contours for the blade offset of a drag knife and pivots the "
+"blade around corners."
+msgstr "根据拖刀的刀片偏移补偿轮廓，并在拐角处旋转刀片。"
+
+#: dragknife/transformers/tangential_knife_transformer.py
+msgid ""
+"Rotates a tangential knife to stay tangent to the path and lifts it at sharp "
+"corners."
+msgstr "旋转切向刀使其保持与路径相切，并在尖角处抬起。"
+
+#: dragknife/steps/tangential_knife_cut_step.py
+msgid "Tangential Knife Cut"
+msgstr "切向刀切割"
+
+#: dragknife/steps/tangential_knife_cut_step.py
+msgid "Angle Tolerance"
+msgstr "角度容差"
+
+#: dragknife/steps/tangential_knife_cut_step.py
+msgid ""
+"Maximum heading change rotated with the knife down; larger changes lift the "
+"knife"
+msgstr "刀片放下时旋转的最大方向变化；更大的变化会抬起刀具"
+
+#: dragknife/steps/tangential_knife_cut_step.py
+msgid "Radius Tolerance"
+msgstr "半径容差"
+
+#: dragknife/steps/tangential_knife_cut_step.py
+msgid "Arcs tighter than this radius are cut with the knife lifted"
+msgstr "半径小于此值的圆弧会抬起刀具切割"
+
+#: dragknife/steps/tangential_knife_cut_step.py
+msgid "Spindle RPM"
+msgstr "主轴转速"
+
+#: dragknife/steps/tangential_knife_cut_step.py
+msgid "Blade motor speed (M3)"
+msgstr "刀片电机速度 (M3)"
+
+#: dragknife/steps/knife_cut_step.py
+msgid ""
+"Knife head used for this step; the machine's first knife is used when unset"
+msgstr "此步骤使用的刀具机头；未设置时使用机器的第一把刀"
+
+#: dragknife/steps/knife_cut_step.py
+msgid "Blade Offset"
+msgstr "刀片偏移"
+
+#: dragknife/steps/knife_cut_step.py
+msgid "Distance between the blade tip and the machine's pivot point"
+msgstr "刀尖与机器旋转中心之间的距离"
+
+#: dragknife/steps/knife_cut_step.py
+msgid "Safe Z Height"
+msgstr "安全 Z 高度"
+
+#: dragknife/steps/knife_cut_step.py
+msgid "Height to retract between moves"
+msgstr "移动之间抬起的的高度"
+
+#: dragknife/steps/knife_cut_step.py
+msgid "Knife head, blade geometry, and retraction height for this operation."
+msgstr "此操作的刀具机头、刀片几何形状和抬起高度。"
+
+#: dragknife/steps/knife_cut_step.py dragknife/knife_head_var.py
+msgid "Knife"
+msgstr "刀具"
+
+#: dragknife/steps/knife_cut_step.py
+msgid "Step Settings"
+msgstr "步骤设置"
+
+#: dragknife/steps/drag_knife_cut_step.py
+msgid "Drag Knife Cut"
+msgstr "拖刀切割"
+
+#: dragknife/steps/drag_knife_cut_step.py
+msgid "Swivel Angle"
+msgstr "旋转角度"
+
+#: dragknife/steps/drag_knife_cut_step.py
+msgid ""
+"Maximum corner angle pivoted with the blade down; sharper corners lift the "
+"knife first"
+msgstr "刀片放下时旋转的最大拐角角度；更尖的拐角会先抬起刀具"

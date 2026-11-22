@@ -10,18 +10,18 @@ Marlin, Smoothieware und andere Firmware-Typen.
 
 ### Kompatibilitätsmatrix
 
-| Firmware         | Version | Status                  | Treiber                                  | Hinweise                   |
-| ---------------- | ------- | ----------------------- | ---------------------------------------- | -------------------------- |
-| **GRBL**         | 1.1+    | Vollständig unterstützt | GRBL (USB/Serial) (+ compatibility mode) | Empfohlen                  |
-| **GRBL**         | 1.1+    | Experimentell | GRBL (Bluetooth) | Gekoppelte Bluetooth-SPP-Geräte |
-| **grblHAL**      | 2023+   | Kompatibel              | GRBL (USB/Serial) / grblHAL (Telnet)     | Moderner GRBL-Fork         |
-| **GRBL**         | 0.9     | Eingeschränkt           | GRBL (USB/Serial)                        | Älter, kann Probleme haben |
-| **FluidNC**      | Alle    | Kompatibel              | FluidNC / ESP3D (Web API)                | ESP32-basiert              |
-| **Smoothieware** | Alle    | Kompatibel              | SmoothieDriver (Telnet)                  | Netzwerkbasiert            |
-| **Marlin**       | 2.0+    | Kompatibel              | Marlin Serial                            | Laser-Modus erforderlich   |
-| **ESP3D**        | Alle    | Kompatibel              | grblHAL (Telnet) / Web API               | v2: Telnet, v3: Web API    |
-| **OctoPrint**    | Alle    | Kompatibel              | OctoPrint                                | Siehe Hinweise unten       |
-| **Andere**       | -       | Nicht unterstützt       | -                                        | Support anfordern          |
+| Firmware         | Version | Status                  | Treiber                                  | Hinweise                        |
+| ---------------- | ------- | ----------------------- | ---------------------------------------- | ------------------------------- |
+| **GRBL**         | 1.1+    | Vollständig unterstützt | GRBL (USB/Serial) (+ compatibility mode) | Empfohlen                       |
+| **GRBL**         | 1.1+    | Experimentell           | GRBL (Bluetooth)                         | Gekoppelte Bluetooth-SPP-Geräte |
+| **grblHAL**      | 2023+   | Kompatibel              | GRBL (USB/Serial) / grblHAL (Telnet)     | Moderner GRBL-Fork              |
+| **GRBL**         | 0.9     | Eingeschränkt           | GRBL (USB/Serial)                        | Älter, kann Probleme haben      |
+| **FluidNC**      | Alle    | Kompatibel              | FluidNC / ESP3D (Web API)                | ESP32-basiert                   |
+| **Smoothieware** | Alle    | Kompatibel              | SmoothieDriver (Telnet)                  | Netzwerkbasiert                 |
+| **Marlin**       | 2.0+    | Kompatibel              | Marlin Serial                            | Laser-Modus erforderlich        |
+| **ESP3D**        | Alle    | Kompatibel              | grblHAL (Telnet) / Web API               | v2: Telnet, v3: Web API         |
+| **OctoPrint**    | Alle    | Kompatibel              | OctoPrint                                | Siehe Hinweise unten            |
+| **Andere**       | -       | Nicht unterstützt       | -                                        | Support anfordern               |
 
 ---
 
@@ -591,9 +591,9 @@ CO2 bieten Ausgangspunkte für neue Maschinen.
 
 ## OctoPrint
 
-Rayforge enthält einen OctoPrint-Treiber, der G-Code direkt an einen
-OctoPrint-Server über das Netzwerk sendet. Dies ist nützlich, wenn dein Laser mit einem Raspberry Pi
-oder einem anderen Rechner mit OctoPrint verbunden ist.
+Rayforge enthält einen OctoPrint-Treiber, der G-Code direkt an einen OctoPrint-Server über das
+Netzwerk sendet. Dies ist nützlich, wenn dein Laser mit einem Raspberry Pi oder einem anderen
+Rechner mit OctoPrint verbunden ist.
 
 **Funktionen:**
 

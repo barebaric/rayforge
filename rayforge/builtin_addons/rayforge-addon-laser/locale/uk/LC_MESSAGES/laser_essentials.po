@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 17:23+0100\n"
+"POT-Creation-Date: 2026-11-19 19:50+0100\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: Ukrainian\n"
@@ -17,6 +17,265 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ?0 : n%10>=2 && "
 "n%10<=4 && (n%100<10 || n%100>=20) ?1 :2);\n"
+
+#: laser_essentials/calibration/material_test_grid.py
+msgid "Diode Engrave"
+msgstr "Діодне гравіювання"
+
+#: laser_essentials/calibration/material_test_grid.py
+msgid "Diode Cut"
+msgstr "Діодне різання"
+
+#: laser_essentials/calibration/material_test_grid.py
+msgid "CO2 Engrave"
+msgstr "CO2 гравіювання"
+
+#: laser_essentials/calibration/material_test_grid.py
+msgid "CO2 Cut"
+msgstr "CO2 різання"
+
+#: laser_essentials/calibration/material_test_grid.py
+#: laser_essentials/steps/material_test.py
+msgid "Material Test Grid"
+msgstr "Сітка тестування матеріалу"
+
+#: laser_essentials/calibration/material_test_grid.py
+msgid "Presets"
+msgstr "Пресети"
+
+#: laser_essentials/calibration/material_test_grid.py
+msgid "Load common test configurations"
+msgstr "Завантажити типові конфігурації тестування"
+
+#: laser_essentials/calibration/material_test_grid.py
+msgid "Select"
+msgstr "Вибрати"
+
+#: laser_essentials/calibration/material_test_grid.py
+msgid ""
+"The laser head and the post-processing of the grid stay in the settings of "
+"its operation."
+msgstr ""
+"Головка лазера та постобробка сітки залишаються в налаштуваннях її операції."
+
+#: laser_essentials/calibration/material_test_grid.py
+msgid "A Material Test Grid needs at least 2×2 cells."
+msgstr "Сітка тесту матеріалу потребує щонайменше 2×2 клітинок."
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Z axis steps"
+msgstr "Кроки осі Z"
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Manual (pause between lines)"
+msgstr "Вручну (пауза між лініями)"
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Ramp (tilted material)"
+msgstr "Рампа (нахилений матеріал)"
+
+#: laser_essentials/calibration/focus_test.py
+msgid ""
+"Focus the laser as usual first. The job moves the head to the first offset, "
+"engraves one line per offset and returns the head to the starting height. A "
+"positive offset means more distance between the head and the material."
+msgstr ""
+"Спочатку сфокусуйте лазер як звичайно. Завдання переміщує головку до першого "
+"зміщення, гравіює одну лінію на кожне зміщення та повертає головку на "
+"початкову висоту. Додатне зміщення означає більшу відстань між головкою та "
+"матеріалом."
+
+#: laser_essentials/calibration/focus_test.py
+msgid ""
+"Focus the laser as usual first. The labels are engraved at that height. "
+"Before each line the job pauses: set the head to the first offset, then move "
+"it by one step at every following pause, and press Resume. A positive offset "
+"means more distance between the head and the material."
+msgstr ""
+"Спочатку сфокусуйте лазер як звичайно. Мітки гравіюються на цій висоті. "
+"Перед кожною лінією завдання зупиняється: встановіть головку на перше "
+"зміщення, переміщуйте її на один крок на кожній наступній паузі та "
+"натискайте Продовжити. Додатне зміщення означає більшу відстань між головкою "
+"та матеріалом."
+
+#: laser_essentials/calibration/focus_test.py
+msgid ""
+"Prop up one end of a flat strip so it rises evenly under the line. The "
+"thinnest part of the line marks the focus; the ticks show the distance along "
+"the line, so the height there follows from the rise."
+msgstr ""
+"Підкладіть один кінець плоскої смуги, щоб вона рівномірно піднімалася під "
+"лінією. Найтонша частина лінії позначає фокус; позначки показують відстань "
+"уздовж лінії, тому висота там випливає з підйому."
+
+#: laser_essentials/calibration/focus_test.py
+msgid "A Focus Test needs at least two lines."
+msgstr "Тест фокусу потребує щонайменше двох ліній."
+
+#: laser_essentials/calibration/focus_test.py
+msgid "The focus step must not be zero."
+msgstr "Крок фокусу не може бути нульовим."
+
+#: laser_essentials/calibration/focus_test.py
+#, python-brace-format
+msgid ""
+"The focus offsets must stay within ±{limit:g} mm of the starting height."
+msgstr ""
+"Зміщення фокусу мають залишатися в межах ±{limit:g} мм від початкової висоти."
+
+#: laser_essentials/calibration/focus_test.py
+#, python-brace-format
+msgid "Z to {offset} mm"
+msgstr "Z на {offset} мм"
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Z back to the starting height"
+msgstr "Z назад на початкову висоту"
+
+#: laser_essentials/calibration/focus_test.py
+#, python-brace-format
+msgid "Pause: set the head to {offset} mm from focus"
+msgstr "Пауза: встановіть головку на {offset} мм від фокусу"
+
+#: laser_essentials/calibration/focus_test.py
+#, python-brace-format
+msgid "Pause: move the head by {step} mm"
+msgstr "Пауза: перемістіть головку на {step} мм"
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Focus Test"
+msgstr "Тест фокусу"
+
+#: laser_essentials/calibration/focus_test.py
+#, python-brace-format
+msgid ""
+"The method {method} is not available on this machine. Choose another method "
+"to rebuild the test."
+msgstr ""
+"Метод {method} недоступний на цій машині. Виберіть інший метод, щоб "
+"перебудувати тест."
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Method"
+msgstr "Метод"
+
+#: laser_essentials/calibration/focus_test.py
+msgid "First Offset"
+msgstr "Перше зміщення"
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Step"
+msgstr "Крок"
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Number of Lines"
+msgstr "Кількість ліній"
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Line Length"
+msgstr "Довжина лінії"
+
+#: laser_essentials/calibration/focus_test.py
+#: laser_essentials/calibration/interval_test.py
+#: laser_essentials/steps/material_test.py
+msgid "Spacing"
+msgstr "Інтервал"
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Ramp Length"
+msgstr "Довжина рампи"
+
+#: laser_essentials/calibration/focus_test.py
+#, python-brace-format
+msgid "This machine does not support the focus test mode {mode}."
+msgstr "Ця машина не підтримує режим тесту фокусу {mode}."
+
+#: laser_essentials/calibration/focus_test.py
+#, python-brace-format
+msgid "Focus {offset} mm"
+msgstr "Фокус {offset} мм"
+
+#: laser_essentials/calibration/focus_test.py
+msgid "Focus ramp"
+msgstr "Рампа фокусу"
+
+#: laser_essentials/calibration/common.py
+#: laser_essentials/widgets/raster_page.py laser_essentials/steps/laser_step.py
+msgid "Power"
+msgstr "Потужність"
+
+#: laser_essentials/calibration/common.py
+msgid "Speed"
+msgstr "Швидкість"
+
+#: laser_essentials/calibration/common.py
+#: laser_essentials/steps/material_test.py
+msgid "Include Labels"
+msgstr "Включити мітки"
+
+#: laser_essentials/calibration/common.py
+msgid "Label Engrave Power (%)"
+msgstr "Потужність гравіювання міток (%)"
+
+#: laser_essentials/calibration/common.py
+#: laser_essentials/steps/material_test.py
+msgid "Label Engrave Speed"
+msgstr "Швидкість гравіювання міток"
+
+#: laser_essentials/calibration/common.py
+msgid "Labels"
+msgstr "Мітки"
+
+#: laser_essentials/calibration/builder.py
+msgid "Machine commands need the Automation addon."
+msgstr "Команди машини потребують додатка Automation."
+
+#: laser_essentials/calibration/interval_test.py
+msgid "An Interval Test needs at least two cells."
+msgstr "Тест інтервалу потребує щонайменше двох клітинок."
+
+#: laser_essentials/calibration/interval_test.py
+msgid "The minimum line interval must be above zero and below the maximum."
+msgstr ""
+"Мінімальний інтервал ліній має бути більшим за нуль і меншим за максимум."
+
+#: laser_essentials/calibration/interval_test.py
+msgid "Interval Test"
+msgstr "Тест інтервалу"
+
+#: laser_essentials/calibration/interval_test.py
+msgid "Number of Cells"
+msgstr "Кількість клітинок"
+
+#: laser_essentials/calibration/interval_test.py
+msgid "Smallest Interval"
+msgstr "Найменший інтервал"
+
+#: laser_essentials/calibration/interval_test.py
+msgid "Largest Interval"
+msgstr "Найбільший інтервал"
+
+#: laser_essentials/calibration/interval_test.py
+msgid "Cell Size"
+msgstr "Розмір клітинки"
+
+#: laser_essentials/calibration/interval_test.py
+msgid ""
+"Engraves a row of filled squares, each with its own line interval, at the "
+"same power and speed."
+msgstr ""
+"Гравіює ряд заповнених квадратів, кожен зі своїм інтервалом ліній, за "
+"однакової потужності та швидкості."
+
+#: laser_essentials/calibration/interval_test.py
+#, python-brace-format
+msgid "Interval {interval:.2f} mm"
+msgstr "Інтервал {interval:.2f} мм"
+
+#: laser_essentials/calibration/interval_test.py
+#, python-brace-format
+msgid "{lpi:.0f} LPI"
+msgstr "{lpi:.0f} LPI"
 
 #: laser_essentials/material_test_helpers.py
 msgid "Cut"
@@ -142,65 +401,24 @@ msgstr "Геометрія"
 msgid "Cut a frame around the selected content."
 msgstr "Виріжте рамку навколо вибраного вмісту."
 
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Grid"
-msgstr "Сітка"
+#: laser_essentials/widgets/calibration_provider.py
+msgid "Test Settings"
+msgstr "Налаштування тесту"
 
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Test cell dimensions, shape, and spacing."
-msgstr "Розміри тестових комірок, форма та інтервали."
+#: laser_essentials/widgets/calibration_provider.py
+msgid ""
+"Changing a setting rebuilds the test. The other settings of its operation "
+"stay."
+msgstr ""
+"Зміна параметра перебудовує тест. Інші налаштування його операції "
+"залишаються."
 
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Labels"
-msgstr "Мітки"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Speed/power annotations on the grid."
-msgstr "Анотації швидкості/потужності на сітці."
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Parameters"
-msgstr "Параметри"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Define the parameter ranges for the test grid."
-msgstr "Визначте діапазони параметрів для тестової сітки."
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Diode Engrave"
-msgstr "Діодне гравіювання"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Diode Cut"
-msgstr "Діодне різання"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "CO2 Engrave"
-msgstr "CO2 гравіювання"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "CO2 Cut"
-msgstr "CO2 різання"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Select"
-msgstr "Вибрати"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Preset"
-msgstr "Пресет"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Load common test configurations."
-msgstr "Завантажити типові конфігурації тестування."
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Presets"
-msgstr "Пресети"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Load common test configurations"
-msgstr "Завантажити типові конфігурації тестування"
+#: laser_essentials/widgets/calibration_provider.py
+msgid ""
+"Changing a setting rebuilds the test and replaces changes made to its "
+"operations."
+msgstr ""
+"Зміна параметра перебудовує тест і замінює зміни, зроблені в його операціях."
 
 #: laser_essentials/widgets/raster_power_widget.py
 msgid "Min Power (White)"
@@ -230,10 +448,6 @@ msgstr "Швидкість гравіювання"
 #: laser_essentials/widgets/raster_page.py
 msgid "Raster the image onto the material."
 msgstr "Виконайте растрування зображення на матеріалі."
-
-#: laser_essentials/widgets/raster_page.py laser_essentials/steps/laser_step.py
-msgid "Power"
-msgstr "Потужність"
 
 #: laser_essentials/widgets/raster_page.py
 msgid "Power modulation and brightness range."
@@ -352,7 +566,6 @@ msgstr "Сторона різу"
 #: laser_essentials/steps/wavefront_step.py
 #: laser_essentials/steps/frame_step.py
 #: laser_essentials/steps/offset_fill_step.py
-#: laser_essentials/steps/contour_step.py
 msgid "Offset"
 msgstr "Зміщення"
 
@@ -623,12 +836,26 @@ msgid "Contour"
 msgstr "Контур"
 
 #: laser_essentials/steps/contour_step.py
+msgid "Offset X"
+msgstr "Зміщення X"
+
+#: laser_essentials/steps/contour_step.py
 msgid ""
-"Shifts the cut path inward/outward per Cut Side (none on Centerline). "
-"Defaults to kerf compensation for the head"
+"Shifts the cut along X per Cut Side. Defaults to half the laser spot width"
 msgstr ""
-"Зсуває шлях різання усередину/назовні залежно від сторони різу (жодного на "
-"центральній лінії). За замовчуванням — компенсація kerf для голівки"
+"Зсуває різ уздовж X залежно від сторони різу. За замовчуванням половина "
+"ширини плями лазера"
+
+#: laser_essentials/steps/contour_step.py
+msgid "Offset Y"
+msgstr "Зміщення Y"
+
+#: laser_essentials/steps/contour_step.py
+msgid ""
+"Shifts the cut along Y per Cut Side. Defaults to half the laser spot height"
+msgstr ""
+"Зсуває різ уздовж Y залежно від сторони різу. За замовчуванням половина "
+"висоти плями лазера"
 
 #: laser_essentials/steps/contour_step.py
 msgid "Cut Order"
@@ -669,11 +896,6 @@ msgid "Brightness level (0.0-1.0) to define edges"
 msgstr "Рівень яскравості (0.0-1.0) для визначення країв"
 
 #: laser_essentials/steps/material_test.py
-#: laser_essentials/commands/material_test_cmd.py
-msgid "Material Test Grid"
-msgstr "Сітка тестування матеріалу"
-
-#: laser_essentials/steps/material_test.py
 msgid "Test Type"
 msgstr "Тип тесту"
 
@@ -710,10 +932,6 @@ msgid "Size of each test square"
 msgstr "Розмір кожного тестового квадрата"
 
 #: laser_essentials/steps/material_test.py
-msgid "Spacing"
-msgstr "Інтервал"
-
-#: laser_essentials/steps/material_test.py
 msgid "Gap between test squares"
 msgstr "Проміжок між тестовими квадратами"
 
@@ -726,20 +944,12 @@ msgstr ""
 "Залиште 0, щоб використовувати розмір лазерної плями"
 
 #: laser_essentials/steps/material_test.py
-msgid "Include Labels"
-msgstr "Включити мітки"
-
-#: laser_essentials/steps/material_test.py
 msgid "Add speed/power annotations to the grid"
 msgstr "Додати анотації швидкості/потужності до сітки"
 
 #: laser_essentials/steps/material_test.py
 msgid "Label Engrave Power"
 msgstr "Потужність гравіювання міток"
-
-#: laser_essentials/steps/material_test.py
-msgid "Label Engrave Speed"
-msgstr "Швидкість гравіювання міток"
 
 #: laser_essentials/steps/material_test.py
 msgid "Speed for engraving labels"
@@ -850,6 +1060,14 @@ msgstr "Швидкість різання ({value}) перевищує макс�
 msgid "Create Material Test Grid"
 msgstr "Створити сітку тестування матеріалу"
 
+#: laser_essentials/frontend.py
+msgid "Create Interval Test"
+msgstr "Створити тест інтервалу"
+
+#: laser_essentials/frontend.py
+msgid "Create Focus Test"
+msgstr "Створити тест фокусу"
+
 #: laser_essentials/scan_angle_var.py
 msgid "Angle"
 msgstr "Кут"
@@ -866,6 +1084,20 @@ msgstr "Діапазон яскравості"
 msgid "Laser Head"
 msgstr "Лазерна голівка"
 
-#: laser_essentials/commands/material_test_cmd.py
-msgid "Add Material Test"
-msgstr "Додати тест матеріалу"
+#: laser_essentials/commands/calibration_cmd.py
+msgid "Select a machine first."
+msgstr "Спершу виберіть машину."
+
+#: laser_essentials/commands/calibration_cmd.py
+#, python-brace-format
+msgid "Add {test}"
+msgstr "Додати {test}"
+
+#: laser_essentials/commands/calibration_cmd.py
+msgid "The layer of this test no longer exists."
+msgstr "Шар цього тесту більше не існує."
+
+#: laser_essentials/commands/calibration_cmd.py
+#, python-brace-format
+msgid "Change {test}"
+msgstr "Змінити {test}"

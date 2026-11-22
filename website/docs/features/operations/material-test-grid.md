@@ -14,17 +14,17 @@ combination produces the result you want.
 
 Create one via **Tools → Create Material Test Grid**. Rayforge adds the grid on a new layer named
 after the test, with one workpiece and a matching operation, and selects it. The grid's settings
-appear under **Test Settings** in the item properties panel on the right, so the canvas and the
-grid stay in view while you change them. Every change rebuilds the grid right away, as one step you
-can undo. Select the grid again later to bring its settings back. The
+appear under **Test Settings** in the item properties panel on the right, so the canvas and the grid
+stay in view while you change them. Every change rebuilds the grid right away, as one step you can
+undo. Select the grid again later to bring its settings back. The
 [Interval and Focus Tests](interval-and-focus-tests.md) work the same way.
 
 ![Material Test Grid Settings](/screenshots/material-test.webp)
 
 ## Presets
 
-The Test Settings offer presets for common laser types. They fill in a sensible speed range,
-power range, and test type so you can start with a reasonable baseline:
+The Test Settings offer presets for common laser types. They fill in a sensible speed range, power
+range, and test type so you can start with a reasonable baseline:
 
 | Preset            | Speed Range       | Power Range | Test Type |
 | ----------------- | ----------------- | ----------- | --------- |
@@ -68,9 +68,9 @@ and are engraved first, so the test pattern cannot obscure them. They get their 
 default) and speed (1000 mm/min by default), and speed values are shown in your preferred display
 unit.
 
-The **parameter ranges** are what the grid varies — speed, power, passes, or offset,
-depending on the selected mode. Modes that keep a parameter fixed (for example the speed in Power vs
-Passes) let you set that constant here as well.
+The **parameter ranges** are what the grid varies — speed, power, passes, or offset, depending on
+the selected mode. Modes that keep a parameter fixed (for example the speed in Power vs Passes) let
+you set that constant here as well.
 
 ## The Linked Workpiece
 

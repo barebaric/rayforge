@@ -29,11 +29,15 @@ Les appareils GRBL peuvent se connecter en USB/série ou par réseau :
 - **GRBL (USB/Serial — compatibility mode)** — Pilote à protocole ping-pong. Envoie une ligne,
   attend « ok », envoie la suivante. Sans gestion de tampon ni détection d'interblocage. Nécessaire
   uniquement lorsque le pilote standard déclenche de fausses alarmes ou des erreurs de communication
-- **GRBL (Bluetooth)** — Connexion Bluetooth Classic SPP/RFCOMM pour les contrôleurs appairés dans le système d'exploitation
+- **GRBL (Bluetooth)** — Connexion Bluetooth Classic SPP/RFCOMM pour les contrôleurs appairés dans
+  le système d'exploitation
 - **grblHAL (Telnet)** — Connexion TCP brute (telnet) pour les contrôleurs grblHAL en réseau et pour
   le pont telnet d'ESP3D
 - **FluidNC / ESP3D (Web API)** — Pilote HTTP/WebSocket pour les contrôleurs FluidNC et ESP3D v3,
   avec envoi de fichiers et prise en charge des réglages de l'appareil
+
+Les machines xTool en Wi-Fi utilisent leurs propres pilotes expérimentaux ; voir
+[xTool en Wi-Fi](xtool) pour la D1/D1 Pro et la M2.
 
 Les contrôleurs basés sur Ruida sont pris en charge par le pilote **Ruida RPA**, qui se connecte
 directement en USB ou UDP, ou via TUI RPC par l'intermédiaire du Ruida Protocol Analyzer. Son champ

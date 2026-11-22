@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-03 17:02+0100\n"
+"POT-Creation-Date: 2026-11-21 12:21+0100\n"
 "PO-Revision-Date: 2026-09-27 22:58\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -28,163 +28,6 @@ msgstr "पैरामीटर जो इस स्केच की ज्य�
 #: sketcher/core/sketch.py
 msgid "Sketch"
 msgstr "स्केच"
-
-#: sketcher/core/constraints/equal_length.py
-msgid "Equal Length"
-msgstr "समान लंबाई"
-
-#: sketcher/core/constraints/equal_length.py
-msgid "{} entities"
-msgstr "{} एंटिटी"
-
-#: sketcher/core/constraints/parallelogram.py
-msgid "Parallelogram"
-msgstr "समांतर चतुर्भुज"
-
-#: sketcher/core/constraints/parallelogram.py
-msgid "Origin at {}"
-msgstr "{} पर मूल"
-
-#: sketcher/core/constraints/point_on_curve.py
-msgid "Point on Curve"
-msgstr "वक्र पर बिंदु"
-
-#: sketcher/core/constraints/point_on_curve.py
-#: sketcher/core/constraints/point_on_line.py
-msgid "Point at {}"
-msgstr "{} पर बिंदु"
-
-#: sketcher/core/constraints/point_on_line.py
-msgid "Point on Line"
-msgstr "रेखा पर बिंदु"
-
-#: sketcher/core/constraints/collinear.py
-msgid "Collinear"
-msgstr "संरेखी"
-
-#: sketcher/core/constraints/collinear.py
-msgid "{}, {}, {}"
-msgstr "{}, {}, {}"
-
-#: sketcher/core/constraints/tangent.py
-#: sketcher/ui_gtk/tools/tangent_constraint_tool.py
-msgid "Tangent"
-msgstr "स्पर्श"
-
-#: sketcher/core/constraints/tangent.py
-msgid "Line to {} at {}"
-msgstr "{} से {} पर रेखा"
-
-#: sketcher/core/constraints/rotational.py
-msgid "Rotational Array"
-msgstr "घूर्णन ऐरे"
-
-#: sketcher/core/constraints/distance.py sketcher/ui_gtk/tools/offset_tool.py
-#: sketcher/ui_gtk/tools/distance_constraint_tool.py
-msgid "Distance"
-msgstr "दूरी"
-
-#: sketcher/core/constraints/distance.py sketcher/core/constraints/vertical.py
-#: sketcher/core/constraints/symmetry.py
-#: sketcher/core/constraints/horizontal.py
-#: sketcher/core/constraints/aspect_ratio.py
-msgid "From {} to {}"
-msgstr "{} से {}"
-
-#: sketcher/core/constraints/distance.py sketcher/core/constraints/vertical.py
-#: sketcher/core/constraints/horizontal.py
-msgid "Enter length or expression."
-msgstr "लंबाई या व्यंजक दर्ज करें."
-
-#: sketcher/core/constraints/vertical.py
-#: sketcher/ui_gtk/tools/vertical_constraint_tool.py
-msgid "Vertical"
-msgstr "लंबवत"
-
-#: sketcher/core/constraints/equal_distance.py
-msgid "Equal Distance"
-msgstr "समान दूरी"
-
-#: sketcher/core/constraints/equal_distance.py
-msgid "{}-{} and {}-{}"
-msgstr "{}-{} और {}-{}"
-
-#: sketcher/core/constraints/perpendicular.py
-#: sketcher/ui_gtk/tools/perpendicular_constraint_tool.py
-msgid "Perpendicular"
-msgstr "लंब"
-
-#: sketcher/core/constraints/perpendicular.py
-msgid "Between {} and {}"
-msgstr "{} और {} के बीच"
-
-#: sketcher/core/constraints/symmetry.py
-#: sketcher/ui_gtk/tools/symmetry_constraint_tool.py
-msgid "Symmetry"
-msgstr "सममिति"
-
-#: sketcher/core/constraints/horizontal.py
-#: sketcher/ui_gtk/tools/horizontal_constraint_tool.py
-msgid "Horizontal"
-msgstr "क्षैतिज"
-
-#: sketcher/core/constraints/base.py
-msgid "Enter value or expression."
-msgstr "मान या व्यंजक दर्ज करें."
-
-#: sketcher/core/constraints/angle.py
-#: sketcher/ui_gtk/tools/angle_constraint_tool.py
-msgid "Angle"
-msgstr "कोण"
-
-#: sketcher/core/constraints/angle.py
-msgid "Between two lines"
-msgstr "दो रेखाओं के बीच"
-
-#: sketcher/core/constraints/angle.py
-msgid "Enter angle in degrees or expression."
-msgstr "डिग्री में कोण या व्यंजक दर्ज करें."
-
-#: sketcher/core/constraints/diameter.py
-#: sketcher/ui_gtk/tools/diameter_constraint_tool.py
-msgid "Diameter"
-msgstr "व्यास"
-
-#: sketcher/core/constraints/diameter.py
-msgid "Circle at {}"
-msgstr "{} पर वृत्त"
-
-#: sketcher/core/constraints/diameter.py
-msgid "Enter diameter or expression."
-msgstr "व्यास या व्यंजक दर्ज करें."
-
-#: sketcher/core/constraints/coincident.py
-#: sketcher/ui_gtk/tools/coincident_constraint_tool.py
-msgid "Coincident"
-msgstr "संपाती"
-
-#: sketcher/core/constraints/coincident.py
-msgid "At {}"
-msgstr "{} पर"
-
-#: sketcher/core/constraints/radius.py
-#: sketcher/ui_gtk/tools/circular_array_tool.py
-#: sketcher/ui_gtk/tools/radius_constraint_tool.py
-msgid "Radius"
-msgstr "त्रिज्या"
-
-#: sketcher/core/constraints/radius.py
-msgid "{} at {}"
-msgstr "{} पर {}"
-
-#: sketcher/core/constraints/radius.py
-msgid "Enter radius or expression (e.g. 'width/2')."
-msgstr "त्रिज्या या व्यंजक दर्ज करें (जैसे 'width/2')."
-
-#: sketcher/core/constraints/aspect_ratio.py
-#: sketcher/ui_gtk/tools/aspect_ratio_constraint_tool.py
-msgid "Aspect Ratio"
-msgstr "आस्पेक्ट अनुपात"
 
 #: sketcher/core/commands/circle.py
 msgid "Add Circle"
@@ -429,6 +272,10 @@ msgid "Symmetric"
 msgstr "सममित"
 
 #: sketcher/ui_gtk/tools/symmetry_constraint_tool.py
+msgid "Symmetry"
+msgstr "सममिति"
+
+#: sketcher/ui_gtk/tools/symmetry_constraint_tool.py
 msgid "Add Symmetry Constraint"
 msgstr "सममिति कॉन्स्ट्रेंट जोड़ें"
 
@@ -535,8 +382,16 @@ msgid "Waypoint"
 msgstr "वेपॉइंट"
 
 #: sketcher/ui_gtk/tools/aspect_ratio_constraint_tool.py
+msgid "Aspect Ratio"
+msgstr "आस्पेक्ट अनुपात"
+
+#: sketcher/ui_gtk/tools/aspect_ratio_constraint_tool.py
 msgid "Add Aspect Ratio Constraint"
 msgstr "आस्पेक्ट अनुपात कॉन्स्ट्रेंट जोड़ें"
+
+#: sketcher/ui_gtk/tools/angle_constraint_tool.py
+msgid "Angle"
+msgstr "कोण"
 
 #: sketcher/ui_gtk/tools/angle_constraint_tool.py
 msgid "Add Angle Constraint"
@@ -576,6 +431,10 @@ msgid "Create"
 msgstr "बनाएँ"
 
 #: sketcher/ui_gtk/tools/tangent_constraint_tool.py
+msgid "Tangent"
+msgstr "स्पर्श"
+
+#: sketcher/ui_gtk/tools/tangent_constraint_tool.py
 msgid "Add Tangent Constraint"
 msgstr "स्पर्श कॉन्स्ट्रेंट जोड़ें"
 
@@ -586,6 +445,10 @@ msgstr "दीर्घवृत्त"
 #: sketcher/ui_gtk/tools/circle_tool.py
 msgid "Constrain to circle"
 msgstr "वृत्त पर बाधित करें"
+
+#: sketcher/ui_gtk/tools/vertical_constraint_tool.py
+msgid "Vertical"
+msgstr "लंबवत"
 
 #: sketcher/ui_gtk/tools/vertical_constraint_tool.py
 msgid "Add Vertical Constraint"
@@ -623,6 +486,11 @@ msgstr "केंद्र X"
 #: sketcher/ui_gtk/tools/circular_array_tool.py
 msgid "Center Y"
 msgstr "केंद्र Y"
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+#: sketcher/ui_gtk/tools/radius_constraint_tool.py
+msgid "Radius"
+msgstr "त्रिज्या"
 
 #: sketcher/ui_gtk/tools/circular_array_tool.py
 msgid "Rotate copies"
@@ -730,9 +598,18 @@ msgstr ""
 "चयनित कॉन्टूर को उनके ऑफ़सेट से बदलता है. धनात्मक मान बंद कॉन्टूर बड़े करते हैं; खुले कॉन्टूर "
 "स्लॉट बन जाते हैं."
 
+#: sketcher/ui_gtk/tools/offset_tool.py
+#: sketcher/ui_gtk/tools/distance_constraint_tool.py
+msgid "Distance"
+msgstr "दूरी"
+
 #: sketcher/ui_gtk/tools/text_box_tool.py
 msgid "Text Box"
 msgstr "टेक्स्ट बॉक्स"
+
+#: sketcher/ui_gtk/tools/diameter_constraint_tool.py
+msgid "Diameter"
+msgstr "व्यास"
 
 #: sketcher/ui_gtk/tools/diameter_constraint_tool.py
 msgid "Add Diameter Constraint"
@@ -763,6 +640,10 @@ msgid "Smooth"
 msgstr "चिकना"
 
 #: sketcher/ui_gtk/tools/coincident_constraint_tool.py
+msgid "Coincident"
+msgstr "संपाती"
+
+#: sketcher/ui_gtk/tools/coincident_constraint_tool.py
 msgid "Add Coincident Constraint"
 msgstr "संपाती कॉन्स्ट्रेंट जोड़ें"
 
@@ -775,8 +656,16 @@ msgid "Add Point On Shape"
 msgstr "आकृति पर बिंदु जोड़ें"
 
 #: sketcher/ui_gtk/tools/perpendicular_constraint_tool.py
+msgid "Perpendicular"
+msgstr "लंब"
+
+#: sketcher/ui_gtk/tools/perpendicular_constraint_tool.py
 msgid "Add Perpendicular Constraint"
 msgstr "लंब कॉन्स्ट्रेंट जोड़ें"
+
+#: sketcher/ui_gtk/tools/horizontal_constraint_tool.py
+msgid "Horizontal"
+msgstr "क्षैतिज"
 
 #: sketcher/ui_gtk/tools/horizontal_constraint_tool.py
 msgid "Add Horizontal Constraint"

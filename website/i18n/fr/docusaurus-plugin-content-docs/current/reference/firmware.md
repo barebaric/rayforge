@@ -13,7 +13,7 @@ charge Marlin, Smoothieware et d'autres types de firmware.
 | Firmware         | Version | Statut                     | Pilote                                   | Notes                            |
 | ---------------- | ------- | -------------------------- | ---------------------------------------- | -------------------------------- |
 | **GRBL**         | 1.1+    | Entièrement pris en charge | GRBL (USB/Serial) (+ compatibility mode) | Recommandé                       |
-| **GRBL**         | 1.1+    | Expérimental | GRBL (Bluetooth) | Appareils SPP Bluetooth appairés |
+| **GRBL**         | 1.1+    | Expérimental               | GRBL (Bluetooth)                         | Appareils SPP Bluetooth appairés |
 | **grblHAL**      | 2023+   | Compatible                 | GRBL (USB/Serial) / grblHAL (Telnet)     | Fork GRBL moderne                |
 | **GRBL**         | 0.9     | Limité                     | GRBL (USB/Serial)                        | Ancien, peut avoir des problèmes |
 | **FluidNC**      | Tous    | Compatible                 | FluidNC / ESP3D (Web API)                | Basé sur ESP32                   |
@@ -591,9 +591,9 @@ MP-570 60W CO2 fournissent des points de départ pour les nouvelles machines.
 
 ## OctoPrint
 
-Rayforge inclut un pilote OctoPrint qui soumet le G-code directement à un serveur
-OctoPrint via le réseau. Ceci est utile si ton laser est connecté à un Raspberry Pi ou une autre
-machine exécutant OctoPrint.
+Rayforge inclut un pilote OctoPrint qui soumet le G-code directement à un serveur OctoPrint via le
+réseau. Ceci est utile si ton laser est connecté à un Raspberry Pi ou une autre machine exécutant
+OctoPrint.
 
 **Fonctionnalités :**
 

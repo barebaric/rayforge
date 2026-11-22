@@ -156,6 +156,8 @@ TARGETS = {
     "step-settings:contour:post": "step_settings",
     "step-settings:contour:post:optimize": "step_settings_optimize",
     "step-settings:contour:post:perforation": "step_settings_perforation",
+    "step-settings:drag-knife:general": "knife_step_settings",
+    "step-settings:tangential-knife:general": "knife_step_settings",
     "step-settings:engrave:general:constant_power": "step_settings",
     "step-settings:engrave:general:dither": "step_settings",
     "step-settings:engrave:general:multi_pass": "step_settings",

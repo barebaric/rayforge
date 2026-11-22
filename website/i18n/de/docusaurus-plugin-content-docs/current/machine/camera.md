@@ -457,8 +457,8 @@ ankündigt; siehe [Remote-Geräte](remote.md) für die Einrichtung des Daemons.
 4. Aktiviere die Kamera. Der Live-Feed sollte auf der Arbeitsfläche erscheinen.
 
 Das Geräteprofil des Creality Falcon A1 Pro enthält bereits eine vorkonfigurierte, deaktivierte
-HTTP-Snapshot-Kamera. Wähle unter **Maschine → Aktuelle Maschineneinstellungen → Kamera** **Falcon A1 Pro
-Camera** aus und ersetze `<laser-ip>` in der URL des Feldes **Source** durch die erreichbare
+HTTP-Snapshot-Kamera. Wähle unter **Maschine → Aktuelle Maschineneinstellungen → Kamera** **Falcon
+A1 Pro Camera** aus und ersetze `<laser-ip>` in der URL des Feldes **Source** durch die erreichbare
 IP-Adresse der Maschine. Übernimm die gültige URL mit **Enter** oder indem du das Feld verlässt, und
 aktiviere die Kamera anschließend manuell. Alternativ kannst du die IP-Adresse verwenden, die dem
 Falcon in deinem WLAN zugewiesen wurde.

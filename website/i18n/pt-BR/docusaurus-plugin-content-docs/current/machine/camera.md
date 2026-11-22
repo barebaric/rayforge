@@ -455,10 +455,11 @@ remoto; consulte [Dispositivos remotos](remote.md) para configurar o daemon.
 4. Ative a câmera. O vídeo deverá aparecer na tela.
 
 O perfil do dispositivo Creality Falcon A1 Pro já inclui uma câmera de instantâneo HTTP
-pré-configurada e desativada. Em **Máquina → Configurações Atuais da Máquina → Câmera**, selecione **Falcon
-A1 Pro Camera** e substitua `<laser-ip>` na URL do campo **Source** pelo endereço IP acessível da
-máquina. Confirme a URL válida com **Enter** ou clicando fora do campo e, em seguida, ative a câmera
-manualmente. Você também pode usar o endereço IP atribuído ao Falcon na sua rede Wi-Fi.
+pré-configurada e desativada. Em **Máquina → Configurações Atuais da Máquina → Câmera**, selecione
+**Falcon A1 Pro Camera** e substitua `<laser-ip>` na URL do campo **Source** pelo endereço IP
+acessível da máquina. Confirme a URL válida com **Enter** ou clicando fora do campo e, em seguida,
+ative a câmera manualmente. Você também pode usar o endereço IP atribuído ao Falcon na sua rede
+Wi-Fi.
 
 Depois, você pode editar o campo **Source** sem perder a calibração ou o alinhamento. Ao editar a
 URL, a câmera é desativada imediatamente. O botão de ativação permanece indisponível até que uma URL
