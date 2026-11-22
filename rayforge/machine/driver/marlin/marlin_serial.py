@@ -214,7 +214,7 @@ class MarlinSerialDriver(SessionDriverBase):
         )
 
     async def run_probe_cycle(
-        self, axis: Axis, max_travel: float, feed_rate: int
+        self, axis: Axis, target: float, feed_rate: int
     ) -> Pos | None:
         raise NotImplementedError(
             "Probing is not implemented for the Marlin driver."

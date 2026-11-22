@@ -113,7 +113,8 @@ class PerforationTransformer(OpsTransformer):
         self,
         workpiece: WorkPiece | None,
         stock_geometries: Sequence[Geometry] | None,
-        settings: dict[str, Any] | None,
+        machine=None,
+        settings: dict[str, Any] | None = None,
     ) -> TabsSpec:
         clips = self._generate_clips(workpiece) if workpiece else []
         return TabsSpec(tab_power=0.0, original_power=1.0, clips=clips)

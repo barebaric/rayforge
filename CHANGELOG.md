@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   so the connection to the machine is not dropped when the computer
   goes idle. The new "Prevent sleep during jobs" option on the General
   settings page can disable it
+- Machine: bed mesh probing. The Bed Mesh page probes the work
+  surface on a configurable grid, stores the height map with the
+  machine, and renders it as a 3D surface. A per-layer post processor
+  applies the bilinear height correction in machine space, optionally
+  subdividing cuts at grid lines so Z follows the bed between probe
+  points
 
 ### Changed
 
@@ -43,6 +49,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Machine: bed mesh probing refuses to start when Safe Z or the
+  probe's lowest reach lies outside the machine's Z travel, and it
+  lifts straight up before traveling between probe points
+- Machine: FluidNC devices use the HTTP port for the WebSocket when
+  no WebSocket port is configured
+- Machine: homing no longer times out on large machines; the wait is
+  derived from the longest axis travel and the configured travel speed
+  instead of the short interactive-command budget
 - Windows: the app starts on machines whose graphics driver crashes
   GTK's OpenGL renderer. The cairo renderer is selected by default
   there now, unless `GSK_RENDERER` is set explicitly (#684)

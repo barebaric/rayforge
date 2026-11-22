@@ -120,6 +120,7 @@ class GrblTelnetDriver(GrblSerialDriver):
             "deadlock_detection": bool(
                 kwargs.get("deadlock_detection", False)
             ),
+            "homing_timeout": self._estimate_homing_timeout(),
         }
         cached_rx_buffer_size = self.config.get("rx_buffer_size")
         if cached_rx_buffer_size is not None:

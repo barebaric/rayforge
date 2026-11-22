@@ -926,6 +926,25 @@ def test_machine_token_ignores_unused_wcs_offset(isolated_machine):
     assert after_t == before_t
 
 
+def test_machine_token_tracks_active_wcs_offset(isolated_machine):
+    step = _TestStep(name="s1")
+    doc = _make_doc(step, WorkPiece(name="wp"))
+    before = IntentBuilder(machine=isolated_machine).build(doc)
+
+    slot = isolated_machine.active_wcs
+    x, y, z = isolated_machine.get_wcs_offset(slot)
+    isolated_machine.update_wcs_offset(slot, (x, y, z + 5.0))
+    after = IntentBuilder(machine=isolated_machine).build(doc)
+
+    before_t = next(
+        n.version_token for n in before if n.key == job_machinexform_key()
+    )
+    after_t = next(
+        n.version_token for n in after if n.key == job_machinexform_key()
+    )
+    assert after_t != before_t
+
+
 def test_machine_token_tracks_effective_layer_wcs_offset(isolated_machine):
     step = _TestStep(name="s1")
     doc = _make_doc(step, WorkPiece(name="wp"))

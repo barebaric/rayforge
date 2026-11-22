@@ -40,6 +40,13 @@ if TYPE_CHECKING:
     from ..models.machine import Machine
 
 
+#: Homing seek rates are typically well below the configured travel
+#: speed, and pull-off moves add time; scale the predicted travel time
+#: to keep the timeout a ceiling rather than an expected wait.
+_HOMING_SAFETY_FACTOR = 8.0
+_HOMING_MIN_TIMEOUT_S = 30.0
+
+
 @runtime_checkable
 class SessionLike(Protocol):
     """The uniform session surface every raydriver session exposes.
@@ -144,6 +151,26 @@ class SessionDriverBase(Driver):
         if self._session is None:
             return None
         return self._session.resource_uri
+
+    def _estimate_homing_timeout(self) -> float:
+        """Predict a homing wait budget from axis length and speed.
+
+        The longest axis travel is divided by the machine's configured
+        travel speed; a safety factor covers the slower seek rate and
+        the pull-off moves. The result is a ceiling for the session,
+        not an expected wait.
+        """
+        machine = self._machine
+        distances = list(machine.axis_extents)
+        z_extents = machine.z_extents
+        if z_extents is not None:
+            distances.append(z_extents[1] - z_extents[0])
+        distance = max(distances) if distances else 0.0
+        speed = float(machine.max_travel_speed)
+        if speed <= 0.0:
+            speed = 3000.0
+        seconds = distance / speed * 60.0
+        return max(seconds * _HOMING_SAFETY_FACTOR, _HOMING_MIN_TIMEOUT_S)
 
     @property
     def session(self) -> SessionLike | None:
@@ -468,13 +495,13 @@ class SessionDriverBase(Driver):
             return None
 
     async def run_probe_cycle(
-        self, axis: Axis, max_travel: float, feed_rate: int
+        self, axis: Axis, target: float, feed_rate: int
     ) -> Pos | None:
         session = self._require_session()
         assert axis.name, "Probing requires a single, named axis."
         return await session.run_probe_cycle(
             axis.name.upper(),
-            self._to_machine_length(max_travel),
+            self._to_machine_length(target),
             self._to_machine_speed(feed_rate),
         )
 

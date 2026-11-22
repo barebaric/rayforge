@@ -4,7 +4,10 @@ import pytest
 import pytest_asyncio
 from raydriver.esp3d.emulator import Esp3dEmulator
 
-from rayforge.machine.driver.grbl.grbl_network import GrblNetworkDriver
+from rayforge.machine.driver.grbl.grbl_network import (
+    GrblNetworkDriver,
+    _resolve_ws_port,
+)
 from rayforge.machine.models.machine import Machine
 
 
@@ -65,6 +68,22 @@ class TestRegistry:
     def test_setup_vars(self):
         keys = set(GrblNetworkDriver.get_setup_vars().keys())
         assert {"host", "port", "ws_port", "protocol"} <= keys
+
+    def test_ws_port_defaults_to_the_http_port(self):
+        ws_port = GrblNetworkDriver.get_setup_vars().get("ws_port")
+        assert ws_port is not None
+        assert ws_port.default == 0
+
+
+class TestWebSocketPort:
+    def test_zero_uses_the_http_port(self):
+        assert _resolve_ws_port(80, 0, "ESP3D") == 80
+        assert _resolve_ws_port(8080, 0, "FluidNC") == 8080
+
+    def test_explicit_port_is_preserved(self):
+        assert _resolve_ws_port(8848, 8849, "Longer") == 8849
+        # A split-port FluidNC build keeps its explicit value.
+        assert _resolve_ws_port(80, 81, "FluidNC") == 81
 
 
 class TestConnection:

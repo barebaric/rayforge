@@ -2,7 +2,6 @@ import logging
 from gettext import gettext as _
 from typing import Any, cast
 
-from raydriver.config import GrblBluetoothConfig
 from raydriver.core.bluetooth import is_supported, normalize_address
 from raydriver.grbl import GrblSession
 
@@ -149,22 +148,22 @@ class GrblBluetoothDriver(GrblSerialDriver):
             )
 
         cached_rx_buffer_size = self.config.get("rx_buffer_size")
-        config = GrblBluetoothConfig(
-            address=address,
-            channel=channel,
-            poll_status_while_running=bool(
+        config = {
+            "address": address,
+            "channel": channel,
+            "poll_status_while_running": bool(
                 kwargs.get("poll_status_while_running", False)
             ),
-            deadlock_detection=bool(kwargs.get("deadlock_detection", False)),
-            rx_buffer_size_override=int(
+            "deadlock_detection": bool(
+                kwargs.get("deadlock_detection", False)
+            ),
+            "rx_buffer_size_override": int(
                 kwargs.get("rx_buffer_size_override", 0) or 0
             ),
-            cached_rx_buffer_size=(
-                int(cached_rx_buffer_size)
-                if cached_rx_buffer_size is not None
-                else None
-            ),
-        )
+            "homing_timeout": self._estimate_homing_timeout(),
+        }
+        if cached_rx_buffer_size is not None:
+            config["cached_rx_buffer_size"] = int(cached_rx_buffer_size)
         self._session = GrblSession(
             config=config,
             dialect=self._dialect_templates(),
