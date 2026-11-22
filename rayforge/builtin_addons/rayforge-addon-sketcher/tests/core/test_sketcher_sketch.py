@@ -6,8 +6,7 @@ import pytest
 from raygeo.geo import Arc as GeoArc
 from raygeo.geo import Geometry, Move
 from raygeo.geo import Line as GeoLine
-from sketcher.core import Sketch
-from sketcher.core.constraints import (
+from raygeo.sketch.constraints import (
     CoincidentConstraint,
     EqualDistanceConstraint,
     EqualLengthConstraint,
@@ -15,6 +14,7 @@ from sketcher.core.constraints import (
     PointOnLineConstraint,
     SymmetryConstraint,
 )
+from sketcher.core import Sketch
 from sketcher.core.sketch import Fill
 
 from rayforge.core.varset import FloatVar
@@ -76,8 +76,8 @@ def test_sketch_is_empty():
     # 1. Initially empty (contains origin point, but no entities)
     assert s.is_empty is True
     # Verify internal state: Origin exists, so points list is not empty
-    assert len(s.registry.points) == 1
-    assert len(s.registry.entities) == 0
+    assert len(s.registry.points()) == 1
+    assert len(s.registry.entities()) == 0
 
     # 2. Adding standalone points doesn't change emptiness regarding drawable
     # geometry
@@ -698,7 +698,7 @@ def test_remove_point_if_unused():
     # 1. Test removing a point that is not used by any entity
     unused_pid = s.add_point(100, 100)
     assert s.remove_point_if_unused(unused_pid) is True
-    assert unused_pid not in [p.id for p in s.registry.points]
+    assert unused_pid not in [p.id for p in s.registry.points()]
 
     # 2. Test that None returns False and does nothing
     assert s.remove_point_if_unused(None) is False
@@ -708,7 +708,7 @@ def test_remove_point_if_unused():
     p2 = s.add_point(10, 0)
     s.add_line(p1, p2)
     assert s.remove_point_if_unused(p1) is False
-    assert p1 in [p.id for p in s.registry.points]
+    assert p1 in [p.id for p in s.registry.points()]
 
     # 4. Test removing a point after its entity is removed
     p3 = s.add_point(20, 0)
@@ -719,14 +719,14 @@ def test_remove_point_if_unused():
         s.remove_entities([entity])
     assert s.remove_point_if_unused(p3) is True
     assert s.remove_point_if_unused(p4) is True
-    assert p3 not in [p.id for p in s.registry.points]
-    assert p4 not in [p.id for p in s.registry.points]
+    assert p3 not in [p.id for p in s.registry.points()]
+    assert p4 not in [p.id for p in s.registry.points()]
 
     # 5. Test that origin point is removed when not used by any entity
     # (in a new sketch with no entities, origin is considered unused)
     origin_pid = s.origin_id
     assert s.remove_point_if_unused(origin_pid) is True
-    assert origin_pid not in [p.id for p in s.registry.points]
+    assert origin_pid not in [p.id for p in s.registry.points()]
 
     # 6. Test that origin point is NOT removed when used by an entity
     s2 = Sketch()
@@ -734,7 +734,7 @@ def test_remove_point_if_unused():
     p_other = s2.add_point(10, 0)
     s2.add_line(origin_pid2, p_other)
     assert s2.remove_point_if_unused(origin_pid2) is False
-    assert origin_pid2 in [p.id for p in s2.registry.points]
+    assert origin_pid2 in [p.id for p in s2.registry.points()]
 
 
 class TestSketchLoopFindingHelpers:

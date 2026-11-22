@@ -1,6 +1,19 @@
 name: print_and_cut
 display_name: "Print & Cut"
 description: "Align workpieces to physical objects using registration marks"
+long_description: |
+  Align laser cuts to pre-printed material using registration marks.
+
+  1. Pick reference points on your design
+  2. Jog the machine to the matching physical positions
+  3. Apply the alignment to cut exactly on the print
+
+  Ideal for stickers, labels, and anything that must line up with an
+  existing print. Open it via **Tools - Align to Physical Position**
+  with a workpiece selected.
+screenshots:
+  - website/static/screenshots/addon-print-and-cut-pick.webp
+  - website/static/screenshots/addon-print-and-cut-apply.webp
 api_version: 19
 author:
   name: "Rayforge Team"

@@ -1,12 +1,15 @@
 """Tests for the Rust-backed GrblSerialDriver."""
 
 import asyncio
+import logging
 import time
+from dataclasses import replace
 
 import pytest
 import pytest_asyncio
-from raydriver.emulator import GrblEmulator
-from raydriver.grbl import GrblSession, MockTransport
+from raydriver.core.transport import MockTransport
+from raydriver.grbl import GrblSession
+from raydriver.grbl.emulator import GrblEmulator
 from raygeo.ops import Ops
 from raygeo.ops.axis import Axis
 
@@ -189,7 +192,7 @@ class TestRegistry:
         assert encoder.dialect.uid == machine.dialect.uid
 
     def test_convert_state(self):
-        from raydriver.grbl.types import DeviceState as RDState
+        from raydriver.core.types import DeviceState as RDState
 
         state = _parser_module().parse_state(
             "<Alarm:1|FS:500,0>", RDState(), False
@@ -281,6 +284,35 @@ class TestDeviceOperations:
         assert b"G4 P0.01\n" in text
         assert text.index(b"$H\n") < text.index(b"G55\n")
         assert text.index(b"G55\n") < text.index(b"G54\n")
+
+    async def test_home_does_not_park_by_default(self, connected_driver):
+        drv, mock, _emulator, _recorder = connected_driver
+        await drv.home(None)
+        assert b"G53" not in sent_text(mock)
+
+    async def test_home_parks_when_position_set(self, connected_driver):
+        drv, mock, _emulator, _recorder = connected_driver
+        drv._machine.set_park_position_after_homing((12.5, 0.0))
+        mock.clear_sent()
+        await drv.home(None)
+        text = sent_text(mock)
+        assert b"G53 G0 X12.5 Y0.0\n" in text
+        assert text.index(b"$H\n") < text.index(b"G53 G0 X12.5 Y0.0\n")
+
+    async def test_home_skips_park_when_template_empty(self, connected_driver):
+        drv, mock, _emulator, _recorder = connected_driver
+        drv._machine.set_park_position_after_homing((10.0, 10.0))
+        drv._machine._hydrated_dialect = replace(drv.dialect, move_to_park="")
+        mock.clear_sent()
+        await drv.home(None)
+        assert b"G53" not in sent_text(mock)
+
+    async def test_home_single_axis_skips_park(self, connected_driver):
+        drv, mock, _emulator, _recorder = connected_driver
+        drv._machine.set_park_position_after_homing((10.0, 10.0))
+        mock.clear_sent()
+        await drv.home([Axis.X])
+        assert b"G53" not in sent_text(mock)
 
     async def test_set_power(self, connected_driver):
         drv, mock, _emulator, _recorder = connected_driver
@@ -419,6 +451,48 @@ class TestStreaming:
         sent = sent_text(mock)
         assert b"\x18" in sent
         assert b"M5\n" in sent
+
+
+@pytest.mark.asyncio
+class TestRawLogging:
+    async def test_settings_reply_is_logged(self, connected_driver, caplog):
+        drv, _mock, _emulator, _recorder = connected_driver
+        with caplog.at_level(
+            logging.INFO,
+            logger="rayforge.machine.driver.grbl.grbl_serial",
+        ):
+            await drv._require_session().execute_interactive_command("$$")
+        messages = [record.getMessage() for record in caplog.records]
+        assert any(message.startswith("$") for message in messages)
+        assert "ok" in messages
+
+    async def test_outgoing_command_is_logged(self, connected_driver, caplog):
+        drv, _mock, _emulator, _recorder = connected_driver
+        with caplog.at_level(
+            logging.INFO,
+            logger="rayforge.machine.driver.grbl.grbl_serial",
+        ):
+            await drv._require_session().execute_interactive_command("$$")
+        assert any(
+            record.getMessage() == "$$"
+            and record.__dict__.get("log_category") == "RAW_IO"
+            for record in caplog.records
+        )
+
+    async def test_status_reports_are_logged(self, connected_driver, caplog):
+        _drv, _mock, _emulator, _recorder = connected_driver
+        with caplog.at_level(
+            logging.INFO,
+            logger="rayforge.machine.driver.grbl.grbl_serial",
+        ):
+
+            def has_status_report():
+                return any(
+                    record.__dict__.get("log_category") == "STATUS_POLL"
+                    for record in caplog.records
+                )
+
+            await wait_until(has_status_report)
 
 
 def _slow_job(n_lines: int) -> str:

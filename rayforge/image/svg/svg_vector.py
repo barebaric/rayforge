@@ -25,7 +25,12 @@ from ..structures import (
     VectorizationResult,
 )
 from .svg_base import SvgImporterBase
-from .svgutil import NO_COLOR_KEY, extract_layer_manifest
+from .svgutil import (
+    NO_COLOR_KEY,
+    NO_LAYER_KEY,
+    extract_layer_manifest,
+    filter_svg_layers,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -144,6 +149,10 @@ class SvgVectorImporter(SvgImporterBase):
             for layer_id, geo in layers_raw:
                 if layer_id in target_layer_ids and not geo.is_empty():
                     geometries_by_layer[layer_id] = geo
+            if NO_LAYER_KEY in target_layer_ids:
+                geo = self._orphan_geometry(svg_str)
+                if not geo.is_empty():
+                    geometries_by_layer[NO_LAYER_KEY] = geo
 
         # If no layers found, fall back to the whole SVG.
         if not geometries_by_layer:
@@ -180,7 +189,25 @@ class SvgVectorImporter(SvgImporterBase):
                 layer_geometries.append(
                     self._layer_geometry(layer_id, layer_name, geo)
                 )
+        if NO_LAYER_KEY in layer_names_by_id:
+            geo = self._orphan_geometry(svg_str)
+            if not geo.is_empty():
+                layer_geometries.append(
+                    self._layer_geometry(
+                        NO_LAYER_KEY, layer_names_by_id[NO_LAYER_KEY], geo
+                    )
+                )
         return layer_geometries
+
+    def _orphan_geometry(self, svg_str: str) -> Geometry:
+        """Merged geometry of root-level content outside any named layer."""
+        orphan_svg = filter_svg_layers(svg_str.encode("utf-8"), [NO_LAYER_KEY])
+        geo = Geometry()
+        for g in svg_string_to_geometries(
+            orphan_svg.decode("utf-8"), 1.0, 1.0
+        ):
+            geo.extend(g)
+        return geo
 
     def _layer_geometries_by_color(
         self, svg_str: str, color_attr: ColorAttr

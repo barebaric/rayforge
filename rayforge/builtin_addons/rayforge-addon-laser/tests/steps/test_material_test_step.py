@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, Protocol, cast
 from unittest.mock import MagicMock, patch
 
 import pytest
+from laser_essentials.material_test_helpers import GridMode
 from laser_essentials.steps import MaterialTestStep
 from raygeo.cnc.execution.specs import ComputePayload
 from raygeo.ops.assembly import Assembler
@@ -133,6 +134,53 @@ class TestMaterialTestStep:
         assert kwargs["cols"] == 5
         assert kwargs["rows"] == 3
 
+    def test_zero_line_interval_falls_back_to_spot_size(self, machine):
+        """Line Interval 0 means auto (laser spot size). Passing the 0
+        on to the assembler divides the cell height by zero, which
+        generates billions of scan lines and exhausts memory."""
+        step = MaterialTestStep(name="Test")
+        step.line_interval_mm = 0.0
+        workpiece = MagicMock(spec=["size"])
+        workpiece.size = (100, 100)
+
+        with patch(
+            "rayforge.shared.units.formatter.get_context",
+            return_value=_mock_speed_preference(),
+        ):
+            kwargs = step.get_assembler_kwargs(machine, workpiece)
+
+        assert kwargs["line_interval_mm"] == pytest.approx(0.1)
+
+    def test_none_line_interval_falls_back_to_spot_size(self, machine):
+        """An unset Line Interval resolves to the laser spot size."""
+        step = MaterialTestStep(name="Test")
+        step.line_interval_mm = None
+        workpiece = MagicMock(spec=["size"])
+        workpiece.size = (100, 100)
+
+        with patch(
+            "rayforge.shared.units.formatter.get_context",
+            return_value=_mock_speed_preference(),
+        ):
+            kwargs = step.get_assembler_kwargs(machine, workpiece)
+
+        assert kwargs["line_interval_mm"] == pytest.approx(0.1)
+
+    def test_explicit_line_interval_is_kept(self, machine):
+        """A positive Line Interval reaches the assembler unchanged."""
+        step = MaterialTestStep(name="Test")
+        step.line_interval_mm = 0.25
+        workpiece = MagicMock(spec=["size"])
+        workpiece.size = (100, 100)
+
+        with patch(
+            "rayforge.shared.units.formatter.get_context",
+            return_value=_mock_speed_preference(),
+        ):
+            kwargs = step.get_assembler_kwargs(machine, workpiece)
+
+        assert kwargs["line_interval_mm"] == pytest.approx(0.25)
+
     def test_roundtrip_serialization(self):
         step = MaterialTestStep(name="Test")
         step.test_type = "Engrave"
@@ -244,6 +292,61 @@ class TestMaterialTestStep:
             t.get("name") for t in step.per_workpiece_transformers_dicts
         }
         assert "BidirScanOffsetTransformer" in per_wp_names
+
+
+class TestMaterialTestCheck:
+    def test_check_ignores_unused_base_cut_speed(self, machine):
+        """The step's unused cut_speed default (500) must not trigger
+        a machine-limit warning."""
+        machine.max_cut_speed = 400
+        step = MaterialTestStep(name="mtg")
+        step.speed_range = (100.0, 400.0)
+        step.include_labels = False
+        assert step.check(machine) == []
+
+    def test_check_flags_speed_range_above_machine_max(self, machine):
+        machine.max_cut_speed = 400
+        step = MaterialTestStep(name="mtg")
+        step.speed_range = (100.0, 500.0)
+        step.include_labels = False
+        assert len(step.check(machine)) == 1
+
+    def test_check_flags_fixed_speed_mode(self, machine):
+        machine.max_cut_speed = 400
+        step = MaterialTestStep(name="mtg")
+        step.grid_mode = GridMode.POWER_VS_PASSES.value
+        step.fixed_speed = 500.0
+        step.include_labels = False
+        assert len(step.check(machine)) == 1
+
+    def test_check_ignores_fixed_speed_when_not_used(self, machine):
+        machine.max_cut_speed = 400
+        step = MaterialTestStep(name="mtg")
+        step.grid_mode = GridMode.POWER_VS_SPEED.value
+        step.speed_range = (100.0, 400.0)
+        step.fixed_speed = 500.0
+        step.include_labels = False
+        assert step.check(machine) == []
+
+    def test_check_flags_label_speed(self, machine):
+        machine.max_cut_speed = 400
+        step = MaterialTestStep(name="mtg")
+        step.speed_range = (100.0, 400.0)
+        step.include_labels = True
+        step.label_speed = 500.0
+        assert len(step.check(machine)) == 1
+
+    def test_check_skips_label_speed_when_labels_off(self, machine):
+        machine.max_cut_speed = 400
+        step = MaterialTestStep(name="mtg")
+        step.speed_range = (100.0, 400.0)
+        step.include_labels = False
+        step.label_speed = 500.0
+        assert step.check(machine) == []
+
+    def test_check_without_machine(self):
+        step = MaterialTestStep(name="mtg")
+        assert step.check(None) == []
 
 
 class TestMaterialTestComputePayload:

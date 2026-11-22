@@ -30,6 +30,15 @@ Cuando está habilitado, puedes hacer homing de ejes individuales independientem
 lugar de requerir que todos los ejes hagan homing juntos. Esto es útil para máquinas donde un eje ya
 puede estar posicionado correctamente.
 
+### Referenciado de Z
+
+Elige cómo encuentra el eje Z su posición de referencia al hacer homing. Este ajuste solo aparece
+cuando el controlador de la máquina admite más de un método.
+
+- **Interruptor de origen**: Z se mueve a su interruptor de origen, igual que los ejes X e Y
+- **Sonda**: Z usa la sonda de autoenfoque del controlador para encontrar la superficie de trabajo y
+  luego se mueve a la distancia de enfoque configurada
+
 ## Ajustes de Arcos y Curvas
 
 Ajustes para controlar cómo las rutas curvas se convierten en movimientos de G-code.
@@ -57,6 +66,43 @@ especificada en milímetros. Un valor más pequeño produce rutas más precisas 
 comandos. Un valor más grande permite más desviación pero genera menos comandos.
 
 Valores típicos van de 0.01mm para trabajo de precisión a 0.1mm para procesamiento más rápido.
+
+## Desplazamiento de Escaneo Bidireccional por Velocidad {#bidirectional-scan-offset-by-speed}
+
+La tabla de desplazamiento de escaneo bidireccional por velocidad corrige la desalineación
+horizontal entre las pasadas raster de izquierda a derecha y de derecha a izquierda. En muchas
+máquinas este sesgo no es constante: cuanto más rápido se mueve el cabezal láser, más se desvían las
+pasadas de derecha a izquierda de su alineación, lo que se ve como bandas que empeoran a velocidades
+de grabado más altas.
+
+![Desplazamiento de Escaneo Bidireccional por Velocidad](/screenshots/machine-settings-advanced-bidir-offset-table.webp)
+
+Cada fila de la tabla asocia una velocidad de grabado con el desplazamiento, en milímetros, que las
+pasadas de derecha a izquierda necesitan a esa velocidad:
+
+- Usa **Añadir Fila** para añadir una fila y el botón de papelera de una fila para eliminarla
+- Los valores positivos desplazan las pasadas de derecha a izquierda hacia la derecha, los negativos
+  hacia la izquierda
+- Las filas se mantienen ordenadas por velocidad; si dos filas tienen la misma velocidad, la última
+  es la que vale
+
+Cuando se ejecuta un paso de grabado, Rayforge busca la velocidad del paso en esta tabla e interpola
+el desplazamiento linealmente entre las filas circundantes. Las velocidades por debajo de la primera
+fila o por encima de la última usan el desplazamiento de la fila más cercana, y una tabla vacía
+significa que todas las velocidades usan un desplazamiento de 0.
+
+**Sin corrección** — la desalineación crece con la velocidad de grabado:
+
+![Pasadas raster desalineadas a 1000, 4000 y 8000 mm/min](/images/bidir-scan-offset-uncorrected.webp)
+
+**Con la tabla de desplazamiento aplicada:**
+
+![Pasadas raster alineadas a todas las velocidades](/images/bidir-scan-offset-table-applied.webp)
+
+La tabla solo se aplica a los pasos de grabado cuyo propio **Desplazamiento de Escaneo
+Bidireccional** es 0; un desplazamiento por paso distinto de cero siempre tiene prioridad. Consulta
+[Desplazamiento de Escaneo Bidireccional](../features/operations/engrave.md#bidirectional-scan-offset)
+para ver cómo es la desalineación y cómo calibrarla.
 
 ## Ver También
 

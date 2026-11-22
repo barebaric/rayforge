@@ -60,7 +60,7 @@ Das Kameraeigenschaften-Panel zeigt Status-Symbole für Kalibrierung und Ausrich
 1. **Verbinde deine Kamera** über USB mit deinem Computer
 
 2. **Kameraeinstellungen öffnen:**
-   - Navigiere zu **Maschine → Maschineneinstellungen → Kamera**
+   - Navigiere zu **Maschine → Aktuelle Maschineneinstellungen → Kamera**
 
 3. **Eine neue Kamera hinzufügen:**
    - Klicke auf die "+"-Taste, um eine Kamera hinzuzufügen
@@ -149,8 +149,9 @@ Wähle zuerst einen **Pattern Type**:
    jede Position auf **Capture Frame**. Strebe mindestens 8 Aufnahmen an, die das gesamte Bild
    abdecken, einschließlich Ecken und Kanten. Die Fortschrittsanzeige und Statusanzeigen zeigen die
    Aufnahmequalität.
-4. Sobald genügend Aufnahmen gemacht wurden, berechnet der Assistent das Verzerrungsmodell und
-   wendet es an — das Kamera-Overlay zeigt nun ein korrigiertes, gerades Bild.
+4. Sobald genügend Aufnahmen gemacht wurden, klicke auf **Calibrate**. Der Assistent zeigt das
+   Ergebnis — bestätige mit **Save Calibration**, um es anzuwenden (nur **Discard** verwirft das
+   Ergebnis) — und das Kamera-Overlay zeigt nun ein korrigiertes, gerades Bild.
 
 #### Ein bereits gedrucktes Muster verwenden
 
@@ -213,7 +214,8 @@ manuell anpassen — die radialen (k1–k3) und tangentialen (p1–p2) Parameter
 Die Bildausrichtung ist die letzte Stufe des Kamera-Assistenten. Die Kameraausrichtung kalibriert
 die Beziehung zwischen Kamerapixeln und realen Koordinaten und ermöglicht so präzises Positionieren.
 Der Assistent verwendet dasselbe hier beschriebene Verfahren, und das Anwenden der Ausrichtung
-schließt den Assistenten ab.
+schließt den Assistenten ab. Ein Beenden ohne angewendete Ausrichtung fragt zuerst nach, da die
+Kameraansicht dann nicht genau auf den Arbeitsbereich abgebildet werden kann.
 
 #### Warum Ausrichtung notwendig ist
 
@@ -246,8 +248,10 @@ Die Ausrichtung erstellt eine Transformationsmatrix, die Kamerapixel Maschinenko
    - Wiederhole für jeden Referenzpunkt
 
 4. **Weltkoordinaten eingeben:**
-   - Gib für jeden Bildpunkt die realen X/Y-Koordinaten in mm ein
-   - Dies sind die tatsächlichen Maschinenkoordinaten, an denen sich jeder Punkt befindet
+   - Gib für jeden Bildpunkt die realen X/Y-Koordinaten in deiner Anzeigeeinheit ein (in den
+     Anwendungseinstellungen festgelegt)
+   - Dies sind die tatsächlichen Maschinenkoordinaten, an denen sich jeder Punkt befindet, gemessen
+     vom Ursprung des Arbeitsbereichs
    - Miss genau mit einem Lineal oder verwende bekannte Maschinenpositionen
 
 5. **Ausrichtung anwenden:**
@@ -295,6 +299,26 @@ Das Kameraeigenschaften-Panel zeigt den Ausrichtungsstatus mit einem Symbol:
 
 Sobald ausgerichtet, hilft das Kamera-Overlay beim präzisen Positionieren von Jobs. Schalte es durch
 Klicken auf das Kamerasymbol in der Hauptfenster-Symbolleiste ein oder aus.
+
+---
+
+### Ansicht außerhalb des Arbeitsbereichs
+
+Die Kamera sieht meist mehr als nur den Arbeitsbereich. Unter Maschineneinstellungen → Kamera →
+Ansicht außerhalb des Arbeitsbereichs kannst du einen zusätzlichen halbtransparenten Rand aus
+Kamerabild um den Arbeitsbereich anzeigen lassen, der das Positionieren von Werkstücken erleichtert.
+
+![Kameraansicht außerhalb des Arbeitsbereichs](/screenshots/main-camera-outside-view.webp)
+
+- **Außerhalb des Arbeitsbereichs anzeigen** schaltet den Rand ein oder aus. Er ist standardmäßig
+  deaktiviert und erfordert eine ausgerichtete Kamera.
+- **Rand** legt fest, wie weit der Rand über den Arbeitsbereich hinausgeht, bis zu 100 mm.
+- **Transparenz** steuert, wie gut der Rand sichtbar ist.
+
+Bereiche, die die Kamera nicht sieht, bleiben transparent, statt schwarz zu erscheinen, und der Rand
+endet an der Kante dessen, was die Kamera tatsächlich abdeckt. Objekte, die über das Bett ragen, wie
+der Portalrahmen, können im Rand verschoben erscheinen, da das Kamerabild auf die Bettebene
+ausgerichtet ist.
 
 ---
 
@@ -419,11 +443,12 @@ sudo lsof /dev/video0
 
 Rayforge unterstützt lokale Kameras sowie Netzwerkkameras über HTTP-Schnappschüsse,
 HTTP/MJPEG-Streams und RTSP. Lokale Kameras werden automatisch erkannt; Netzwerkkameras werden über
-ihre URL hinzugefügt.
+ihre URL hinzugefügt. **Daemon-Kamera** listet die Kameras auf, die ein entfernter raydriver-Daemon
+ankündigt; siehe [Remote-Geräte](remote.md) für die Einrichtung des Daemons.
 
 ### Netzwerkkamera hinzufügen
 
-1. Öffne **Maschine → Maschineneinstellungen → Kamera**.
+1. Öffne **Maschine → Aktuelle Maschineneinstellungen → Kamera**.
 2. Klicke auf **+** und wähle **HTTP snapshot URL**, **HTTP stream URL** oder **RTSP stream**.
 3. Gib einen Namen und die URL ein, zum Beispiel:
    - HTTP-Schnappschuss: `http://192.168.1.50:8080/media/getCapturePhoto`
@@ -432,7 +457,7 @@ ihre URL hinzugefügt.
 4. Aktiviere die Kamera. Der Live-Feed sollte auf der Arbeitsfläche erscheinen.
 
 Das Geräteprofil des Creality Falcon A1 Pro enthält bereits eine vorkonfigurierte, deaktivierte
-HTTP-Snapshot-Kamera. Wähle unter **Maschine → Maschineneinstellungen → Kamera** **Falcon A1 Pro
+HTTP-Snapshot-Kamera. Wähle unter **Maschine → Aktuelle Maschineneinstellungen → Kamera** **Falcon A1 Pro
 Camera** aus und ersetze `<laser-ip>` in der URL des Feldes **Source** durch die erreichbare
 IP-Adresse der Maschine. Übernimm die gültige URL mit **Enter** oder indem du das Feld verlässt, und
 aktiviere die Kamera anschließend manuell. Alternativ kannst du die IP-Adresse verwenden, die dem
@@ -442,6 +467,23 @@ Die URL kann später im Feld **Source** geändert werden, ohne Kalibrierung oder
 verlieren. Beim Ändern wird die Kamera sofort deaktiviert. Der Aktivierungsschalter bleibt gesperrt,
 bis eine gültige URL übernommen wurde; aktiviere die Kamera danach wieder manuell. Rayforge prüft,
 ob das URL-Schema zum Quelltyp passt (`http://`, `https://`, `rtsp://` oder `rtsps://`).
+
+### Daemon-Kamera hinzufügen
+
+Verwende dies, wenn die Kamera am Computer mit dem raydriver-Daemon statt an deinem Computer
+angeschlossen ist.
+
+1. Öffne **Maschine → Aktuelle Maschineneinstellungen → Kamera**.
+2. Klicke auf **+** und wähle **Daemon camera** als Quelltyp.
+3. Wähle den Daemon. Die Liste enthält die in Rayforge konfigurierten Remote-Maschinen.
+4. Wähle eine der vom Daemon angekündigten Kameras. Rayforge trägt die URL und den passenden
+   Netzwerk-Quelltyp ein.
+5. Aktiviere die Kamera.
+
+Wenn keine Daemons aufgelistet sind, konfiguriere zuerst die Remote-Maschine; siehe
+[Remote-Geräte](remote.md).
+
+![Daemon-Kamera hinzufügen](/screenshots/machine-settings-remote-camera.webp)
 
 ### Probleme mit Netzwerkkameras
 

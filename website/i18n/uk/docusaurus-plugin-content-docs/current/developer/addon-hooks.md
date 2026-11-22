@@ -71,6 +71,105 @@ def main_window_ready(main_window):
     main_window.add_page("my-page", MyCustomPage())
 ```
 
+## Хуки моніторингу завдань
+
+Ці хуки повідомляють про життєвий цикл і поступ завдань, що виконуються на машині, щоб addons могли
+реагувати, коли завдання стартує, поступає, призупиняється, відновлюється чи завершується —
+наприклад, для запуску зовнішніх команд або оновлення системи розумного дому.
+
+Усі вони отримують знімок `JobStatus` (`rayforge.machine.job_status.JobStatus`) — незмінний об'єкт
+із такими полями:
+
+- `machine_id` та `machine_name`: ідентифікують машину, що виконує завдання
+- `kind`: `JobKind.SEND` для завдань випалювання, `JobKind.FRAME` для трасування контуру
+- `phase`: `JobPhase.RUNNING` або `JobPhase.PAUSED`
+- `started_at`: час запуску завдання (секунди з початку епохи)
+- `elapsed_seconds`: секунди, що минули з початку завдання
+- `total_distance` та `traveled_distance`: повна та пройдена довжина шляху в міліметрах
+- `progress_fraction`: виконана частка завдання, від `0.0` до `1.0`
+- `eta_seconds`: оцінка секунд, що залишилися, або `None`, якщо невідомо
+- `estimated_seconds`: модельна повна тривалість завдання в секундах, або `None`, якщо невідомо
+
+Обробники виконуються в головному потоці й мають швидко повертатися; тривалу роботу (запуск
+підпроцесів, мережеві виклики) передавайте фоновому потоку.
+
+### `on_job_started(status)`
+
+Викликається, коли завдання починає виконуватися на машині.
+
+```python
+@hookimpl
+def on_job_started(status):
+    logger.info(f"Job on {status.machine_name} started")
+```
+
+### `on_job_updated(status)`
+
+Викликається з оновленнями поступу під час виконання завдання, щонайбільше приблизно раз на секунду.
+
+```python
+@hookimpl
+def on_job_updated(status):
+    print(
+        f"Progress: {status.progress_fraction:.0%}, "
+        f"ETA {status.eta_seconds}s"
+    )
+```
+
+### `on_job_paused(status)` / `on_job_resumed(status)`
+
+Викликається, коли виконуване завдання входить у паузу подачі (feed hold) або виходить із неї.
+
+### `on_job_finished(status, outcome, message="")`
+
+Викликається, коли завдання завершується, незалежно від того, як саме. Аргумент `outcome` — член
+`JobOutcome` (`COMPLETED`, `CANCELLED` або `FAILED`), а `message` містить деталі помилки, коли
+результат — `FAILED`. Для виконаних завдань `progress_fraction` знімка дорівнює `1.0`.
+
+```python
+@hookimpl
+def on_job_finished(status, outcome, message=""):
+    if outcome == JobOutcome.FAILED:
+        notify(f"Job failed: {message}")
+    else:
+        notify(f"Job {outcome.name.lower()} on {status.machine_name}")
+```
+
+Останній знімок можна також опитувати між подіями: під час виконання завдання `machine.current_job`
+повертає його `JobStatus`, або `None`, коли жодне завдання не виконується.
+
+Ось повний addon, що запускає команду оболонки при кожній зміні стану завдання:
+
+```python
+import subprocess
+
+import pluggy
+
+from rayforge.machine.job_status import JobOutcome
+
+hookimpl = pluggy.HookimplMarker("rayforge")
+
+
+@hookimpl
+def on_job_started(status):
+    subprocess.Popen(["/usr/local/bin/notify-ha", "started"])
+
+
+@hookimpl
+def on_job_paused(status):
+    subprocess.Popen(["/usr/local/bin/notify-ha", "paused"])
+
+
+@hookimpl
+def on_job_resumed(status):
+    subprocess.Popen(["/usr/local/bin/notify-ha", "resumed"])
+
+
+@hookimpl
+def on_job_finished(status, outcome, message=""):
+    subprocess.Popen(["/usr/local/bin/notify-ha", outcome.name.lower()])
+```
+
 ## Хуки реєстрації
 
 Ці хуки дозволяють реєструвати власні компоненти в різних реєстрах Rayforge.
@@ -280,7 +379,10 @@ def transformer_settings_loaded(dialog, step, transformer):
 існуючі, версія API збільшується. Поле `api_version` вашого аддону має бути не менше мінімальної
 підтримуваної версії.
 
-Поточна версія API — 9. Ось що змінилося в останніх версіях:
+Поточна версія API — 24. Ось що змінилося в останніх версіях:
+
+**Версія 24** додала хуки моніторингу завдань `on_job_started`, `on_job_updated`, `on_job_paused`,
+`on_job_resumed` і `on_job_finished`, а також API опитування `Machine.current_job`.
 
 **Версія 9** додала `main_window_ready`, `register_exporters`, `register_importers` та
 `register_renderers`.

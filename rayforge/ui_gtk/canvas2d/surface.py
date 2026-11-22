@@ -146,10 +146,6 @@ class WorkSurface(WorldSurface):
         self._pointer_dot.set_visible(False)
         self.root.add(self._pointer_dot)
 
-        # Add the Work Origin visual element
-        self._work_origin_element = WorkOriginElement()
-        self.root.add(self._work_origin_element)
-
         # Add the Workarea Background element (gray background for workarea)
         self._workarea_bg_element = WorkareaBackgroundElement()
         self._workarea_bg_element.set_visible(False)
@@ -164,6 +160,11 @@ class WorkSurface(WorldSurface):
         self._extent_frame_element = AxisExtentFrameElement()
         self._extent_frame_element.set_visible(False)
         self.root.add(self._extent_frame_element)
+
+        # Add the Work Origin visual element. Drawn above the extent frame
+        # and nogo zones, which can share its position.
+        self._work_origin_element = WorkOriginElement()
+        self.root.add(self._work_origin_element)
 
         # Signals for clipboard and duplication operations
         self.cut_requested = Signal()
@@ -875,10 +876,9 @@ class WorkSurface(WorldSurface):
 
     def _on_machine_state_changed(self, machine: Machine, state):
         """Handles machine state changes including position updates."""
-        m_pos = state.machine_pos
-        if m_pos and all(p is not None for p in m_pos):
-            m_x, m_y = m_pos[0], m_pos[1]
-            self.set_laser_dot_position(m_x, m_y)
+        pos = machine.get_beam_position()
+        if pos is not None:
+            self.set_laser_dot_position(*pos)
 
     def do_snapshot(self, snapshot: Gtk.Snapshot) -> None:
         self._update_theme_colors()
@@ -1163,14 +1163,18 @@ class WorkSurface(WorldSurface):
             if isinstance(element, StockElement):
                 # Stock elements are below all layers but above camera images
                 return 10
-            if isinstance(element, (CameraImageElement, WorkOriginElement)):
-                # Camera images and WCS origin are at the very bottom.
+            if isinstance(element, CameraImageElement):
+                # Camera images are at the very bottom.
                 return -2
             if isinstance(element, AxisExtentFrameElement):
-                # Extent frame is above camera but below everything else
+                # Extent frame is above the camera but below the WCS marker
                 return -1.5
             if isinstance(element, NogoZoneElement):
                 return -1.4
+            if isinstance(element, WorkOriginElement):
+                # WCS origin marker is above the extent frame and nogo
+                # zones so it stays visible where they overlap
+                return -1.3
             # Other elements are above the camera but below stock and layers.
             return -1
 
@@ -1262,7 +1266,9 @@ class WorkSurface(WorldSurface):
 
         # Add elements for new controllers
         for controller in new_controllers - current_controllers:
-            element = CameraImageElement(controller)
+            element = CameraImageElement(
+                controller, outside_view_supported=True
+            )
             element.set_visible(
                 self._cam_visible and controller.config.enabled
             )

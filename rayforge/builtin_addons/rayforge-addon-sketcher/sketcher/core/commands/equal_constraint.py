@@ -3,10 +3,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from ..constraints import EqualLengthConstraint
+from raygeo.sketch.constraints import EqualLengthConstraint
 
 if TYPE_CHECKING:
-    from ..constraints import Constraint
+    from raygeo.sketch.constraints import Constraint
+
     from ..sketch import Sketch
 
 

@@ -6,9 +6,9 @@ the raydriver library, while the driver types are Rayforge's domain.
 These functions are the boundary between a session and its Driver.
 """
 
-from raydriver.grbl.types import DeviceError as SessionDeviceError
-from raydriver.grbl.types import DeviceState as SessionDeviceState
-from raydriver.grbl.types import DeviceStatus as SessionDeviceStatus
+from raydriver.core.types import DeviceError as SessionDeviceError
+from raydriver.core.types import DeviceState as SessionDeviceState
+from raydriver.core.types import DeviceStatus as SessionDeviceStatus
 
 from .driver import DeviceError, DeviceState, DeviceStatus
 

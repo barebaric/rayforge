@@ -21,6 +21,8 @@ const SECTION_GROUP = {
   MarlinSerialDriver: 'Marlin',
   RuidaRPAAdapter: 'Ruida',
   OctoPrintDriver: 'OctoPrint',
+  XtoolNetworkDriver: 'xTool',
+  XtoolM2Driver: 'xTool',
 };
 
 const SECTION_LABELS = {
@@ -29,9 +31,10 @@ const SECTION_LABELS = {
   Marlin: { icon: mdiChip, label: 'Marlin' },
   Ruida: { icon: mdiChip, label: 'Ruida' },
   OctoPrint: { icon: mdiWifi, label: 'OctoPrint' },
+  xTool: { icon: mdiWifi, label: 'xTool' },
 };
 
-const SECTION_ORDER = ['Grbl', 'Smoothieware', 'Marlin', 'Ruida', 'OctoPrint'];
+const SECTION_ORDER = ['Grbl', 'Smoothieware', 'Marlin', 'Ruida', 'OctoPrint', 'xTool'];
 
 const GENERIC_NAMES = [
   'Generic GRBL',
@@ -290,12 +293,18 @@ const devices = [
     id: 'xtool-d1-pro',
     name: 'xTool D1 Pro',
     description: 'Diode laser engraver with 430x390mm work area, connected via Wi-Fi',
-    driver: 'GrblNetworkDriver',
+    driver: 'XtoolNetworkDriver',
     affiliate: {
       href: 'https://s.click.aliexpress.com/e/_c4PqlR0n',
       img: 'https://ae01.alicdn.com/kf/S71096d813f5b4a329d25c12d1e1c6848U.jpg_350x350.jpg',
       shop: 'AliExpress',
     },
+  },
+  {
+    id: 'xtool-m2',
+    name: 'xTool M2',
+    description: '3-in-1 diode/IR laser and printer, monitored via Wi-Fi (no job streaming yet)',
+    driver: 'XtoolM2Driver',
   },
 ];
 
@@ -524,6 +533,17 @@ export default function Devices() {
                       values={{ octoLink }}
                     >
                       {'Connect your laser through an {octoLink} server.'}
+                    </Translate>
+                  </span>
+                </p>
+              )}
+
+              {section.groupName === 'xTool' && (
+                <p className={`${styles.note} ${styles.noteWarning}`}>
+                  <Icon path={mdiAlertOutline} size={1} className={`${styles.noteIcon} ${styles.noteIconWarning}`} />
+                  <span>
+                    <Translate id="page.devices.note.xtool">
+                      {'xTool support is experimental: it was implemented from community-documented protocols and is not yet verified against a wide range of machines. The xTool M2 cannot receive jobs over Wi-Fi yet; start its jobs from xTool Studio.'}
                     </Translate>
                   </span>
                 </p>

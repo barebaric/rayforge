@@ -19,13 +19,9 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 RELEASE_DATE="$(date +%Y-%m-%d)"
 RELEASE_NOTES_URL="https://github.com/barebaric/rayforge/releases/tag/${VERSION}"
 
-# Versions like "1.13.0-beta1" must be published as winget prereleases,
-# otherwise winget would offer them over the matching stable release.
-if [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+- ]]; then
-    PRERELEASE="Prerelease: true"
-else
-    PRERELEASE=""
-fi
+# Prerelease versions like "1.13.0-beta1" need no dedicated manifest field:
+# winget derives the prerelease marker from the dash in the version string,
+# which sorts below the matching stable release.
 
 mkdir -p "$OUTDIR"
 
@@ -35,7 +31,6 @@ render() {
         -e "s|@INSTALLER_SHA256@|$INSTALLER_SHA256|g" \
         -e "s|@RELEASE_DATE@|$RELEASE_DATE|g" \
         -e "s|@RELEASE_NOTES_URL@|$RELEASE_NOTES_URL|g" \
-        -e "s|@PRERELEASE@|$PRERELEASE|g" \
         "$1" | sed '/^[[:space:]]*$/d' > "$OUTDIR/$2"
 }
 

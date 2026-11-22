@@ -1,12 +1,12 @@
 import pytest
-from sketcher.core import Sketch
-from sketcher.core.commands import FilletCommand
-from sketcher.core.constraints import (
+from raygeo.sketch.constraints import (
     CollinearConstraint,
     EqualDistanceConstraint,
     TangentConstraint,
 )
-from sketcher.core.entities import Arc, Line
+from raygeo.sketch.entities import Arc, Line
+from sketcher.core import Sketch
+from sketcher.core.commands import FilletCommand
 
 # Constant for consistency
 DEFAULT_FILLET_RADIUS = 10.0
@@ -68,8 +68,8 @@ def test_fillet_command_execute(sketch_with_corner):
     """Test the direct execution of FilletCommand."""
     sketch, corner_pid, line1_id, line2_id = sketch_with_corner
 
-    initial_points_count = len(sketch.registry.points)
-    initial_entities_count = len(sketch.registry.entities)
+    initial_points_count = len(sketch.registry.points())
+    initial_entities_count = len(sketch.registry.entities())
     initial_constraints_count = len(sketch.constraints)
 
     command = FilletCommand(
@@ -81,8 +81,8 @@ def test_fillet_command_execute(sketch_with_corner):
     # Points: +3 (Tangent1, Tangent2, Center)
     # Entities: +1 total (2 lines removed, 2 lines + 1 arc added)
     # Constraints: +5 (2 Tangent, 2 Collinear, 1 EqualDistance)
-    assert len(sketch.registry.points) == initial_points_count + 3
-    assert len(sketch.registry.entities) == initial_entities_count + 1
+    assert len(sketch.registry.points()) == initial_points_count + 3
+    assert len(sketch.registry.entities()) == initial_entities_count + 1
     assert len(sketch.constraints) == initial_constraints_count + 5
 
     # Verify new geometry types
@@ -121,8 +121,8 @@ def test_fillet_command_undo(sketch_with_corner):
 
     # Store initial state
     initial_state = {
-        "points_count": len(sketch.registry.points),
-        "entities_count": len(sketch.registry.entities),
+        "points_count": len(sketch.registry.points()),
+        "entities_count": len(sketch.registry.entities()),
         "constraints_count": len(sketch.constraints),
         "line1_p1": line1.p1_idx,
         "line1_p2": line1.p2_idx,
@@ -136,13 +136,13 @@ def test_fillet_command_undo(sketch_with_corner):
     command.execute()
 
     # Sanity check that something changed
-    assert len(sketch.registry.points) != initial_state["points_count"]
+    assert len(sketch.registry.points()) != initial_state["points_count"]
 
     command.undo()
 
     # Verify state is restored
-    assert len(sketch.registry.points) == initial_state["points_count"]
-    assert len(sketch.registry.entities) == initial_state["entities_count"]
+    assert len(sketch.registry.points()) == initial_state["points_count"]
+    assert len(sketch.registry.entities()) == initial_state["entities_count"]
     assert len(sketch.constraints) == initial_state["constraints_count"]
 
     restored_line1 = sketch.registry.get_entity(line1_id)

@@ -129,26 +129,25 @@ class Pipeline:
     def _can_generate_job(self) -> bool:
         """True when the current doc can produce a job aggregate.
 
-        Mirrors the intent builder's criteria: a visible step with at
-        least one workpiece in its layer, or a visible geometry-less
-        step.  Without these the builder emits no job node, so any
-        rebuild would be a no-op and asking for a job artifact would
-        spin forever.
+        Mirrors the intent builder's criteria: a visible geometry-less
+        step, or a visible step whose workpiece selection matches at
+        least one workpiece of its layer.  Without these the builder
+        emits no job node, so any rebuild would be a no-op and asking
+        for a job artifact would spin forever.
         """
         if not self._doc:
             return False
         for layer in self._doc.layers:
-            if not layer.workflow:
+            if not layer.workflow or not layer.workflow.steps:
                 continue
-            if not layer.all_workpieces:
-                if any(
-                    step.visible and not step.needs_workpieces
-                    for step in layer.workflow.steps
-                ):
+            workpieces = list(layer.all_workpieces)
+            for step in layer.workflow.steps:
+                if not step.visible:
+                    continue
+                if not step.needs_workpieces:
                     return True
-                continue
-            if any(step.visible for step in layer.workflow.steps):
-                return True
+                if step.selected_workpieces(workpieces):
+                    return True
         return False
 
     def _connect_ctl_signals(self) -> None:
@@ -373,7 +372,15 @@ class Pipeline:
         if self._is_shutting_down or output is None:
             return
         source_dims = output.source_dimensions
-        gen_size = workpiece.size if workpiece else (0.0, 0.0)
+        # generation_size must be the size the ops were generated at:
+        # an output built before a resize can arrive on the main thread
+        # after the resize was committed, and consumers scale the ops
+        # by current_size / generation_size.
+        gen_size = (
+            source_dims
+            if source_dims
+            else (workpiece.size if workpiece else (0.0, 0.0))
+        )
         artifact = WorkPieceArtifact(
             ops=output.ops,
             is_scalable=output.is_scalable,
@@ -558,6 +565,7 @@ class Pipeline:
             return
 
         def _on_finished(sender, *, handle, task_status):
+            self._intent_ctl.rebuild_finished.disconnect(_on_settled)
             self.job_generation_finished.disconnect(_on_finished)
             if task_status == "failed":
                 when_done(
@@ -567,7 +575,24 @@ class Pipeline:
                 return
             when_done(handle, None)
 
+        def _on_settled(sender):
+            # rebuild_finished only fires once a rebuild chain has
+            # settled, and node completions are marshalled to the main
+            # thread before it.  Reaching this without having received
+            # job_generation_finished means this rebuild will never
+            # produce a job, so fail the request instead of leaving
+            # send/frame wedged forever.
+            if self._intent_ctl.has_pending_debounce():
+                return
+            self._intent_ctl.rebuild_finished.disconnect(_on_settled)
+            self.job_generation_finished.disconnect(_on_finished)
+            when_done(
+                None,
+                RuntimeError("Job generation did not produce a result."),
+            )
+
         self.job_generation_finished.connect(_on_finished, weak=False)
+        self._intent_ctl.rebuild_finished.connect(_on_settled, weak=False)
         self._intent_ctl.force_rebuild()
 
     async def generate_job_artifact_async(

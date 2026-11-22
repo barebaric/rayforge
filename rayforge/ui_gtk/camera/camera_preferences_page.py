@@ -1,18 +1,24 @@
 from gettext import gettext as _
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 from blinker import Signal
 from gi.repository import Adw, Gtk
 
 from ...camera.controller import CameraController
 from ...camera.models.camera import Camera, CameraSourceType
+from ...camera.remote import collect_remote_daemons
 from ...camera.v4l import display_name
+from ...context import get_context
 from ..icons import get_icon
 from ..shared.preferences_group import PreferencesGroupWithButton
 from ..shared.preferences_page import TrackedPreferencesPage
 from ..shared.slider import create_slider
+from .outside_view_widget import CameraOutsideViewGroup
 from .properties_widget import CameraProperties
 from .selection_dialog import CameraSelectionDialog
+
+if TYPE_CHECKING:
+    from ...machine.models.machine import Machine
 
 
 class CameraRow(Gtk.Box):
@@ -309,7 +315,8 @@ class CameraPreferencesPage(TrackedPreferencesPage):
     key = "camera"
     path_prefix = "/machine-settings/"
 
-    def __init__(self, **kwargs):
+    def __init__(self, machine: "Machine | None" = None, **kwargs):
+        self._machine = machine
         super().__init__(
             title=_("Camera"), icon_name="camera-on-symbolic", **kwargs
         )
@@ -342,6 +349,10 @@ class CameraPreferencesPage(TrackedPreferencesPage):
         self.camera_properties_widget = CameraProperties(None)
         self.add(self.camera_properties_widget)
 
+        # Display of the camera image around the workspace.
+        self.camera_outside_view_widget = CameraOutsideViewGroup()
+        self.add(self.camera_outside_view_widget)
+
         # Connect signals
         self.camera_list_editor.add_requested.connect(self.on_add_camera)
         self.camera_list_editor.remove_requested.connect(self.on_remove_camera)
@@ -361,9 +372,14 @@ class CameraPreferencesPage(TrackedPreferencesPage):
 
     def on_add_camera(self, sender):
         """Show a dialog to select a new camera device."""
+        machine = self._machine or get_context().machine
+        machines = list(get_context().machine_mgr.get_machines())
+        if machine is not None and machine not in machines:
+            machines.append(machine)
         dialog = CameraSelectionDialog(
             self.get_ancestor(Gtk.Window),
             active_controllers=self._controllers,
+            remote_daemons=collect_remote_daemons(machines),
         )
         dialog.present()
         dialog.connect("response", self.on_camera_selection_dialog_response)
@@ -421,6 +437,8 @@ class CameraPreferencesPage(TrackedPreferencesPage):
             )
             self.selected_controller = selected_controller
             self.camera_properties_widget.set_controller(selected_controller)
+            self.camera_outside_view_widget.set_controller(selected_controller)
         else:
             self.selected_controller = None
             self.camera_properties_widget.set_controller(None)
+            self.camera_outside_view_widget.set_controller(None)

@@ -29,6 +29,9 @@ Generate the following files in `media/[release]/drafts/`:
 - `blog_post.md` - Formatted post for the website blog. Don't store this in the drafts, store it in `website/content/blog/posts/`.
   Give credits to paying Patreon supporters.
 - Update the changelog in the appstream file (`data/org.rayforge.rayforge.metainfo.xml`)
+- Regenerate the gettext catalogs with `pixi run update-translations` and translate the new
+  strings (see `docs/agents/translations.md`); `.po` files are not updated outside release
+  preparation
 - Generate five release thumbnails using the MCP tool. Something like "make a YouTube thumbnail for Rayforge 1.1 with ... [something creative]".
   Put the thumbnails into media/[release]/thumbs/
 - Depending on the changes, check that the user documentation on the website is up to date. Check the docs by reading the application code.

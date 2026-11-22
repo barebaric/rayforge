@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from ..types import EntityID
+from raygeo.sketch.types import EntityID
 
 
 @dataclass

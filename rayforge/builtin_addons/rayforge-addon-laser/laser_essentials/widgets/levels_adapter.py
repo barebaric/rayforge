@@ -33,9 +33,9 @@ class LevelsAdapter(RowAdapter):
     mode.
 
     The adapter also owns the histogram data: the dialog points it at
-    the step via :meth:`set_histogram_source` and it (re)computes the
-    histogram from the step's layer whenever ``invert`` changes (the
-    value arrives through :meth:`update_from_values`).
+    the step via :meth:`set_histogram_source` and it computes the
+    histogram from the step's layer, as the workpieces render with their
+    image edits applied.
 
     It edits two step attributes at once:
 
@@ -58,8 +58,6 @@ class LevelsAdapter(RowAdapter):
         self._row = row
         self.preview = preview
         self._step: Any = None
-        self._last_invert: bool | None = None
-        self._histogram_ready = False
         preview.black_point_changed.connect(
             lambda s, **kw: self.changed.send(self),
             weak=False,
@@ -99,8 +97,6 @@ class LevelsAdapter(RowAdapter):
         step = self._step
         if step is None:
             return
-        invert = bool(self._last_invert or False)
-
         layer = step.layer
         if not layer:
             self.preview.update_histogram(None)
@@ -137,7 +133,7 @@ class LevelsAdapter(RowAdapter):
             if not surface:
                 continue
 
-            gray_values = get_visible_grayscale_values(surface, invert)
+            gray_values = get_visible_grayscale_values(surface)
             if gray_values.size > 0:
                 all_gray_values.append(gray_values)
 
@@ -153,7 +149,6 @@ class LevelsAdapter(RowAdapter):
 
         auto_black, auto_white = compute_auto_levels(combined_gray)
         self.preview.set_auto_points(auto_black, auto_white)
-        self._histogram_ready = True
 
     def get_value(self) -> Any | None:
         return self.preview.black_point
@@ -180,18 +175,11 @@ class LevelsAdapter(RowAdapter):
             self._row.set_subtitle(escape_title(var.description))
 
     def update_from_values(self, values: dict[str, Any]) -> None:
-        """Sync the preview's auto mode from the sibling auto_levels,
-        and recompute the histogram when invert changes."""
+        """Sync the preview's auto mode from the sibling auto_levels."""
         auto_mode = bool(values.get("auto_levels", True))
         if auto_mode != self.preview.auto_mode:
             self.preview.auto_mode = auto_mode
             self._update_subtitle()
-
-        invert = values.get("invert")
-        if invert is not None and invert != self._last_invert:
-            self._last_invert = bool(invert)
-            if self._histogram_ready:
-                self.compute_histogram()
 
     def _update_subtitle(self):
         if self.preview.auto_mode:

@@ -45,8 +45,8 @@ enviarán al láser. Las imágenes base de tus workpieces no se muestran, manten
 enfocada en las trayectorias de corte.
 
 El marco de extensión de la máquina aparece como un borde que representa toda el área de recorrido
-de los ejes de tu máquina. La cruz del origen de trabajo muestra dónde se encuentra el origen del
-sistema de coordenadas dentro de esa área. Ambos se actualizan automáticamente si cambias el
+de los ejes de tu máquina. Las flechas del origen de trabajo muestran dónde se encuentra el origen
+del sistema de coordenadas dentro de esa área. Ambos se actualizan automáticamente si cambias el
 desplazamiento del sistema de coordenadas de trabajo en tu máquina.
 
 ## Temas relacionados

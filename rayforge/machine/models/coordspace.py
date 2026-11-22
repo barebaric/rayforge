@@ -241,6 +241,7 @@ class MachineSpace(CoordinateSpace):
         self,
         wcs_offset: Point3D = (0.0, 0.0, 0.0),
         wcs_is_workarea_origin: bool = False,
+        extra_offset: Point = (0.0, 0.0),
     ) -> np.ndarray:
         """
         Returns the 4x4 transformation matrix to convert from machine
@@ -254,11 +255,34 @@ class MachineSpace(CoordinateSpace):
         off_x, off_y, _ = self.get_command_offset(
             wcs_offset=wcs_offset,
             wcs_is_workarea_origin=wcs_is_workarea_origin,
+            extra_offset=extra_offset,
         )
         matrix = np.identity(4, dtype=np.float64)
         matrix[0, 3] = -off_x
         matrix[1, 3] = -off_y
         return matrix
+
+    def command_point_to_machine(
+        self,
+        x: float,
+        y: float,
+        wcs_offset: Point3D = (0.0, 0.0, 0.0),
+        wcs_is_workarea_origin: bool = False,
+    ) -> Point:
+        """
+        Transform a point from command space (G-code output) to machine
+        space.
+
+        Inverse of get_machine_to_command_matrix(): the command offset
+        returned by get_command_offset() is added back, so the result
+        is the machine position at which the controller arrives when it
+        receives the given command coordinate.
+        """
+        off_x, off_y, _ = self.get_command_offset(
+            wcs_offset=wcs_offset,
+            wcs_is_workarea_origin=wcs_is_workarea_origin,
+        )
+        return x + off_x, y + off_y
 
     def get_machine_to_world_matrix(self) -> np.ndarray:
         """
@@ -272,10 +296,15 @@ class MachineSpace(CoordinateSpace):
         self,
         wcs_offset: Point3D = (0.0, 0.0, 0.0),
         wcs_is_workarea_origin: bool = False,
+        extra_offset: Point = (0.0, 0.0),
     ) -> Point3D:
         """
         Calculates the offset to subtract from machine coordinates to obtain
         command coordinates (G-code output).
+
+        _extra_offset_ is added after the origin offset is resolved, in
+        both origin modes. It carries offsets that are independent of
+        the WCS/workarea origin, such as the pointer offset.
         """
         if wcs_is_workarea_origin:
             ml, mt, mr, mb = self.margins
@@ -298,10 +327,14 @@ class MachineSpace(CoordinateSpace):
                 y_offset = -mt if self.reverse_y else mt
             else:
                 y_offset = -mb if self.reverse_y else mb
-
-            return (float(x_offset), float(y_offset), 0.0)
         else:
-            return (wcs_offset[0], wcs_offset[1], 0.0)
+            x_offset, y_offset = wcs_offset[0], wcs_offset[1]
+
+        return (
+            float(x_offset + extra_offset[0]),
+            float(y_offset + extra_offset[1]),
+            0.0,
+        )
 
     @property
     def workarea_size(self) -> tuple[float, float]:

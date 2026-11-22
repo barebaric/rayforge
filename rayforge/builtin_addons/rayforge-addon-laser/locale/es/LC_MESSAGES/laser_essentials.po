@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-24 21:41+0200\n"
+"POT-Creation-Date: 2026-11-11 17:23+0100\n"
 "PO-Revision-Date: 2025-08-08 10:00+0200\n"
 "Last-Translator: Samuel Abels\n"
 "Language-Team: Spanish <LL@li.org>\n"
@@ -42,6 +42,44 @@ msgstr "Velocidad vs Pasadas"
 #: laser_essentials/material_test_helpers.py
 msgid "Speed vs Offset"
 msgstr "Velocidad vs Desplazamiento"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Columns (Power Steps)"
+msgstr "Columnas (Pasos de potencia)"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Rows (Speed Steps)"
+msgstr "Filas (Pasos de velocidad)"
+
+#: laser_essentials/material_test_helpers.py
+#: laser_essentials/steps/material_test.py
+msgid "Number of power variations"
+msgstr "Número de variaciones de potencia"
+
+#: laser_essentials/material_test_helpers.py
+#: laser_essentials/steps/material_test.py
+msgid "Number of speed variations"
+msgstr "Número de variaciones de velocidad"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Rows (Passes Steps)"
+msgstr "Filas (Pasos de pases)"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Number of passes variations"
+msgstr "Número de variaciones de pases"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Columns (Speed Steps)"
+msgstr "Columnas (Pasos de velocidad)"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Rows (Offset Steps)"
+msgstr "Filas (pasos de desplazamiento)"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Number of offset variations"
+msgstr "Número de variaciones de desplazamiento"
 
 #: laser_essentials/widgets/shrinkwrap_page.py
 #: laser_essentials/steps/shrinkwrap_step.py
@@ -106,44 +144,6 @@ msgid "Cut a frame around the selected content."
 msgstr "Corta un marco alrededor del contenido seleccionado."
 
 #: laser_essentials/widgets/material_test_grid_page.py
-msgid "Columns (Power Steps)"
-msgstr "Columnas (Pasos de potencia)"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Rows (Speed Steps)"
-msgstr "Filas (Pasos de velocidad)"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-#: laser_essentials/steps/material_test.py
-msgid "Number of power variations"
-msgstr "Número de variaciones de potencia"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-#: laser_essentials/steps/material_test.py
-msgid "Number of speed variations"
-msgstr "Número de variaciones de velocidad"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Rows (Passes Steps)"
-msgstr "Filas (Pasos de pases)"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Number of passes variations"
-msgstr "Número de variaciones de pases"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Columns (Speed Steps)"
-msgstr "Columnas (Pasos de velocidad)"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Rows (Offset Steps)"
-msgstr "Filas (pasos de desplazamiento)"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Number of offset variations"
-msgstr "Número de variaciones de desplazamiento"
-
-#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Grid"
 msgstr "Cuadrícula"
 
@@ -204,6 +204,10 @@ msgid "Load common test configurations"
 msgstr "Cargar configuraciones de prueba comunes"
 
 #: laser_essentials/widgets/raster_power_widget.py
+msgid "Min Power (White)"
+msgstr "Potencia mín. (Blanco)"
+
+#: laser_essentials/widgets/raster_power_widget.py
 #: laser_essentials/steps/raster_step.py
 msgid "Power for lightest areas, as a percentage of the step's main power"
 msgstr ""
@@ -211,27 +215,15 @@ msgstr ""
 "del paso."
 
 #: laser_essentials/widgets/raster_power_widget.py
+msgid "Max Power (Black)"
+msgstr "Potencia máx. (Negro)"
+
+#: laser_essentials/widgets/raster_power_widget.py
 #: laser_essentials/steps/raster_step.py
 msgid "Power for darkest areas, as a percentage of the step's main power"
 msgstr ""
 "Potencia para las áreas más oscuras, como porcentaje de la potencia "
 "principal del paso."
-
-#: laser_essentials/widgets/raster_power_widget.py
-msgid "Min Power (Black)"
-msgstr "Potencia mínima (Negro)"
-
-#: laser_essentials/widgets/raster_power_widget.py
-msgid "Max Power (White)"
-msgstr "Potencia máxima (Blanco)"
-
-#: laser_essentials/widgets/raster_power_widget.py
-msgid "Min Power (White)"
-msgstr "Potencia mín. (Blanco)"
-
-#: laser_essentials/widgets/raster_power_widget.py
-msgid "Max Power (Black)"
-msgstr "Potencia máx. (Negro)"
 
 #: laser_essentials/widgets/raster_page.py
 msgid "Engrave Speed"
@@ -252,6 +244,15 @@ msgstr "Modulación de potencia y rango de brillo."
 #: laser_essentials/widgets/raster_page.py
 msgid "Change Power Range"
 msgstr "Cambiar rango de potencia"
+
+#: laser_essentials/widgets/offset_fill_page.py
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Offset Fill"
+msgstr "Relleno por desplazamiento"
+
+#: laser_essentials/widgets/offset_fill_page.py
+msgid "Fill closed shapes with rings that follow the outline."
+msgstr "Rellena formas cerradas con anillos que siguen el contorno."
 
 #: laser_essentials/widgets/levels_adapter.py
 msgid "Auto-adjusted based on image content"
@@ -352,7 +353,9 @@ msgstr "Lado de corte"
 
 #: laser_essentials/steps/shrinkwrap_step.py
 #: laser_essentials/steps/wavefront_step.py
-#: laser_essentials/steps/frame_step.py laser_essentials/steps/contour_step.py
+#: laser_essentials/steps/frame_step.py
+#: laser_essentials/steps/offset_fill_step.py
+#: laser_essentials/steps/contour_step.py
 msgid "Offset"
 msgstr "Desplazamiento"
 
@@ -404,6 +407,30 @@ msgstr "Radio de las esquinas"
 msgid "Radius used to round the frame's corners"
 msgstr "Radio usado para redondear las esquinas del marco"
 
+#: laser_essentials/steps/offset_fill_step.py
+#: laser_essentials/steps/material_test.py
+msgid "Line Interval"
+msgstr "Intervalo de línea"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid ""
+"Distance between neighbouring fill rings. Defaults to the laser spot size"
+msgstr ""
+"Distancia entre anillos de relleno vecinos. De forma predeterminada, se usa "
+"el tamaño del punto láser"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Distance of the first ring inside the outline"
+msgstr "Distancia del primer anillo dentro del contorno"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Fill Direction"
+msgstr "Dirección de relleno"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Order in which the rings are cut"
+msgstr "Orden en el que se cortan los anillos"
+
 #: laser_essentials/steps/raster_step.py
 msgid "Mode"
 msgstr "Modo"
@@ -423,6 +450,58 @@ msgstr "Método de grabado"
 #: laser_essentials/steps/raster_step.py
 msgid "Algorithm for converting grayscale to binary"
 msgstr "Algoritmo para convertir escala de grises a binario"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Serpentine"
+msgstr "Serpentina"
+
+#: laser_essentials/steps/raster_step.py
+msgid ""
+"Alternate the dither direction on every row to avoid directional artifacts"
+msgstr ""
+"Alternar la dirección del difuminado en cada fila para evitar artefactos "
+"direccionales"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Min Feature Size"
+msgstr "Tamaño mínimo de punto"
+
+#: laser_essentials/steps/raster_step.py
+msgid ""
+"Smallest dot width in scan-line pixels. The auto value matches the laser "
+"spot size; smaller values allow finer but fainter dots"
+msgstr ""
+"Anchura mínima del punto en píxeles de línea de barrido. El valor automático "
+"coincide con el tamaño del punto láser; los valores más pequeños permiten "
+"puntos más finos pero más débiles"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Linear Light"
+msgstr "Luz lineal"
+
+#: laser_essentials/steps/raster_step.py
+msgid ""
+"Diffuse in linear light instead of on the raw sRGB values, which engraves "
+"mid-tones darker"
+msgstr ""
+"Difunde en luz lineal en lugar de sobre los valores sRGB sin procesar, lo "
+"que graba los tonos medios más oscuros"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Halftone Cell Size"
+msgstr "Tamaño de celda del semitono"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Distance between halftone dot centers"
+msgstr "Distancia entre los centros de los puntos del semitono"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Halftone Angle"
+msgstr "Ángulo del semitono"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Rotation of the halftone dot grid"
+msgstr "Rotación de la cuadrícula de puntos del semitono"
 
 #: laser_essentials/steps/raster_step.py
 msgid "Cross-Hatch"
@@ -466,11 +545,11 @@ msgstr "Intervalo de muestreo"
 
 #: laser_essentials/steps/raster_step.py
 msgid ""
-"Distance between power samples along scan line. Lower values improve "
-"accuracy, but increase output size"
+"Distance between samples along scan line. Lower values improve accuracy, but "
+"increase output size"
 msgstr ""
-"Distancia entre muestras de potencia a lo largo de la línea de escaneo. Los "
-"valores más bajos mejoran la precisión, pero aumentan el tamaño de salida"
+"Distancia entre muestras a lo largo de la línea de escaneo. Los valores más "
+"bajos mejoran la precisión, pero aumentan el tamaño de la salida"
 
 #: laser_essentials/steps/raster_step.py
 msgid "Dot Width Correction"
@@ -493,14 +572,6 @@ msgid ""
 msgstr ""
 "Corrige la desalineación en X entre pasadas de rasterizado de izquierda "
 "aderecha y de derecha a izquierda"
-
-#: laser_essentials/steps/raster_step.py
-msgid "Invert"
-msgstr "Invertir"
-
-#: laser_essentials/steps/raster_step.py
-msgid "Engrave white areas instead of black areas"
-msgstr "Grabar áreas blancas en lugar de áreas negras"
 
 #: laser_essentials/steps/raster_step.py
 msgid "Number of Depth Levels"
@@ -656,10 +727,6 @@ msgid "Gap between test squares"
 msgstr "Separación entre cuadrados de prueba"
 
 #: laser_essentials/steps/material_test.py
-msgid "Line Interval"
-msgstr "Intervalo de línea"
-
-#: laser_essentials/steps/material_test.py
 msgid ""
 "Distance between scan lines in machine units (for Engrave mode). Leave at 0 "
 "to use laser spot size"
@@ -676,8 +743,8 @@ msgid "Add speed/power annotations to the grid"
 msgstr "Añadir anotaciones de velocidad/potencia a la cuadrícula"
 
 #: laser_essentials/steps/material_test.py
-msgid "Label Engrave Power (%)"
-msgstr "Potencia de grabado de etiqueta (%)"
+msgid "Label Engrave Power"
+msgstr "Potencia de grabado de etiquetas"
 
 #: laser_essentials/steps/material_test.py
 msgid "Label Engrave Speed"
@@ -782,6 +849,12 @@ msgstr "Desplazamiento X de escaneo bidireccional para la primera fila"
 #: laser_essentials/steps/material_test.py
 msgid "Bidir scan X-offset for last row"
 msgstr "Desplazamiento X de escaneo bidireccional para la última fila"
+
+#: laser_essentials/steps/material_test.py
+#, python-brace-format
+msgid "Cut speed ({value}) exceeds the machine's maximum ({max})."
+msgstr ""
+"La velocidad de corte ({value}) supera el máximo de la máquina ({max})."
 
 #: laser_essentials/frontend.py
 msgid "Create Material Test Grid"

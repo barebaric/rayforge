@@ -22,6 +22,5 @@ Tags:
 - cnc
 - gcode
 ReleaseNotesUrl: @RELEASE_NOTES_URL@
-@PRERELEASE@
 ManifestType: defaultLocale
 ManifestVersion: 1.12.0

@@ -4,20 +4,22 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
 from raygeo.geo.types import Point as GeoPoint
-
-from ..constraints import (
+from raygeo.sketch.constraints import (
     DistanceConstraint,
     PerpendicularConstraint,
     SymmetryConstraint,
 )
-from ..entities import Line, Point
-from ..types import EntityID
+from raygeo.sketch.entities import Line
+from raygeo.sketch.entities import SketchPoint as Point
+from raygeo.sketch.types import EntityID
+
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData
 from .items import AddItemsCommand
 
 if TYPE_CHECKING:
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
+
     from ..sketch import Sketch
 
 
@@ -53,6 +55,13 @@ class RectanglePreviewState(PreviewState):
             if pid is not None:
                 result.add(pid)
         return result
+
+    def get_preview_entity_ids(self) -> set[EntityID]:
+        return {
+            value
+            for key, value in self.preview_ids.items()
+            if key.startswith("line")
+        }
 
     def set_dimensions(
         self,
@@ -734,13 +743,13 @@ class RectangleCommand(SketchChangeCommand):
         # Remove entities that reference the preview points
         entity_ids_to_remove = {
             e.id
-            for e in registry.entities
+            for e in registry.entities()
             if any(pid in point_ids for pid in e.get_point_ids())
         }
-        registry.remove_entities_by_id(list(entity_ids_to_remove))
+        registry.remove_entities(list(entity_ids_to_remove))
 
         # Remove only the preview-derived points (not start/end)
-        registry.points = [p for p in registry.points if p.id not in point_ids]
+        registry.remove_points(list(point_ids))
 
         preview_state.center_on_start = center_on_start
         preview_state.preview_ids = (
@@ -779,13 +788,13 @@ class RectangleCommand(SketchChangeCommand):
         # Find and remove entities that use these points
         entity_ids_to_remove = {
             e.id
-            for e in registry.entities
+            for e in registry.entities()
             if any(pid in point_ids for pid in e.get_point_ids())
         }
-        registry.remove_entities_by_id(list(entity_ids_to_remove))
+        registry.remove_entities(list(entity_ids_to_remove))
 
         # Remove points
-        registry.points = [p for p in registry.points if p.id not in point_ids]
+        registry.remove_points(list(point_ids))
 
     def _do_execute(self) -> None:
         if self.add_cmd:
@@ -843,7 +852,7 @@ class RectangleCommand(SketchChangeCommand):
         # If the start point was temporary, remove it from the registry
         # and add its object to the command to be re-added properly.
         if self.is_start_temp:
-            reg.points.remove(start_p)
+            reg.remove_points([start_p.id])
             points_to_add.append(start_p)
 
         self.add_cmd = AddItemsCommand(

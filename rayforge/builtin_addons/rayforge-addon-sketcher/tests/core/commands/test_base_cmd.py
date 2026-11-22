@@ -81,7 +81,7 @@ def test_restore_undo_state_with_missing_point(sketch, command):
     sketch.add_point(10.0, 20.0)
     command.capture_undo_state()
 
-    sketch.registry.points = []
+    sketch.registry.set_points([])
 
     command.restore_undo_state()
 

@@ -10,10 +10,12 @@ The MachineController is the logic layer that owns and manages the driver.
 """
 
 import asyncio
+import logging
 
 import pytest
 
 import rayforge.machine.driver as driver_module
+from rayforge.machine.driver.driver import DriverSetupError
 from rayforge.machine.driver.dummy import NoDeviceDriver
 from rayforge.machine.models.controller import MachineController
 from rayforge.machine.models.machine import Machine
@@ -117,6 +119,63 @@ class TestDriverRebuildDebounce:
 
 
 @pytest.mark.usefixtures("lite_context")
+class TestRebuildFailureLogging:
+    """Rebuild tasks must downgrade failures that indicate the device
+    is not reachable or the driver cannot be set up to a warning
+    instead of an unhandled task exception.
+
+    rebuild_driver is patched rather than driven with a real driver,
+    because the automatic connect after a rebuild skips NoDeviceDriver
+    instances. Patching still verifies the wiring: a task that ran
+    rebuild_driver directly would surface the exception as an unhandled
+    task error and fail the last assertion.
+    """
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "exc",
+        [
+            ConnectionRefusedError("[Errno 111] Connect call failed"),
+            DriverSetupError("Port must be configured."),
+        ],
+        ids=["refused", "setup"],
+    )
+    @pytest.mark.parametrize(
+        "trigger",
+        ["on-init", "on-change", "after-disconnect"],
+    )
+    async def test_rebuild_task_failure_logs_warning(
+        self, trigger, exc, machine, task_mgr, caplog, mocker
+    ):
+        mocker.patch.object(
+            MachineController,
+            "rebuild_driver",
+            side_effect=exc,
+        )
+        machine.auto_connect = True
+        if trigger == "on-init":
+            machine.driver_name = "OptOutDriver"
+            machine.context.machine_mgr.get_controller(machine.id)
+        elif trigger == "on-change":
+            machine.set_driver(OptOutDriver, {"port": "/dev/null"})
+        else:
+            machine.context.machine_mgr.get_controller(machine.id)
+            await machine.disconnect()
+        await wait_until_settled(task_mgr, 5000)
+
+        assert any(
+            r.levelno == logging.WARNING
+            and "Driver rebuild for machine" in r.getMessage()
+            and machine.name in r.getMessage()
+            for r in caplog.records
+        )
+        assert not any(
+            "Unhandled exception in managed task" in r.getMessage()
+            for r in caplog.records
+        )
+
+
+@pytest.mark.usefixtures("lite_context")
 class TestUpdateSettingsOptIn:
     """A driver that absorbs setup changes via update_settings keeps
     running without being torn down; the default (opt-out) still
@@ -149,3 +208,68 @@ class TestUpdateSettingsOptIn:
         await wait_until_settled(task_mgr)
 
         assert machine.driver is not live_driver
+
+    @pytest.mark.asyncio
+    async def test_opt_in_driver_is_rebuilt_after_disconnect(
+        self, machine, task_mgr
+    ):
+        await wait_until_settled(task_mgr)
+        machine.auto_connect = False
+        machine.set_driver(OptInDriver, {"port": "/dev/old"})
+        await wait_until_settled(task_mgr)
+        cleaned_driver = machine.driver
+
+        await machine.disconnect()
+        await wait_until_settled(task_mgr)
+
+        assert machine.driver is not cleaned_driver
+        assert not hasattr(cleaned_driver, "accepted_args")
+        assert machine.driver.did_setup
+
+
+class WcsDriver(NoDeviceDriver):
+    """A driver whose WCS names are not raw commands."""
+
+    selected: str | None = None
+    raw: tuple[str, ...] = ()
+
+    async def select_wcs(self, wcs):
+        self.selected = wcs
+
+    async def read_parser_state(self):
+        return self.selected
+
+    async def run_raw(self, machine_code):
+        self.raw = (*self.raw, machine_code)
+
+
+driver_module.register_driver(WcsDriver)
+
+
+@pytest.mark.usefixtures("lite_context")
+class TestSwitchActiveWcs:
+    """A WCS switch goes through the driver's select_wcs()."""
+
+    @pytest.mark.asyncio
+    async def test_switch_uses_select_wcs(self, machine, mocker, task_mgr):
+        await wait_until_settled(task_mgr)
+        machine.auto_connect = False
+        machine.set_driver(WcsDriver, {})
+        await wait_until_settled(task_mgr)
+        mocker.patch.object(machine, "is_connected", return_value=True)
+
+        await machine.switch_active_wcs("CURRENT")
+
+        assert machine.driver.selected == "CURRENT"
+        assert machine.driver.raw == ()
+        assert machine.active_wcs == "CURRENT"
+        assert machine.controller._confirmed_active_wcs == "CURRENT"
+
+    @pytest.mark.asyncio
+    async def test_default_select_wcs_sends_raw_command(self, machine, mocker):
+        driver = NoDeviceDriver(machine.context, machine)
+        run_raw = mocker.patch.object(driver, "run_raw")
+
+        await driver.select_wcs("G55")
+
+        run_raw.assert_awaited_once_with("G55")

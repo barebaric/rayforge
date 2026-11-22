@@ -8,6 +8,7 @@ from .contour_step import ContourStep
 from .frame_step import FrameStep
 from .laser_step import LaserStep
 from .material_test import MaterialTestStep
+from .offset_fill_step import OffsetFillStep
 from .raster_step import EngraveStep
 from .shrinkwrap_step import ShrinkWrapStep
 from .wavefront_step import WavefrontStep
@@ -18,6 +19,7 @@ __all__ = [
     "FrameStep",
     "LaserStep",
     "MaterialTestStep",
+    "OffsetFillStep",
     "ShrinkWrapStep",
     "WavefrontStep",
 ]

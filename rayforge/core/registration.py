@@ -82,6 +82,14 @@ REGISTRY_TABLE = [
         needs_window=False,
     ),
     RegistryEntry(
+        "register_image_edits",
+        "image_edit_registry",
+        "rayforge.core.image_edit",
+        "image_edit_registry",
+        worker_ok=True,
+        needs_window=False,
+    ),
+    RegistryEntry(
         "register_importers",
         "importer_registry",
         "rayforge.image",

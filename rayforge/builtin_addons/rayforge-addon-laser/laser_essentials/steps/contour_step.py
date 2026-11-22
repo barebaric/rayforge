@@ -57,11 +57,20 @@ class ContourStep(LaserStep):
                 ),
                 LengthVar(
                     key="offset_mm",
-                    label=_("Offset"),
+                    label=_("Offset X"),
                     description=_(
-                        "Shifts the cut path inward/outward per Cut "
-                        "Side (none on Centerline). Defaults to kerf "
-                        "compensation for the head"
+                        "Shifts the cut along X per Cut Side. Defaults "
+                        "to half the laser spot width"
+                    ),
+                    default=0.0,
+                    sensitive_when=lambda v: v.get("cut_side") != "CENTERLINE",
+                ),
+                LengthVar(
+                    key="offset_y_mm",
+                    label=_("Offset Y"),
+                    description=_(
+                        "Shifts the cut along Y per Cut Side. Defaults "
+                        "to half the laser spot height"
                     ),
                     default=0.0,
                     sensitive_when=lambda v: v.get("cut_side") != "CENTERLINE",
@@ -123,6 +132,7 @@ class ContourStep(LaserStep):
         self.cut_order = "INSIDE_OUTSIDE"
         self.remove_inner_paths = False
         self.offset_mm = 0.0
+        self.offset_y_mm = 0.0
         self.overcut = 0.0
         self.override_threshold = False
         self.threshold = 0.5
@@ -150,6 +160,17 @@ class ContourStep(LaserStep):
         )
         return params
 
+    def _signed_offsets(self) -> tuple[float, float]:
+        """Return the X/Y offsets after applying the cut-side sign."""
+        side = str(self.cut_side).upper()
+        if side == CutSide.OUTSIDE.name:
+            sign = 1.0
+        elif side == CutSide.INSIDE.name:
+            sign = -1.0
+        else:
+            return 0.0, 0.0
+        return sign * self.offset_mm, sign * self.offset_y_mm
+
     def get_assembler_kwargs(
         self,
         machine: Machine,
@@ -160,6 +181,7 @@ class ContourStep(LaserStep):
         kwargs["cut_order"] = str(self.cut_order).lower()
         kwargs["remove_inner"] = self.remove_inner_paths
         kwargs["offset_mm"] = self.offset_mm
+        kwargs["offset_y_mm"] = self.offset_y_mm
         kwargs["overcut"] = self.overcut
         kwargs["arc_tolerance"] = machine.arc_tolerance
         kwargs["allow_arcs"] = machine.supports_arcs
@@ -179,16 +201,27 @@ class ContourStep(LaserStep):
         When the workpiece has no vector boundaries (e.g. an SVG
         with empty ``pristine_geometry``), the source is rendered
         to pixels and traced into geometry before assembling.
+
+        Anisotropic offsets (``offset_mm`` != ``offset_y_mm``) are
+        applied to the Part geometry before assembly because the
+        assembler spec only carries a single offset distance.
         """
+        signed_x, signed_y = self._signed_offsets()
+        anisotropic = (
+            abs(signed_x - signed_y) > 1e-9
+            and abs(signed_x) > 1e-9
+            and abs(signed_y) > 1e-9
+        )
         part = build_part_vector_with_raster_fallback(
             workpiece,
             self.pixels_per_mm,
             override_threshold=self.override_threshold,
             threshold=self.threshold,
+            offset_xy=(signed_x, signed_y) if anisotropic else None,
         )
         kwargs = self.get_assembler_kwargs(machine, workpiece)
         spec = ContourSpec(
-            offset_mm=kwargs["offset_mm"],
+            offset_mm=0.0 if anisotropic else kwargs["offset_mm"],
             cut_side=kwargs["cut_side"],
             overcut=kwargs["overcut"],
             cut_order=kwargs["cut_order"],
@@ -213,6 +246,11 @@ class ContourStep(LaserStep):
         offset_mm = settings.get("offset_mm")
         if offset_mm is not None:
             self.offset_mm = offset_mm
+            if "offset_y_mm" not in settings:
+                self.offset_y_mm = offset_mm
+        offset_y_mm = settings.get("offset_y_mm")
+        if offset_y_mm is not None:
+            self.offset_y_mm = offset_y_mm
 
     def to_dict(self) -> dict:
         data = super().to_dict()
@@ -220,6 +258,7 @@ class ContourStep(LaserStep):
         data["cut_order"] = self.cut_order
         data["remove_inner_paths"] = self.remove_inner_paths
         data["offset_mm"] = self.offset_mm
+        data["offset_y_mm"] = self.offset_y_mm
         data["overcut"] = self.overcut
         data["override_threshold"] = self.override_threshold
         data["threshold"] = self.threshold
@@ -247,6 +286,7 @@ class ContourStep(LaserStep):
                 legacy.get("path_offset_mm", legacy.get("offset_mm", 0.0)),
             )
             step.offset_mm = path_offset + (data.get("kerf_mm", 0.0) / 2.0)
+        step.offset_y_mm = data.get("offset_y_mm", step.offset_mm)
         step.overcut = data.get("overcut", legacy.get("overcut", 0.0))
         step.override_threshold = data.get(
             "override_threshold",
@@ -260,6 +300,9 @@ class ContourStep(LaserStep):
         Smooth = transformer_registry.get("Smooth")
         LeadInOutTransformer = transformer_registry.get("LeadInOutTransformer")
         TabOpsTransformer = transformer_registry.get("TabOpsTransformer")
+        PerforationTransformer = transformer_registry.get(
+            "PerforationTransformer"
+        )
         CropTransformer = transformer_registry.get("CropTransformer")
         MergeLinesTransformer = transformer_registry.get(
             "MergeLinesTransformer"
@@ -269,6 +312,7 @@ class ContourStep(LaserStep):
         assert Smooth is not None
         assert LeadInOutTransformer is not None
         assert TabOpsTransformer is not None
+        assert PerforationTransformer is not None
         assert CropTransformer is not None
         assert MergeLinesTransformer is not None
         assert Optimize is not None
@@ -280,6 +324,7 @@ class ContourStep(LaserStep):
                 enabled=False, lead_in_mm=0, lead_out_mm=0, auto=True
             ).to_dict(),
             TabOpsTransformer().to_dict(),
+            PerforationTransformer(enabled=False).to_dict(),
             CropTransformer(enabled=False).to_dict(),
             optimize_dict,
         ], [
@@ -310,7 +355,7 @@ class ContourStep(LaserStep):
         step.per_workpiece_transformers_dicts = per_wp
         step.per_step_transformers_dicts = per_step
         step.selected_head_uid = default_head.uid
-        step.offset_mm = default_head.kerf_mm
+        step.offset_mm, step.offset_y_mm = default_head.kerf_xy_mm
         step.max_cut_speed = machine.max_cut_speed
         step.max_travel_speed = machine.max_travel_speed
         # Operating feed defaults are machine-derived: the machine only

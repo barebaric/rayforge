@@ -9,6 +9,599 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Machine: the Machine menu gains a "Select Machine" submenu listing all
+  configured machines, plus a "Manage Machines…" entry next to "Current
+  Machine Settings" so machines can be selected and managed without
+  opening the application settings first
+- Machine: automatic system sleep is inhibited while a job is running,
+  so the connection to the machine is not dropped when the computer
+  goes idle. The new "Prevent sleep during jobs" option on the General
+  settings page can disable it
+
+### Changed
+
+- Machine: the GRBL, GRBL compatibility, Smoothie and Marlin drivers
+  build on the shared session driver now; their protocol-specific code
+  is limited to connection setup, device settings and probing
+- Machine: the device census is fetched through each session's
+  `probe_device()` method now and returned as typed per-protocol
+  result objects, replacing raydriver's module-level probe helper
+- Machine: grblHAL controllers are identified by their `[BOARD:...]`
+  name during probing instead of falling back to the firmware build
+  field
+- Machine: the device census behind GRBL and Marlin probing
+  (firmware identity, motion limits, unit reporting) is computed by
+  the raydriver library now; Rayforge only maps the result onto its
+  device profiles
+- Machine: network discovery of FluidNC/ESP3D devices and the xTool
+  machine-type query now use the raydriver library's HTTP probes
+  instead of local aiohttp code
+- Machine: the xTool drivers share the generic raydriver-session
+  base now; the xTool M2 console additionally shows connection and
+  raw traffic lines when verbose output is enabled
+- Dependencies: raydriver upgraded to 1.12.0
+
+## 1.14.0
+
+### Added
+
+- Machine: remote machines. Rayforge can now drive a machine that is
+  attached to another computer on the network: a raydriver daemon
+  running next to the hardware hosts the connection, and the new
+  "Remote machine (raydriver)" driver connects to a device on that
+  daemon. The daemon resolves the device's protocol and capabilities,
+  so one driver covers GRBL, Smoothie and Marlin devices alike. The
+  machine wizard discovers daemons and their devices on the network;
+  alternatively the daemon is entered manually with hostname, port
+  and token, and the device list is read live from the daemon.
+  Probing works over the remote connection. Jobs run on the device
+  host and keep going if Rayforge disconnects; reconnecting resyncs
+  progress exactly (raydriver 1.3.2)
+- Import: the import dialog's Layer Source combo starts from the
+  choice made in the previous import. The auto-switch to color
+  grouping only applies until a source has been picked manually; a
+  remembered choice always wins
+
+### Changed
+
+- Machine: the GRBL (Network) driver now runs its ESP3D/FluidNC
+  protocol stack in Rust through the raydriver library. Class names,
+  setup settings and existing machine configurations stay unchanged;
+  commands and responses move to the Rust HTTP/WebSocket transport,
+  and jobs are uploaded and executed as before (raydriver 1.10.0)
+- Optimize: raster scan lines stay in emission order by default.
+  Reordering them makes the machine reverse and hop its Y axis
+  between rows, and the mechanical play taken up on every reversal
+  displaces the rows enough to show up as irregular horizontal
+  banding. A new Reorder Scan Lines toggle (off by default) restores
+  the old travel-optimizing behavior for machines with calibrated
+  axes (raygeo 1.76.0, discussion #686)
+- Engrave: the Sample Interval row is shown in every raster mode,
+  and its auto value is mode-aware. In dithering the sample pitch is
+  the length of each dot, not just a power-sampling distance; dither
+  and constant-power modes now default it to the line spacing for
+  square cells, while power-modulated modes keep half the spot
+  width, where finer sampling smooths the power ramp (discussion
+  #686)
+- Dependencies: raygeo upgraded to 1.76.0, raydriver to 1.10.0
+
+### Fixed
+
+- Windows: the app launches again on machines with Windows Security.
+  The installer shipped MSYS2's python-opencv, whose unsigned
+  face-recognition DLL (libopencv_face-500.dll) Windows Security
+  blocks; since the app imports cv2 at startup, the main window never
+  appeared. The build now uses the same pinned contrib-free
+  opencv-python wheel as macOS, provides python3.dll so the
+  MSVC-built wheel loads under MSYS2's mingw Python, and a build-time
+  guard fails the build if an OpenCV contrib DLL ever re-enters the
+  bundle (#697)
+- Machine: remote machines keep the generic remote driver when a
+  probe matches a curated device profile; previously the machine was
+  adopted as that local profile (e.g. GRBL serial) and appeared as a
+  standard local device in machine settings. The wizard also skips
+  profile selection for remote devices, which are identified by
+  daemon and device instead of a local hardware profile
+- Machine: the remote device picker reports problems inline instead
+  of as a traceback: a failed device list (e.g. a wrong token) shows
+  a "check the hostname and token" hint, and the picker shows its
+  status (searching, no devices) instead of a silent empty dropdown.
+  The token field explains how to get it ("raydriver daemon status"
+  on the device host), and TLS fields are hidden for loopback
+  daemons, which need no certificate
+
+### Documentation
+
+- A new Remote Devices page describes setting up a raydriver daemon
+  on the device host, getting the token, and connecting from
+  Rayforge, with screenshots of the wizard and machine settings, in
+  all languages
+- The engrave docs describe the Sample Interval setting and its
+  mode-aware defaults, and the optimize docs describe the Reorder
+  Scan Lines toggle, in all languages
+
+## 1.14.0-beta2
+
+### Added
+
+- Engrave: the Dither mode's error-diffusion algorithms gain two new
+  settings. Min Feature Size groups each scan line into cells before
+  diffusing and stretches each cell's dot across the cell; Auto (the
+  default) derives the cell width from the laser spot size, matching
+  the former spot-derived setting, and smaller values allow finer but
+  fainter dots. Linear Light diffuses in linear light instead of on
+  the raw sRGB values, for users who want the previous, darker
+  mid-tone rendering (#689)
+
+### Changed
+
+- Engrave: Serpentine now defaults to on for new steps, avoiding
+  directional artifacts out of the box; documents saved before this
+  change keep their stored value. Bayer and the screens are unaffected
+- Dependencies: raygeo upgraded to 1.74.0
+
+### Fixed
+
+- Engrave: Dither mode no longer deletes short runs after diffusing.
+  That filter removed exactly the isolated dots that carry light tones
+  (82-98% of dots at sRGB 192-224), which destroyed smooth gradation
+  and made engravings look darker and blotchier than other software.
+  The error diffusion now runs in raygeo on the raw sRGB values, so
+  dot coverage matches the tone the image shows on screen (#686)
+
+## 1.14.0-beta1
+
+### Added
+
+- Addons: automatic update checks can be turned off; a new switch on
+  the General settings page skips the addon update check at startup
+  (#651, by heiserhorn)
+- Addons: external addon services can be disabled; a new switch on
+  the Addons settings page stops every connection to remote addon
+  and license services, so the addon registry is not fetched,
+  update checks and URL installs are skipped, and premium license
+  validation answers "not found" without reaching the network (#652,
+  by heiserhorn)
+
+### Changed
+
+- Machine: the Smoothie, Marlin and simple GRBL serial drivers now
+  run their entire protocol stacks in Rust through the raydriver
+  library. Class names, setup settings and existing machine
+  configurations stay unchanged; connection handling, ping-pong
+  streaming, status and position polling, holds and cancels move
+  into the Rust sessions (raydriver 1.0.0)
+- Console: with Show verbose enabled, the machine conversation shows
+  every written line for the Rust-backed GRBL (Serial), GRBL
+  (simple), Smoothie and Marlin drivers: streamed G-code, realtime
+  commands and status polls are all reported, not only the device's
+  replies (raydriver 1.0.0b5)
+- CNC: profile passes follow the exact line-and-arc offset and emit
+  arcs as true G2/G3 walls instead of segmented polylines, honouring
+  the cut direction on both the polygon and curve-true paths.
+  Adaptive clearing no longer strands uncut floor: the entry spiral
+  machines the seed disk, the ramp entry seeds its actual swath at
+  tool width and keeps clear of islands, the core resume strategy
+  clears step-over-scale remainders, and an erosion pass machines
+  slivers that high step-overs strand. Descents into material are
+  emitted as cutting moves instead of rapid-classified travels (at
+  the cut feed for now, since steps carry no plunge feed yet), wall
+  margin now reaches the clearing pass's island clearance, and a
+  wrong-side safehold reports an error instead of panicking
+  (raygeo 1.73.0)
+- Dependencies: ruida-pa upgraded to 0.24.0, which consolidates its
+  modules under the ruida_pa namespace
+
+### Fixed
+
+- Tabs: the Tab Power setting takes effect again. The step's power
+  and tab_power were missing from the settings handed to the tab
+  generator, so the transformer always saw tab_power=0 and degraded
+  every tab to the gap mode no matter what the Tab Power field said;
+  tabs with Tab Power above 0% are now cut at reduced power
+  (tab_power * power) instead of being skipped (#667)
+- Addons: installs that fail while importing the addon's entry point
+  are no longer invisible. Previously the error was only recorded
+  internally, the addons list skipped the row and the install
+  reported success; the row is now shown with its error, the failure
+  dialog includes the actual error text, uninstall matches
+  error-only addons, and unparsable addon directories can be cleaned
+  up by directory name (#425)
+- Addons: the zip download fallback also runs when the git clone
+  fails; it previously ran only when GitPython itself was
+  unavailable, so a clone failure (e.g. no usable git binary in a
+  frozen macOS app) aborted the install even though the zip download
+  would have worked
+- Machine: custom Marlin firmware forks that announce themselves with
+  a bare banner or plain ok acknowledgements instead of the start
+  boot line can connect again; the Marlin driver now accepts any
+  unprompted output as the connection handshake (raydriver 1.0.0)
+  (#672)
+- CNC: the ramp entry step passes its real tool radius to the ramp
+  spec instead of relying on raygeo's 3.0 mm default, which is wrong
+  for every tool that is not 6 mm wide, so the cleared area now
+  matches the swath the ramp's floor-level tail actually machined
+  (raygeo 1.71.0)
+- Sketcher: long chains of connected segments no longer drift into
+  phantom constraint conflicts after changing a parameter. The angle
+  constraint's gradient treated the intersection of the two
+  constrained lines as fixed when it actually moves with the line
+  endpoints, so the solver terminated early with large residuals;
+  the gradient is now evaluated by finite differences, which is
+  exact including the intersection movement (#671)
+- Import: children of a group in a LightBurn (.lbrn2) project stay on
+  their own layers; they were merged onto the group's layer, which is
+  often layer 0 or missing, putting shapes on the wrong layer with
+  the wrong settings. Layers also import sorted by the file's
+  priority value instead of in order of first appearance, so
+  outlines no longer cut before their holes (#666, by medoix)
+- Import: layers created by an import without a source colour pick an
+  unused palette colour instead of all sharing the default, so the
+  layers of a multi-layer import are distinguishable when operation
+  colours are set to layer (#665, by medoix)
+- Import: .lbrn2 paths that reference vertices or primitives stored
+  on an earlier shape import again instead of being skipped, so
+  repeated outlines are no longer lost; paths that end a rounding
+  error short of their start close the gap instead of importing as
+  open contours left out of the generated job (#664, by medoix)
+- Camera: closing the lens calibration result dialog now keeps the
+  calibration instead of silently discarding it; only an explicit
+  Discard throws the result away. Alignment point coordinates are
+  entered in the display unit measured from the work area origin,
+  the point bubble explains what X and Y mean, and finishing the
+  wizard without an applied alignment warns first (#648)
+- UI: removing a machine no longer crashes the UI widgets that touch
+  it; the removal could raise "No machine found with ID ..." from
+  the machine manager, aborting the setup wizard finalize mid-way
+  and leaving duplicate machine entries behind (#662)
+- Packaging: deb packages ship compiled gettext catalogs again;
+  packages were built with .po sources only, so the interface fell
+  back to English (#303)
+- macOS: the app launches again on macOS versions older than 26; the
+  1.13.2 bundle shipped a Homebrew freetype built for macOS 26 whose
+  binaries reference the macOS 26-only libhvf. The bundled binaries
+  are now built from source on macOS 15, and a build-time gate fails
+  the build if any bundled binary declares a higher minimum macOS
+  version (#659)
+
+## 1.13.2
+
+### Added
+
+- DXF: imports are flattened onto the Z=0 plane by default. 3D CAD
+  exports often contain a part's outlines at two Z heights (top and
+  bottom face of the stock), and the surviving Z values made the
+  head plunge below the material surface mid-job. When the drawing
+  spans more than one Z height, the import dialog offers a "Flatten
+  Z Coordinates" switch under Import Mode (on by default); turning
+  it off keeps the original Z heights and shows a warning banner.
+  Flat drawings show no new UI, and the choice survives re-import
+  and project reload (#646)
+- Addons: addons not provided by the Rayforge team get a dedicated
+  icon in the addon registry and the installed addons list, and
+  installing one asks for confirmation first, naming its author and
+  linking to its repository so the code can be reviewed. This
+  applies to registry installs, premium addon unlocks, and manual
+  URL installs (#647)
+- Devices: a built-in profile for the OMTech SH-G570 (80W CO2 laser
+  cutter, 700 x 500 mm work area, Ruida controller) (#641, by
+  neostar)
+
+### Fixed
+
+- UI: file chooser errors are surfaced instead of failing silently.
+  When the chooser cannot open at all - e.g. in the flatpak sandbox
+  when the host's xdg-desktop-portal FileChooser is missing or
+  broken - clicking Import or Open did nothing, with no log output
+  and no UI feedback; real failures are now reported through each
+  context's existing channel: main window toast, wizard error
+  dialog, or the surrounding dialog's toast/error label (#649)
+- Machine: the machine creation wizard prefills saved driver
+  settings that are zero; previously only truthy values were
+  restored, so a profile value of 0.0 (e.g. the OMTech SH-G570's
+  image power bias) was replaced by the driver default (#641)
+- Windows: sdist builds work again; pyo3 0.29 embeds the library
+  name python3.dll directly into abi3 import tables, and MSYS2's
+  mingw Python ships libpython3.dll but no python3.dll, so raygeo
+  failed to import with "DLL load failed while importing raygeo"
+  (raygeo 1.67.3) (#650)
+
+## 1.13.1
+
+### Fixed
+
+- UI: renaming a workpiece or group no longer hangs or crashes; the
+  focus change triggered by closing the rename editor re-entered the
+  rename handling (#633)
+- Machine: switching between machines no longer leaves the previous
+  machine unable to reconnect; a cleaned-up driver is rebuilt instead
+  of being reused, so switching back reconnects instead of failing
+  with "Direct mode requires the direct backend" and a status stuck
+  at Unknown until restart (#635, by medoix)
+- Machine: selecting a work coordinate system works on Ruida
+  controllers; Ruida's WCS names are not G-code commands, so the
+  selection now goes through the driver instead of being sent as raw
+  G-code, and a rebuilt Ruida driver keeps the machine's selection
+  instead of reverting it to MACHINE (#636, by medoix)
+- G-code: scanline merging restores the cutting power after each
+  zero-power bridge between merged collinear cut lines; previously
+  jobs with shared edges (Merge Lines feeding Optimize) only burned
+  the first cut while the head kept moving (raygeo 1.67.2) (#639)
+
+## 1.13.0
+
+### Added
+
+- Machine: device profiles gain reverse X/Y/Z axis switches, so they
+  can ship machines whose controller reports negative machine
+  coordinates (e.g. Grbl controllers where machine zero sits at the
+  corner opposite the homing switches). The settings are wired into
+  the profile review, machine export and machine creation (#613)
+- Devices: a built-in profile for the FoxAlien Vasto (desktop CNC
+  router, 400 x 400 mm, Grbl 1.1h, typically fitted with the FoxAlien
+  40W diode module). The controller reports negative machine
+  coordinates, so the profile ships origin top-right with both axes
+  reversed (#615)
+- Machine: a park position drives the head to a configurable machine
+  coordinate after homing all axes, for machines whose homing
+  pull-off parks the head past the machine origin, outside the soft
+  limit range. The move uses the dialect's Move To Park command,
+  which the grbl dialect flavors and all built-in Grbl profiles ship;
+  the position is set on the Advanced settings page, and unset means
+  no move (#619)
+- Machine: a cleanup button in the G-code dialect list header deletes
+  all custom dialects that no machine references, after a
+  confirmation dialog lists the affected dialects (#632)
+
+### Changed
+
+- Machine: the reverse-axis setting subtitle states the actual
+  semantics, machine coordinates count down from the origin, instead
+  of the vague "Makes coordinate values negative" (#613)
+
+### Fixed
+
+- Canvas: the green work-origin marker is drawn as arrows above the
+  extent frame and no-go zones, so it stays visible when the work
+  origin sits on the frame corner; the arrowheads keep a fixed
+  device-space size that no longer scales with zoom (#625)
+- Windows: upgrading no longer deletes the previous installation
+  before checking the deletion succeeded. The installer makes sure no
+  instance is running, moves the previous installation aside with a
+  rename, and renames it back if writing the new files fails, so a
+  locked file can no longer leave the old version half-deleted and
+  unusable (#627)
+- Windows: the uninstaller no longer deletes whole file-extension
+  registry keys shared with other applications (.png, .bmp, .jpeg,
+  .jpg, .svg, .svgz, .dxf), discarding associations owned by other
+  software; it removes only the Rayforge ProgID keys and restores the
+  default association it replaced (#627)
+- Windows: shared file types are registered via OpenWithProgids, which
+  adds Rayforge to the "Open with" menu, instead of being claimed as
+  the default; Rayforge-owned formats (.ryp, .rfs, .rd) keep their
+  default registration (#627)
+- Devices: the Creality Falcon A1 is declared with both axes
+  reversed, because it homes to the maximum end of both axes and its
+  machine coordinates count down from the park corner; jogs, soft
+  limit clamping and G-code generation stay inside the reachable
+  range again. Existing Falcon A1 machines pick the change up through
+  the profile review flow, and the wizard now asks which profile
+  matches instead of silently adopting the Falcon 2 Pro 22W, which
+  shares the A1's USB id (#619)
+- Devices: the Falcon A1 profile parks the head at the machine origin
+  after homing, so the head lands inside the soft-limit range and the
+  first jog after homing is no longer rejected with error:15 (#619)
+- UI: the raster Line Spacing field's up/down arrows step in 0.1 mm
+  increments instead of a full millimeter, so finer values are
+  reachable; other fields keep their step of 1 (#629)
+
+### Documentation
+
+- The device docs describe the FoxAlien Vasto's confirmed coordinate
+  layout: homing drives to the bottom-left corner while the controller
+  reports negative machine positions, so machine zero sits at the
+  opposite corner
+- The projector-mode docs and the main-window screenshots show the
+  arrow-shaped work-origin marker instead of a crosshair
+
+## 1.13.0-beta5
+
+### Added
+
+- Addons: five hooks report job lifecycle and progress to addons:
+  on_job_started, on_job_updated (rate-limited to roughly 1 Hz),
+  on_job_paused, on_job_resumed and on_job_finished with the job's
+  outcome. Plugin API version 23 -> 24, additive (#614)
+- Machine: the jog speed set in the bottom panel is remembered per
+  machine instead of resetting to 1000 mm/min (#617)
+
+### Changed
+
+- Machine: the soft limit rows in the hardware settings and wizard are
+  retitled to "X Min Distance from Origin" and friends, with an
+  explanation that the values are distances from the origin corner
+  into the bed, not machine coordinates (#624)
+
+### Fixed
+
+- Machine: disabling soft limits now persists across restarts; the
+  toggle silently reverted to enabled with full-axis bounds (#624)
+- Machine: soft limits clamp the machine position against the physical
+  bed again, so right and top jogs are no longer blocked after the
+  work origin was zeroed at an object, and no jog can run past the bed
+  into a firmware soft-limit alarm (#623)
+- Canvas: the green work origin marker is visible again; it was drawn
+  thinner than a pixel at most zoom levels (#623)
+- Canvas: perfectly horizontal or vertical lines are selectable again
+  and get a thin but fully usable selection box with resize handles
+  (#609)
+- Material test grid: a Line Interval of 0 resolves to the laser spot
+  size as the setting's description promises, instead of exhausting
+  memory (#620)
+- Material test grid: only the speeds the grid actually engraves with
+  are validated against the machine's maximum, removing the bogus "Cut
+  speed (500 mm/min) exceeds the machine's maximum" warning on
+  machines limited to the grid's top speed (#607)
+- macOS: closing a dialog while the main window is in native full
+  screen no longer blanks the window; dialogs detach their transient
+  parent so GTK's macOS backend cannot tear the full-screen window out
+  of its Space (#616)
+
+### Documentation
+
+- The hardware docs describe the soft limit fields as distances from
+  the origin, in all languages
+
+## 1.13.0-beta4
+
+### Changed
+
+- Republished 1.13.0-beta3 with its changelog and AppStream release
+  notes included, so the Flatpak build can ship it. There are no
+  functional changes.
+
+## 1.13.0-beta3
+
+### Fixed
+
+- Machine: the focus laser now lights on GRBL firmware that applies the
+  spindle PWM at motion start (confirmed on Creality Falcon and
+  Sculpfun iCube) by arming it with a zero-distance move
+- Machine: dialect edits apply to the connected session immediately
+  instead of waiting for the next reconnect or job
+- Laser control: the on/off toggle returns to its previous state when
+  the command fails or times out instead of drifting out of sync
+- Console: commands sent to the machine appear with verbose output, not
+  only the device's replies
+- Job generation: a step whose workpiece selection matches nothing now
+  fails with a clear error instead of making Send and Frame wait
+  forever without feedback (#596)
+- Usage reporting: machine reports no longer raise a TypeError in the
+  usage tracker
+- macOS: closing a dialog while the main window is in native full
+  screen no longer leaves a blank window behind
+
+### Documentation
+
+- Document the x86-64-v2 CPU requirement of the Linux packages, with a
+  command to check and alternatives for older CPUs
+- Fix the translated Bidirectional Scan Offset links to point at the
+  explicit anchor used by the machine settings page
+
+## 1.13.0-beta2
+
+### Added
+
+- Laser: a new Offset Fill step fills closed shapes with rings that run
+  parallel to the outline, one Line Interval apart (defaulting to the
+  laser spot size). An Offset sets the distance of the first ring from
+  the outline and Fill Direction cuts Outside-Inside or Inside-Outside;
+  holes stay free and open paths are ignored. Path Optimization, Smooth,
+  Multi-Pass and Crop to Stock apply as on Contour (#524)
+- Optimize: the path optimizer gains Choose Best Start Point, which
+  starts each closed path at the vertex nearest the laser head, and
+  Prefer Corners, which starts at a sharp corner when the path has one
+  so the seam is less visible. Both are off by default (#523)
+- Sketcher: Polygon tool (G+X) for regular polygons and stars, made of
+  plain points and lines that constraints keep regular (#522)
+- Vector editing: edit the nodes of imported paths: drag nodes and curve
+  handles, delete and insert nodes, and turn segments into curves or
+  lines (#521)
+- Workpieces: the X/Y position can refer to the bounding box corner,
+  the box center, or the geometry provider's reference point, which is
+  the fixed origin for sketches. When parameters change or a sketch is
+  edited, the chosen point stays fixed, so parametric cut and engrave
+  sketches keep their alignment (#587)
+
+### Fixed
+
+- Console: raw machine communication is shown again with Show verbose;
+  since the GRBL protocol moved into the Rust driver, only high-level
+  state changes were displayed (#573)
+- Machine: jog limits are evaluated in work coordinates, so jogs toward
+  the origin no longer clamp to zero on machines whose machine
+  coordinates are offset from the work origin; the soft limits toggle
+  now disables jog limit checks as a whole and persists (#574)
+- Canvas: the laser position dot follows the work position, so it no
+  longer lands outside the work area when the controller carries a work
+  coordinate offset (#580)
+- Renaming a workpiece, group, step, layer or stock item no longer
+  triggers a full re-render, which could crash GTK in large projects
+  (#571)
+- AppImage: TLS certificate verification for update and addon registry
+  checks works, and GTK can compile keymaps on Wayland instead of
+  crashing (#578)
+- Properties: stepping the X/Y position spin row with several items
+  selected no longer hangs the application in a move loop between the
+  old and the new position (#594)
+- Layers: double-clicking a word while renaming a sketch or workpiece
+  no longer opens the sketch editor and hangs GTK's focus handling
+  (#582)
+- Recent files: file names containing underscores, ampersands and other
+  special characters are shown correctly (#583)
+- Ruida: identical workpieces are collapsed into one Ruida layer, and
+  the last requested power is re-applied at genuine layer boundaries,
+  so duplicated workpieces are no longer cut with the laser off (#564)
+- Sketcher: the path tool closes a path onto its start point and ends
+  editing instead of leaving a duplicate loose corner
+- Sketcher: drag snapping no longer flickers on geometry coupled to the
+  drag, both-axis snaps are recorded as a single coincident constraint,
+  and array templates keep the coincident pairs that close their shapes
+
+### Performance
+
+- Sketcher: constraint solving and drags are much faster. The solver
+  partitions constraints into independent components, leaves points no
+  constraint references out of the solve, uses constant-time point
+  lookups, and runs single-threaded to avoid BLAS synchronization
+  overhead. A 60-rectangle sketch solves in about 11 ms instead of
+  720 ms, and drag frames on large sketches drop from hundreds of
+  milliseconds to under one.
+
+## 1.13.0-beta1
+
+### Added
+
+- Import: HPGL plot files (`.plt`, `.hpgl`) from cutting plotters and
+  CAD programs, with one selectable layer per pen. Pen moves, circles,
+  arcs and rectangles are supported; labels and other skipped
+  instructions are listed in the import dialog (#517)
+- Import: Adobe Illustrator (`.ai`) and EPS/PostScript files. AI files
+  saved with PDF compatibility (the default since Illustrator 9) import
+  like PDFs; EPS, PostScript and older AI files are converted to PDF
+  with Ghostscript, an optional dependency, with a clear message when
+  it is missing. Text becomes outlines and the EPS bounding box sets
+  the page size (#517)
+- Import: GIF, TIFF and WebP bitmaps, traced like PNG. Animated GIFs
+  and multi-page TIFFs import their first frame or page (#517)
+- Import: compressed SVG (`.svgz`, Inkscape's "Compressed SVG"), with
+  the same options as plain SVG. The file type is registered with the
+  desktop, AppStream and the Windows installer (#546)
+- Import: sources can be reloaded from disk in place and relinked to
+  another file, updating every workpiece made from them as one undo
+  step. Rayforge watches imported files and offers to reload those
+  that changed, with an Auto-reload option and a General preference
+  to turn watching off (#513, #537)
+- Engrave: more dithering algorithms for photos. The error-diffusion
+  kernels Atkinson, Stucki, Jarvis-Judice-Ninke, Sierra (3-row,
+  2-row, Lite) and Burkes, with an optional serpentine scan, plus a
+  clustered-dot Newsprint screen and a round-dot Halftone screen with
+  adjustable cell size and angle. LightBurn imports keep the image
+  layer's dither mode (#514)
+- Laser: the Frame button opens a popover with an "Include Overscan
+  Margin" switch. When it is off the frame traces only the envelope
+  the laser burns instead of the full machine path, so it no longer
+  overshoots the artwork by the raster overscan margin (raygeo 1.65.0,
+  #563)
+- Path clean-up tools in the Object menu and canvas context menu:
+  Close Paths and Join Open Paths with a tolerance in mm, Delete
+  Duplicates (duplicate contours inside a workpiece and stacked copies
+  of whole workpieces), and Break Apart (one workpiece per contour,
+  holes and open paths included). Each is a single undo step (#516)
+- Contour: Perforation post-processor for dashed cuts. The laser
+  fires for a Cut Length and is off for a Skip Length along every
+  contour, starting with a full cut at the start of each contour; off
+  by default (#525)
 - Sketcher: boolean operations. Union, Difference, Intersection and
   Exclude bake the selected closed regions into multi-ring polygons
   (outer contours counter-clockwise, hole contours clockwise), so
@@ -26,11 +619,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   selector (Auto, Network, USB) that shows only the fields relevant
   to the chosen transport; Auto opens USB when available and falls
   back to the network
+- Ruida: network connections can use TCP alongside UDP; ruida-pa was
+  upgraded to 0.22.0 (thanks to @medoix, #520)
+- Machine: a Z homing mode lets machines choose between a Home Switch
+  and the auto-focus Probe routine where the driver supports both.
+  The Ruida driver routes Z home to its auto-focus routine by default,
+  so existing machines keep homing Z as before (#548)
+- Machine: a speed-dependent bidirectional scan offset table in the
+  Advanced settings interpolates the raster offset for each step's
+  speed, for lasers whose left-to-right/right-to-left skew grows with
+  speed; a per-step offset still overrides the table (#307)
+- Camera: the camera view can extend beyond the work area, with
+  adjustable margins and border transparency (#543)
+- Settings: a new Mouse Gestures page rebinds the 2D and 3D canvas
+  and sketch-editor navigation gestures, helping with setups where
+  specific mouse buttons are not delivered (#390)
 - Linux: official AppImage builds are attached to GitHub releases
 - Windows: Publish Rayforge through WinGet ("winget install rayforge")
+- Image Editing addon: non-destructive image edits stored per
+  workpiece and applied wherever its image is used (canvas, 3D preview,
+  operations). The first edit is Tools > Invert Image (#515)
+- Image Editing: Tools > Adjust Image... corrects the brightness,
+  contrast and gamma of the selected images and sharpens them with an
+  unsharp mask whose radius is in mm. The canvas shows the result while
+  editing, and Apply is a single undo step (#515)
+- Addons: the `register_image_edits` hook and image edit registry
+  (plugin API 23) let addons provide their own image edits
+- Step settings: a new Workpieces tab shows which workpieces a step
+  processes on its layer. A step normally processes every workpiece of
+  its layer; generated content like the Material Test Grid restricts
+  its step to the workpiece it creates, and that selection is now
+  visible instead of hidden
 
 ### Changed
 
+- Engrave: Invert moved from the operation to the workpiece, as the
+  Invert Image edit. Older projects are converted when they are opened,
+  so their output stays the same (#515)
 - Machines: the GRBL Serial driver now runs its entire protocol stack
   (handshake, character-counting flow control, streaming, stall
   detection and deadlock recovery) in Rust through the raydriver
@@ -39,10 +664,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   existing machine configurations continue to work unchanged.
   Machines saved while the driver carried its experimental name keep
   working through a compatibility alias
+- Addon API 22: actions registered via the `register_actions` hook
+  accept an `enabled_when` predicate for their enabled state, and the
+  hook is invoked again when an addon is enabled while the window
+  exists, so addons no longer need `action_extension_registry` for
+  either
+- Upgrade raygeo to 1.66.0: full-sweep raster passes are limited to
+  each scan line's own content extent, so a shape that narrows in X
+  (for example an hourglass) no longer sweeps the widest extent on
+  every row (#565)
 - Updated translations
 
 ### Fixed
 
+- Addon API: disabling an addon did not reliably remove its
+  `action_extension_registry` handlers when several addons registered
+  same-named handlers, which could leave stale handlers behind or
+  strip other addons' handlers
+- Engrave: the step's Bidirectional Scan Offset had no effect since
+  the pipeline moved to raygeo intents, because the value no longer
+  reached the transformer; changing it now also refreshes the cached
+  toolpath (#307)
+- Step settings: choice rows backed by an enum (such as the Engrave
+  step's dithering algorithm) now show the step's actual value when
+  the dialog opens and after undo, instead of the first entry
+- Machine: the running job ETA is derived from the modeled time
+  remaining at the acknowledged command frontier instead of the recent
+  command speed, so it no longer collapses during buffered bursts or
+  swings on jobs that mix fast and slow phases (#496)
+- Ruida: homing a single X or Y axis now jogs only that axis instead
+  of moving both to the origin (#545)
+- Engrave: the Crop to Stock post-processor is now offered on Engrave
+  steps, so raster content can be clipped to the stock boundary (#508)
+- Devices: the Sculpfun S30 focus laser uses constant power (M3), so
+  it lights while the head is stationary; a dedicated Sculpfun S9
+  profile was added (#512)
 - Ruida: the setup wizard no longer requires the optional USB device
   and Magic fields, so Next is enabled again once a valid hostname is
   entered; the Magic field is prefilled with the standard 0x88
@@ -60,6 +716,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   placeholder now pick fonts with proper fallback, fixing garbled
   text and wrong sizes, especially for non-Latin languages (thanks
   to @atkaper, #507)
+- macOS: adding a camera no longer crashes Rayforge; the app bundle
+  now declares `NSCameraUsageDescription`, and the first frame waits
+  for the capture session to settle before reading (#510)
+- Material test: resizing the workpiece no longer leaves the grid's
+  cells and labels misaligned with the workpiece image until the next
+  rebuild; toolpath outputs are stamped with the size their ops were
+  generated at instead of the workpiece's live size (#568)
 
 ## 1.12.0
 

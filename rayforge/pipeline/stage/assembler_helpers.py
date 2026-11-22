@@ -27,6 +27,8 @@ from raygeo.ops.types import RasterMode
 
 from ...core.vectorization_spec import TraceSpec
 from ...image.dither import (
+    DEFAULT_HALFTONE_ANGLE,
+    DEFAULT_HALFTONE_CELL_MM,
     DitherAlgorithm,
     grayscale_to_dithered_array,
 )
@@ -48,7 +50,8 @@ class DepthMode(Enum):
 
     * ``POWER_MODULATION`` — variable power proportional to darkness.
     * ``CONSTANT_POWER`` — binary mask, constant-power scan lines.
-    * ``DITHER`` — Floyd-Steinberg / ordered dither to binary.
+    * ``DITHER`` — error-diffusion, ordered or halftone dither to
+      binary.
     * ``MULTI_PASS`` — repeated Z-stepped passes through the depth.
     """
 
@@ -150,6 +153,7 @@ def build_part_vector(
     override_threshold: bool = False,
     threshold: float = 0.5,
     normalize_windings: bool = False,
+    offset_xy: tuple[float, float] | None = None,
 ) -> Part | None:
     """Build a ``Part`` carrying vector geometry for an assembler.
 
@@ -160,11 +164,8 @@ def build_part_vector(
     Resolution order:
 
     1. **Vector source** — if the workpiece has boundaries and
-       ``override_threshold`` is False, use ``workpiece.to_part()``.
-       When ``normalize_windings`` is True (e.g. WavefrontStep),
-       the geometry is re-scaled manually so that
-       ``normalize_winding_orders()`` can be applied before
-       constructing the Part.
+       ``override_threshold`` is False, scale them to mm-space and
+       build a multi-face Part.
 
     2. **Raster fallback** — if a ``surface`` is available (either
        because there are no boundaries or because
@@ -182,23 +183,25 @@ def build_part_vector(
         normalize_windings: If True, normalize winding orders
             (outer CCW, inner CW) on the scaled geometry.  Required
             by wavefront/pocketing assemblers.
+        offset_xy: Optional ``(x, y)`` offset applied to the mm-space
+            geometry before constructing the Part.  Used for
+            direction-dependent kerf compensation.
     """
     boundaries = workpiece.boundaries
     has_vector_source = boundaries is not None and not boundaries.is_empty()
 
     # 1. Vector source — preferred path.
     if has_vector_source and not override_threshold:
+        assert boundaries is not None
+        w, h = workpiece.size
+        geo = boundaries.copy()
+        if w > 0 and h > 0:
+            geo.transform(Matrix.scale(w, h))
+        if offset_xy is not None:
+            geo.grow_xy(offset_xy[0], offset_xy[1])
         if normalize_windings:
-            assert boundaries is not None
-            scaled = boundaries.copy()
-            w, h = workpiece.size
-            if w > 0 and h > 0:
-                scaled.transform(Matrix.scale(w, h))
-            scaled.normalize_winding_orders()
-            return Part.from_geometry_multi_face(
-                geometry=scaled, size_mm=(w, h)
-            )
-        return workpiece.to_part()
+            geo.normalize_winding_orders()
+        return Part.from_geometry_multi_face(geometry=geo, size_mm=(w, h))
 
     # 2. Raster fallback — trace the surface.
     if surface is not None:
@@ -209,6 +212,8 @@ def build_part_vector(
             auto_threshold=not override_threshold,
         )
         if geo is not None and not geo.is_empty():
+            if offset_xy is not None:
+                geo.grow_xy(offset_xy[0], offset_xy[1])
             if normalize_windings:
                 geo.normalize_winding_orders()
                 return Part.from_geometry_multi_face(
@@ -229,6 +234,7 @@ def build_part_vector_with_raster_fallback(
     override_threshold: bool = False,
     threshold: float = 0.5,
     normalize_windings: bool = False,
+    offset_xy: tuple[float, float] | None = None,
 ) -> Part:
     """Build a vector :class:`Part`, rendering the workpiece source to a
     raster surface and tracing it when no vector boundaries are
@@ -241,6 +247,11 @@ def build_part_vector_with_raster_fallback(
     Returns a :class:`Part` with at least ``size_mm`` set.  The
     geometry may be empty (``None``) if neither the vector source
     nor the raster trace yields any contours.
+
+    Args:
+        offset_xy: Optional ``(x, y)`` offset applied to the mm-space
+            geometry before constructing the Part.  Used for
+            direction-dependent kerf compensation.
     """
     boundaries = workpiece.boundaries
     has_vector = boundaries is not None and not boundaries.is_empty()
@@ -250,6 +261,7 @@ def build_part_vector_with_raster_fallback(
             surface=None,
             override_threshold=False,
             normalize_windings=normalize_windings,
+            offset_xy=offset_xy,
         )
         if part is not None and part.has_geometry():
             return part
@@ -279,6 +291,7 @@ def build_part_vector_with_raster_fallback(
         override_threshold=True,
         threshold=threshold,
         normalize_windings=normalize_windings,
+        offset_xy=offset_xy,
     )
     if part is not None:
         return part
@@ -289,7 +302,6 @@ def preprocess_raster_image(
     surface: cairo.ImageSurface,
     *,
     mode: DepthMode,
-    invert: bool = False,
     auto_levels: bool = True,
     computed_auto_levels: tuple[int, int] | None = None,
     black_point: int = 0,
@@ -298,6 +310,12 @@ def preprocess_raster_image(
     dither_algorithm: DitherAlgorithm | None = None,
     laser_spot_x_mm: float = 0.1,
     pixels_per_mm_x: float = 1.0,
+    pixels_per_mm_y: float | None = None,
+    dither_serpentine: bool = False,
+    dither_min_feature_px: int | None = None,
+    dither_linear: bool = False,
+    halftone_cell_mm: float = DEFAULT_HALFTONE_CELL_MM,
+    halftone_angle: float = DEFAULT_HALFTONE_ANGLE,
 ) -> tuple[np.ndarray | None, np.ndarray | None]:
     """Convert a Cairo surface into an image array for a raster assembler.
 
@@ -309,7 +327,6 @@ def preprocess_raster_image(
     Args:
         surface: The rendered Cairo ARGB32 surface.
         mode: The rasterisation depth mode.
-        invert: If True, invert grayscale before further processing.
         auto_levels: If True, auto-compute black/white points from
             the image histogram.
         computed_auto_levels: Pre-computed ``(black, white)`` points
@@ -324,9 +341,21 @@ def preprocess_raster_image(
             ``CONSTANT_POWER`` mode.
         dither_algorithm: Dithering algorithm for ``DITHER`` mode.
         laser_spot_x_mm: Laser spot X diameter in mm, used to
-            compute minimum feature size for dithering.
+            compute the automatic minimum feature size for dithering.
         pixels_per_mm_x: Rendered pixels-per-mm in X, used with
-            ``laser_spot_x_mm`` for dither minimum feature size.
+            ``laser_spot_x_mm`` for the dither minimum feature size.
+        pixels_per_mm_y: Rendered pixels-per-mm in Y; defaults to
+            ``pixels_per_mm_x``. Screens use both to keep their cells
+            square in millimetres.
+        dither_serpentine: Alternate the scan direction per row for
+            the error-diffusion algorithms.
+        dither_min_feature_px: Minimum feature size in scan-line
+            pixels for the error-diffusion algorithms. ``None``
+            derives it from the laser spot size.
+        dither_linear: Diffuse in linear light instead of on the raw
+            sRGB-encoded values (error-diffusion algorithms).
+        halftone_cell_mm: Dot spacing of the halftone screen in mm.
+        halftone_angle: Halftone screen angle in degrees.
 
     Returns:
         ``(image, alpha)`` where *image* is a 2-D ``uint8`` array
@@ -336,9 +365,6 @@ def preprocess_raster_image(
     """
     if mode in (DepthMode.MULTI_PASS, DepthMode.POWER_MODULATION):
         gray_image, alpha = surface_to_grayscale(surface)
-        if invert:
-            alpha_mask = alpha > 0
-            gray_image[alpha_mask] = 255 - gray_image[alpha_mask]
         gray_image = _apply_raster_levels(
             gray_image,
             alpha,
@@ -350,15 +376,17 @@ def preprocess_raster_image(
         return gray_image, alpha
 
     if mode == DepthMode.DITHER:
-        min_feature_px = max(
+        auto_feature_px = max(
             1,
             round(laser_spot_x_mm * pixels_per_mm_x),
         )
+        min_feature_px = (
+            auto_feature_px
+            if dither_min_feature_px is None
+            else dither_min_feature_px
+        )
         algo = dither_algorithm or DitherAlgorithm.FLOYD_STEINBERG
         gray_image, alpha = surface_to_grayscale(surface)
-        if invert:
-            alpha_mask = alpha > 0
-            gray_image[alpha_mask] = 255 - gray_image[alpha_mask]
         gray_image = _apply_raster_levels(
             gray_image,
             alpha,
@@ -371,15 +399,19 @@ def preprocess_raster_image(
             gray_image,
             algo,
             min_feature_px=min_feature_px,
+            linear=dither_linear,
+            serpentine=dither_serpentine,
+            halftone_cell_mm=halftone_cell_mm,
+            halftone_angle=halftone_angle,
+            pixels_per_mm=(
+                pixels_per_mm_x,
+                pixels_per_mm_y or pixels_per_mm_x,
+            ),
         )
         return image, None
 
     if mode == DepthMode.CONSTANT_POWER:
-        image = surface_to_binary(
-            surface,
-            threshold=threshold,
-            invert=invert,
-        )
+        image = surface_to_binary(surface, threshold=threshold)
         return image, None
 
     return None, None
@@ -415,7 +447,6 @@ def compute_raster_auto_levels(
     workpiece: WorkPiece,
     pixels_per_mm: tuple[float, float],
     *,
-    invert: bool = False,
     max_preview_pixels: int = 512,
 ) -> tuple[int, int] | None:
     """Compute auto-levels from a low-resolution preview render.
@@ -431,8 +462,6 @@ def compute_raster_auto_levels(
     Args:
         workpiece: The WorkPiece to render a preview of.
         pixels_per_mm: The ``(x, y)`` resolution of the full render.
-        invert: If True, invert the grayscale before computing
-            levels.
         max_preview_pixels: Maximum preview dimension in pixels.
 
     Returns:
@@ -456,10 +485,6 @@ def compute_raster_auto_levels(
         return None
 
     gray_image, alpha = surface_to_grayscale(surface)
-
-    if invert:
-        alpha_mask = alpha > 0
-        gray_image[alpha_mask] = 255 - gray_image[alpha_mask]
 
     surface.flush()
 

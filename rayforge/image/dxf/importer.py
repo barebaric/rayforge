@@ -40,6 +40,20 @@ from .renderer import DXF_RENDERER
 
 logger = logging.getLogger(__name__)
 
+# Z extent below which a drawing is considered flat. DXF coordinates
+# carry rounding noise, so an exact zero test is too strict.
+Z_VARIATION_TOLERANCE = 1e-4
+
+# Affine projection onto the Z=0 plane: identity in X and Y, zero row
+# for Z. Applied with raygeo's Rust-side transform, which preserves
+# command types and curve control points exactly.
+PROJECT_ONTO_Z0 = [
+    [1.0, 0.0, 0.0, 0.0],
+    [0.0, 1.0, 0.0, 0.0],
+    [0.0, 0.0, 0.0, 0.0],
+    [0.0, 0.0, 0.0, 1.0],
+]
+
 units_to_mm = {
     0: 1.0,
     1: 25.4,
@@ -60,6 +74,7 @@ class DxfImporter(Importer):
     features: ClassVar[set[ImporterFeature]] = {
         ImporterFeature.DIRECT_VECTOR,
         ImporterFeature.LAYER_SELECTION,
+        ImporterFeature.Z_FLATTENING,
     }
 
     def __init__(self, data: bytes, source_file: Path | None = None):
@@ -88,10 +103,7 @@ class DxfImporter(Importer):
             )
 
         # Count entities per layer to detect empty layers
-        counts: defaultdict[str, int] = defaultdict(int)
-        if doc.modelspace():
-            for e in doc.modelspace():
-                counts[e.dxf.layer] += 1
+        counts = self._count_features(doc)
 
         manifest_data = self._get_layer_manifest(doc)
         layers = []
@@ -111,6 +123,7 @@ class DxfImporter(Importer):
             natural_size_mm=size_mm,
             warnings=self._warnings,
             errors=self._errors,
+            has_z_variation=self._has_z_variation(doc),
         )
 
     def create_source_asset(self, parse_result: ParsingResult) -> SourceAsset:
@@ -194,6 +207,12 @@ class DxfImporter(Importer):
             for geo in geometries_to_process.values():
                 merged_geo.extend(geo)
             final_geometries = {None: merged_geo}
+
+        if isinstance(spec, PassthroughSpec) and spec.flatten_z:
+            final_geometries = {
+                layer_id: self._flatten_z(geo)
+                for layer_id, geo in final_geometries.items()
+            }
 
         # Hack: Updating the parsing result bounds if layers were filtered
         # is a violation of the pipelines sequential nature. Ideally this
@@ -290,6 +309,48 @@ class DxfImporter(Importer):
             if layer.dxf.name.lower() != "defpoints"
         ]
 
+    def _count_features(self, doc) -> defaultdict[str, int]:
+        """
+        Counts entities per layer, descending into INSERT blocks.
+        Entities on layer "0" inside a block inherit the layer of the
+        block insertion, following the DXF specification.
+        """
+
+        def effective_layer(layer: str, insert_layer: str | None) -> str:
+            if layer != "0" or insert_layer is None:
+                return layer
+            return insert_layer
+
+        counts: defaultdict[str, int] = defaultdict(int)
+
+        def walk(entity, insert_layer: str | None):
+            if entity.dxftype() == "INSERT":
+                layer = effective_layer(entity.dxf.layer, insert_layer)
+                block_name = entity.dxf.name
+                if block_name in doc.blocks:
+                    for sub_entity in doc.blocks.get(block_name):
+                        walk(sub_entity, layer)
+                return
+
+            counts[effective_layer(entity.dxf.layer, insert_layer)] += 1
+
+        for entity in doc.modelspace():
+            walk(entity, None)
+
+        return counts
+
+    def _has_z_variation(self, doc) -> bool:
+        """Returns True when the drawing's geometry spans more than one
+        Z level (3D CAD exports often carry the top and bottom face
+        outlines of a part at different Z heights).
+        """
+        entity_bbox = bbox.extents(doc.modelspace(), fast=True)
+        if not entity_bbox.has_data:
+            return False
+        min_z = entity_bbox.extmin.z
+        max_z = entity_bbox.extmax.z
+        return abs(max_z - min_z) > Z_VARIATION_TOLERANCE
+
     def parse(self) -> ParsingResult | None:
         try:
             data_str = self.raw_data.decode("utf-8", errors="replace")
@@ -379,7 +440,11 @@ class DxfImporter(Importer):
         """
         raw_paths_by_layer: defaultdict[str, list] = defaultdict(list)
 
-        def process_entity(entity, parent_transform: ezdxf.math.Matrix44):
+        def process_entity(
+            entity,
+            parent_transform: ezdxf.math.Matrix44,
+            insert_layer: str | None = None,
+        ):
             # Transform Composition
             if hasattr(entity, "matrix44"):
                 transform = parent_transform @ entity.matrix44()
@@ -391,11 +456,16 @@ class DxfImporter(Importer):
                 block_name = entity.dxf.name
                 if block_name in doc.blocks:
                     block_def = doc.blocks.get(block_name)
+                    inherited = entity.dxf.layer
+                    if inherited == "0" and insert_layer is not None:
+                        inherited = insert_layer
                     for sub_entity in block_def:
-                        process_entity(sub_entity, transform)
+                        process_entity(sub_entity, transform, inherited)
                 return
 
             layer_name = entity.dxf.layer
+            if layer_name == "0" and insert_layer is not None:
+                layer_name = insert_layer
             if layer_name.lower() == "defpoints":
                 return
 
@@ -534,6 +604,17 @@ class DxfImporter(Importer):
                     cz - end.z
                 ) ** 2 > 1e-8:
                     geo.move_to(end.x, end.y, end.z)
+
+    @staticmethod
+    def _flatten_z(geo: Geometry) -> Geometry:
+        """Returns a copy of *geo* with every point projected onto the
+        Z=0 plane, transformed in Rust via a projection matrix.
+        """
+        if geo is None or geo.is_empty():
+            return geo
+        flat = geo.copy()
+        flat.transform(PROJECT_ONTO_Z0)
+        return flat
 
     def _get_scale_to_mm(self, doc, default: float = 1.0) -> float:
         insunits = doc.header.get("$INSUNITS", 0)

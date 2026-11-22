@@ -23,6 +23,7 @@ from .mirror_tool import MirrorHorizontalTool, MirrorVerticalTool
 from .offset_tool import OffsetTool
 from .path_tool import PathTool
 from .perpendicular_constraint_tool import PerpendicularConstraintTool
+from .polygon_tool import PolygonTool
 from .radius_constraint_tool import RadiusConstraintTool
 from .rectangle_tool import RectangleTool
 from .rounded_rect_tool import RoundedRectTool
@@ -60,6 +61,7 @@ TOOL_REGISTRY = {
     "offset": OffsetTool,
     "path": PathTool,
     "perpendicular": PerpendicularConstraintTool,
+    "polygon": PolygonTool,
     "radius": RadiusConstraintTool,
     "rectangle": RectangleTool,
     "rounded_rect": RoundedRectTool,
@@ -133,6 +135,7 @@ __all__ = [
     "MirrorVerticalTool",
     "PathTool",
     "PerpendicularConstraintTool",
+    "PolygonTool",
     "RadiusConstraintTool",
     "RectangleTool",
     "RoundedRectTool",

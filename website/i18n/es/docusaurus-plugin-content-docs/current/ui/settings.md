@@ -15,6 +15,11 @@ Elige entre el tema **Sistema**, **Claro** u **Oscuro** para coincidir con tu en
 o preferencia personal. También puedes configurar los **Colores de operación** para usar el color
 del láser o el color de la capa como distinción visual en el lienzo.
 
+**Modo taller** sustituye la pestaña de controles del panel inferior por una superficie de control
+táctil: lecturas de posición grandes por eje con botones de cero, una tarjeta de offsets, steppers
+sobredimensionados de velocidad/paso de jog y una cuadrícula de botones grandes de jog y trabajo.
+Pensado para manejar la máquina estando junto a ella; está desactivado por defecto.
+
 ### Unidades
 
 Configura las unidades de pantalla usadas en toda la aplicación. Puedes establecer unidades
@@ -29,6 +34,18 @@ operaciones** y activar el recálculo manualmente vía el botón de la barra de 
 
 Rayforge puede **Buscar actualizaciones** automáticamente al inicio. Cuando está habilitado, se te
 notificará cuando haya una nueva versión disponible.
+
+Rayforge también puede **Buscar actualizaciones de complementos** automáticamente al inicio.
+Desactivar esta opción no impide las comprobaciones manuales desde la página Complementos.
+
+Con **Vigilar archivos importados** activado, Rayforge supervisa los archivos detrás de las piezas
+de trabajo importadas y ofrece recargarlas cuando cambian en el disco. Consulta
+[Mantener los archivos importados sincronizados](../files/importing.md#mantener-los-archivos-importados-sincronizados)
+para más detalles.
+
+Con **Evitar la suspensión durante los trabajos** activado, Rayforge bloquea la suspensión
+automática del sistema mientras se ejecuta un trabajo, para que no se pierda la conexión con la
+máquina. La suspensión manual o cerrar la tapa siguen funcionando.
 
 También puedes configurar el **Comportamiento de inicio** — iniciar con un espacio de trabajo vacío,
 reabrir el último proyecto o abrir siempre un archivo de proyecto específico. Ten en cuenta que los
@@ -68,7 +85,7 @@ El diálogo de ajustes también incluye páginas para gestionar otras partes de 
 tiene su propia documentación:
 
 - [Máquinas](../application-settings/machines.md) — añadir, eliminar y configurar tus cortadores
-  láser
+  láser (también disponible en **Máquina → Manage Machines…**)
 - [Materiales](../application-settings/materials.md) — gestionar tus bibliotecas de materiales
 - [Recetas](../application-settings/recipes.md) — gestionar las recetas de operaciones guardadas
 - [Reglas de color](../application-settings/color-rules.md) — asignar los colores SVG a tipos de

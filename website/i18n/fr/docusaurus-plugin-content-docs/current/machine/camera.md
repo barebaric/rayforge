@@ -62,7 +62,7 @@ en un coup d'œil :
 1. **Connecte ta caméra** à ton ordinateur via USB
 
 2. **Ouvre les Paramètres Caméra :**
-   - Navigue vers **Machine → Paramètres de la machine → Caméra**
+   - Navigue vers **Machine → Paramètres actuels de la machine → Caméra**
 
 3. **Ajoute une nouvelle caméra :**
    - Clique sur le bouton "+" pour ajouter une caméra
@@ -152,8 +152,9 @@ Choisis d'abord un **Pattern Type** :
    Frame** pour chaque position. Vise au moins 8 captures couvrant tout le cadre, y compris les
    coins et les bords. La barre de progression et les indicateurs d'état montrent la qualité de la
    capture.
-4. Une fois suffisamment d'images capturées, l'assistant calcule le modèle de distorsion et
-   l'applique — la superposition caméra affiche maintenant une image corrigée et droite.
+4. Une fois suffisamment d'images capturées, clique sur **Calibrate**. L'assistant affiche le
+   résultat — confirme avec **Save Calibration** pour l'appliquer (seul **Discard** jette le
+   résultat) — et la superposition caméra affiche maintenant une image corrigée et droite.
 
 #### Utiliser un motif déjà imprimé
 
@@ -217,7 +218,8 @@ manuellement les coefficients de distorsion — ajuste finement les paramètres 
 L'alignement d'image est l'étape finale de l'assistant de caméra. L'alignement de la caméra calibre
 la relation entre les pixels de la caméra et les coordonnées du monde réel, permettant un
 positionnement précis. L'assistant utilise la même procédure décrite ici, et appliquer l'alignement
-termine l'assistant.
+termine l'assistant. Terminer sans alignement appliqué déclenche d'abord un avertissement, car la
+vue caméra ne peut alors pas être projetée avec précision sur la zone de travail.
 
 #### Pourquoi l'Alignement est Nécessaire
 
@@ -252,8 +254,10 @@ machine.
    - Répète pour chaque point de référence
 
 4. **Entre les coordonnées monde :**
-   - Pour chaque point d'image, entre les coordonnées X/Y réelles en mm
-   - Ce sont les coordonnées machine réelles où chaque point est situé
+   - Pour chaque point d'image, entre les coordonnées X/Y réelles dans ton unité d'affichage
+     (définie dans les réglages de l'application)
+   - Ce sont les coordonnées machine réelles où chaque point est situé, mesurées depuis l'origine de
+     la zone de travail
    - Mesure avec précision avec une règle ou utilise des positions machine connues
 
 5. **Applique l'alignement :**
@@ -302,6 +306,27 @@ Le panneau des propriétés de la caméra affiche le statut d'alignement avec un
 
 Une fois alignée, la superposition caméra aide à positionner les travaux avec précision. Active-la
 en cliquant sur l'icône caméra dans la barre d'outils de la fenêtre principale.
+
+---
+
+### Vue hors de la zone de travail
+
+La caméra voit généralement plus que la seule zone de travail. Dans Paramètres de la machine →
+Caméra → Vue hors de la zone de travail, tu peux afficher une bordure supplémentaire
+semi-transparente de l'image caméra autour de la zone de travail, ce qui facilite le positionnement
+des pièces.
+
+![Vue caméra hors de la zone de travail](/screenshots/main-camera-outside-view.webp)
+
+- **Afficher hors de la zone de travail** active ou désactive la bordure. Elle est désactivée par
+  défaut et nécessite une caméra alignée.
+- **Marge** contrôle la distance dont la bordure dépasse de la zone de travail, jusqu'à 100 mm.
+- **Transparence** contrôle la visibilité de la bordure.
+
+Les zones que la caméra ne voit pas restent transparentes au lieu d'apparaître en noir, et la
+bordure s'arrête à la limite de ce que la caméra couvre réellement. Les objets dépassant au-dessus
+du lit, comme le portique, peuvent sembler décalés dans la bordure, car l'image caméra est alignée
+sur le plan du lit.
 
 ---
 
@@ -426,11 +451,12 @@ sudo lsof /dev/video0
 
 Rayforge prend en charge les caméras locales et les caméras réseau via des instantanés HTTP, des
 flux HTTP/MJPEG et RTSP. Les caméras locales sont détectées automatiquement ; les caméras réseau
-sont ajoutées en saisissant directement leur URL.
+sont ajoutées en saisissant directement leur URL. **Daemon camera** liste les caméras annoncées par
+un démon raydriver distant ; voir [Appareils distants](remote.md) pour configurer le démon.
 
 ### Ajouter une caméra réseau
 
-1. Ouvre **Machine → Paramètres de la machine → Caméra**.
+1. Ouvre **Machine → Paramètres actuels de la machine → Caméra**.
 2. Clique sur **+** et choisis **HTTP snapshot URL**, **HTTP stream URL** ou **RTSP stream**.
 3. Saisis un nom et l'URL, par exemple :
    - Instantané HTTP : `http://192.168.1.50:8080/media/getCapturePhoto`
@@ -439,7 +465,7 @@ sont ajoutées en saisissant directement leur URL.
 4. Active la caméra. Le flux devrait apparaître sur le canevas.
 
 Le profil de l'appareil Creality Falcon A1 Pro inclut une caméra HTTP snapshot préconfigurée et
-désactivée. Dans **Machine → Paramètres de la machine → Caméra**, sélectionne **Falcon A1 Pro
+désactivée. Dans **Machine → Paramètres actuels de la machine → Caméra**, sélectionne **Falcon A1 Pro
 Camera** et remplace `<laser-ip>` dans l'URL du champ **Source** par l'adresse IP accessible de la
 machine. Valide l'URL correcte avec **Entrée** ou en quittant le champ, puis active manuellement la
 caméra. Tu peux aussi utiliser l'adresse IP attribuée au Falcon sur ton réseau Wi-Fi.
@@ -448,6 +474,23 @@ Tu peux ensuite modifier le champ **Source** sans perdre le calibrage ni l'align
 l'URL désactive immédiatement la caméra. L'interrupteur reste indisponible jusqu'à ce qu'une URL
 valide soit appliquée ; réactive ensuite la caméra manuellement. Rayforge vérifie que le schéma de
 l'URL correspond au type de source (`http://`, `https://`, `rtsp://` ou `rtsps://`).
+
+### Ajouter une caméra du démon
+
+Utilise cette option lorsque la caméra est connectée à l'ordinateur qui exécute le démon raydriver
+plutôt qu'à ton ordinateur.
+
+1. Ouvre **Machine → Paramètres actuels de la machine → Caméra**.
+2. Clique sur **+** et choisis **Daemon camera** comme type de source.
+3. Sélectionne le démon. La liste contient les machines distantes configurées dans Rayforge.
+4. Sélectionne l'une des caméras annoncées par le démon. Rayforge remplit l'URL et le type de source
+   réseau correspondant.
+5. Active la caméra.
+
+Si aucun démon n'est listé, configure d'abord la machine distante ; voir
+[Appareils distants](remote.md).
+
+![Ajouter une caméra du démon](/screenshots/machine-settings-remote-camera.webp)
 
 ### Problèmes de connexion
 

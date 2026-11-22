@@ -9,5 +9,9 @@
   relevant page in `website/docs` and the matching page in every translated
   directory. Purely internal changes, refactors, and error-handling details do
   not need documentation
+- When a change alters UI that the docs show, regenerate the affected
+  screenshots: pick the matching target from the `TARGETS` registry in
+  `scripts/screenshot/cli.py` and run `pixi run screenshot <target>`; the
+  images are written to `website/static/screenshots`
 - Run `pixi run site-format` after editing website markdown so Prettier
   formatting stays consistent

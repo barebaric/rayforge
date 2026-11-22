@@ -9,51 +9,49 @@ on:
     # Trigger on pushes to the main branch to update existing docs
     branches:
       - main
+    paths:
+      - "website/**"
+      - "scripts/deploy_website.sh"
+      - "scripts/update_api_docs.py"
+      - "requirements.txt"
+      - "pixi.toml"
+      - "pixi.lock"
+      - ".github/workflows/website.yml"
   pull_request:
     # Trigger on pull requests targeting the main branch
     branches:
       - main
+    paths:
+      - "website/**"
+      - "scripts/deploy_website.sh"
+      - "scripts/update_api_docs.py"
+      - "requirements.txt"
+      - "pixi.toml"
+      - "pixi.lock"
+      - ".github/workflows/website.yml"
   # Allow manual runs from the Actions tab
   workflow_dispatch:
 
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
+concurrency:
+  group: website-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+permissions:
+  contents: read
+
+jobs:
+  version:
+    name: Determine version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+      rayforge_version: ${{ steps.get_version.outputs.rayforge_version }}
+      is_prerelease: ${{ steps.get_version.outputs.is_prerelease }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
           fetch-depth: 0 # Fetch all history for versioning
-
-      - name: Set up Pixi
-        uses: prefix-dev/setup-pixi@v0.10.2
-        with:
-          pixi-version: v0.68.1
-          frozen: true
-          cache: true
-
-      - name: Configure Git
-        run: |
-          git config user.name github-actions
-          git config user.email github-actions@github.com
-
-      - name: Install website dependencies
-        run: pixi run --frozen -e website site-install
-
-      - name: Build documentation for PR Preview
-        if: github.event_name == 'pull_request'
-        run: pixi run --frozen -e website site-build
-
-      - name: Upload artifact for pull request review
-        if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v7
-        with:
-          name: docs-preview
-          path: website/build/
-          retention-days: 7
 
       - name: Determine Version
         id: get_version
@@ -72,11 +70,89 @@ jobs:
             echo "Found latest version to update: $VERSION_NAME"
           fi
           echo "version=$VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "rayforge_version=${VERSION_NAME#v}" >> "$GITHUB_OUTPUT"
           if [[ "$VERSION_NAME" =~ ^[0-9]+\.[0-9]+\.[0-9]+- ]]; then
             echo "is_prerelease=true" >> "$GITHUB_OUTPUT"
           else
             echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
           fi
+
+  build:
+    name: Build ${{ matrix.locale }}
+    needs: version
+    runs-on: ubuntu-latest
+    env:
+      RAYFORGE_VERSION: ${{ needs.version.outputs.rayforge_version }}
+      IS_PRERELEASE: ${{ needs.version.outputs.is_prerelease }}
+    strategy:
+      matrix:
+        locale: [en, pt-BR, es, fr, hi, de, zh-CN, uk]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Pixi
+        uses: prefix-dev/setup-pixi@v0.11.3
+        with:
+          pixi-version: v0.68.1
+          frozen: true
+          cache: true
+          environments: website
+          cache-key: pixi-website-${{ runner.os }}-${{ hashFiles('pixi.lock') }}
+
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-website-${{ runner.os }}-${{ hashFiles('website/package-lock.json') }}
+          restore-keys: |
+            npm-website-${{ runner.os }}-
+
+      - name: Install website dependencies
+        run: pixi run --frozen -e website site-install-ci
+
+      - name: Cache Docusaurus build
+        uses: actions/cache@v4
+        with:
+          path: website/node_modules/.cache/rspack
+          key: docusaurus-${{ runner.os }}-${{ matrix.locale }}-${{ hashFiles('website/package-lock.json', 'website/docusaurus.config.js') }}-${{ github.sha }}
+          restore-keys: |
+            docusaurus-${{ runner.os }}-${{ matrix.locale }}-${{ hashFiles('website/package-lock.json', 'website/docusaurus.config.js') }}-
+
+      - name: Build ${{ matrix.locale }}
+        run: pixi run --frozen -e website site-build --locale ${{ matrix.locale }}
+
+      - name: Upload ${{ matrix.locale }} build
+        uses: actions/upload-artifact@v7
+        with:
+          name: website-build-${{ matrix.locale }}
+          path: website/build/
+          retention-days: 1
+
+  deploy:
+    name: Merge and deploy
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # Fetch all history for versioning
+
+      - name: Download built locales
+        uses: actions/download-artifact@v8
+        with:
+          pattern: website-build-*
+          path: website/build
+          merge-multiple: true
+
+      - name: Upload artifact for pull request review
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v7
+        with:
+          name: docs-preview
+          path: website/build/
+          retention-days: 7
 
       - name: Configure SSH
         if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.repository == 'barebaric/rayforge'
@@ -91,9 +167,10 @@ jobs:
       - name: Deploy Website
         if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.repository == 'barebaric/rayforge'
         env:
-          DEPLOY_VERSION: ${{ steps.get_version.outputs.version }}
+          DEPLOY_VERSION: ${{ needs.version.outputs.version }}
           DEPLOY_REPO_URL: git@github.com:barebaric/rayforge-website.git
           DEPLOY_BRANCH: main
           IS_TAGGED_RELEASE: ${{ github.ref_type == 'tag' }}
-          IS_PRERELEASE: ${{ steps.get_version.outputs.is_prerelease }}
-        run: pixi run --frozen -e website site-deploy
+          IS_PRERELEASE: ${{ needs.version.outputs.is_prerelease }}
+          SKIP_BUILD: "1"
+        run: bash scripts/deploy_website.sh

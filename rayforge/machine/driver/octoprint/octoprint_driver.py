@@ -11,6 +11,7 @@ from typing import (
 )
 
 import aiohttp
+from raydriver.core.discovery.spec import DiscoverySpec, MdnsRecognizer
 from raygeo.ops.axis import Axis
 
 from ....context import RayforgeContext
@@ -24,7 +25,6 @@ from ....core.varset.hostnamevar import is_valid_hostname_or_ip
 from ....core.varset.var import Var
 from ....pipeline.encoder.base import EncodedOutput, OpsEncoder
 from ....pipeline.encoder.gcode import GcodeEncoder
-from ...discovery.spec import DiscoverySpec, MdnsRecognizer
 from ...transport import TransportStatus
 from ..driver import (
     DeviceConnectionError,
@@ -66,6 +66,19 @@ _STATE_MAP: dict[str, DeviceStatus] = {
 _POLL_INTERVAL = 2.0
 _RECONNECT_INTERVAL = 5.0
 _WS_PING_INTERVAL = 30.0
+
+
+class OctoPrintHTTPError(DeviceConnectionError):
+    """Raised when OctoPrint answers with an HTTP error status.
+
+    The server was reached and answered, so this is not a connection
+    failure even though it derives from ``DeviceConnectionError`` for
+    the callers that treat any failed request alike.
+    """
+
+    def __init__(self, status: int, message: str):
+        self.status = status
+        super().__init__(message)
 
 
 def _normalize_path_prefix(path: str) -> str:
@@ -200,7 +213,7 @@ class OctoPrintDriver(Driver):
             vars=[
                 HostnameVar(
                     key="host",
-                    label=_("Hostname"),
+                    label=_("Hostname or IP address"),
                     description=_(
                         "IP address or hostname of the OctoPrint server"
                     ),
@@ -359,6 +372,11 @@ class OctoPrintDriver(Driver):
                 },
             )
             return data
+        except aiohttp.ClientResponseError as e:
+            msg = _(
+                "OctoPrint rejected {method} {path} with HTTP {status}."
+            ).format(method=method, path=path, status=e.status)
+            raise OctoPrintHTTPError(e.status, msg) from e
         except aiohttp.ClientError as e:
             msg = _(
                 "Could not connect to OctoPrint at "
@@ -452,32 +470,15 @@ class OctoPrintDriver(Driver):
                     ws_url,
                     heartbeat=_WS_PING_INTERVAL,
                 ) as ws:
-                    msg = await ws.receive()
-                    if msg.type != aiohttp.WSMsgType.TEXT:
-                        raise DeviceConnectionError(
-                            _("Unexpected WebSocket frame.")
-                        )
-
-                    if msg.data == "o":
-                        if self._session_key and self._user_name:
-                            auth_inner = json.dumps(
-                                {
-                                    "auth": (
-                                        f"{self._user_name}:"
-                                        f"{self._session_key}"
-                                    )
-                                }
-                            )
-                            await ws.send_str(json.dumps([auth_inner]))
-                    elif msg.data.startswith("c["):
-                        raise DeviceConnectionError(
-                            _("Server closed WebSocket connection.")
-                        )
-
+                    await self._authenticate_socket(ws)
                     self._update_connection_status(TransportStatus.CONNECTED)
 
                     async for msg in ws:
                         if msg.type == aiohttp.WSMsgType.TEXT:
+                            if msg.data.startswith("c["):
+                                raise DeviceConnectionError(
+                                    _("Server closed WebSocket connection.")
+                                )
                             self._process_sockjs_frame(msg.data)
                         elif msg.type in (
                             aiohttp.WSMsgType.CLOSED,
@@ -489,36 +490,75 @@ class OctoPrintDriver(Driver):
             except aiohttp.ClientError as e:
                 raise DeviceConnectionError(str(e)) from e
 
+    async def _authenticate_socket(
+        self, ws: aiohttp.ClientWebSocketResponse
+    ) -> None:
+        """Authenticates the push socket.
+
+        ``/sockjs/websocket`` is SockJS's raw WebSocket transport. It
+        sends no ``o`` open frame and uses no framing, so the ``auth``
+        message must be sent right after connecting. Without it
+        OctoPrint withholds status updates because the anonymous
+        socket lacks the ``STATUS`` permission, which leaves the
+        driver stuck at ``UNKNOWN``.
+        """
+        if not (self._session_key and self._user_name):
+            return
+        auth = f"{self._user_name}:{self._session_key}"
+        await ws.send_str(json.dumps({"auth": auth}))
+
     def _process_sockjs_frame(self, data: str) -> None:
         if data == "o" or data == "h":
             return
         if data.startswith("c["):
             logger.info("SockJS close frame received")
             return
-        if not data.startswith("a["):
-            return
-
-        try:
-            messages = json.loads(data[1:])
-        except json.JSONDecodeError:
-            return
-
-        for raw_msg in messages:
-            if not isinstance(raw_msg, str):
-                continue
+        if data.startswith("a["):
             try:
-                payload = json.loads(raw_msg)
+                messages = json.loads(data[1:])
             except json.JSONDecodeError:
-                continue
+                return
+            for raw_msg in messages:
+                payload = self._decode_push_message(raw_msg)
+                if payload is not None:
+                    self._process_push_message(payload)
+            return
+
+        payload = self._decode_push_message(data)
+        if payload is not None:
             self._process_push_message(payload)
 
+    @staticmethod
+    def _decode_push_message(raw_msg: Any) -> dict[str, Any] | None:
+        """Decodes a push payload.
+
+        The raw SockJS WebSocket transport delivers message objects
+        as JSON text (``{"current": ...}``), while the SockJS
+        protocol wraps them in a batch (``a[{"current": ...}]``)
+        whose elements may be objects or pre-encoded JSON strings.
+        Accept all of these forms.
+        """
+        if isinstance(raw_msg, dict):
+            return raw_msg
+        if not isinstance(raw_msg, str):
+            return None
+        try:
+            payload = json.loads(raw_msg)
+        except json.JSONDecodeError:
+            return None
+        if isinstance(payload, dict):
+            return payload
+        return None
+
     def _process_push_message(self, payload: dict[str, Any]) -> None:
-        if "current" in payload:
-            self._handle_current_update(payload["current"])
-        elif "history" in payload:
-            self._handle_current_update(payload["history"])
-        elif "event" in payload:
-            self._handle_event(payload["event"])
+        for key in ("current", "history"):
+            data = payload.get(key)
+            if isinstance(data, dict):
+                self._handle_current_update(data)
+                return
+        event = payload.get("event")
+        if isinstance(event, dict):
+            self._handle_event(event)
 
     def _handle_current_update(self, data: dict[str, Any]) -> None:
         state = data.get("state")
@@ -602,6 +642,8 @@ class OctoPrintDriver(Driver):
                                 success="Error" not in job_state
                             )
 
+            except OctoPrintHTTPError as e:
+                logger.warning(f"Polling error: {e}")
             except DeviceConnectionError:
                 raise
             except (aiohttp.ClientError, ValueError) as e:
@@ -799,11 +841,19 @@ class OctoPrintDriver(Driver):
             )
 
     async def cancel(self, emergency: bool = False) -> None:
-        await self._api_request(
-            "POST",
-            "/api/job",
-            json={"command": "cancel"},
-        )
+        try:
+            await self._api_request(
+                "POST",
+                "/api/job",
+                json={"command": "cancel"},
+            )
+        except OctoPrintHTTPError as e:
+            if e.status != 409:
+                raise
+            logger.info(
+                "OctoPrint has no active job to cancel",
+                extra=self._log_extra("MACHINE_EVENT"),
+            )
         self._job_active = False
         self._job_done_event.set()
         self.job_finished.send(self)

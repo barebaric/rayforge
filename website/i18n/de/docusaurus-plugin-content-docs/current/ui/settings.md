@@ -16,6 +16,11 @@ oder persönliche Vorliebe anzupassen. Du kannst auch **Operationsfarben** konfi
 ob die Laserfarbe oder die Ebenenfarbe zur visuellen Unterscheidung auf der Arbeitsfläche verwendet
 wird.
 
+**Shop-Modus** ersetzt den Steuerungs-Tab im unteren Panel durch eine touchfreundliche
+Bedienoberfläche: große Positionsanzeigen pro Achse mit Null-Tasten, eine Offsets-Karte, übergroße
+Jog-Geschwindigkeits-/Schrittweiten-Stepper und ein Raster großer Jog- und Job-Tasten. Gedacht für
+die Bedienung direkt an der Maschine; standardmäßig deaktiviert.
+
 ### Einheiten
 
 Konfiguriere die in der gesamten Anwendung verwendeten Anzeigeeinheiten. Du kannst separate
@@ -31,6 +36,18 @@ Symbolleisten-Schaltfläche auslösen.
 
 Rayforge kann beim Start **automatisch nach Updates suchen**. Wenn aktiviert, wirst du
 benachrichtigt, wenn eine neue Version verfügbar ist.
+
+Rayforge kann beim Start außerdem **automatisch nach Addon-Updates suchen**. Das Deaktivieren
+verhindert keine manuellen Prüfungen auf der Addons-Seite.
+
+Ist **Importierte Dateien beobachten** aktiviert, überwacht Rayforge die Dateien hinter importierten
+Werkstücken und bietet an, sie neu zu laden, wenn sie sich auf der Festplatte ändern. Details
+findest du unter
+[Importierte Dateien synchron halten](../files/importing.md#importierte-dateien-synchron-halten).
+
+Mit **Schlaf während Jobs verhindern** blockiert Rayforge den automatischen Systemschlaf, während
+ein Job läuft, damit die Verbindung zur Maschine nicht getrennt wird. Ein manuelles Suspendieren
+oder das Schließen des Deckels funktioniert weiterhin.
 
 Du kannst auch das **Startverhalten** konfigurieren — mit einem leeren Arbeitsbereich starten, das
 letzte Projekt erneut öffnen oder immer eine bestimmte Projektdatei öffnen. Beachte, dass auf der
@@ -72,7 +89,7 @@ Der Einstellungsdialog enthält weitere Seiten zur Verwaltung anderer Teile der 
 verfügt über eine eigene Dokumentation:
 
 - [Maschinen](../application-settings/machines.md) — Maschinen hinzufügen, entfernen und
-  konfigurieren
+  konfigurieren (auch über **Maschine → Manage Machines…** erreichbar)
 - [Materialien](../application-settings/materials.md) — Materialbibliotheken verwalten
 - [Rezepte](../application-settings/recipes.md) — gespeicherte Operationsrezepte verwalten
 - [Farbregeln](../application-settings/color-rules.md) — SVG-Farben Schritttypen zuordnen

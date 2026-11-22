@@ -1,6 +1,18 @@
 name: ai_workpiece_generator
 display_name: "AI Workpiece Generator"
 description: "Generate workpieces using AI directly within Rayforge"
+long_description: |
+  Create laser-ready vector designs from text descriptions using AI.
+
+  - Describe a shape, for example "a gear with 8 teeth", and get a
+    workpiece on the canvas
+  - Specify the dimensions in millimeters
+  - Works with your configured AI provider
+
+  Find it in the **Tools** menu. Be specific in your prompts: simple
+  geometric designs with clear details work best.
+screenshots:
+  - website/static/screenshots/addon-ai-workpiece-generator.webp
 api_version: 18
 requires:
   - sketcher

@@ -1,15 +1,15 @@
 from unittest.mock import MagicMock
 
 import pytest
-from sketcher.core.commands import AddItemsCommand
-from sketcher.core.constraints import (
+from raygeo.sketch.constraints import (
     CoincidentConstraint,
     PointOnCurveConstraint,
     PointOnLineConstraint,
 )
-from sketcher.core.params import ParameterContext
-from sketcher.core.selection import SketchSelection
+from raygeo.sketch.params import ParameterContext
+from sketcher.core.commands import AddItemsCommand
 from sketcher.core.sketch import Sketch
+from sketcher.selection import SketchSelection
 from sketcher.ui_gtk.tools import CoincidentConstraintTool
 
 
@@ -19,7 +19,7 @@ def bezier_env():
     start = sketch.add_point(0, 0, fixed=True)
     end = sketch.add_point(10, 0, fixed=True)
     bezier_id = sketch.registry.add_bezier(
-        start_idx=start, end_idx=end, cp1=(0.0, 10.0), cp2=(0.0, 10.0)
+        start=start, end=end, cp1=(0.0, 10.0), cp2=(0.0, 10.0)
     )
     return sketch, start, end, bezier_id
 

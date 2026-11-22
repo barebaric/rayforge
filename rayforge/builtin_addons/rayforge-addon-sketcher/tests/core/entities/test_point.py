@@ -1,9 +1,9 @@
 import math
 
-from sketcher.core.entities import Point
-from sketcher.core.entities.bezier import Bezier
-from sketcher.core.entities.point import WaypointType
-from sketcher.core.registry import EntityRegistry
+from raygeo.sketch.entities import Bezier
+from raygeo.sketch.entities import SketchPoint as Point
+from raygeo.sketch.registry import EntityRegistry
+from raygeo.sketch.types import WaypointType
 
 
 def test_point_instantiation():
@@ -126,7 +126,9 @@ def test_point_apply_constraint_symmetric():
 
     pt2.apply_constraint(registry, b1, cp_index=2)
 
-    assert b2.cp1 == (-5.0, -3.0)
+    result = registry.get_entity(b2_id)
+    assert isinstance(result, Bezier)
+    assert result.cp1 == (-5.0, -3.0)
 
 
 def test_point_apply_constraint_smooth():
@@ -152,14 +154,16 @@ def test_point_apply_constraint_smooth():
 
     pt2.apply_constraint(registry, b1, cp_index=2)
 
-    assert b2.cp1 is not None
+    result = registry.get_entity(b2_id)
+    assert isinstance(result, Bezier)
+    assert result.cp1 is not None
 
     expected_length = math.sqrt(2.0**2 + 4.0**2)
-    actual_length = math.sqrt(b2.cp1[0] ** 2 + b2.cp1[1] ** 2)
+    actual_length = math.sqrt(result.cp1[0] ** 2 + result.cp1[1] ** 2)
     assert abs(actual_length - expected_length) < 0.001
 
-    assert b2.cp1[0] < 0
-    assert b2.cp1[1] < 0
+    assert result.cp1[0] < 0
+    assert result.cp1[1] < 0
 
 
 def test_point_apply_constraint_sharp_noop():
@@ -184,4 +188,6 @@ def test_point_apply_constraint_sharp_noop():
 
     pt2.apply_constraint(registry, b1, cp_index=2)
 
-    assert b2.cp1 is None
+    result = registry.get_entity(b2_id)
+    assert isinstance(result, Bezier)
+    assert result.cp1 is None

@@ -33,6 +33,7 @@ class WorkpieceRow(Gtk.Box):
         self._on_rename = on_rename
         self._rename_entry = None
         self._rename_click_controller = None
+        self._closing_rename = False
         self.set_margin_start(6)
         self.set_margin_end(6)
         self.set_margin_top(4)
@@ -59,10 +60,10 @@ class WorkpieceRow(Gtk.Box):
 
         self._update_ui()
 
-        workpiece.updated.connect(self._on_workpiece_updated)
+        workpiece.renamed.connect(self._on_workpiece_renamed)
 
     def do_destroy(self):
-        self.workpiece.updated.disconnect(self._on_workpiece_updated)
+        self.workpiece.renamed.disconnect(self._on_workpiece_renamed)
         self._remove_rename_click_controller()
 
     def get_drag_content(self) -> Gdk.ContentProvider:
@@ -86,7 +87,7 @@ class WorkpieceRow(Gtk.Box):
     def _update_ui(self):
         self.name_label.set_text(self._get_display_name())
 
-    def _on_workpiece_updated(self, sender, **kwargs):
+    def _on_workpiece_renamed(self, sender):
         self._update_ui()
 
     def _on_drag_prepare(self, drag_source, x, y):
@@ -108,6 +109,10 @@ class WorkpieceRow(Gtk.Box):
         if self.workpiece.geometry_provider_uid:
             return
         self.start_rename()
+
+    def is_renaming(self) -> bool:
+        """Whether the row's in-place name editor is currently active."""
+        return self._rename_entry is not None
 
     def start_rename(self):
         """Starts in-place editing of the item name."""
@@ -174,29 +179,40 @@ class WorkpieceRow(Gtk.Box):
         self._finish_rename(entry)
 
     def _on_rename_focus_out(self, *args):
+        if self._closing_rename:
+            return
         self._finish_rename(self._rename_entry)
 
     def _cancel_rename(self):
-        if self._rename_entry is None:
+        if self._rename_entry is None or self._closing_rename:
             return
-        self._replace_name_widget()
-        self._update_ui()
+        self._closing_rename = True
+        try:
+            self._replace_name_widget()
+            self._update_ui()
+        finally:
+            self._closing_rename = False
 
     def _finish_rename(self, entry):
-        if self._rename_entry is None:
+        if self._rename_entry is None or self._closing_rename:
             return
-        new_name = entry.get_text().strip()
-        self._replace_name_widget()
-        if new_name and new_name != self.workpiece.name:
-            if self._on_rename:
-                self._on_rename(self.workpiece, new_name)
-            else:
-                self._update_ui()
+        self._closing_rename = True
+        try:
+            new_name = entry.get_text().strip()
+            self._replace_name_widget()
+            if new_name and new_name != self.workpiece.name:
+                if self._on_rename:
+                    self._on_rename(self.workpiece, new_name)
+                else:
+                    self._update_ui()
+        finally:
+            self._closing_rename = False
 
     def _replace_name_widget(self):
-        if self._rename_entry is None:
+        entry = self._rename_entry
+        if entry is None:
             return
-        self._remove_rename_click_controller()
-        self.remove(self._rename_entry)
         self._rename_entry = None
+        self._remove_rename_click_controller()
+        self.remove(entry)
         self.append(self.name_label)

@@ -1,14 +1,15 @@
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Union
 
+from raygeo.sketch.entities import Bezier, Entity, Line
+from raygeo.sketch.entities import SketchPoint as Point
+from raygeo.sketch.types import EntityID, WaypointType
+
 from ...core.commands import SetWaypointTypeCommand
-from ...core.entities import Bezier, Entity, Line, Point
-from ...core.entities.point import WaypointType
-from ...core.types import EntityID
 from .base import SketchTool
 
 if TYPE_CHECKING:
-    from ...core.constraints import Constraint
+    from raygeo.sketch.constraints import Constraint
 
 
 class WaypointSharpTool(SketchTool):
@@ -51,7 +52,7 @@ class WaypointSharpTool(SketchTool):
 
     def _is_waypoint_at_bezier(self, pid: EntityID) -> bool:
         sketch = self.element.sketch
-        for entity in sketch.registry.entities:
+        for entity in sketch.registry.entities():
             if isinstance(entity, Bezier) and pid in (
                 entity.start_idx,
                 entity.end_idx,
@@ -61,7 +62,7 @@ class WaypointSharpTool(SketchTool):
 
     def _is_waypoint_at_line(self, pid: EntityID) -> bool:
         sketch = self.element.sketch
-        for entity in sketch.registry.entities:
+        for entity in sketch.registry.entities():
             if isinstance(entity, Line) and pid in (
                 entity.p1_idx,
                 entity.p2_idx,

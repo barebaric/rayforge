@@ -4,12 +4,42 @@ hookspec = pluggy.HookspecMarker("rayforge")
 hookimpl = pluggy.HookimplMarker("rayforge")
 
 MINIMUM_API_VERSION = 16
-PLUGIN_API_VERSION = 21
+PLUGIN_API_VERSION = 24
 
 
 """
 API Changelog
 =============
+
+Version 24
+----------
+Added the job monitoring hooks ``on_job_started``, ``on_job_updated``,
+``on_job_paused``, ``on_job_resumed``, and ``on_job_finished``. Addons
+receive ``JobStatus`` snapshots
+(``rayforge.machine.job_status.JobStatus``) describing the running
+job; ``on_job_updated`` is rate-limited to roughly one call per
+second and all handlers run on the main thread. The latest snapshot
+is also available via ``Machine.current_job``.
+
+Version 23
+----------
+Added the ``register_image_edits`` hook and the global
+``image_edit_registry`` (``rayforge.core.image_edit``). Addons register
+``ImageEditOp`` subclasses there; a workpiece applies its
+``image_edits`` stack in ``WorkPiece.get_processed_image()``.
+``WorkPiece.get_vips_image()`` is now the private
+``_get_vips_image()`` and returns the unedited render; callers that
+want what the user sees use ``get_processed_image()``.
+
+Version 22
+----------
+``action_registry.register()`` accepts an ``enabled_when`` predicate that
+receives the ``ActionManager`` and is evaluated on every action state
+update. Addons that used ``action_extension_registry`` only to enable and
+disable their action can now register directly in the
+``register_actions`` hook. That hook is also invoked again when an addon
+is enabled while the window exists, so runtime-enabled addons no longer
+need ``action_extension_registry`` to have their actions created.
 
 Version 21
 ----------
@@ -234,6 +264,17 @@ class RayforgeSpecs:
         """
 
     @hookspec
+    def register_image_edits(self, image_edit_registry):
+        """
+        Called to allow addons to register image editing operations.
+
+        .. versionadded:: 22
+
+        Args:
+            image_edit_registry: The global ImageEditRegistry instance.
+        """
+
+    @hookspec
     def register_transformers(self, transformer_registry):
         """
         Called to allow addons to register custom ops transformers.
@@ -448,4 +489,76 @@ class RayforgeSpecs:
 
         Args:
             main_window: The MainWindow instance.
+        """
+
+    @hookspec
+    def on_job_started(self, status):
+        """
+        Called when a job starts executing on a machine.
+
+        Fired for send and frame jobs alike; check ``status.kind`` to
+        distinguish them. Handlers run on the main thread and must
+        return quickly.
+
+        .. versionadded:: 24
+
+        Args:
+            status: A ``rayforge.machine.job_status.JobStatus``
+              snapshot of the new job.
+        """
+
+    @hookspec
+    def on_job_updated(self, status):
+        """
+        Called with progress updates while a job is running.
+
+        Rate-limited to roughly one call per second. Handlers run on
+        the main thread and must return quickly.
+
+        .. versionadded:: 24
+
+        Args:
+            status: A ``rayforge.machine.job_status.JobStatus``
+              snapshot.
+        """
+
+    @hookspec
+    def on_job_paused(self, status):
+        """
+        Called when the running job enters a feed hold.
+
+        .. versionadded:: 24
+
+        Args:
+            status: A ``rayforge.machine.job_status.JobStatus``
+              snapshot.
+        """
+
+    @hookspec
+    def on_job_resumed(self, status):
+        """
+        Called when a paused job resumes execution.
+
+        .. versionadded:: 24
+
+        Args:
+            status: A ``rayforge.machine.job_status.JobStatus``
+              snapshot.
+        """
+
+    @hookspec
+    def on_job_finished(self, status, outcome, message=""):
+        """
+        Called when a job finishes, regardless of how it ended.
+
+        .. versionadded:: 24
+
+        Args:
+            status: The final ``rayforge.machine.job_status.JobStatus``
+              snapshot. For completed jobs the progress fraction is
+              forced to 1.0.
+            outcome: A ``rayforge.machine.job_status.JobOutcome``
+              member: COMPLETED, CANCELLED, or FAILED.
+            message: Error details when outcome is FAILED, else an
+              empty string.
         """

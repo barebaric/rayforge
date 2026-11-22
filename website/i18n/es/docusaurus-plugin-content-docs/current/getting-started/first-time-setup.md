@@ -15,16 +15,16 @@ de una conexión.
 Inicia Rayforge desde el menú de aplicaciones o ejecutando `rayforge` en una terminal. En el primer
 inicio — cuando aún no se ha configurado ninguna máquina real — el asistente de configuración se
 abre automáticamente para que puedas configurar tu máquina sin buscar en los menús. (Siempre puedes
-abrirlo después desde **Configuración → Máquinas → Add Machine**.)
+abrirlo después desde **Máquina → Manage Machines…** y hacer clic en **Add Machine**.)
 
 ## Paso 2: Crear una Máquina con el Asistente
 
-Ve a **Configuración → Máquinas** o presiona <kbd>ctrl+coma</kbd> para abrir el diálogo de
-configuración, luego selecciona la página **Máquinas**.
+Abre **Máquina → Manage Machines…** en la ventana principal (o presiona <kbd>ctrl+coma</kbd> y abre
+la página **Máquinas**) y haz clic en **Add Machine**.
 
 ![Configuración de Máquina](/screenshots/app-settings-machines.webp)
 
-Haz clic en **Add Machine** para abrir el selector de máquinas.
+El selector de máquinas se abre con los perfiles de dispositivo integrados.
 
 ![Diálogo de Add Machine](/screenshots/app-settings-machines-add.webp)
 
@@ -49,8 +49,8 @@ El asistente puede descubrir dispositivos por ti en lugar de requerir que elijas
 y completes todo manualmente:
 
 - **Dispositivos serie USB** se listan a medida que aparecen.
-- **Dispositivos de red** se descubren vía mDNS: servidores OctoPrint y placas ESP3D aparecen junto
-  a dispositivos serie USB.
+- **Dispositivos de red** se descubren vía mDNS: servidores OctoPrint, placas ESP3D y placas grblHAL
+  que anuncian `_telnet._tcp` aparecen junto a dispositivos serie USB.
 - Los dispositivos descubridos se **emparejan con perfiles integrados** cuando se encuentra una
   coincidencia segura, por lo que a menudo solo puedes confirmar los ajustes detectados en lugar de
   introducirlos.
@@ -58,6 +58,13 @@ y completes todo manualmente:
   compilación del firmware, y OctoPrint/Smoothieware se sondean a través de la red.
 - Los dispositivos que ya has configurado se muestran como **solo lectura** para que no crees
   duplicados accidentalmente.
+
+- **Las placas grblHAL por telnet** se confirman con el comando de información de compilación `$I`
+  antes de listarlas. Las placas cuya firmware no se anuncia por mDNS se encuentran mediante un
+  escaneo de subred acotado (solo puerto telnet, concurrencia limitada) que se ejecuta junto a los
+  escaneos serie y mDNS.
+
+![Asistente — Descubrir dispositivos](/screenshots/config-wizard-discover.webp)
 
 Haz clic en un dispositivo descubierto para rellenar previamente el asistente, o elige un punto de
 partida manualmente como se describe a continuación.

@@ -210,6 +210,21 @@ def test_signal_triggers_debounced_rebuild(isolated_machine):
     ctrl.shutdown()
 
 
+def test_rename_does_not_rebuild(isolated_machine):
+    """A rename fires ``renamed``, which the controller never
+    subscribes to, so no rebuild may be scheduled."""
+    step = _TestStep(name="s1")
+    wp = WorkPiece(name="wp")
+    doc = _make_doc(step, wp)
+    tm = FakeTaskManager()
+    ctrl = IntentController(doc, tm, machine=isolated_machine)
+    ctrl.connect()
+
+    wp.name = "renamed"
+    assert tm.delayed == []
+    ctrl.shutdown()
+
+
 def test_second_change_reschedules_debounce(isolated_machine):
     step = _TestStep(name="s1")
     wp = WorkPiece(name="wp")
@@ -226,6 +241,28 @@ def test_second_change_reschedules_debounce(isolated_machine):
     assert timer.cancelled
     assert len(tm.delayed) == 2
     tm.fire_latest()
+    assert ctrl.generation_id == 1
+    ctrl.shutdown()
+
+
+def test_force_rebuild_clears_stale_state(isolated_machine):
+    """An explicit rebuild must clear stale data even when automatic
+    rebuilds are disabled, so export is re-enabled after recalculation.
+    """
+    step = _TestStep(name="s1")
+    wp = WorkPiece(name="wp")
+    doc = _make_doc(step, wp)
+    tm = FakeTaskManager()
+    ctrl = IntentController(doc, tm, machine=isolated_machine)
+    ctrl.connect()
+    ctrl.auto_rebuild = False
+
+    wp.updated.send(wp)
+    assert ctrl.is_data_stale
+
+    ctrl.force_rebuild()
+
+    assert not ctrl.is_data_stale
     assert ctrl.generation_id == 1
     ctrl.shutdown()
 

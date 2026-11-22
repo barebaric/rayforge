@@ -7,16 +7,18 @@ from typing import TYPE_CHECKING
 from raygeo.geo.shape.arc import get_arc_direction
 from raygeo.geo.shape.circle import project_point_onto_circle
 from raygeo.geo.types import Point as GeoPoint
+from raygeo.sketch.constraints import EqualDistanceConstraint, RadiusConstraint
+from raygeo.sketch.entities import Arc
+from raygeo.sketch.entities import SketchPoint as Point
+from raygeo.sketch.types import EntityID
 
-from ..constraints import EqualDistanceConstraint, RadiusConstraint
-from ..entities import Arc, Point
-from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData
 from .items import AddItemsCommand
 
 if TYPE_CHECKING:
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
+
     from ..sketch import Sketch
 
 
@@ -51,6 +53,11 @@ class ArcPreviewState(PreviewState):
         if self.temp_end_id is not None:
             result.add(self.temp_end_id)
         return result
+
+    def get_preview_entity_ids(self) -> set[EntityID]:
+        if self.temp_entity_id is None:
+            return set()
+        return {self.temp_entity_id}
 
     @property
     def has_start_point(self) -> bool:
@@ -361,17 +368,10 @@ class ArcCommand(SketchChangeCommand):
             except IndexError:
                 pass
 
-            registry.entities = [
-                e
-                for e in registry.entities
-                if e.id != preview_state.temp_entity_id
-            ]
-            registry._entity_map = {e.id: e for e in registry.entities}
+            registry.remove_entities([preview_state.temp_entity_id])
 
         if preview_state.temp_end_id is not None:
-            registry.points = [
-                p for p in registry.points if p.id != preview_state.temp_end_id
-            ]
+            registry.remove_points([preview_state.temp_end_id])
 
     @staticmethod
     def cleanup_center_preview(
@@ -421,7 +421,7 @@ class ArcCommand(SketchChangeCommand):
             if projected:
                 final_x, final_y = projected
 
-            temp_id = registry._id_counter
+            temp_id = registry.next_id()
             end_pid = temp_id
             new_point = Point(temp_id, final_x, final_y)
 
@@ -432,7 +432,7 @@ class ArcCommand(SketchChangeCommand):
                 self.sketch.remove_point_if_unused(self.start_id)
             return
 
-        temp_arc_id = registry._id_counter + (1 if new_point else 0)
+        temp_arc_id = registry.next_id() + (1 if new_point else 0)
         new_arc = Arc(
             temp_arc_id,
             self.start_id,
@@ -457,7 +457,7 @@ class ArcCommand(SketchChangeCommand):
         if self.is_center_temp:
             try:
                 p = registry.get_point(self.center_id)
-                registry.points.remove(p)
+                registry.remove_points([p.id])
                 points_to_add.append(p)
             except (IndexError, ValueError):
                 pass
@@ -465,7 +465,7 @@ class ArcCommand(SketchChangeCommand):
         if self.is_start_temp:
             try:
                 p = registry.get_point(self.start_id)
-                registry.points.remove(p)
+                registry.remove_points([p.id])
                 points_to_add.append(p)
             except (IndexError, ValueError):
                 pass

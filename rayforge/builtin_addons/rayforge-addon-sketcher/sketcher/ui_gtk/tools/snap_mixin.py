@@ -1,24 +1,26 @@
+import logging
 import os
 from typing import TYPE_CHECKING, Any
 
 import cairo
 from raygeo.geo.types import Point as GeoPoint
-
-from ...core.constraints import (
+from raygeo.sketch.constraints import (
     CoincidentConstraint,
     HorizontalConstraint,
     PointOnLineConstraint,
     SymmetryConstraint,
     VerticalConstraint,
 )
-from ...core.entities import Arc, Circle, Line, Point
-from ...core.snap import (
+from raygeo.sketch.entities import Arc, Circle, Line
+from raygeo.sketch.entities import SketchPoint as Point
+from raygeo.sketch.snap import (
     SNAP_LINE_STYLES,
     DragContext,
     SnapLineType,
     SnapResult,
 )
-from ...core.snap.types import SnapLineStyle
+from raygeo.sketch.snap.types import SnapLineStyle
+
 from .base import SketcherKey
 
 if TYPE_CHECKING:
@@ -29,6 +31,8 @@ DEBUG_SNAPPING = os.environ.get("DEBUG_SNAPPING", "").lower() in (
     "true",
     "yes",
 )
+
+logger = logging.getLogger(__name__)
 
 
 class SnapMixin:
@@ -92,10 +96,22 @@ class SnapMixin:
             self.current_snap_result = None
             return (model_x, model_y)
 
+        get_preview_state = getattr(self, "get_preview_state", None)
+        preview_state = (
+            get_preview_state() if get_preview_state is not None else None
+        )
+        preview_entities = (
+            preview_state.get_preview_entity_ids()
+            if preview_state is not None
+            else set()
+        )
+
         context = DragContext(
             dragged_point_ids=exclude_points or set(),
             dragged_entity_ids=set(),
+            preview_entity_ids=preview_entities,
             initial_positions={},
+            suppress_coincident_points=False,
         )
 
         snap_result = self._query_snap_engine(
@@ -163,9 +179,20 @@ class SnapMixin:
             scale_x, _ = element.canvas.view_transform.get_scale()
             if scale_x > 0:
                 element.snap_engine.threshold = 5.0 / scale_x
-        return element.snap_engine.query(
+        snap_result = element.snap_engine.query(
             element.sketch.registry, position, context
         )
+        if snap_result.primary_snap_point is not None:
+            sp = snap_result.primary_snap_point
+            source = sp.source.id if sp.source is not None else None
+            logger.debug(
+                "Snap: %s at (%.2f, %.2f) source=%s",
+                sp.line_type.name,
+                sp.x,
+                sp.y,
+                source,
+            )
+        return snap_result
 
     def build_snap_constraints(
         self,
@@ -259,26 +286,57 @@ class SnapMixin:
                         max(ec.p1, ec.p2),
                     )
                 )
+            elif isinstance(ec, CoincidentConstraint):
+                seen.add(
+                    (
+                        "CoincidentConstraint",
+                        min(ec.p1, ec.p2),
+                        max(ec.p1, ec.p2),
+                    )
+                )
 
+        # The point an ENTITY_POINT snap already pins the endpoint to
+        # needs no axis constraints on top of its coincidence.
+        primary_pid = None
+        sp = result.primary_snap_point
+        if (
+            sp is not None
+            and sp.line_type == SnapLineType.ENTITY_POINT
+            and isinstance(sp.source, Point)
+        ):
+            primary_pid = sp.source.id
+
+        axes: dict[int, set[str]] = {}
         for sl in result.snap_lines:
             if not isinstance(sl.source, Point):
                 continue
             src_id = sl.source.id
-            if src_id == end_pid:
+            if src_id == end_pid or src_id == primary_pid:
                 continue
-            key = (
-                "HorizontalConstraint"
-                if sl.is_horizontal
-                else "VerticalConstraint",
-                min(src_id, end_pid),
-                max(src_id, end_pid),
+            axes.setdefault(src_id, set()).add(
+                "h" if sl.is_horizontal else "v"
             )
-            if key in seen:
+
+        for src_id, kinds in axes.items():
+            lo, hi = min(src_id, end_pid), max(src_id, end_pid)
+            h_key = ("HorizontalConstraint", lo, hi)
+            v_key = ("VerticalConstraint", lo, hi)
+            if kinds == {"h", "v"} and h_key not in seen and v_key not in seen:
+                # Axis snaps in both directions onto the same point
+                # pin the endpoint onto it completely: that is a
+                # coincidence, so record one CoincidentConstraint
+                # instead of two orientation constraints that mean
+                # the same thing.
+                coincident_key = ("CoincidentConstraint", lo, hi)
+                if coincident_key not in seen:
+                    seen.add(coincident_key)
+                    constraints.append(CoincidentConstraint(src_id, end_pid))
                 continue
-            seen.add(key)
-            if sl.is_horizontal:
+            if "h" in kinds and h_key not in seen:
+                seen.add(h_key)
                 constraints.append(HorizontalConstraint(src_id, end_pid))
-            else:
+            if "v" in kinds and v_key not in seen:
+                seen.add(v_key)
                 constraints.append(VerticalConstraint(src_id, end_pid))
 
         return constraints
@@ -392,7 +450,7 @@ class SnapMixin:
         to_screen,
     ) -> None:
         """Draw the indicator for the primary snap point."""
-        from ...core.constraints.symmetry import draw_symmetry_arrows
+        from raygeo.sketch.constraints.symmetry import draw_symmetry_arrows
 
         if not self.current_snap_result:
             return
@@ -551,6 +609,9 @@ class SnapMixin:
             DragContext(),
         )
         element.snap_engine.threshold = old_threshold
+        # The rebuild above ran with an unbounded threshold: drop the
+        # cached index so real queries rebuild it with the real one.
+        element.snap_engine.invalidate_index()
 
         ctx.save()
         for snap_line in snap_lines:

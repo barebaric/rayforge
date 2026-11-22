@@ -2,13 +2,13 @@ from gettext import gettext as _
 from typing import ClassVar
 
 import cairo
+from raygeo.sketch.entities import TextBox as TextBoxEntity
 
 from rayforge.core.color import ColorRGBA
 from rayforge.image.geo_renderer import geometry_to_cairo
 
 from ...core.commands import AddFillCommand, RemoveFillCommand
 from ...core.commands.fill import SetTextFillCommand
-from ...core.entities.text_box import TextBoxEntity
 from ...core.sketch import DEFAULT_FILL_COLOR, FillStyle
 from .base import SketchTool
 
@@ -60,7 +60,7 @@ class FillTool(SketchTool):
         registry = self.element.sketch.registry
         surface = cairo.RecordingSurface(cairo.CONTENT_COLOR_ALPHA, None)
         ctx = cairo.Context(surface)
-        for entity in registry.entities:
+        for entity in registry.entities():
             if not isinstance(entity, TextBoxEntity):
                 continue
             if entity.construction or not entity.content:

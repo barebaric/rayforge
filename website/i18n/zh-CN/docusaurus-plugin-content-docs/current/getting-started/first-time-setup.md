@@ -12,15 +12,16 @@ description:
 
 从应用程序菜单启动 Rayforge，或在终端中运行
 `rayforge`。在首次启动时——当尚未配置任何真实机器时——配置向导会自动打开，以便您可以设置机器而无需在菜单中查找。（您始终可以稍后从
-**设置 → 机器 → 添加机器** 打开它。）
+**机器 → Manage Machines…** 并点击 **Add Machine** 打开它。）
 
 ## 第 2 步：使用向导创建机器
 
-导航到 **设置 → 机器** 或按 <kbd>ctrl+comma</kbd> 打开设置对话框，然后选择 **机器** 页面。
+打开主窗口的 **机器 → Manage Machines…**（或按 <kbd>ctrl+comma</kbd> 打开 **机器** 页面），然后点击
+**Add Machine**。
 
 ![机器设置](/screenshots/app-settings-machines.webp)
 
-点击 **Add Machine** 打开机器选择器。
+机器选择器将打开，并显示内置设备配置文件。
 
 ![添加机器](/screenshots/app-settings-machines-add.webp)
 
@@ -41,10 +42,16 @@ description:
 向导可以为您发现设备，而无需您手动选择起点并填写所有内容：
 
 - **USB 串口设备**在出现时即被列出。
-- **网络设备**通过 mDNS 发现：OctoPrint 服务器和 ESP3D 开发板与 USB 串口设备一起显示。
+- **网络设备**通过 mDNS 发现：OctoPrint 服务器、ESP3D 开发板以及通过 `_telnet._tcp`
+  广播的 grblHAL 板与 USB 串口设备一起显示。
 - 发现的设备在找到可靠匹配时会**匹配到内置配置文件**，因此您通常只需确认检测到的设置，而无需手动输入。
 - GRBL 从固件的编译标志自动选择正确的 G 代码方言，OctoPrint/Smoothieware 通过网络探测。
 - 您已配置的设备显示为**只读**，以避免意外创建重复项。
+
+- **通过 telnet 连接的 grblHAL 板**会先用 `$I`
+  构建信息命令确认，然后再列出。固件不会通过 mDNS 广播的板子由窄范围子网扫描（仅 telnet 端口、有限并发）发现，该扫描与串口和 mDNS 扫描一起运行。
+
+![向导 — 发现设备](/screenshots/config-wizard-discover.webp)
 
 点击发现的设备以预填充向导，或按如下所述手动选择起点。
 

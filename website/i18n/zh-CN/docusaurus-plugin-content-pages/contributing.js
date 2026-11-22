@@ -130,6 +130,15 @@ export default function Contributing() {
                   <span className={styles.panelLinkLabel}>浏览源代码</span>
                   <span className={styles.panelLinkMeta}>GitHub 仓库</span>
                 </a>
+                <a
+                  href="https://github.com/barebaric/rayforge/blob/main/CONTRIBUTING.md"
+                  className={styles.panelLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <span className={styles.panelLinkLabel}>贡献规则</span>
+                  <span className={styles.panelLinkMeta}>CONTRIBUTING.md</span>
+                </a>
                 <Link to="/sponsor" className={styles.panelLink}>
                   <span className={styles.panelLinkLabel}>
                     成为赞助商

@@ -10,10 +10,11 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
 import pytest
-from gi.repository import GLib
+from gi.repository import GLib, Gtk
 
 from rayforge.camera.controller import CameraController
 from rayforge.camera.models.camera import Camera, CameraSourceType
+from rayforge.camera.remote import RemoteCamera, RemoteDaemon
 from rayforge.ui_gtk.camera.selection_dialog import CameraSelectionDialog
 
 
@@ -50,6 +51,43 @@ class _FakeActiveController(CameraController):
     @property
     def raw_image_data(self):
         return self._frame
+
+
+def _row_labels(row) -> list[str]:
+    model = row.get_model()
+    assert isinstance(model, Gtk.StringList)
+    return [
+        label
+        for i in range(model.get_n_items())
+        if (label := model.get_string(i)) is not None
+    ]
+
+
+def _type_labels(dialog) -> list[str]:
+    return _row_labels(dialog.type_row)
+
+
+@pytest.mark.ui
+def test_daemon_source_is_listed_without_daemons(ui_context_initializer):
+    with patch(
+        "rayforge.ui_gtk.camera.selection_dialog.list_local_device_ids",
+        return_value=[],
+    ):
+        dialog = CameraSelectionDialog(None)
+        assert "Daemon camera" in _type_labels(dialog)
+
+        dialog.type_row.set_selected(dialog.type_values.index("daemon"))
+        assert dialog.daemon_picker.get_visible() is True
+        assert _row_labels(dialog.daemon_picker) == ["No daemons found"]
+        assert dialog.daemon_picker.get_sensitive() is False
+        assert _row_labels(dialog.daemon_row) == [
+            "No daemon cameras advertised"
+        ]
+        assert dialog.camera_payload is None
+        assert dialog.get_response_enabled("select") is False
+
+    dialog.destroy()
+    _pump(time.monotonic() + 0.2)
 
 
 @pytest.mark.ui
@@ -215,6 +253,118 @@ def test_configured_mode_selects_existing_camera(
         assert dialog.selected_device_id == camera.id
         assert dialog.camera_payload == {"camera_id": camera.id}
         assert dialog.get_response_enabled("select") is True
+
+    dialog.destroy()
+    _pump(time.monotonic() + 0.2)
+
+
+@pytest.mark.ui
+def test_daemon_camera_asks_for_daemon_then_camera(ui_context_initializer):
+    daemon = RemoteDaemon(
+        label="Workshop (pi.local:8765)",
+        host="pi.local",
+    )
+    camera = RemoteCamera(
+        name="Enclosure",
+        uri="http://pi.local:8080/stream",
+        source_type=CameraSourceType.HTTP_STREAM,
+    )
+
+    async def fake_fetch(driver_args):
+        assert driver_args["remote_host"] == "pi.local"
+        return [camera]
+
+    with (
+        patch(
+            "rayforge.ui_gtk.camera.selection_dialog.list_local_device_ids",
+            return_value=[],
+        ),
+        patch(
+            "rayforge.ui_gtk.camera.selection_dialog.fetch_remote_cameras",
+            fake_fetch,
+        ),
+    ):
+        dialog = CameraSelectionDialog(None, remote_daemons=[daemon])
+        daemon_index = dialog.type_values.index("daemon")
+        assert "Daemon camera" in _type_labels(dialog)
+        assert dialog.daemon_picker.get_visible() is False
+        assert dialog.daemon_row.get_visible() is False
+
+        dialog.type_row.set_selected(daemon_index)
+        assert _pump_until(lambda: dialog.daemon_picker.get_visible())
+        assert _pump_until(lambda: dialog.daemon_row.get_sensitive())
+        assert dialog.daemon_picker.get_selected() == 0
+        assert dialog.daemon_row.get_selected() == 0
+
+        dialog.daemon_row.set_selected(1)
+
+        assert _pump_until(lambda: dialog.uri_entry.get_text() == camera.uri)
+        assert dialog.type_row.get_selected() == daemon_index
+        assert dialog.uri_entry.get_editable() is False
+        assert dialog.camera_payload == {
+            "name": camera.name,
+            "source_type": "http_stream",
+            "source_config": {"uri": camera.uri},
+        }
+
+    dialog.destroy()
+    _pump(time.monotonic() + 0.2)
+
+
+@pytest.mark.ui
+def test_daemon_picker_switches_the_offered_cameras(ui_context_initializer):
+    workshop = RemoteDaemon(
+        label="Workshop (pi.local:8765)",
+        host="pi.local",
+    )
+    office = RemoteDaemon(
+        label="Office (office.local:8765)",
+        host="office.local",
+    )
+    workshop_camera = RemoteCamera(
+        name="Workshop cam",
+        uri="http://pi.local:8080/stream",
+        source_type=CameraSourceType.HTTP_STREAM,
+    )
+    office_camera = RemoteCamera(
+        name="Office cam",
+        uri="http://office.local:8080/snapshot",
+        source_type=CameraSourceType.HTTP_SNAPSHOT,
+    )
+
+    async def fake_fetch(driver_args):
+        if driver_args["remote_host"] == "pi.local":
+            return [workshop_camera]
+        return [office_camera]
+
+    with (
+        patch(
+            "rayforge.ui_gtk.camera.selection_dialog.list_local_device_ids",
+            return_value=[],
+        ),
+        patch(
+            "rayforge.ui_gtk.camera.selection_dialog.fetch_remote_cameras",
+            fake_fetch,
+        ),
+    ):
+        dialog = CameraSelectionDialog(None, remote_daemons=[workshop, office])
+        dialog.type_row.set_selected(dialog.type_values.index("daemon"))
+        assert _pump_until(lambda: dialog.daemon_row.get_sensitive())
+        assert dialog._remote_cameras == [workshop_camera]
+
+        dialog.daemon_picker.set_selected(1)
+        assert _pump_until(lambda: dialog._remote_cameras == [office_camera])
+        dialog.daemon_row.set_selected(1)
+        assert _pump_until(
+            lambda: (
+                dialog.camera_payload
+                == {
+                    "name": office_camera.name,
+                    "source_type": "http_snapshot",
+                    "source_config": {"uri": office_camera.uri},
+                }
+            )
+        )
 
     dialog.destroy()
     _pump(time.monotonic() + 0.2)

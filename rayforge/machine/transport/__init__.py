@@ -1,13 +1,9 @@
 import sys
 
-from .grbl import GrblSerialTransport
-from .http import HttpTransport
 from .serial import SerialTransport
-from .telnet import TelnetTransport
 from .transport import Transport, TransportStatus
 from .udp import UdpTransport
 from .udp_server import UdpServerTransport
-from .websocket import WebSocketTransport
 
 if sys.platform != "win32":
     from .serial_server import SerialServerTransport
@@ -16,14 +12,10 @@ else:
 
 
 __all__ = [
-    "GrblSerialTransport",
-    "HttpTransport",
     "SerialServerTransport",
     "SerialTransport",
-    "TelnetTransport",
     "Transport",
     "TransportStatus",
     "UdpServerTransport",
     "UdpTransport",
-    "WebSocketTransport",
 ]

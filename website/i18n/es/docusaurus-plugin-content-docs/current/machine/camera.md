@@ -61,7 +61,7 @@ vistazo:
 1. **Conecta tu cámara** a tu computadora vía USB
 
 2. **Abre Ajustes de Cámara:**
-   - Navega a **Máquina → Ajustes de Máquina → Cámara**
+   - Navega a **Máquina → Ajustes Actuales de Máquina → Cámara**
 
 3. **Añade una nueva cámara:**
    - Haz clic en el botón "+" para añadir una cámara
@@ -150,8 +150,9 @@ Primero elige un **Pattern Type**:
    **Capture Frame** para cada posición. Apunta a al menos 8 capturas que cubran todo el encuadre,
    incluyendo esquinas y bordes. La barra de progreso y los indicadores de estado muestran la
    calidad de captura.
-4. Cuando se hayan capturado suficientes fotogramas, el asistente calcula el modelo de distorsión y
-   lo aplica — la superposición de la cámara ahora muestra una imagen corregida y recta.
+4. Cuando se hayan capturado suficientes fotogramas, haz clic en **Calibrate**. El asistente muestra
+   el resultado — confírmalo con **Save Calibration** para aplicarlo (solo **Discard** descarta el
+   resultado) — y la superposición de la cámara ahora muestra una imagen corregida y recta.
 
 #### Uso de un patrón ya impreso
 
@@ -215,7 +216,9 @@ distorsión manualmente — ajusta finamente los parámetros radiales (k1–k3) 
 La alineación de imagen es la etapa final del asistente de cámara. La alineación de cámara calibra
 la relación entre los píxeles de la cámara y las coordenadas del mundo real, permitiendo el
 posicionamiento preciso. El asistente usa el mismo procedimiento descrito aquí, y aplicar la
-alineación finaliza el asistente.
+alineación finaliza el asistente. Finalizar sin una alineación aplicada muestra primero una
+advertencia, porque entonces la vista de la cámara no puede mapearse con precisión sobre el área de
+trabajo.
 
 #### Por Qué es Necesaria la Alineación
 
@@ -250,8 +253,10 @@ de la máquina.
    - Repite para cada punto de referencia
 
 4. **Ingresa coordenadas del mundo:**
-   - Para cada punto de imagen, ingresa las coordenadas X/Y del mundo real en mm
-   - Estas son las coordenadas reales de la máquina donde está ubicado cada punto
+   - Para cada punto de imagen, ingresa las coordenadas X/Y del mundo real en tu unidad de
+     visualización (configurada en los ajustes de la aplicación)
+   - Estas son las coordenadas reales de la máquina donde está ubicado cada punto, medidas desde el
+     origen del área de trabajo
    - Mide con precisión con una regla o usa posiciones conocidas de la máquina
 
 5. **Aplica la alineación:**
@@ -300,6 +305,26 @@ El panel de propiedades de la cámara muestra el estado de alineación con un í
 
 Una vez alineada, la superposición de cámara ayuda a posicionar trabajos con precisión. Actívala
 haciendo clic en el icono de cámara en la barra de herramientas de la ventana principal.
+
+---
+
+### Vista fuera del área de trabajo
+
+La cámara normalmente ve más que solo el área de trabajo. En Configuración de máquina → Cámara →
+Vista fuera del área de trabajo, puedes mostrar un borde adicional semitransparente con la imagen de
+la cámara alrededor del área de trabajo, lo que facilita posicionar las piezas.
+
+![Vista de la cámara fuera del área de trabajo](/screenshots/main-camera-outside-view.webp)
+
+- **Mostrar fuera del área de trabajo** activa o desactiva el borde. Está desactivado por defecto y
+  requiere una cámara alineada.
+- **Margen** controla hasta dónde se extiende el borde más allá del área de trabajo, hasta 100 mm.
+- **Transparencia** controla la visibilidad del borde.
+
+Las zonas que la cámara no puede ver permanecen transparentes en lugar de mostrarse en negro, y el
+borde termina donde la cámara deja de ver. Los objetos que sobresalen por encima de la cama, como el
+pórtico, pueden aparecer desplazados en el borde, porque la imagen de la cámara está alineada con el
+plano de la cama.
 
 ---
 
@@ -423,11 +448,12 @@ sudo lsof /dev/video0
 
 Rayforge admite cámaras locales y cámaras de red mediante instantáneas HTTP, transmisiones
 HTTP/MJPEG y RTSP. Las cámaras locales se detectan automáticamente; las cámaras de red se añaden
-introduciendo directamente su URL.
+introduciendo directamente su URL. **Daemon camera** enumera las cámaras anunciadas por un demonio
+raydriver remoto; consulta [Dispositivos remotos](remote.md) para configurar el demonio.
 
 ### Añadir una cámara de red
 
-1. Abre **Máquina → Ajustes de Máquina → Cámara**.
+1. Abre **Máquina → Ajustes Actuales de Máquina → Cámara**.
 2. Haz clic en **+** y elige **HTTP snapshot URL**, **HTTP stream URL** o **RTSP stream**.
 3. Introduce un nombre y la URL, por ejemplo:
    - Instantánea HTTP: `http://192.168.1.50:8080/media/getCapturePhoto`
@@ -436,7 +462,7 @@ introduciendo directamente su URL.
 4. Activa la cámara. La transmisión debería aparecer en el lienzo.
 
 El perfil del dispositivo Creality Falcon A1 Pro incluye una cámara de instantáneas HTTP
-preconfigurada y desactivada. En **Máquina → Ajustes de Máquina → Cámara**, selecciona **Falcon A1
+preconfigurada y desactivada. En **Máquina → Ajustes Actuales de Máquina → Cámara**, selecciona **Falcon A1
 Pro Camera** y sustituye `<laser-ip>` en la URL del campo **Source** por la dirección IP accesible
 de la máquina. Confirma la URL válida con **Enter** o haciendo clic fuera del campo y, después,
 activa la cámara manualmente. También puedes usar la dirección IP asignada al Falcon en tu red
@@ -447,6 +473,23 @@ la URL, la cámara se desactiva inmediatamente. El interruptor de activación pe
 hasta que se aplique una URL válida; después, vuelve a activar la cámara manualmente. Rayforge
 comprueba que el esquema de la URL coincida con el tipo de fuente (`http://`, `https://`, `rtsp://`
 o `rtsps://`).
+
+### Añadir una cámara del demonio
+
+Usa esta opción cuando la cámara esté conectada al ordenador que ejecuta el demonio raydriver en
+lugar de a tu ordenador.
+
+1. Abre **Máquina → Ajustes Actuales de Máquina → Cámara**.
+2. Haz clic en **+** y elige **Daemon camera** como tipo de fuente.
+3. Selecciona el demonio. La lista contiene las máquinas remotas configuradas en Rayforge.
+4. Selecciona una de las cámaras que anuncia el demonio. Rayforge rellena la URL y el tipo de fuente
+   de red correspondiente.
+5. Activa la cámara.
+
+Si no aparece ningún demonio, configura primero la máquina remota; consulta
+[Dispositivos remotos](remote.md).
+
+![Añadir una cámara del demonio](/screenshots/machine-settings-remote-camera.webp)
 
 ### Problemas de conexión
 

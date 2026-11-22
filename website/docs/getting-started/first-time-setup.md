@@ -13,17 +13,17 @@ you through creating your first machine with the configuration wizard and establ
 
 Start Rayforge from your application menu or by running `rayforge` in a terminal. On first launch —
 when no real machine has been configured yet — the configuration wizard opens automatically so you
-can set up your machine without hunting through menus. (You can always open it later from **Settings
-→ Machines → Add Machine**.)
+can set up your machine without hunting through menus. (You can always open it later from **Machine
+→ Manage Machines…** by clicking **Add Machine**.)
 
 ## Step 2: Create a Machine with the Wizard
 
-Navigate to **Settings → Machines** or press <kbd>ctrl+comma</kbd> to open the settings dialog, then
-select the **Machines** page.
+Open the main window's **Machine → Manage Machines…** entry (or press <kbd>ctrl+comma</kbd> and open
+the **Machines** page), then click **Add Machine**.
 
 ![Machine Settings](/screenshots/app-settings-machines.webp)
 
-Click **Add Machine** to open the machine picker.
+The machine picker opens with the built-in device profiles.
 
 ![Add Machine Dialog](/screenshots/app-settings-machines-add.webp)
 
@@ -47,14 +47,19 @@ The wizard can discover devices for you instead of requiring you to pick a start
 everything in by hand:
 
 - **USB serial devices** are listed as they appear.
-- **Network devices** are discovered via mDNS: OctoPrint servers and ESP3D boards appear alongside
-  USB serial devices.
+- **Network devices** are discovered via mDNS: OctoPrint servers, ESP3D boards, and grblHAL boards
+  that announce `_telnet._tcp` appear alongside USB serial devices.
+- **grblHAL boards over telnet** are confirmed with the `$I` build-info command before they are
+  listed. Boards whose firmware announces nothing via mDNS are found by a narrow subnet scan (telnet
+  port only, bounded concurrency) that runs alongside the serial and mDNS scans.
 - Discovered devices are **matched to built-in profiles** when a confident match is found, so you
   can often just confirm the detected settings rather than entering them.
 - GRBL auto-selects the correct G-code dialect from the firmware's compile flags, and
   OctoPrint/Smoothieware are probed over the network.
 - Devices you have already configured are shown as **read-only** so you don't accidentally create
   duplicates.
+
+![Wizard — Discover Devices](/screenshots/config-wizard-discover.webp)
 
 Click a discovered device to pre-fill the wizard, or pick a starting point manually as described
 below.

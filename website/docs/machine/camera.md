@@ -42,12 +42,14 @@ Rayforge supports four kinds of camera sources:
 | Source Type       | Use For                                                          |
 | ----------------- | ---------------------------------------------------------------- |
 | **Local camera**  | USB webcams, laptop built-in cameras, any V4L2/DirectShow device |
+| **Daemon camera** | A camera advertised by a remote raydriver daemon                 |
 | **HTTP snapshot** | Endpoints that return one still image per request                |
 | **HTTP stream**   | Continuous HTTP/HTTPS video, e.g. MJPEG-over-HTTP                |
 | **RTSP**          | RTSP network cameras                                             |
 
 Local cameras are auto-detected and selected from a list. Network cameras (HTTP snapshot, HTTP
-stream, RTSP) are added by entering the camera's URL directly.
+stream, RTSP) are added by entering the camera's URL directly. **Daemon camera** lists the cameras
+advertised by a remote raydriver daemon; see [Remote Devices](remote.md) for setting up the daemon.
 
 ### Hardware Requirements
 
@@ -75,7 +77,7 @@ stream, RTSP) are added by entering the camera's URL directly.
 1. **Connect your camera** to your computer via USB
 
 2. **Open Camera Settings:**
-   - Navigate to **Machine → Machine Settings → Camera**
+   - Navigate to **Machine → Current Machine Settings → Camera**
 
 3. **Add a new camera:**
    - Click the **+** button to add a camera
@@ -90,7 +92,7 @@ stream, RTSP) are added by entering the camera's URL directly.
 ### Adding a Network Camera
 
 1. **Open Camera Settings:**
-   - Navigate to **Machine → Machine Settings → Camera**
+   - Navigate to **Machine → Current Machine Settings → Camera**
 
 2. **Add a new camera:**
    - Click the **+** button to add a camera
@@ -109,7 +111,7 @@ stream, RTSP) are added by entering the camera's URL directly.
 <!-- prettier-ignore-start -->
 :::info[Creality Falcon A1 Pro]
 The Falcon A1 Pro device profile includes a preconfigured, disabled HTTP snapshot camera. In
-**Machine → Machine Settings → Camera**, select **Falcon A1 Pro Camera** and replace `<laser-ip>` in
+**Machine → Current Machine Settings → Camera**, select **Falcon A1 Pro Camera** and replace `<laser-ip>` in
 the **Source** URL with the machine's reachable IP address. The camera exposes a still-image
 endpoint at `http://<laser-ip>:8080/media/getCapturePhoto`. When connected via USB, the Falcon
 shares a network interface over USB; find the address from your USB network adapter or the machine's
@@ -121,6 +123,22 @@ network. Commit the valid URL with **Enter** or by leaving the field, then enabl
 If your camera's IP address changes later (for example after a reconnect or router reboot), you
 don't need to re-add the camera or redo calibration — see
 [Updating a Network Camera's URL](#updating-a-network-cameras-url) below.
+
+### Adding a Daemon Camera
+
+Use this when the camera is connected to the computer running a raydriver daemon rather than to your
+computer.
+
+1. Open **Machine → Current Machine Settings → Camera**.
+2. Click **+** and choose **Daemon camera** as the source type.
+3. Select the daemon. The list contains the remote machines configured in Rayforge.
+4. Select one of the cameras the daemon advertises. Rayforge fills in the URL and the matching
+   network source type.
+5. Enable the camera.
+
+If no daemons are listed, configure the remote machine first; see [Remote Devices](remote.md).
+
+![Adding a daemon camera](/screenshots/machine-settings-remote-camera.webp)
 
 ### Updating a Network Camera's URL
 
@@ -209,8 +227,9 @@ First choose a **Pattern Type**:
 3. Move the pattern to different positions and angles within the camera view and click **Capture
    Frame** for each position. Aim for at least 8 captures covering the entire frame, including
    corners and edges. The progress bar and status indicators show capture quality.
-4. When enough frames are captured, the wizard computes the distortion model and applies it — the
-   camera overlay now shows a corrected, straight image.
+4. When enough frames are captured, click **Calibrate**. The wizard shows the result — confirm with
+   **Save Calibration** to apply it (only **Discard** throws the result away) — and the camera
+   overlay now shows a corrected, straight image.
 
 #### Using a Pattern You Already Printed
 
@@ -272,7 +291,9 @@ tangential (p1–p2) parameters.
 
 Image alignment is the camera wizard's final stage. Camera alignment calibrates the relationship
 between camera pixels and real-world coordinates, enabling accurate positioning. The wizard uses the
-same procedure described here, and applying the alignment finishes the wizard.
+same procedure described here, and applying the alignment finishes the wizard. Finishing without an
+applied alignment warns first, because the camera view then cannot be mapped onto the work area
+accurately.
 
 #### Why Alignment is Necessary
 
@@ -305,8 +326,10 @@ Alignment creates a transformation matrix that maps camera pixels to machine coo
    - Repeat for each reference point
 
 4. **Enter world coordinates:**
-   - For each image point, enter the real-world X/Y coordinates in mm
-   - These are the actual machine coordinates where each point is located
+   - For each image point, enter the real-world X/Y coordinates in your display unit (set in the
+     application settings)
+   - These are the actual machine coordinates where each point is located, measured from the work
+     area origin
    - Measure accurately with a ruler or use known machine positions
 
 5. **Apply alignment:**
@@ -353,6 +376,25 @@ The camera properties panel shows the alignment status with an icon:
 
 Once aligned, the camera overlay helps position jobs accurately. Toggle it by clicking the camera
 icon in the main window toolbar.
+
+---
+
+### View Outside the Workspace
+
+The camera usually sees more than just the work area. In Machine settings → Camera → View Outside
+Workspace, you can show an additional semi-transparent border of camera image around the workspace,
+which makes it easier to position workpieces.
+
+![Camera view outside the workspace](/screenshots/main-camera-outside-view.webp)
+
+- **Show Outside Workspace** turns the border on or off. It is off by default and requires an
+  aligned camera.
+- **Margin** controls how far the border extends beyond the work area, up to 100 mm.
+- **Transparency** controls how visible the border is.
+
+Areas the camera cannot see stay transparent instead of showing black, and the border ends at the
+edge of what the camera actually covers. Objects sticking up above the bed, such as the gantry, can
+appear shifted in the border, because the camera image is aligned to the bed plane.
 
 ---
 

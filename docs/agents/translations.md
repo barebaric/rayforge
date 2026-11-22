@@ -15,15 +15,19 @@ headings and bodies, validation and error messages.
 
 ## Updating the catalogs
 
-- Wrapping a string only marks it for extraction. New messages must also be
-  added to the gettext template `rayforge/locale/rayforge.pot` and translated
-  in `rayforge/locale/<lang>/LC_MESSAGES/rayforge.po` for every shipped
+- Do not update `rayforge/locale/rayforge.pot` or any `.po` file as part of a
+  feature or bug fix PR. Wrapping a string with `_()` only marks it for
+  extraction; the catalogs are regenerated and translated as part of the
+  release preparation process
+- During release preparation, new messages are added to the gettext template
+  `rayforge/locale/rayforge.pot` and translated in
+  `rayforge/locale/<lang>/LC_MESSAGES/rayforge.po` for every shipped
   language (list them with `ls rayforge/locale`). The `en` catalog keeps empty
   translations, since it falls back to the source text
-- Only add or update entries for the strings of your own change; do not
-  rewrite unrelated catalog entries
 
 ## Avoiding catalog churn
+
+Applies when catalogs are updated during release preparation.
 
 - `pixi run update-translations` rewrites every catalog in the repository,
   including the addon catalogs under `rayforge/builtin_addons/`. Most of those

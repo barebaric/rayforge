@@ -10,17 +10,20 @@ from ...image.registry import exporter_registry, importer_registry
 from ..shared.gtk import file_filter_to_gtk
 
 if TYPE_CHECKING:
+    from ...core.source_asset import SourceAsset
     from ...core.workpiece import WorkPiece
     from ...doceditor.editor import DocEditor
     from ..mainwindow import MainWindow
 
 logger = logging.getLogger(__name__)
 
+FileDialogCallback = Callable[[Gtk.FileDialog, Gio.AsyncResult, Any], None]
+
 
 def show_import_dialog(
     win: "MainWindow",
     editor: "DocEditor",
-    callback: Callable,
+    callback: FileDialogCallback,
     user_data: Any = None,
 ):
     """
@@ -35,7 +38,31 @@ def show_import_dialog(
     """
     dialog = Gtk.FileDialog.new()
     dialog.set_title(_("Open File"))
+    _set_import_filters(dialog)
+    dialog.open(win, None, callback, user_data)
 
+
+def show_relink_dialog(
+    win: Gtk.Window,
+    asset: "SourceAsset",
+    callback: FileDialogCallback,
+    user_data: Any = None,
+):
+    """
+    Shows the file chooser dialog for pointing an imported source at
+    another file.
+    """
+    dialog = Gtk.FileDialog.new()
+    dialog.set_title(_("Relink \u201c{name}\u201d").format(name=asset.name))
+    _set_import_filters(dialog)
+    folder = asset.source_file.parent
+    if folder.is_dir():
+        dialog.set_initial_folder(Gio.File.new_for_path(str(folder)))
+    dialog.open(win, None, callback, user_data)
+
+
+def _set_import_filters(dialog: Gtk.FileDialog):
+    """Offers every file type that an importer can read."""
     filter_list = Gio.ListStore.new(Gtk.FileFilter)
     all_supported = Gtk.FileFilter()
     all_supported.set_name(_("All supported"))
@@ -61,12 +88,10 @@ def show_import_dialog(
     dialog.set_filters(filter_list)
     dialog.set_default_filter(all_supported)
 
-    dialog.open(win, None, callback, user_data)
-
 
 def show_export_gcode_dialog(
     win: "MainWindow",
-    callback: Callable,
+    callback: FileDialogCallback,
     initial_name: str | None = None,
 ):
     """
@@ -101,7 +126,7 @@ def show_export_gcode_dialog(
 
 def show_export_object_dialog(
     win: "MainWindow",
-    callback: Callable,
+    callback: FileDialogCallback,
     workpiece: Optional["WorkPiece"] = None,
 ):
     """
@@ -152,7 +177,7 @@ def show_export_object_dialog(
 
 def show_export_document_dialog(
     win: "MainWindow",
-    callback: Callable,
+    callback: FileDialogCallback,
     initial_name: str | None = None,
 ):
     """
@@ -194,7 +219,7 @@ def show_export_document_dialog(
     dialog.save(win, None, callback, win)
 
 
-def show_open_project_dialog(win: "MainWindow", callback: Callable):
+def show_open_project_dialog(win: "MainWindow", callback: FileDialogCallback):
     """
     Shows file chooser dialog for opening Rayforge project files.
 
@@ -224,7 +249,7 @@ def show_open_project_dialog(win: "MainWindow", callback: Callable):
 
 def show_save_project_dialog(
     win: "MainWindow",
-    callback: Callable,
+    callback: FileDialogCallback,
     initial_name: str | None = None,
 ):
     """

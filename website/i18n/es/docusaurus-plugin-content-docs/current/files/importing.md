@@ -7,21 +7,27 @@ bits. Esta página explica cómo importar archivos y optimizarlos para obtener l
 
 ### Formatos vectoriales
 
-| Formato       | Extensión         | Método de importación     | Mejor para                            |
-| ------------- | ----------------- | ------------------------- | ------------------------------------- |
-| **SVG**       | `.svg`            | Vectores directos o trazo | Gráficos vectoriales, logos, diseños  |
-| **DXF**       | `.dxf`            | Vectores directos         | Planos CAD, diseños técnicos          |
-| **PDF**       | `.pdf`            | Vectores directos o trazo | Documentos con contenido vectorial    |
-| **LightBurn** | `.lbrn`, `.lbrn2` | Vectores directos         | Proyectos LightBurn                   |
-| **Ruida**     | `.rd`             | Vectores directos         | Archivos de trabajo controlador Ruida |
+| Formato         | Extensión         | Método de importación                            | Mejor para                            |
+| --------------- | ----------------- | ------------------------------------------------ | ------------------------------------- |
+| **SVG**         | `.svg`, `.svgz`   | Vectores directos o trazo                        | Gráficos vectoriales, logos, diseños  |
+| **DXF**         | `.dxf`            | Vectores directos                                | Planos CAD, diseños técnicos          |
+| **PDF**         | `.pdf`            | Vectores directos o trazo                        | Documentos con contenido vectorial    |
+| **LightBurn**   | `.lbrn`, `.lbrn2` | Vectores directos                                | Proyectos LightBurn                   |
+| **Ruida**       | `.rd`             | Vectores directos                                | Archivos de trabajo controlador Ruida |
+| **Illustrator** | `.ai`             | Vectores directos o trazo                        | Logotipos de Illustrator              |
+| **EPS**         | `.eps`, `.ps`     | Vectores directos o trazo (requiere Ghostscript) | Logotipos, arte para impresión        |
+| **HPGL**        | `.plt`, `.hpgl`   | Vectores directos                                | Archivos de plóter y plóter de corte  |
 
 ### Formatos de mapa de bits
 
 | Formato  | Extensión       | Método de importación | Mejor para                             |
 | -------- | --------------- | --------------------- | -------------------------------------- |
-| **PNG**  | `.webp`         | Trazo a vectores      | Fotos, imágenes con transparencia      |
+| **PNG**  | `.png`          | Trazo a vectores      | Fotos, imágenes con transparencia      |
 | **JPEG** | `.jpg`, `.jpeg` | Trazo a vectores      | Fotos, imágenes de tono continuo       |
 | **BMP**  | `.bmp`          | Trazo a vectores      | Gráficos simples, capturas de pantalla |
+| **GIF**  | `.gif`          | Trazo a vectores      | Gráficos simples, animaciones          |
+| **TIFF** | `.tif`, `.tiff` | Trazo a vectores      | Escaneos, arte para impresión          |
+| **WebP** | `.webp`         | Trazo a vectores      | Imágenes web                           |
 
 <!-- prettier-ignore-start -->
 :::note[Importación de mapa de bits]
@@ -105,6 +111,53 @@ La notificación de redimensionado aparece como un mensaje emergente:
 Esto garantiza que tus diseños siempre se ajusten a las capacidades de tu máquina, dándote la
 flexibilidad de restaurar el tamaño original si es necesario.
 
+### Mantener los archivos importados sincronizados
+
+Al importar un archivo, Rayforge conserva un enlace a este en el disco. Si el archivo cambia más
+tarde — por ejemplo después de editarlo y guardarlo de nuevo en Inkscape o en tu programa de CAD —
+Rayforge ofrece recargar el contenido importado, para que tu proyecto no conserve geometría
+obsoleta.
+
+![El diálogo de archivo importado modificado](/screenshots/source-changed-dialog.webp)
+
+Esta función se controla con la opción **Vigilar archivos importados** en Configuración → General.
+Cuando está activada (el valor predeterminado), Rayforge comprueba los archivos enlazados mientras
+el proyecto está abierto — también justo después de abrirlo — y muestra un diálogo para cada archivo
+que haya cambiado en el disco:
+
+- **Recargar** sustituye el contenido importado por la nueva versión. La posición, el tamaño y la
+  configuración de las piezas de trabajo afectadas se conservan, y toda la recarga es un único paso
+  de deshacer.
+- **Ignorar** conserva el contenido actual. Se te preguntará de nuevo la próxima vez que cambie el
+  archivo.
+- Activa **Recargar siempre este archivo sin preguntar** para recargar ese archivo automáticamente
+  de ahora en adelante. Los archivos marcados así se recargan sin preguntar.
+
+Cuando varios archivos enlazados han cambiado a la vez, el diálogo los enumera y te permite elegir
+cuáles recargar.
+
+<!-- prettier-ignore-start -->
+:::note[La recarga ajusta el documento]
+Al recargar, el documento vuelve a coincidir con el archivo: los elementos que se le añadieron
+aparecen en el proyecto, los elementos que ya no están en él se eliminan, y las pestañas de
+sujeción que queden a más de 1 mm del nuevo contorno se descartan. Los elementos que editaste en
+Rayforge se dejan sin cambios. Una notificación resume lo que cambió la recarga.
+:::
+<!-- prettier-ignore-end -->
+
+### Recarga y reenlace manuales
+
+También puedes recargar o reenlazar manualmente en cualquier momento mediante **Archivo → Recargar
+desde el disco** y **Archivo → Reenlazar archivo de origen…**, o a través del menú contextual de la
+selección en el lienzo, de la lista de capas o del explorador de activos. **Recargar desde el
+disco** vuelve a leer los archivos detrás de las piezas de trabajo seleccionadas. Cuando no se puede
+encontrar el archivo enlazado, Rayforge sugiere reenlazarlo en su lugar.
+
+**Reenlazar archivo de origen…** apunta una fuente importada a un archivo diferente. Esto es útil
+cuando un archivo se movió o renombró, o cuando un proyecto se abre en otro ordenador y falta el
+archivo enlazado. Las piezas de trabajo conservan su posición y configuración y muestran el
+contenido del nuevo archivo.
+
 ---
 
 ## Importación SVG
@@ -179,6 +232,14 @@ Desactiva "Usar vectores originales" para utilizar este método.
 - SVG con efectos, filtros, degradados
 - Cuando la importación directa produce errores
 
+### Selección de capas y geometría sin agrupar
+
+Con **Usar vectores originales**, la lista **Seleccionar capas** muestra una entrada por cada capa
+SVG con nombre (o por color al agrupar por colores). Las formas que quedan fuera de cualquier capa
+con nombre se ofrecen como una capa adicional **Sin agrupar**, activada de forma predeterminada,
+para que se importen y corten como cualquier otra capa. Desmarcar una capa excluye su geometría
+tanto de la vista previa como de las trayectorias de herramienta generadas.
+
 ### Vista previa en tiempo real
 
 El diálogo de importación muestra una vista previa en tiempo real de cómo se importará tu SVG:
@@ -238,6 +299,22 @@ Rayforge admite formatos DXF estándar:
 - **R2000+** - Generalmente funciona, pero R12 es más seguro
 
 **Consejo:** Exporta como DXF R12/LT2 para máxima compatibilidad.
+
+### Aplanado de coordenadas Z
+
+Algunos exportadores CAD escriben archivos DXF con geometría a diferentes alturas Z — por ejemplo,
+un modelo 3D exportado con los contornos de las caras superior e inferior de una pieza. Rayforge es
+un programa 2D: en una máquina con eje Z, dichos valores Z se convierten en movimientos Z reales
+dentro del trabajo, y la cabeza puede hundirse por debajo de la superficie del material y chocar.
+
+Cuando un archivo DXF contiene geometría a más de una altura Z, el diálogo de importación ofrece por
+ello una opción **Aplanar coordenadas Z** (dentro de "Modo de importación"). Viene activada por
+defecto y proyecta toda la geometría importada sobre el plano Z=0. Puedes desactivarla para
+conservar las alturas Z originales — el diálogo te avisará entonces de que la trayectoria se moverá
+en Z, lo que solo es seguro si sabes que tu archivo lo necesita (por ejemplo, para recrear una
+altura de enfoque específica por forma).
+
+En los dibujos planos no se muestra la opción; no hay nada que aplanar.
 
 ### Consejos para importación DXF
 
@@ -355,7 +432,19 @@ configuraciones láser ajustables.
 
 ---
 
-## Importación de imágenes de mapa de bits (PNG, JPG, BMP)
+## Importación de Illustrator y EPS
+
+Los archivos de Illustrator guardados con compatibilidad con PDF, lo predeterminado desde
+Illustrator 9, se importan igual que los archivos PDF, con la misma selección de capas y las mismas
+opciones de trazo.
+
+Los archivos EPS, PostScript y los de Illustrator más antiguos se convierten primero a PDF con
+Ghostscript. Instala Ghostscript si el diálogo de importación indica que falta. Si no puedes
+instalarlo, exporta el diseño como PDF o SVG desde el programa que lo creó.
+
+---
+
+## Importación de imágenes de mapa de bits (PNG, JPG, BMP, GIF, TIFF, WebP)
 
 Las imágenes de mapa de bits se **trazan** para crear trazados vectoriales utilizando el diálogo de
 importación.

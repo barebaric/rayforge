@@ -246,8 +246,14 @@ class IntentBuilder:
                         step, nodes
                     )
                     continue
-                step_workpieces = self._workpieces_for_step(step, workpieces)
+                step_workpieces = step.selected_workpieces(workpieces)
                 if not step_workpieces:
+                    logger.warning(
+                        "Step %r matches none of its layer's workpieces "
+                        "(selected uids: %r); skipping it",
+                        step.name,
+                        step.workpiece_uids,
+                    )
                     continue
                 inputs = self._build_workpiece_nodes(
                     step, step_workpieces, nodes
@@ -288,25 +294,6 @@ class IntentBuilder:
     # ------------------------------------------------------------------
     # Workpiece compute nodes
     # ------------------------------------------------------------------
-
-    @staticmethod
-    def _workpieces_for_step(
-        step: Step, workpieces: Sequence[WorkPiece]
-    ) -> list[WorkPiece]:
-        """The workpieces a step applies to.
-
-        A step that generated a specific workpiece (see
-        ``Step.generated_workpiece_uid``) only processes that workpiece;
-        every other step processes all workpieces in the layer. Returns
-        an empty list when the generated workpiece is not present.
-        """
-        generated_uid = step.generated_workpiece_uid
-        if generated_uid is None:
-            return list(workpieces)
-        for wp in workpieces:
-            if wp.uid == generated_uid:
-                return [wp]
-        return []
 
     def _build_workpiece_nodes(
         self,
@@ -772,6 +759,7 @@ class IntentBuilder:
             ),
             "assembler_params": _canonical(self._assembler_params(step, wp)),
             "wpxf": _canonical(step.per_workpiece_transformers_dicts),
+            "bidir_offset": self._bidir_offset_params(step),
         }
         if pos_sensitive:
             payload["xf_rev"] = wp.transform_revision
@@ -897,6 +885,7 @@ class IntentBuilder:
         payload.transformers = self._build_transformer_specs(
             step.per_workpiece_transformers_dicts,
             workpiece=wp,
+            step=step,
         )
 
         if step.uses_global_state and step.layer:
@@ -940,6 +929,7 @@ class IntentBuilder:
         transformer_dicts: list[dict[str, Any]],
         *,
         workpiece: WorkPiece | None = None,
+        step: Step | None = None,
     ) -> list[Any]:
         """Build typed Rust ``*Spec`` pyclasses from a list of
         serialised transformer dicts.
@@ -948,7 +938,8 @@ class IntentBuilder:
         calls ``to_spec`` to produce the typed spec the Rust compute
         and aggregate stages consume.  ``workpiece`` is forwarded so
         that position-sensitive transformers (e.g. CropTransformer)
-        can resolve their regions.
+        can resolve their regions, and ``step`` provides the
+        step-specific settings (see :meth:`_transformer_settings`).
         """
         transformers: list[OpsTransformer] = []
         for t_dict in transformer_dicts:
@@ -974,7 +965,7 @@ class IntentBuilder:
         if not transformers:
             return []
         stock = self._resolve_stock_geometries()
-        settings = self._transformer_settings()
+        settings = self._transformer_settings(step)
 
         specs: list = []
         for t in transformers:
@@ -983,28 +974,63 @@ class IntentBuilder:
             specs.append(t.to_spec(workpiece, stock, settings))
         return specs
 
-    def _transformer_settings(self) -> dict[str, Any] | None:
+    def _bidir_offset_params(self, step: Step) -> list[Any]:
+        """The inputs of the bidirectional scan offset, which the
+        compute stage applies through the per-workpiece transformers."""
+        table = (
+            [list(row) for row in self._machine.bidir_offset_table]
+            if self._machine is not None
+            else []
+        )
+        return [
+            step.cut_speed,
+            getattr(step, "bidir_x_offset_mm", 0.0),
+            table,
+        ]
+
+    def _transformer_settings(
+        self, step: Step | None = None
+    ) -> dict[str, Any] | None:
         """Return the settings dict forwarded to ``to_spec``.
 
         Currently this carries the ``driver_native_overscan`` flag so
         :class:`OverscanTransformer` can short-circuit when the
-        machine driver handles overscan itself, and the machine
+        machine driver handles overscan itself, the machine
         kinematics so acceleration-aware transformers (e.g. the
         scanline merging inside :class:`Optimize`) can build their
-        specs from them.
+        specs from them, and the machine's bidirectional scan offset
+        table. With a ``step`` it adds the step's speed, its own
+        bidirectional scan offset for :class:`BidirScanOffsetTransformer`,
+        and the laser power settings :class:`TabOpsTransformer` needs to
+        apply reduced-power tabs.
         """
-        if self._machine is None:
-            return None
-        try:
-            native = bool(self._machine.driver.native_overscan)
-        except AttributeError:
-            native = False
-        return {
-            "driver_native_overscan": native,
-            "machine_max_cut_speed": self._machine.max_cut_speed,
-            "machine_max_travel_speed": self._machine.max_travel_speed,
-            "machine_acceleration": self._machine.acceleration,
-        }
+        settings: dict[str, Any] = {}
+        if self._machine is not None:
+            try:
+                native = bool(self._machine.driver.native_overscan)
+            except AttributeError:
+                native = False
+            settings.update(
+                {
+                    "driver_native_overscan": native,
+                    "machine_max_cut_speed": self._machine.max_cut_speed,
+                    "machine_max_travel_speed": (
+                        self._machine.max_travel_speed
+                    ),
+                    "machine_acceleration": self._machine.acceleration,
+                    "bidir_offset_table": [
+                        list(row) for row in self._machine.bidir_offset_table
+                    ],
+                }
+            )
+        if step is not None:
+            settings["cut_speed"] = step.cut_speed
+            settings["power"] = getattr(step, "power", 1.0)
+            settings["tab_power"] = getattr(step, "tab_power", 0.0)
+            settings["bidir_x_offset_mm"] = getattr(
+                step, "bidir_x_offset_mm", 0.0
+            )
+        return settings or None
 
     def _resolve_stock_geometries(self) -> list[Any] | None:
         """Return the world-space stock boundary geometries.
@@ -1129,7 +1155,8 @@ class IntentBuilder:
             wrap_end=[],
             machine=self._machine_params(),
             transformers=self._build_transformer_specs(
-                step.per_step_transformers_dicts
+                step.per_step_transformers_dicts,
+                step=step,
             ),
         )
         return StageSpec.Aggregate(spec=spec)
@@ -1300,12 +1327,16 @@ class IntentBuilder:
         # Default WCS command offset. While a pointer dry-run is
         # requested, the pointer offset is included so the pointer dot
         # traces the toolpath instead of the beam.
+        pointer_offset = (
+            machine.get_pointer_offset()
+            if machine.pointer_job_shift_enabled
+            else (0.0, 0.0)
+        )
         default_wcs_offset = list(
             space.get_command_offset(
-                wcs_offset=machine.get_job_wcs_offset(
-                    machine.get_active_wcs_offset()
-                ),
+                wcs_offset=machine.get_active_wcs_offset(),
                 wcs_is_workarea_origin=machine.wcs_origin_is_workarea_origin,
+                extra_offset=pointer_offset,
             )
         )
 
@@ -1313,12 +1344,10 @@ class IntentBuilder:
         layer_wcs_offsets: list[tuple[str, list[float]]] = []
         for layer in doc.layers:
             effective_wcs = layer.get_effective_wcs(machine)
-            wcs_off = machine.get_job_wcs_offset(
-                machine.get_wcs_offset(effective_wcs)
-            )
             cmd_offset = space.get_command_offset(
-                wcs_offset=wcs_off,
+                wcs_offset=machine.get_wcs_offset(effective_wcs),
                 wcs_is_workarea_origin=machine.wcs_origin_is_workarea_origin,
+                extra_offset=pointer_offset,
             )
             layer_wcs_offsets.append((layer.uid, list(cmd_offset)))
 

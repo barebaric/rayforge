@@ -418,12 +418,14 @@ class LayerColumn(Gtk.Box):
 
     def _connect_signals(self):
         self.layer.updated.connect(self._on_layer_updated)
+        self.layer.renamed.connect(self._on_layer_renamed)
         self.layer.descendant_added.connect(self._on_layer_structure_changed)
         self.layer.descendant_removed.connect(self._on_layer_structure_changed)
         self.doc.active_layer_changed.connect(self._on_active_layer_changed)
 
     def do_destroy(self):
         self.layer.updated.disconnect(self._on_layer_updated)
+        self.layer.renamed.disconnect(self._on_layer_renamed)
         self.layer.descendant_added.disconnect(
             self._on_layer_structure_changed
         )
@@ -435,6 +437,9 @@ class LayerColumn(Gtk.Box):
     def _on_layer_updated(self, sender, **kwargs):
         self._update_ui()
         self._rebuild_workpiece_list()
+
+    def _on_layer_renamed(self, sender):
+        self._update_ui()
 
     def _on_layer_structure_changed(self, sender, **kwargs):
         self.workflow_row.refresh()
@@ -471,6 +476,12 @@ class LayerColumn(Gtk.Box):
                     item = self._row_items.get(widget)
                     if item is None:
                         break
+                    row_child = widget.get_child()
+                    if (
+                        isinstance(row_child, (WorkpieceRow, GroupRow))
+                        and row_child.is_renaming()
+                    ):
+                        return
                     if n_press == 1:
                         if not self._handle_item_click(item, gesture):
                             return
@@ -621,6 +632,15 @@ class LayerColumn(Gtk.Box):
         menu.append_item(Gio.MenuItem.new(_("Rename"), "win.rename-item"))
         menu.append_section(None, Gio.Menu.new())
         menu.append_item(Gio.MenuItem.new(_("Duplicate"), "win.duplicate"))
+        menu.append_section(None, Gio.Menu.new())
+        menu.append_item(
+            Gio.MenuItem.new(_("Reload from Disk"), "win.reload-source")
+        )
+        menu.append_item(
+            Gio.MenuItem.new(
+                _("Relink Source File\u2026"), "win.relink-source"
+            )
+        )
         menu.append_section(None, Gio.Menu.new())
         menu.append_item(Gio.MenuItem.new(_("Copy"), "win.copy"))
         menu.append_item(Gio.MenuItem.new(_("Cut"), "win.cut"))

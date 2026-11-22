@@ -18,9 +18,9 @@ import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
+from raygeo.sketch.entities import Line
 from sketcher.core import Sketch
 from sketcher.core.commands import ChamferCommand, FilletCommand
-from sketcher.core.entities import Line
 from sketcher.ui_gtk.sketchelement import SketchElement
 
 

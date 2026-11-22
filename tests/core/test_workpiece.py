@@ -14,7 +14,7 @@ from rayforge.core.source_asset import SourceAsset
 from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.tab import Tab
 from rayforge.core.vectorization_spec import LayerImportMode, PassthroughSpec
-from rayforge.core.workpiece import WorkPiece
+from rayforge.core.workpiece import AnchorMode, WorkPiece
 from rayforge.image import import_file
 from rayforge.image.svg.renderer import SvgRenderer
 
@@ -114,6 +114,56 @@ class _FakeProvider:
 
     def get_geometry(self, params=None, *, resolved_text_cache=None):
         return self._geometry.copy(), []
+
+    def get_reference_point(self):
+        return None
+
+    def to_dict(self):
+        return {}
+
+
+class _FakeParametricProvider:
+    """
+    A minimal IGeometryProvider: a rectangle from ``(left, 0)`` to
+    ``(left + width, height)`` whose extents are driven by parameters,
+    with a fixed reference point at ``(0, 0)``.
+    """
+
+    def __init__(self, width=100.0, height=50.0, left=0.0):
+        self.name = "fake"
+        self.uid = "fake-parametric-uid"
+        self.width = width
+        self.height = height
+        self.left = left
+        self.updated = Signal()
+
+    @property
+    def provider_type_name(self) -> str:
+        return "fake"
+
+    @property
+    def renderer(self):
+        return None
+
+    def get_geometry(self, params=None, *, resolved_text_cache=None):
+        values = {
+            "width": self.width,
+            "height": self.height,
+            "left": self.left,
+        }
+        values.update(params or {})
+        geo = _make_loop(
+            [
+                (values["left"], 0.0),
+                (values["left"] + values["width"], 0.0),
+                (values["left"] + values["width"], values["height"]),
+                (values["left"], values["height"]),
+            ]
+        )
+        return geo, []
+
+    def get_reference_point(self):
+        return (0.0, 0.0)
 
     def to_dict(self):
         return {}
@@ -768,3 +818,91 @@ class TestWorkPiece:
         assert areas[""] == max(areas.values())
         assert areas[""] > 2000.0
         assert set(areas.values()) == {2400.0, 1600.0}
+
+
+class TestWorkPieceAnchorModes:
+    def _make_workpiece(self, **kwargs) -> WorkPiece:
+        provider = _FakeParametricProvider(**kwargs)
+        wp = WorkPiece.from_geometry_provider(provider)
+        wp._transient_geometry_provider = provider
+        return wp
+
+    def test_default_anchor_mode_is_corner(self):
+        wp = WorkPiece("wp")
+        assert wp.anchor_mode is AnchorMode.CORNER
+        assert wp.anchor_point == (0.0, 0.0)
+
+    def test_set_size_preserves_anchor_point(self):
+        wp = WorkPiece("wp")
+        wp.set_size(100.0, 50.0)
+        wp.pos = (10.0, 20.0)
+        corner_before = wp.get_world_transform().transform_point((0.0, 0.0))
+
+        wp.set_size(40.0, 30.0, anchor=(0.0, 0.0))
+
+        corner_after = wp.get_world_transform().transform_point((0.0, 0.0))
+        assert corner_after == pytest.approx(corner_before)
+        assert wp.size == pytest.approx((40.0, 30.0))
+
+    def test_reference_anchor_maps_into_normalized_space(self):
+        wp = self._make_workpiece(width=100.0, left=-40.0)
+
+        assert wp._reference_anchor == pytest.approx((40.0 / 100.0, 0.0))
+
+    def test_regenerate_reference_mode_keeps_origin_fixed(self):
+        wp = self._make_workpiece(width=100.0, height=50.0)
+        wp.anchor_mode = AnchorMode.REFERENCE
+        wp.pos = (5.0, 7.0)
+        origin_before = wp.get_anchor_world()
+
+        wp.geometry_provider_params = {"width": 140.0, "left": -40.0}
+
+        assert wp.size == pytest.approx((140.0, 50.0))
+        assert wp.anchor_point == pytest.approx((40.0 / 140.0, 0.0))
+        assert wp.get_anchor_world() == pytest.approx(origin_before)
+
+    def test_regenerate_corner_mode_keeps_corner_fixed(self):
+        wp = self._make_workpiece(width=100.0, height=50.0)
+        wp.pos = (5.0, 7.0)
+        corner_before = wp.get_anchor_world()
+
+        wp.geometry_provider_params = {"width": 140.0}
+
+        assert wp.size == pytest.approx((140.0, 50.0))
+        assert wp.get_anchor_world() == pytest.approx(corner_before)
+
+    def test_regenerate_center_mode_keeps_center_fixed(self):
+        wp = self._make_workpiece(width=100.0, height=50.0)
+        wp.anchor_mode = AnchorMode.CENTER
+        wp.pos = (5.0, 7.0)
+        center_before = wp.get_world_transform().transform_point((0.5, 0.5))
+
+        wp.geometry_provider_params = {"width": 140.0}
+
+        center_after = wp.get_world_transform().transform_point((0.5, 0.5))
+        assert center_after == pytest.approx(center_before)
+
+    def test_reference_mode_falls_back_to_center_without_point(self):
+        provider = _FakeProvider(_make_loop([(0, 0), (50, 0), (50, 50)]))
+        wp = WorkPiece.from_geometry_provider(provider)
+        wp.anchor_mode = AnchorMode.REFERENCE
+
+        assert not wp.has_reference_point()
+        assert wp.anchor_point == (0.5, 0.5)
+
+    def test_anchor_mode_serialization_round_trip(self):
+        wp = WorkPiece("wp")
+        wp.anchor_mode = AnchorMode.REFERENCE
+
+        restored = WorkPiece.from_dict(wp.to_dict())
+
+        assert restored.anchor_mode is AnchorMode.REFERENCE
+
+    def test_anchor_mode_defaults_to_corner_for_legacy_files(self):
+        wp = WorkPiece("wp")
+        data = wp.to_dict()
+        del data["anchor_mode"]
+
+        restored = WorkPiece.from_dict(data)
+
+        assert restored.anchor_mode is AnchorMode.CORNER

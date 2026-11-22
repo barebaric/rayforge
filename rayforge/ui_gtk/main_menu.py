@@ -2,8 +2,21 @@ from gettext import gettext as _
 
 from gi.repository import Gio, GLib, Gtk
 
+from ..machine.models.machine import Machine
 from ..machine.models.macro import Macro
 from .action_registry import action_registry
+
+
+def _escape_menu_label(text: str) -> str:
+    """Make text that GtkModelButton renders literally.
+
+    Menu items are built from a GMenu model and rendered by
+    GtkModelButton, which always treats underscores as mnemonics. GMenu
+    offers no way to turn that off, so every underscore is doubled to make
+    it show up as a literal underscore. Labels are plain text rather than
+    Pango markup, so characters such as ``&`` and ``<`` need no escaping.
+    """
+    return text.replace("_", "__")
 
 
 class MainMenu(Gio.Menu):
@@ -37,6 +50,10 @@ class MainMenu(Gio.Menu):
 
         import_export_group = Gio.Menu()
         import_export_group.append(_("Import..."), "win.import")
+        import_export_group.append(_("Reload from Disk"), "win.reload-source")
+        import_export_group.append(
+            _("Relink Source File..."), "win.relink-source"
+        )
         import_export_group.append(_("Export G-code..."), "win.export")
         import_export_group.append(
             _("Export Document..."), "win.export_document"
@@ -108,8 +125,15 @@ class MainMenu(Gio.Menu):
 
         other_group = Gio.Menu()
         other_group.append(_("Split"), "win.split")
+        other_group.append(_("Break Apart"), "win.break-apart")
         other_group.append(_("Export Object..."), "win.export-object")
         object_menu.append_section(None, other_group)
+
+        cleanup_group = Gio.Menu()
+        cleanup_group.append(_("Close Paths…"), "win.close-paths")
+        cleanup_group.append(_("Join Open Paths…"), "win.join-paths")
+        cleanup_group.append(_("Delete Duplicates"), "win.delete-duplicates")
+        object_menu.append_section(None, cleanup_group)
 
         # Addon section for Object menu
         self._addon_sections["object"] = Gio.Menu()
@@ -180,6 +204,17 @@ class MainMenu(Gio.Menu):
 
         # Machine Menu
         machine_menu = Gio.Menu()
+
+        # Configured machines, rebuilt dynamically whenever a machine
+        # is added, removed, renamed, or activated. Marking the active
+        # one is done by the stateful 'select-machine' action.
+        self.machines_submenu = Gio.Menu()
+        self.dynamic_machines_section = Gio.Menu()
+        self.machines_submenu.append_section(
+            None, self.dynamic_machines_section
+        )
+        machine_menu.append_submenu(_("Select Machine"), self.machines_submenu)
+
         jog_group = Gio.Menu()
         jog_group.append(_("Home"), "win.machine-home")
         jog_group.append(_("Frame"), "win.machine-frame")
@@ -201,7 +236,10 @@ class MainMenu(Gio.Menu):
 
         machine_settings_group = Gio.Menu()
         machine_settings_group.append(
-            _("Machine Settings"), "win.machine-settings"
+            _("Manage Machines…"), "win.machine-manage"
+        )
+        machine_settings_group.append(
+            _("Current Machine Settings"), "win.machine-settings"
         )
         machine_menu.append_section(None, machine_settings_group)
 
@@ -265,6 +303,28 @@ class MainMenu(Gio.Menu):
             if info.label:
                 group.append(info.label, f"win.{info.action_name}")
 
+    def update_machines_menu(self, machines: list[Machine]):
+        """Clears and rebuilds the dynamic machine selection section.
+
+        Each entry targets the stateful ``win.select-machine`` action
+        with the machine ID, so the menu renders the active machine as
+        a checked radio item.
+        """
+        self.dynamic_machines_section.remove_all()
+
+        if not machines:
+            # Action is None, so it will appear insensitive
+            self.dynamic_machines_section.append(_("(No Machines)"), None)
+            return
+
+        for machine in machines:
+            label = _escape_menu_label(machine.name)
+            item = Gio.MenuItem.new(label, "win.select-machine")
+            item.set_action_and_target_value(
+                "win.select-machine", GLib.Variant.new_string(machine.id)
+            )
+            self.dynamic_machines_section.append_item(item)
+
     def update_macros_menu(self, macros: list[Macro]):
         """Clears and rebuilds the dynamic macro execution menu items."""
         self.dynamic_macros_section.remove_all()
@@ -284,9 +344,7 @@ class MainMenu(Gio.Menu):
             return
 
         for info in recent_infos:
-            # Use Glib.markup_escape to prevent issues with special chars
-            # in filenames.
-            display_name = GLib.markup_escape_text(info.get_display_name())
+            display_name = _escape_menu_label(info.get_display_name())
             uri = info.get_uri()
             action_name = f"win.open-recent('{uri}')"
             self.dynamic_recent_files_section.append(display_name, action_name)

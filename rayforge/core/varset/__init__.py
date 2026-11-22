@@ -1,6 +1,7 @@
 from .anglevar import AngleVar
 from .appkeyvar import AppKeyVar
 from .baudratevar import BaudrateVar
+from .bluetoothaddressvar import BluetoothAddressVar
 from .boolvar import BoolVar
 from .choicevar import ChoiceVar
 from .codevar import CodeVar
@@ -11,6 +12,7 @@ from .labeledchoicevar import LabeledChoiceVar
 from .lengthvar import LengthVar
 from .oauthvar import OAuthFlowVar
 from .portvar import PortVar
+from .remotedevicevar import RemoteDeviceVar
 from .serialportvar import SerialPortVar, format_vidpid, parse_vidpid
 from .speedvar import SpeedVar
 from .textareavar import TextAreaVar
@@ -23,6 +25,7 @@ __all__ = [
     "AngleVar",
     "AppKeyVar",
     "BaudrateVar",
+    "BluetoothAddressVar",
     "BoolVar",
     "ChoiceVar",
     "CodeVar",
@@ -33,6 +36,7 @@ __all__ = [
     "LengthVar",
     "OAuthFlowVar",
     "PortVar",
+    "RemoteDeviceVar",
     "SerialPortVar",
     "SliderFloatVar",
     "SliderIntVar",

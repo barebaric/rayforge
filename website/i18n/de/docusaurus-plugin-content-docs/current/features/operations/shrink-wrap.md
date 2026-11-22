@@ -65,8 +65,9 @@ Spielraum erhalten bleibt.
 
 ## Haupt-Einstellungen
 
-Der Schritt-Einstellungen-Dialog hat drei Registerkarten: **Schritt-Einstellungen**, **Laser** und
-**Nachbearbeitung**. Die Einstellungen werden unten in Registerkarten-Reihenfolge beschrieben.
+Der Schritt-Einstellungen-Dialog hat vier Registerkarten: **Schritt-Einstellungen**, **Laser**,
+**Nachbearbeitung** und **Werkstücke**. Die Einstellungen werden unten in Registerkarten-Reihenfolge
+beschrieben.
 
 ### Schrumpfumhüllung
 

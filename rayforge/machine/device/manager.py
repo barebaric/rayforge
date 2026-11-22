@@ -8,9 +8,9 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
 import yaml
+from raydriver.core.discovery import DeviceIdentity
 
 from ...core.model import ModelLibrary
-from ..discovery import DeviceIdentity
 from . import discovery_journal
 from .lightburn_importer import (
     ImportSummary,

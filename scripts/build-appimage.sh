@@ -17,7 +17,9 @@ ENV_NAME="appimage"
 ROOT_DIR=$(cd "$(dirname "$0")/.." && pwd)
 cd "$ROOT_DIR"
 
-if [[ -n "${GITHUB_REF_NAME:-}" && "${GITHUB_REF_TYPE:-}" == "tag" ]]; then
+if [[ -n "${VERSION:-}" ]]; then
+    :
+elif [[ -n "${GITHUB_REF_NAME:-}" && "${GITHUB_REF_TYPE:-}" == "tag" ]]; then
     VERSION="$GITHUB_REF_NAME"
 else
     VERSION=$(git describe --tags --always)
@@ -116,8 +118,13 @@ export GI_TYPELIB_PATH="$BUNDLE/lib/girepository-1.0"
 export XDG_DATA_DIRS="$BUNDLE/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
 export LOCPATH="$BUNDLE/share/locale${LOCPATH:+:$LOCPATH}"
 
-if [ -f "$BUNDLE/etc/ssl/cacert.pem" ]; then
-    export SSL_CERT_FILE="$BUNDLE/etc/ssl/cacert.pem"
+XKB_DIR="$BUNDLE/share/xkeyboard-config-2"
+if [ -d "$XKB_DIR" ]; then
+    export XKB_CONFIG_ROOT="$XKB_DIR"
+fi
+
+if [ -f "$BUNDLE/ssl/cacert.pem" ]; then
+    export SSL_CERT_FILE="$BUNDLE/ssl/cacert.pem"
 fi
 
 if [ -d "$BUNDLE/lib/gio/modules" ]; then
@@ -153,6 +160,64 @@ cat > "$FONTCONFIG_CONF" <<XMLEOF
 XMLEOF
 export FONTCONFIG_FILE="$FONTCONFIG_CONF"
 
+if [ "${1:-}" = "--apprun-selfcheck" ]; then
+    "$BUNDLE/bin/python" - <<'PY'
+import ctypes
+import os
+import ssl
+import sys
+
+failures = []
+
+
+class Rmlvo(ctypes.Structure):
+    _fields_ = [
+        ("rules", ctypes.c_char_p),
+        ("model", ctypes.c_char_p),
+        ("layout", ctypes.c_char_p),
+        ("variant", ctypes.c_char_p),
+        ("options", ctypes.c_char_p),
+    ]
+
+
+cafile = ssl.get_default_verify_paths().cafile
+try:
+    if not cafile or not os.path.isfile(cafile):
+        raise FileNotFoundError(cafile)
+    ssl.create_default_context(cafile=cafile)
+    print("TLS CA file: OK (%s)" % cafile)
+except OSError as err:
+    print("TLS CA file: FAILED (%s)" % err)
+    failures.append("tls")
+
+try:
+    lib = ctypes.CDLL("libxkbcommon.so.0")
+    lib.xkb_context_new.argtypes = [ctypes.c_int]
+    lib.xkb_context_new.restype = ctypes.c_void_p
+    lib.xkb_keymap_new_from_names.argtypes = [
+        ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int]
+    lib.xkb_keymap_new_from_names.restype = ctypes.c_void_p
+    lib.xkb_keymap_unref.argtypes = [ctypes.c_void_p]
+    lib.xkb_context_unref.argtypes = [ctypes.c_void_p]
+    ctx = lib.xkb_context_new(0)
+    names = Rmlvo(b"evdev", b"pc105", b"us", None, None)
+    keymap = lib.xkb_keymap_new_from_names(ctx, ctypes.byref(names), 0)
+    if keymap:
+        print("XKB keymap (evdev): OK")
+        lib.xkb_keymap_unref(keymap)
+    else:
+        print("XKB keymap (evdev): FAILED")
+        failures.append("xkb")
+    lib.xkb_context_unref(ctx)
+except OSError as err:
+    print("XKB keymap (evdev): FAILED (%s)" % err)
+    failures.append("xkb")
+
+sys.exit(1 if failures else 0)
+PY
+    exit $?
+fi
+
 exec "$BUNDLE/bin/python" -P -m rayforge "$@"
 EOF
 chmod +x "$APPDIR/AppRun"
@@ -170,6 +235,6 @@ fi
 chmod +x "$APPIMAGETOOL"
 
 echo "Packing AppImage..."
-APPIMAGE_EXTRACT_AND_RUN=1 "$APPIMAGETOOL" --comp xz "$APPDIR" "$APPIMAGE_FILE"
+APPIMAGE_EXTRACT_AND_RUN=1 "$APPIMAGETOOL" --comp gzip "$APPDIR" "$APPIMAGE_FILE"
 
 echo "Created: $APPIMAGE_FILE"

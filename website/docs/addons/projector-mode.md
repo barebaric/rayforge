@@ -48,8 +48,8 @@ outlines showing the computed toolpaths — the same paths that will be sent to 
 images of your workpieces are not shown, keeping the display focused on the cutting paths.
 
 The machine extent frame appears as a border representing the full travel area of your machine's
-axes. The work origin crosshair shows where the coordinate system origin is located within that
-area. Both update automatically if you change the work coordinate system offset on your machine.
+axes. The work origin arrows show where the coordinate system origin is located within that area.
+Both update automatically if you change the work coordinate system offset on your machine.
 
 ## Related Topics
 

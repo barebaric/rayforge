@@ -103,6 +103,7 @@ Configure o comportamento das operações de jog:
 - **Faixa**: 1-60.000 mm/min
 - **Padrão**: 1.000 mm/min
 - **Propósito**: Controla quão rápido a cabeça do laser se move
+- **Persistência**: A última velocidade usada é salva por máquina
 
 <!-- prettier-ignore-start -->
 :::tip[Seleção de Velocidade]
@@ -171,6 +172,12 @@ Mostra a posição da cabeça do laser no sistema de coordenadas ativo:
 - Coordenadas são relativas à origem WCS selecionada
 - Atualiza em tempo real conforme você faz jog ou executa trabalhos
 - Formato: Valores X, Y, Z em milímetros
+
+Com o [Modo oficina](settings.md) ativado nas configurações do aplicativo, toda a aba de controles
+muda para uma superfície de controle sensível ao toque — leituras grandes por eixo com botões de
+zero, offsets, steppers de velocidade/passo e botões superdimensionados de jog e trabalho:
+
+![Painel inferior em modo oficina](/screenshots/bottom-panel-shop-mode.webp)
 
 ### Status de Conexão
 

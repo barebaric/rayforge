@@ -1,6 +1,6 @@
 # Ruida RPA Driver
 
-The Ruida RPA driver connects Rayforge to Ruida-based laser controllers. It supports both a direct connection (USB or UDP) and a TUI RPC connection via the Ruida Protocol Analyzer. A machine settings configuration is available as the "Ruida RPA (Connect via Ruida Protocol Analyzer)" device.
+The Ruida RPA driver connects Rayforge to Ruida-based laser controllers. It supports both a direct connection (USB, UDP, or TCP) and a TUI RPC connection via the Ruida Protocol Analyzer. A machine settings configuration is available as the "Ruida RPA (Connect via Ruida Protocol Analyzer)" device.
 
 ## Installation
 
@@ -15,7 +15,9 @@ ruida-pa is installed from PyPI as part of the default pixi environment. To diag
 
 To configure Rayforge to use the ruidarpa driver, select the **Ruida RPA (Connect via Ruida Protocol Analyzer)** device in the machine settings.
 
-Configuring both the **UDP Hostname** and the **USB device** enables automatic swap between connections when cables are connected and disconnected. USB is preferred when both cables are connected because of slightly better performance (no ACK handshake).
+Configuring both the **Hostname** and the **USB device** enables automatic swap between connections when cables are connected and disconnected. USB is preferred when both cables are connected because of slightly better performance (no ACK handshake).
+
+Enabling **TCP protocol** switches the network connection from UDP to TCP; leave it disabled for the default UDP transport. The setting only applies to network connections.
 
 The **magic number** setting is used for other controllers. The default of `0x88` will work with many common controllers. The value is entered in hex.
 

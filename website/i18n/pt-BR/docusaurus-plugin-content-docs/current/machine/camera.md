@@ -59,7 +59,7 @@ rapidamente:
 1. **Conecte sua câmera** ao computador via USB
 
 2. **Abra Configurações da Câmera:**
-   - Navegue até **Máquina → Configurações da Máquina → Câmera**
+   - Navegue até **Máquina → Configurações Atuais da Máquina → Câmera**
 
 3. **Adicione uma nova câmera:**
    - Clique no botão "+" para adicionar uma câmera
@@ -147,8 +147,9 @@ Primeiro escolha um **Pattern Type**:
 3. Mova o padrão para diferentes posições e ângulos dentro da vista da câmera e clique em **Capture
    Frame** para cada posição. Procure fazer pelo menos 8 capturas cobrindo todo o quadro, incluindo
    cantos e bordas. A barra de progresso e os indicadores de status mostram a qualidade da captura.
-4. Quando quadros suficientes forem capturados, o assistente calcula o modelo de distorção e o
-   aplica — a sobreposição da câmera agora mostra uma imagem corrigida e reta.
+4. Quando quadros suficientes forem capturados, clique em **Calibrate**. O assistente mostra o
+   resultado — confirme com **Save Calibration** para aplicá-lo (apenas **Discard** descarta o
+   resultado) — e a sobreposição da câmera agora mostra uma imagem corrigida e reta.
 
 #### Usando um padrão já impresso
 
@@ -210,6 +211,8 @@ ajuste fino dos parâmetros radial (k1–k3) e tangencial (p1–p2).
 O alinhamento de imagem é o estágio final do assistente de câmera. O alinhamento da câmera calibra a
 relação entre pixels da câmera e coordenadas do mundo real, permitindo posicionamento preciso. O
 assistente usa o mesmo procedimento descrito aqui, e aplicar o alinhamento conclui o assistente.
+Finalizar sem um alinhamento aplicado exibe primeiro um aviso, porque a visão da câmera então não
+pode ser mapeada com precisão sobre a área de trabalho.
 
 #### Por Que o Alinhamento é Necessário
 
@@ -243,8 +246,10 @@ máquina.
    - Repita para cada ponto de referência
 
 4. **Insira coordenadas do mundo real:**
-   - Para cada ponto na imagem, insira as coordenadas X/Y reais em mm
-   - Estas são as coordenadas reais da máquina onde cada ponto está localizado
+   - Para cada ponto na imagem, insira as coordenadas X/Y reais na sua unidade de exibição (definida
+     nas configurações do aplicativo)
+   - Estas são as coordenadas reais da máquina onde cada ponto está localizado, medidas a partir da
+     origem da área de trabalho
    - Meça com precisão com uma régua ou use posições conhecidas da máquina
 
 5. **Aplique o alinhamento:**
@@ -293,6 +298,25 @@ O painel de propriedades da câmera mostra o status de alinhamento com um ícone
 
 Uma vez alinhada, a sobreposição de câmera ajuda a posicionar trabalhos com precisão. Alterne
 clicando no ícone da câmera na barra de ferramentas da janela principal.
+
+---
+
+### Visualização fora da área de trabalho
+
+A câmera geralmente vê mais do que apenas a área de trabalho. Em Configurações da máquina → Câmera →
+Visualização fora da área de trabalho, você pode exibir uma borda adicional semitransparente com a
+imagem da câmera ao redor da área de trabalho, o que facilita posicionar as peças.
+
+![Visualização da câmera fora da área de trabalho](/screenshots/main-camera-outside-view.webp)
+
+- **Mostrar fora da área de trabalho** liga ou desliga a borda. Ela fica desligada por padrão e
+  exige uma câmera alinhada.
+- **Margem** controla até onde a borda se estende além da área de trabalho, até 100 mm.
+- **Transparência** controla a visibilidade da borda.
+
+As áreas que a câmera não consegue ver permanecem transparentes em vez de aparecer em preto, e a
+borda termina no limite do que a câmera realmente cobre. Objetos que se elevam acima da mesa, como o
+pórtico, podem aparecer deslocados na borda, porque a imagem da câmera é alinhada ao plano da mesa.
 
 ---
 
@@ -417,11 +441,12 @@ sudo lsof /dev/video0
 
 O Rayforge é compatível com câmeras locais e câmeras de rede por meio de instantâneos HTTP, fluxos
 HTTP/MJPEG e RTSP. Câmeras locais são detectadas automaticamente; câmeras de rede são adicionadas
-informando diretamente a URL.
+informando diretamente a URL. **Daemon camera** lista as câmeras anunciadas por um daemon raydriver
+remoto; consulte [Dispositivos remotos](remote.md) para configurar o daemon.
 
 ### Adicionar uma câmera de rede
 
-1. Abra **Máquina → Configurações da Máquina → Câmera**.
+1. Abra **Máquina → Configurações Atuais da Máquina → Câmera**.
 2. Clique em **+** e escolha **HTTP snapshot URL**, **HTTP stream URL** ou **RTSP stream**.
 3. Informe um nome e a URL, por exemplo:
    - Instantâneo HTTP: `http://192.168.1.50:8080/media/getCapturePhoto`
@@ -430,7 +455,7 @@ informando diretamente a URL.
 4. Ative a câmera. O vídeo deverá aparecer na tela.
 
 O perfil do dispositivo Creality Falcon A1 Pro já inclui uma câmera de instantâneo HTTP
-pré-configurada e desativada. Em **Máquina → Configurações da Máquina → Câmera**, selecione **Falcon
+pré-configurada e desativada. Em **Máquina → Configurações Atuais da Máquina → Câmera**, selecione **Falcon
 A1 Pro Camera** e substitua `<laser-ip>` na URL do campo **Source** pelo endereço IP acessível da
 máquina. Confirme a URL válida com **Enter** ou clicando fora do campo e, em seguida, ative a câmera
 manualmente. Você também pode usar o endereço IP atribuído ao Falcon na sua rede Wi-Fi.
@@ -439,6 +464,23 @@ Depois, você pode editar o campo **Source** sem perder a calibração ou o alin
 URL, a câmera é desativada imediatamente. O botão de ativação permanece indisponível até que uma URL
 válida seja aplicada; depois, ative a câmera novamente manualmente. O Rayforge verifica se o esquema
 da URL corresponde ao tipo de fonte (`http://`, `https://`, `rtsp://` ou `rtsps://`).
+
+### Adicionar uma câmera do daemon
+
+Use esta opção quando a câmera estiver conectada ao computador que executa o daemon raydriver, e não
+ao seu computador.
+
+1. Abra **Máquina → Configurações Atuais da Máquina → Câmera**.
+2. Clique em **+** e escolha **Daemon camera** como tipo de fonte.
+3. Selecione o daemon. A lista contém as máquinas remotas configuradas no Rayforge.
+4. Selecione uma das câmeras anunciadas pelo daemon. O Rayforge preenche a URL e o tipo de fonte de
+   rede correspondente.
+5. Ative a câmera.
+
+Se nenhum daemon for listado, configure primeiro a máquina remota; consulte
+[Dispositivos remotos](remote.md).
+
+![Adicionar uma câmera do daemon](/screenshots/machine-settings-remote-camera.webp)
 
 ### Problemas de conexão
 

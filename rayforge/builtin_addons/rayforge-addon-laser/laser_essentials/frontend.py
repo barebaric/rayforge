@@ -13,8 +13,12 @@ from rayforge.core.hooks import hookimpl
 from rayforge.ui_gtk.action_registry import MenuPlacement
 from rayforge.ui_gtk.icons import register_icon_path
 
-from .commands import MaterialTestCmd
+from .commands import CalibrationCmd, CalibrationSync
 from .widgets import ASSEMBLER_WIDGETS
+from .widgets.calibration_provider import (
+    register_test_settings,
+    show_new_test,
+)
 
 ADDON_NAME = "laser_essentials"
 _ICONS_DIR = Path(__file__).parent / "resources" / "icons"
@@ -32,26 +36,56 @@ def register_step_settings_pages(step_settings_page_registry):
 
 
 @hookimpl
+def rayforge_init(context):
+    """Register the Test Settings with the item properties panel."""
+    register_test_settings(ADDON_NAME)
+
+
+@hookimpl
 def register_commands(command_registry):
     """Register editor command handlers."""
-    command_registry.register("material_test", MaterialTestCmd, ADDON_NAME)
+    command_registry.register("calibration", CalibrationCmd, ADDON_NAME)
+    command_registry.register("calibration_sync", CalibrationSync, ADDON_NAME)
+
+
+def _create_test(action_registry, generator_id: str):
+    window = action_registry.window
+    editor = window.doc_editor
+    cmd = editor.calibration
+    try:
+        record = cmd.create(generator_id)
+    except ValueError as e:
+        editor.notification_requested.send(editor, message=str(e))
+        return
+    show_new_test(window, cmd.workpieces(record))
 
 
 @hookimpl
 def register_actions(action_registry):
     """Register actions with menu placement."""
-    action = Gio.SimpleAction.new("material_test", None)
-
-    def on_activate(action, param):
-        window = action_registry.window
-        editor = window.doc_editor
-        editor.material_test.create_test_grid()
-
-    action.connect("activate", on_activate)
-    action_registry.register(
-        action_name="material_test",
-        action=action,
-        addon_name=ADDON_NAME,
-        label=_("Create Material Test Grid"),
-        menu=MenuPlacement(menu_id="tools", priority=100),
+    tests = (
+        (
+            "material_test",
+            "material_test_grid",
+            _("Create Material Test Grid"),
+        ),
+        ("interval_test", "interval_test", _("Create Interval Test")),
+        ("focus_test", "focus_test", _("Create Focus Test")),
     )
+    for priority, (action_name, generator_id, label) in enumerate(
+        tests, start=100
+    ):
+        action = Gio.SimpleAction.new(action_name, None)
+        action.connect(
+            "activate",
+            lambda _action, _param, gid=generator_id: _create_test(
+                action_registry, gid
+            ),
+        )
+        action_registry.register(
+            action_name=action_name,
+            action=action,
+            addon_name=ADDON_NAME,
+            label=label,
+            menu=MenuPlacement(menu_id="tools", priority=priority),
+        )

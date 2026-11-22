@@ -20,12 +20,13 @@ Accurate workpiece positioning is essential for:
 
 Rayforge provides several complementary tools for positioning:
 
-| Method             | Purpose                 | Best For                               |
-| ------------------ | ----------------------- | -------------------------------------- |
-| **Focus Mode**     | See laser position      | Quick visual alignment                 |
-| **Framing**        | Preview job bounds      | Verifying design fits on material      |
-| **WCS Zero**       | Set coordinate origin   | Repeatable positioning                 |
-| **Camera Overlay** | Visual design placement | Precise alignment on existing features |
+| Method                 | Purpose                 | Best For                               |
+| ---------------------- | ----------------------- | -------------------------------------- |
+| **Focus Mode**         | See laser position      | Quick visual alignment                 |
+| **Framing**            | Preview job bounds      | Verifying design fits on material      |
+| **WCS Zero**           | Set coordinate origin   | Repeatable positioning                 |
+| **Camera Overlay**     | Visual design placement | Precise alignment on existing features |
+| **Position Reference** | Choose the anchor point | Aligning parametric sketches           |
 
 ---
 
@@ -110,8 +111,8 @@ ask again"). You can choose:
 - **Dry-Run with Pointer**: the job runs with the pointer offset applied, so the pointer dot traces
   the toolpath while the beam runs displaced by the offset. The laser still fires at job power —
   make sure the displaced beam cannot hit anything it should not.
-- **Turn Off and Burn**: alignment is switched off and the job burns normally with the beam at the
-  WCS positions.
+- **Burn with Beam**: the job burns normally with the beam at the WCS positions. Pointer alignment
+  stays on, so you can keep aiming with the pointer dot after the job.
 - **Cancel**.
 
 Jog moves and jobs are never shifted by the toggle: jog is relative, and regular G-code output is
@@ -206,6 +207,39 @@ See [Work Coordinate Systems](../general-info/coordinate-systems.md) for complet
 
 ---
 
+## Position Reference
+
+By default, the **X Position** and **Y Position** fields in the properties panel refer to the
+lower-left corner of a workpiece's bounding box. For parametric sketches this is often not the most
+useful anchor: when a parameter changes the sketch's size, a corner-based position makes the design
+appear to shift relative to everything else.
+
+The **Position relative to** dropdown in the properties panel lets you choose which point the
+position fields refer to:
+
+| Option              | Refers to                                               |
+| ------------------- | ------------------------------------------------------- |
+| **Corner**          | The lower-left corner of the bounding box (the default) |
+| **Center**          | The center of the bounding box                          |
+| **Reference point** | The geometry's logical origin, e.g. the sketch origin   |
+
+![The Position relative to selector in the properties panel](/screenshots/main-item-properties.webp)
+
+The chosen reference point is also the point that stays fixed when the workpiece is resized, and
+when a sketch workpiece is regenerated with changed parameters. The **Reference point** option is
+only available for workpieces whose source defines one, such as sketches, where it is the sketch
+origin.
+
+<!-- prettier-ignore-start -->
+:::tip[Aligning Parametric Sketches]
+To keep an engraving registered inside a cutting outline: constrain both sketches to the sketch
+origin, set both workpieces to **Reference point**, and give both the same X/Y position. The
+sketches stay aligned no matter how the parameters change.
+:::
+<!-- prettier-ignore-end -->
+
+---
+
 ## Camera-Based Positioning
 
 The camera overlay shows a live view of your material with your design superimposed, enabling
@@ -292,6 +326,16 @@ For stock longer than the laser bed (fed through the machine in segments), a
 5. **Position the next segment** of the design relative to that origin in the canvas.
 6. **Frame to verify**, then **run the job**.
 7. Repeat from step 2 for each remaining segment.
+
+### Parametric Sketch Workflow
+
+For jobs that combine a cutting sketch with a parametric engraving sketch:
+
+1. **Constrain both sketches** to the sketch origin (e.g. center the geometry on the origin)
+2. **Place both workpieces** on the canvas and set **Position relative to → Reference point**
+3. **Enter the same X/Y position** for both workpieces
+4. **Adjust parameters** as needed — the sketches stay registered to each other
+5. **Frame the job** to verify placement
 
 ### Production Workflow
 

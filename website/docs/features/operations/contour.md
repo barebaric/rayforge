@@ -54,8 +54,8 @@ Use contour cutting for:
 
 ## Key Settings
 
-The step settings dialog has three tabs: **Step Settings**, **Laser**, and **Post Processing**.
-Settings are described in tab order below.
+The step settings dialog has four tabs: **Step Settings**, **Laser**, **Post Processing**, and
+**Workpieces**. Settings are described in tab order below.
 
 ### Contour Settings
 
@@ -75,10 +75,12 @@ Controls where the laser cuts relative to the vector path:
 
 **Offset Distance:**
 
-- How far inside/outside to offset (mm)
+- **Offset X** and **Offset Y**: how far inside/outside to offset on each axis (mm)
+- Both default to half the laser head's spot size on that axis
 - Typically set to half your kerf width
 - Kerf = width of material removed by laser
 - Example: 0.15mm offset for 0.3mm kerf
+- Set them independently when the beam spot is not circular
 
 #### Cut Order
 
@@ -208,6 +210,7 @@ See [Kerf](../kerf.md) for detailed guide.
 Contour operations support several post-processing options:
 
 - **[Smooth Path](../smooth.md)** - Reduce jagged edges in cutting paths
+- **[Perforation](../perforation.md)** - Cut dashed lines for folds, tear-off lines and stitch holes
 - **[Holding Tabs](../holding-tabs.md)** - Keep cut pieces attached to stock material
 - **[Crop to Stock](../crop-to-stock.md)** - Limit cuts to material boundary
 - **[Path Optimization](../path-optimization.md)** - Reduce travel distance between cuts

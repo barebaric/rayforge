@@ -16,14 +16,16 @@ description: "在 Rayforge 中配置机器的常规设置 — 设置机器名称
 
 选择与你的机器控制器匹配的驱动程序。驱动程序负责 Rayforge 与硬件之间的通信。
 
-GRBL 设备有三种串行驱动程序选项：
+GRBL 设备可以通过 USB/串口或网络连接：
 
-- **GRBL (Serial)** — 带缓冲计数、死锁检测和 stall 恢复的驱动程序。推荐用于大多数 GRBL 设备
-- **GRBL (Serial Simple)**
-  — 乒乓协议驱动程序。发送一行，等待 "ok"，再发送下一行。无缓冲管理，无死锁检测。当标准驱动程序导致误报时非常有用
-- **GRBL (Rust)**
-  — 实验性驱动程序，其完整的 GRBL 串行协议栈（流控制、作业流传输、stall 检测、死锁恢复、设置和探测）在 Rust 中运行。可以作为 GRBL
-  (Serial) 的直接替代选择
+- **GRBL (USB/Serial)**
+  — 带缓冲计数、死锁检测和 stall 恢复的驱动程序。其 GRBL 协议栈在 Rust 中运行。推荐用于大多数 GRBL 设备
+- **GRBL (USB/Serial — compatibility mode)**
+  — 乒乓协议驱动程序。发送一行，等待 "ok"，再发送下一行。无缓冲管理，无死锁检测。仅当标准驱动程序导致误报或通信错误时才需要
+- **GRBL (Bluetooth)** — 用于操作系统中已配对控制器的蓝牙经典 SPP/RFCOMM 连接
+- **grblHAL (Telnet)** — 原始 TCP/telnet 连接，适用于联网的 grblHAL 控制器以及 ESP3D 的 telnet 桥接
+- **FluidNC / ESP3D (Web API)** — 用于 FluidNC 和 ESP3D
+  v3 控制器的 HTTP/WebSocket 驱动程序，支持文件上传和设备设置
 
 基于 Ruida 的控制器由 **Ruida RPA** 驱动程序支持，它可以直接通过 USB 或 UDP 连接，或通过 TUI
 RPC 经由 Ruida Protocol

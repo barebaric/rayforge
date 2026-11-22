@@ -58,6 +58,22 @@ def inches_dxf_importer():
 
 
 @pytest.fixture
+def dxf3d_importer():
+    """A DXF whose outlines exist at two Z levels (z=0 and z=-10),
+    like a 3D CAD edge export of a 10mm thick part.
+    """
+    doc = ezdxf.new()  # type: ignore
+    doc.header["$INSUNITS"] = 4  # Millimeters
+    msp = doc.modelspace()
+    msp.add_line((0, 0, 0), (100, 0, 0))
+    msp.add_line((0, 0, -10), (100, 0, -10))
+    msp.add_arc(center=(50, 25, -10), radius=10, start_angle=0, end_angle=90)
+    buffer = io.StringIO()
+    doc.write(buffer)
+    return DxfImporter(buffer.getvalue().encode("utf-8"))
+
+
+@pytest.fixture
 def multi_layer_dxf_importer():
     doc = ezdxf.new()  # type: ignore
     doc.header["$INSUNITS"] = 4  # Millimeters
@@ -78,6 +94,47 @@ def multi_layer_dxf_importer():
         dxfattribs={"layer": "Layer3"},
     )
 
+    buffer = io.StringIO()
+    doc.write(buffer)
+    return DxfImporter(buffer.getvalue().encode("utf-8"))
+
+
+@pytest.fixture
+def block_layer_dxf_importer():
+    """A DXF with a block spanning two layers, where LAYER_B is used
+    only inside the block (mirrors issue #773)."""
+    doc = ezdxf.new()  # type: ignore
+    doc.header["$INSUNITS"] = 4  # Millimeters
+    doc.layers.new("LAYER_A")
+    doc.layers.new("LAYER_B")
+    block = doc.blocks.new("TestBlock")
+    block.add_lwpolyline(
+        [(0, 0), (10, 0), (10, 10), (0, 10)],
+        dxfattribs={"layer": "LAYER_A"},
+    )
+    block.add_circle(center=(20, 5), radius=5, dxfattribs={"layer": "LAYER_B"})
+    msp = doc.modelspace()
+    msp.add_line((0, 0), (5, 5), dxfattribs={"layer": "LAYER_A"})
+    msp.add_blockref("TestBlock", (50, 50))
+    buffer = io.StringIO()
+    doc.write(buffer)
+    return DxfImporter(buffer.getvalue().encode("utf-8"))
+
+
+@pytest.fixture
+def block_layer0_dxf_importer():
+    """A DXF whose block content sits on layer "0", so it inherits the
+    layer of the block insertion."""
+    doc = ezdxf.new()  # type: ignore
+    doc.header["$INSUNITS"] = 4  # Millimeters
+    doc.layers.new("LAYER_A")
+    block = doc.blocks.new("TestBlock")
+    block.add_lwpolyline(
+        [(0, 0), (10, 0), (10, 10), (0, 10)],
+        dxfattribs={"layer": "0"},
+    )
+    msp = doc.modelspace()
+    msp.add_blockref("TestBlock", (50, 50), dxfattribs={"layer": "LAYER_A"})
     buffer = io.StringIO()
     doc.write(buffer)
     return DxfImporter(buffer.getvalue().encode("utf-8"))
@@ -174,6 +231,7 @@ class TestDXFImporterContract:
         assert DxfImporter.features == {
             ImporterFeature.DIRECT_VECTOR,
             ImporterFeature.LAYER_SELECTION,
+            ImporterFeature.Z_FLATTENING,
         }
 
     def test_scan_returns_manifest(self, line_dxf_importer):
@@ -451,3 +509,141 @@ class TestDXFImporter:
                 layer_names.add(item.name)
 
         assert layer_names == {"Layer1", "Layer3"}
+
+
+def _z_values(geo: Geometry) -> set[float]:
+    """Collects all Z coordinates used by a geometry's commands."""
+    zs = set()
+    for cmd in geo.iter_typed_commands():
+        end = cmd.end
+        zs.add(round(end[2], 6))
+        if isinstance(cmd, Bezier):
+            zs.add(round(cmd.control1[2], 6))
+            zs.add(round(cmd.control2[2], 6))
+    return zs
+
+
+class TestDXFZFlattening:
+    def test_features_advertise_z_flattening(self):
+        assert ImporterFeature.Z_FLATTENING in DxfImporter.features
+
+    def test_scan_detects_z_variation(self, dxf3d_importer):
+        manifest = dxf3d_importer.scan()
+        assert manifest is not None
+        assert manifest.has_z_variation is True
+
+    def test_scan_flat_dxf_has_no_z_variation(self, line_dxf_importer):
+        manifest = line_dxf_importer.scan()
+        assert manifest is not None
+        assert manifest.has_z_variation is False
+
+    def test_vectorize_flattens_z_by_default(self, dxf3d_importer):
+        parse_result = dxf3d_importer.parse()
+        assert parse_result is not None
+
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
+        vec_result = dxf3d_importer.vectorize(parse_result, spec)
+
+        assert _z_values(vec_result.geometries_by_layer[None]) == {0.0}
+
+    def test_vectorize_preserves_z_when_disabled(self, dxf3d_importer):
+        parse_result = dxf3d_importer.parse()
+        assert parse_result is not None
+
+        spec = PassthroughSpec(
+            layer_import_mode=LayerImportMode.FLATTEN,
+            flatten_z=False,
+        )
+        vec_result = dxf3d_importer.vectorize(parse_result, spec)
+
+        assert _z_values(vec_result.geometries_by_layer[None]) == {
+            0.0,
+            -10.0,
+        }
+
+    def test_flatten_preserves_curves(self, dxf3d_importer):
+        """Flattening must not degrade curves (DXF arcs arrive as
+        beziers) into line segments.
+        """
+        parse_result = dxf3d_importer.parse()
+        assert parse_result is not None
+
+        spec = PassthroughSpec(
+            layer_import_mode=LayerImportMode.FLATTEN,
+            flatten_z=False,
+        )
+        unflattened = dxf3d_importer.vectorize(parse_result, spec)
+        vec_result = dxf3d_importer.vectorize(
+            parse_result,
+            PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN),
+        )
+        flat = vec_result.geometries_by_layer[None]
+
+        def curve_count(geo):
+            return sum(
+                1
+                for cmd in geo.iter_typed_commands()
+                if isinstance(cmd, Bezier)
+            )
+
+        assert curve_count(flat) == curve_count(
+            unflattened.geometries_by_layer[None]
+        )
+        assert curve_count(flat) > 0
+        for cmd in flat.iter_typed_commands():
+            if isinstance(cmd, Bezier):
+                assert cmd.control1[2] == 0.0
+                assert cmd.control2[2] == 0.0
+
+    def test_flatten_z_spec_roundtrip(self):
+        spec = PassthroughSpec(flatten_z=False)
+        restored = PassthroughSpec.from_dict(spec.to_dict())
+        assert restored.flatten_z is False
+
+    def test_flatten_z_defaults_true_for_legacy_specs(self):
+        legacy = PassthroughSpec().to_dict()
+        del legacy["flatten_z"]
+        restored = PassthroughSpec.from_dict(legacy)
+        assert restored.flatten_z is True
+
+
+class TestDXFBlockLayers:
+    def test_scan_counts_entities_inside_blocks(
+        self, block_layer_dxf_importer: DxfImporter
+    ):
+        manifest = block_layer_dxf_importer.scan()
+        counts = {layer.id: layer.feature_count for layer in manifest.layers}
+        assert counts["LAYER_A"] == 2
+        assert counts["LAYER_B"] == 1
+
+    def test_vectorize_imports_block_only_layer(
+        self, block_layer_dxf_importer: DxfImporter
+    ):
+        parse_result = block_layer_dxf_importer.parse()
+        assert parse_result is not None
+        spec = PassthroughSpec(
+            active_layer_ids=["LAYER_B"],
+            layer_import_mode=LayerImportMode.NEW_LAYERS,
+        )
+        vec_result = block_layer_dxf_importer.vectorize(parse_result, spec)
+        geo = vec_result.geometries_by_layer["LAYER_B"]
+        assert not geo.is_empty()
+        x1, _y1, x2, _y2 = geo.rect()
+        assert (x2 - x1) == pytest.approx(10.0)
+
+    def test_block_entities_on_layer_zero_inherit_insert_layer(
+        self, block_layer0_dxf_importer: DxfImporter
+    ):
+        manifest = block_layer0_dxf_importer.scan()
+        counts = {layer.id: layer.feature_count for layer in manifest.layers}
+        assert counts.get("LAYER_A") == 1
+
+        parse_result = block_layer0_dxf_importer.parse()
+        assert parse_result is not None
+        spec = PassthroughSpec(
+            active_layer_ids=["LAYER_A"],
+            layer_import_mode=LayerImportMode.NEW_LAYERS,
+        )
+        vec_result = block_layer0_dxf_importer.vectorize(parse_result, spec)
+        assert not vec_result.geometries_by_layer["LAYER_A"].is_empty()
+        assert "0" not in vec_result.geometries_by_layer

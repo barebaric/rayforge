@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-06 22:41+0200\n"
+"POT-Creation-Date: 2026-11-15 17:41+0100\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -255,6 +255,15 @@ msgstr "Auswahl (Beschriftet)"
 msgid "Tuple"
 msgstr "Tupel"
 
+#: rayforge/core/varset/remotedevicevar.py
+#: rayforge/machine/driver/remote_driver.py
+msgid "Select a device on the daemon."
+msgstr "Wählen Sie ein Gerät am Daemon."
+
+#: rayforge/core/varset/remotedevicevar.py
+msgid "Remote Device"
+msgstr "Remote-Gerät"
+
 #: rayforge/core/varset/boolvar.py
 msgid "Boolean (Switch)"
 msgstr "Boolesch (Schalter)"
@@ -369,6 +378,18 @@ msgstr ""
 "Operator '{op}' kann nicht zwischen den Typen '{left}' und '{right}' "
 "verwendet werden."
 
+#: rayforge/core/workpiece.py
+msgid "Corner"
+msgstr "Ecke"
+
+#: rayforge/core/workpiece.py
+msgid "Center"
+msgstr "Mitte"
+
+#: rayforge/core/workpiece.py
+msgid "Reference point"
+msgstr "Bezugspunkt"
+
 #: rayforge/camera/source/base.py
 #, python-brace-format
 msgid "URL contains placeholder <{placeholder}>; replace it with a valid value"
@@ -397,6 +418,125 @@ msgstr "Die URL enthält einen ungültigen Host oder Port."
 msgid "URL must include a valid hostname or IP address"
 msgstr ""
 "Die URL muss einen gültigen Hostnamen oder eine gültige IP-Adresse enthalten."
+
+#: rayforge/machine/driver/remote_setup.py
+msgid "Daemon hostname"
+msgstr "Daemon-Hostname"
+
+#: rayforge/machine/driver/remote_setup.py
+msgid "Hostname or IP of the computer running the raydriver daemon."
+msgstr "Hostname oder IP des Computers, auf dem der raydriver-Daemon läuft."
+
+#: rayforge/machine/driver/remote_setup.py
+msgid "Daemon port"
+msgstr "Daemon-Port"
+
+#: rayforge/machine/driver/remote_setup.py
+msgid "Control port of the raydriver daemon."
+msgstr "Steuerport des raydriver-Daemons."
+
+#: rayforge/machine/driver/remote_setup.py
+msgid "Token"
+msgstr "Token"
+
+#: rayforge/machine/driver/remote_setup.py
+msgid ""
+"The daemon's shared secret. Run 'raydriver daemon status' on the computer "
+"running the daemon to print it."
+msgstr ""
+"Das gemeinsame Geheimnis des Daemons. Führen Sie 'raydriver daemon status' "
+"auf dem Computer aus, auf dem der Daemon läuft, um es auszugeben."
+
+#: rayforge/machine/driver/remote_setup.py
+msgid "TLS certificate (PEM path)"
+msgstr "TLS-Zertifikat (PEM-Pfad)"
+
+#: rayforge/machine/driver/remote_setup.py
+msgid ""
+"Pin the daemon's certificate. Only needed for a daemon reached over the "
+"network with TLS."
+msgstr ""
+"Das Zertifikat des Daemons pinnen. Nur für einen Daemon erforderlich, der "
+"über das Netzwerk mit TLS erreicht wird."
+
+#: rayforge/machine/driver/remote_setup.py
+msgid "TLS hostname"
+msgstr "TLS-Hostname"
+
+#: rayforge/machine/driver/remote_setup.py
+msgid ""
+"Hostname to verify against the certificate (defaults to the daemon hostname)."
+msgstr ""
+"Hostname, der gegen das Zertifikat geprüft wird (standardmäßig der Daemon-"
+"Hostname)."
+
+#: rayforge/machine/driver/remote_driver.py
+msgid "Remote machine (raydriver)"
+msgstr "Remote-Maschine (raydriver)"
+
+#: rayforge/machine/driver/remote_driver.py
+msgid "A device attached to a raydriver daemon on another computer"
+msgstr ""
+"Ein Gerät, das an einem raydriver-Daemon auf einem anderen Computer "
+"angeschlossen ist"
+
+#: rayforge/machine/driver/remote_driver.py
+msgid "Daemon hostname must be configured."
+msgstr "Der Daemon-Hostname muss konfiguriert sein."
+
+#: rayforge/machine/driver/remote_driver.py
+#: rayforge/ui_gtk/camera/selection_dialog.py
+#: rayforge/ui_gtk/machine/device_settings_page.py
+#: rayforge/ui_gtk/machine/settings_dialog.py
+msgid "Device"
+msgstr "Gerät"
+
+#: rayforge/machine/driver/remote_driver.py
+msgid ""
+"The machine on the daemon. The list is read from the daemon once its "
+"hostname is set."
+msgstr ""
+"Die Maschine am Daemon. Die Liste wird vom Daemon gelesen, sobald sein "
+"Hostname gesetzt ist."
+
+#: rayforge/machine/driver/remote_driver.py
+msgid "Protocol"
+msgstr "Protokoll"
+
+#: rayforge/machine/driver/remote_driver.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
+#: rayforge/machine/driver/grbl/grbl_network.py
+msgid "Unknown Settings"
+msgstr "Unbekannte Einstellungen"
+
+#: rayforge/machine/driver/remote_driver.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
+#: rayforge/machine/driver/grbl/grbl_network.py
+msgid "Settings reported by the device not in the standard list."
+msgstr ""
+"Vom Gerät gemeldete Einstellungen, die nicht in der Standardliste enthalten "
+"sind."
+
+#: rayforge/machine/driver/remote_driver.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
+#: rayforge/machine/driver/grbl/grbl_network.py
+msgid "Unknown setting from device"
+msgstr "Unbekannte Einstellung vom Gerät"
+
+#: rayforge/machine/driver/remote_driver.py
+msgid "Remote machine"
+msgstr "Remote-Maschine"
+
+#: rayforge/machine/driver/remote_driver.py
+#: rayforge/machine/driver/octoprint/octoprint_util.py
+#: rayforge/machine/driver/marlin/marlin_probe.py
+#: rayforge/machine/driver/grbl/grbl_probe.py
+#: rayforge/machine/driver/smoothie/smoothie_util.py
+msgid "Auto-configured via probe wizard"
+msgstr "Automatisch über den Erkennungsassistenten konfiguriert"
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
 msgid "Ruida"
@@ -448,6 +588,18 @@ msgid ""
 msgstr ""
 "Welche Verbindungsart verwendet werden soll. „Automatisch“ öffnet USB, wenn "
 "verfügbar, und greift andernfalls auf das Netzwerk zurück."
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "TCP protocol"
+msgstr "TCP-Protokoll"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"Use TCP instead of UDP for the network connection. Needed by controllers "
+"that do not respond over UDP."
+msgstr ""
+"TCP statt UDP für die Netzwerkverbindung verwenden. Wird von Controllern "
+"benötigt, die nicht über UDP antworten."
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
 #: rayforge/machine/driver/octoprint/octoprint_driver.py
@@ -634,6 +786,14 @@ msgstr ""
 "Dieser Treiber ist experimentell und höchstwahrscheinlich fehlerhaft. Er "
 "funktioniert möglicherweise nicht zuverlässig. Verwendung auf eigenes Risiko."
 
+#: rayforge/machine/driver/driver.py
+msgid "Home Switch"
+msgstr "Referenzschalter"
+
+#: rayforge/machine/driver/driver.py
+msgid "Probe"
+msgstr "Taster"
+
 #: rayforge/machine/driver/driver.py rayforge/machine/transport/transport.py
 #: rayforge/ui_gtk/machine/machine_dropdown.py
 #: rayforge/ui_gtk/machine/status_widget.py
@@ -690,7 +850,7 @@ msgid "Lock"
 msgstr "Gesperrt"
 
 #: rayforge/machine/driver/driver.py
-#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+#: rayforge/ui_gtk/addon_manager/action_button.py
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 msgid "Unlock"
 msgstr "Entsperren"
@@ -740,13 +900,6 @@ msgstr ""
 msgid "Could not read the OctoPrint server version."
 msgstr "OctoPrint-Serverversion konnte nicht gelesen werden."
 
-#: rayforge/machine/driver/octoprint/octoprint_util.py
-#: rayforge/machine/driver/marlin/marlin_probe.py
-#: rayforge/machine/driver/grbl/grbl_probe.py
-#: rayforge/machine/driver/smoothie/smoothie_util.py
-msgid "Auto-configured via probe wizard"
-msgstr "Automatisch über den Erkennungsassistenten konfiguriert"
-
 #: rayforge/machine/driver/octoprint/octoprint_driver.py
 msgid "OctoPrint"
 msgstr "OctoPrint"
@@ -756,6 +909,7 @@ msgid "Submit G-code to an OctoPrint server"
 msgstr "G-Code an einen OctoPrint-Server senden"
 
 #: rayforge/machine/driver/octoprint/octoprint_driver.py
+#: rayforge/machine/driver/session_driver.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
 #: rayforge/machine/driver/grbl/grbl_network.py
@@ -954,12 +1108,25 @@ msgstr "Baudrate muss konfiguriert werden."
 
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
 msgid "Port not configured"
 msgstr "Port nicht konfiguriert."
 
 #: rayforge/machine/driver/marlin/marlin_serial.py
-msgid "No response from device"
-msgstr "Keine Antwort vom Gerät"
+#: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
+msgid "Driver is not set up. Check the port settings."
+msgstr "Treiber ist nicht eingerichtet. Überprüfen Sie die Port-Einstellungen."
+
+#: rayforge/machine/driver/session_driver.py
+#: rayforge/machine/driver/smoothie/smoothie_driver.py
+msgid "Driver is not set up. Check the connection settings."
+msgstr ""
+"Der Treiber ist nicht eingerichtet. Überprüfe die Verbindungseinstellungen."
+
+#: rayforge/machine/driver/session_driver.py
+msgid "Connection not configured"
+msgstr "Verbindung nicht konfiguriert"
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 msgid "GRBL (Telnet)"
@@ -1663,10 +1830,6 @@ msgid "GRBL device"
 msgstr "GRBL-Gerät"
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
-msgid "Driver is not set up. Check the port settings."
-msgstr "Treiber ist nicht eingerichtet. Überprüfen Sie die Port-Einstellungen."
-
-#: rayforge/machine/driver/grbl/grbl_serial.py
 msgid "RX Buffer Size Override"
 msgstr "RX-Puffergröße überschreiben"
 
@@ -1677,26 +1840,6 @@ msgid ""
 msgstr ""
 "Erzwinge eine bestimmte RX-Puffergröße in Bytes. Setze auf 0 für "
 "automatische Erkennung vom Gerät."
-
-#: rayforge/machine/driver/grbl/grbl_serial.py
-#: rayforge/machine/driver/grbl/grbl_serial_simple.py
-#: rayforge/machine/driver/grbl/grbl_network.py
-msgid "Unknown Settings"
-msgstr "Unbekannte Einstellungen"
-
-#: rayforge/machine/driver/grbl/grbl_serial.py
-#: rayforge/machine/driver/grbl/grbl_serial_simple.py
-#: rayforge/machine/driver/grbl/grbl_network.py
-msgid "Settings reported by the device not in the standard list."
-msgstr ""
-"Vom Gerät gemeldete Einstellungen, die nicht in der Standardliste enthalten "
-"sind."
-
-#: rayforge/machine/driver/grbl/grbl_serial.py
-#: rayforge/machine/driver/grbl/grbl_serial_simple.py
-#: rayforge/machine/driver/grbl/grbl_network.py
-msgid "Unknown setting from device"
-msgstr "Unbekannte Einstellung vom Gerät"
 
 #: rayforge/machine/driver/grbl/grbl_probe.py
 msgid ""
@@ -1814,10 +1957,35 @@ msgstr "Smoothieware über eine Telnet-Verbindung"
 msgid "The Telnet port number"
 msgstr "Die Telnet-Portnummer"
 
+#: rayforge/machine/driver/smoothie/smoothie_driver.py
+msgid "Host not configured"
+msgstr "Host nicht konfiguriert"
+
 #: rayforge/machine/discovery/mdns_channel.py
 #, python-brace-format
 msgid "{host}:{port}"
 msgstr "{host}:{port}"
+
+#: rayforge/machine/discovery/raydriver_channel.py
+msgid "unreachable"
+msgstr "nicht erreichbar"
+
+#: rayforge/machine/discovery/raydriver_channel.py
+msgid "token required"
+msgstr "Token erforderlich"
+
+#: rayforge/machine/discovery/raydriver_channel.py
+#, python-brace-format
+msgid "{host}:{port} via raydriver daemon"
+msgstr "{host}:{port} über raydriver-Daemon"
+
+#: rayforge/machine/discovery/raydriver_channel.py
+msgid "no devices"
+msgstr "keine Geräte"
+
+#: rayforge/machine/discovery/raydriver_channel.py
+msgid "raydriver daemon"
+msgstr "raydriver-Daemon"
 
 #: rayforge/machine/discovery/serial_channel.py
 #, python-brace-format
@@ -1874,6 +2042,11 @@ msgstr "Arbeitsränder"
 msgid "Soft Limits"
 msgstr "Software-Grenzen"
 
+#: rayforge/machine/device/profile.py rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid "Enable Soft Limits"
+msgstr "Soft-Limits aktivieren"
+
 #: rayforge/machine/device/profile.py
 msgid "Coordinate Origin"
 msgstr "Koordinatenursprung"
@@ -1888,6 +2061,21 @@ msgstr "Panel-Ausrichtung"
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Has Z-Axis"
 msgstr "Hat Z-Achse"
+
+#: rayforge/machine/device/profile.py rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid "Reverse X-Axis Direction"
+msgstr "X-Achsenrichtung umkehren"
+
+#: rayforge/machine/device/profile.py rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid "Reverse Y-Axis Direction"
+msgstr "Y-Achsenrichtung umkehren"
+
+#: rayforge/machine/device/profile.py rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid "Reverse Z-Axis Direction"
+msgstr "Z-Achsenrichtung umkehren"
 
 #: rayforge/machine/device/profile.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
@@ -1928,6 +2116,10 @@ msgstr "Verhalten"
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Home on Start"
 msgstr "Referenzierung beim Start"
+
+#: rayforge/machine/device/profile.py
+msgid "Park Position After Homing"
+msgstr "Parkposition nach der Referenzfahrt"
 
 #: rayforge/machine/device/profile.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
@@ -2401,6 +2593,10 @@ msgstr "Achse referenzieren"
 msgid "Move To"
 msgstr "Fahre zu"
 
+#: rayforge/machine/models/dialect/base.py
+msgid "Move To Park"
+msgstr "Fahre zu Parkposition"
+
 #: rayforge/machine/models/dialect/base.py rayforge/ui_gtk/main_menu.py
 msgid "Clear Alarm"
 msgstr "Alarm zurücksetzen"
@@ -2542,6 +2738,10 @@ msgstr ""
 "ihn abzubrechen."
 
 #: rayforge/machine/cmd.py
+msgid "The document produces no toolpath."
+msgstr "Das Dokument erzeugt keinen Werkzeugweg."
+
+#: rayforge/machine/cmd.py
 #, python-brace-format
 msgid "Framing failed: {error}"
 msgstr "Rahmung fehlgeschlagen: {error}"
@@ -2679,6 +2879,7 @@ msgstr ""
 #: rayforge/ui_gtk/machine/template_selector.py
 #: rayforge/ui_gtk/varset/adapter/combo.py
 #: rayforge/ui_gtk/addon_manager/addon_dialog.py
+#: rayforge/ui_gtk/addon_manager/community_dialog.py
 #: rayforge/ui_gtk/addon_manager/license_dialog.py
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 #: rayforge/ui_gtk/addon_manager/experimental_dialog.py
@@ -2692,6 +2893,7 @@ msgstr ""
 #: rayforge/ui_gtk/doceditor/step_settings/recipe_control_widget.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
+#: rayforge/ui_gtk/doceditor/path_tolerance_dialog.py
 #: rayforge/ui_gtk/doceditor/step_type_selection_dialog.py
 #: rayforge/ui_gtk/doceditor/material_selector.py
 #: rayforge/ui_gtk/doceditor/material_list.py
@@ -2727,6 +2929,14 @@ msgstr "Patreon"
 #: rayforge/ui_gtk/settings/license_settings_page.py
 msgid "Link your Patreon account for early access to new addons."
 msgstr "Verknüpfe dein Patreon-Konto für frühen Zugang zu neuen Erweiterungen."
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "External addon services are disabled"
+msgstr "Externe Addon-Dienste sind deaktiviert"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Enable them on the Addons settings page"
+msgstr "Aktiviere sie auf der Addon-Einstellungsseite"
 
 #: rayforge/ui_gtk/settings/license_settings_page.py
 msgid "Patreon Account Linked"
@@ -2915,6 +3125,28 @@ msgid "Addons"
 msgstr "Erweiterungen"
 
 #: rayforge/ui_gtk/settings/addon_manager_page.py
+msgid "Online Services"
+msgstr "Online-Dienste"
+
+#: rayforge/ui_gtk/settings/addon_manager_page.py
+msgid ""
+"Controls registry access, remote installation, and external license "
+"services. Built-in and locally installed addons remain available when "
+"disabled."
+msgstr ""
+"Steuert den Zugriff auf die Registry, Remote-Installationen und externe "
+"Lizenzdienste. Integrierte und lokal installierte Addons bleiben bei "
+"deaktivierter Option verfügbar."
+
+#: rayforge/ui_gtk/settings/addon_manager_page.py
+msgid "Enable external addon services"
+msgstr "Externe Addon-Dienste aktivieren"
+
+#: rayforge/ui_gtk/settings/addon_manager_page.py
+msgid "Allow network access to addon and license providers"
+msgstr "Netzwerkzugriff auf Addon- und Lizenzanbieter erlauben"
+
+#: rayforge/ui_gtk/settings/addon_manager_page.py
 msgid "Installed Addons"
 msgstr "Installierte Erweiterungen"
 
@@ -2924,16 +3156,16 @@ msgstr "Erweiterungen installieren, aktualisieren und entfernen."
 
 #: rayforge/ui_gtk/settings/gesture_preferences_page.py
 msgid "Mouse Gestures"
-msgstr ""
+msgstr "Mausgesten"
 
 #: rayforge/ui_gtk/settings/gesture_preferences_page.py
 #, python-format
 msgid "Default: %s"
-msgstr ""
+msgstr "Standard: %s"
 
 #: rayforge/ui_gtk/settings/gesture_preferences_page.py
 msgid "Unassigned"
-msgstr ""
+msgstr "Nicht zugewiesen"
 
 #: rayforge/ui_gtk/settings/recipe_manager_page.py
 msgid "Recipes"
@@ -3217,6 +3449,7 @@ msgid "Length"
 msgstr "Länge"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
+#: rayforge/ui_gtk/machine/bidir_offset_table.py
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Speed"
 msgstr "Geschwindigkeit"
@@ -3253,6 +3486,24 @@ msgstr "Nach Updates suchen"
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Automatically check for new Rayforge versions on startup"
 msgstr "Automatisch beim Start nach neuen Rayforge-Versionen suchen"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Check for addon updates"
+msgstr "Nach Addon-Updates suchen"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Automatically check for addon updates on startup"
+msgstr "Automatisch beim Start nach Addon-Updates suchen"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Watch imported files"
+msgstr "Importierte Dateien überwachen"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Offer to reload imported files when they change on disk"
+msgstr ""
+"Anbieten, importierte Dateien neu zu laden, wenn sie sich auf der Festplatte "
+"ändern"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Startup behavior"
@@ -3316,6 +3567,11 @@ msgstr "_Abbrechen"
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "_Restart"
 msgstr "_Neu starten"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+#, python-brace-format
+msgid "Error: {msg}"
+msgstr "Fehler: {msg}"
 
 #: rayforge/ui_gtk/array_dialog.py
 msgid "Copies keep their original layers."
@@ -3433,9 +3689,41 @@ msgstr "Gruppieren"
 msgid "Ungroup"
 msgstr "Gruppierung aufheben"
 
+#: rayforge/ui_gtk/canvas2d/context_menu.py rayforge/ui_gtk/main_menu.py
+msgid "Break Apart"
+msgstr "Auseinanderbrechen"
+
+#: rayforge/ui_gtk/canvas2d/context_menu.py rayforge/ui_gtk/main_menu.py
+msgid "Close Paths…"
+msgstr "Pfade schließen…"
+
+#: rayforge/ui_gtk/canvas2d/context_menu.py rayforge/ui_gtk/main_menu.py
+msgid "Join Open Paths…"
+msgstr "Offene Pfade verbinden…"
+
+#: rayforge/ui_gtk/canvas2d/context_menu.py rayforge/ui_gtk/main_menu.py
+msgid "Delete Duplicates"
+msgstr "Duplikate löschen"
+
+#: rayforge/ui_gtk/canvas2d/context_menu.py
+msgid "Clean Up Paths"
+msgstr "Pfade bereinigen"
+
 #: rayforge/ui_gtk/canvas2d/context_menu.py rayforge/doceditor/stock_cmd.py
 msgid "Convert to Stock"
 msgstr "In Material umwandeln"
+
+#: rayforge/ui_gtk/canvas2d/context_menu.py rayforge/ui_gtk/main_menu.py
+#: rayforge/ui_gtk/doceditor/asset_browser.py
+#: rayforge/ui_gtk/doceditor/layer_column.py
+msgid "Reload from Disk"
+msgstr "Von Festplatte neu laden"
+
+#: rayforge/ui_gtk/canvas2d/context_menu.py
+#: rayforge/ui_gtk/doceditor/asset_browser.py
+#: rayforge/ui_gtk/doceditor/layer_column.py
+msgid "Relink Source File…"
+msgstr "Quelldatei neu verknüpfen…"
 
 #: rayforge/ui_gtk/canvas2d/context_menu.py
 msgid "Add Tab Here"
@@ -3502,6 +3790,66 @@ msgstr "Material hinzufügen"
 #: rayforge/ui_gtk/actions.py
 msgid "Auto Layout (Simple)"
 msgstr "Automatische Anordnung (Einfach)"
+
+#: rayforge/ui_gtk/actions.py
+#, python-brace-format
+msgid "The file of {name} cannot be found. Use Relink to pick it."
+msgstr ""
+"Die Datei von {name} kann nicht gefunden werden. Verwende „Neu verknüpfen“, "
+"um sie auszuwählen."
+
+#: rayforge/ui_gtk/actions.py
+msgid "Nothing to break apart"
+msgstr "Nichts zum Auseinanderbrechen"
+
+#: rayforge/ui_gtk/actions.py
+#, python-brace-format
+msgid "Closed {count} path"
+msgid_plural "Closed {count} paths"
+msgstr[0] "{count} Pfad geschlossen"
+msgstr[1] "{count} Pfade geschlossen"
+
+#: rayforge/ui_gtk/actions.py
+msgid "Close Paths"
+msgstr "Pfade schließen"
+
+#: rayforge/ui_gtk/actions.py
+msgid ""
+"Closes open paths whose start and end point are closer than the tolerance."
+msgstr ""
+"Schließt offene Pfade, deren Start- und Endpunkt näher als die Toleranz "
+"beieinanderliegen."
+
+#: rayforge/ui_gtk/actions.py
+#, python-brace-format
+msgid "Made {count} join"
+msgid_plural "Made {count} joins"
+msgstr[0] "{count} Verbindung hergestellt"
+msgstr[1] "{count} Verbindungen hergestellt"
+
+#: rayforge/ui_gtk/actions.py
+msgid "Join Open Paths"
+msgstr "Offene Pfade verbinden"
+
+#: rayforge/ui_gtk/actions.py
+msgid ""
+"Joins open paths whose end points are closer than the tolerance. Paths whose "
+"ends then meet are closed."
+msgstr ""
+"Verbindet offene Pfade, deren Endpunkte näher als die Toleranz "
+"beieinanderliegen. Pfade, deren Enden danach aufeinandertreffen, werden "
+"geschlossen."
+
+#: rayforge/ui_gtk/actions.py
+msgid "Join Paths"
+msgstr "Pfade verbinden"
+
+#: rayforge/ui_gtk/actions.py
+#, python-brace-format
+msgid "Deleted {count} duplicate"
+msgid_plural "Deleted {count} duplicates"
+msgstr[0] "{count} Duplikat gelöscht"
+msgstr[1] "{count} Duplikate gelöscht"
 
 #: rayforge/ui_gtk/camera/lens_calibration_dialog.py
 #, python-brace-format
@@ -3598,6 +3946,7 @@ msgid "Temporal averaging, higher values cause trailing"
 msgstr "Zeitliche Mittelung, höhere Werte verursachen Schlieren"
 
 #: rayforge/ui_gtk/camera/image_settings_widget.py
+#: rayforge/ui_gtk/camera/outside_view_widget.py
 msgid "Transparency"
 msgstr "Transparenz"
 
@@ -3652,12 +4001,6 @@ msgid "RTSP stream"
 msgstr "RTSP-Stream"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
-#: rayforge/ui_gtk/machine/device_settings_page.py
-#: rayforge/ui_gtk/machine/settings_dialog.py
-msgid "Device"
-msgstr "Gerät"
-
-#: rayforge/ui_gtk/camera/selection_dialog.py
 msgid "Choose an attached local camera"
 msgstr "Wählen Sie eine angeschlossene lokale Kamera"
 
@@ -3694,6 +4037,16 @@ msgstr "Diesen Punkt löschen"
 #: rayforge/ui_gtk/camera/point_bubble_widget.py
 msgid "Nudge Pixel:"
 msgstr "Pixel verschieben:"
+
+#: rayforge/ui_gtk/camera/point_bubble_widget.py
+#, python-brace-format
+msgid "X ({unit}):"
+msgstr "X ({unit}):"
+
+#: rayforge/ui_gtk/camera/point_bubble_widget.py
+#, python-brace-format
+msgid "Y ({unit}):"
+msgstr "Y ({unit}):"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Camera Properties"
@@ -4050,6 +4403,12 @@ msgstr "Benutzerdefiniert ({id})"
 msgid "Save Calibration Card"
 msgstr "Kalibrierungskarte speichern"
 
+#: rayforge/ui_gtk/camera/wizard/card_page.py rayforge/ui_gtk/mainwindow.py
+#: rayforge/ui_gtk/debug_log_dialog.py rayforge/ui_gtk/project_cmd.py
+#, python-brace-format
+msgid "Error saving file: {msg}"
+msgstr "Fehler beim Speichern der Datei: {msg}"
+
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Calibration card saved"
 msgstr "Kalibrierungskarte gespeichert"
@@ -4173,6 +4532,7 @@ msgid "Skip Anyway"
 msgstr "Trotzdem überspringen"
 
 #: rayforge/ui_gtk/camera/wizard/capture_page.py
+#: rayforge/ui_gtk/camera/wizard/wizard.py
 msgid "Stay Here"
 msgstr "Hier bleiben"
 
@@ -4194,6 +4554,23 @@ msgstr "Weiter"
 #: rayforge/ui_gtk/camera/wizard/wizard.py
 msgid "Finish"
 msgstr "Fertig"
+
+#: rayforge/ui_gtk/camera/wizard/wizard.py
+msgid "Finish Without Alignment?"
+msgstr "Ohne Ausrichtung abschließen?"
+
+#: rayforge/ui_gtk/camera/wizard/wizard.py
+msgid ""
+"No reference points have been applied yet. Without them the camera view is "
+"stretched over the work area and will not line up with the actual machine."
+msgstr ""
+"Es wurden noch keine Bezugspunkte angewendet. Ohne sie wird die "
+"Kameraansicht über den Arbeitsbereich gestreckt und passt nicht zur "
+"tatsächlichen Maschine."
+
+#: rayforge/ui_gtk/camera/wizard/wizard.py
+msgid "Finish Anyway"
+msgstr "Trotzdem abschließen"
 
 #: rayforge/ui_gtk/camera/wizard/wizard.py
 #: rayforge/ui_gtk/machine/dialect_list.py
@@ -4338,16 +4715,63 @@ msgstr "Kameras"
 msgid "Stream a camera image directly onto the work surface."
 msgstr "Ein Kamerabild direkt auf die Arbeitsfläche streamen."
 
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid "View Outside Workspace"
+msgstr "Ansicht außerhalb des Arbeitsbereichs"
+
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid ""
+"Show the camera image in a margin around the work area to help position "
+"workpieces. Requires image alignment."
+msgstr ""
+"Das Kamerabild in einem Rand um den Arbeitsbereich anzeigen, um Werkstücke "
+"zu positionieren. Erfordert eine Bildausrichtung."
+
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid "Show Outside Workspace"
+msgstr "Außerhalb des Arbeitsbereichs anzeigen"
+
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid "Draw the camera image around the work area"
+msgstr "Das Kamerabild um den Arbeitsbereich herum zeichnen"
+
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid "Margin"
+msgstr "Rand"
+
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid "Size of the visible area on each side of the work area"
+msgstr "Größe des sichtbaren Bereichs auf jeder Seite des Arbeitsbereichs"
+
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid "Transparency outside the work area"
+msgstr "Transparenz außerhalb des Arbeitsbereichs"
+
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid "Not shown until the camera image is aligned"
+msgstr "Wird erst angezeigt, wenn das Kamerabild ausgerichtet ist"
+
 #: rayforge/ui_gtk/camera/alignment_widget.py
+#: rayforge/shared/units/definitions.py
+msgid "mm"
+msgstr "mm"
+
+#: rayforge/ui_gtk/camera/alignment_widget.py
+#, python-brace-format
 msgid ""
 "Click the image to add reference points. Drag to move them.\n"
 "Scroll to Zoom. Middle-click and drag to Pan.\n"
-"Use the Arrow Keys to nudge the active point precisely."
+"Use the Arrow Keys to nudge the active point precisely.\n"
+"For each point, enter its position on the work area (X/Y in {unit}, measured "
+"from the work area origin)."
 msgstr ""
-"Klicken Sie auf das Bild, um Referenzpunkte hinzuzufügen. Ziehen Sie, um sie "
-"zu verschieben.\n"
-"Scrollen zum Zoomen. Mittelklick und Ziehen zum Schwenken.\n"
-"Verwenden Sie die Pfeiltasten, um den aktiven Punkt präzise zu verschieben."
+"Klicke in das Bild, um Bezugspunkte hinzuzufügen. Ziehe sie, um sie zu "
+"bewegen.\n"
+"Scrolle zum Zoomen. Klicke mit der mittleren Maustaste und ziehe, um zu "
+"verschieben.\n"
+"Verschiebe den aktiven Punkt mit den Pfeiltasten präzise.\n"
+"Gib für jeden Punkt seine Position auf dem Arbeitsbereich ein (X/Y in "
+"{unit}, gemessen vom Arbeitsbereichsursprung)."
 
 #: rayforge/ui_gtk/camera/alignment_widget.py
 msgid "Reset Points"
@@ -4776,8 +5200,8 @@ msgid "Calibrate this camera later from the machine settings page."
 msgstr "Kalibriere diese Kamera später über die Maschineneinstellungen."
 
 #: rayforge/ui_gtk/machine/console.py
-msgid "Show verbose output (status polls)"
-msgstr "Ausführliche Ausgabe anzeigen (Statusabfragen)"
+msgid "Show verbose output (status polls, raw I/O)"
+msgstr "Ausführliche Ausgabe anzeigen (Statusabfragen, Roh-E/A)"
 
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
 msgid "Rectangle"
@@ -5435,6 +5859,35 @@ msgid "Send a homing command when the application starts"
 msgstr "Beim Start der Anwendung einen Referenzierungsbefehl senden"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+msgid "Park After Homing"
+msgstr "Parken nach Referenzfahrt"
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid ""
+"After homing, move the head to the park position, e.g. to clear the homing "
+"pull-off"
+msgstr ""
+"Nach der Referenzfahrt den Kopf zur Parkposition bewegen, z. B. um die "
+"Abzugsposition der Referenzfahrt zu verlassen."
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid "Park Position X"
+msgstr "Parkposition X"
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid "Machine-coordinate X of the park position"
+msgstr "Maschinenkoordinate X der Parkposition"
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid "Park Position Y"
+msgstr "Parkposition Y"
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid "Machine-coordinate Y of the park position"
+msgstr "Maschinenkoordinate Y der Parkposition"
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
 msgid "Allow Single Axis Homing"
 msgstr "Referenzfahrt für einzelne Achsen erlauben"
 
@@ -5443,6 +5896,17 @@ msgid "Enable individual axis homing controls in the jog dialog"
 msgstr ""
 "Steuerelemente für die Referenzfahrt einzelner Achsen im manuellen "
 "Steuerungsdialog aktivieren"
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid "Z Homing"
+msgstr "Z-Referenzfahrt"
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid ""
+"How the Z axis finds its reference: a home switch, or the auto-focus probe"
+msgstr ""
+"Wie die Z-Achse ihre Referenz findet: über einen Referenzschalter oder den "
+"Autofokus-Taster"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
 msgid "Clear Alarm On Connect"
@@ -5488,6 +5952,34 @@ msgstr "Aus Vorlage erstellen"
 #: rayforge/ui_gtk/machine/dialect_list.py
 msgid "No custom dialects configured"
 msgstr "Keine benutzerdefinierten Dialekte konfiguriert"
+
+#: rayforge/ui_gtk/machine/dialect_list.py
+msgid "Delete Unused Dialects"
+msgstr "Unbenutzte Dialekte löschen"
+
+#: rayforge/ui_gtk/machine/dialect_list.py
+msgid "No Unused Dialects"
+msgstr "Keine unbenutzten Dialekte"
+
+#: rayforge/ui_gtk/machine/dialect_list.py
+msgid "Every custom dialect is used by at least one machine."
+msgstr ""
+"Jeder benutzerdefinierte Dialekt wird von mindestens einer Maschine "
+"verwendet."
+
+#: rayforge/ui_gtk/machine/dialect_list.py
+msgid "Delete Unused Dialects?"
+msgstr "Unbenutzte Dialekte löschen?"
+
+#: rayforge/ui_gtk/machine/dialect_list.py
+msgid "The following dialects are not used by any machine:"
+msgstr "Die folgenden Dialekte werden von keiner Maschine verwendet:"
+
+#: rayforge/ui_gtk/machine/dialect_list.py
+msgid "They will be permanently removed. This action cannot be undone."
+msgstr ""
+"Sie werden dauerhaft entfernt. Diese Aktion kann nicht rückgängig gemacht "
+"werden."
 
 #: rayforge/ui_gtk/machine/dialect_list.py
 #, python-brace-format
@@ -5700,18 +6192,8 @@ msgstr ""
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Reverse X-Axis Direction"
-msgstr "X-Achsenrichtung umkehren"
-
-#: rayforge/ui_gtk/machine/hardware_page.py
-#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Makes coordinate values negative"
-msgstr "Macht Koordinatenwerte negativ"
-
-#: rayforge/ui_gtk/machine/hardware_page.py
-#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Reverse Y-Axis Direction"
-msgstr "Y-Achsenrichtung umkehren"
+msgid "Machine coordinates count down from the origin"
+msgstr "Maschinenkoordinaten werden vom Ursprung aus abwärts gezählt"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
@@ -5719,11 +6201,6 @@ msgid "Enable if this machine has a Z axis (focus motor, movable bed)"
 msgstr ""
 "Aktiviere dies, wenn die Maschine eine Z-Achse hat (Fokussiermotor, "
 "bewegliches Bett)"
-
-#: rayforge/ui_gtk/machine/hardware_page.py
-#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Reverse Z-Axis Direction"
-msgstr "Z-Achsenrichtung umkehren"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 msgid "Enable if a positive Z command (e.g., G0 Z10) moves the head down"
@@ -5812,60 +6289,47 @@ msgstr ""
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid ""
-"Configurable safety bounds for jogging. Leave disabled to use work surface "
-"bounds."
+"Configurable safety bounds for jogging. Leave disabled to jog without limit "
+"checks."
 msgstr ""
-"Konfigurierbare Sicherheitsgrenzen für manuelles Bewegen. Deaktiviert "
-"lassen, um Arbeitsflächengrenzen zu verwenden."
+"Konfigurierbare Sicherheitsgrenzen für Jog-Bewegungen. Deaktiviert lassen, "
+"um ohne Limit-Prüfung zu joggen."
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Enable Custom Soft Limits"
-msgstr "Benutzerdefinierte Software-Grenzen aktivieren"
-
-#: rayforge/ui_gtk/machine/hardware_page.py
-msgid "Override work surface bounds with custom limits"
-msgstr "Arbeitsflächengrenzen mit benutzerdefinierten Grenzen überschreiben"
-
-#: rayforge/ui_gtk/machine/hardware_page.py
-#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "X Min"
-msgstr "X Min"
+msgid "Limit jogging to custom bounds instead of the work surface"
+msgstr ""
+"Jog-Bewegungen auf benutzerdefinierte Grenzen statt auf die Arbeitsfläche "
+"beschränken"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Minimum X coordinate"
-msgstr "Minimale X-Koordinate"
+msgid "X Min Distance from Origin"
+msgstr "X-Mindestabstand vom Ursprung"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Y Min"
-msgstr "Y Min"
+msgid ""
+"Distance from the origin corner into the bed (not a coordinate). Fixed to "
+"the physical bed, independent of the WCS."
+msgstr ""
+"Abstand von der Ursprungsecke in die Maschine hinein (keine Koordinate). An "
+"die physische Maschine gebunden, unabhängig vom WCS."
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Minimum Y coordinate"
-msgstr "Minimale Y-Koordinate"
+msgid "Y Min Distance from Origin"
+msgstr "Y-Mindestabstand vom Ursprung"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "X Max"
-msgstr "X Max"
+msgid "X Max Distance from Origin"
+msgstr "X-Maximalabstand vom Ursprung"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Maximum X coordinate"
-msgstr "Maximale X-Koordinate"
-
-#: rayforge/ui_gtk/machine/hardware_page.py
-#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Y Max"
-msgstr "Y Max"
-
-#: rayforge/ui_gtk/machine/hardware_page.py
-#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Maximum Y coordinate"
-msgstr "Maximale Y-Koordinate"
+msgid "Y Max Distance from Origin"
+msgstr "Y-Maximalabstand vom Ursprung"
 
 #: rayforge/ui_gtk/machine/notes_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/review_page.py
@@ -5896,6 +6360,45 @@ msgid ""
 msgstr ""
 "Diese Notizen werden mit dieser Maschine gespeichert und niemals durch "
 "Geräteprofil-Aktualisierungen überschrieben."
+
+#: rayforge/ui_gtk/machine/bidir_offset_table.py
+msgid "Offset"
+msgstr "Versatz"
+
+#: rayforge/ui_gtk/machine/bidir_offset_table.py
+msgid "Positive values shift right-to-left passes to the right"
+msgstr "Positive Werte verschieben Rechts-nach-links-Durchläufe nach rechts"
+
+#: rayforge/ui_gtk/machine/bidir_offset_table.py
+msgid "Remove Row"
+msgstr "Zeile entfernen"
+
+#: rayforge/ui_gtk/machine/bidir_offset_table.py
+#, python-brace-format
+msgid "{speed}: {offset}"
+msgstr "{speed}: {offset}"
+
+#: rayforge/ui_gtk/machine/bidir_offset_table.py
+msgid "Bidirectional Scan Offset by Speed"
+msgstr "Bidirektionaler Scan-Versatz nach Geschwindigkeit"
+
+#: rayforge/ui_gtk/machine/bidir_offset_table.py
+msgid ""
+"Shift of right-to-left raster passes at each engrave speed, interpolated "
+"between rows. Engrave steps use it when their own Bidirectional Scan Offset "
+"is 0."
+msgstr ""
+"Verschiebung der Rechts-nach-links-Rasterdurchläufe bei jeder "
+"Graviergeschwindigkeit, zwischen den Zeilen interpoliert. Gravurschritte "
+"verwenden sie, wenn ihr eigener bidirektionaler Scan-Versatz 0 ist."
+
+#: rayforge/ui_gtk/machine/bidir_offset_table.py
+msgid "Add Row"
+msgstr "Zeile hinzufügen"
+
+#: rayforge/ui_gtk/machine/bidir_offset_table.py
+msgid "No rows: all speeds use an offset of 0"
+msgstr "Keine Zeilen: Alle Geschwindigkeiten verwenden einen Versatz von 0"
 
 #: rayforge/ui_gtk/machine/wizard_pages/camera_page.py
 msgid ""
@@ -6070,6 +6573,7 @@ msgstr ""
 "Netzwerkverbindungen gefunden werden, erscheinen hier automatisch."
 
 #: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+#: rayforge/ui_gtk/varset/adapter/remote_device.py
 msgid "Searching for devices…"
 msgstr "Geräte werden gesucht…"
 
@@ -6095,6 +6599,11 @@ msgstr "Ja"
 #: rayforge/ui_gtk/machine/wizard_pages/ai_lookup_page.py
 msgid "No"
 msgstr "Nein"
+
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+#, python-brace-format
+msgid "Yes, at ({x}, {y})"
+msgstr "Ja, bei ({x}, {y})"
 
 #: rayforge/ui_gtk/machine/wizard_pages/review_page.py
 #: rayforge/ui_gtk/machine/general_preferences_page.py
@@ -6523,10 +7032,6 @@ msgid "Enable if +Z moves head down"
 msgstr "Aktivieren, wenn +Z den Kopf nach unten bewegt"
 
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Override work-surface bounds with custom limits"
-msgstr "Arbeitsflächengrenzen mit benutzerdefinierten Limits überschreiben"
-
-#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Limits in machine units per minute."
 msgstr "Limits in Maschineneinheiten pro Minute."
 
@@ -6826,6 +7331,11 @@ msgstr "Problem melden"
 
 #: rayforge/ui_gtk/machine/settings_dialog.py
 #, python-brace-format
+msgid "Error exporting profile: {msg}"
+msgstr "Fehler beim Exportieren des Profils: {msg}"
+
+#: rayforge/ui_gtk/machine/settings_dialog.py
+#, python-brace-format
 msgid "Exported to {path}"
 msgstr "Exportiert nach {path}"
 
@@ -6961,6 +7471,18 @@ msgstr "Parameter hinzufügen"
 #: rayforge/ui_gtk/varset/varset_editor.py
 msgid "New Parameter"
 msgstr "Neuer Parameter"
+
+#: rayforge/ui_gtk/varset/adapter/remote_device.py
+msgid ""
+"Could not list devices — check the hostname and token (the daemon may "
+"require a token)."
+msgstr ""
+"Geräte konnten nicht aufgelistet werden — prüfen Sie Hostname und Token (der "
+"Daemon erfordert möglicherweise ein Token)."
+
+#: rayforge/ui_gtk/varset/adapter/remote_device.py
+msgid "The daemon has no devices configured."
+msgstr "Der Daemon hat keine Geräte konfiguriert."
 
 #: rayforge/ui_gtk/varset/adapter/combo.py
 msgid "Match by USB VID:PID…"
@@ -7132,35 +7654,9 @@ msgid "No addons found in registry."
 msgstr "Keine Erweiterungen im Register gefunden."
 
 #: rayforge/ui_gtk/addon_manager/addon_dialog.py
-msgid "Install"
-msgstr "Installieren"
-
-#: rayforge/ui_gtk/addon_manager/addon_dialog.py
-#: rayforge/ui_gtk/doceditor/step_settings/recipe_control_widget.py
-msgid "Update"
-msgstr "Aktualisieren"
-
-#: rayforge/ui_gtk/addon_manager/addon_dialog.py
-msgid "Installed"
-msgstr "Installiert"
-
-#: rayforge/ui_gtk/addon_manager/addon_dialog.py
-#, python-brace-format
-msgid "Version {v} already installed"
-msgstr "Version {v} bereits installiert"
-
-#: rayforge/ui_gtk/addon_manager/addon_dialog.py
-msgid "Incompatible"
-msgstr "Inkompatibel"
-
-#: rayforge/ui_gtk/addon_manager/addon_dialog.py
-#, python-brace-format
-msgid "Requires {deps}, but current rayforge version is {current}"
-msgstr "Benötigt {deps}, aber die aktuelle Rayforge-Version ist {current}"
-
-#: rayforge/ui_gtk/addon_manager/addon_dialog.py
-msgid "Unavailable"
-msgstr "Nicht verfügbar"
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Community addon"
+msgstr "Community-Addon"
 
 #: rayforge/ui_gtk/addon_manager/addon_dialog.py
 msgid "Manual Install"
@@ -7169,6 +7665,67 @@ msgstr "Manuelle Installation"
 #: rayforge/ui_gtk/addon_manager/addon_dialog.py
 msgid "Enter the Git URL."
 msgstr "Gib die Git-URL ein."
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
+#: rayforge/ui_gtk/addon_manager/action_button.py
+msgid "Install"
+msgstr "Installieren"
+
+#: rayforge/ui_gtk/addon_manager/community_dialog.py
+msgid "Install Community Addon?"
+msgstr "Community-Addon installieren?"
+
+#: rayforge/ui_gtk/addon_manager/community_dialog.py
+#, python-brace-format
+msgid ""
+"\"{name}\" is a community addon and is not provided by the Rayforge team. "
+"Addons have the same access to your computer and your files as Rayforge "
+"itself. Only install this addon if you trust its author, {author}."
+msgstr ""
+"„{name}“ ist ein Community-Addon und wird nicht vom Rayforge-Team "
+"bereitgestellt. Addons haben denselben Zugriff auf deinen Computer und deine "
+"Dateien wie Rayforge selbst. Installiere dieses Addon nur, wenn du seinem "
+"Autor, {author}, vertraust."
+
+#: rayforge/ui_gtk/addon_manager/community_dialog.py
+msgid "unknown"
+msgstr "unbekannt"
+
+#: rayforge/ui_gtk/addon_manager/community_dialog.py
+msgid "Install Anyway"
+msgstr "Trotzdem installieren"
+
+#: rayforge/ui_gtk/addon_manager/community_dialog.py
+#: rayforge/ui_gtk/addon_manager/addon_detail_dialog.py
+msgid "Open the repository in your browser"
+msgstr "Repository im Browser öffnen"
+
+#: rayforge/ui_gtk/addon_manager/action_button.py
+#: rayforge/ui_gtk/doceditor/step_settings/recipe_control_widget.py
+msgid "Update"
+msgstr "Aktualisieren"
+
+#: rayforge/ui_gtk/addon_manager/action_button.py
+msgid "Installed"
+msgstr "Installiert"
+
+#: rayforge/ui_gtk/addon_manager/action_button.py
+#, python-brace-format
+msgid "Version {v} already installed"
+msgstr "Version {v} bereits installiert"
+
+#: rayforge/ui_gtk/addon_manager/action_button.py
+msgid "Incompatible"
+msgstr "Inkompatibel"
+
+#: rayforge/ui_gtk/addon_manager/action_button.py
+#, python-brace-format
+msgid "Requires {deps}, but current rayforge version is {current}"
+msgstr "Benötigt {deps}, aber die aktuelle Rayforge-Version ist {current}"
+
+#: rayforge/ui_gtk/addon_manager/action_button.py
+msgid "Unavailable"
+msgstr "Nicht verfügbar"
 
 #: rayforge/ui_gtk/addon_manager/license_dialog.py
 msgid "Enter License Key"
@@ -7269,6 +7826,14 @@ msgid "No addons installed."
 msgstr "Keine Erweiterungen installiert."
 
 #: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Enable external addon services to install addons"
+msgstr "Aktiviere externe Addon-Dienste, um Addons zu installieren"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "External addon services are disabled."
+msgstr "Externe Addon-Dienste sind deaktiviert."
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
 #, python-brace-format
 msgid "Installing {name}..."
 msgstr "Installiere {name}..."
@@ -7354,6 +7919,23 @@ msgstr "Fehler beim Löschen der Erweiterung."
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 msgid "Info"
 msgstr "Info"
+
+#: rayforge/ui_gtk/addon_manager/screenshot_dialog.py
+msgid "Screenshot"
+msgstr "Screenshot"
+
+#: rayforge/ui_gtk/addon_manager/addon_detail_dialog.py
+#, python-brace-format
+msgid "by {author}"
+msgstr "von {author}"
+
+#: rayforge/ui_gtk/addon_manager/addon_detail_dialog.py
+msgid "Previous screenshot"
+msgstr "Vorheriger Screenshot"
+
+#: rayforge/ui_gtk/addon_manager/addon_detail_dialog.py
+msgid "Next screenshot"
+msgstr "Nächster Screenshot"
 
 #: rayforge/ui_gtk/addon_manager/experimental_dialog.py
 msgid "Enable Experimental Addon?"
@@ -7737,6 +8319,10 @@ msgid "Import..."
 msgstr "Importieren..."
 
 #: rayforge/ui_gtk/main_menu.py
+msgid "Relink Source File..."
+msgstr "Quelldatei neu verknüpfen..."
+
+#: rayforge/ui_gtk/main_menu.py
 msgid "Export G-code..."
 msgstr "G-Code exportieren..."
 
@@ -7931,7 +8517,7 @@ msgstr "Anordnen"
 msgid "_Tools"
 msgstr "_Werkzeuge"
 
-#: rayforge/ui_gtk/main_menu.py
+#: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/doceditor/frame_popover.py
 msgid "Frame"
 msgstr "Umrandung fahren"
 
@@ -8054,6 +8640,16 @@ msgstr "Bitte wähle ein einzelnes Objekt zum Exportieren aus."
 
 #: rayforge/ui_gtk/mainwindow.py
 #, python-brace-format
+msgid "Error exporting object: {msg}"
+msgstr "Fehler beim Exportieren des Objekts: {msg}"
+
+#: rayforge/ui_gtk/mainwindow.py
+#, python-brace-format
+msgid "Error exporting document: {msg}"
+msgstr "Fehler beim Exportieren des Dokuments: {msg}"
+
+#: rayforge/ui_gtk/mainwindow.py
+#, python-brace-format
 msgid "Debug log saved to {path}"
 msgstr "Debug-Protokoll wurde unter {path} gespeichert."
 
@@ -8165,89 +8761,84 @@ msgstr "Debug-Archiv konnte nicht erstellt werden."
 
 #: rayforge/ui_gtk/debug_log_dialog.py
 #, python-brace-format
-msgid "Error saving file: {msg}"
-msgstr "Fehler beim Speichern der Datei: {msg}"
-
-#: rayforge/ui_gtk/debug_log_dialog.py
-#, python-brace-format
 msgid "An unexpected error occurred: {error}"
 msgstr "Ein unerwarteter Fehler ist aufgetreten: {error}"
 
 #: rayforge/ui_gtk/gestures/model.py
 msgid "Click"
-msgstr ""
+msgstr "Klicken"
 
 #: rayforge/ui_gtk/gestures/model.py
 msgid "Double-click"
-msgstr ""
+msgstr "Doppelklick"
 
 #: rayforge/ui_gtk/gestures/model.py
 msgid "Drag"
-msgstr ""
+msgstr "Ziehen"
 
 #: rayforge/ui_gtk/gestures/model.py
 msgid "Scroll"
-msgstr ""
+msgstr "Scrollen"
 
 #: rayforge/ui_gtk/gestures/model.py
 msgid "Middle"
-msgstr ""
+msgstr "Mitte"
 
 #: rayforge/ui_gtk/gestures/model.py
 msgid "Shift"
-msgstr ""
+msgstr "Umschalt"
 
 #: rayforge/ui_gtk/gestures/model.py
 msgid "Ctrl"
-msgstr ""
+msgstr "Strg"
 
 #: rayforge/ui_gtk/gestures/model.py
 msgid "Alt"
-msgstr ""
+msgstr "Alt"
 
 #: rayforge/ui_gtk/gestures/builtin.py
 msgid "2D Canvas"
-msgstr ""
+msgstr "2D-Arbeitsfläche"
 
 #: rayforge/ui_gtk/gestures/builtin.py
 msgid "Navigation gestures on the 2D work surface."
-msgstr ""
+msgstr "Navigationsgesten auf der 2D-Arbeitsfläche."
 
 #: rayforge/ui_gtk/gestures/builtin.py
 msgid "3D Canvas"
-msgstr ""
+msgstr "3D-Arbeitsfläche"
 
 #: rayforge/ui_gtk/gestures/builtin.py
 msgid "Navigation gestures on the 3D preview."
-msgstr ""
+msgstr "Navigationsgesten in der 3D-Vorschau."
 
 #: rayforge/ui_gtk/gestures/builtin.py
 msgid "Pan the view"
-msgstr ""
+msgstr "Ansicht verschieben"
 
 #: rayforge/ui_gtk/gestures/builtin.py
 msgid "Hold the mouse button down and move to pan the view."
-msgstr ""
+msgstr "Maustaste gedrückt halten und bewegen, um die Ansicht zu verschieben."
 
 #: rayforge/ui_gtk/gestures/builtin.py
 msgid "Orbit the camera"
-msgstr ""
+msgstr "Kamera umkreisen"
 
 #: rayforge/ui_gtk/gestures/builtin.py
 msgid "Hold the mouse button down and move to orbit around the scene."
-msgstr ""
+msgstr "Maustaste gedrückt halten und bewegen, um die Szene zu umkreisen."
 
 #: rayforge/ui_gtk/gestures/builtin.py
 msgid "Pan the camera"
-msgstr ""
+msgstr "Kamera verschieben"
 
 #: rayforge/ui_gtk/gestures/builtin.py
 msgid "Hold the mouse button down and move to pan the scene."
-msgstr ""
+msgstr "Maustaste gedrückt halten und bewegen, um die Szene zu verschieben."
 
 #: rayforge/ui_gtk/gestures/builtin.py
 msgid "Rotate around the Z axis"
-msgstr ""
+msgstr "Um die Z-Achse drehen"
 
 #: rayforge/ui_gtk/project_cmd.py
 msgid "Unsaved Changes"
@@ -8266,6 +8857,11 @@ msgstr "_Nicht speichern"
 #: rayforge/ui_gtk/project_cmd.py
 msgid "New project created"
 msgstr "Neues Projekt erstellt"
+
+#: rayforge/ui_gtk/project_cmd.py rayforge/ui_gtk/doceditor/import_handler.py
+#, python-brace-format
+msgid "Error opening file: {msg}"
+msgstr "Fehler beim Öffnen der Datei: {msg}"
 
 #: rayforge/ui_gtk/project_cmd.py
 msgid "Untitled"
@@ -8361,6 +8957,16 @@ msgstr ""
 msgid "Switch to Trace Mode"
 msgstr "In Nachzeichnungsmodus wechseln"
 
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid ""
+"Z flattening is disabled: the geometry keeps its original Z heights. On "
+"machines with a Z axis the toolpath will move in Z and may plunge below the "
+"material surface."
+msgstr ""
+"Z-Glättung ist deaktiviert: Die Geometrie behält ihre ursprünglichen Z-"
+"Höhen. Auf Maschinen mit Z-Achse bewegt sich der Werkzeugpfad in Z und kann "
+"unter die Materialoberfläche eintauchen."
+
 #: rayforge/ui_gtk/doceditor/import_dialog.py rayforge/doceditor/file_cmd.py
 msgid "Re-Import"
 msgstr "Erneut importieren"
@@ -8392,6 +8998,19 @@ msgid ""
 msgstr ""
 "Pixel pro Zoll für dimensionslose SVG-Abmessungen. Inkscape ≥0.92 verwendet "
 "96, ältere Inkscape verwendet 90, Illustrator verwendet 72"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py rayforge/ui_gtk/about.py
+msgid "Geometry"
+msgstr "Geometrie"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Flatten Z Coordinates"
+msgstr "Z-Koordinaten abflachen"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Project all geometry onto the Z=0 plane (recommended for laser cutting)"
+msgstr ""
+"Alle Geometrie auf die Z=0-Ebene projizieren (empfohlen für Laserschneiden)"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
@@ -8616,6 +9235,24 @@ msgstr "Schrittname und Rezepteinstellungen."
 msgid "Change {key}"
 msgstr "{key} ändern"
 
+#: rayforge/ui_gtk/doceditor/step_settings/pages/workpieces.py
+#: rayforge/ui_gtk/doceditor/step_settings/dialog.py
+msgid "Workpieces"
+msgstr "Werkstücke"
+
+#: rayforge/ui_gtk/doceditor/step_settings/pages/workpieces.py
+msgid "The workpieces this step processes."
+msgstr "Die Werkstücke, die dieser Schritt verarbeitet."
+
+#: rayforge/ui_gtk/doceditor/step_settings/pages/workpieces.py
+msgid "All workpieces on this layer"
+msgstr "Alle Werkstücke auf dieser Ebene"
+
+#: rayforge/ui_gtk/doceditor/step_settings/pages/workpieces.py
+#, python-brace-format
+msgid "Processes {count} of {total} workpieces"
+msgstr "Verarbeitet {count} von {total} Werkstücken"
+
 #: rayforge/ui_gtk/doceditor/step_settings/pages/post_processing.py
 msgid "Transformers applied to this step's generated toolpath."
 msgstr ""
@@ -8728,9 +9365,24 @@ msgstr ""
 "Fehler beim Erstellen der Bibliothek. Ein Ordner mit diesem Namen existiert "
 "möglicherweise bereits."
 
+#: rayforge/ui_gtk/doceditor/frame_popover.py
+msgid "Include Overscan Margin"
+msgstr "Overscan-Marge einschließen"
+
+#: rayforge/ui_gtk/doceditor/frame_popover.py
+msgid "Frame the full machine path, including the extra engraving travel"
+msgstr ""
+"Den vollständigen Maschinenpfad umrahmen, einschließlich des zusätzlichen "
+"Gravierwegs"
+
 #: rayforge/ui_gtk/doceditor/file_dialogs.py
 msgid "Open File"
 msgstr "Datei öffnen"
+
+#: rayforge/ui_gtk/doceditor/file_dialogs.py
+#, python-brace-format
+msgid "Relink “{name}”"
+msgstr "„{name}“ neu verknüpfen"
 
 #: rayforge/ui_gtk/doceditor/file_dialogs.py
 msgid "All supported"
@@ -8841,6 +9493,11 @@ msgid "Texture images"
 msgstr "Texturbilder"
 
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
+#, python-brace-format
+msgid "Error choosing file: {msg}"
+msgstr "Fehler beim Auswählen der Datei: {msg}"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
 msgid "Only WebP and PNG texture images are supported."
 msgstr "Es werden nur WebP- und PNG-Texturbilder unterstützt."
 
@@ -8851,6 +9508,10 @@ msgstr "Benutzerdefiniert"
 #: rayforge/ui_gtk/doceditor/layers_tab.py
 msgid "Add New Layer"
 msgstr "Neue Ebene hinzufügen"
+
+#: rayforge/ui_gtk/doceditor/path_tolerance_dialog.py
+msgid "Tolerance"
+msgstr "Toleranz"
 
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
 #: rayforge/ui_gtk/doceditor/item_properties.py
@@ -8991,6 +9652,43 @@ msgstr "Maschine muss verbunden sein, um Hier Null zu setzen"
 msgid "Set current position as 0"
 msgstr "Aktuelle Position als 0 setzen"
 
+#: rayforge/ui_gtk/doceditor/source_changed_dialog.py
+msgid "Imported File Changed"
+msgid_plural "Imported Files Changed"
+msgstr[0] "Importierte Datei geändert"
+msgstr[1] "Importierte Dateien geändert"
+
+#: rayforge/ui_gtk/doceditor/source_changed_dialog.py
+#, python-brace-format
+msgid ""
+"\"{name}\" was changed on disk. Reload it? Position, size and settings are "
+"kept."
+msgstr ""
+"„{name}“ wurde auf der Festplatte geändert. Neu laden? Position, Größe und "
+"Einstellungen bleiben erhalten."
+
+#: rayforge/ui_gtk/doceditor/source_changed_dialog.py
+msgid ""
+"These imported files were changed on disk. Reload them? Position, size and "
+"settings are kept."
+msgstr ""
+"Diese importierten Dateien wurden auf der Festplatte geändert. Neu laden? "
+"Position, Größe und Einstellungen bleiben erhalten."
+
+#: rayforge/ui_gtk/doceditor/source_changed_dialog.py
+msgid "_Ignore"
+msgstr "_Ignorieren"
+
+#: rayforge/ui_gtk/doceditor/source_changed_dialog.py
+msgid "_Reload"
+msgstr "_Neu laden"
+
+#: rayforge/ui_gtk/doceditor/source_changed_dialog.py
+msgid "Always reload this file without asking"
+msgid_plural "Always reload the selected files without asking"
+msgstr[0] "Diese Datei immer ohne Nachfrage neu laden"
+msgstr[1] "Die ausgewählten Dateien immer ohne Nachfrage neu laden"
+
 #: rayforge/ui_gtk/doceditor/step_type_selection_dialog.py
 msgid "Select Step Types"
 msgstr "Schritttypen auswählen"
@@ -9094,6 +9792,10 @@ msgid "Reset Y position to 0"
 msgstr "Y-Position auf 0 zurücksetzen"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
+msgid "Position relative to"
+msgstr "Position relativ zu"
+
+#: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Fixed Ratio"
 msgstr "Festes Verhältnis"
 
@@ -9137,6 +9839,10 @@ msgstr "Scherung auf 0° zurücksetzen"
 #, python-brace-format
 msgid "Natural: {val}"
 msgstr "Natürlich: {val}"
+
+#: rayforge/ui_gtk/doceditor/property_providers/transform.py
+msgid "Change position origin"
+msgstr "Positionsursprung ändern"
 
 #: rayforge/ui_gtk/doceditor/property_providers/workpiece.py
 msgid "Source File"
@@ -9463,10 +10169,6 @@ msgid "Graphics & Imaging"
 msgstr "Grafik & Bildverarbeitung"
 
 #: rayforge/ui_gtk/about.py
-msgid "Geometry"
-msgstr "Geometrie"
-
-#: rayforge/ui_gtk/about.py
 msgid "File Formats & Communication"
 msgstr "Dateiformate & Kommunikation"
 
@@ -9546,10 +10248,6 @@ msgstr "in/min"
 #: rayforge/shared/units/definitions.py
 msgid "in/s"
 msgstr "in/s"
-
-#: rayforge/shared/units/definitions.py
-msgid "mm"
-msgstr "mm"
 
 #: rayforge/shared/units/definitions.py
 msgid "cm"
@@ -10229,6 +10927,77 @@ msgstr "Werkstücke neu anordnen"
 msgid "Reorder items"
 msgstr "Elemente neu anordnen"
 
+#: rayforge/doceditor/reload_cmd.py
+#, python-brace-format
+msgid "{name} ({x:.1f}, {y:.1f} mm)"
+msgstr "{name} ({x:.1f}, {y:.1f} mm)"
+
+#: rayforge/doceditor/reload_cmd.py
+#, python-brace-format
+msgid "Could not reload {name}: {error}"
+msgstr "{name} konnte nicht neu geladen werden: {error}"
+
+#: rayforge/doceditor/reload_cmd.py
+#, python-brace-format
+msgid "Reloaded {name}"
+msgstr "{name} neu geladen"
+
+#: rayforge/doceditor/reload_cmd.py
+#, python-brace-format
+msgid "{n} new element added"
+msgid_plural "{n} new elements added"
+msgstr[0] "{n} neues Element hinzugefügt"
+msgstr[1] "{n} neue Elemente hinzugefügt"
+
+#: rayforge/doceditor/reload_cmd.py
+#, python-brace-format
+msgid "{n} element no longer in the file was removed"
+msgid_plural "{n} elements no longer in the file were removed"
+msgstr[0] "{n} nicht mehr in der Datei enthaltenes Element wurde entfernt"
+msgstr[1] "{n} nicht mehr in der Datei enthaltene Elemente wurden entfernt"
+
+#: rayforge/doceditor/reload_cmd.py
+#, python-brace-format
+msgid "{n} edited element was left unchanged"
+msgid_plural "{n} edited elements were left unchanged"
+msgstr[0] "{n} bearbeitetes Element wurde unverändert gelassen"
+msgstr[1] "{n} bearbeitete Elemente wurden unverändert gelassen"
+
+#: rayforge/doceditor/reload_cmd.py
+#, python-brace-format
+msgid "and {n} more"
+msgstr "und {n} weitere"
+
+#: rayforge/doceditor/reload_cmd.py
+#, python-brace-format
+msgid ""
+"{n} tab more than {limit:.1f} mm from the new outline was removed: {places}"
+msgid_plural ""
+"{n} tabs more than {limit:.1f} mm from the new outline were removed: {places}"
+msgstr[0] ""
+"{n} Haltesteg, der mehr als {limit:.1f} mm von der neuen Kontur entfernt "
+"war, wurde entfernt: {places}"
+msgstr[1] ""
+"{n} Haltestege, die mehr als {limit:.1f} mm von der neuen Kontur entfernt "
+"waren, wurden entfernt: {places}"
+
+#: rayforge/doceditor/reload_cmd.py
+msgid "the file type is not known"
+msgstr "der Dateityp ist unbekannt"
+
+#: rayforge/doceditor/reload_cmd.py
+msgid "the file could not be read"
+msgstr "die Datei konnte nicht gelesen werden"
+
+#: rayforge/doceditor/reload_cmd.py
+msgid "the file contains nothing to import"
+msgstr "die Datei enthält nichts zum Importieren"
+
+#: rayforge/doceditor/reload_cmd.py
+#, python-brace-format
+msgid "Reload {name}"
+msgstr "{name} neu laden"
+
 #: rayforge/doceditor/array_cmd.py
 msgid "Create Array"
 msgstr "Array erstellen"
@@ -10236,6 +11005,46 @@ msgstr "Array erstellen"
 #: rayforge/doceditor/array_cmd.py
 msgid "Create array copy"
 msgstr "Array-Kopie erstellen"
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Move node"
+msgstr "Knoten verschieben"
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Delete node"
+msgstr "Knoten löschen"
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Insert node"
+msgstr "Knoten einfügen"
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Make curve"
+msgstr "In Kurve umwandeln"
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Make line"
+msgstr "In Linie umwandeln"
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Move handle"
+msgstr "Griff verschieben"
+
+#: rayforge/doceditor/path_cleanup_cmd.py
+msgid "Close paths"
+msgstr "Pfade schließen"
+
+#: rayforge/doceditor/path_cleanup_cmd.py
+msgid "Join paths"
+msgstr "Pfade verbinden"
+
+#: rayforge/doceditor/path_cleanup_cmd.py
+msgid "Delete duplicates"
+msgstr "Duplikate löschen"
+
+#: rayforge/doceditor/path_cleanup_cmd.py
+msgid "Break apart"
+msgstr "Auseinanderbrechen"
 
 #: rayforge/doceditor/editor.py
 #, python-brace-format
@@ -10314,11 +11123,28 @@ msgstr "An Punkt positionieren"
 msgid "Auto Layout"
 msgstr "Automatisches Layout"
 
+#: rayforge/image/hpgl/importer.py
+#, python-brace-format
+msgid "Some HPGL instructions are not supported and were skipped: {names}"
+msgstr ""
+"Einige HPGL-Befehle werden nicht unterstützt und wurden übersprungen: {names}"
+
+#: rayforge/image/hpgl/importer.py
+#, python-brace-format
+msgid "{filename} contains no HPGL drawing commands."
+msgstr "{filename} enthält keine HPGL-Zeichenbefehle."
+
+#: rayforge/image/hpgl/importer.py
+#, python-brace-format
+msgid "Pen {number}"
+msgstr "Stift {number}"
+
 #: rayforge/image/png/importer.py
 msgid "Failed to scan PNG file: {}"
 msgstr "Fehler beim Scannen der PNG-Datei: {}"
 
-#: rayforge/image/png/importer.py rayforge/image/jpg/importer.py
+#: rayforge/image/png/importer.py rayforge/image/bitmap/importer.py
+#: rayforge/image/jpg/importer.py
 msgid "Failed to process image data."
 msgstr "Verarbeitung der Bilddaten fehlgeschlagen."
 
@@ -10354,6 +11180,15 @@ msgstr "Rasterisierung des SVG für das Nachzeichnen fehlgeschlagen."
 #: rayforge/image/svg/svg_trace.py
 msgid "Failed to normalize image data."
 msgstr "Normalisierung der Bilddaten fehlgeschlagen."
+
+#: rayforge/image/svg/importer.py
+msgid "This SVGZ file's gzip data could not be decompressed."
+msgstr "Die gzip-Daten dieser SVGZ-Datei konnten nicht dekomprimiert werden."
+
+#: rayforge/image/bitmap/importer.py
+#, python-brace-format
+msgid "Could not read the {format} image: {error}"
+msgstr "Das {format}-Bild konnte nicht gelesen werden: {error}"
 
 #: rayforge/image/pdf/pdf_trace.py rayforge/image/pdf/pdf_vector.py
 msgid "PDF file contains no pages."
@@ -10460,6 +11295,34 @@ msgid "Floyd Steinberg"
 msgstr "Floyd Steinberg"
 
 #: rayforge/image/dither.py
+msgid "Atkinson"
+msgstr "Atkinson"
+
+#: rayforge/image/dither.py
+msgid "Stucki"
+msgstr "Stucki"
+
+#: rayforge/image/dither.py
+msgid "Jarvis, Judice & Ninke"
+msgstr "Jarvis, Judice & Ninke"
+
+#: rayforge/image/dither.py
+msgid "Sierra"
+msgstr "Sierra"
+
+#: rayforge/image/dither.py
+msgid "Sierra 2-Row"
+msgstr "Sierra 2-Row"
+
+#: rayforge/image/dither.py
+msgid "Sierra Lite"
+msgstr "Sierra Lite"
+
+#: rayforge/image/dither.py
+msgid "Burkes"
+msgstr "Burkes"
+
+#: rayforge/image/dither.py
 msgid "Bayer 2"
 msgstr "Bayer 2"
 
@@ -10470,3 +11333,79 @@ msgstr "Bayer 4"
 #: rayforge/image/dither.py
 msgid "Bayer 8"
 msgstr "Bayer 8"
+
+#: rayforge/image/dither.py
+msgid "Newsprint"
+msgstr "Zeitungsraster"
+
+#: rayforge/image/dither.py
+msgid "Halftone"
+msgstr "Halbton"
+
+#: rayforge/image/postscript/importer.py
+msgid ""
+"Importing EPS and PostScript files requires Ghostscript, which was not "
+"found. Install Ghostscript and try again."
+msgstr ""
+"Für den Import von EPS- und PostScript-Dateien wird Ghostscript benötigt, "
+"das nicht gefunden wurde. Installiere Ghostscript und versuche es erneut."
+
+#: rayforge/image/postscript/importer.py
+#, python-brace-format
+msgid "Ghostscript could not convert {filename}: {error}"
+msgstr "Ghostscript konnte {filename} nicht umwandeln: {error}"
+
+#: rayforge/image/postscript/importer.py
+msgid ""
+"This Illustrator file was saved without PDF compatibility. Rayforge can only "
+"read it with Ghostscript, which was not found. Install Ghostscript, or save "
+"the file again in Illustrator with \"Create PDF Compatible File\" enabled."
+msgstr ""
+"Diese Illustrator-Datei wurde ohne PDF-Kompatibilität gespeichert. Rayforge "
+"kann sie nur mit Ghostscript lesen, das nicht gefunden wurde. Installiere "
+"Ghostscript oder speichere die Datei in Illustrator erneut mit aktivierter "
+"Option „PDF-kompatible Datei erstellen“."
+
+#: rayforge/machine/driver/grbl/grbl_serial.py:80
+msgid "GRBL (USB/Serial)"
+msgstr "GRBL (USB/Seriell)"
+
+#: rayforge/machine/driver/grbl/grbl_serial.py:81
+msgid "GRBL-compatible USB/serial connection (recommended)"
+msgstr "GRBL-kompatible USB/serielle Verbindung (empfohlen)"
+
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py:88
+msgid "GRBL (USB/Serial — compatibility mode)"
+msgstr "GRBL (USB/Seriell — Kompatibilitätsmodus)"
+
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py:89
+msgid ""
+"Only needed if the standard serial connection misbehaves (ping-pong"
+"protocol, no buffer counting)"
+msgstr ""
+"Nur nötig, wenn die Standard-Serial-Verbindung Probleme macht"
+"(Ping-Pong-Protokoll, keine Pufferzählung)"
+
+#: rayforge/machine/driver/grbl/grbl_network.py:76
+msgid "FluidNC / ESP3D (Web API)"
+msgstr "FluidNC / ESP3D (Web API)"
+
+#: rayforge/machine/driver/grbl/grbl_network.py:77
+msgid "FluidNC or ESP3D controller via its HTTP/WebSocket interface"
+msgstr "FluidNC- oder ESP3D-Controller über seine HTTP/WebSocket-Schnittstelle"
+
+#: rayforge/machine/driver/grbl/grbl_telnet.py:26
+msgid "grblHAL (Telnet)"
+msgstr "grblHAL (Telnet)"
+
+#: rayforge/machine/driver/grbl/grbl_telnet.py:27
+msgid "Raw TCP/telnet connection (grblHAL networking, ESP3D telnet bridge)"
+msgstr "Raw-TCP/Telnet-Verbindung (grblHAL-Netzwerk, ESP3D-Telnet-Bridge)"
+
+#: rayforge/machine/driver/grbl/grbl_network.py:144
+#: rayforge/machine/driver/grbl/grbl_telnet.py:47
+#: rayforge/machine/driver/octoprint/octoprint_driver.py:203
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py:378
+#: rayforge/machine/driver/smoothie/smoothie_driver.py:102
+msgid "Hostname or IP address"
+msgstr "Hostname oder IP-Adresse"

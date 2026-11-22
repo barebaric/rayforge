@@ -503,14 +503,19 @@ class UnifiedWizard(PatchedDialogWindow):
                 # export only"; there is nothing to probe with.
                 if driver_cls is NoDeviceDriver:
                     driver_cls = None
-            if driver_cls is not None and driver_cls.supports_probing:
+            if driver_cls is not None and driver_cls.supports_probing_for(
+                mc.driver_args or {}
+            ):
                 return "probe"
             return self._ai_entry_step()
 
         if name == "probe":
-            # A discovery-originated probe that did not resolve to a
-            # profile continues on the (candidate-ranked) profile
-            # picker; manual flows go on to the AI/manual steps.
+            # A remote device has no local profile to pick; continue to
+            # the AI/manual steps. A discovery-originated local probe
+            # that did not resolve to a profile continues on the
+            # (candidate-ranked) profile picker.
+            if self._is_remote_machine():
+                return self._ai_entry_step()
             if self._source is None and self.aux_state.get("discovered"):
                 return "profile"
             return self._ai_entry_step()
@@ -569,8 +574,21 @@ class UnifiedWizard(PatchedDialogWindow):
             if device.identity.usb_vid is not None
             else None
         )
-        if device.probe_profile is not None:
-            self._merge_driver_config(device.probe_profile)
+        if self._is_remote_machine():
+            # A remote device is identified by its daemon + device, not
+            # by a local hardware profile. Skip profile matching and
+            # selection: confirm the device and credentials on the
+            # connection page, then probe.
+            self.aux_state = {"discovered": device}
+            self._source = None
+            probed = _probed_profile(device)
+            if probed is not None:
+                self._merge_probe_specs(probed)
+            self._navigate_to("connect")
+            return
+        probed = _probed_profile(device)
+        if probed is not None:
+            self._merge_driver_config(probed)
 
         matches: list[ProfileMatch] = []
         try:
@@ -596,8 +614,9 @@ class UnifiedWizard(PatchedDialogWindow):
         # page-level probe could not produce data.
         self.aux_state = {"discovered": device}
         self._source = None
-        if device.probe_profile is not None:
-            self._merge_probe_specs(device.probe_profile)
+        probed = _probed_profile(device)
+        if probed is not None:
+            self._merge_probe_specs(probed)
         if not self._connection_args_complete():
             self._navigate_to("profile")
             return
@@ -624,7 +643,7 @@ class UnifiedWizard(PatchedDialogWindow):
         return (
             driver_cls is not None
             and driver_cls is not NoDeviceDriver
-            and driver_cls.supports_probing
+            and driver_cls.supports_probing_for(device.params)
         )
 
     def _probe_identity(self, device: DiscoveredDevice) -> DeviceIdentity:
@@ -715,6 +734,16 @@ class UnifiedWizard(PatchedDialogWindow):
         args.update(device.params)
         self.profile.machine_config.driver_args = args or None
 
+    def _is_remote_machine(self) -> bool:
+        """True when the working profile targets a raydriver daemon.
+
+        A remote device is identified by its daemon + device, not by a
+        local hardware profile, so the wizard skips profile matching
+        and selection for it.
+        """
+        args = self.profile.machine_config.driver_args or {}
+        return bool(args.get("remote_host"))
+
     def _on_profile_source_selected(
         self, sender, *, kind: str, profile: DeviceProfile | None
     ) -> None:
@@ -728,8 +757,9 @@ class UnifiedWizard(PatchedDialogWindow):
             if isinstance(discovered, DiscoveredDevice):
                 self.profile.machine_config.driver = discovered.driver_name
                 self._overlay_driver_args(discovered)
-                if discovered.probe_profile is not None:
-                    self._merge_probe_specs(discovered.probe_profile)
+                probed = _probed_profile(discovered)
+                if probed is not None:
+                    self._merge_probe_specs(probed)
             self.aux_state = {}
             self._source = None
         elif kind in ("profile", "import") and profile is not None:
@@ -738,8 +768,9 @@ class UnifiedWizard(PatchedDialogWindow):
             self.profile = self._clone_profile(profile)
             if isinstance(discovered, DiscoveredDevice):
                 self._overlay_driver_args(discovered)
-                if discovered.probe_profile is not None:
-                    self._merge_driver_config(discovered.probe_profile)
+                probed = _probed_profile(discovered)
+                if probed is not None:
+                    self._merge_driver_config(probed)
             self.aux_state = {}
             # Stash chosen source for later sanity feedback
             self._source = {"kind": kind, "profile": profile}
@@ -793,10 +824,15 @@ class UnifiedWizard(PatchedDialogWindow):
         the machine (discovery-originated probes only)."""
         if self._source is not None:
             return
+        if self._is_remote_machine():
+            # A remote machine keeps the generic remote driver; adopting
+            # a curated local profile would turn it into a local device.
+            # The probed specs were already merged by the caller.
+            return
         device = self.aux_state.get("discovered")
         if not isinstance(device, DiscoveredDevice):
             return
-        device = dc_replace(device, probe_profile=probed)
+        device.probe_profile = probed
         try:
             matches = get_context().device_profile_mgr.match_device(
                 self._probe_identity(device)
@@ -863,6 +899,13 @@ class UnifiedWizard(PatchedDialogWindow):
 
     def do_close_request(self, *args) -> bool:
         return False
+
+
+def _probed_profile(device: DiscoveredDevice) -> DeviceProfile | None:
+    """The probe data a discovered device carries, if it is a full
+    profile (the census is typed loosely on the raydriver side)."""
+    profile = device.probe_profile
+    return profile if isinstance(profile, DeviceProfile) else None
 
 
 def _clone_meta(src) -> Any:

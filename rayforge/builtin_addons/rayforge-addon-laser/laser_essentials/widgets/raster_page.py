@@ -8,6 +8,7 @@ from rayforge.machine.models.laser import LaserHead
 from rayforge.pipeline.stage.assembler_helpers import DepthMode
 from rayforge.ui_gtk.varset.adapter.combo import ComboAdapter
 
+from ..steps.raster_step import auto_sample_interval_mm
 from .laser_step_page import LaserStepSettingsPage
 from .levels_adapter import LevelsAdapter
 from .raster_power_widget import RasterPowerWidget
@@ -19,6 +20,11 @@ _ENGRAVE_KEYS = {
     "depth_mode",
     "threshold",
     "dither_algorithm",
+    "dither_serpentine",
+    "dither_min_feature_px",
+    "dither_linear",
+    "halftone_cell_mm",
+    "halftone_angle",
     "scan_angle",
     "cross_hatch",
     "scan_mode",
@@ -26,7 +32,6 @@ _ENGRAVE_KEYS = {
     "sample_interval_mm",
     "dot_width_correction_mm",
     "bidir_x_offset_mm",
-    "invert",
     "num_depth_levels",
     "z_step_down",
     "angle_increment",
@@ -76,18 +81,16 @@ class RasterSettingsPage(LaserStepSettingsPage):
             widget_cls=RasterPowerWidget,
         )
 
-        # The Power section's visible_when predicates and histogram
-        # depend on depth_mode and invert, whose rows live in the
-        # Engrave section. Feed them in as context; the adapters fire
-        # changed synchronously on user interaction and on resync.
+        # The Power section's visible_when predicates depend on
+        # depth_mode, whose row lives in the Engrave section. Feed it in
+        # as context; the adapter fires changed synchronously on user
+        # interaction and on resync.
         self._sync_power_context()
-        for key in ("depth_mode", "invert"):
-            adapter = self.engrave_widget.adapter_for(key)
-            if adapter is not None:
-                adapter.changed.connect(
-                    lambda sender, k=key: self._sync_power_context(),
-                    weak=False,
-                )
+        adapter = self.engrave_widget.adapter_for("depth_mode")
+        if adapter is not None:
+            adapter.changed.connect(
+                lambda sender: self._on_depth_mode_changed(), weak=False
+            )
 
         levels = self.power_widget.adapter_for("black_point")
         if isinstance(levels, LevelsAdapter):
@@ -113,18 +116,34 @@ class RasterSettingsPage(LaserStepSettingsPage):
             values["sample_interval_mm"] = spot_x / 2.0
         if self.step.dot_width_correction_mm is None:
             values["dot_width_correction_mm"] = spot_x / 2.0
+        sample_interval = self.step.sample_interval_mm or (
+            auto_sample_interval_mm(
+                self.step.depth_mode,
+                self.step.line_interval_mm,
+                spot_x,
+                spot_y,
+            )
+        )
+        if self.step.sample_interval_mm is None:
+            values["sample_interval_mm"] = sample_interval
+        if self.step.dither_min_feature_px is None:
+            values["dither_min_feature_px"] = max(
+                1, round(spot_x / sample_interval)
+            )
         if values:
             self.engrave_widget.set_values(values)
 
     def _sync_power_context(self):
-        """Feed the current depth_mode/invert into the Power section."""
+        """Feed the current depth_mode into the Power section."""
         values = self.engrave_widget.get_values()
         self.power_widget.set_context_values(
-            {
-                "depth_mode": values.get("depth_mode"),
-                "invert": values.get("invert"),
-            }
+            {"depth_mode": values.get("depth_mode")}
         )
+
+    def _on_depth_mode_changed(self) -> None:
+        """Refresh the auto-value rows, then feed the mode onward."""
+        self._push_head_defaults()
+        self._sync_power_context()
 
     def _on_varset_data_changed(self, widget, key):
         if key in ("min_power_level", "max_power_level"):

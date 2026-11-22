@@ -49,8 +49,9 @@ Utilisez la coupe de contour pour :
 
 ## Paramètres Clés
 
-La boîte de dialogue des paramètres d'étape comporte trois onglets : **Paramètres d'étape**,
-**Laser** et **Post-Traitement**. Les paramètres sont décrits ci-dessous dans l'ordre des onglets.
+La boîte de dialogue des paramètres d'étape comporte quatre onglets : **Paramètres d'étape**,
+**Laser**, **Post-Traitement** et **Pièces**. Les paramètres sont décrits ci-dessous dans l'ordre
+des onglets.
 
 ### Paramètres de Contour
 
@@ -210,6 +211,8 @@ Voir [Kerf](../kerf.md) pour un guide détaillé.
 Les opérations de contour supportent plusieurs options de post-traitement :
 
 - **[Lissage de Parcours](../smooth.md)** - Réduire les bords irréguliers dans les parcours de coupe
+- **[Perforation](../perforation.md)** - Découpe en pointillés pour plis, lignes prédécoupées et
+  trous de couture
 - **[Ponts de Maintien](../holding-tabs.md)** - Maintenir les pièces coupées attachées au matériau
   de stock
 - **[Rognage au Stock](../crop-to-stock.md)** - Limiter les coupes à la limite du matériau

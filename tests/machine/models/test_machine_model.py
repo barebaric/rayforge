@@ -20,6 +20,12 @@ from rayforge import config
 from rayforge import context as context_module
 from rayforge.context import get_context
 from rayforge.core.doc import Doc
+from rayforge.machine.driver.driver import (
+    DeviceState,
+    Driver,
+    ZHomingMode,
+)
+from rayforge.machine.models.coordinate_system import CoordinateSystem
 from rayforge.machine.models.dialect_manager import DialectManager
 from rayforge.machine.models.machine import Machine, Origin
 from rayforge.machine.models.rotary_module import RotaryModule
@@ -442,6 +448,22 @@ class TestMachineModel:
         assert machine.work_margins == (50, 50, 50, 50)
         assert machine.soft_limits == (10, 10, 280, 380)
 
+    def test_soft_limits_enabled_persists_through_serialization(
+        self, lite_context
+    ):
+        """Test that a disabled soft-limits toggle survives a restart."""
+        machine = Machine(lite_context)
+        assert machine.soft_limits_enabled is True
+        machine.set_soft_limits_enabled(False)
+
+        data = machine.to_dict()["machine"]
+        assert data["soft_limits_enabled"] is False
+
+        restored = Machine.from_dict(
+            {"machine": dict(data)}, context=lite_context
+        )
+        assert restored.soft_limits_enabled is False
+
     def test_usb_id_serialization_uses_hex(self, lite_context):
         """USB ids serialize as hex strings and round-trip; legacy
         integer values are still accepted on load."""
@@ -559,6 +581,55 @@ class TestSupportsCurves:
         data = machine.to_dict()
         restored = Machine.from_dict(data, context=lite_context)
         assert restored.supports_curves is True
+
+
+class TestZHomingMode:
+    def test_default_is_driver_default(self, lite_context):
+        machine = Machine(lite_context)
+        assert machine.z_homing_mode is None
+
+    def test_no_signal_on_same_value(self, lite_context):
+        machine = Machine(lite_context)
+        signals = []
+        machine.changed.connect(lambda m: signals.append(m))
+        machine.set_z_homing_mode(None)
+        assert len(signals) == 0
+
+    def test_signal_on_change(self, lite_context):
+        machine = Machine(lite_context)
+        signals = []
+
+        def handler(sender):
+            signals.append(sender)
+
+        machine.changed.connect(handler)
+        machine.set_z_homing_mode(ZHomingMode.PROBE)
+        assert len(signals) == 1
+
+    def test_serialization_round_trip(self, lite_context):
+        machine = Machine(lite_context)
+        machine.set_z_homing_mode(ZHomingMode.PROBE)
+        data = machine.to_dict()
+        restored = Machine.from_dict(data, context=lite_context)
+        assert restored.z_homing_mode is ZHomingMode.PROBE
+
+    def test_unknown_mode_falls_back_to_driver_default(self, lite_context):
+        data = Machine(lite_context).to_dict()
+        data["machine"]["z_homing_mode"] = "laser-eye"
+        restored = Machine.from_dict(data, context=lite_context)
+        assert restored.z_homing_mode is None
+
+
+class TestDriverZHomingModes:
+    def test_drivers_default_to_switch_only(self):
+        assert Driver.z_homing_modes == (ZHomingMode.SWITCH,)
+
+    def test_unset_mode_resolves_to_first_supported(self):
+        assert Driver.resolve_z_homing_mode(None) is ZHomingMode.SWITCH
+
+    def test_unsupported_mode_resolves_to_default(self):
+        resolved = Driver.resolve_z_homing_mode(ZHomingMode.PROBE)
+        assert resolved is ZHomingMode.SWITCH
 
 
 class TestSetSupportsArcs:
@@ -790,6 +861,55 @@ class TestSetterEqualityGuards:
         assert len(signals) == 1
 
 
+class TestParkPositionAfterHoming:
+    def test_default_is_none(self, lite_context):
+        machine = Machine(lite_context)
+        assert machine.park_position_after_homing is None
+
+    def test_no_signal_on_same_value(self, lite_context):
+        machine = Machine(lite_context)
+        machine.set_park_position_after_homing((10.0, 5.0))
+        signals = []
+
+        def handler(sender):
+            signals.append(sender)
+
+        machine.changed.connect(handler)
+        machine.set_park_position_after_homing((10.0, 5.0))
+        assert len(signals) == 0
+
+    def test_signal_on_change(self, lite_context):
+        machine = Machine(lite_context)
+        signals = []
+
+        def handler(sender):
+            signals.append(sender)
+
+        machine.changed.connect(handler)
+        machine.set_park_position_after_homing((10.0, 5.0))
+        assert len(signals) == 1
+
+    def test_position_values_are_coerced_to_float(self, lite_context):
+        machine = Machine(lite_context)
+        machine.set_park_position_after_homing((10, 5))
+        assert machine.park_position_after_homing == (10.0, 5.0)
+
+    def test_serialization_round_trip(self, lite_context):
+        machine = Machine(lite_context)
+        machine.set_park_position_after_homing((10.0, 5.0))
+        data = machine.to_dict()
+        restored = Machine.from_dict(data, context=lite_context)
+        assert restored.park_position_after_homing == (10.0, 5.0)
+
+    def test_serialization_round_trip_when_disabled(self, lite_context):
+        machine = Machine(lite_context)
+        machine.set_park_position_after_homing((10.0, 5.0))
+        machine.set_park_position_after_homing(None)
+        data = machine.to_dict()
+        restored = Machine.from_dict(data, context=lite_context)
+        assert restored.park_position_after_homing is None
+
+
 class TestHydratedDialectCache:
     """Tests for _hydrated_dialect cache invalidation."""
 
@@ -877,3 +997,75 @@ class TestSetDriverEmitsChanged:
         machine.changed.connect(handler)
         machine.set_driver(TestDriver3, {"port": "/dev/null"})
         assert len(signals) == 0
+
+
+@pytest.mark.usefixtures("lite_context")
+class TestSoftLimitClampingSpace:
+    """Soft limits are bed-fixed machine-space boxes and must be
+    clamped against the machine position, not the work position, so
+    zeroing the WCS mid-bed does not block valid jogs or allow jogs
+    past the bed edge (issue #613)."""
+
+    def _make_machine(self, lite_context):
+        machine = Machine(lite_context)
+        machine.set_axis_extents(400.0, 400.0)
+        machine.set_reverse_x_axis(True)
+        machine.set_reverse_y_axis(True)
+        machine.set_soft_limits_enabled(True)
+        return machine
+
+    def _set_machine_pos(self, machine, x, y):
+        machine.set_device_state(
+            DeviceState(machine_pos=(x, y, 0.0), work_pos=(0.0, 0.0, 0.0))
+        )
+
+    def _set_wcs(self, machine, x, y):
+        machine.coordinate_systems["G54"] = CoordinateSystem(
+            name="G54", offset=(x, y, 0.0)
+        )
+
+    def test_jog_into_positive_work_space_is_allowed(self, lite_context):
+        """Zeroing at an object mid-bed (G54 -292/-341) must not block
+        jogging right/top away from it."""
+        machine = self._make_machine(lite_context)
+        self._set_wcs(machine, -292.0, -341.0)
+        self._set_machine_pos(machine, -292.0, -341.0)
+
+        assert machine._adjust_jog_distance_for_limits(Axis.X, 7.0) == 7.0
+        assert machine._adjust_jog_distance_for_limits(Axis.Y, 7.0) == 7.0
+
+    def test_jog_is_clamped_at_bed_edge(self, lite_context):
+        machine = self._make_machine(lite_context)
+        self._set_machine_pos(machine, -50.0, -50.0)
+
+        assert machine._adjust_jog_distance_for_limits(Axis.X, 100.0) == 50.0
+        assert (
+            machine._adjust_jog_distance_for_limits(Axis.Y, -100.0) == -100.0
+        )
+        assert (
+            machine._adjust_jog_distance_for_limits(Axis.Y, -400.0) == -350.0
+        )
+
+    def test_configured_limits_clamp_in_machine_space(self, lite_context):
+        """User limits 0..397 are origin-corner distances: machine
+        [-397, 0] on a reversed machine."""
+        machine = self._make_machine(lite_context)
+        machine.set_soft_limits(0.0, 0.0, 397.0, 397.0)
+        self._set_machine_pos(machine, -100.0, -100.0)
+
+        assert machine.get_soft_limits() == (-397.0, -397.0, 0.0, 0.0)
+        assert machine._adjust_jog_distance_for_limits(Axis.X, 7.0) == 7.0
+        assert (
+            machine._adjust_jog_distance_for_limits(Axis.X, -500.0) == -297.0
+        )
+
+    def test_work_position_shift_no_longer_applied(self, lite_context):
+        """Regression: with a mid-bed WCS zero the work position used
+        to be compared against machine-space limits, blocking every
+        positive-direction jog."""
+        machine = self._make_machine(lite_context)
+        self._set_wcs(machine, -292.0, -341.0)
+        self._set_machine_pos(machine, -292.0, -341.0)
+
+        assert machine.would_jog_exceed_limits(Axis.X, 7.0) is False
+        assert machine.would_jog_exceed_limits(Axis.Y, 7.0) is False

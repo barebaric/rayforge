@@ -49,11 +49,22 @@ git rebase upstream/main
    git push origin feature/ihr-feature-name
    ```
 
-2. Erstelle einen Pull-Request auf GitHub mit:
-   - Einer klaren Überschrift, die die Änderung beschreibt
-   - Einer detaillierten Beschreibung, was du geändert hast und warum
+2. Erstelle einen Pull-Request auf GitHub und fülle die Pull-Request-Vorlage aus:
+   - Eine klare Überschrift und eine Beschreibung der Änderung und des Problems, das sie löst
+   - Warum du deinen konkreten Architektur-Ansatz gewählt hast und welche Alternativen du verworfen
+     hast
+   - Die genauen Schritte, mit denen du die Änderung lokal getestet hast
    - Referenz auf verwandte Issues
    - Screenshots, wenn die Änderung die UI betrifft
+   - Jede Checkbox der Checkliste in der Vorlage angekreuzt
+
+<!-- prettier-ignore-start -->
+:::warning[Vorlage wird erzwungen]
+Pull-Requests, die die Vorlage nicht ausfüllen, werden automatisch von einem Bot geschlossen.
+Bearbeite die Beschreibung des Pull-Requests, sodass jeder Abschnitt beantwortet und jede Checkbox
+angekreuzt ist — der Pull-Request wird danach automatisch wieder geöffnet.
+:::
+<!-- prettier-ignore-end -->
 
 ## Code-Review-Prozess
 
@@ -70,6 +81,16 @@ Pull-Requests werden gemergt, wenn sie:
 - [ ] Appropriate Tests für neue Funktionalität enthalten
 - [ ] Dokumentations-Updates haben, falls erforderlich
 - [ ] Von mindestens einem Maintainer genehmigt sind
+
+## KI-unterstützter Code
+
+Wir begrüßen die Nutzung von KI-Werkzeugen beim Schreiben von Code. Trotzdem bist du streng für den
+von dir eingereichten Code verantwortlich. Du MUSST ihn vollständig verstehen und musst in der Lage
+sein, die Architekturentscheidungen zu erklären.
+
+KI-generierter Code führt oft subtile Bugs, architektonische Diskrepanzen und Sicherheitslücken ein.
+Pull-Requests, die wie rohe, unüberprüfte KI-Ausgaben wirken, werden geschlossen, um die Zeit der
+Maintainer zu respektieren.
 
 ## Zusätzliche Richtlinien
 

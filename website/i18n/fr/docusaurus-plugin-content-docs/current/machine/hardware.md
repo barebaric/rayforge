@@ -93,15 +93,19 @@ l'étendue des axes moins les marges.
 ## Limites Logicielles
 
 Limites de sécurité configurables pour le déplacement de la tête machine. Lorsqu'activées, les
-commandes de déplacement empêcheront tout mouvement en dehors de ces limites.
+commandes de déplacement empêcheront tout mouvement en dehors de ces limites. Lorsqu'elles sont
+désactivées, le déplacement n'est pas limité.
 
-- **Activer les Limites Logicielles Personnalisées** : Basculer pour utiliser des limites
-  personnalisées au lieu des limites de la surface de travail
-- **X/Y Min** : Coordonnée minimum pour chaque axe
-- **X/Y Max** : Coordonnée maximum pour chaque axe
+- **Activer les Limites Logicielles** : Active ou désactive la vérification des limites de
+  déplacement
+- **X/Y Distance Min de l'Origine** : Distance minimale depuis le coin de l'origine pour chaque axe
+- **X/Y Distance Max de l'Origine** : Distance maximale depuis le coin de l'origine pour chaque axe
 
-Les limites logicielles sont automatiquement contraintes pour rester dans l'étendue des axes (0 à la
-valeur d'étendue).
+Les limites logicielles sont évaluées en coordonnées machine et restent ancrées à la table physique
+: elles ne bougent pas lorsque l'origine de travail est remise à zéro. Les valeurs sont saisies
+comme des distances depuis le coin de l'origine des coordonnées vers la table. Sans limites
+personnalisées, l'activation utilise l'étendue des axes. Les limites sont automatiquement
+contraintes pour rester dans l'étendue des axes (0 à la valeur d'étendue).
 
 <!-- prettier-ignore-start -->
 :::tip

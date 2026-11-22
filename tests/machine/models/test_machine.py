@@ -915,6 +915,7 @@ class TestMachine:
             assert oy == pytest.approx(by - 60.0)
 
     @pytest.mark.asyncio
+    @pytest.mark.parametrize("workarea_origin", [False, True])
     async def test_frame_job_shifts_with_pointer_alignment(
         self,
         doc: Doc,
@@ -924,6 +925,7 @@ class TestMachine:
         lite_context,
         task_mgr: TaskManager,
         contour_step_class,
+        workarea_origin: bool,
     ):
         """
         While pointer alignment is on, the frame outline is traced by
@@ -941,7 +943,7 @@ class TestMachine:
 
         machine.set_axis_extents(200.0, 200.0)
         machine.set_origin(Origin.BOTTOM_LEFT)
-        machine.wcs_origin_is_workarea_origin = False
+        machine.set_wcs_origin_is_workarea_origin(workarea_origin)
         machine.active_wcs = "G56"
         machine.update_wcs_offset("G56", (0.0, 0.0, 0.0))
 
@@ -1279,6 +1281,40 @@ class TestMachine:
         assert new_machine.acceleration == 2500
 
     @pytest.mark.asyncio
+    async def test_jog_speed_setter(
+        self, machine: Machine, mocker, task_mgr: TaskManager
+    ):
+        """Test that the jog speed setter works correctly."""
+        await wait_for_tasks_to_finish(task_mgr)
+        machine.set_jog_speed(2000)
+        assert machine.jog_speed == 2000
+
+        # Test that setting jog speed triggers changed signal
+        changed_spy = mocker.spy(machine.changed, "send")
+        machine.set_jog_speed(1500)
+        changed_spy.assert_called_once_with(machine)
+
+    @pytest.mark.asyncio
+    async def test_machine_serialization_with_jog_speed(
+        self, machine: Machine, task_mgr: TaskManager, lite_context
+    ):
+        """Test that jog speed is properly serialized and deserialized."""
+        await wait_for_tasks_to_finish(task_mgr)
+        machine.set_jog_speed(2500)
+
+        machine_dict = machine.to_dict()
+
+        assert "jog_speed" in machine_dict["machine"]["speeds"]
+        assert machine_dict["machine"]["speeds"]["jog_speed"] == 2500
+
+        new_machine = Machine.from_dict(machine_dict, context=lite_context)
+
+        # Wait for the async driver rebuild scheduled by from_dict to finish
+        await wait_for_tasks_to_finish(task_mgr)
+
+        assert new_machine.jog_speed == 2500
+
+    @pytest.mark.asyncio
     async def test_get_default_head(
         self, machine: Machine, task_mgr: TaskManager
     ):
@@ -1500,6 +1536,28 @@ class TestMachine:
         changed_spy.assert_called_once_with(machine)
 
     @pytest.mark.asyncio
+    async def test_dialects_changed_refreshes_driver_dialect(
+        self, machine: Machine, task_mgr: TaskManager, mocker
+    ):
+        """
+        Test that when dialects are updated via dialect manager, the
+        machine's live driver is told to re-read its dialect so manual
+        commands use the edited templates.
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+
+        controller = machine.controller
+        driver_mock = mocker.MagicMock()
+        mocker.patch.object(controller, "driver", driver_mock)
+
+        # Simulate a dialect edit, as performed by the dialect editor
+        machine.context.dialect_mgr.dialects_changed.send(
+            machine.context.dialect_mgr
+        )
+
+        driver_mock.refresh_dialect.assert_called_once_with()
+
+    @pytest.mark.asyncio
     async def test_dialect_fallback_to_grbl_on_invalid_uid(
         self, machine: Machine, task_mgr: TaskManager
     ):
@@ -1717,14 +1775,13 @@ class TestMachine:
         """
         Test that home method accepts multiple axes using binary operators.
         """
-        # Mock the _send_and_wait method to avoid connection issues
-        mock_send_and_wait = mocker.AsyncMock()
-
-        # Create driver directly to avoid setup issues
+        # Create driver directly to avoid setup issues, then replace
+        # its Rust session with a mock to avoid connection issues.
         machine.set_driver(SmoothieDriver, {"host": "test", "port": 23})
         await wait_for_tasks_to_finish(task_mgr)
 
-        machine.driver._send_and_wait = mock_send_and_wait
+        mock_session = mocker.AsyncMock()
+        machine.driver._session = mock_session
 
         # Test home with single axis
         await machine.home(Axis.X)
@@ -1741,10 +1798,21 @@ class TestMachine:
         await machine.home()
         await machine.home(None)
 
-        # Verify that _send_and_wait was called for each home operation
-        # 3 single axes + 3*2 for multiple axes (2 axes each)
-        #  + 1*3 for all three axes + 2 for home all/home none
-        assert mock_send_and_wait.call_count == 14
+        # Verify that the session was asked to home for each call:
+        # 3 single axes + 3 two-axis homes + 1 three-axis home
+        # + 2 for home all/home none
+        homes = [call.args[0] for call in mock_session.home.await_args_list]
+        assert homes == [
+            ["X"],
+            ["Y"],
+            ["Z"],
+            ["X", "Y"],
+            ["X", "Z"],
+            ["Y", "Z"],
+            ["X", "Y", "Z"],
+            None,
+            None,
+        ]
 
     @pytest.mark.asyncio
     async def test_machine_jog_methods(self, machine: Machine, mocker):
@@ -2560,6 +2628,95 @@ class TestJogDelegation:
             isolated_machine.would_jog_exceed_limits(axis, distance)
             is expected
         )
+
+    @pytest.mark.parametrize(
+        "machine_pos, axis, distance, expected",
+        [
+            # Mid-bed: all four directions jog freely
+            ((-200.0, -170.0), Axis.X, -10.0, -10.0),
+            ((-200.0, -170.0), Axis.X, 10.0, 10.0),
+            ((-200.0, -170.0), Axis.Y, -10.0, -10.0),
+            ((-200.0, -170.0), Axis.Y, 10.0, 10.0),
+            # Near the far travel end: outward shortens, inward is
+            # untouched
+            ((-5.0, -170.0), Axis.X, 10.0, 5.0),
+            ((-5.0, -170.0), Axis.X, -10.0, -10.0),
+            # Near the switch end: outward jogs shorten
+            ((-392.0, -170.0), Axis.X, -10.0, -3.0),
+            ((-170.0, -392.0), Axis.Y, -10.0, -3.0),
+        ],
+    )
+    def test_adjust_jog_distance_uses_machine_coordinates(
+        self, isolated_machine: Machine, machine_pos, axis, distance, expected
+    ):
+        """
+        Soft limits describe the physical bed in machine coordinates,
+        so the jog check compares against the machine position and is
+        unaffected by the active WCS offset.
+
+        This supersedes the work-space evaluation from #574: that
+        setup paired a bottom-left origin with firmware that reports
+        negative positions and a G54 used as a UI correction - the
+        misconfiguration later diagnosed in #613. With the machine
+        configured to match the firmware (top-right origin, reversed
+        axes, G54 at zero), machine-space evaluation clamps at the
+        real bed edges in every zeroing workflow.
+        """
+        isolated_machine.set_axis_extents(395, 395)
+        isolated_machine.set_reverse_x_axis(True)
+        isolated_machine.set_reverse_y_axis(True)
+        isolated_machine.set_soft_limits(0.0, 0.0, 395.0, 395.0)
+        isolated_machine.update_wcs_offsets_batch(
+            {"G54": (-292.0, -341.0, 0.0)}
+        )
+        isolated_machine.device_state.machine_pos = machine_pos + (0.0,)
+
+        assert isolated_machine._adjust_jog_distance_for_limits(
+            axis, distance
+        ) == pytest.approx(expected)
+
+    def test_would_jog_exceed_limits_ignores_wcs_offset(
+        self, isolated_machine: Machine
+    ):
+        """
+        The orange jog warning keys off the machine position against
+        the bed bounds, so zeroing the WCS mid-bed neither flags valid
+        jogs nor hides jogs past the bed edge (issue #613).
+        """
+        isolated_machine.set_axis_extents(395, 395)
+        isolated_machine.set_reverse_x_axis(True)
+        isolated_machine.set_reverse_y_axis(True)
+        isolated_machine.update_wcs_offsets_batch(
+            {"G54": (-292.0, -341.0, 0.0)}
+        )
+        isolated_machine.device_state.machine_pos = (-287.0, -217.0, 0.0)
+
+        assert isolated_machine.would_jog_exceed_limits(Axis.X, -10.0) is False
+        assert isolated_machine.would_jog_exceed_limits(Axis.X, 10.0) is False
+
+        isolated_machine.device_state.machine_pos = (-394.0, -217.0, 0.0)
+        assert isolated_machine.would_jog_exceed_limits(Axis.X, -10.0) is True
+        assert isolated_machine.would_jog_exceed_limits(Axis.X, 10.0) is False
+
+    def test_disabled_soft_limits_skip_limit_check(
+        self, isolated_machine: Machine
+    ):
+        """
+        With the soft limits toggle off, no jog is clamped or flagged
+        no matter where the machine coordinates sit (issue #574).
+        """
+        isolated_machine.set_axis_extents(395, 395)
+        isolated_machine.set_soft_limits_enabled(False)
+        isolated_machine.update_wcs_offsets_batch(
+            {"G54": (-387.0, -387.0, 0.0)}
+        )
+        isolated_machine.device_state.machine_pos = (-287.0, -217.0, 0.0)
+
+        assert (
+            isolated_machine._adjust_jog_distance_for_limits(Axis.X, -10.0)
+            == -10.0
+        )
+        assert isolated_machine.would_jog_exceed_limits(Axis.X, -10.0) is False
 
     def test_set_z_extents_updates_travel_range(
         self, isolated_machine: Machine

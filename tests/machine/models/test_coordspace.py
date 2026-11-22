@@ -109,6 +109,59 @@ class TestMachineSpace:
         assert x == 30.0
         assert y == 20.0
 
+    def test_command_offset_uses_wcs_plus_extra(self):
+        """The extra offset is added to the WCS command offset."""
+        space = MachineSpace(
+            origin=OriginCorner.BOTTOM_LEFT,
+            x_positive_direction=AxisDirection.POSITIVE_RIGHT,
+            y_positive_direction=AxisDirection.POSITIVE_UP,
+        )
+
+        offset = space.get_command_offset(
+            wcs_offset=(10.0, 20.0, 5.0),
+            extra_offset=(12.0, -3.5),
+        )
+
+        assert offset == pytest.approx((22.0, 16.5, 0.0))
+
+    def test_command_offset_workarea_plus_extra(self):
+        """The extra offset is also added in workarea-origin mode."""
+        space = MachineSpace(
+            origin=OriginCorner.BOTTOM_LEFT,
+            x_positive_direction=AxisDirection.POSITIVE_RIGHT,
+            y_positive_direction=AxisDirection.POSITIVE_UP,
+            extents=(400.0, 300.0),
+            margins=(10.0, 20.0, 30.0, 40.0),
+        )
+
+        offset = space.get_command_offset(
+            wcs_offset=(999.0, 999.0, 0.0),
+            wcs_is_workarea_origin=True,
+            extra_offset=(12.0, -3.5),
+        )
+
+        assert offset == pytest.approx((22.0, 36.5, 0.0))
+
+    def test_machine_to_command_matrix_includes_extra_offset(self):
+        """The command matrix applies the extra offset in workarea
+        mode."""
+        space = MachineSpace(
+            origin=OriginCorner.BOTTOM_LEFT,
+            x_positive_direction=AxisDirection.POSITIVE_RIGHT,
+            y_positive_direction=AxisDirection.POSITIVE_UP,
+            extents=(400.0, 300.0),
+            margins=(10.0, 20.0, 30.0, 40.0),
+        )
+
+        matrix = space.get_machine_to_command_matrix(
+            wcs_is_workarea_origin=True,
+            extra_offset=(12.0, -3.5),
+        )
+        command = matrix @ np.array([100.0, 100.0, 0.0, 1.0])
+
+        assert command[0] == pytest.approx(78.0)
+        assert command[1] == pytest.approx(63.5)
+
     def test_transform_top_left_to_world(self):
         """Top-left origin machine coords should transform to world."""
         space = MachineSpace(

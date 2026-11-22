@@ -1,12 +1,13 @@
-from sketcher.core import Sketch
-from sketcher.core.commands import TextBoxCommand
-from sketcher.core.constraints import (
+from raygeo.sketch.constraints import (
     AspectRatioConstraint,
     HorizontalConstraint,
     ParallelogramConstraint,
     PerpendicularConstraint,
 )
-from sketcher.core.entities import Line, TextBoxEntity
+from raygeo.sketch.entities import Line
+from raygeo.sketch.entities import TextBox as TextBoxEntity
+from sketcher.core import Sketch
+from sketcher.core.commands import TextBoxCommand
 
 
 def test_text_box_calculate_geometry_default():
@@ -115,8 +116,8 @@ def test_text_box_command_execute():
     cmd = TextBoxCommand(sketch, (0, 0), 10.0, 10.0)
     cmd.execute()
 
-    assert len(sketch.registry.points) == 5
-    assert len(sketch.registry.entities) == 5
+    assert len(sketch.registry.points()) == 5
+    assert len(sketch.registry.entities()) == 5
     assert len(sketch.constraints) == 4
     assert cmd.text_box_id is not None
 
@@ -127,8 +128,8 @@ def test_text_box_command_execute_custom_dimensions():
     cmd = TextBoxCommand(sketch, (5, 10), 20.0, 15.0)
     cmd.execute()
 
-    assert len(sketch.registry.points) == 5
-    assert len(sketch.registry.entities) == 5
+    assert len(sketch.registry.points()) == 5
+    assert len(sketch.registry.entities()) == 5
     assert len(sketch.constraints) == 4
     assert cmd.text_box_id is not None
 
@@ -142,14 +143,14 @@ def test_text_box_command_undo():
     cmd = TextBoxCommand(sketch, (0, 0), 10.0, 10.0)
     cmd.execute()
 
-    assert len(sketch.registry.points) == 5
-    assert len(sketch.registry.entities) == 5
+    assert len(sketch.registry.points()) == 5
+    assert len(sketch.registry.entities()) == 5
     assert len(sketch.constraints) == 4
 
     cmd.undo()
 
-    assert len(sketch.registry.points) == 1
-    assert len(sketch.registry.entities) == 0
+    assert len(sketch.registry.points()) == 1
+    assert len(sketch.registry.entities()) == 0
     assert len(sketch.constraints) == 0
 
 
@@ -159,15 +160,15 @@ def test_text_box_command_execute_after_undo():
     cmd = TextBoxCommand(sketch, (0, 0), 10.0, 10.0)
     cmd.execute()
 
-    initial_points = len(sketch.registry.points)
-    initial_entities = len(sketch.registry.entities)
+    initial_points = len(sketch.registry.points())
+    initial_entities = len(sketch.registry.entities())
     initial_constraints = len(sketch.constraints)
 
     cmd.undo()
     cmd.execute()
 
-    assert len(sketch.registry.points) == initial_points
-    assert len(sketch.registry.entities) == initial_entities
+    assert len(sketch.registry.points()) == initial_points
+    assert len(sketch.registry.entities()) == initial_entities
     assert len(sketch.constraints) == initial_constraints
 
 
@@ -179,7 +180,7 @@ def test_text_box_command_construction_lines():
 
     lines = [
         e
-        for e in sketch.registry.entities
+        for e in sketch.registry.entities()
         if isinstance(e, Line) and e.construction
     ]
 

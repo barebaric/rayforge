@@ -8,22 +8,24 @@ Rayforge 主要为**基于 GRBL 的控制器**设计，但也支持 Marlin、Smo
 
 ### 兼容性矩阵
 
-| 固件             | 版本  | 状态     | 驱动程序                       | 备注             |
-| ---------------- | ----- | -------- | ------------------------------ | ---------------- |
-| **GRBL**         | 1.1+  | 完全支持 | GRBL 串口 / GRBL Serial Simple | 推荐             |
-| **grblHAL**      | 2023+ | 兼容     | GRBL 串口 / GRBL Telnet        | 现代 GRBL 分支   |
-| **GRBL**         | 0.9   | 有限     | GRBL 串口                      | 较旧，可能有问题 |
-| **Smoothieware** | 全部  | 兼容     | SmoothieDriver (Telnet)        | 基于网络         |
-| **Marlin**       | 2.0+  | 兼容     | Marlin 串口                    | 需要激光模式     |
-| **ESP3D**        | 全部  | 兼容     | GRBL Telnet                    | 基于网络         |
-| **OctoPrint**    | 全部  | 实验性   | OctoPrint                      | 见下方说明       |
-| **其他**         | -     | 不支持   | -                              | 请求支持         |
+| 固件             | 版本  | 状态     | 驱动程序                                 | 备注                    |
+| ---------------- | ----- | -------- | ---------------------------------------- | ----------------------- |
+| **GRBL**         | 1.1+  | 完全支持 | GRBL (USB/Serial) (+ compatibility mode) | 推荐                    |
+| **GRBL**         | 1.1+    | 实验性   | GRBL (Bluetooth) | 已配对的蓝牙 SPP 设备 |
+| **grblHAL**      | 2023+ | 兼容     | GRBL (USB/Serial) / grblHAL (Telnet)     | 现代 GRBL 分支          |
+| **GRBL**         | 0.9   | 有限     | GRBL (USB/Serial)                        | 较旧，可能有问题        |
+| **FluidNC**      | 全部  | 兼容     | FluidNC / ESP3D (Web API)                | 基于 ESP32              |
+| **Smoothieware** | 全部  | 兼容     | SmoothieDriver (Telnet)                  | 基于网络                |
+| **Marlin**       | 2.0+  | 兼容     | Marlin 串口                              | 需要激光模式            |
+| **ESP3D**        | 全部  | 兼容     | grblHAL (Telnet) / Web API               | v2: Telnet, v3: Web API |
+| **OctoPrint**    | 全部  | 实验性   | OctoPrint                                | 见下方说明              |
+| **其他**         | -     | 不支持   | -                                        | 请求支持                |
 
 ---
 
 ## GRBL 固件
 
-**状态：** 完全支持 **版本：** 1.1+ **驱动程序：** GRBL 串口, GRBL Serial Simple
+**状态：** 完全支持 **版本：** 1.1+ **驱动程序：** GRBL (USB/Serial) (+ compatibility mode)
 
 ### GRBL 1.1（推荐）
 
@@ -91,7 +93,7 @@ GRBL 0.9 是较旧的版本，有一些兼容性问题：
 
 **升级说明：** 参见 [GRBL Wiki](https://github.com/gnea/grbl/wiki)
 
-### GRBL Serial Simple 驱动程序
+### GRBL (USB/Serial — compatibility mode) 驱动程序
 
 Rayforge 包含第二个串行 GRBL 驱动程序，适用于标准缓冲计数驱动程序导致误报或通信错误的设备。
 
@@ -110,14 +112,29 @@ Rayforge 包含第二个串行 GRBL 驱动程序，适用于标准缓冲计数�
 
 **何时不使用：**
 
-- 标准 GRBL Serial 驱动程序在大多数设备上可靠工作
+- 标准 GRBL (USB/Serial) 驱动程序在大多数设备上可靠工作
 - Simple 驱动程序缺乏死锁恢复，因此作业可能在丢失 "ok" 响应时停止而无法自动恢复
 
 ---
 
+## GRBL (Bluetooth) 驱动程序
+
+**状态：** 实验性 **固件：** GRBL **驱动程序：** GRBL (Bluetooth)
+
+GRBL (Bluetooth) 驱动程序通过蓝牙经典串口协议 (SPP/RFCOMM) 连接控制器，许多基于 ESP32 的激光控制器都提供该协议。连接由操作系统直接建立，因此不需要 `/dev/rfcomm*` 桥接或传出 COM 端口。
+
+**使用 GRBL (Bluetooth) 驱动程序：**
+
+1. **在操作系统的蓝牙设置中配对控制器**
+2. **在机器设置中选择“GRBL (Bluetooth)”**
+3. **从列表中选择设备**，或手动输入其地址
+4. **保持默认的 RFCOMM 信道 1**，除非设备使用其他信道
+
+支持 Linux、macOS 和 Windows。不支持低功耗蓝牙 (BLE)。
+
 ## grblHAL
 
-**状态：** 兼容 **版本：** 2023+ **驱动程序：** GRBL 串口
+**状态：** 兼容 **版本：** 2023+ **驱动程序：** GRBL (USB/Serial)、grblHAL (Telnet)
 
 ### 什么是 grblHAL？
 
@@ -133,27 +150,30 @@ grblHAL 是 GRBL 的现代分支，具有增强功能：
 
 - **完全兼容** - grblHAL 维护 GRBL 1.1 协议
 - 所有 GRBL 功能都工作
-- 额外功能（网络、SD）Rayforge 尚不支持
+- 网络功能通过 grblHAL (Telnet) 驱动支持
 - 状态报告与 GRBL 相同
 
 **使用 grblHAL：**
 
-1. 在 Rayforge 中选择"GRBL 串口"驱动程序
+1. 在 Rayforge 中选择"GRBL (USB/Serial)"驱动程序
 2. 通过 USB 串口连接（就像 GRBL）
 3. 所有功能按 GRBL 记录工作
 
-**未来：** Rayforge 可能会添加对 grblHAL 特定功能的支持（网络等）
+如需通过网络而非 USB 连接，请使用下文介绍的 grblHAL (Telnet) 驱动。
 
 ---
 
-## GRBL Telnet 驱动
+## grblHAL (Telnet) 驱动
 
-**状态：** 支持 **固件：** grblHAL、ESP3D 和其他网络化 GRBL 控制器 **驱动程序：** GRBL Telnet
+**状态：** 支持 **固件：** grblHAL、ESP3D 和其他网络化 GRBL 控制器 **驱动程序：** grblHAL (Telnet)
 
-### 关于 GRBL Telnet 驱动
+### 关于 grblHAL (Telnet) 驱动
 
-GRBL
-Telnet 驱动通过网络 Telnet 接口连接基于 GRBL 的控制器。适用于内置 WiFi 或以太网的板子——无需 USB 电缆。
+grblHAL
+(Telnet) 驱动通过网络 Telnet 接口连接基于 GRBL 的控制器。适用于内置 WiFi 或以太网的板子——无需 USB 电缆。
+
+启用 LWIP mDNS 的 grblHAL 构建会广播 `_telnet._tcp`，因此向导能立即找到它们，并在列出之前用 `$I`
+构建信息命令确认每块板子。固件不会通过 mDNS 广播的板子由窄范围子网扫描（仅 telnet 端口、有限并发和每主机超时）发现，并进行同样的确认。
 
 **功能：**
 
@@ -161,11 +181,11 @@ Telnet 驱动通过网络 Telnet 接口连接基于 GRBL 的控制器。适用�
 - 兼容基于 grblHAL 和 ESP3D 的板子
 - 与串口驱动相同的 GRBL 协议
 
-**使用 GRBL Telnet 驱动：**
+**使用 grblHAL (Telnet) 驱动：**
 
 1. **在控制器上配置网络**（WiFi 或以太网）
-2. 在机器设置中**选择"GRBL Telnet"**驱动
-3. **输入 IP 地址**和控制器的端口
+2. 在机器设置中**选择"grblHAL (Telnet)"**驱动
+3. **输入主机名或 IP 地址**以及控制器的端口
 4. **连接** — 驱动通过 Telnet 通信
 
 **要求：**
@@ -176,9 +196,33 @@ Telnet 驱动通过网络 Telnet 接口连接基于 GRBL 的控制器。适用�
 
 ---
 
+## FluidNC / ESP3D (Web API) 驱动
+
+**状态：** 支持 **固件：** FluidNC、ESP3D v3 **驱动程序：** FluidNC / ESP3D (Web API)
+
+### 关于 Web API 驱动
+
+FluidNC / ESP3D (Web API) 驱动使用控制器的 HTTP/WebSocket 接口——与其 Web
+UI 使用的接口相同。与 telnet 驱动相比，它增加了文件上传以及设备设置的读写，并且 Rayforge 会通过 mDNS 自动发现 FluidNC 和 ESP3D
+v3 设备。
+
+**使用 Web API 驱动：**
+
+1. 在控制器上**配置网络**（WiFi 或以太网）
+2. 在机器设置中**选择"FluidNC / ESP3D (Web API)"**驱动
+3. **输入主机名或 IP 地址**以及 HTTP/WebSocket 端口（FluidNC 两者通常都是 80）
+4. **连接**
+
+**要求：**
+
+- FluidNC 或 ESP3D v3 固件
+- 控制器与计算机在同一网络
+
+---
+
 ## Smoothieware
 
-**驱动程序：** GRBL 串口（兼容模式）
+**驱动程序：** GRBL (USB/Serial)（兼容模式）
 
 ### 兼容性说明
 

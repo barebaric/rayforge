@@ -64,8 +64,9 @@ folga.
 
 ## Configurações Principais
 
-O diálogo de configurações de etapa tem três abas: **Configurações de Etapa**, **Laser** e
-**Pós-Processamento**. As configurações são descritas em ordem de aba abaixo.
+O diálogo de configurações de etapa tem quatro abas: **Configurações de Etapa**, **Laser**,
+**Pós-Processamento** e **Peças de trabalho**. As configurações são descritas em ordem de aba
+abaixo.
 
 ### Shrink Wrap
 

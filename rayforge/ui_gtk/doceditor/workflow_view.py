@@ -50,6 +50,7 @@ class WorkflowView(ExpanderWithButton):
             try:
                 # Disconnect old handlers
                 self.workflow.updated.disconnect(self.on_workflow_changed)
+                self.workflow.renamed.disconnect(self.on_workflow_renamed)
                 self.workflow.descendant_added.disconnect(
                     self.on_workflow_changed
                 )
@@ -69,11 +70,17 @@ class WorkflowView(ExpanderWithButton):
             # Connect to signals that indicate a change in the workflow's
             # properties or its list of children.
             self.workflow.updated.connect(self.on_workflow_changed)
+            self.workflow.renamed.connect(self.on_workflow_renamed)
             self.workflow.descendant_added.connect(self.on_workflow_changed)
             self.workflow.descendant_removed.connect(self.on_workflow_changed)
             self.workflow.descendant_updated.connect(self.on_workflow_changed)
             # Trigger initial full population and metadata update
             self.on_workflow_changed(self.workflow)
+
+    def on_workflow_renamed(self, sender):
+        """A workflow rename only changes the displayed title."""
+        if self.workflow:
+            self.set_title(self.workflow.name)
 
     def on_workflow_changed(self, sender, **kwargs):
         """

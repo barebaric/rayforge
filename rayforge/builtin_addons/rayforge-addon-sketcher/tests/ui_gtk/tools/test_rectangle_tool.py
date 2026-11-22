@@ -1,13 +1,13 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+from raygeo.sketch.entities import SketchPoint
+from raygeo.sketch.entities import SketchPoint as Point
+from raygeo.sketch.snap import SnapLineType
 from sketcher.core.commands import (
     RectangleCommand,
     RectanglePreviewState,
 )
-from sketcher.core.entities import Point
-from sketcher.core.entities import Point as SketchPoint
-from sketcher.core.snap import SnapLineType
 from sketcher.ui_gtk.tools import RectangleTool
 
 
@@ -16,7 +16,7 @@ def mock_element():
     """Create a mock SketchElement for testing tools."""
     element = MagicMock()
     element.sketch = MagicMock()
-    element.sketch.registry._id_counter = 0
+    element.sketch.registry.next_id.return_value = 0
     element.hittester.get_hit_data.return_value = (None, None)
     element.execute_command = MagicMock()
     element.canvas = MagicMock()

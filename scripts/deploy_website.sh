@@ -114,19 +114,27 @@ BOT_EMAIL="41898282+github-actions[bot]@users.noreply.github.com"
 git -C "${DEPLOY_DIR}" config user.name "github-actions[bot]"
 git -C "${DEPLOY_DIR}" config user.email "${BOT_EMAIL}"
 
-# Sync pre-generated raygeo API docs into the website tree
-echo "Syncing raygeo API docs..."
-python3 "${PROJECT_ROOT}/scripts/update_api_docs.py"
+if [ "${SKIP_BUILD:-0}" = "1" ]; then
+  echo "Using prebuilt site from ${BUILD_DIR}"
+  if [ ! -d "${BUILD_DIR}" ]; then
+    echo "Error: SKIP_BUILD is set but ${BUILD_DIR} does not exist."
+    exit 1
+  fi
+else
+  # Sync pre-generated third-party API docs into the website tree
+  echo "Syncing third-party API docs..."
+  python3 "${PROJECT_ROOT}/scripts/update_api_docs.py"
 
-# Install dependencies and build the Docusaurus site
-echo "Installing dependencies..."
-cd "${WEBSITE_SRC_DIR}"
-npm install
+  # Install dependencies and build the Docusaurus site
+  echo "Installing dependencies..."
+  cd "${WEBSITE_SRC_DIR}"
+  npm install
 
-# Strip the 'v' prefix from version for download links (e.g., v1.0.2 -> 1.0.2)
-RAYFORGE_VERSION="${DEPLOY_VERSION#v}"
-echo "Building static site with version: ${RAYFORGE_VERSION}"
-RAYFORGE_VERSION="${RAYFORGE_VERSION}" IS_PRERELEASE="${IS_PRERELEASE}" npm run build
+  # Strip the 'v' prefix from version for download links (e.g., v1.0.2 -> 1.0.2)
+  RAYFORGE_VERSION="${DEPLOY_VERSION#v}"
+  echo "Building static site with version: ${RAYFORGE_VERSION}"
+  RAYFORGE_VERSION="${RAYFORGE_VERSION}" IS_PRERELEASE="${IS_PRERELEASE}" npm run build
+fi
 
 # Verify build output
 echo "Build output:"

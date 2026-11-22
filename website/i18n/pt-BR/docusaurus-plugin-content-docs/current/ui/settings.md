@@ -15,6 +15,11 @@ Escolha entre o tema **Sistema**, **Claro** ou **Escuro** para corresponder ao s
 desktop ou preferência pessoal. Você também pode configurar as **Cores da operação** para usar a cor
 do laser ou a cor da camada como distinção visual na tela.
 
+**Modo oficina** substitui a aba de controles do painel inferior por uma superfície de controle
+sensível ao toque: leituras de posição grandes por eixo com botões de zero, um cartão de offsets,
+steppers superdimensionados de velocidade/passo de jog e uma grade de botões grandes de jog e
+trabalho. Feito para operar a máquina em pé junto a ela; desativado por padrão.
+
 ### Unidades
 
 Configure as unidades de exibição usadas em todo o aplicativo. Você pode definir unidades separadas
@@ -29,6 +34,18 @@ automaticamente** e acionar o recálculo manualmente pelo botão na barra de fer
 
 O Rayforge pode **Verificar atualizações** automaticamente na inicialização. Quando habilitado, você
 será notificado quando uma nova versão estiver disponível.
+
+O Rayforge também pode **Verificar atualizações de addons** automaticamente na inicialização.
+Desativar essa opção não impede verificações manuais na página Addons.
+
+Com **Vigiar arquivos importados** ativado, o Rayforge monitora os arquivos por trás das peças de
+trabalho importadas e oferece recarregá-los quando eles mudam no disco. Veja
+[Mantendo os arquivos importados sincronizados](../files/importing.md#mantendo-os-arquivos-importados-sincronizados)
+para mais detalhes.
+
+Com **Evitar suspensão durante trabalhos** ativado, o Rayforge bloqueia a suspensão automática do
+sistema enquanto um trabalho está em execução, para que a conexão com a máquina não seja perdida.
+Uma suspensão explícita ou fechar a tampa continuam funcionando.
 
 Você também pode configurar o **Comportamento de inicialização** — iniciar com um espaço de trabalho
 vazio, reabrir o último projeto ou sempre abrir um arquivo de projeto específico. Note que arquivos
@@ -68,7 +85,7 @@ O diálogo de configurações também inclui páginas para gerenciar outras part
 uma possui sua própria documentação:
 
 - [Máquinas](../application-settings/machines.md) — adicionar, remover e configurar suas cortadoras
-  a laser
+  a laser (também disponível em **Máquina → Manage Machines…**)
 - [Materiais](../application-settings/materials.md) — gerenciar suas bibliotecas de materiais
 - [Receitas](../application-settings/recipes.md) — gerenciar receitas de operações salvas
 - [Regras de Cor](../application-settings/color-rules.md) — mapear cores SVG para tipos de etapa

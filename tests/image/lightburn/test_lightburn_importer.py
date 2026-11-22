@@ -9,8 +9,12 @@ from raygeo.geo import Matrix
 
 from rayforge.core.layer import Layer
 from rayforge.core.step_registry import step_registry
-from rayforge.core.vectorization_spec import PassthroughSpec
+from rayforge.core.vectorization_spec import (
+    LayerImportMode,
+    PassthroughSpec,
+)
 from rayforge.image.assembler import ItemAssembler
+from rayforge.image.dither import DitherAlgorithm
 from rayforge.image.lightburn.importer import (
     LightBurnImporter,
     _apply_xform_to_geo,
@@ -233,6 +237,55 @@ class TestBuildStepConfig:
         assert config is not None
         assert config == {"passes": 3}
 
+    @pytest.mark.parametrize(
+        "mode, algorithm",
+        [
+            ("dithered", "FLOYD_STEINBERG"),
+            ("atkinson", "ATKINSON"),
+            ("stucki", "STUCKI"),
+            ("jarvis", "JARVIS_JUDICE_NINKE"),
+            ("ordered", "BAYER8"),
+            ("newsprint", "NEWSPRINT"),
+        ],
+    )
+    def test_dither_mode_mapping(self, mode, algorithm):
+        config = _build_step_config({"ditherMode": mode})
+        assert config == {
+            "depth_mode": "DITHER",
+            "dither_algorithm": algorithm,
+        }
+
+    def test_halftone_mapping_converts_cells_per_inch(self):
+        cs = {
+            "ditherMode": "halftone",
+            "cellsPerInch": 50,
+            "halftoneAngle": 22.5,
+        }
+        config = _build_step_config(cs)
+        assert config is not None
+        assert config["depth_mode"] == "DITHER"
+        assert config["dither_algorithm"] == "HALFTONE"
+        assert config["halftone_cell_mm"] == pytest.approx(25.4 / 50)
+        assert config["halftone_angle"] == 22.5
+
+    def test_halftone_settings_ignored_for_other_modes(self):
+        cs = {"ditherMode": "stucki", "cellsPerInch": 50, "halftoneAngle": 9}
+        config = _build_step_config(cs)
+        assert config is not None
+        assert "halftone_cell_mm" not in config
+        assert "halftone_angle" not in config
+
+    def test_threshold_mode_maps_to_constant_power(self):
+        config = _build_step_config({"ditherMode": "threshold"})
+        assert config == {"depth_mode": "CONSTANT_POWER", "threshold": 128}
+
+    def test_grayscale_mode_maps_to_variable_power(self):
+        config = _build_step_config({"ditherMode": "grayscale"})
+        assert config == {"depth_mode": "POWER_MODULATION"}
+
+    def test_unknown_dither_mode_is_ignored(self):
+        assert _build_step_config({"ditherMode": "sketch"}) is None
+
     def test_all_keys(self):
         cs = {"maxPower": 70, "speed": 6.66667, "kerf": 0.06, "numPasses": 2}
         config = _build_step_config(cs)
@@ -333,6 +386,111 @@ class TestLightBurnImporter:
     def _import(self, filename: str) -> LightBurnImporter:
         data = _load(filename)
         return LightBurnImporter(data, source_file=ASSETS / filename)
+
+    def test_new_layers_get_distinct_colors(self):
+        importer = self._import("multi_layer.lbrn2")
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.NEW_LAYERS)
+        result = importer.get_doc_items(spec)
+        assert result is not None and result.payload is not None
+        colors = [
+            item.color
+            for item in result.payload.items
+            if isinstance(item, Layer)
+        ]
+        assert len(colors) == 2
+        assert len(set(colors)) == 2
+
+    def test_group_children_keep_their_own_layers(self):
+        data = b"""<Project>
+            <CutSetting type="Cut">
+                <index Value="0"/><name Value="C00"/>
+            </CutSetting>
+            <CutSetting type="Cut">
+                <index Value="2"/><name Value="C02"/>
+            </CutSetting>
+            <Shape Type="Group">
+                <XForm>1 0 0 1 100 0</XForm>
+                <Children>
+                    <Shape Type="Ellipse" CutIndex="0" Rx="1" Ry="1">
+                        <XForm>1 0 0 1 0 0</XForm>
+                    </Shape>
+                    <Shape Type="Group" CutIndex="0">
+                        <XForm>1 0 0 1 0 50</XForm>
+                        <Children>
+                            <Shape Type="Rect" CutIndex="2" W="10" H="10">
+                                <XForm>1 0 0 1 0 0</XForm>
+                            </Shape>
+                        </Children>
+                    </Shape>
+                </Children>
+            </Shape>
+        </Project>"""
+        importer = LightBurnImporter(data, source_file=Path("group.lbrn2"))
+        assert importer.parse() is not None
+        layers = importer._geometries_by_layer
+        assert set(layers) == {"0", "2"}
+        assert layers["0"].rect() == pytest.approx((99, -1, 101, 1))
+        assert layers["2"].rect() == pytest.approx((95, 45, 105, 55))
+
+    def test_layers_follow_cut_priority(self):
+        data = b"""<Project>
+            <CutSetting type="Cut">
+                <index Value="0"/><name Value="C00"/><priority Value="1"/>
+            </CutSetting>
+            <CutSetting type="Cut">
+                <index Value="2"/><name Value="C02"/><priority Value="0"/>
+            </CutSetting>
+            <Shape Type="Rect" CutIndex="0" W="10" H="10">
+                <XForm>1 0 0 1 0 0</XForm>
+            </Shape>
+            <Shape Type="Rect" CutIndex="2" W="10" H="10">
+                <XForm>1 0 0 1 50 0</XForm>
+            </Shape>
+        </Project>"""
+        importer = LightBurnImporter(data, source_file=Path("order.lbrn2"))
+        parse_result = importer.parse()
+        assert parse_result is not None
+        assert [la.layer_id for la in parse_result.layers] == ["2", "0"]
+
+    def test_path_reuses_shared_vertices_and_primitives(self):
+        data = b"""<Project>
+            <Shape Type="Path" CutIndex="0" VertID="0" PrimID="0">
+                <XForm>1 0 0 1 0 0</XForm>
+                <VertList>V0 0V10 0V10 10</VertList>
+                <PrimList>L0 1L1 2L2 0</PrimList>
+            </Shape>
+            <Shape Type="Path" CutIndex="0" VertID="0" PrimID="0">
+                <XForm>1 0 0 1 100 0</XForm>
+            </Shape>
+            <Shape Type="Path" CutIndex="0" VertID="7" PrimID="7">
+                <XForm>1 0 0 1 200 0</XForm>
+            </Shape>
+            <Shape Type="Path" CutIndex="0">
+                <XForm>1 0 0 1 300 0</XForm>
+            </Shape>
+        </Project>"""
+        importer = LightBurnImporter(data, source_file=Path("shared.lbrn2"))
+        assert importer.parse() is not None
+        contours = importer._geometries_by_layer["0"].split_into_contours()
+        assert sorted(c.rect()[0] for c in contours) == [0.0, 100.0]
+        assert all(c.rect()[2] - c.rect()[0] == 10.0 for c in contours)
+
+    @pytest.mark.parametrize(
+        "end_y, expected_closed",
+        [("0.00075", True), ("0.5", False)],
+    )
+    def test_path_closes_rounding_gap_only(self, end_y, expected_closed):
+        data = (
+            b'<Project><Shape Type="Path" CutIndex="0">'
+            b"<XForm>1 0 0 1 0 0</XForm>"
+            b"<VertList>V0 0V10 0V10 10V0 " + end_y.encode() + b"</VertList>"
+            b"<PrimList>L0 1L1 2L2 3</PrimList>"
+            b"</Shape></Project>"
+        )
+        importer = LightBurnImporter(data, source_file=Path("gap.lbrn2"))
+        assert importer.parse() is not None
+        geo = importer._geometries_by_layer["0"]
+        assert geo.is_closed() is expected_closed
 
     def test_import_lbrn2_with_rect(self):
         importer = self._import("rect.lbrn2")
@@ -626,6 +784,25 @@ class TestLightBurnImporter:
         assert step.scan_angle == 45.0
         assert step.min_power_level == 0.1
         assert step.max_power_level == 0.5
+
+    def test_image_layer_import_keeps_dither_mode(self):
+        """images.lbrn2 engraves its bitmaps with LightBurn's
+        ``dithered`` (Floyd-Steinberg) mode; the step must follow."""
+        if step_registry.get("EngraveStep") is None:
+            pytest.skip("EngraveStep not registered")
+        importer = self._import("images.lbrn2")
+        result = importer.get_doc_items()
+        assert result is not None and result.payload is not None
+        steps = [
+            step
+            for item in result.payload.items
+            if isinstance(item, Layer) and item.workflow is not None
+            for step in item.workflow.steps
+        ]
+        assert steps
+        step = cast(Any, steps[0])
+        assert step.depth_mode == "DITHER"
+        assert step.dither_algorithm is DitherAlgorithm.FLOYD_STEINBERG
 
 
 class TestApplySettingsDispatch:

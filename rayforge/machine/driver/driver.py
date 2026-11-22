@@ -12,6 +12,7 @@ from typing import (
 )
 
 from blinker import Signal
+from raydriver.core.discovery.spec import DiscoverySpec
 from raygeo.ops import Ops
 from raygeo.ops.axis import Axis
 from raygeo.ops.state import PowerMode
@@ -19,7 +20,6 @@ from raygeo.ops.state import PowerMode
 from ...context import RayforgeContext
 from ...core.varset import IntVar, VarSet
 from ...shared.units.system import UnitSystem
-from ..discovery.spec import DiscoverySpec
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
@@ -83,6 +83,19 @@ DRIVER_MATURITY_LABELS = {
         "This driver is experimental and almost certainly buggy. It may not "
         "work reliably. Use it at your own risk."
     ),
+}
+
+
+class ZHomingMode(Enum):
+    """How the Z axis finds its reference position when homed."""
+
+    SWITCH = "switch"
+    PROBE = "probe"
+
+
+Z_HOMING_MODE_LABELS = {
+    ZHomingMode.SWITCH: _("Home Switch"),
+    ZHomingMode.PROBE: _("Probe"),
 }
 
 
@@ -289,6 +302,37 @@ class Driver(ABC):
     # rayforge.machine.discovery). Serial-only drivers declare only
     # the serial recognizer; network drivers only the mDNS one.
     DISCOVERY: ClassVar[DiscoverySpec | None] = None
+    # The Z homing modes the driver can perform. The first entry is
+    # the default for machines that have not chosen a mode.
+    z_homing_modes: ClassVar[tuple[ZHomingMode, ...]] = (ZHomingMode.SWITCH,)
+
+    @classmethod
+    def supports_probing_for(cls, driver_args: dict[str, Any]) -> bool:
+        """Whether probing is available for a specific configuration.
+
+        Defaults to the class-level ``supports_probing``. Drivers whose
+        capabilities depend on the configured device (e.g. a generic
+        remote driver whose protocol is resolved at runtime) override
+        this to inspect ``driver_args``. Callers that have the setup
+        arguments should prefer this over the class attribute.
+        """
+        return cls.supports_probing
+
+    @classmethod
+    def resolve_z_homing_mode(cls, mode: ZHomingMode | None) -> ZHomingMode:
+        """
+        Returns the Z homing mode to use for a machine's chosen mode.
+
+        Falls back to the driver's default when no mode was chosen or
+        the driver does not support the chosen one.
+        """
+        if mode is not None and mode in cls.z_homing_modes:
+            return mode
+        return cls.z_homing_modes[0]
+
+    def get_z_homing_mode(self) -> ZHomingMode:
+        """Returns the Z homing mode configured for this machine."""
+        return self.resolve_z_homing_mode(self._machine.z_homing_mode)
 
     @classmethod
     def supports_travel_speed(cls, dialect: "GcodeDialect | None") -> bool:
@@ -493,6 +537,17 @@ class Driver(ABC):
         by the machine controller.
         """
         return False
+
+    def refresh_dialect(self) -> None:
+        """
+        Informs a live driver that a dialect definition changed.
+
+        Drivers that keep a resolved copy of the dialect's interactive
+        command templates re-read them so manual commands use the
+        edited templates without waiting for a reconnect or job. The
+        default is a no-op for drivers that resolve the dialect per
+        command.
+        """
 
     @classmethod
     @abstractmethod
@@ -844,13 +899,14 @@ class Driver(ABC):
         """
         Selects the active Work Coordinate System on the controller.
 
-        For G-code based controllers (GRBL, Smoothie), this is typically
-        done via G-code commands during job execution. Drivers that require
-        immediate selection should override this method.
+        The default sends the WCS name as a raw command, which is the
+        G-code selection (e.g. "G54") for GRBL and Smoothie. Drivers whose
+        WCS names are not commands should override this method.
 
         Args:
             wcs: The WCS slot to select (e.g., "G54", "REF0", "MACHINE")
         """
+        await self.run_raw(wcs)
 
     @abstractmethod
     async def run_probe_cycle(

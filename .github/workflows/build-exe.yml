@@ -15,8 +15,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    runs-on: windows-2025
+  version:
+    name: Resolve Version
+    runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.set-version.outputs.version }}
     steps:
@@ -40,9 +41,25 @@ jobs:
             echo "Error: No git version number found!"
             exit 1
           fi
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Version: $VERSION"
+
+  build:
+    runs-on: windows-2025
+    needs: version
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Cache pip and cargo
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.cache
+          key: win-deps-${{ hashFiles('requirements.txt') }}-${{ hashFiles('scripts/win/win_setup.sh') }}
+          restore-keys: win-deps-
 
       - name: Set up MSYS2 Environment Shell
         id: msys2
@@ -121,39 +138,39 @@ jobs:
         run: |
           BUNDLE_DIR="dist/rayforge-v${{ env.VERSION }}"
           ZIP_FILE="dist/rayforge-v${{ env.VERSION }}-windows-bundle.zip"
-          zip -r9 "${ZIP_FILE}" "${BUNDLE_DIR}"
+          zip -r -1 "${ZIP_FILE}" "${BUNDLE_DIR}"
 
       - name: Upload PyInstaller bundle
         uses: actions/upload-artifact@v7
         with:
-          name: rayforge-v${{ steps.set-version.outputs.version }}-windows-bundle
-          path: dist/rayforge-v${{ steps.set-version.outputs.version }}-windows-bundle.zip
+          name: rayforge-v${{ needs.version.outputs.version }}-windows-bundle
+          path: dist/rayforge-v${{ needs.version.outputs.version }}-windows-bundle.zip
 
       - name: Upload Installer Artifact
         uses: actions/upload-artifact@v7
         with:
-          name: rayforge-v${{ steps.set-version.outputs.version }}-installer.zip
-          path: dist/rayforge-v${{ steps.set-version.outputs.version }}-installer.exe
-          compression-level: 9
+          name: rayforge-v${{ needs.version.outputs.version }}-installer.zip
+          path: dist/rayforge-v${{ needs.version.outputs.version }}-installer.exe
+          compression-level: 0
 
   test-exe:
     name: Test Executable
-    needs: build
+    needs: [version, build]
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Download Artifact
         uses: actions/download-artifact@v8
         with:
-          name: rayforge-v${{ needs.build.outputs.version }}-windows-bundle
+          name: rayforge-v${{ needs.version.outputs.version }}-windows-bundle
 
       - name: Extract Bundle
         shell: bash
         run: |
-          unzip rayforge-v${{ needs.build.outputs.version }}-windows-bundle.zip
+          unzip rayforge-v${{ needs.version.outputs.version }}-windows-bundle.zip
 
       - name: Test Executable (CLI)
         shell: bash
@@ -162,8 +179,8 @@ jobs:
           ls -l
 
           # Define paths based on the extracted directory
-          BUNDLE_DIR="dist/rayforge-v${{ needs.build.outputs.version }}"
-          EXECUTABLE_NAME="rayforge-v${{ needs.build.outputs.version }}.exe"
+          BUNDLE_DIR="dist/rayforge-v${{ needs.version.outputs.version }}"
+          EXECUTABLE_NAME="rayforge-v${{ needs.version.outputs.version }}.exe"
 
           echo "Listing files in extracted directory:"
           ls -lR "${BUNDLE_DIR}"
@@ -175,12 +192,12 @@ jobs:
         shell: bash
         run: |
           bash scripts/win/win_run_ui_test.sh \
-            "dist/rayforge-v${{ needs.build.outputs.version }}" \
-            "rayforge-v${{ needs.build.outputs.version }}.exe"
+            "dist/rayforge-v${{ needs.version.outputs.version }}" \
+            "rayforge-v${{ needs.version.outputs.version }}.exe"
 
   release:
     name: Create GitHub Release
-    needs: [build, test-exe]
+    needs: [version, build, test-exe]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/') && github.repository == 'barebaric/rayforge'
     outputs:
@@ -201,16 +218,16 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           # For the release, we use the installer artifact
-          name: rayforge-v${{ needs.build.outputs.version }}-installer.zip
+          name: rayforge-v${{ needs.version.outputs.version }}-installer.zip
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
           # The file to attach to the release is the installer
-          files: rayforge-v${{ needs.build.outputs.version }}-installer.exe
+          files: rayforge-v${{ needs.version.outputs.version }}-installer.exe
           draft: false
           prerelease: ${{ steps.release_info.outputs.is_prerelease }}
-          name: Release ${{ needs.build.outputs.version }}
+          name: Release ${{ needs.version.outputs.version }}
           tag_name: ${{ github.ref_name }}
           generate_release_notes: true
         env:
@@ -223,6 +240,8 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/') && github.repository == 'barebaric/rayforge'
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
 
       - name: Download Installer
         shell: bash
@@ -249,7 +268,10 @@ jobs:
       - name: Validate Manifests
         shell: pwsh
         run: |
-          winget validate --manifest "$env:GITHUB_WORKSPACE\winget-manifests"
+          # winget exits nonzero on warnings; some winget builds falsely warn
+          # about the schema header URL, and the winget-pkgs pipeline performs
+          # the authoritative validation anyway.
+          winget validate --manifest "$env:GITHUB_WORKSPACE\winget-manifests" --ignore-warnings
 
       - name: Determine PR Title
         id: prtitle

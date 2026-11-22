@@ -45,10 +45,12 @@ from .canvas2d.surface import WorkSurface
 from .debug_log_dialog import DebugLogDialog
 from .doceditor import file_dialogs
 from .doceditor.bottom_panel import BottomPanel
+from .doceditor.frame_popover import FramePopover
 from .doceditor.import_handler import start_interactive_import
 from .doceditor.item_properties import DocItemPropertiesWidget
 from .doceditor.missing_features_dialog import MissingFeaturesDialog
 from .doceditor.property_providers import register_builtin_providers
+from .doceditor.source_reload import SourceReloadMonitor
 from .doceditor.workflow_view import WorkflowView
 from .machine.machine_dropdown import MachineDropdown
 from .machine.profile_review_dialog import (
@@ -60,7 +62,7 @@ from .machine.unified_wizard import UnifiedWizard
 from .main_menu import MainMenu
 from .project_cmd import ProjectCmd
 from .settings.settings_dialog import SettingsWindow
-from .shared.gtk import get_monitor_geometry
+from .shared.gtk import get_monitor_geometry, report_dialog_error
 from .shared.pointer_alignment_dialog import PointerAlignmentDialog
 from .shared.progress_bar import ProgressBar
 from .shared.sanity_check_dialog import SanityCheckDialog
@@ -195,6 +197,8 @@ class MainWindow(Adw.ApplicationWindow):
         # Instantiate UI-specific command handlers
         self.view_cmd = ViewModeCmd(self.doc_editor, self)
         self.project_cmd = ProjectCmd(self, self.doc_editor)
+        self.source_reload = SourceReloadMonitor(self, self.doc_editor)
+        self.source_reload.start()
 
         geometry = get_monitor_geometry()
         if geometry:
@@ -554,6 +558,11 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Set up config signals.
         config.changed.connect(self.on_config_changed)
+        # The machine menu lists every configured machine, so rebuild it
+        # whenever the set of machines or their names change.
+        context.machine_mgr.machine_added.connect(self._update_machines_menu)
+        context.machine_mgr.machine_removed.connect(self._update_machines_menu)
+        context.machine_mgr.machine_updated.connect(self._update_machines_menu)
         task_mgr.tasks_updated.connect(self.on_running_tasks_changed)
         self.needs_homing = (
             config.machine.home_on_start if config.machine else False
@@ -806,11 +815,15 @@ class MainWindow(Adw.ApplicationWindow):
         if not machine:
             return
 
-        panel = machine.panel
-        wcs_offset = machine.get_command_wcs_offset()
-        x_off, y_off, _ = panel.get_command_offset(
-            wcs_offset=wcs_offset,
+        pointer_offset = (
+            machine.get_pointer_offset()
+            if machine.pointer_alignment_enabled
+            else (0.0, 0.0)
+        )
+        x_off, y_off, _ = machine.panel.get_command_offset(
+            wcs_offset=machine.get_active_wcs_offset(),
             wcs_is_workarea_origin=machine.wcs_origin_is_workarea_origin,
+            extra_offset=pointer_offset,
         )
         self.machine_cmd.move_to(
             machine,
@@ -940,6 +953,20 @@ class MainWindow(Adw.ApplicationWindow):
         """Public method to load a project from a given path."""
         self.project_cmd.load_project(file_path)
 
+    def _update_machines_menu(self, *args, **kwargs):
+        """Rebuilds the machine selection menu and syncs its action state."""
+        context = get_context()
+        machines = context.machine_mgr.get_machines()
+        self.menu_model.update_machines_menu(machines)
+
+        active_machine = context.config.machine
+        action = self.action_manager.get_action("select-machine")
+        action.set_state(
+            GLib.Variant.new_string(
+                active_machine.id if active_machine else ""
+            )
+        )
+
     def _update_macros_menu(self, *args):
         """Rebuilds the dynamic 'Macros' menu."""
         config = get_context().config
@@ -970,6 +997,10 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _on_addon_state_changed(self, sender, addon_name):
         """Handle addon enable/disable to refresh action handlers."""
+        if addon_name in sender.loaded_addons:
+            call_registration_hooks(
+                get_context().plugin_mgr, window_required=True
+            )
         action_extension_registry.invoke_setup_handlers(self.action_manager)
         self.action_manager.update_action_states()
 
@@ -1375,6 +1406,24 @@ class MainWindow(Adw.ApplicationWindow):
         context = get_context()
         context.machine_mgr.set_active_machine(machine)
 
+    def on_machine_selected_by_menu(
+        self, action: Gio.SimpleAction, param: GLib.Variant | None
+    ):
+        """Handles the 'select-machine' action from the Machine menu.
+
+        The menu marks the active machine through the action's string
+        state. Updating it immediately keeps the checkmark responsive
+        while the machine manager performs the actual switch.
+        """
+        if param is None:
+            return
+        context = get_context()
+        machine = context.machine_mgr.machines.get(param.get_string())
+        if machine is None:
+            return
+        action.set_state(param)
+        context.machine_mgr.set_active_machine(machine)
+
     def _on_machine_status_changed(self, machine: Machine, state: DeviceState):
         """Called when the active machine's state changes."""
         config = get_context().config
@@ -1620,8 +1669,12 @@ class MainWindow(Adw.ApplicationWindow):
         # Initialize new document
         self._initialize_document()
 
-        # Check for missing step types and show dialog if needed
-        missing_types = new_doc.missing_step_types
+        GLib.idle_add(self._check_changed_sources)
+
+        # Check for missing step types and image edits and show a dialog
+        missing_types = (
+            new_doc.missing_step_types | new_doc.missing_image_edit_ops
+        )
         if missing_types:
             dialog = MissingFeaturesDialog(self, missing_types)
             dialog.present()
@@ -1631,6 +1684,10 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Update the UI with the new document's content
         self.on_doc_changed(new_doc)
+
+    def _check_changed_sources(self) -> bool:
+        self.source_reload.check_now()
+        return GLib.SOURCE_REMOVE
 
     def _on_editor_notification(
         self,
@@ -1886,6 +1943,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.surface.update_from_doc()
         self._update_workflow_views()
         self._apply_right_panel_visibility()
+        self._update_machines_menu()
         self._update_macros_menu()
         self._update_setup_banner()
 
@@ -2155,9 +2213,9 @@ class MainWindow(Adw.ApplicationWindow):
             )
             self.surface.set_laser_dot_visible(connected)
             if state and connected:
-                x, y = state.machine_pos[:2]
-                if x is not None and y is not None:
-                    self.surface.set_laser_dot_position(x, y)
+                pos = active_machine.get_beam_position()
+                if pos is not None:
+                    self.surface.set_laser_dot_position(*pos)
 
             # Set macro action sensitivity
             can_run_macros = connected and not is_job_or_task_active
@@ -2431,7 +2489,11 @@ class MainWindow(Adw.ApplicationWindow):
             self.doc_editor.file.export_object_to_path(file_path, selected[0])
 
         except GLib.Error as e:
-            logger.error(f"Error exporting object: {e.message}")
+            if report_dialog_error("Exporting object", e):
+                self._on_editor_notification(
+                    self,
+                    _("Error exporting object: {msg}").format(msg=e.message),
+                )
 
     def _on_export_document_response(self, dialog, result, user_data):
         try:
@@ -2440,7 +2502,11 @@ class MainWindow(Adw.ApplicationWindow):
                 return
             file_path = Path(file.get_path())
         except GLib.Error as e:
-            logger.error(f"Error exporting document: {e.message}")
+            if report_dialog_error("Exporting document", e):
+                self._on_editor_notification(
+                    self,
+                    _("Error exporting document: {msg}").format(msg=e.message),
+                )
             return
 
         self.doc_editor.file.export_document_to_path(file_path)
@@ -2452,7 +2518,11 @@ class MainWindow(Adw.ApplicationWindow):
                 return
             file_path = Path(file.get_path())
         except GLib.Error as e:
-            logger.error(f"Error saving file: {e.message}")
+            if report_dialog_error("Saving G-code", e):
+                self._on_editor_notification(
+                    self,
+                    _("Error saving file: {msg}").format(msg=e.message),
+                )
             return
 
         # This is now a non-blocking call.
@@ -2484,11 +2554,15 @@ class MainWindow(Adw.ApplicationWindow):
             return
 
         machine_x, machine_y = pos
-        panel = machine.panel
-        wcs_offset = machine.get_command_wcs_offset()
-        x_off, y_off, _ = panel.get_command_offset(
-            wcs_offset=wcs_offset,
+        pointer_offset = (
+            machine.get_pointer_offset()
+            if machine.pointer_alignment_enabled
+            else (0.0, 0.0)
+        )
+        x_off, y_off, _ = machine.panel.get_command_offset(
+            wcs_offset=machine.get_active_wcs_offset(),
             wcs_is_workarea_origin=machine.wcs_origin_is_workarea_origin,
+            extra_offset=pointer_offset,
         )
         self.machine_cmd.move_to(
             machine,
@@ -2511,6 +2585,18 @@ class MainWindow(Adw.ApplicationWindow):
         if not config.machine:
             return
 
+        # Let the user choose the frame extent before the job starts.
+        popover = FramePopover(on_frame=self._start_frame_job)
+        popover.connect("closed", lambda p: p.unparent())
+        popover.set_parent(self.toolbar.frame_button)
+        popover.popup()
+
+    def _start_frame_job(self, include_overscan: bool):
+        config = get_context().config
+        machine = config.machine
+        if not machine:
+            return
+
         # Disable focus mode when framing
         focus_action = self.action_manager.get_action("toggle-focus")
         focus_state = focus_action.get_state()
@@ -2519,7 +2605,9 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Get the coroutine object for the framing job
         job_coro = self.machine_cmd.frame_job(
-            config.machine, on_progress=self._on_job_progress_updated
+            machine,
+            on_progress=self._on_job_progress_updated,
+            include_overscan=include_overscan,
         )
         # Run the job using the helper
         self._run_machine_job(job_coro)
@@ -2549,7 +2637,6 @@ class MainWindow(Adw.ApplicationWindow):
             if machine.pointer_alignment_enabled:
                 dialog = PointerAlignmentDialog(
                     parent=self,
-                    machine=machine,
                     on_proceed=_proceed,
                 )
                 dialog.present()
@@ -2730,7 +2817,14 @@ class MainWindow(Adw.ApplicationWindow):
         ).present()
 
     def show_settings(self, action, param):
-        dialog = SettingsWindow(transient_for=self)
+        self._present_settings_window()
+
+    def on_manage_machines_clicked(self, action, param):
+        """Opens the Machines page of the application settings."""
+        self._present_settings_window(initial_page="machines")
+
+    def _present_settings_window(self, initial_page: str = "general"):
+        dialog = SettingsWindow(initial_page=initial_page, transient_for=self)
         dialog.present()
         dialog.connect("close-request", self._on_settings_dialog_closed)
 

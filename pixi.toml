@@ -13,57 +13,57 @@ video = { features = ["video-tools"], solve-group = "video" }
 
 [feature.app.dependencies]
 adwaita-icon-theme = "==51.0"
-glib = "==2.90.0"
+glib = "==2.90.0|==2.90.1|==2.90.0|==2.90.1"
 cairo = "==1.18.6"
-expat = "==2.8.5"
+expat = "==2.9.0"
 gettext = "==0.25.1"
 gobject-introspection = "==1.86.0"
 gtk4 = "==4.24.1"
-libheif = "==1.23.5"
+libheif = "==1.23.7"
 libvips = "==8.18.7"
 openslide = "==4.0.1"
-poppler = "==26.7.0"
-python = "==3.12.14|==3.14.7|==3.12.14|==3.14.7"
+poppler = "==26.11.0"
+python = "==3.15.2"
 librsvg = "==2.62.4"
 svgelements = "==1.9.6"
-pluggy = "==1.6.0"
+pluggy = "==1.7.0"
 scipy = "==1.18.1"
-numpy = "==2.5.3"
-pycairo = "==1.29.1"
+numpy = "==2.5.5"
+pycairo = "==1.29.2"
 PyOpenGL = "==3.1.10"
 PyOpenGL-accelerate = "==3.1.10"
-PyGObject = "==3.58.0"
+PyGObject = "==3.58.1"
 pkg-config = "==0.29.2"
-rust = "==1.98.1"
-patchelf = "==0.19.2"
+rust = "==1.100.0"
+patchelf = "==0.19.3"
 
 [feature.app.pypi-dependencies]
-raygeo = "==1.61.0"
-raydriver = "==0.3.0"
+raydriver = "==1.18.0"
+raygeo = "==1.92.1"
 rayforge = { editable = true, path = "." }
-ruida-pa = "==0.21.2"
-aiohttp = "==3.14.3"
+ruida-pa = "==0.24.0"
+aiohttp = "==3.14.5"
 asyncudp = "==0.11.0"
 blinker = "==1.9.0"
 build = "==1.6.1"
 cairosvg = "==2.9.1"
-ezdxf = "==1.4.4"
-GitPython = "==3.2.0"
-platformdirs = "==4.12.3"
-pypdf = "==6.19.0"
+ezdxf = "==1.4.5"
+GitPython = "==3.2.1"
+platformdirs = "==4.14.5"
+pypdf = "==7.1.0"
 pymupdf = "==1.28.2"
 pyserial = "==3.5"
 pyvips = "==3.2.0"
 PyYAML = "==6.0.3"
-semver = "==3.1.0"
-trimesh = "==5.1.1"
+semver = "==3.1.2"
+trimesh = "==5.2.1"
 vtracer = "==0.6.15"
-websockets = "==17.2"
-zeroconf = "==0.151.5"
+websockets = "==17.4"
+zeroconf = "==0.154.0"
 
 [feature.app.target.linux-64.dependencies]
 xorg-xproto = "==7.0.31"
-xorg-libx11 = "==1.8.13"
+xorg-libx11 = "==1.8.14"
 xorg-kbproto = "==1.0.7"
 xorg-xextproto = "==7.3.0"
 xorg-xineramaproto = "==1.2.1"
@@ -82,35 +82,36 @@ xorg-libxrandr = "==1.5.5"
 gettext = "==0.25.1"
 
 [feature.test.dependencies]
-pytest = "==9.1.1"
-appstream = "==1.1.1"
+pytest = "==9.2.0"
+appstream = "==1.1.1|==1.2.3"
 
 [feature.test.pypi-dependencies]
-pytest-asyncio = "==1.4.0"
-pytest-mock = "==3.16.0"
+pytest-asyncio = "==1.5.0"
+pytest-mock = "==3.17.0"
 pytest-cov = "==7.1.0"
-pygobject-stubs = "==2.17.0"
-flake8 = "==7.4.1"
-pyflakes = "==4.0.2"
+pytest-xdist = "==3.8.0"
+pygobject-stubs = "==2.20.0"
+flake8 = "==7.5.0"
+pyflakes = "==4.1.0"
 pyright = "==1.1.414"
-ruff = "==0.16.10"
-pre-commit = "==4.6.2"
+ruff = "==0.17.5"
+pre-commit = "==4.7.0"
 
 [feature.website.dependencies]
-nodejs = "==26.10.0"
+nodejs = "==26.13.1"
 [feature.video-tools.dependencies]
 ffmpeg = "==9.0.2"
-python = "==3.14.7"
+python = "==3.15.2"
 
 [feature.video-tools.pypi-dependencies]
-pillow = "==12.3.0"
+pillow = "==13.0.0"
 
 [tool.pixi]
 workdir = "."
 
 [tasks]
 pre-commit-install = "pre-commit install"
-lint = { depends-on = ["ruff", "flake", "pyflakes", "pyright", "validate-metainfo"] }
+lint = { depends-on = ["format"], cmd = "bash scripts/lint.sh" }
 update-translations = "bash scripts/update_translations.sh"
 compile-translations = "bash scripts/update_translations.sh --compile-only"
 print-untranslated = "bash scripts/print_untranslated.sh"
@@ -130,24 +131,22 @@ cmd = "ruff format rayforge tests scripts && ruff check --select I --fix rayforg
 
 [tasks.flake]
 depends-on = ["format"]
-cmd = "flake8 --ignore=E127,E128,E121,E123,E126,E203,E226,E24,E704,W503,W504 --builtins=_ rayforge tests"
+cmd = "bash scripts/lint.sh flake"
 
 [tasks.ruff]
 depends-on = ["format"]
-cmd = "ruff check rayforge tests scripts"
+cmd = "bash scripts/lint.sh ruff"
 
 [tasks.pyflakes]
 depends-on = ["format"]
-env = { PYFLAKES_BUILTINS = "_" }
-cmd = "pyflakes rayforge tests"
+cmd = "bash scripts/lint.sh pyflakes"
 
 [tasks.pyright]
 depends-on = ["format"]
-env = { VIRTUAL_ENV = ".pixi/envs/default" }
-cmd = "pyright"
+cmd = "bash scripts/lint.sh pyright"
 
 [tasks.validate-metainfo]
-cmd = "appstreamcli validate --no-net data/org.rayforge.rayforge.metainfo.xml"
+cmd = "bash scripts/lint.sh validate-metainfo"
 
 [tasks.rayforge]
 env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0)"}
@@ -158,16 +157,19 @@ env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection
 cmd = "scripts/with_gdk.sh"
 
 [tasks.test]
-env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0)"}
-cmd = "pytest -v --ignore=tests/ui_gtk"
+env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0)", PYTEST_XDIST_AUTO_NUM_WORKERS = "$(python -c 'import os; print(min(os.cpu_count() or 1, 8))')"}
+cmd = "pytest -v --ignore=tests/ui_gtk -n auto"
 
 [tasks.uitest]
-env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0):/usr/lib/x86_64-linux-gnu/girepository-1.0", GSK_RENDERER = "cairo" }
-cmd = "xvfb-run -a pytest -v -m ui"
+env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0):/usr/lib/x86_64-linux-gnu/girepository-1.0", GSK_RENDERER = "cairo", PYTEST_XDIST_AUTO_NUM_WORKERS = "$(python -c 'import os; print(min(os.cpu_count() or 1, 8))')"}
+cmd = "xvfb-run -a pytest -v -m ui -n auto"
 
 [tasks.screenshot]
 env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0)"}
 cmd = "scripts/with_gdk.sh scripts/screenshot/cli.py"
+
+[tasks.figures]
+cmd = "python -m scripts.figures"
 
 [tasks.wheel]
 cmd = "python3 -m build"
@@ -190,6 +192,7 @@ depends-on = ["compile-translations"]
 
 [dependencies]
 libadwaita = "==1.10.0"
+threadpoolctl = "==3.8.0"
 
 # Keep the conda solve from backtracking pygobject below the
 # pygobject>=3.55.0 floor required by the pygobject-stubs pypi
@@ -204,9 +207,10 @@ libglvnd = "==1.7.0"
 [feature.website.tasks]
 site-gen-api = "python3 scripts/update_api_docs.py"
 site-install = { cmd = "npm install", cwd = "website" }
+site-install-ci = { cmd = "npm ci --prefer-offline --no-audit --no-fund", cwd = "website" }
 site-format = { cmd = "npx prettier --write \"docs/**/*.md\" \"blog/**/*.md\" \"i18n/**/*.md\"", cwd = "website", depends-on = ["site-install"] }
 site-serve = { cmd = "npm start", cwd = "website", depends-on = ["update-api-docs"] }
-site-build = { cmd = "npm run build", cwd = "website", depends-on = ["site-gen-api"] }
+site-build = { cmd = "npm run build --", cwd = "website", depends-on = ["site-gen-api"] }
 site-deploy = { cmd = "bash scripts/deploy_website.sh", depends-on = ["site-gen-api"] }
 
 [tasks.update-api-docs]

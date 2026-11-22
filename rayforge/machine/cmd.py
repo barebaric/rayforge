@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections.abc import Awaitable, Callable, Coroutine
+from functools import partial
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
@@ -19,12 +21,14 @@ from ..pipeline.encoder.context import GcodeContext, JobInfo
 from ..shared.util.template import TemplateFormatter
 from .driver.driver import FrameCorner
 from .job_monitor import JobMonitor
+from .job_status import JobKind, JobOutcome
 from .kinematic_mapping import KinematicMapping
 from .models.coordspace import MachineSpace
 
 if TYPE_CHECKING:
     from ..core.layer import Layer
     from ..doceditor.editor import DocEditor
+    from ..shared.tasker.task import Task
     from .models.laser import Laser
     from .models.machine import Machine
     from .models.rotary_module import RotaryModule
@@ -93,6 +97,7 @@ class MachineCmd:
             Coroutine,
         ]
         | None = None,
+        kind: JobKind = JobKind.SEND,
     ):
         """
         Internal helper to execute a job on a driver while managing
@@ -101,6 +106,10 @@ class MachineCmd:
         The job runs the encoded pipeline output, unless *execute* is
         given: then it calls ``execute(on_command_done)`` instead, which
         runs a driver-defined action (framing) under the same monitoring.
+
+        Args:
+            kind: Whether the job is reported to addons as a send or
+                frame job.
         """
         if self._current_monitor:
             msg = _(
@@ -145,11 +154,15 @@ class MachineCmd:
             )
             self._current_monitor = JobMonitor(
                 ops,
+                machine=machine,
+                kind=kind,
+                context=get_context(),
                 estimated_seconds=estimated_seconds,
                 default_feed_rate=machine.max_cut_speed,
                 default_rapid_rate=machine.max_travel_speed,
                 acceleration=machine.acceleration,
             )
+            self._current_monitor.begin()
 
             if self._on_progress_callback:
                 logger.debug("Connecting progress handler to JobMonitor")
@@ -170,10 +183,6 @@ class MachineCmd:
                     else None
                 )
                 await execute(on_command_done)
-                if self._current_monitor and not (
-                    machine.reports_granular_progress
-                ):
-                    self._current_monitor.mark_as_complete()
             elif encoded is None:
                 # No driver-defined action: the pipeline must have
                 # produced encoded output.
@@ -192,8 +201,8 @@ class MachineCmd:
                     ops,
                     on_command_done=None,
                 )
-                if self._current_monitor:
-                    self._current_monitor.mark_as_complete()
+
+            self._end_monitor(JobOutcome.COMPLETED)
 
             estimated_hours = estimated_seconds / 3600.0
             machine.add_machine_hours(estimated_hours)
@@ -201,14 +210,26 @@ class MachineCmd:
                 f"Job completed. Estimated time: {estimated_hours:.3f}h "
                 f"added to machine hours."
             )
+        except asyncio.CancelledError:
+            self._end_monitor(JobOutcome.CANCELLED)
+            raise
+        except Exception as e:
+            self._end_monitor(JobOutcome.FAILED, message=str(e))
+            raise
         finally:
             cleanup_monitor()
+
+    def _end_monitor(self, outcome: JobOutcome, message: str = "") -> None:
+        """Finalizes the active job monitor with the given outcome."""
+        if self._current_monitor is not None:
+            self._current_monitor.end(outcome, message)
 
     async def _run_frame_action(
         self,
         artifact: JobArtifact,
         machine: Machine,
         on_progress: Callable[[dict], None] | None,
+        include_overscan: bool = False,
     ):
         """The specific machine action for a framing job.
 
@@ -216,6 +237,11 @@ class MachineCmd:
         transforms a job gets — and hands the corners to the driver,
         which frames in whatever way fits the controller (see
         Driver.frame()).
+
+        With *include_overscan* the frame traces the whole machine
+        path; otherwise it is built from the envelope the laser
+        actually burns, so raster overscan margins stay outside the
+        framed area (issue #563).
         """
         if not isinstance(artifact, JobArtifact):
             raise TypeError("_run_frame_action received a non-JobArtifact")
@@ -233,7 +259,8 @@ class MachineCmd:
 
         # A moves-only trace carrying the outline through the same
         # transforms a job gets.
-        frame_ops = _build_frame_trace(artifact.ops.rect(), repeat_count)
+        frame_rect = _job_frame_rect(artifact.ops, include_overscan)
+        frame_ops = _build_frame_trace(frame_rect, repeat_count)
 
         # Apply the active layer's rotary mapping so the frame drives
         # the rotary axis instead of the physical Y axis (issue #356).
@@ -252,7 +279,7 @@ class MachineCmd:
         # the active WCS origin because the controller adds the WCS
         # offset back (issue #362). The regular send path performs the
         # same adjustment in the machine-transform stage. While
-        # pointer alignment is on, the command WCS offset includes the
+        # pointer alignment is on, the command offset includes the
         # pointer offset, so the frame outline is traced by the
         # pointer dot rather than the cutting beam.
         space = MachineSpace.from_machine(machine)
@@ -265,9 +292,15 @@ class MachineCmd:
 
         _warn_if_frame_exceeds_travel(self._editor, machine, frame_ops.rect())
 
+        pointer_offset = (
+            machine.get_pointer_offset()
+            if machine.pointer_alignment_enabled
+            else (0.0, 0.0)
+        )
         to_command = space.get_machine_to_command_matrix(
-            wcs_offset=machine.get_command_wcs_offset(),
+            wcs_offset=machine.get_active_wcs_offset(),
             wcs_is_workarea_origin=machine.wcs_origin_is_workarea_origin,
+            extra_offset=pointer_offset,
         )
         frame_ops.transform(to_command)
 
@@ -281,7 +314,7 @@ class MachineCmd:
             )
 
         corners = _frame_trace_corners(
-            frame_ops, len(_frame_rect_corners(artifact.ops.rect()))
+            frame_ops, len(_frame_rect_corners(frame_rect))
         )
 
         async def execute(
@@ -302,6 +335,7 @@ class MachineCmd:
             machine,
             on_progress=on_progress,
             execute=execute,
+            kind=JobKind.FRAME,
         )
 
     async def _run_send_action(
@@ -325,6 +359,7 @@ class MachineCmd:
             machine,
             on_progress=on_progress,
             encoded=artifact.encoded_output,
+            kind=JobKind.SEND,
         )
 
     async def _start_job(
@@ -364,6 +399,10 @@ class MachineCmd:
 
             if not handle:
                 logger.warning("Job has no operations.")
+                self._editor.notification_requested.send(
+                    self,
+                    message=_("The document produces no toolpath."),
+                )
                 return
 
             # 2. Use the safe context manager to acquire and release the
@@ -394,15 +433,23 @@ class MachineCmd:
         self,
         machine: Machine,
         on_progress: Callable[[dict], None] | None = None,
+        include_overscan: bool = False,
     ):
         """
         Asynchronously generates ops and runs a framing job.
         This is an awaitable coroutine.
+
+        When *include_overscan* is set, the frame traces the full
+        machine path including the overscan acceleration margins;
+        otherwise it traces the area the laser actually burns.
         """
         try:
             await self._start_job(
                 machine,
-                final_job_action=self._run_frame_action,
+                final_job_action=partial(
+                    self._run_frame_action,
+                    include_overscan=include_overscan,
+                ),
                 on_progress=on_progress,
             )
         except JobAlreadyRunningError as e:
@@ -528,6 +575,7 @@ class MachineCmd:
         head: Laser,
         percent: float,
         machine: Machine | None = None,
+        when_done: Callable[[Task], None] | None = None,
     ):
         """
         Adds a task to set the laser power to a specific percentage.
@@ -535,13 +583,16 @@ class MachineCmd:
         Args:
             head: The laser head to control
             percent: Power percentage (0-1.0). 0 disables power.
+            when_done: Invoked with the task once it finishes, so
+                callers can detect commands that did not take effect.
         """
         if machine is None:
             config = get_context().config
             machine = config.machine
         if machine:
             self._editor.task_manager.add_coroutine(
-                lambda ctx: machine.set_power(head, percent)
+                lambda ctx: machine.set_power(head, percent),
+                when_done=when_done,
             )
 
     def set_focus_power(
@@ -549,6 +600,7 @@ class MachineCmd:
         head: Laser,
         percent: float,
         machine: Machine | None = None,
+        when_done: Callable[[Task], None] | None = None,
     ):
         """
         Adds a task to set the laser power for focus mode.
@@ -556,13 +608,16 @@ class MachineCmd:
         Args:
             head: The laser head to control
             percent: Power percentage (0-1.0). 0 disables power.
+            when_done: Invoked with the task once it finishes, so
+                callers can detect commands that did not take effect.
         """
         if machine is None:
             config = get_context().config
             machine = config.machine
         if machine:
             self._editor.task_manager.add_coroutine(
-                lambda ctx: machine.set_focus_power(head, percent)
+                lambda ctx: machine.set_focus_power(head, percent),
+                when_done=when_done,
             )
 
     def home(self, machine: Machine, axis: Axis | None = None):
@@ -667,6 +722,20 @@ def _apply_frame_rotary_mapping(
     if mapping is not None:
         mapping.apply(frame_ops)
     return module
+
+
+def _job_frame_rect(
+    ops: Ops, include_overscan: bool
+) -> tuple[float, float, float, float]:
+    """The job-area rect the frame outline is built from.
+
+    Overscan extends raster lines with zero-power lead-in and lead-out
+    moves, so the burning envelope excludes them while the plain ops
+    rect includes them.
+    """
+    if include_overscan:
+        return ops.rect()
+    return ops.powered_rect()
 
 
 def _frame_rect_corners(

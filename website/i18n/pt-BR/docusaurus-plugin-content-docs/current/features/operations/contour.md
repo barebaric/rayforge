@@ -48,8 +48,9 @@ Use corte de contorno para:
 
 ## Configurações Principais
 
-O diálogo de configurações de etapa tem três abas: **Configurações de Etapa**, **Laser** e
-**Pós-Processamento**. As configurações são descritas em ordem de aba abaixo.
+O diálogo de configurações de etapa tem quatro abas: **Configurações de Etapa**, **Laser**,
+**Pós-Processamento** e **Peças de trabalho**. As configurações são descritas em ordem de aba
+abaixo.
 
 ### Configurações de Contorno
 
@@ -207,6 +208,8 @@ Veja [Kerf](../kerf.md) para um guia detalhado.
 Operações de contorno suportam várias opções de pós-processamento:
 
 - **[Suavização de Caminho](../smooth.md)** - Reduz bordas irregulares em caminhos de corte
+- **[Perfuração](../perforation.md)** - Cortes tracejados para dobras, linhas destacáveis e furos de
+  costura
 - **[Abas de Fixação](../holding-tabs.md)** - Mantém peças cortadas anexadas ao material de estoque
 - **[Cortar para Estoque](../crop-to-stock.md)** - Limita cortes ao limite do material
 - **[Otimização de Caminho](../path-optimization.md)** - Reduz distância de deslocamento entre

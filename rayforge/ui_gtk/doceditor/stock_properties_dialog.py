@@ -36,6 +36,7 @@ class StockPropertiesDialog(PatchedDialogWindow):
 
         # Connect to stock item updates to refresh UI
         self.stock_item.updated.connect(self.on_stock_item_updated)
+        self.stock_item.renamed.connect(self.on_stock_item_renamed)
 
         # Make sure to disconnect when the dialog is destroyed
         self.connect("destroy", self._on_destroy)
@@ -123,6 +124,7 @@ class StockPropertiesDialog(PatchedDialogWindow):
         """Clean up signal connections when dialog is destroyed."""
         if hasattr(self, "stock_item") and self.stock_item:
             self.stock_item.updated.disconnect(self.on_stock_item_updated)
+            self.stock_item.renamed.disconnect(self.on_stock_item_renamed)
 
     def _debounce(self, callback, *args, delay_ms=300):
         """
@@ -189,6 +191,11 @@ class StockPropertiesDialog(PatchedDialogWindow):
         # Update the material display if it has changed
         self.material_row.set_material(self.stock_item.material)
         self._update_color_display()
+
+    def on_stock_item_renamed(self, sender):
+        """Update the name field when the stock item is renamed."""
+        if self.name_row.get_text() != self.stock_item.name:
+            self.name_row.set_text(self.stock_item.name)
 
     def _apply_thickness_change(self, new_thickness):
         """Apply the thickness change."""

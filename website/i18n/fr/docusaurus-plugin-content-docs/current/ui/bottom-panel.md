@@ -105,6 +105,7 @@ Configure le comportement des opérations de déplacement :
 - **Plage** : 1-60 000 mm/min
 - **Par défaut** : 1 000 mm/min
 - **Objectif** : Contrôle la vitesse de déplacement de la tête laser
+- **Persistance** : La dernière vitesse utilisée est enregistrée par machine
 
 <!-- prettier-ignore-start -->
 :::tip[Sélection de vitesse]
@@ -173,6 +174,12 @@ Affiche la position de la tête laser dans le système de coordonnées actif :
 - Les coordonnées sont relatives à l'origine du WCS sélectionné
 - Se met à jour en temps réel lorsque tu déplaces ou exécutes des travaux
 - Format : valeurs X, Y, Z en millimètres
+
+Avec le [Mode atelier](settings.md#apparence) activé dans les paramètres de l'application, tout
+l'onglet de commandes passe à une surface de contrôle tactile : grands affichages par axe avec
+boutons de zéro, offsets, steppers vitesse/pas et gros boutons de jog et de travail :
+
+![Panneau inférieur en mode atelier](/screenshots/bottom-panel-shop-mode.webp)
 
 ### État de la connexion
 

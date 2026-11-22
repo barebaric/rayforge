@@ -15,6 +15,7 @@ from gi.repository import Gdk, GLib, Graphene, Gtk
 
 from ...camera.controller import CameraController
 from ...camera.models.camera import Pos
+from ...shared.units.formatter import get_preferred_unit
 from ..canvas.worldsurface import WorldSurface
 from ..icons import get_icon
 from ..shared.gtk import apply_css
@@ -281,11 +282,15 @@ class CameraAlignment(Gtk.Box):
         icon.set_valign(Gtk.Align.CENTER)
         self.info_box.append(icon)
 
+        unit = get_preferred_unit("length")
+        unit_label = unit.label if unit else _("mm")
         info_text = _(
             "Click the image to add reference points. Drag to move "
             "them.\nScroll to Zoom. Middle-click and drag to Pan.\n"
-            "Use the Arrow Keys to nudge the active point precisely."
-        )
+            "Use the Arrow Keys to nudge the active point precisely.\n"
+            "For each point, enter its position on the work area (X/Y "
+            "in {unit}, measured from the work area origin)."
+        ).format(unit=unit_label)
         info_label = Gtk.Label(label=info_text, xalign=0)
         info_label.set_wrap(True)
         info_label.set_hexpand(True)

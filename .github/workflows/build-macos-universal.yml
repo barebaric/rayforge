@@ -55,7 +55,7 @@ jobs:
   build-intel:
     name: Build macOS Intel Bundle
     needs: version
-    runs-on: macos-26-intel
+    runs-on: macos-15-intel
     env:
       VERSION: ${{ needs.version.outputs.version }}
     steps:
@@ -72,12 +72,32 @@ jobs:
           cache: "pip"
           cache-dependency-path: requirements.txt
 
+      - name: Cache Homebrew downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/Homebrew
+          key: brew-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/mac/Brewfile') }}
+          restore-keys: brew-${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Cache freetype build
+        uses: actions/cache@v4
+        with:
+          path: ~/.rayforge-macos-deps
+          key: macdeps-${{ runner.os }}-${{ runner.arch }}-freetype-2.15.0
+          restore-keys: macdeps-${{ runner.os }}-${{ runner.arch }}-
+
       - name: Install macOS dependencies
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+          HOMEBREW_NO_INSTALL_CLEANUP: "1"
         run: bash scripts/mac/mac_setup.sh --install
 
       - name: Build macOS artifacts
         run: |
           printf "5\n" | bash scripts/mac/mac_build.sh --version "${VERSION}"
+
+      - name: Check bundled binary compatibility
+        run: bash scripts/mac/check_minos.sh 15.0
 
       - name: Smoke test Intel app
         run: |
@@ -104,12 +124,12 @@ jobs:
         with:
           name: rayforge-${{ env.VERSION }}-macos-intel-app.zip
           path: rayforge-${{ env.VERSION }}-macos-intel-app.zip
-          compression-level: 9
+          compression-level: 0
 
   build-arm:
     name: Build macOS Apple Silicon Bundle
     needs: version
-    runs-on: macos-26
+    runs-on: macos-15
     env:
       VERSION: ${{ needs.version.outputs.version }}
     steps:
@@ -126,12 +146,32 @@ jobs:
           cache: "pip"
           cache-dependency-path: requirements.txt
 
+      - name: Cache Homebrew downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/Homebrew
+          key: brew-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/mac/Brewfile') }}
+          restore-keys: brew-${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Cache freetype build
+        uses: actions/cache@v4
+        with:
+          path: ~/.rayforge-macos-deps
+          key: macdeps-${{ runner.os }}-${{ runner.arch }}-freetype-2.15.0
+          restore-keys: macdeps-${{ runner.os }}-${{ runner.arch }}-
+
       - name: Install macOS dependencies
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+          HOMEBREW_NO_INSTALL_CLEANUP: "1"
         run: bash scripts/mac/mac_setup.sh --install
 
       - name: Build macOS artifacts
         run: |
           printf "5\n" | bash scripts/mac/mac_build.sh --version "${VERSION}"
+
+      - name: Check bundled binary compatibility
+        run: bash scripts/mac/check_minos.sh 15.0
 
       - name: Smoke test ARM app
         run: |
@@ -158,7 +198,7 @@ jobs:
         with:
           name: rayforge-${{ env.VERSION }}-macos-arm-app.zip
           path: rayforge-${{ env.VERSION }}-macos-arm-app.zip
-          compression-level: 9
+          compression-level: 0
 
   merge-universal:
     name: Merge Universal App and DMG
@@ -298,13 +338,14 @@ jobs:
         with:
           name: rayforge-${{ env.VERSION }}-macos-universal-app.zip
           path: rayforge-${{ env.VERSION }}-macos-universal-app.zip
-          compression-level: 9
+          compression-level: 0
 
       - name: Upload universal DMG artifact
         uses: actions/upload-artifact@v7
         with:
           name: rayforge-${{ env.VERSION }}-macos-universal-dmg
           path: rayforge-${{ env.VERSION }}-macos-universal.dmg
+          compression-level: 0
 
   release:
     name: Create GitHub Release (Universal)

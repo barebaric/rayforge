@@ -16,6 +16,11 @@ bureau ou ta préférence personnelle. Tu peux aussi configurer les **Couleurs d
 utiliser soit la couleur du laser, soit la couleur du calque comme distinction visuelle sur le
 canevas.
 
+**Mode atelier** remplace l'onglet de commandes du panneau inférieur par une surface de contrôle
+tactile : grands affichages de position par axe avec boutons de zéro, une carte des offsets, des
+steppers surdimensionnés pour la vitesse/pas de jog et une grille de gros boutons de jog et de
+travail. Conçu pour piloter la machine debout devant elle ; désactivé par défaut.
+
 ### Unités
 
 Configure les unités d'affichage utilisées dans l'application. Tu peux définir des unités séparées
@@ -31,6 +36,18 @@ la barre d'outils.
 
 Rayforge peut **Vérifier les mises à jour** automatiquement au démarrage. Lorsqu'activé, tu seras
 informé lorsqu'une nouvelle version est disponible.
+
+Rayforge peut aussi **Vérifier les mises à jour des extensions** automatiquement au démarrage.
+Désactiver cette option n'empêche pas les vérifications manuelles depuis la page Extensions.
+
+Lorsque **Surveiller les fichiers importés** est activé, Rayforge surveille les fichiers derrière
+les pièces importées et propose de les recharger lorsqu'ils changent sur le disque. Voir
+[Garder les fichiers importés synchronisés](../files/importing.md#garder-les-fichiers-importés-synchronisés)
+pour plus de détails.
+
+Lorsque **Empêcher la mise en veille pendant les tâches** est activé, Rayforge bloque la mise en
+veille automatique du système pendant l'exécution d'une tâche, afin que la connexion à la machine ne
+soit pas perdue. Une mise en veille explicite ou la fermeture du capot fonctionnent toujours.
 
 Tu peux aussi configurer le **Comportement au démarrage** — démarrer avec un espace de travail vide,
 rouvrir le dernier projet ou toujours ouvrir un fichier de projet spécifique. Note que les fichiers
@@ -71,7 +88,7 @@ La boîte de dialogue des paramètres inclut également des pages pour gérer d'
 l'application. Chacune possède sa propre documentation :
 
 - [Machines](../application-settings/machines.md) — ajouter, supprimer et configurer tes découpeurs
-  laser
+  laser (également disponible dans **Machine → Manage Machines…**)
 - [Matériaux](../application-settings/materials.md) — gérer tes bibliothèques de matériaux
 - [Recettes](../application-settings/recipes.md) — gérer les recettes d'opérations enregistrées
 - [Règles de couleur](../application-settings/color-rules.md) — faire correspondre les couleurs SVG

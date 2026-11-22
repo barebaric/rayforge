@@ -37,6 +37,7 @@ class TestRecipeKeys:
             "cut_order",
             "remove_inner_paths",
             "offset_mm",
+            "offset_y_mm",
             "overcut",
         ):
             assert key in ContourStep.recipe_keys()
@@ -48,7 +49,6 @@ class TestRecipeKeys:
         for key in (
             "scan_angle",
             "depth_mode",
-            "invert",
             "min_power_level",
             "max_power_level",
         ):
@@ -125,6 +125,7 @@ class TestRecipeVarsetBehavior:
         expected = [
             "cut_side",
             "offset_mm",
+            "offset_y_mm",
             "cut_order",
             "remove_inner_paths",
             "overcut",
@@ -145,13 +146,12 @@ class TestRecipeVarsetBehavior:
         assert var.allow_none is False
 
     def test_offset_sensitive_when_not_centerline(self):
-        """The offset row is insensitive while cut_side is CENTERLINE."""
-        var = next(
-            v for v in ContourStep.recipe_varset() if v.key == "offset_mm"
-        )
-        assert var.sensitive_when is not None
-        assert var.sensitive_when({"cut_side": "CENTERLINE"}) is False
-        assert var.sensitive_when({"cut_side": "OUTSIDE"}) is True
+        """The offset rows are insensitive while cut_side is CENTERLINE."""
+        for key in ("offset_mm", "offset_y_mm"):
+            var = next(v for v in ContourStep.recipe_varset() if v.key == key)
+            assert var.sensitive_when is not None
+            assert var.sensitive_when({"cut_side": "CENTERLINE"}) is False
+            assert var.sensitive_when({"cut_side": "OUTSIDE"}) is True
 
     def test_laser_step_rows_match_dialog_order(self):
         """The laser section order is head, power, power mode, speeds,

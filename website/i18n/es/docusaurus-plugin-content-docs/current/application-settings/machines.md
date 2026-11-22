@@ -8,19 +8,24 @@ description:
 
 ![Ajustes de Máquinas](/screenshots/app-settings-machines.webp)
 
-La página de Máquinas en Configuración de la Aplicación muestra una lista de todas las máquinas
-configuradas. Cada entrada muestra el nombre de la máquina y tiene botones para editarla o
-eliminarla. La máquina activa actualmente está marcada con un icono de verificación.
+La página **Máquinas** muestra una lista de todas las máquinas configuradas. Cada entrada muestra el
+nombre de la máquina y tiene botones para editarla o eliminarla. La máquina activa actualmente está
+marcada con un icono de verificación.
+
+Abre la página desde la ventana principal con **Máquina → Manage Machines…**, o selecciona
+**Máquinas** en Configuración de la Aplicación (<kbd>ctrl+coma</kbd>).
 
 ## Añadir una Máquina
 
-1. Haz clic en el botón **Add Machine** en la parte inferior de la lista
-2. Selecciona un perfil de dispositivo de la lista para usarlo como plantilla — cada perfil
+Desde la página Máquinas, haz clic en el botón **Add Machine** en la parte inferior de la lista y
+luego:
+
+1. Selecciona un perfil de dispositivo de la lista para usarlo como plantilla — cada perfil
    preconfigura los ajustes de la máquina y el dialecto de G-code
 
 ![Añadir Máquina](/screenshots/app-settings-machines-add.webp)
 
-3. Se abre el [diálogo de ajustes de máquina](../machine/general.md) donde puedes ajustar la
+2. Se abre el [diálogo de ajustes de máquina](../machine/general.md) donde puedes ajustar la
    configuración
 
 Alternativamente:
@@ -51,8 +56,10 @@ actualizaciones del perfil.
 
 ## Cambiar la Máquina Activa
 
-Usa el menú desplegable de máquinas en la cabecera de la ventana principal para cambiar entre las
-máquinas configuradas. La selección se recuerda entre sesiones.
+El submenú **Máquina → Select Machine** lista todas las máquinas configuradas; la máquina activa
+tiene una marca de verificación. Selecciona otra entrada para cambiar a ella. También puedes usar el
+menú desplegable de máquinas en la cabecera de la ventana principal. La selección se recuerda entre
+sesiones.
 
 ## Eliminar una Máquina
 

@@ -1,12 +1,13 @@
 """
 Screenshot: Sketcher drawing and modification tools — path, arc and
-ellipse, rectangle, chamfer and fillet, fill, construction grid, and
-text boxes (including the font properties panel).
+ellipse, rectangle, polygon, chamfer and fillet, fill, construction
+grid, and text boxes (including the font properties panel).
 
 Usage:
   pixi run screenshot addons:sketcher:tool:path
   pixi run screenshot addons:sketcher:tool:arc-ellipse
   pixi run screenshot addons:sketcher:tool:rectangle
+  pixi run screenshot addons:sketcher:tool:polygon
   pixi run screenshot addons:sketcher:tool:chamfer-fillet
   pixi run screenshot addons:sketcher:tool:fill
   pixi run screenshot addons:sketcher:tool:text-box
@@ -29,6 +30,7 @@ from rayforge_addons.sketcher.sketcher.core.commands import (
     FilletCommand,
     GridCommand,
     ModifyTextPropertyCommand,
+    PolygonCommand,
     RectangleCommand,
     RemoveItemsCommand,
     RoundedRectCommand,
@@ -201,9 +203,12 @@ def _capture_geometry(
     return True
 
 
-def _preview_start(command_cls, registry, x, y):
-    preview = command_cls.start_preview(registry, x, y)
-    state = (preview.start_id, preview.start_temp)
+def _preview_start(command_cls, registry, x, y, **kwargs):
+    preview = command_cls.start_preview(registry, x, y, **kwargs)
+    if hasattr(preview, "center_id"):
+        state = (preview.center_id, preview.center_temp)
+    else:
+        state = (preview.start_id, preview.start_temp)
     command_cls.cleanup_preview(registry, preview)
     return state
 
@@ -376,6 +381,38 @@ def _stage_rectangle_scene(element):
             (110.0, 35.0),
             radius=14.0,
             is_start_temp=start_temp,
+        )
+    )
+    element.mark_dirty()
+    element.selection.clear()
+    element.set_tool("select")
+
+
+def _stage_polygon_scene(element):
+    """A hexagon and a five-point star, the polygon tool's results."""
+    registry = element.sketch.registry
+    center_id, center_temp = _preview_start(
+        PolygonCommand, registry, -75.0, 0.0
+    )
+    element.execute_command(
+        PolygonCommand(
+            element.sketch,
+            center_id,
+            (-40.0, 0.0),
+            is_center_temp=center_temp,
+        )
+    )
+    center_id, center_temp = _preview_start(
+        PolygonCommand, registry, 75.0, 0.0, sides=5, star_ratio=0.5
+    )
+    element.execute_command(
+        PolygonCommand(
+            element.sketch,
+            center_id,
+            (110.0, 0.0),
+            sides=5,
+            star_ratio=0.5,
+            is_center_temp=center_temp,
         )
     )
     element.mark_dirty()
@@ -631,6 +668,8 @@ def _stage_target_scene(target: str):
         _stage_arc_ellipse_scene(element)
     elif target.endswith(":rectangle"):
         _stage_rectangle_scene(element)
+    elif target.endswith(":polygon"):
+        _stage_polygon_scene(element)
     elif target.endswith(":chamfer-fillet"):
         _stage_chamfer_fillet_scene(element)
     elif target.endswith(":fill"):

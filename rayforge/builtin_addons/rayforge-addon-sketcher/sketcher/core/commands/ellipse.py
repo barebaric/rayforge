@@ -4,19 +4,21 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point as GeoPoint
-
-from ..constraints import (
+from raygeo.sketch.constraints import (
     Constraint,
     EqualDistanceConstraint,
     PerpendicularConstraint,
 )
-from ..entities import Ellipse, Line, Point
-from ..types import EntityID
+from raygeo.sketch.entities import Ellipse, Line
+from raygeo.sketch.entities import SketchPoint as Point
+from raygeo.sketch.types import EntityID
+
 from .base import PreviewState, SketchChangeCommand
 from .items import AddItemsCommand
 
 if TYPE_CHECKING:
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
+
     from ..sketch import Sketch
 
 
@@ -41,6 +43,9 @@ class EllipsePreviewState(PreviewState):
 
     def get_preview_point_ids(self) -> set[EntityID]:
         return {self.center_id, self.radius_x_id, self.radius_y_id}
+
+    def get_preview_entity_ids(self) -> set[EntityID]:
+        return {self.entity_id}
 
     def get_hidden_point_ids(self) -> set[EntityID]:
         return {self.start_id}
@@ -172,17 +177,14 @@ class EllipseCommand(SketchChangeCommand):
             raise TypeError("Expected EllipsePreviewState")
 
         if preview_state.entity_id is not None:
-            registry.entities = [
-                e for e in registry.entities if e.id != preview_state.entity_id
-            ]
-            registry._entity_map = {e.id: e for e in registry.entities}
+            registry.remove_entities([preview_state.entity_id])
 
         point_ids = {
             preview_state.center_id,
             preview_state.radius_x_id,
             preview_state.radius_y_id,
         }
-        registry.points = [p for p in registry.points if p.id not in point_ids]
+        registry.remove_points(list(point_ids))
 
     def _do_execute(self) -> None:
         if self.add_cmd:
@@ -278,7 +280,7 @@ class EllipseCommand(SketchChangeCommand):
         points_to_add = [new_center, new_radius_x, new_radius_y]
 
         if self.is_start_temp:
-            registry.points.remove(start_p)
+            registry.remove_points([start_p.id])
 
         self.add_cmd = AddItemsCommand(
             self.sketch,

@@ -53,10 +53,9 @@ def get_icon(icon_name: str) -> Gtk.Image:
     # Check cache first
     if icon_name in _icon_cache:
         cached_value = _icon_cache[icon_name]
-        if isinstance(cached_value, Gio.Icon):
-            return Gtk.Image.new_from_gicon(cached_value)
-        else:  # icon name string
+        if isinstance(cached_value, str):  # icon name string
             return Gtk.Image.new_from_icon_name(cached_value)
+        return Gtk.Image.new_from_gicon(cached_value)
 
     # First, attempt to load the icon from a local file path.
     path = get_icon_path(icon_name)

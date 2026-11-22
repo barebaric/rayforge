@@ -28,6 +28,10 @@
   Run targeted tests
 - Never use "head" to filter CLI commands; it hides useful error messages
 - Do not make changes unrelated to the current task
+- Do not update `.po`/`.pot` translation catalogs in feature or bug PRs;
+  catalogs are only updated during release preparation
+- Feature or bug PRs that change user-visible behavior include updated
+  website docs and regenerated screenshot targets where applicable
 - Never remove logging or debugging unless asked by the user
 - In answers, put each file into its own markdown code block. File start
   markers belong outside the block

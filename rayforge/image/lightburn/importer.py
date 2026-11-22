@@ -6,7 +6,7 @@ import logging
 import math
 import re
 import warnings
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from gettext import gettext as _
 from pathlib import Path
 from typing import Any, ClassVar
@@ -58,6 +58,8 @@ _CONTROL_PT_RE = re.compile(
     r"(c0[xXyY]|c1[xXyY])(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)"
 )
 _PRIMLIST_ITEM_RE = re.compile(r"([A-Za-z])\s*(-?\d+(?:\s+-?\d+)*)?")
+# Stored paths can end a rounding error short of their start point.
+_PATH_CLOSE_TOLERANCE_MM = 0.005
 
 
 def _parse_xform(text: str) -> Matrix:
@@ -270,10 +272,46 @@ class BitmapInfo:
     png_data: bytes
 
 
+@dataclass
+class PathDataCache:
+    """Path data by ID, as later shapes may reference it without a copy."""
+
+    verts: dict[str, list[dict[str, float]]] = field(default_factory=dict)
+    prims: dict[str, str] = field(default_factory=dict)
+
+
+def _resolve_path_data(
+    shape_elem: ET.Element, cache: PathDataCache | None
+) -> tuple[list[dict[str, float]] | None, str]:
+    """Return a Path's vertices and raw primitive list, stored or shared."""
+    cache = cache if cache is not None else PathDataCache()
+    vert_id = shape_elem.get("VertID")
+    prim_id = shape_elem.get("PrimID")
+
+    vert_list_el = shape_elem.find("VertList")
+    if vert_list_el is not None and vert_list_el.text is not None:
+        verts = _parse_verts(vert_list_el.text)
+        if vert_id is not None:
+            cache.verts[vert_id] = verts
+    else:
+        verts = cache.verts.get(vert_id or "")
+
+    prim_list_el = shape_elem.find("PrimList")
+    if prim_list_el is not None:
+        prim_list_raw = prim_list_el.text or ""
+        if prim_id is not None:
+            cache.prims[prim_id] = prim_list_raw
+    else:
+        prim_list_raw = cache.prims.get(prim_id or "", "")
+
+    return verts, prim_list_raw
+
+
 def _shape_to_geometry(
     shape_elem: ET.Element,
     cut_settings: dict[int, dict[str, Any]],
     bitmaps: list[BitmapInfo] | None = None,
+    path_cache: PathDataCache | None = None,
 ) -> tuple[int, Geometry] | None:
     shape_type = shape_elem.get("Type")
     cut_index = int(shape_elem.get("CutIndex", "0"))
@@ -299,36 +337,16 @@ def _shape_to_geometry(
             geo = _build_ellipse(rx, ry)
 
     elif shape_type == "Path":
-        vert_list_el = shape_elem.find("VertList")
-        prim_list_el = shape_elem.find("PrimList")
-        if vert_list_el is not None and vert_list_el.text is not None:
-            verts = _parse_verts(vert_list_el.text)
-            prim_list_raw = (
-                prim_list_el.text
-                if prim_list_el is not None and prim_list_el.text
-                else ""
-            )
+        verts, prim_list_raw = _resolve_path_data(shape_elem, path_cache)
+        if verts is not None:
             prims = _parse_prims(prim_list_raw)
             geo = _build_path_from_verts_and_prims(verts, prims, prim_list_raw)
+            geo.close_gaps(tolerance=_PATH_CLOSE_TOLERANCE_MM)
 
     elif shape_type == "Text":
         has_backup = shape_elem.get("HasBackupPath", "0") == "1"
         if has_backup:
             geo = _build_path_text(shape_elem)
-
-    elif shape_type == "Group":
-        children_elem = shape_elem.find("Children")
-        if children_elem is not None:
-            combined = Geometry()
-            for child in children_elem.findall("Shape"):
-                child_result = _shape_to_geometry(child, cut_settings, bitmaps)
-                if child_result is not None:
-                    _child_cut_idx, child_geo = child_result
-                    child_geo = _apply_xform_to_geo(child_geo, xform)
-                    combined.extend(child_geo)
-            if not combined.is_empty():
-                return (cut_index, combined)
-        return None
 
     elif shape_type == "Bitmap":
         w = float(shape_elem.get("W", "0"))
@@ -361,11 +379,85 @@ def _shape_to_geometry(
     return (cut_index, geo)
 
 
+def _shape_to_layer_geometries(
+    shape_elem: ET.Element,
+    cut_settings: dict[int, dict[str, Any]],
+    bitmaps: list[BitmapInfo] | None = None,
+    path_cache: PathDataCache | None = None,
+) -> list[tuple[int, Geometry]]:
+    """Return a shape's geometry per cut layer.
+
+    Groups have no layer of their own that matters: each child stays on
+    its own cut layer, with the group's transform applied.
+    """
+    if shape_elem.get("Type") != "Group":
+        result = _shape_to_geometry(
+            shape_elem, cut_settings, bitmaps, path_cache
+        )
+        return [result] if result is not None else []
+
+    children_elem = shape_elem.find("Children")
+    if children_elem is None:
+        return []
+
+    xform_el = shape_elem.find("XForm")
+    xform = Matrix()
+    if xform_el is not None and xform_el.text:
+        xform = _parse_xform(xform_el.text)
+
+    layer_geometries: list[tuple[int, Geometry]] = []
+    for child in children_elem.findall("Shape"):
+        for cut_index, geo in _shape_to_layer_geometries(
+            child, cut_settings, bitmaps, path_cache
+        ):
+            layer_geometries.append(
+                (cut_index, _apply_xform_to_geo(geo, xform))
+            )
+    return layer_geometries
+
+
+#: LightBurn image modes (``ditherMode``) that map onto a dither
+#: algorithm of the Engrave step.
+_LIGHTBURN_DITHER_ALGORITHMS = {
+    "dithered": "FLOYD_STEINBERG",
+    "atkinson": "ATKINSON",
+    "stucki": "STUCKI",
+    "jarvis": "JARVIS_JUDICE_NINKE",
+    "ordered": "BAYER8",
+    "newsprint": "NEWSPRINT",
+    "halftone": "HALFTONE",
+}
+
+
+def _build_image_mode_config(cs: dict[str, Any]) -> dict[str, Any]:
+    """Translate LightBurn's image mode to Engrave-step settings."""
+    mode = cs.get("ditherMode")
+    if mode == "threshold":
+        return {"depth_mode": "CONSTANT_POWER", "threshold": 128}
+    if mode == "grayscale":
+        return {"depth_mode": "POWER_MODULATION"}
+    algorithm = _LIGHTBURN_DITHER_ALGORITHMS.get(str(mode))
+    if algorithm is None:
+        return {}
+    config: dict[str, Any] = {
+        "depth_mode": "DITHER",
+        "dither_algorithm": algorithm,
+    }
+    if algorithm == "HALFTONE":
+        cells_per_inch = cs.get("cellsPerInch")
+        if cells_per_inch:
+            config["halftone_cell_mm"] = 25.4 / float(cells_per_inch)
+        angle = cs.get("halftoneAngle")
+        if angle is not None:
+            config["halftone_angle"] = float(angle)
+    return config
+
+
 def _build_step_config(
     cs: dict[str, Any],
 ) -> dict[str, Any] | None:
     """Translate LightBurn cut settings to generic step configuration."""
-    config: dict[str, Any] = {}
+    config: dict[str, Any] = _build_image_mode_config(cs)
     max_power = cs.get("maxPower")
     if max_power is not None:
         config["power"] = float(max_power) / 100.0
@@ -695,6 +787,11 @@ class LightBurnImporter(Importer):
             layer_settings=layer_settings,
         )
 
+    def _layer_order_key(self, cut_index: int) -> tuple[int, int]:
+        """Sort key placing layers in the file's cut order."""
+        cut_setting = self._cut_settings.get(cut_index, {})
+        return (int(cut_setting.get("priority", cut_index)), cut_index)
+
     def parse(self) -> ParsingResult | None:
         try:
             root = ET.fromstring(self.raw_data)
@@ -713,13 +810,12 @@ class LightBurnImporter(Importer):
 
         geometries_by_layer: dict[str, Geometry] = {}
         shape_count_by_layer: dict[int, int] = {}
+        path_cache = PathDataCache()
 
         for shape_elem in project.findall("Shape"):
-            result = _shape_to_geometry(
-                shape_elem, self._cut_settings, self._bitmaps
-            )
-            if result is not None:
-                cut_idx, geo = result
+            for cut_idx, geo in _shape_to_layer_geometries(
+                shape_elem, self._cut_settings, self._bitmaps, path_cache
+            ):
                 layer_id = str(cut_idx)
                 if layer_id not in geometries_by_layer:
                     geometries_by_layer[layer_id] = Geometry()
@@ -728,6 +824,12 @@ class LightBurnImporter(Importer):
                     shape_count_by_layer.get(cut_idx, 0) + 1
                 )
 
+        geometries_by_layer = dict(
+            sorted(
+                geometries_by_layer.items(),
+                key=lambda item: self._layer_order_key(int(item[0])),
+            )
+        )
         self._geometries_by_layer = geometries_by_layer
 
         for idx, cs in self._cut_settings.items():

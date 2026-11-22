@@ -6,96 +6,52 @@ G-code line, wait for the ``ok`` acknowledgement, then send the next.
 There is no character-counting flow control, no deadlock detection, and
 no buffer management.  This makes it extremely robust at the cost of
 lower throughput compared to the advanced ``GrblSerialDriver``.
+
+The protocol itself runs in Rust via the ``raydriver`` package; this
+module only supplies the Rayforge-side setup and GRBL device settings.
 """
 
-import asyncio
 import logging
-import re
-from collections.abc import Awaitable, Callable
 from gettext import gettext as _
-from typing import (
-    TYPE_CHECKING,
-    Any,
-)
+from typing import TYPE_CHECKING, Any, cast
 
-from ....context import RayforgeContext
+import serial
+from raydriver.grbl.parser import error_code_to_device_error
+from raydriver.grbl.simple import GrblSimpleSession
+
 from ....core.varset import (
     BaudrateVar,
     SerialPortVar,
     Var,
     VarSet,
 )
-from ....pipeline.encoder.base import (
-    EncodedOutput,
-    MachineCodeOpMap,
-    OpsEncoder,
+from ...transport.serial import (
+    SerialPortPermissionError,
+    SerialTransport,
+    resolve_serial_port,
 )
-from ....pipeline.encoder.gcode import GcodeEncoder
-from ....shared.units.system import UnitSystem, inches_to_mm
-from ...transport import SerialTransport, TransportStatus
-from ...transport.serial import SerialPortPermissionError
 from ..driver import (
-    Axis,
-    DeviceConnectionError,
-    DeviceStatus,
-    Driver,
+    DeviceError,
     DriverMaturity,
     DriverPrecheckError,
     DriverSetupError,
-    Pos,
 )
+from ..session_driver import SessionDriverBase
+from ..session_state import error_from_session_state
 from .grbl_probe import probe_grbl_device
 from .grbl_util import (
-    alarm_code_to_device_error,
     apply_setting_to_varset,
-    detect_unit_system_from_settings,
-    gcode_to_p_number,
     get_grbl_setting_varsets,
-    grbl_setting_re,
-    is_report_in_inches,
-    parse_grbl_parser_state,
-    parse_state,
-    prb_re,
-    split_realtime_commands,
-    strip_gcode_comments,
-    sync_state_wco,
-    wcs_re,
 )
 
 if TYPE_CHECKING:
-    from raygeo.ops import Ops
-
-    from ....core.doc import Doc
+    from ....context import RayforgeContext
     from ...device.profile import DeviceProfile
-    from ...models.laser import Laser
-    from ...models.machine import Machine
 
 logger = logging.getLogger(__name__)
 
 
-class _PingPongPending:
-    """Tracks a single sent command awaiting its ``ok`` response."""
-
-    __slots__ = ("command", "error", "event", "response_lines")
-
-    def __init__(self, command: str):
-        self.command = command
-        self.event = asyncio.Event()
-        self.response_lines: list[str] = []
-        self.error: str | None = None
-
-    def set_result(self, error: str | None = None):
-        self.error = error
-        self.event.set()
-
-    async def wait(self, timeout: float = 30.0) -> list[str]:
-        await asyncio.wait_for(self.event.wait(), timeout=timeout)
-        if self.error is not None:
-            raise DeviceConnectionError(self.error)
-        return self.response_lines
-
-
-class GrblSerialSimpleDriver(Driver):
+class GrblSerialSimpleDriver(SessionDriverBase):
     """
     A minimal GRBL serial driver using ping-pong communication.
 
@@ -105,66 +61,19 @@ class GrblSerialSimpleDriver(Driver):
     issues with the advanced driver.
     """
 
-    label = _("GRBL (Serial Simple)")
+    label = _("GRBL (USB/Serial — compatibility mode)")
     subtitle = _(
-        "GRBL serial with simple ping-pong protocol (no buffer counting)"
+        "Only needed if the standard serial connection misbehaves "
+        "(ping-pong protocol, no buffer counting)"
     )
     supports_settings = True
-    reports_granular_progress = True
     supports_probing = True
     supports_unit_detection = True
     maturity = DriverMaturity.EXPERIMENTAL
 
-    SAFETY_SHUTDOWN_DELAY: float = 0.2
-
-    _ok_re = re.compile(rb"ok\r*\n")
-    _error_re = re.compile(rb"error:(\d+)\r*\n")
-    _status_re = re.compile(rb"<([^>]+)>")
-    _line_re = re.compile(rb"([^\r\n]+)\r*\n")
-
-    # Handshake verification bounds. The '?' realtime poll is repeated
-    # every POLL_INTERVAL until a response arrives, because devices
-    # that are still booting silently drop queries sent before their
-    # serial stream is ready.
-    HANDSHAKE_TIMEOUT: float = 3.0
-    HANDSHAKE_POLL_INTERVAL: float = 0.5
-
-    def __init__(self, context: RayforgeContext, machine: "Machine"):
-        super().__init__(context, machine)
-        self._transport: SerialTransport | None = None
-        self.keep_running = False
-        self._connection_task: asyncio.Task | None = None
-        self._poll_task: asyncio.Task | None = None
-        self._cmd_lock = asyncio.Lock()
-        self._is_cancelled = False
-        self._job_running = False
-        self._is_holding = False
-        self._raw_grbl_status: DeviceStatus = DeviceStatus.UNKNOWN
-        self._handshake_received = asyncio.Event()
-        self._on_command_done: (
-            Callable[[int], None | Awaitable[None]] | None
-        ) = None
-        self._pending: _PingPongPending | None = None
-        self._line_buffer: bytearray = bytearray()
-        self._current_op_index: int = -1
-        self._report_in_inches: bool = False
-
-    @property
-    def machine_space_wcs(self) -> str:
-        return "G53"
-
-    @property
-    def machine_space_wcs_display_name(self) -> str:
-        return _("Machine Coordinates (G53)")
-
-    @property
-    def resource_uri(self) -> str | None:
-        if self._transport and self._transport.port:
-            return f"serial://{self._transport.port}"
-        return None
-
     @classmethod
     def precheck(cls, **kwargs: Any) -> None:
+        """Checks for systemic serial port issues before setup."""
         try:
             SerialTransport.check_serial_permissions_globally()
         except SerialPortPermissionError as e:
@@ -189,571 +98,56 @@ class GrblSerialSimpleDriver(Driver):
         )
 
     @classmethod
-    def create_encoder(cls, machine: "Machine") -> OpsEncoder:
-        assert machine.dialect is not None
-        return GcodeEncoder(machine.dialect)
-
-    @classmethod
     async def probe(
         cls, context: "RayforgeContext", **kwargs: Any
     ) -> tuple["DeviceProfile", list[str]]:
         return await probe_grbl_device(cls, context, **kwargs)
 
     def _setup_implementation(self, **kwargs: Any) -> None:
-        port = kwargs.get("port", "")
+        port = cast(str, kwargs.get("port", ""))
         baudrate = kwargs.get("baudrate", 115200)
-
         if not port:
             raise DriverSetupError(_("Port must be configured."))
         if not baudrate:
             raise DriverSetupError(_("Baudrate must be configured."))
 
-        self._transport = SerialTransport(str(port), int(baudrate))
-        self._transport.received.connect(self._on_serial_data)
-
-    async def cleanup(self) -> None:
-        self.keep_running = False
-        self._is_cancelled = False
-        self._job_running = False
-        if self._connection_task and not self._connection_task.done():
-            self._connection_task.cancel()
-            try:
-                await self._connection_task
-            except asyncio.CancelledError:
-                pass
-        if self._poll_task and not self._poll_task.done():
-            self._poll_task.cancel()
-        self._connection_task = None
-        self._poll_task = None
-        if self._transport:
-            self._transport.received.disconnect(self._on_serial_data)
-            if self._transport.is_connected:
-                await self._transport.disconnect()
-        await super().cleanup()
-
-    def _log_extra(self, category: str) -> dict[str, str | None]:
-        return {
-            "log_category": category,
-            "machine_id": self._machine.id if self._machine else None,
-        }
-
-    async def _connect_implementation(self) -> None:
-        if self._connection_task and not self._connection_task.done():
-            self._connection_task.cancel()
-        self.keep_running = True
-        self._connection_task = asyncio.ensure_future(self._connection_loop())
-
-    async def _await_handshake(self) -> bool:
-        """
-        Polls the device with realtime '?' commands until it responds
-        with a status report (or its welcome message arrives), bounded
-        by HANDSHAKE_TIMEOUT. Returns True once the handshake event is
-        set, False if the device stayed silent.
-        """
-        loop = asyncio.get_event_loop()
-        deadline = loop.time() + self.HANDSHAKE_TIMEOUT
-        while True:
-            await self._send_raw(b"?\n")
-            try:
-                await asyncio.wait_for(
-                    self._handshake_received.wait(),
-                    timeout=self.HANDSHAKE_POLL_INTERVAL,
-                )
-                return True
-            except asyncio.TimeoutError:
-                if loop.time() >= deadline:
-                    return False
-
-    async def _connection_loop(self) -> None:
-        transport = self._transport
-        if not transport:
-            return
-
-        while self.keep_running:
-            try:
-                self._handshake_received.clear()
-                await transport.connect()
-                self._update_connection_status(
-                    TransportStatus.CONNECTED, "Connected"
-                )
-
-                if not await self._await_handshake():
-                    logger.warning("Handshake timeout. Retrying connection.")
-                    await transport.disconnect()
-                    self._update_connection_status(
-                        TransportStatus.SLEEPING,
-                        "Handshake failed, retrying...",
-                    )
-                    await asyncio.sleep(5)
-                    continue
-
-                await self._start_polling()
-
-                while transport.is_connected and self.keep_running:
-                    await asyncio.sleep(0.5)
-
-            except asyncio.CancelledError:
-                break
-            except Exception as e:  # noqa: BLE001 - connection loop boundary
-                logger.error(f"Connection error: {e}")
-                self._update_connection_status(TransportStatus.ERROR, str(e))
-
-            if self.keep_running:
-                await transport.disconnect()
-                self._update_connection_status(
-                    TransportStatus.SLEEPING, "Reconnecting..."
-                )
-                await asyncio.sleep(5)
-
-    async def _start_polling(self) -> None:
-        if self._poll_task and not self._poll_task.done():
-            self._poll_task.cancel()
-        self._poll_task = asyncio.ensure_future(self._poll_loop())
-
-    async def _poll_loop(self) -> None:
-        transport = self._transport
-        if not transport:
-            return
-        try:
-            while transport.is_connected and self.keep_running:
-                if not self._job_running:
-                    async with self._cmd_lock:
-                        if transport.is_connected:
-                            await self._send_raw(b"?\n")
-                await asyncio.sleep(1.0)
-        except asyncio.CancelledError:
-            pass
-
-    def _update_connection_status(
-        self, status: TransportStatus, message: str = ""
-    ) -> None:
-        if status == TransportStatus.CONNECTED:
-            self.state.status = DeviceStatus.IDLE
-        elif status in (
-            TransportStatus.ERROR,
-            TransportStatus.SLEEPING,
-        ):
-            self.state.status = DeviceStatus.UNKNOWN
-        self.connection_status_changed.send(
-            self, status=status, message=message
-        )
-
-    async def _send_raw(self, data: bytes) -> None:
-        if self._transport and self._transport.is_connected:
-            await self._transport.send(data)
-
-    async def _ping_pong(
-        self, command: str, timeout: float = 30.0
-    ) -> list[str]:
-        """
-        Send *command* and wait for ``ok`` / ``error:`` response.
-        Returns collected response lines.
-        """
-        if not self._transport or not self._transport.is_connected:
-            raise ConnectionError("Serial transport not connected")
-
-        pending = _PingPongPending(command)
-        self._pending = pending
-        payload = (command.strip() + "\n").encode("utf-8")
-        logger.info(command.strip(), extra=self._log_extra("USER_COMMAND"))
-        await self._transport.send(payload)
-
-        try:
-            return await pending.wait(timeout=timeout)
-        except asyncio.TimeoutError:
-            logger.error(f"Ping-pong timeout on '{command}' after {timeout}s")
-            raise DeviceConnectionError(
-                f"Device did not respond to '{command}' within {timeout}s"
+        # Note that we intentionally do not check if the serial port
+        # exists, as a missing port is a common occurrence when e.g.
+        # the USB cable is not plugged in, and not a sign of
+        # misconfiguration.
+        if port.startswith("/dev/ttyS"):
+            logger.warning(
+                f"Port {port} is a hardware serial port, which is "
+                f"unlikely for USB-based GRBL devices."
             )
-        except asyncio.CancelledError:
-            raise
-        finally:
-            self._pending = None
 
-    async def _ping_pong_no_wait(self, command: str) -> None:
-        """Send command without waiting for response (fire and forget)."""
-        if not self._transport or not self._transport.is_connected:
-            raise ConnectionError("Serial transport not connected")
-        payload = (command.strip() + "\n").encode("utf-8")
-        logger.info(command.strip(), extra=self._log_extra("USER_COMMAND"))
-        await self._transport.send(payload)
+        # The Rust session retries its fixed port internally, so a
+        # 'vid:pid' spec can only be resolved once, here at setup.
+        try:
+            port = resolve_serial_port(port)
+        except serial.SerialException as e:
+            raise DriverSetupError(str(e)) from e
 
-    def _on_serial_data(self, sender, data: bytes) -> None:
-        """Parse incoming serial data and dispatch responses."""
-        self._line_buffer.extend(data)
-        self._process_line_buffer()
-
-    def _process_line_buffer(self) -> None:
-        """Process complete lines from the receive buffer."""
-        while b"\n" in self._line_buffer:
-            idx = self._line_buffer.index(b"\n") + 1
-            raw_line = bytes(self._line_buffer[:idx])
-            del self._line_buffer[:idx]
-
-            for line in (
-                raw_line.decode("utf-8", errors="replace").strip().splitlines()
-            ):
-                if not line:
-                    continue
-                self._handle_response_line(line)
-
-    def _handle_response_line(self, line: str) -> None:
-        """Route a single decoded response line."""
-        if line == "ok":
-            if self._pending:
-                self._pending.set_result()
-            return
-
-        if line.startswith("error:"):
-            if self._pending:
-                self._pending.set_result(error=line)
-            return
-
-        if line.startswith("<") and line.endswith(">"):
-            self._handle_status_report(line)
-            return
-
-        if line.startswith("ALARM:"):
-            logger.warning(line, extra=self._log_extra("MACHINE_EVENT"))
-            alarm_code = line.split(":")[1].strip()
-            self.state.error = alarm_code_to_device_error(alarm_code)
-            self.state.status = DeviceStatus.ALARM
-            self.state_changed.send(self, state=self.state)
-            if self._pending:
-                self._pending.set_result(error=line)
-            return
-
-        if line.startswith(("Grbl ", "GrblHAL ", "grbl ")):
-            self._handshake_received.set()
-            return
-
-        if line.startswith("["):
-            if line.startswith("[OPT:"):
-                logger.debug(f"Received OPT info: {line}")
-            elif line.startswith("[VER:"):
-                logger.debug(f"Received version: {line}")
-            if self._pending:
-                self._pending.response_lines.append(line)
-            return
-
-        if self._pending:
-            self._pending.response_lines.append(line)
-
-    def _handle_status_report(self, report: str) -> None:
-        """Process a GRBL status report like <Idle|MPos:0,0,0>."""
-        self._handshake_received.set()
-        state = parse_state(
-            report,
-            self.state,
-            lambda message: logger.info(message),
-            report_in_inches=self._report_in_inches,
+        self._session = GrblSimpleSession(
+            config={
+                "port": port,
+                "baudrate": int(baudrate),
+            },
+            dialect=self._dialect_templates(),
+            event_callback=self._on_session_event,
         )
-
-        self._raw_grbl_status = state.status
-
-        if self._job_running and state.status == DeviceStatus.IDLE:
-            state.status = DeviceStatus.RUN
-
-        # The driver owns the pause state. While we have requested a hold,
-        # force HOLD so a firmware status report cannot mask it (status
-        # polling is disabled while a job runs, so HOLD may never be observed).
-        if self._is_holding and state.status != DeviceStatus.ALARM:
-            state.status = DeviceStatus.HOLD
-
-        self.state.status = state.status
-        if state.error is not None:
-            self.state.error = state.error
-
-        self.state_changed.send(self, state=self.state)
-
-    def _start_job(
-        self,
-        on_command_done: Callable[[int], None | Awaitable[None]] | None = None,
-    ) -> None:
-        self._is_cancelled = False
-        self._job_running = True
-        self._is_holding = False
-        self._job_exception: Exception | None = None
-        self._on_command_done = on_command_done
-        self._current_op_index = -1
-        self.state.status = DeviceStatus.RUN
-        self.state_changed.send(self, state=self.state)
-
-    async def _stream_gcode_ping_pong(
-        self,
-        gcode_lines: list[str],
-        op_map: MachineCodeOpMap | None = None,
-    ) -> None:
-        """
-        Stream G-code using strict ping-pong: send one line,
-        wait for ok, repeat.
-        """
-        total = len(gcode_lines)
-        logger.debug(f"Starting ping-pong streaming job with {total} lines.")
-        job_completed_successfully = False
-        sent_count = 0
-        try:
-            for line_idx, line in enumerate(gcode_lines):
-                if (
-                    self._is_cancelled
-                    or self.state.status == DeviceStatus.ALARM
-                ):
-                    logger.info("Job cancelled or alarm. Stopping.")
-                    break
-
-                stripped = strip_gcode_comments(line).strip()
-                if not stripped:
-                    continue
-
-                new_op = op_map.op_for_line(line_idx) if op_map else None
-                if new_op is not None and new_op != self._current_op_index:
-                    self._current_op_index = new_op
-                    if self._on_command_done:
-                        result = self._on_command_done(new_op)
-                        if asyncio.iscoroutine(result):
-                            await result
-
-                await self._ping_pong(stripped)
-                sent_count += 1
-
-            if (
-                sent_count == total
-                and not self._is_cancelled
-                and self.state.status != DeviceStatus.ALARM
-            ):
-                job_completed_successfully = True
-        except DeviceConnectionError as e:
-            logger.warning(f"Job interrupted: {e}")
-            await self._send_safety_shutdown(emergency=True)
-        except Exception:
-            logger.exception("Unexpected streaming error")
-            await self._send_safety_shutdown(emergency=True)
-        finally:
-            self._job_running = False
-            self._is_holding = False
-            self._on_command_done = None
-            if job_completed_successfully:
-                self.job_finished.send(self)
-                logger.debug(
-                    f"Ping-pong streaming finished ({sent_count}/{total})."
-                )
-            elif self._is_cancelled:
-                logger.debug(
-                    f"Ping-pong streaming cancelled at {sent_count}/{total}."
-                )
-            else:
-                self.job_finished.send(self)
-
-    async def run(
-        self,
-        encoded: EncodedOutput,
-        doc: "Doc",
-        ops: "Ops",
-        on_command_done: Callable[[int], None | Awaitable[None]] | None = None,
-    ) -> None:
-        self._start_job(on_command_done)
-        mapping = encoded.op_map
-        gcode_lines = encoded.text.splitlines()
-        try:
-            await self._stream_gcode_ping_pong(gcode_lines, mapping)
-        except DeviceConnectionError as e:
-            logger.warning(f"Job terminated: {e}")
-
-    async def run_raw(self, machine_code: str) -> None:
-        """
-        Executes a raw G-code string using the ping-pong streaming
-        protocol.
-
-        GRBL realtime commands (?, ~, !) are sent directly instead:
-        the firmware executes them on receipt and never acknowledges
-        them, so streaming them as gcode would wedge the protocol.
-        """
-        lines = [
-            line.strip() for line in machine_code.splitlines() if line.strip()
-        ]
-        gcode_lines, realtime_lines = split_realtime_commands(lines)
-
-        for line in realtime_lines:
-            if not self._transport or not self._transport.is_connected:
-                raise ConnectionError("Serial transport not initialized")
-            logger.info(line, extra=self._log_extra("USER_COMMAND"))
-            await self._transport.send(line.encode("utf-8"))
-
-        if not gcode_lines:
-            return
-        self._start_job()
-        try:
-            await self._stream_gcode_ping_pong(gcode_lines)
-        except DeviceConnectionError as e:
-            logger.warning(f"Raw G-code terminated: {e}")
-
-    async def cancel(self, emergency: bool = False) -> None:
-        logger.debug("Cancel command initiated.")
-        job_was_running = self._job_running
-        self._is_cancelled = True
-        self._job_running = False
-        self._is_holding = False
-        self._on_command_done = None
-
-        if self._transport and self._transport.is_connected:
-            logger.info("Sending Soft Reset (Ctrl-X) to device.")
-            await self._transport.send(b"\x18")
-            self._line_buffer.clear()
-            if self._pending:
-                self._pending.set_result()
-                self._pending = None
-            await self._send_safety_shutdown(emergency)
-            if job_was_running:
-                self.job_finished.send(self)
-        else:
-            raise ConnectionError("Serial transport not initialized")
-
-    async def _send_safety_shutdown(self, emergency: bool = False) -> None:
-        """
-        Best-effort transmission of the dialect's tool-off commands so
-        a cancelled or aborted job cannot leave persistent PWM outputs
-        energized. After a soft reset the firmware needs a moment to
-        become ready again, hence the short delay before sending.
-        Responses are ignored: the commands are sent fire-and-forget.
-        """
-        dialect = self.dialect
-        commands = dialect.get_safety_off_commands()
-        if emergency and dialect.emergency_stop:
-            commands.append(dialect.emergency_stop)
-        transport = self._transport
-        if not commands or not transport or not transport.is_connected:
-            return
-        await asyncio.sleep(self.SAFETY_SHUTDOWN_DELAY)
-        for command in commands:
-            if not transport.is_connected:
-                break
-            try:
-                logger.info(command, extra=self._log_extra("USER_COMMAND"))
-                await transport.send((command + "\n").encode("utf-8"))
-            except ConnectionError as e:
-                logger.warning(f"Safety command '{command}' failed: {e}")
-
-    async def _execute_command(self, command: str) -> list[str]:
-        """Send a command using ping-pong and return response lines."""
-        self._is_cancelled = False
-        async with self._cmd_lock:
-            return await self._ping_pong(command)
-
-    async def execute_interactive_command(self, command: str) -> list[str]:
-        """Send a command and await its full response."""
-        if not self._transport or not self._transport.is_connected:
-            raise ConnectionError("Serial transport not connected")
-        return await self._execute_command(command)
-
-    async def set_hold(self, hold: bool = True) -> None:
-        self._is_holding = hold
-        self._is_cancelled = False
-        realtime = b"!" if hold else b"~"
-        if self._transport and self._transport.is_connected:
-            await self._transport.send(realtime)
-        desired = (
-            DeviceStatus.HOLD
-            if hold
-            else DeviceStatus.RUN
-            if self._job_running
-            else DeviceStatus.IDLE
-        )
-        if self.state.status != desired:
-            self.state.status = desired
-            self.state_changed.send(self, state=self.state)
-
-    def can_home(self, axis: Axis | None = None) -> bool:
-        return True
-
-    async def home(self, axes: Axis | None = None) -> None:
-        dialect = self.dialect
-        if axes is None:
-            await self._execute_command(dialect.home_all)
-        else:
-            for axis in axes:
-                cmd = dialect.home_axis.format(axis_letter=axis.name)
-                await self._execute_command(cmd)
-
-        active_wcs = self._machine.active_wcs
-        temp_wcs = "G55" if active_wcs == "G54" else "G54"
-        await self._execute_command("G4 P0.01")
-        await self._execute_command(temp_wcs)
-        await self._execute_command(active_wcs)
-        self.state.error = None
-        self.state_changed.send(self, state=self.state)
-
-    async def move_to(self, pos_x, pos_y, pos_z=None, speed=None) -> None:
-        cmd = self._format_move_to(float(pos_x), float(pos_y), pos_z, speed)
-        await self._execute_command(cmd)
-
-    async def select_tool(self, tool_number: int) -> None:
-        dialect = self.dialect
-        cmd = dialect.tool_change.format(tool_number=tool_number)
-        await self._execute_command(cmd)
-
-    async def clear_alarm(self) -> None:
-        dialect = self.dialect
-        response = await self._execute_command(dialect.clear_alarm)
-        has_error = any(line.startswith("error:") for line in response)
-        if not has_error:
-            self.state.error = None
-            self.state_changed.send(self, state=self.state)
-
-    async def set_power(self, head: "Laser", percent: float) -> None:
-        dialect = self.dialect
-        if percent <= 0:
-            cmd = dialect.laser_off
-        else:
-            power_abs = percent * head.max_power
-            cmd = dialect.laser_on.format(power=power_abs)
-        await self._execute_command(cmd)
-
-    async def set_focus_power(self, head: "Laser", percent: float) -> None:
-        dialect = self.dialect
-        if percent <= 0:
-            cmd = dialect.laser_off
-        else:
-            power_abs = percent * head.max_power
-            cmd = dialect.focus_laser_on.format(power=power_abs)
-        await self._execute_command(cmd)
-
-    def can_jog(self, axis: Axis | None = None) -> bool:
-        return True
-
-    async def jog(self, speed: int, **deltas: float) -> None:
-        dialect = self.dialect
-        cmd_parts = [dialect.jog.format(speed=self._to_machine_speed(speed))]
-        for axis_name, distance in deltas.items():
-            cmd_parts.append(
-                f"{axis_name.upper()}{self._to_machine_length(distance)}"
-            )
-        if len(cmd_parts) == 1:
-            return
-        cmd = " ".join(cmd_parts)
-        await self._execute_command(cmd)
 
     def get_setting_vars(self) -> list["VarSet"]:
         return get_grbl_setting_varsets()
 
-    async def detect_unit_system(self) -> UnitSystem | None:
-        """
-        Queries the device's ``$$`` settings and infers the unit
-        system from the ``$13`` (Report in inches) flag.
-        """
-        try:
-            response_lines = await self.execute_interactive_command("$$")
-        except (ConnectionError, asyncio.TimeoutError) as e:
-            logger.warning(f"Unit system detection failed: {e}")
-            return None
-        self._report_in_inches = is_report_in_inches(response_lines)
-        return detect_unit_system_from_settings(response_lines)
-
     async def read_settings(self) -> None:
-        response_lines = await self.execute_interactive_command("$$")
-        self._report_in_inches = is_report_in_inches(response_lines)
+        pairs = await self._require_session().read_settings()
+
         known_varsets = self.get_setting_vars()
         key_to_varset_map = {
-            var.key: varset for varset in known_varsets for var in varset
+            var_key: varset
+            for varset in known_varsets
+            for var_key in varset.keys()  # noqa: SIM118
         }
         unknown_vars = VarSet(
             title=_("Unknown Settings"),
@@ -761,26 +155,24 @@ class GrblSerialSimpleDriver(Driver):
                 "Settings reported by the device not in the standard list."
             ),
         )
-        for line in response_lines:
-            match = grbl_setting_re.match(line)
-            if match:
-                key, value_str = match.groups()
-                target_varset = key_to_varset_map.get(key)
-                if target_varset:
-                    apply_setting_to_varset(target_varset, key, value_str)
-                else:
-                    unknown_vars.add(
-                        Var(
-                            key=key,
-                            label=f"${key}",
-                            var_type=str,
-                            value=value_str,
-                            description=_("Unknown setting from device"),
-                        )
+        for key, value_str in pairs:
+            target_varset = key_to_varset_map.get(key)
+            if target_varset:
+                apply_setting_to_varset(target_varset, key, value_str)
+            else:
+                unknown_vars.add(
+                    Var(
+                        key=key,
+                        label=f"${key}",
+                        var_type=str,
+                        value=value_str,
+                        description=_("Unknown setting from device"),
                     )
+                )
         result = known_varsets
         if len(unknown_vars) > 0:
             result.append(unknown_vars)
+
         num_settings = sum(len(vs) for vs in result)
         logger.info(
             f"Driver settings read with {num_settings} settings.",
@@ -791,91 +183,8 @@ class GrblSerialSimpleDriver(Driver):
     async def write_setting(self, key: str, value: Any) -> None:
         if isinstance(value, bool):
             value = 1 if value else 0
-        cmd = f"${key}={value}"
-        await self._execute_command(cmd)
+        await self._require_session().write_setting(key, str(value))
 
-    async def set_wcs_offset(
-        self, wcs_slot: str, x: float, y: float, z: float | None
-    ) -> None:
-        p_num = gcode_to_p_number(wcs_slot)
-        if p_num is None:
-            raise ValueError(f"Invalid WCS slot: {wcs_slot}")
-        cmd = self.dialect.format_wcs_offset(
-            p_num,
-            self._to_machine_length(x),
-            self._to_machine_length(y),
-            self._to_machine_length(z) if z is not None else None,
-        )
-        await self._execute_command(cmd)
-
-    async def read_wcs_offsets(self) -> dict[str, Pos]:
-        response_lines = await self.execute_interactive_command("$#")
-        offsets = {}
-        for line in response_lines:
-            match = wcs_re.match(line)
-            if match:
-                slot, x_str, y_str, z_str = match.groups()
-                z_str = z_str or "0.000"
-                parsed: Pos = (float(x_str), float(y_str), float(z_str))
-                offsets[slot] = (
-                    tuple(inches_to_mm(v) for v in parsed)
-                    if self._report_in_inches
-                    else parsed
-                )
-        sync_state_wco(
-            self.state,
-            offsets,
-            self._machine.active_wcs if self._machine else None,
-        )
-        self.state_changed.send(self, state=self.state)
-        self.wcs_updated.send(self, offsets=offsets)
-        return offsets
-
-    async def read_parser_state(self) -> str | None:
-        try:
-            response_lines = await self.execute_interactive_command("$G")
-            return parse_grbl_parser_state(response_lines)
-        except DeviceConnectionError as e:
-            logger.warning(f"Could not read parser state: {e}")
-            return None
-
-    async def run_probe_cycle(
-        self, axis: Axis, max_travel: float, feed_rate: int
-    ) -> Pos | None:
-        assert axis.name, "Probing requires a single, named axis."
-        axis_letter = axis.name.upper()
-        dialect = self.dialect
-        cmd = dialect.probe_cycle.format(
-            axis_letter=axis_letter,
-            max_travel=self._to_machine_length(max_travel),
-            feed_rate=self._to_machine_speed(feed_rate),
-        )
-        self.probe_status_changed.send(
-            self, message=f"Probing {axis_letter}..."
-        )
-        try:
-            response_lines = await self.execute_interactive_command(cmd)
-        except DeviceConnectionError:
-            self.probe_status_changed.send(
-                self, message="Probe failed: Timed out"
-            )
-            return None
-        for line in response_lines:
-            match = prb_re.match(line)
-            if match:
-                x_str, y_str, z_str, success = match.groups()
-                if int(success) == 1:
-                    pos: Pos = (
-                        float(x_str),
-                        float(y_str),
-                        float(z_str),
-                    )
-                    if self._report_in_inches:
-                        pos = tuple(inches_to_mm(v) for v in pos)
-                    self.probe_status_changed.send(
-                        self,
-                        message=f"Probe triggered at {pos}",
-                    )
-                    return pos
-        self.probe_status_changed.send(self, message="Probe failed")
-        return None
+    def get_error(self, error_code: str) -> DeviceError | None:
+        """Returns error details for a given GRBL error code."""
+        return error_from_session_state(error_code_to_device_error(error_code))

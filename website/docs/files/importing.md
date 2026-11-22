@@ -13,21 +13,27 @@ import files and optimize them for best results.
 
 ### Vector Formats
 
-| Format        | Extension         | Import Method           | Best For                        |
-| ------------- | ----------------- | ----------------------- | ------------------------------- |
-| **SVG**       | `.svg`            | Direct vectors or trace | Vector graphics, logos, designs |
-| **DXF**       | `.dxf`            | Direct vectors          | CAD drawings, technical designs |
-| **PDF**       | `.pdf`            | Direct vectors or trace | Documents with vector content   |
-| **LightBurn** | `.lbrn`, `.lbrn2` | Direct vectors          | LightBurn project files         |
-| **Ruida**     | `.rd`             | Direct vectors          | Ruida controller job files      |
+| Format          | Extension         | Import Method                               | Best For                        |
+| --------------- | ----------------- | ------------------------------------------- | ------------------------------- |
+| **SVG**         | `.svg`, `.svgz`   | Direct vectors or trace                     | Vector graphics, logos, designs |
+| **DXF**         | `.dxf`            | Direct vectors                              | CAD drawings, technical designs |
+| **PDF**         | `.pdf`            | Direct vectors or trace                     | Documents with vector content   |
+| **LightBurn**   | `.lbrn`, `.lbrn2` | Direct vectors                              | LightBurn project files         |
+| **Ruida**       | `.rd`             | Direct vectors                              | Ruida controller job files      |
+| **Illustrator** | `.ai`             | Direct vectors or trace                     | Logos from Illustrator          |
+| **EPS**         | `.eps`, `.ps`     | Direct vectors or trace (needs Ghostscript) | Logos, print artwork            |
+| **HPGL**        | `.plt`, `.hpgl`   | Direct vectors                              | Plotter and vinyl cutter files  |
 
 ### Raster Formats
 
 | Format   | Extension       | Import Method    | Best For                         |
 | -------- | --------------- | ---------------- | -------------------------------- |
-| **PNG**  | `.webp`         | Trace to vectors | Photos, images with transparency |
+| **PNG**  | `.png`          | Trace to vectors | Photos, images with transparency |
 | **JPEG** | `.jpg`, `.jpeg` | Trace to vectors | Photos, continuous-tone images   |
 | **BMP**  | `.bmp`          | Trace to vectors | Simple graphics, screenshots     |
+| **GIF**  | `.gif`          | Trace to vectors | Simple graphics, animations      |
+| **TIFF** | `.tif`, `.tiff` | Trace to vectors | Scans, print artwork             |
+| **WebP** | `.webp`         | Trace to vectors | Web images                       |
 
 <!-- prettier-ignore-start -->
 :::note[Raster Import]
@@ -109,6 +115,47 @@ The resize notification appears as a toast message:
 This ensures your designs always fit within your machine's capabilities while giving you the
 flexibility to restore the original size if needed.
 
+### Keeping Imported Files in Sync
+
+When you import a file, Rayforge keeps a link to it on disk. If the file changes later — for example
+after editing and re-saving it in Inkscape or your CAD program — Rayforge offers to reload the
+imported content, so your project does not keep outdated geometry.
+
+![The Imported File Changed dialog](/screenshots/source-changed-dialog.webp)
+
+Watching is controlled by the **Watch imported files** option in Settings → General. When it is on
+(the default), Rayforge checks the linked files while the project is open — including right after
+opening it — and shows a dialog for each file that changed on disk:
+
+- **Reload** replaces the imported content with the new version. Position, size and the settings of
+  the affected workpieces are kept, and the whole reload is a single undo step.
+- **Ignore** keeps the current content. You will be asked again the next time the file changes.
+- Enable **Always reload this file without asking** to reload that file automatically from now on.
+  Files marked this way are reloaded without asking.
+
+When several linked files changed at once, the dialog lists them and lets you choose which ones to
+reload.
+
+<!-- prettier-ignore-start -->
+:::note[Reload Adjusts the Document]
+Reloading brings the document back in line with the file: elements that were added to it appear in
+the project, elements that are no longer in it are removed, and holding tabs that end up more than
+1 mm away from the new outline are dropped. Elements you edited in Rayforge are left unchanged. A
+notification summarizes what the reload changed.
+:::
+<!-- prettier-ignore-end -->
+
+### Manual Reload and Relinking
+
+You can also reload or relink manually at any time via **File → Reload from Disk** and **File →
+Relink Source File…**, or through the context menu of the canvas selection, the layer list, or the
+asset browser. **Reload from Disk** re-reads the files behind the selected workpieces. When the
+linked file cannot be found, Rayforge suggests relinking it instead.
+
+**Relink Source File…** points an imported source at a different file. This is useful when a file
+was moved or renamed, or when a project is opened on another computer and the linked file is
+missing. The workpieces keep their position and settings and show the content of the new file.
+
 ---
 
 ## SVG Import
@@ -119,8 +166,9 @@ SVG (Scalable Vector Graphics) is the **recommended format** for vector designs.
 :::tip[Automate Step Assignment]
 You can configure
 [color rules](../application-settings/color-rules.md) to automatically assign step types (Contour,
-Engrave, etc.) based on the colors in your SVG. When rules exist, the import dialog defaults to
-grouping shapes by color so the rules take effect.
+Engrave, etc.) based on the colors in your SVG. Until you pick a layer source yourself, the import
+dialog defaults to grouping shapes by color when rules exist, so the rules take effect; the layer
+source you choose is remembered for future imports.
 :::
 <!-- prettier-ignore-end -->
 
@@ -183,6 +231,13 @@ Disable "Use Original Vectors" to use this method.
 - SVGs with effects, filters, gradients
 - When direct import produces errors
 
+### Selecting Layers and Ungrouped Geometry
+
+With **Use Original Vectors**, the **Select Layers** list shows one entry per named SVG layer (or
+per color when grouping by color). Shapes that lie outside any named layer are offered as an extra
+**Ungrouped** layer, enabled by default, so they are imported and cut like any other layer.
+Deselecting a layer excludes its geometry from both the preview and the generated toolpaths.
+
 ### Live Preview
 
 The import dialog shows a live preview of how your SVG will be imported:
@@ -242,6 +297,21 @@ Rayforge supports standard DXF formats:
 - **R2000+** - Generally works, but R12 is safer
 
 **Tip:** Export as R12/LT2 DXF for maximum compatibility.
+
+### Z Flattening
+
+Some CAD exporters write DXF files with geometry at different Z heights — for example a 3D model
+exported with the outlines of both the top and the bottom face of a part. Rayforge is a 2D program:
+on a machine with a Z axis, such Z values become real Z moves in the job, and the head can plunge
+below the material surface and crash.
+
+When a DXF file contains geometry at more than one Z height, the import dialog therefore offers a
+**Flatten Z Coordinates** option (under "Import Mode"). It is enabled by default and projects all
+imported geometry onto the Z=0 plane. You can turn it off to keep the original Z heights — the
+dialog then warns you that the toolpath will move in Z, which is only safe if you know your file
+needs it (for example to re-create a specific focus height per shape).
+
+For flat drawings the option is not shown; there is nothing to flatten.
 
 ### DXF Import Tips
 
@@ -351,7 +421,18 @@ settings.
 
 ---
 
-## Raster Image Import (PNG, JPG, BMP)
+## Illustrator and EPS Import
+
+Illustrator files saved with PDF compatibility, the default since Illustrator 9, import exactly like
+PDF files, with the same layer selection and tracing options.
+
+EPS, PostScript and older Illustrator files are converted to PDF with Ghostscript first. Install
+Ghostscript if the import dialog reports that it is missing. If you cannot install it, export the
+design as PDF or SVG from the program that made it.
+
+---
+
+## Raster Image Import (PNG, JPG, BMP, GIF, TIFF, WebP)
 
 Raster images are **traced** to create vector paths using the import dialog.
 

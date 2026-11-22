@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-03 16:38+0200\n"
+"POT-Creation-Date: 2026-11-11 13:48+0100\n"
 "PO-Revision-Date: 2026-09-27 22:58\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -34,6 +34,28 @@ msgid "Keep the first workpiece at its original position"
 msgstr "पहले वर्कपीस को उसकी मूल स्थिति पर रखें"
 
 #: post_processors/widgets/optimize_group.py
+msgid "Choose Best Start Point"
+msgstr "सर्वोत्तम प्रारंभ बिंदु चुनें"
+
+#: post_processors/widgets/optimize_group.py
+msgid ""
+"Start closed paths at the vertex nearest the laser head to shorten travel "
+"moves."
+msgstr ""
+"यात्रा हरकतों को छोटा करने हेतु बंद पाथ को लेज़र हेड के सबसे नज़दीकी शीर्ष बिंदु से शुरू करें."
+
+#: post_processors/widgets/optimize_group.py
+msgid "Prefer Corners"
+msgstr "कोनों को प्राथमिकता दें"
+
+#: post_processors/widgets/optimize_group.py
+msgid ""
+"Start closed paths at a sharp corner where the path has one, which makes the "
+"seam less visible."
+msgstr ""
+"जहाँ पाथ में कोई नुकीला कोना हो, वहाँ बंद पाथ को उसी से शुरू करें, जिससे सीवन कम दिखाई दे."
+
+#: post_processors/widgets/optimize_group.py
 msgid "Merge Scanlines"
 msgstr "स्कैनलाइनों को मिलाएँ"
 
@@ -56,6 +78,20 @@ msgid ""
 msgstr "शून्य शक्ति पर पाटने का अधिकतम अंतर; 0 मशीन के त्वरण से स्वचालित रूप से तय करता है"
 
 #: post_processors/widgets/optimize_group.py
+msgid "Reorder Scan Lines"
+msgstr "स्कैनलाइनों का क्रम बदलें"
+
+#: post_processors/widgets/optimize_group.py
+msgid ""
+"Reorder raster scan lines for shorter travel. Raster rows normally keep "
+"their order: reordering makes the machine hop its Y axis between rows, which "
+"can cause banding."
+msgstr ""
+"छोटे ट्रैवल के लिए रास्टर स्कैनलाइनों का क्रम बदलता है। रास्टर पंक्तियाँ सामान्यतः अपना क्रम "
+"बनाए रखती हैं: क्रम बदलने से मशीन पंक्तियों के बीच अपने Y अक्ष पर कूदती है, जिससे बैंडिंग हो "
+"सकती है।"
+
+#: post_processors/widgets/optimize_group.py
 msgid "Toggle Flipping"
 msgstr "पलटना टॉगल करें"
 
@@ -64,8 +100,20 @@ msgid "Toggle Preserve First Workpiece"
 msgstr "पहला वर्कपीस सुरक्षित रखना टॉगल करें"
 
 #: post_processors/widgets/optimize_group.py
+msgid "Toggle Choose Best Start Point"
+msgstr "सर्वोत्तम प्रारंभ बिंदु चुनना टॉगल करें"
+
+#: post_processors/widgets/optimize_group.py
+msgid "Toggle Prefer Corners"
+msgstr "कोनों को प्राथमिकता देना टॉगल करें"
+
+#: post_processors/widgets/optimize_group.py
 msgid "Change maximum bridged gap"
 msgstr "अधिकतम पाटे गए अंतर को बदलें"
+
+#: post_processors/widgets/optimize_group.py
+msgid "Toggle Reorder Scan Lines"
+msgstr "स्कैनलाइनों का क्रम बदलना टॉगल करें"
 
 #: post_processors/widgets/overscan_group.py
 msgid "This machine adds overscan automatically; the setting has no effect."
@@ -201,6 +249,30 @@ msgstr "लीड-इन दूरी बदलें"
 msgid "Change Lead-Out Distance"
 msgstr "लीड-आउट दूरी बदलें"
 
+#: post_processors/widgets/perforation_group.py
+msgid "Cut Length"
+msgstr "कट लंबाई"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Distance the laser fires before each gap"
+msgstr "प्रत्येक अंतर से पहले लेज़र जितनी दूरी तक चालू रहता है"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Skip Length"
+msgstr "स्किप लंबाई"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Distance travelled with the laser off between cuts"
+msgstr "कटों के बीच लेज़र बंद रहने पर तय की गई दूरी"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Change perforation cut length"
+msgstr "परफ़ोरेशन कट लंबाई बदलें"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Change perforation skip length"
+msgstr "परफ़ोरेशन स्किप लंबाई बदलें"
+
 #: post_processors/widgets/merge_lines_group.py
 msgid "Tolerance"
 msgstr "सहनशीलता"
@@ -253,6 +325,15 @@ msgstr "रेखाएँ मर्ज करें"
 #: post_processors/transformers/merge_lines_transformer.py
 msgid "Merges overlapping lines to avoid double passing."
 msgstr "दोहरे पास से बचने के लिए ओवरलैपिंग रेखाएँ मर्ज करता है."
+
+#: post_processors/transformers/perforation_transformer.py
+msgid "Perforation"
+msgstr "परफ़ोरेशन"
+
+#: post_processors/transformers/perforation_transformer.py
+msgid ""
+"Cuts in dashes: the laser fires for the cut length and skips the skip length"
+msgstr "डैश में काटता है: लेज़र कट लंबाई तक चालू रहता है और स्किप लंबाई तक बंद रहता है"
 
 #: post_processors/transformers/overscan_transformer.py
 msgid "Overscan"

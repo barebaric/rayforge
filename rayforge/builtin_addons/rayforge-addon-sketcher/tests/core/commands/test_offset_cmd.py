@@ -5,9 +5,10 @@ from raygeo.geo.shape.polygon import (
     get_polygon_closest_point,
     is_point_inside_polygon,
 )
+from raygeo.sketch.entities import Circle, Ellipse
+from raygeo.sketch.entities import Polygon as PolygonEntity
 from sketcher.core import Sketch
 from sketcher.core.commands import OffsetCommand
-from sketcher.core.entities import Circle, Ellipse, PolygonEntity
 
 
 def _circle_sketch():
@@ -23,7 +24,7 @@ def test_circle_offset_updates_in_place():
     cmd = OffsetCommand(sketch, [circle_id], 5.0)
     cmd.execute()
 
-    circles = [e for e in sketch.registry.entities if isinstance(e, Circle)]
+    circles = [e for e in sketch.registry.entities() if isinstance(e, Circle)]
     assert len(circles) == 1
     assert circles[0].id == circle_id
     radius_pt = sketch.registry.get_point(circles[0].radius_pt_idx)
@@ -66,7 +67,9 @@ def test_ellipse_offset_updates_in_place():
     cmd = OffsetCommand(sketch, [ellipse_id], 2.0)
     cmd.execute()
 
-    ellipses = [e for e in sketch.registry.entities if isinstance(e, Ellipse)]
+    ellipses = [
+        e for e in sketch.registry.entities() if isinstance(e, Ellipse)
+    ]
     assert len(ellipses) == 1
     assert ellipses[0].id == ellipse_id
     rx_pt = sketch.registry.get_point(ellipses[0].radius_x_pt_idx)
@@ -103,7 +106,7 @@ def test_square_offset_replaces_lines_with_polygon():
         assert sketch.registry.get_entity(eid) is None
 
     polygons = [
-        e for e in sketch.registry.entities if isinstance(e, PolygonEntity)
+        e for e in sketch.registry.entities() if isinstance(e, PolygonEntity)
     ]
     assert len(polygons) == 1
     assert polygons[0].closed is True
@@ -126,7 +129,7 @@ def test_square_offset_replaces_lines_with_polygon():
     for eid in entity_ids:
         assert sketch.registry.get_entity(eid) is not None
     assert not [
-        e for e in sketch.registry.entities if isinstance(e, PolygonEntity)
+        e for e in sketch.registry.entities() if isinstance(e, PolygonEntity)
     ]
 
 
@@ -142,7 +145,7 @@ def test_line_offset_becomes_slot():
     assert sketch.registry.get_entity(line_id) is None
 
     polygons = [
-        e for e in sketch.registry.entities if isinstance(e, PolygonEntity)
+        e for e in sketch.registry.entities() if isinstance(e, PolygonEntity)
     ]
     assert len(polygons) == 1
     assert polygons[0].closed is True
@@ -174,7 +177,7 @@ def test_mixed_selection_all_or_nothing():
 
     assert sketch.registry.get_entity(line_id) is not None
     assert not [
-        e for e in sketch.registry.entities if isinstance(e, PolygonEntity)
+        e for e in sketch.registry.entities() if isinstance(e, PolygonEntity)
     ]
 
 
@@ -182,4 +185,4 @@ def test_empty_selection_aborts():
     sketch = Sketch()
     cmd = OffsetCommand(sketch, [], 2.0)
     cmd.execute()
-    assert not sketch.registry.entities
+    assert not sketch.registry.entities()

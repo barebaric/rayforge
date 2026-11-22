@@ -1,7 +1,7 @@
 import cairo
 import pytest
 from gi.repository import PangoCairo
-from sketcher.core.constraints import (
+from raygeo.sketch.constraints import (
     AngleConstraint,
     DiameterConstraint,
     DistanceConstraint,
@@ -9,8 +9,8 @@ from sketcher.core.constraints import (
     EqualLengthConstraint,
     RadiusConstraint,
 )
-from sketcher.core.constraints.base import ConstraintStatus
-from sketcher.core.registry import EntityRegistry
+from raygeo.sketch.registry import EntityRegistry
+from raygeo.sketch.types import ConstraintStatus
 
 
 @pytest.mark.parametrize(
@@ -24,7 +24,10 @@ from sketcher.core.registry import EntityRegistry
         ("equal_distance", "="),
     ],
 )
-@pytest.mark.parametrize("status", list(ConstraintStatus))
+@pytest.mark.parametrize(
+    "status",
+    list(ConstraintStatus),  # type: ignore[arg-type]
+)
 @pytest.mark.parametrize("selected, hovered", [(False, False), (True, True)])
 def test_constraint_text_uses_pango(
     mocker, kind, expected, status, selected, hovered

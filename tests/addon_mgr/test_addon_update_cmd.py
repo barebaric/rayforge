@@ -39,6 +39,8 @@ def mock_context():
     """Provides a mock RayforgeContext with mocked managers."""
     context = MagicMock()
     context.addon_mgr = MagicMock()
+    context.config.check_for_addon_updates = True
+    context.config.external_addon_services_enabled = True
     return context
 
 
@@ -54,6 +56,32 @@ def update_command(mock_context):
 
 
 class TestUpdateCheck:
+    async def test_startup_check_schedules_when_enabled(self, update_command):
+        update_command.check_for_updates_on_startup()
+
+        update_command._task_mgr.add_coroutine.assert_called_once_with(
+            update_command._check_for_updates_worker,
+            key="addon-update-check",
+        )
+
+    async def test_startup_check_does_not_schedule_when_disabled(
+        self, update_command, mock_context
+    ):
+        mock_context.config.check_for_addon_updates = False
+
+        update_command.check_for_updates_on_startup()
+
+        update_command._task_mgr.add_coroutine.assert_not_called()
+
+    async def test_startup_check_does_not_schedule_without_services(
+        self, update_command, mock_context
+    ):
+        mock_context.config.external_addon_services_enabled = False
+
+        update_command.check_for_updates_on_startup()
+
+        update_command._task_mgr.add_coroutine.assert_not_called()
+
     async def test_check_for_updates_worker_no_updates(
         self, update_command, mock_context
     ):

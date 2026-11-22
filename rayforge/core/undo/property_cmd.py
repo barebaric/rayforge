@@ -18,9 +18,11 @@ class ChangePropertyCommand(Command):
         setter_method_name: str | None = None,
         on_change_callback: Callable[[], None] | None = None,
         name: str | None = None,
+        coalesce: bool = True,
     ):
         super().__init__(name, on_change_callback)
         self.target = target
+        self.coalesce = coalesce
         self.property_name = property_name
         self.new_value = new_value
         self.setter_method_name = setter_method_name
@@ -54,6 +56,8 @@ class ChangePropertyCommand(Command):
     def can_coalesce_with(self, next_command: Command) -> bool:
         return (
             isinstance(next_command, ChangePropertyCommand)
+            and self.coalesce
+            and next_command.coalesce
             and self.target is next_command.target
             and self.property_name == next_command.property_name
         )

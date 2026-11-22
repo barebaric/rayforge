@@ -15,7 +15,8 @@ import logging
 from datetime import datetime, timezone
 from pathlib import Path
 
-from ..discovery import DeviceIdentity
+from raydriver.core.discovery import DeviceIdentity
+
 from .matching import ProfileMatch
 
 logger = logging.getLogger(__name__)

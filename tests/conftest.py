@@ -5,8 +5,13 @@ import sys
 import tempfile
 from pathlib import Path
 
-# MUST be set before any rayforge imports to isolate config directories
-_TEST_CONFIG_DIR = Path(tempfile.gettempdir()) / "rayforge_test_config"
+# MUST be set before any rayforge imports to isolate config directories.
+# Each xdist worker gets its own directory so parallel runs never share or
+# delete each other's configuration state.
+_XDIST_WORKER = os.environ.get("PYTEST_XDIST_WORKER", "local")
+_TEST_CONFIG_DIR = (
+    Path(tempfile.gettempdir()) / f"rayforge_test_config_{_XDIST_WORKER}"
+)
 os.environ["RAYFORGE_CONFIG_DIR"] = str(_TEST_CONFIG_DIR)
 
 try:
@@ -246,6 +251,7 @@ async def context_initializer(tmp_path, task_mgr, monkeypatch):
     from rayforge import config
     from rayforge import context as context_module
     from rayforge.context import get_context
+    from rayforge.machine.driver.dummy import NoDeviceDriver
     from rayforge.shared import tasker
 
     # 1. Isolate test configuration files
@@ -262,6 +268,7 @@ async def context_initializer(tmp_path, task_mgr, monkeypatch):
 
     # 2. Patch the global task_mgr proxy to use our test-isolated instance.
     monkeypatch.setattr(tasker.task_mgr, "_instance", task_mgr)
+    monkeypatch.setattr(NoDeviceDriver, "simulation_step_delay_s", 0.0)
 
     # 3. Get the context and configure for headless mode
     context = get_context()
@@ -273,7 +280,13 @@ async def context_initializer(tmp_path, task_mgr, monkeypatch):
     yield context
 
     # 4. Teardown: shutdown and fully reset the context singleton and globals
-    # This is crucial for test isolation.
+    # This is crucial for test isolation. Give tasks that were still winding
+    # down when the test finished a chance to complete (parallel workers can
+    # delay them), but still fail if they never settle.
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + 2.0
+    while task_mgr.has_tasks() and loop.time() < deadline:
+        await asyncio.sleep(0.01)
     if task_mgr.has_tasks():
         pytest.fail("Task manager still has tasks at end of test.")
 
@@ -312,6 +325,7 @@ def lite_context(tmp_path, task_mgr, monkeypatch):
     from rayforge import config
     from rayforge import context as context_module
     from rayforge.context import get_context
+    from rayforge.machine.driver.dummy import NoDeviceDriver
     from rayforge.machine.models.dialect_manager import DialectManager
     from rayforge.shared import tasker
 
@@ -323,6 +337,7 @@ def lite_context(tmp_path, task_mgr, monkeypatch):
     monkeypatch.setattr(config, "MACHINE_DIR", temp_machine_dir)
 
     monkeypatch.setattr(tasker.task_mgr, "_instance", task_mgr)
+    monkeypatch.setattr(NoDeviceDriver, "simulation_step_delay_s", 0.0)
 
     context = get_context()
     context.initialize_lite_context(temp_machine_dir)

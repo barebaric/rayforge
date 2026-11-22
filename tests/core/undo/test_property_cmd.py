@@ -98,6 +98,14 @@ def test_property_cannot_coalesce_different_property():
     assert cmd1.can_coalesce_with(cmd2) is False
 
 
+def test_property_cannot_coalesce_when_either_opts_out():
+    target = MockTarget()
+    plain = ChangePropertyCommand(target, "value", 10)
+    single = ChangePropertyCommand(target, "value", 20, coalesce=False)
+    assert plain.can_coalesce_with(single) is False
+    assert single.can_coalesce_with(plain) is False
+
+
 def test_property_coalesce_success():
     target = MockTarget()
     cmd1 = ChangePropertyCommand(target, "value", 10, name="cmd1")

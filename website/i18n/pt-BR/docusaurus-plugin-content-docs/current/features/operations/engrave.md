@@ -178,12 +178,11 @@ diferentes, descritas abaixo.
 | 10% | 60% | Profundidade média, seguro |
 | 20% | 80% | Relevo profundo, dramático |
 
-**Inverter:**
+**Invertendo a imagem:**
 
-- **Desligado** (padrão): Branco = raso, Preto = profundo
-- **Ligado**: Branco = profundo, Preto = raso
-
-Use inverter para litofanias (áreas claras devem ser finas) ou embossing (áreas elevadas).
+O preto é gravado em profundidade e o branco fica raso. Para inverter, para litofanias (áreas claras
+devem ser finas) ou embossing (áreas elevadas), selecione a peça e use **Tools - Invert Image**.
+Consulte [Edição de imagens](../../addons/image-editing.md).
 
 **Faixa de Brilho:**
 
@@ -226,12 +225,19 @@ Isso é particularmente útil para:
 
 Escolha o algoritmo que melhor se adapta à sua imagem e material:
 
-| Algoritmo       | Qualidade | Velocidade  | Melhor Para                        |
-| --------------- | --------- | ----------- | ---------------------------------- |
-| Floyd-Steinberg | Mais Alta | Mais Lento  | Fotos, retratos, gradientes suaves |
-| Bayer 2x2       | Baixa     | Mais Rápido | Efeito meio-tom grosseiro          |
-| Bayer 4x4       | Média     | Rápido      | Meio-tom balanceado                |
-| Bayer 8x8       | Alta      | Médio       | Detalhe fino, padrões sutis        |
+| Algoritmo                         | Qualidade | Velocidade  | Melhor Para                                  |
+| --------------------------------- | --------- | ----------- | -------------------------------------------- |
+| Floyd-Steinberg                   | Mais Alta | Mais Lento  | Fotos, retratos, gradientes suaves           |
+| Bayer 2x2                         | Baixa     | Mais Rápido | Efeito meio-tom grosseiro                    |
+| Bayer 4x4                         | Média     | Rápido      | Meio-tom balanceado                          |
+| Bayer 8x8                         | Alta      | Médio       | Detalhe fino, padrões sutis                  |
+| Atkinson                          | Média     | Médio       | Imagens de alto contraste, madeira           |
+| Stucki                            | Mais Alta | Lento       | Retratos, tons de pele suaves                |
+| Jarvis, Judice e Ninke            | Mais Alta | Lento       | Gradientes suaves, grão fino                 |
+| Sierra (3 linhas, 2 linhas, Lite) | Alta      | Médio       | Alternativas mais leves ao Stucki            |
+| Burkes                            | Alta      | Médio       | Fotos, mais rápido que Stucki                |
+| Papel de jornal                   | Média     | Mais Rápido | Pontos agrupados no estilo jornal            |
+| Meio-tom                          | Média     | Rápido      | Pontos redondos, tamanho e ângulo ajustáveis |
 
 **Floyd-Steinberg** é padrão e recomendado para a maioria das gravações de fotos. Usa difusão de
 erro para distribuir erros de quantização para pixels vizinhos, criando resultados de aparência
@@ -239,6 +245,25 @@ natural.
 
 **Pontilhamento Bayer** cria padrões regulares que podem produzir efeitos artísticos lembrando
 impressão tradicional de meio-tom.
+
+**Stucki, Jarvis, Sierra, Burkes e Atkinson** são algoritmos de difusão de erro como o
+Floyd-Steinberg que espalham o erro por uma vizinhança maior, o que dá um grão mais uniforme em
+áreas planas como tons de pele. O Atkinson difunde só parte do erro, o que aumenta o contraste.
+**Serpentina** (ativada por padrão) alterna a direção de varredura em cada linha e evita listras
+direcionais.
+
+**Tamanho mínimo de elemento** agrupa cada linha de varredura em células antes da difusão, para que
+nenhum ponto fique menor que o número de pixels indicado. O valor automático corresponde ao tamanho
+do spot do laser, mantendo cada ponto em força total; valores menores permitem pontos mais finos,
+porém mais fracos.
+
+**Luz linear** difunde em luz linear em vez de sobre os valores sRGB brutos. Difundir sobre os
+valores sRGB mantém a cobertura de pontos no tom que a imagem mostra na tela; a luz linear grava
+tons médios notavelmente mais escuros.
+
+**Papel de jornal** e **Meio-tom** agrupam os pixels em pontos. O meio-tom desenha pontos redondos
+numa grade definida por **Tamanho da célula de meio-tom** (a distância entre os centros dos pontos)
+e **Ângulo do meio-tom**; use um tamanho de célula de pelo menos algumas larguras do ponto do laser.
 
 #### Configurações do Modo Múltiplas Profundidades
 
@@ -262,12 +287,11 @@ impressão tradicional de meio-tom.
 - Cria efeito 3D estilo malha cruzada
 - Típico: 0-45 graus
 
-**Inverter:**
+**Invertendo a imagem:**
 
-- **Habilitado:** Branco = profundo, Preto = raso
-- **Desabilitado:** Preto = profundo, Branco = raso
-
-Use inverter para litofanias (áreas claras devem ser finas) ou embossing (áreas elevadas).
+O preto é gravado em profundidade e o branco fica raso. Para inverter, para litofanias (áreas claras
+devem ser finas) ou embossing (áreas elevadas), selecione a peça e use **Tools - Invert Image**.
+Consulte [Edição de imagens](../../addons/image-editing.md).
 
 ### Padrão de Varredura
 
@@ -295,6 +319,20 @@ tem 10 pixels/mm (254 DPI), use intervalo de linha de 0.1mm ou menor.
 :::
 <!-- prettier-ignore-end -->
 
+#### Intervalo de Amostragem
+
+**Intervalo de amostragem (mm):**
+
+- Distância entre amostras ao longo de cada linha de varredura, em todos os modos de raster
+- No pontilhado define o comprimento de cada ponto; na gravação com potência modulada, a frequência
+  com que a potência muda ao longo da linha
+- Menor = mais detalhe, arquivos de saída maiores
+- O valor automático dá pontos quadrados no pontilhado (segue o intervalo de linha) e é metade da
+  largura do spot do laser nos modos com potência modulada
+
+**Recomendado:** mantenha o valor automático. Um intervalo de amostragem muito maior que o intervalo
+de linha transforma cada ponto em um traço longo, que aparece como textura visível nos gradientes.
+
 #### Direção de Varredura
 
 **Ângulo de Varredura (graus):**
@@ -320,15 +358,16 @@ Pequenas diferenças mecânicas ou de atraso de disparo entre as duas direções
 visíveis em algumas máquinas. Se você vir isso, calibre o **Deslocamento de Varredura Bidirecional**
 abaixo para corrigir diretamente, em vez de perder o benefício de velocidade.
 
-#### Deslocamento de Varredura Bidirecional
+#### Deslocamento de Varredura Bidirecional {#bidirectional-scan-offset}
 
 Corrige um desalinhamento fixo mecânico ou de atraso de disparo entre passagens raster da esquerda
 para a direita e da direita para a esquerda, que de outra forma desalinha linhas de varredura
 alternadas (visível como faixas, especialmente em gravações de fotos).
 
 - Defina em milímetros, positivo ou negativo dependendo de qual direção precisa ser deslocada
-- Aplica um deslocamento constante independentemente da velocidade; se o desalinhamento varia com a
-  velocidade, calibre para sua velocidade de gravação típica
+- Um valor diferente de zero aqui sempre prevalece; quando é 0, a etapa recorre à tabela
+  [Deslocamento de Varredura Bidirecional por Velocidade](../../machine/advanced.md#bidirectional-scan-offset-by-speed)
+  da máquina, que interpola um deslocamento para a velocidade desta etapa
 - Padrão é 0 (sem correção)
 
 **Calibrando o deslocamento:**
@@ -338,6 +377,11 @@ alternadas (visível como faixas, especialmente em gravações de fotos).
 2. Compare linhas alternadas para encontrar a direção e a quantidade do desalinhamento
 3. Ajuste o deslocamento em pequenos incrementos (0.01-0.05mm) e teste novamente até que as linhas
    alternadas se alinhem
+
+Se o desalinhamento varia notavelmente entre suas velocidades de gravação habituais, um único
+deslocamento não consegue corrigir todos os trabalhos. Deixe o deslocamento da etapa em 0 e preencha
+em vez disso uma tabela de deslocamento dependente da velocidade em
+[Configurações da Máquina - Avançado](../../machine/advanced.md#bidirectional-scan-offset-by-speed).
 
 ## Configurações do Laser
 
@@ -441,7 +485,7 @@ Veja [Overscan](../overscan.md) para detalhes.
 
 **Faixas (listras escuras/claras):**
 
-- Calibre o [Deslocamento de Varredura Bidirecional](#deslocamento-de-varredura-bidirecional)
+- Calibre o [Deslocamento de Varredura Bidirecional](#bidirectional-scan-offset)
 - Verifique tensão das correias
 - Reduza velocidade
 - Tente ângulo de varredura diferente

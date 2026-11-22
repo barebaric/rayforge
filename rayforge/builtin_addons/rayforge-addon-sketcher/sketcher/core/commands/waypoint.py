@@ -6,15 +6,15 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point as GeoPoint
+from raygeo.sketch.entities import Bezier, Line
+from raygeo.sketch.types import EntityID, WaypointType
 
-from ..entities import Bezier, Line
-from ..entities.point import WaypointType
-from ..types import EntityID
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
-    from ..entities.point import Point
-    from ..registry import EntityRegistry
+    from raygeo.sketch.entities import SketchPoint as Point
+    from raygeo.sketch.registry import EntityRegistry
+
     from ..sketch import Sketch
 
 logger = logging.getLogger(__name__)
@@ -45,7 +45,7 @@ class SetWaypointTypeCommand(SketchChangeCommand):
         super().__init__(sketch, label)
         self.waypoint_id = waypoint_id
         self.new_type = new_type
-        self._old_waypoint_type: WaypointType | None = None
+        self._old_waypoint_type: str | None = None
         self._old_bezier_states: (
             dict[int, tuple[GeoPoint | None, GeoPoint | None]] | None
         ) = None
@@ -68,7 +68,7 @@ class SetWaypointTypeCommand(SketchChangeCommand):
         point_ids = {waypoint.id}
         point_ids.update(self.sketch.get_coincident_points(waypoint.id))
 
-        for entity in registry.entities:
+        for entity in registry.entities():
             if isinstance(entity, Line):
                 if entity.p2_idx in point_ids:
                     p1 = registry.get_point(entity.p1_idx)
@@ -139,7 +139,7 @@ class SetWaypointTypeCommand(SketchChangeCommand):
         point_ids.update(self.sketch.get_coincident_points(waypoint_id))
 
         connected = []
-        for entity in registry.entities:
+        for entity in registry.entities():
             if isinstance(entity, Line) and (
                 entity.p1_idx in point_ids or entity.p2_idx in point_ids
             ):
@@ -161,7 +161,7 @@ class SetWaypointTypeCommand(SketchChangeCommand):
         """Remove Line entities and add Bezier entities in their place."""
         bezier_ids = []
         line_ids_to_remove = [lid for lid, *_ in lines]
-        registry.remove_entities_by_id(line_ids_to_remove)
+        registry.remove_entities(line_ids_to_remove)
 
         for entry in lines:
             _, p1_idx, p2_idx, construction = entry
@@ -179,11 +179,10 @@ class SetWaypointTypeCommand(SketchChangeCommand):
         bezier_ids: list[EntityID],
     ):
         """Remove Bezier entities and restore Line entities."""
-        registry.remove_entities_by_id(bezier_ids)
+        registry.remove_entities(bezier_ids)
         for line_id, p1_idx, p2_idx, construction in lines:
             new_line = Line(line_id, p1_idx, p2_idx, construction=construction)
-            registry.entities.append(new_line)
-            registry._entity_map[line_id] = new_line
+            registry.append_entity(new_line)
 
     def _do_execute(self) -> None:
         registry = self.sketch.registry
@@ -248,7 +247,7 @@ class SetWaypointTypeCommand(SketchChangeCommand):
                 if b.end_idx in point_ids and b.cp2 is None:
                     b.cp2 = cp_in
 
-        waypoint.waypoint_type = self.new_type
+        waypoint.waypoint_type = self.new_type  # type: ignore[assignment]
         waypoint.enforce_constraint(registry, self.sketch)
 
     def _do_undo(self) -> None:

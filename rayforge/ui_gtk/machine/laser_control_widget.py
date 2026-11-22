@@ -1,3 +1,4 @@
+import logging
 from gettext import gettext as _
 
 from gi.repository import Adw, GLib, Gtk
@@ -9,6 +10,8 @@ from ..icons import get_icon
 from ..shared.gtk import apply_css
 from ..shared.pref_rows.base import SpinRow
 from ..shared.slider import create_slider
+
+logger = logging.getLogger(__name__)
 
 _POWER_CSS = """
 entry.power-value {
@@ -265,7 +268,12 @@ class LaserControlWidget(Gtk.Box):
             return
 
         percent = self._power_adj.get_value() / 100.0
-        self.machine_cmd.set_focus_power(head, percent, self.machine)
+        self.machine_cmd.set_focus_power(
+            head,
+            percent,
+            self.machine,
+            when_done=lambda task: self._on_command_done(task, on=True),
+        )
 
         self._is_on = True
         self._update_toggle_ui()
@@ -287,8 +295,28 @@ class LaserControlWidget(Gtk.Box):
             and self.machine.is_connected()
             and self.machine_cmd
         ):
-            self.machine_cmd.set_focus_power(head, 0, self.machine)
+            self.machine_cmd.set_focus_power(
+                head,
+                0,
+                self.machine,
+                when_done=lambda task: self._on_command_done(task, on=False),
+            )
         self._is_on = False
+        self._update_toggle_ui()
+        self._update_sensitivity()
+
+    def _on_command_done(self, task, *, on: bool):
+        """Reverts the optimistic toggle state when the command did
+        not take effect, so the button never drifts out of sync with
+        the laser."""
+        if task.get_status() == "completed":
+            return
+        logger.warning(
+            "Laser power command did not take effect "
+            "(task status: %s); restoring toggle state.",
+            task.get_status(),
+        )
+        self._is_on = not on
         self._update_toggle_ui()
         self._update_sensitivity()
 

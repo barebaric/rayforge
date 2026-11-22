@@ -16,16 +16,17 @@ Konfigurations-Assistenten und den Aufbau einer Verbindung.
 Starte Rayforge aus deinem Anwendungsmenü oder indem du `rayforge` in einem Terminal ausführst. Beim
 ersten Start — wenn noch keine echte Maschine konfiguriert wurde — öffnet sich der
 Konfigurations-Assistent automatisch, damit du deine Maschine einrichten kannst, ohne durch Menüs zu
-suchen. (Du kannst ihn jederzeit später über **Einstellungen → Maschinen → Add Machine** öffnen.)
+suchen. (Du kannst ihn jederzeit später über **Maschine → Manage Machines…** und einem Klick auf
+**Add Machine** öffnen.)
 
 ## Schritt 2: Eine Maschine mit dem Assistenten erstellen
 
-Navigiere zu **Einstellungen → Maschinen** oder drücke <kbd>ctrl+comma</kbd>, um den
-Einstellungsdialog zu öffnen, und wähle dann die Seite **Maschinen**.
+Öffne im Hauptfenster **Maschine → Manage Machines…** (oder drücke <kbd>ctrl+comma</kbd> und öffne
+die Seite **Maschinen**) und klicke auf **Add Machine**.
 
 ![Maschineneinstellungen](/screenshots/app-settings-machines.webp)
 
-Klicke auf **Add Machine**, um die Maschinenauswahl zu öffnen.
+Die Maschinenauswahl öffnet sich mit den integrierten Geräteprofilen.
 
 ![Maschine hinzufügen Dialog](/screenshots/app-settings-machines-add.webp)
 
@@ -50,8 +51,8 @@ Der Assistent kann Geräte für dich entdecken, anstatt dass du einen Ausgangspu
 von Hand ausfüllen musst:
 
 - **USB-Seriellgeräte** werden aufgelistet, sobald sie erscheinen.
-- **Netzwerkgeräte** werden über mDNS entdeckt: OctoPrint-Server und ESP3D-Boards erscheinen neben
-  den USB-Seriellgeräten.
+- **Netzwerkgeräte** werden über mDNS entdeckt: OctoPrint-Server, ESP3D-Boards und grblHAL-Boards,
+  die sich über `_telnet._tcp` ankündigen, erscheinen neben den USB-Seriellgeräten.
 - Erkannte Geräte werden **mit eingebauten Profilen abgeglichen**, wenn ein zuverlässiger Treffer
   gefunden wird, sodass du oft nur die erkannten Einstellungen bestätigen musst, anstatt sie
   einzugeben.
@@ -59,6 +60,13 @@ von Hand ausfüllen musst:
   OctoPrint/Smoothieware werden über das Netzwerk abgefragt.
 - Geräte, die du bereits konfiguriert hast, werden als **nur lesen** angezeigt, damit du
   versehentlich keine Duplizate erstellst.
+
+- **grblHAL-Boards über Telnet** werden mit dem `$I`-Befehl bestätigt, bevor sie aufgelistet werden.
+  Boards, deren Firmware sich nicht per mDNS ankündigt, werden durch einen schmalen Subnetz-Scan
+  (nur Telnet-Port, begrenzte Parallelität) gefunden, der zusammen mit den Serial- und mDNS-Scans
+  läuft.
+
+![Assistent — Geräte erkennen](/screenshots/config-wizard-discover.webp)
 
 Klicke auf ein erkanntes Gerät, um den Assistenten vorzufüllen, oder wähle manuell einen
 Ausgangspunkt wie unten beschrieben.

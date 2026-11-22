@@ -14,6 +14,7 @@ from ...context import get_context
 from ...shared.util.versioning import UnknownVersion
 from ..icons import get_icon
 from ..shared.preferences_group import PreferencesGroupWithButton
+from .addon_detail_dialog import AddonDetailDialog
 from .addon_dialog import AddonRegistryDialog
 from .experimental_dialog import ExperimentalAddonDialog
 from .license_dialog import LicenseRequiredDialog
@@ -99,6 +100,9 @@ class AddonRow(Gtk.Box):
             if self.is_builtin:
                 icon = get_icon("addon-builtin-symbolic")
                 icon.set_tooltip_text(_("Built-in addon"))
+            elif not addon.metadata.is_official:
+                icon = get_icon("addon-community-symbolic")
+                icon.set_tooltip_text(_("Community addon"))
             else:
                 icon = get_icon("addon-symbolic")
             icon.set_valign(Gtk.Align.CENTER)
@@ -210,11 +214,19 @@ class AddonListWidget(PreferencesGroupWithButton):
         placeholder.add_css_class("dim-label")
         self.list_box.set_placeholder(placeholder)
         self.list_box.set_show_separators(True)
+        self.list_box.connect("row-activated", self._on_row_activated)
 
         self.populate_addons()
 
         self.install_started = Signal()
         self.install_finished = Signal()
+
+    def set_external_services_enabled(self, enabled: bool):
+        self.add_button.set_sensitive(enabled)
+        tooltip = None
+        if not enabled:
+            tooltip = _("Enable external addon services to install addons")
+        self.add_button.set_tooltip_text(tooltip)
 
     def populate_addons(self):
         """Refreshes the list of addons."""
@@ -252,6 +264,7 @@ class AddonListWidget(PreferencesGroupWithButton):
                 am.loaded_addons.get(name)
                 or am.disabled_addons.get(name)
                 or am.incompatible_addons.get(name)
+                or am._load_error_addons.get(name)
             )
             if addon:
                 is_builtin = not addon.root_path.is_relative_to(am.install_dir)
@@ -278,8 +291,24 @@ class AddonListWidget(PreferencesGroupWithButton):
             is_builtin,
         )
 
+    def _on_row_activated(self, _list_box, row):
+        """Opens the detail view when the user clicks an addon row."""
+        addon = getattr(row.get_child(), "addon", None)
+        if addon is None:
+            return
+        dialog = AddonDetailDialog(
+            cast(Gtk.Window, self.get_root()),
+            addon.metadata,
+            on_install=lambda meta, _update: self._install_addon(meta),
+            on_unlock=lambda _meta: self._on_unlock_addon(addon),
+        )
+        dialog.present()
+
     def _on_add_clicked(self, button):
         """Opens the registry dialog."""
+        if not get_context().config.external_addon_services_enabled:
+            self._show_info(_("External addon services are disabled."))
+            return
         root = cast(Gtk.Window, self.get_root())
         dialog = AddonRegistryDialog(root, self._install_addon)
         dialog.present()
@@ -327,7 +356,11 @@ class AddonListWidget(PreferencesGroupWithButton):
             if result_path:
                 self.populate_addons()
             else:
-                self._show_error(_("Failed to install addon."))
+                detail = context.addon_mgr.get_last_install_error()
+                message = _("Failed to install addon.")
+                if detail:
+                    message = f"{message}\n\n{detail}"
+                self._show_error(message)
 
         def _thread_target():
             result = _worker()
@@ -431,6 +464,9 @@ class AddonListWidget(PreferencesGroupWithButton):
 
     def _on_unlock_addon(self, addon: Addon):
         """Handle unlock button click for license-required addon."""
+        if not get_context().config.external_addon_services_enabled:
+            self._show_info(_("External addon services are disabled."))
+            return
         license_config = addon.metadata.license
         if not license_config:
             return

@@ -2,6 +2,12 @@ import logging
 from gettext import gettext as _
 from typing import Any, cast
 
+from raydriver.core.discovery.fingerprints import TcpFingerprint
+from raydriver.core.discovery.spec import (
+    DiscoverySpec,
+    MdnsRecognizer,
+    TcpRecognizer,
+)
 from raydriver.grbl import GrblSession
 
 from ....core.varset import HostnameVar, PortVar, Var, VarSet
@@ -23,12 +29,28 @@ class GrblTelnetDriver(GrblSerialDriver):
     driver.
     """
 
-    label = _("GRBL (Telnet)")
-    subtitle = _("GRBL-compatible controller over a raw TCP/telnet connection")
+    label = _("grblHAL (Telnet)")
+    subtitle = _(
+        "Raw TCP/telnet connection (grblHAL networking, ESP3D telnet bridge)"
+    )
     # Serial-port discovery is inherited from GrblSerialDriver but
     # makes no sense here: a telnet connection has no serial port and
-    # must not claim devices found on one.
-    DISCOVERY = None
+    # must not claim devices found on one. grblHAL builds with LWIP
+    # mDNS announce _telnet._tcp, so that fast path is fingerprinted
+    # with $I -> [VER: before a board is claimed. Boards whose firmware
+    # announces nothing stay discoverable through raydriver's subnet
+    # scan, which probes the raw telnet port with the same
+    # confirmation.
+    DISCOVERY = DiscoverySpec(
+        mdns=MdnsRecognizer(
+            fingerprint_services=("_telnet._tcp",),
+            fingerprint=TcpFingerprint(
+                probe_command="$I\n",
+                match_prefix="[VER:",
+            ),
+        ),
+        tcp=TcpRecognizer(port=23, probe_command="$I\n", match_prefix="[VER:"),
+    )
 
     @classmethod
     def precheck(cls, **kwargs: Any) -> None:
@@ -44,7 +66,7 @@ class GrblTelnetDriver(GrblSerialDriver):
             vars=[
                 HostnameVar(
                     key="host",
-                    label=_("Hostname"),
+                    label=_("Hostname or IP address"),
                     description=_("The IP address or hostname of the device"),
                 ),
                 PortVar(

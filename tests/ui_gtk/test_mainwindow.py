@@ -12,6 +12,7 @@ import pytest
 
 from rayforge.context import get_context
 from rayforge.core.workpiece import WorkPiece
+from rayforge.machine.models.machine import Machine
 
 # Platform-Specific Setup
 if sys.platform.startswith("linux"):
@@ -248,6 +249,56 @@ def test_click_to_move_shifted_with_alignment(app_and_window, mocker):
 
 
 @pytest.mark.ui
+def test_click_to_move_shifted_with_alignment_workarea_origin(
+    app_and_window, mocker
+):
+    """Click-to-move keeps the pointer shift when the workarea origin
+    is the active reference."""
+    _app, win = app_and_window
+    machine = get_context().config.machine
+    assert machine is not None
+    _enable_pointer_alignment(machine)
+    machine.set_wcs_origin_is_workarea_origin(True)
+    machine.set_work_margins(5.0, 7.0, 0.0, 0.0)
+    machine.set_gcode_precision(2)
+
+    move_to = mocker.patch.object(win.machine_cmd, "move_to")
+
+    win._on_move_head_requested(None, x=100.126, y=50.124)
+
+    move_to.assert_called_once()
+    args = move_to.call_args.args
+    assert args[0] is machine
+    assert args[1] == pytest.approx(85.13)
+    assert args[2] == pytest.approx(30.12)
+
+
+@pytest.mark.ui
+def test_move_head_here_shifted_with_alignment_workarea_origin(
+    app_and_window, mocker
+):
+    """Move-Head-Here keeps the pointer shift when the workarea origin
+    is the active reference."""
+    _app, win = app_and_window
+    machine = get_context().config.machine
+    assert machine is not None
+    _enable_pointer_alignment(machine)
+    machine.set_wcs_origin_is_workarea_origin(True)
+    machine.set_work_margins(5.0, 7.0, 0.0, 0.0)
+    win.surface.right_click_machine_pos = (100.0, 50.0)
+
+    move_to = mocker.patch.object(win.machine_cmd, "move_to")
+
+    win.on_move_head_here_clicked(None, None)
+
+    move_to.assert_called_once()
+    args = move_to.call_args.args
+    assert args[0] is machine
+    assert args[1] == pytest.approx(85.0)
+    assert args[2] == pytest.approx(30.0)
+
+
+@pytest.mark.ui
 def test_click_to_set_work_origin_uses_machine_precision(
     app_and_window, mocker
 ):
@@ -288,3 +339,66 @@ def test_move_head_here_shifted_with_alignment(app_and_window, mocker):
     assert args[0] is machine
     assert args[1] == pytest.approx(90.0)
     assert args[2] == pytest.approx(30.0)
+
+
+def _add_machine(mgr, context, name: str) -> Machine:
+    machine = Machine(context)
+    machine.name = name
+    machine.auto_connect = False
+    mgr.add_machine(machine)
+    return machine
+
+
+@pytest.mark.ui
+def test_machine_menu_lists_machines(app_and_window):
+    """The Machine menu lists every configured machine, sorted by name."""
+    _app, win = app_and_window
+    context = get_context()
+    mgr = context.machine_mgr
+    machine_b = _add_machine(mgr, context, "Machine B")
+    machine_a = _add_machine(mgr, context, "Machine A")
+    context.config.set_machine(machine_a)
+    process_events_for_duration(0.3)
+
+    section = win.menu_model.dynamic_machines_section
+    labels = [
+        section.get_item_attribute_value(i, "label", None).get_string()
+        for i in range(section.get_n_items())
+    ]
+    assert len(labels) == len(mgr.get_machines())
+    assert {machine_a.name, machine_b.name} <= set(labels)
+    assert labels == sorted(labels)
+
+    action = win.action_manager.get_action("select-machine")
+    assert action.get_state().get_string() == machine_a.id
+
+
+@pytest.mark.ui
+def test_machine_menu_selection_switches_active_machine(app_and_window):
+    """Activating a machine entry makes that machine the active one."""
+    _app, win = app_and_window
+    context = get_context()
+    mgr = context.machine_mgr
+    machine_a = _add_machine(mgr, context, "Machine A")
+    machine_b = _add_machine(mgr, context, "Machine B")
+    context.config.set_machine(machine_a)
+    process_events_for_duration(0.3)
+
+    action = win.action_manager.get_action("select-machine")
+    action.activate(GLib.Variant.new_string(machine_b.id))
+    process_events_for_duration(0.8)
+
+    assert context.config.machine is machine_b
+    assert action.get_state().get_string() == machine_b.id
+
+
+@pytest.mark.ui
+def test_machine_manage_action_opens_machines_page(app_and_window, mocker):
+    """The Manage Machines entry opens Settings on the Machines page."""
+    _app, win = app_and_window
+    settings_cls = mocker.patch("rayforge.ui_gtk.mainwindow.SettingsWindow")
+
+    win.action_manager.get_action("machine-manage").activate(None)
+
+    settings_cls.assert_called_once()
+    assert settings_cls.call_args.kwargs["initial_page"] == "machines"

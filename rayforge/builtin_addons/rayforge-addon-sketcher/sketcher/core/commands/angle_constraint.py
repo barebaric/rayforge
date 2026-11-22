@@ -7,12 +7,11 @@ from typing import TYPE_CHECKING
 
 from raygeo.geo.shape.arc import normalize_angle
 from raygeo.geo.shape.line import get_line_line_intersection
-
-from ..entities import Line
-from ..types import EntityID
+from raygeo.sketch.entities import Line
+from raygeo.sketch.types import EntityID
 
 if TYPE_CHECKING:
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
 
 logger = logging.getLogger(__name__)
 

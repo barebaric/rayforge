@@ -1,5 +1,5 @@
 import pytest
-from sketcher.core.snap.types import (
+from raygeo.sketch.snap.types import (
     SNAP_LINE_STYLES,
     DragContext,
     SnapLine,
@@ -286,3 +286,10 @@ def test_snap_line_style_frozen():
     style = SnapLineStyle()
     with pytest.raises(AttributeError):
         style.color = (1.0, 0.0, 0.0, 1.0)  # type: ignore
+
+
+def test_drag_context_preview_entities():
+    """Preview entities are distinct from dragged entities."""
+    context = DragContext(preview_entity_ids={7})
+    assert context.is_preview_entity(7) is True
+    assert context.is_entity_dragged(7) is False

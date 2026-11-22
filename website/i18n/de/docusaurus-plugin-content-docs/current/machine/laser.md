@@ -83,6 +83,8 @@ Die physische Größe deines fokussierten Laserstrahls in Millimetern.
 
 - Gib sowohl X- als auch Y-Abmessungen ein
 - Die meisten Laser haben einen runden Punkt (z.B. 0.1 x 0.1)
+- Legt die Standard-Schnittbreitenkompensation der Kontur fest: Offset X verwendet die halbe
+  X-Punktgröße, Offset Y die halbe Y-Punktgröße
 - Beeinflusst Gravurqualitäts-Berechnungen
 
 <!-- prettier-ignore-start -->
@@ -201,8 +203,8 @@ Der typische Arbeitsablauf:
 5. Wenn du auf **Senden** drückst, erscheint eine Warnung: Ein normaler Job brennt mit dem Strahl an
    den WKS-Positionen. Du kannst einen **Probelauf mit Zeiger** ausführen (der Job läuft mit
    angewendetem Zeiger-Offset, sodass der Zeigerpunkt den Werkzeugpfad nachzeichnet, während der
-   Strahl verschoben läuft — er brennt weiterhin mit Job-Leistung), die Ausrichtung ausschalten und
-   brennen oder abbrechen.
+   Strahl verschoben läuft — er brennt weiterhin mit Job-Leistung), **Mit Strahl brennen** (die
+   Ausrichtung bleibt für das anschließende Anvisieren aktiv) oder abbrechen.
 
 Zwei Dinge werden bei einem normalen Senden nie verschoben: **Jog** (eine relative Bewegung braucht
 keine Kompensation) und **Jobs** — Schneiden passiert immer mit dem Strahl an den WKS-Positionen,

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import base64
+import hashlib
 import logging
 import uuid
-from collections import OrderedDict
 from dataclasses import dataclass, field
 from gettext import gettext as _
 from pathlib import Path
@@ -12,9 +12,14 @@ from typing import TYPE_CHECKING, Any, ClassVar
 import pyvips
 from blinker import Signal
 
+from ..shared.util.cache import LruCache
 from .asset import IAsset
+from .image_cache import new_image_cache
 
 logger = logging.getLogger(__name__)
+
+SOURCE_FILE_SHA256_KEY = "source_file_sha256"
+SOURCE_FILE_SIZE_KEY = "source_file_size"
 
 if TYPE_CHECKING:
     from ..image.base_renderer import Renderer
@@ -48,13 +53,18 @@ class SourceAsset(IAsset):
     height_px: int | None = None
     width_mm: float = 0.0
     height_mm: float = 0.0
+    auto_reload: bool = False
     _uid: str = field(init=False, default_factory=lambda: str(uuid.uuid4()))
     _name: str = field(init=False, repr=False)
     _hidden: bool = field(init=False, default=False)
     _updated: Signal = field(init=False, default_factory=Signal)
     extra: dict[str, Any] = field(default_factory=dict)
-    _base_image_cache: OrderedDict = field(
-        init=False, default_factory=OrderedDict, repr=False
+    _base_image_cache: LruCache = field(
+        init=False,
+        default_factory=lambda: new_image_cache(
+            SourceAsset._BASE_IMAGE_CACHE_MAX_SIZE
+        ),
+        repr=False,
     )
 
     _BASE_IMAGE_CACHE_MAX_SIZE: ClassVar[int] = 10
@@ -72,15 +82,51 @@ class SourceAsset(IAsset):
         self, data_id: int, width: int, height: int, image: pyvips.Image
     ) -> None:
         key = (data_id, width, height)
-        if key in self._base_image_cache:
-            self._base_image_cache.move_to_end(key)
-        else:
-            self._base_image_cache[key] = image
-        while len(self._base_image_cache) > self._BASE_IMAGE_CACHE_MAX_SIZE:
-            self._base_image_cache.popitem(last=False)
+        if self._base_image_cache.get(key) is None:
+            self._base_image_cache.put(key, image)
 
     def clear_base_image_cache(self) -> None:
         self._base_image_cache.clear()
+
+    def set_source_file_fingerprint(self, data: bytes) -> None:
+        """
+        Records the SHA-256 and size of the file as it was on disk.
+
+        Importers that convert a file before embedding it (for example EPS
+        to PDF) call this with the original bytes, so the file on disk can
+        still be recognised although ``original_data`` holds the
+        converted data.
+        """
+        self.metadata[SOURCE_FILE_SHA256_KEY] = hashlib.sha256(
+            data
+        ).hexdigest()
+        self.metadata[SOURCE_FILE_SIZE_KEY] = len(data)
+
+    @property
+    def source_file_sha256(self) -> str:
+        """
+        The SHA-256 (hex) of the imported file as it was on disk. Falls
+        back to the embedded data, which is the file itself for every
+        source that was not converted, and for older projects.
+        """
+        digest = self.metadata.get(SOURCE_FILE_SHA256_KEY)
+        if isinstance(digest, str):
+            return digest
+        return hashlib.sha256(self.original_data).hexdigest()
+
+    @property
+    def source_file_size(self) -> int:
+        """The size in bytes of the imported file as it was on disk."""
+        size = self.metadata.get(SOURCE_FILE_SIZE_KEY)
+        if isinstance(size, int):
+            return size
+        return len(self.original_data)
+
+    def matches_source_file(self, data: bytes) -> bool:
+        """True if the bytes are those of the file this asset came from."""
+        if len(data) != self.source_file_size:
+            return False
+        return hashlib.sha256(data).hexdigest() == self.source_file_sha256
 
     @property
     def uid(self) -> str:
@@ -165,6 +211,7 @@ class SourceAsset(IAsset):
             "width_mm": self.width_mm,
             "height_mm": self.height_mm,
             "hidden": self._hidden,
+            "auto_reload": self.auto_reload,
         }
         result.update(self.extra)
         return result
@@ -190,6 +237,7 @@ class SourceAsset(IAsset):
             "width_mm",
             "height_mm",
             "hidden",
+            "auto_reload",
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
 
@@ -224,6 +272,7 @@ class SourceAsset(IAsset):
             height_px=data.get("height_px"),
             width_mm=data.get("width_mm", 0.0),
             height_mm=data.get("height_mm", 0.0),
+            auto_reload=data.get("auto_reload", False),
         )
         if "uid" in data:
             instance._uid = data["uid"]

@@ -3,8 +3,9 @@ from __future__ import annotations
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
-from ..entities import Bezier, Line
-from ..types import EntityID
+from raygeo.sketch.entities import Bezier, Line
+from raygeo.sketch.types import EntityID
+
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
@@ -56,9 +57,7 @@ class StraightenBezierCommand(SketchChangeCommand):
             bezier.construction,
         )
 
-        registry.remove_entities_by_id([bezier.id])
-        registry.entities.append(line)
-        registry._entity_map[line.id] = line
+        registry.replace_entity(bezier.id, line)
 
     def _do_undo(self) -> None:
         if self._old_bezier is None:
@@ -80,7 +79,4 @@ class StraightenBezierCommand(SketchChangeCommand):
 
         bezier = Bezier(bezier_id, start_idx, end_idx, construction, cp1, cp2)
 
-        registry.entities.remove(line)
-        del registry._entity_map[bezier_id]
-        registry.entities.append(bezier)
-        registry._entity_map[bezier_id] = bezier
+        registry.replace_entity(bezier_id, bezier)

@@ -4,8 +4,7 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
 from raygeo.geo.types import Point as GeoPoint
-
-from ..constraints import (
+from raygeo.sketch.constraints import (
     DistanceConstraint,
     EqualDistanceConstraint,
     EqualLengthConstraint,
@@ -14,14 +13,17 @@ from ..constraints import (
     TangentConstraint,
     VerticalConstraint,
 )
-from ..entities import Arc, Line, Point
-from ..types import EntityID
+from raygeo.sketch.entities import Arc, Line
+from raygeo.sketch.entities import SketchPoint as Point
+from raygeo.sketch.types import EntityID
+
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData
 from .items import AddItemsCommand
 
 if TYPE_CHECKING:
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
+
     from ..sketch import Sketch
 
 
@@ -60,6 +62,13 @@ class RoundedRectPreviewState(PreviewState):
             if pid is not None:
                 result.add(pid)
         return result
+
+    def get_preview_entity_ids(self) -> set[EntityID]:
+        return {
+            value
+            for key, value in self.preview_ids.items()
+            if key.startswith(("line", "arc"))
+        }
 
     def set_dimensions(
         self,
@@ -510,25 +519,25 @@ class RoundedRectCommand(SketchChangeCommand):
                 preview_ids["t8"],
                 preview_ids["t1"],
                 preview_ids["c1"],
-                cw=is_cw,
+                clockwise=is_cw,
             )
             preview_ids["arc2"] = registry.add_arc(
                 preview_ids["t2"],
                 preview_ids["t3"],
                 preview_ids["c2"],
-                cw=is_cw,
+                clockwise=is_cw,
             )
             preview_ids["arc3"] = registry.add_arc(
                 preview_ids["t4"],
                 preview_ids["t5"],
                 preview_ids["c3"],
-                cw=is_cw,
+                clockwise=is_cw,
             )
             preview_ids["arc4"] = registry.add_arc(
                 preview_ids["t6"],
                 preview_ids["t7"],
                 preview_ids["c4"],
-                cw=is_cw,
+                clockwise=is_cw,
             )
         else:
             # Update existing preview geometry
@@ -691,12 +700,12 @@ class RoundedRectCommand(SketchChangeCommand):
 
         entity_ids_to_remove = {
             e.id
-            for e in registry.entities
+            for e in registry.entities()
             if any(pid in point_ids for pid in e.get_point_ids())
         }
-        registry.remove_entities_by_id(list(entity_ids_to_remove))
+        registry.remove_entities(list(entity_ids_to_remove))
 
-        registry.points = [p for p in registry.points if p.id not in point_ids]
+        registry.remove_points(list(point_ids))
 
     def _do_execute(self) -> None:
         if self.add_cmd:
@@ -727,7 +736,7 @@ class RoundedRectCommand(SketchChangeCommand):
 
         points_to_add = result["points"]
         if self.is_start_temp:
-            reg.points.remove(start_p)
+            reg.remove_points([start_p.id])
             # Unlike Rectangle, RoundedRect doesn't use the start_pid in its
             # final geometry, so we just remove it.
 

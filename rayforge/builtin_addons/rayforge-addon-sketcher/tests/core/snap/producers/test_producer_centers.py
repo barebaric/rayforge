@@ -1,7 +1,7 @@
 import pytest
-from sketcher.core.registry import EntityRegistry
-from sketcher.core.snap.producers.centers import CentersProducer
-from sketcher.core.snap.types import DragContext, SnapLineType
+from raygeo.sketch.registry import EntityRegistry
+from raygeo.sketch.snap.producers.centers import CentersProducer
+from raygeo.sketch.snap.types import DragContext, SnapLineType
 
 
 @pytest.fixture

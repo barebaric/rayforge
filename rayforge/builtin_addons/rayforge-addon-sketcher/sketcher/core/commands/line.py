@@ -5,16 +5,18 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point as GeoPoint
+from raygeo.sketch.constraints import DistanceConstraint
+from raygeo.sketch.entities import Line
+from raygeo.sketch.entities import SketchPoint as Point
+from raygeo.sketch.types import EntityID
 
-from ..constraints import DistanceConstraint
-from ..entities import Line, Point
-from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData
 from .items import AddItemsCommand
 
 if TYPE_CHECKING:
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
+
     from ..sketch import Sketch
 
 
@@ -41,6 +43,9 @@ class LinePreviewState(PreviewState):
         Excludes the start point since it may be permanent.
         """
         return {self.end_id}
+
+    def get_preview_entity_ids(self) -> set[EntityID]:
+        return {self.entity_id}
 
     def set_length(self, registry: EntityRegistry, length: float) -> None:
         """
@@ -212,19 +217,10 @@ class LineCommand(SketchChangeCommand):
             raise TypeError("Expected LinePreviewState")
 
         if preview_state.entity_id is not None:
-            registry.entities = [
-                e for e in registry.entities if e.id != preview_state.entity_id
-            ]
-            registry._entity_map = {
-                k: v
-                for k, v in registry._entity_map.items()
-                if k != preview_state.entity_id
-            }
+            registry.remove_entities([preview_state.entity_id])
 
         if preview_state.end_id is not None:
-            registry.points = [
-                p for p in registry.points if p.id != preview_state.end_id
-            ]
+            registry.remove_points([preview_state.end_id])
 
     def _do_execute(self) -> None:
         if self.add_cmd:
@@ -249,7 +245,7 @@ class LineCommand(SketchChangeCommand):
         end_pid = self.end_pid
 
         if end_pid is None:
-            temp_id = registry._id_counter
+            temp_id = registry.next_id()
             end_pid = temp_id
             new_point = Point(temp_id, final_x, final_y)
 
@@ -258,7 +254,7 @@ class LineCommand(SketchChangeCommand):
                 self.sketch.remove_point_if_unused(self.start_id)
             return
 
-        temp_line_id = registry._id_counter + (1 if new_point else 0)
+        temp_line_id = registry.next_id() + (1 if new_point else 0)
         new_line = Line(temp_line_id, self.start_id, end_pid)
 
         points_to_add: list[Point] = [new_point] if new_point else []
@@ -266,7 +262,7 @@ class LineCommand(SketchChangeCommand):
         if self.is_start_temp:
             try:
                 p = registry.get_point(self.start_id)
-                registry.points.remove(p)
+                registry.remove_points([p.id])
                 points_to_add.append(p)
             except (IndexError, ValueError):
                 pass

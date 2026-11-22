@@ -55,11 +55,21 @@ git rebase upstream/main
    git push origin feature/your-feature-name
    ```
 
-2. Create a pull request on GitHub with:
-   - A clear title describing the change
-   - A detailed description of what you changed and why
+2. Create a pull request on GitHub and fill out the pull request template:
+   - A clear title and a description of the change and the problem it solves
+   - Why you chose your specific architectural approach and which alternatives you rejected
+   - The exact steps you used to test the change locally
    - Reference to any related issues
    - Screenshots if the change affects the UI
+   - Every checkbox in the template's checklist ticked
+
+<!-- prettier-ignore-start -->
+:::warning[Template Enforcement]
+Pull requests that do not fill out the template are closed automatically by a
+bot. Edit the pull request description to answer every section and to tick
+every checkbox — the pull request is then reopened automatically.
+:::
+<!-- prettier-ignore-end -->
 
 ## Code Review Process
 
@@ -76,6 +86,14 @@ Pull requests are merged when they:
 - [ ] Include appropriate tests for new functionality
 - [ ] Have documentation updates if needed
 - [ ] Are approved by at least one maintainer
+
+## AI-Assisted Code
+
+We welcome the use of AI tools to help write code. However, you are strictly responsible for the
+code you submit. You MUST fully understand it and must be able to explain the architectural choices.
+
+AI-generated code often introduces subtle bugs, architectural mismatches, and security flaws. Pull
+requests that appear to be raw, unreviewed AI output will be closed to respect maintainer time.
 
 ## Additional Guidelines
 

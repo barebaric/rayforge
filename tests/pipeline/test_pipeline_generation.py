@@ -260,6 +260,86 @@ class TestPipelineGeneration:
         await asyncio.to_thread(task_mgr.wait_until_settled, 5000)
 
     @pytest.mark.asyncio
+    async def test_generate_job_artifact_with_stale_step_selection(
+        self,
+        doc,
+        real_workpiece,
+        task_mgr,
+        context_initializer,
+        contour_step_class,
+    ):
+        """A step whose workpiece selection matches no workpiece must
+        fail the request with a clear error instead of waiting forever
+        for a job node that the builder never emits (#596)."""
+        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
+        assert layer.workflow is not None
+        step = contour_step_class.create(context_initializer)
+        layer.workflow.add_step(step)
+        step.workpiece_uids = ["00000000-0000-0000-0000-000000000000"]
+
+        pipeline = Pipeline(
+            doc,
+            task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
+
+        with pytest.raises(RuntimeError, match="no visible steps"):
+            await asyncio.wait_for(
+                pipeline.generate_job_artifact_async(), timeout=10
+            )
+
+        await pipeline.wait_until_idle()
+        await asyncio.to_thread(task_mgr.wait_until_settled, 5000)
+
+    @pytest.mark.asyncio
+    async def test_generate_job_artifact_fails_when_rebuild_has_no_job(
+        self,
+        doc,
+        real_workpiece,
+        task_mgr,
+        context_initializer,
+        contour_step_class,
+        monkeypatch,
+    ):
+        """When a rebuild settles without ever emitting
+        job_generation_finished, the request must fail instead of
+        leaving send/frame wedged forever (#596)."""
+        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
+        assert layer.workflow is not None
+        step = contour_step_class.create(context_initializer)
+        layer.workflow.add_step(step)
+
+        pipeline = Pipeline(
+            doc,
+            task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
+        await asyncio.to_thread(task_mgr.wait_until_settled, 5000)
+
+        class _EmptyBuilder:
+            def __init__(self, **kwargs):
+                pass
+
+            def build(self, doc_arg):
+                return []
+
+        monkeypatch.setattr(
+            "rayforge.pipeline.intent_controller.IntentBuilder",
+            _EmptyBuilder,
+        )
+        pipeline.invalidate_job_output()
+
+        with pytest.raises(RuntimeError, match="did not produce a result"):
+            await asyncio.wait_for(
+                pipeline.generate_job_artifact_async(), timeout=10
+            )
+
+        await pipeline.wait_until_idle()
+        await asyncio.to_thread(task_mgr.wait_until_settled, 5000)
+
+    @pytest.mark.asyncio
     async def test_generate_job_artifact_async_already_running(
         self,
         doc,

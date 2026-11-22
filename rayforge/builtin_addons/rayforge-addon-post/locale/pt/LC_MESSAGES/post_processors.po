@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-03 16:38+0200\n"
+"POT-Creation-Date: 2026-11-11 13:48+0100\n"
 "PO-Revision-Date: 2026-03-18 23:38+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -34,6 +34,30 @@ msgid "Keep the first workpiece at its original position"
 msgstr "Manter a primeira peça de trabalho em sua posição original"
 
 #: post_processors/widgets/optimize_group.py
+msgid "Choose Best Start Point"
+msgstr "Escolher Melhor Ponto de Início"
+
+#: post_processors/widgets/optimize_group.py
+msgid ""
+"Start closed paths at the vertex nearest the laser head to shorten travel "
+"moves."
+msgstr ""
+"Inicia os percursos fechados no vértice mais próximo da cabeça do laser para "
+"encurtar os movimentos de deslocação."
+
+#: post_processors/widgets/optimize_group.py
+msgid "Prefer Corners"
+msgstr "Preferir Cantos"
+
+#: post_processors/widgets/optimize_group.py
+msgid ""
+"Start closed paths at a sharp corner where the path has one, which makes the "
+"seam less visible."
+msgstr ""
+"Inicia os percursos fechados num canto pronunciado quando o percurso tem um, "
+"o que torna a costura menos visível."
+
+#: post_processors/widgets/optimize_group.py
 msgid "Merge Scanlines"
 msgstr "Mesclar linhas de varredura"
 
@@ -58,6 +82,20 @@ msgstr ""
 "aceleração da máquina"
 
 #: post_processors/widgets/optimize_group.py
+msgid "Reorder Scan Lines"
+msgstr "Reordenar linhas de varredura"
+
+#: post_processors/widgets/optimize_group.py
+msgid ""
+"Reorder raster scan lines for shorter travel. Raster rows normally keep "
+"their order: reordering makes the machine hop its Y axis between rows, which "
+"can cause banding."
+msgstr ""
+"Reordena as linhas de varredura do raster para encurtar os deslocamentos. As "
+"linhas do raster normalmente mantêm sua ordem: a reordenação faz a máquina "
+"saltar o eixo Y entre as linhas, o que pode causar bandas."
+
+#: post_processors/widgets/optimize_group.py
 msgid "Toggle Flipping"
 msgstr "Alternar Inversão"
 
@@ -66,8 +104,20 @@ msgid "Toggle Preserve First Workpiece"
 msgstr "Alternar Preservação da Primeira Peça de Trabalho"
 
 #: post_processors/widgets/optimize_group.py
+msgid "Toggle Choose Best Start Point"
+msgstr "Alternar Escolha de Melhor Ponto de Início"
+
+#: post_processors/widgets/optimize_group.py
+msgid "Toggle Prefer Corners"
+msgstr "Alternar Preferência por Cantos"
+
+#: post_processors/widgets/optimize_group.py
 msgid "Change maximum bridged gap"
 msgstr "Alterar o espaço máximo atravessado"
+
+#: post_processors/widgets/optimize_group.py
+msgid "Toggle Reorder Scan Lines"
+msgstr "Alternar Reordenação de Linhas de Varredura"
 
 #: post_processors/widgets/overscan_group.py
 msgid "This machine adds overscan automatically; the setting has no effect."
@@ -206,6 +256,30 @@ msgstr "Alterar distância de entrada"
 msgid "Change Lead-Out Distance"
 msgstr "Alterar distância de saída"
 
+#: post_processors/widgets/perforation_group.py
+msgid "Cut Length"
+msgstr "Comprimento de corte"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Distance the laser fires before each gap"
+msgstr "Distância que o laser permanece ligado antes de cada espaço"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Skip Length"
+msgstr "Comprimento de salto"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Distance travelled with the laser off between cuts"
+msgstr "Distância percorrida com o laser desligado entre cortes"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Change perforation cut length"
+msgstr "Alterar comprimento de corte da perfuração"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Change perforation skip length"
+msgstr "Alterar comprimento de salto da perfuração"
+
 #: post_processors/widgets/merge_lines_group.py
 msgid "Tolerance"
 msgstr "Tolerância"
@@ -261,6 +335,17 @@ msgstr "Fundir linhas"
 #: post_processors/transformers/merge_lines_transformer.py
 msgid "Merges overlapping lines to avoid double passing."
 msgstr "Funde linhas sobrepostas para evitar passagens duplas."
+
+#: post_processors/transformers/perforation_transformer.py
+msgid "Perforation"
+msgstr "Perfuração"
+
+#: post_processors/transformers/perforation_transformer.py
+msgid ""
+"Cuts in dashes: the laser fires for the cut length and skips the skip length"
+msgstr ""
+"Corta em traços: o laser liga durante o comprimento de corte e desliga "
+"durante o comprimento de salto"
 
 #: post_processors/transformers/overscan_transformer.py
 msgid "Overscan"

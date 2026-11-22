@@ -18,7 +18,7 @@ from ...machine.driver import (
 from ...machine.models.machine import Machine
 from ..camera.camera_preferences_page import CameraPreferencesPage
 from ..icons import get_icon
-from ..shared.gtk import apply_css
+from ..shared.gtk import apply_css, report_dialog_error
 from ..shared.patched_dialog_window import PatchedDialogWindow
 from .advanced_preferences_page import AdvancedPreferencesPage
 from .capabilities_page import CapabilitiesPage
@@ -201,7 +201,7 @@ class MachineSettingsDialog(PatchedDialogWindow):
         )
 
         # --- Page 11: Camera ---
-        self.camera_page = CameraPreferencesPage()
+        self.camera_page = CameraPreferencesPage(machine=self.machine)
         self.camera_page.camera_add_requested.connect(
             self._on_camera_add_requested
         )
@@ -337,7 +337,16 @@ class MachineSettingsDialog(PatchedDialogWindow):
     def _on_export_folder_selected(self, dialog, result):
         try:
             folder = dialog.select_folder_finish(result)
-        except GLib.Error:
+        except GLib.Error as e:
+            if report_dialog_error("Exporting machine profile", e):
+                self.toast_overlay.add_toast(
+                    Adw.Toast(
+                        title=_("Error exporting profile: {msg}").format(
+                            msg=e.message
+                        ),
+                        timeout=5,
+                    )
+                )
             return
         if not folder:
             return

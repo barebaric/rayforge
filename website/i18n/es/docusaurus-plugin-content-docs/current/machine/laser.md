@@ -83,6 +83,8 @@ El tamaño físico de tu haz láser enfocado en milímetros.
 
 - Ingresa ambas dimensiones X e Y
 - La mayoría de los láseres tienen un punto circular (ej., 0.1 x 0.1)
+- Define la compensación de kerf predeterminada del contorno: el desplazamiento X usa la mitad del
+  tamaño de punto X y el desplazamiento Y usa la mitad del tamaño de punto Y
 - Afecta los cálculos de calidad de grabado
 
 <!-- prettier-ignore-start -->
@@ -200,8 +202,8 @@ El flujo de trabajo típico:
 5. Al pulsar **Enviar**, aparece una advertencia: un trabajo normal graba con el haz en las
    posiciones del SCF. Puedes ejecutar una **Simulación con puntero** (el trabajo se ejecuta con el
    desplazamiento del puntero aplicado, de modo que el punto del puntero traza la trayectoria
-   mientras el haz corre desplazado — sigue disparando a potencia de trabajo), desactivar la
-   alineación y grabar, o cancelar.
+   mientras el haz corre desplazado — sigue disparando a potencia de trabajo), **Grabar con haz**
+   (la alineación sigue activa para apuntar después del trabajo), o cancelar.
 
 Dos cosas nunca se desplazan: el **jog** (un movimiento relativo no necesita compensación) y los
 **trabajos** — el corte siempre ocurre con el haz en las posiciones del SCF, por lo que tu salida

@@ -1,9 +1,9 @@
 from typing import cast
 
 from raygeo.geo import Matrix
+from raygeo.sketch.arrays import CurveAlongArray
+from raygeo.sketch.entities import Bezier, Line
 from sketcher.core import Sketch
-from sketcher.core.arrays import CurveAlongArray
-from sketcher.core.entities import Bezier, Line
 from sketcher.ui_gtk.hittest import SketchHitTester
 
 

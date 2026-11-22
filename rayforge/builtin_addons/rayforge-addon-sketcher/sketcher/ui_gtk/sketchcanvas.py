@@ -5,6 +5,7 @@ from typing import cast
 
 from gi.repository import Adw, Gdk, Gtk
 from raygeo.geo import Matrix
+from raygeo.sketch.constraints import Constraint
 
 from rayforge.camera.controller import CameraController
 from rayforge.context import get_context
@@ -15,7 +16,6 @@ from rayforge.ui_gtk.canvas2d.elements.camera_image import CameraImageElement
 from rayforge.ui_gtk.shared.expression_entry import ExpressionEntry
 
 from ..core.commands import ModifyConstraintCommand
-from ..core.constraints import Constraint
 from ..core.sketch import Sketch
 from .editor import SketchEditor
 from .sketchelement import SketchElement
@@ -221,10 +221,10 @@ class SketchCanvas(WorldSurface):
         if not geometry.is_empty():
             min_x, min_y, max_x, max_y = geometry.rect()
             has_bounds = True
-        elif sketch.registry.points:
+        elif sketch.registry.points():
             # This case handles sketches with only points.
-            xs = [p.x for p in sketch.registry.points]
-            ys = [p.y for p in sketch.registry.points]
+            xs = [p.x for p in sketch.registry.points()]
+            ys = [p.y for p in sketch.registry.points()]
             if xs and ys:
                 min_x, max_x = min(xs), max(xs)
                 min_y, max_y = min(ys), max(ys)

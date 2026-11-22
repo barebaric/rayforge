@@ -10,22 +10,24 @@ charge Marlin, Smoothieware et d'autres types de firmware.
 
 ### Matrice de compatibilité
 
-| Firmware         | Version | Statut                     | Pilote                           | Notes                            |
-| ---------------- | ------- | -------------------------- | -------------------------------- | -------------------------------- |
-| **GRBL**         | 1.1+    | Entièrement pris en charge | GRBL Serial / GRBL Serial Simple | Recommandé                       |
-| **grblHAL**      | 2023+   | Compatible                 | GRBL Serial / GRBL Telnet        | Fork GRBL moderne                |
-| **GRBL**         | 0.9     | Limité                     | GRBL Serial                      | Ancien, peut avoir des problèmes |
-| **Smoothieware** | Tous    | Compatible                 | SmoothieDriver (Telnet)          | Basé sur le réseau               |
-| **Marlin**       | 2.0+    | Compatible                 | Marlin Serial                    | Mode laser requis                |
-| **ESP3D**        | Tous    | Compatible                 | GRBL Telnet                      | Basé sur le réseau               |
-| **OctoPrint**    | Tous    | Expérimental               | OctoPrint                        | Voir notes ci-dessous            |
-| **Autre**        | -       | Non pris en charge         | -                                | Demander le support              |
+| Firmware         | Version | Statut                     | Pilote                                   | Notes                            |
+| ---------------- | ------- | -------------------------- | ---------------------------------------- | -------------------------------- |
+| **GRBL**         | 1.1+    | Entièrement pris en charge | GRBL (USB/Serial) (+ compatibility mode) | Recommandé                       |
+| **GRBL**         | 1.1+    | Expérimental | GRBL (Bluetooth) | Appareils SPP Bluetooth appairés |
+| **grblHAL**      | 2023+   | Compatible                 | GRBL (USB/Serial) / grblHAL (Telnet)     | Fork GRBL moderne                |
+| **GRBL**         | 0.9     | Limité                     | GRBL (USB/Serial)                        | Ancien, peut avoir des problèmes |
+| **FluidNC**      | Tous    | Compatible                 | FluidNC / ESP3D (Web API)                | Basé sur ESP32                   |
+| **Smoothieware** | Tous    | Compatible                 | SmoothieDriver (Telnet)                  | Basé sur le réseau               |
+| **Marlin**       | 2.0+    | Compatible                 | Marlin Serial                            | Mode laser requis                |
+| **ESP3D**        | Tous    | Compatible                 | grblHAL (Telnet) / Web API               | v2: Telnet, v3: Web API          |
+| **OctoPrint**    | Tous    | Expérimental               | OctoPrint                                | Voir notes ci-dessous            |
+| **Autre**        | -       | Non pris en charge         | -                                        | Demander le support              |
 
 ---
 
 ## Firmware GRBL
 
-**Statut :** ✓ Entièrement pris en charge **Versions :** 1.1+ **Pilote :** GRBL Serial
+**Statut :** ✓ Entièrement pris en charge **Versions :** 1.1+ **Pilote :** GRBL (USB/Serial)
 
 ### GRBL 1.1 (Recommandé)
 
@@ -94,7 +96,7 @@ GRBL 0.9 est une ancienne version avec quelques problèmes de compatibilité :
 
 **Instructions de mise à niveau :** Voir [GRBL Wiki](https://github.com/gnea/grbl/wiki)
 
-### Pilote GRBL Serial Simple
+### Pilote GRBL (USB/Serial — compatibility mode)
 
 Rayforge inclut un second pilote série GRBL pour les appareils où le pilote standard à comptage de
 tampon provoque de fausses alarmes ou des erreurs de communication.
@@ -114,15 +116,33 @@ tampon provoque de fausses alarmes ou des erreurs de communication.
 
 **Quand ne pas l'utiliser :**
 
-- Le pilote GRBL Serial standard fonctionne de manière fiable sur la plupart des appareils
+- Le pilote GRBL (USB/Serial) standard fonctionne de manière fiable sur la plupart des appareils
 - Le pilote simple n'a pas de récupération d'interblocage, donc les travaux peuvent s'arrêter sur
   une réponse « ok » perdue sans récupération automatique
 
 ---
 
+## Pilote GRBL (Bluetooth)
+
+**Statut :** Expérimental **Firmware :** GRBL **Pilote :** GRBL (Bluetooth)
+
+Le pilote GRBL (Bluetooth) connecte les contrôleurs via le profil de port série Bluetooth Classic
+(SPP/RFCOMM), courant sur de nombreux contrôleurs laser basés sur ESP32. La connexion est établie
+directement par le système d'exploitation ; aucun pont `/dev/rfcomm*` ni port COM sortant n'est
+nécessaire.
+
+**Utilisation du pilote GRBL (Bluetooth) :**
+
+1. **Associez le contrôleur** dans les réglages Bluetooth du système d'exploitation
+2. **Sélectionnez « GRBL (Bluetooth) »** dans les réglages de la machine
+3. **Choisissez l'appareil** dans la liste ou saisissez son adresse manuellement
+4. **Conservez le canal RFCOMM 1** sauf si l'appareil en utilise un autre
+
+Linux, macOS et Windows sont pris en charge. Bluetooth Low Energy (BLE) n'est pas pris en charge.
+
 ## grblHAL
 
-**Statut :** Compatible **Versions :** 2023+ **Pilote :** GRBL Serial
+**Statut :** Compatible **Versions :** 2023+ **Pilote :** GRBL (USB/Serial), grblHAL (Telnet)
 
 ### Qu'est-ce que grblHAL ?
 
@@ -138,29 +158,34 @@ grblHAL est un fork moderne de GRBL avec des fonctionnalités améliorées :
 
 - **Entièrement compatible** - grblHAL maintient le protocole GRBL 1.1
 - Toutes les fonctionnalités GRBL fonctionnent
-- Les fonctionnalités supplémentaires (réseau, SD) ne sont pas encore prises en charge par Rayforge
+- La connexion réseau est prise en charge via le pilote grblHAL (Telnet)
 - Rapport d'état identique à GRBL
 
 **Utiliser grblHAL :**
 
-1. Sélectionnez le pilote "GRBL Serial" dans Rayforge
+1. Sélectionnez le pilote "GRBL (USB/Serial)" dans Rayforge
 2. Connectez-vous via série USB (comme GRBL)
 3. Toutes les fonctionnalités fonctionnent comme documenté pour GRBL
 
-**Futur :** Rayforge pourrait ajouter le support des fonctionnalités spécifiques à grblHAL (réseau,
-etc.)
+Pour une connexion réseau plutôt qu'USB, utilisez le pilote grblHAL (Telnet) décrit ci-dessous.
 
 ---
 
-## Pilote GRBL Telnet
+## Pilote grblHAL (Telnet)
 
 **Statut :** Pris en charge **Firmware :** grblHAL, ESP3D et autres contrôleurs GRBL réseau **Pilote
-:** GRBL Telnet
+:** grblHAL (Telnet)
 
-### À propos du pilote GRBL Telnet
+### À propos du pilote grblHAL (Telnet)
 
-Le pilote GRBL Telnet se connecte aux contrôleurs basés sur GRBL via le réseau par une interface
-Telnet. Idéal pour les cartes avec WiFi ou Ethernet intégré — pas de câble USB nécessaire.
+Le pilote grblHAL (Telnet) se connecte aux contrôleurs basés sur GRBL via le réseau par une
+interface Telnet. Idéal pour les cartes avec WiFi ou Ethernet intégré — pas de câble USB nécessaire.
+
+Les builds grblHAL avec LWIP mDNS annoncent `_telnet._tcp`, donc l'assistant les trouve
+immédiatement et confirme chaque carte avec la commande d'informations de compilation `$I` avant de
+la lister. Les cartes dont le firmware ne s'annonce pas via mDNS sont trouvées par un scan de
+sous-réseau restreint (port telnet uniquement, concurrence et délai par hôte limités) avec la même
+confirmation.
 
 **Fonctionnalités :**
 
@@ -168,11 +193,11 @@ Telnet. Idéal pour les cartes avec WiFi ou Ethernet intégré — pas de câble
 - Compatible avec les cartes basées sur grblHAL et ESP3D
 - Même protocole GRBL que le pilote série
 
-**Utilisation du pilote GRBL Telnet :**
+**Utilisation du pilote grblHAL (Telnet) :**
 
 1. **Configurez le réseau** sur votre contrôleur (WiFi ou Ethernet)
-2. **Sélectionnez « GRBL Telnet »** dans les paramètres machine
-3. **Entrez l'adresse IP** et le port de votre contrôleur
+2. **Sélectionnez « grblHAL (Telnet) »** dans les paramètres machine
+3. **Entrez le nom d'hôte ou l'adresse IP** et le port de votre contrôleur
 4. **Connectez** — le pilote communique via Telnet
 
 **Exigences :**
@@ -183,9 +208,35 @@ Telnet. Idéal pour les cartes avec WiFi ou Ethernet intégré — pas de câble
 
 ---
 
+## Pilote FluidNC / ESP3D (Web API)
+
+**Statut :** Pris en charge **Firmware :** FluidNC, ESP3D v3 **Pilote :** FluidNC / ESP3D (Web API)
+
+### À propos du pilote Web API
+
+Le pilote FluidNC / ESP3D (Web API) utilise l'interface HTTP/WebSocket du contrôleur — la même que
+son interface web. Par rapport au pilote telnet, il ajoute l'envoi de fichiers ainsi que la lecture
+et l'écriture des réglages de l'appareil, et Rayforge découvre automatiquement les appareils FluidNC
+et ESP3D v3 via mDNS.
+
+**Utilisation du pilote Web API :**
+
+1. **Configurez le réseau** sur votre contrôleur (WiFi ou Ethernet)
+2. **Sélectionnez « FluidNC / ESP3D (Web API) »** dans les paramètres machine
+3. **Saisissez le nom d'hôte ou l'adresse IP** et les ports HTTP/WebSocket (pour FluidNC, les deux
+   valent généralement 80)
+4. **Connectez-vous**
+
+**Prérequis :**
+
+- Firmware FluidNC ou ESP3D v3
+- Contrôleur et ordinateur sur le même réseau
+
+---
+
 ## Smoothieware
 
-**Pilote :** GRBL Serial (mode compatibilité)
+**Pilote :** GRBL (USB/Serial) (mode compatibilité)
 
 ### Notes de compatibilité
 

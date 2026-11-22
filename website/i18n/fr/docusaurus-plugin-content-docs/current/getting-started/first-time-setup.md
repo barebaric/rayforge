@@ -16,17 +16,17 @@ l'établissement d'une connexion.
 Démarrez Rayforge depuis votre menu d'applications ou en exécutant `rayforge` dans un terminal. Au
 premier lancement — lorsqu'aucune machine réelle n'a encore été configurée — l'assistant de
 configuration s'ouvre automatiquement pour que vous puissiez configurer votre machine sans chercher
-dans les menus. (Vous pouvez toujours l'ouvrir plus tard depuis **Paramètres → Machines → Add
-Machine**.)
+dans les menus. (Vous pouvez toujours l'ouvrir plus tard depuis **Machine → Manage Machines…** en
+cliquant sur **Add Machine**.)
 
 ## Étape 2 : Créer une Machine avec l'Assistant
 
-Naviguez vers **Paramètres → Machines** ou appuyez sur <kbd>ctrl+comma</kbd> pour ouvrir la boîte de
-dialogue des paramètres, puis sélectionnez la page **Machines**.
+Ouvrez **Machine → Manage Machines…** dans la fenêtre principale (ou appuyez sur
+<kbd>ctrl+comma</kbd> et ouvrez la page **Machines**) puis cliquez sur **Add Machine**.
 
 ![Paramètres Machine](/screenshots/app-settings-machines.webp)
 
-Cliquez sur **Add Machine** pour ouvrir le sélecteur de machine.
+Le sélecteur de machine s'ouvre avec les profils d'appareil intégrés.
 
 ![Boîte de dialogue Add Machine](/screenshots/app-settings-machines-add.webp)
 
@@ -51,8 +51,8 @@ L'assistant peut découvrir les appareils pour vous au lieu de vous demander de 
 départ et de tout remplir à la main :
 
 - **Périphériques série USB** sont listés au fur et à mesure qu'ils apparaissent.
-- **Appareils réseau** sont découverts via mDNS : les serveurs OctoPrint et les cartes ESP3D
-  apparaissent aux côtés des périphériques série USB.
+- **Appareils réseau** sont découverts via mDNS : les serveurs OctoPrint, les cartes ESP3D et les
+  cartes grblHAL qui annoncent `_telnet._tcp` apparaissent aux côtés des périphériques série USB.
 - Les appareils découverts sont **associés aux profils intégrés** lorsqu'une correspondance fiable
   est trouvée, vous pouvez donc souvent simplement confirmer les paramètres détectés au lieu de les
   saisir.
@@ -60,6 +60,13 @@ départ et de tout remplir à la main :
   du firmware, et OctoPrint/Smoothieware sont sondés sur le réseau.
 - Les appareils que vous avez déjà configurés sont affichés en **lecture seule** pour que vous ne
   créiez pas accidentellement des doublons.
+
+- **Les cartes grblHAL via telnet** sont confirmées avec la commande d'informations de compilation
+  `$I` avant d'être listées. Les cartes dont le firmware ne s'annonce pas via mDNS sont trouvées par
+  un scan de sous-réseau restreint (port telnet uniquement, concurrence limitée) exécuté avec les
+  scans série et mDNS.
+
+![Assistant — Découverte des appareils](/screenshots/config-wizard-discover.webp)
 
 Cliquez sur un appareil découvert pour préremplir l'assistant, ou choisissez un point de départ
 manuellement comme décrit ci-dessous.

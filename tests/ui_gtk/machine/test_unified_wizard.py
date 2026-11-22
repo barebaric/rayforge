@@ -1,11 +1,15 @@
 """UI tests for the Unified Machine Configuration Wizard."""
 
 import asyncio
+import time
 from unittest.mock import MagicMock, patch
 
 import pytest
-from gi.repository import Adw, Gtk
+from gi.repository import Adw, GLib, Gtk
+from raydriver.core.discovery import DeviceIdentity
 
+from rayforge.camera.models.source_type import CameraSourceType
+from rayforge.camera.remote import RemoteCamera
 from rayforge.machine.device.matching import (
     CONFIDENCE_CERTAIN,
     CONFIDENCE_VENDOR_TOKENS,
@@ -16,7 +20,6 @@ from rayforge.machine.device.profile import (
     DeviceProfile,
     MachineConfig,
 )
-from rayforge.machine.discovery import DeviceIdentity
 from rayforge.machine.driver.grbl import GrblSerialDriver
 from rayforge.machine.models.machine import Origin
 from rayforge.shared.util.permissions import PermissionIssue
@@ -78,6 +81,17 @@ def _profile(driver=None):
         machine_config=MachineConfig(driver=driver),
         dialect_config={},
     )
+
+
+def _pump_until(condition, timeout: float = 2.0) -> bool:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        while GLib.MainContext.default().iteration(False):
+            pass
+        if condition():
+            return True
+        time.sleep(0.01)
+    return condition()
 
 
 def _make_wizard(ui_context_initializer):
@@ -630,6 +644,21 @@ def test_connection_page_ruida_usb_mode(ui_context_initializer):
 
 
 @pytest.mark.ui
+def test_connection_page_prefills_zero_driver_arg(ui_context_initializer):
+    wizard = _make_wizard(ui_context_initializer)
+    wizard.profile = _profile(driver="RuidaRPAAdapter")
+    wizard.profile.machine_config.driver_args = {"image_power_bias": 0.0}
+    wizard._navigate_to("connect")
+    page = wizard._get_page("connect")
+    assert isinstance(page, ConnectionPage)
+    assert page.connect_widget.get_values()["image_power_bias"] == 0.0
+
+    assert page.apply_to_profile(wizard.profile)
+    args = wizard.profile.machine_config.driver_args
+    assert args["image_power_bias"] == 0.0
+
+
+@pytest.mark.ui
 def test_connection_args_complete_ruida_hostname_only(
     ui_context_initializer,
 ):
@@ -745,6 +774,53 @@ def test_camera_page_selected_device_ids(ui_context_initializer):
     assert len(switches) == 2
     switches[1].set_active(True)
     assert page.selected_device_ids() == [fake_devices[1]]
+
+
+@pytest.mark.ui
+def test_camera_page_lists_daemon_cameras(ui_context_initializer):
+    wizard = _make_wizard(ui_context_initializer)
+    wizard._navigate_to("camera")
+    page = wizard._get_page("camera")
+    assert isinstance(page, CameraPage)
+
+    remote_camera = RemoteCamera(
+        name="Enclosure",
+        uri="http://pi.local:8080/stream",
+        source_type=CameraSourceType.HTTP_STREAM,
+    )
+    profile = _profile(driver="RaydriverRemoteDriver")
+    profile.machine_config.driver_args = {
+        "remote_host": "pi.local",
+        "remote_port": 8765,
+    }
+
+    async def fake_fetch(driver_args):
+        assert driver_args["remote_host"] == "pi.local"
+        return [remote_camera]
+
+    with (
+        patch(_CAMERA_PATCH_TARGET, return_value=[]),
+        patch(
+            "rayforge.ui_gtk.machine.wizard_pages.camera_page."
+            "fetch_remote_cameras",
+            fake_fetch,
+        ),
+    ):
+        page.enter(profile)
+        assert _pump_until(lambda: bool(page._remote_cameras))
+        switches = [
+            row for row in page._switch_rows if isinstance(row, Adw.SwitchRow)
+        ]
+        assert len(switches) == 1
+        switches[0].set_active(True)
+        assert page.selected_remote_cameras() == [remote_camera]
+        assert page.apply_to_profile(profile)
+
+    cameras = profile.machine_config.cameras
+    assert cameras is not None
+    assert cameras[0]["source_type"] == "http_stream"
+    assert cameras[0]["source_config"] == {"uri": remote_camera.uri}
+    assert cameras[0]["enabled"] is True
 
 
 @pytest.mark.ui
@@ -1013,7 +1089,7 @@ def test_ai_lookup_page_progress_bar_tracks_lookup(ui_context_initializer):
 
 
 def _discovered_device(**overrides):
-    from rayforge.machine.discovery import DiscoveredDevice
+    from raydriver.core.discovery import DiscoveredDevice
 
     defaults = {
         "driver_name": "GrblSerialDriver",
@@ -1205,6 +1281,84 @@ def test_device_selected_with_match_skips_to_probe(ui_context_initializer):
     mc = wizard.profile.machine_config
     assert mc.driver == "GrblSerialDriver"
     assert mc.driver_args == {"port": "/dev/ttyUSB0", "baudrate": 115200}
+
+
+@pytest.mark.ui
+def test_remote_device_selected_skips_profile(ui_context_initializer):
+    """A discovered remote device is identified by daemon + device, so
+    the wizard goes to the connection page, not profile selection."""
+    wizard = _make_wizard(ui_context_initializer)
+    page = wizard._get_page("discover")
+    assert isinstance(page, DiscoverPage)
+    device = _discovered_device(
+        driver_name="RaydriverRemoteDriver",
+        params={
+            "remote_host": "127.0.0.1",
+            "remote_port": 8765,
+            "device": "/dev/ttyUSB0",
+            "_raydriver_protocol": "grbl",
+        },
+        label="GRBL",
+        detail="127.0.0.1:8765 via raydriver daemon",
+        identity=DeviceIdentity(banner="raydriver-daemon"),
+    )
+    with patch("rayforge.ui_gtk.machine.wizard_pages.probe_page.task_mgr"):
+        wizard._on_device_selected(page, device=device)
+    assert wizard.stack.get_visible_child_name() == "connect"
+    assert wizard.profile.machine_config.driver == "RaydriverRemoteDriver"
+
+
+@pytest.mark.ui
+def test_remote_probe_next_skips_profile(ui_context_initializer):
+    wizard = _make_wizard(ui_context_initializer)
+    wizard.profile.machine_config.driver = "RaydriverRemoteDriver"
+    wizard.profile.machine_config.driver_args = {
+        "remote_host": "127.0.0.1",
+        "device": "/dev/ttyUSB0",
+        "_raydriver_protocol": "grbl",
+    }
+    wizard.aux_state = {
+        "discovered": _discovered_device(
+            driver_name="RaydriverRemoteDriver",
+            params={"remote_host": "127.0.0.1"},
+        )
+    }
+    wizard._source = None
+    assert wizard._next_step_after("probe") != "profile"
+
+
+@pytest.mark.ui
+def test_remote_probe_keeps_remote_driver(ui_context_initializer):
+    """A remote machine must not be turned into a local device when its
+    probe matches a curated profile."""
+    wizard = _make_wizard(ui_context_initializer)
+    wizard.profile.machine_config.driver = "RaydriverRemoteDriver"
+    wizard.profile.machine_config.driver_args = {
+        "remote_host": "127.0.0.1",
+        "device": "/dev/ttyUSB0",
+        "_raydriver_protocol": "grbl",
+    }
+    wizard._source = None
+    wizard.aux_state = {
+        "discovered": _discovered_device(
+            driver_name="RaydriverRemoteDriver",
+            params={"remote_host": "127.0.0.1"},
+        )
+    }
+    curated = DeviceProfile(
+        meta=DeviceMeta(name="Sculpfun iCube"),
+        machine_config=MachineConfig(driver="GrblSerialDriver"),
+        dialect_config={},
+    )
+    with patch.object(
+        type(ui_context_initializer.device_profile_mgr),
+        "match_device",
+        return_value=_match_result(curated),
+    ):
+        wizard._on_probe_succeeded(
+            wizard._get_page("probe"), profile=curated, warnings=[]
+        )
+    assert wizard.profile.machine_config.driver == "RaydriverRemoteDriver"
 
 
 @pytest.mark.ui
@@ -1628,7 +1782,7 @@ def test_esp3d_device_selected_goes_to_probe(ui_context_initializer):
     device = _discovered_device(
         driver_name="GrblNetworkDriver",
         params={"host": "192.168.1.60", "port": 80},
-        label="GRBL (Network)",
+        label="FluidNC / ESP3D (Web API)",
         detail="192.168.1.60:80 (esp3d.local)",
         identity=DeviceIdentity(firmware="grblnetwork", banner="ESP3D"),
     )

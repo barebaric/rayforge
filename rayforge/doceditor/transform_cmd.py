@@ -9,6 +9,7 @@ from raygeo.geo import Matrix
 from ..context import get_context
 from ..core.item import DocItem
 from ..core.undo import ChangePropertyCommand
+from ..core.workpiece import WorkPiece
 from ..machine.models.machine_panel import PanelOrientation
 
 if TYPE_CHECKING:
@@ -283,6 +284,48 @@ class TransformCmd:
                 )
                 t.execute(cmd)
 
+    def set_position_at_anchor(
+        self, item: WorkPiece, x: float, y: float
+    ) -> None:
+        """
+        Moves a single workpiece so that its anchor point lands at the
+        given machine coordinates. The anchor point is the origin selected
+        via ``anchor_mode``: the bounding box corner, the box center, or
+        the geometry provider's reference point.
+
+        Args:
+            item: The workpiece to move.
+            x: Target anchor X position in machine coordinates.
+            y: Target anchor Y position in machine coordinates.
+        """
+        history_manager = self._editor.history_manager
+        machine = get_context().machine
+
+        if machine:
+            target_world = machine.panel.machine_point_to_world(x, y)
+        else:
+            # Fallback to direct mapping if no machine context
+            target_world = (x, y)
+
+        with history_manager.transaction(_("Move item(s)")) as t:
+            old_matrix = item.matrix.copy()
+            current_world = item.get_anchor_world()
+            dx = target_world[0] - current_world[0]
+            dy = target_world[1] - current_world[1]
+
+            new_matrix = Matrix.translation(dx, dy) @ old_matrix
+
+            if old_matrix.is_close(new_matrix):
+                return
+
+            cmd = ChangePropertyCommand(
+                target=item,
+                property_name="matrix",
+                new_value=new_matrix,
+                old_value=old_matrix,
+            )
+            t.execute(cmd)
+
     def set_angle(self, items: list[DocItem], angle: float):
         """Sets **every** item's local rotation angle to *angle* degrees,
         preserving each item's own world-space center."""
@@ -390,8 +433,13 @@ class TransformCmd:
                     )
 
                 # The set_size method will rebuild the matrix,
-                # preserving pos/angle
-                item.set_size(new_width, new_height)
+                # preserving the anchor point and angle
+                if isinstance(item, WorkPiece):
+                    item.set_size(
+                        new_width, new_height, anchor=item.anchor_point
+                    )
+                else:
+                    item.set_size(new_width, new_height)
                 new_matrix = item.matrix.copy()
 
                 if old_matrix.is_close(new_matrix):

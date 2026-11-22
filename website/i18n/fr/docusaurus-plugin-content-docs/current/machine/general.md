@@ -21,16 +21,19 @@ sélection lorsque vous avez plusieurs machines configurées.
 Sélectionnez le pilote correspondant au contrôleur de votre machine. Le pilote gère la communication
 entre Rayforge et le matériel.
 
-Les appareils GRBL disposent de trois options de pilote série :
+Les appareils GRBL peuvent se connecter en USB/série ou par réseau :
 
-- **GRBL (Serial)** — Pilote avec comptage de tampon, détection d'interblocage et récupération de
-  blocage. Recommandé pour la plupart des appareils GRBL
-- **GRBL (Serial Simple)** — Pilote à protocole ping-pong. Envoie une ligne, attend « ok », envoie
-  la suivante. Sans gestion de tampon ni détection d'interblocage. Utile lorsque le pilote standard
-  déclenche de fausses alarmes
-- **GRBL (Rust)** — Pilote expérimental dont toute la pile du protocole série GRBL (contrôle de
-  flux, diffusion des travaux, détection de blocage, récupération d'interblocage, réglages et
-  probing) s'exécute en Rust. Peut être sélectionné comme alternative directe à GRBL (Serial)
+- **GRBL (USB/Serial)** — Pilote avec comptage de tampon, détection d'interblocage et récupération
+  de blocage. Sa pile du protocole GRBL s'exécute en Rust. Recommandé pour la plupart des appareils
+  GRBL
+- **GRBL (USB/Serial — compatibility mode)** — Pilote à protocole ping-pong. Envoie une ligne,
+  attend « ok », envoie la suivante. Sans gestion de tampon ni détection d'interblocage. Nécessaire
+  uniquement lorsque le pilote standard déclenche de fausses alarmes ou des erreurs de communication
+- **GRBL (Bluetooth)** — Connexion Bluetooth Classic SPP/RFCOMM pour les contrôleurs appairés dans le système d'exploitation
+- **grblHAL (Telnet)** — Connexion TCP brute (telnet) pour les contrôleurs grblHAL en réseau et pour
+  le pont telnet d'ESP3D
+- **FluidNC / ESP3D (Web API)** — Pilote HTTP/WebSocket pour les contrôleurs FluidNC et ESP3D v3,
+  avec envoi de fichiers et prise en charge des réglages de l'appareil
 
 Les contrôleurs basés sur Ruida sont pris en charge par le pilote **Ruida RPA**, qui se connecte
 directement en USB ou UDP, ou via TUI RPC par l'intermédiaire du Ruida Protocol Analyzer. Son champ

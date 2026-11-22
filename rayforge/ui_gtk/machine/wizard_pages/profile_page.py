@@ -18,7 +18,6 @@ matcher considers plausible candidates, best first. Searching
 always covers everything.
 """
 
-from dataclasses import replace
 from gettext import gettext as _
 
 from blinker import Signal
@@ -26,7 +25,11 @@ from gi.repository import Adw, Gtk
 
 from ....context import get_context
 from ....machine.device.profile import DeviceProfile
-from ....machine.driver import DiscoveredDevice, normalize_tokens
+from ....machine.driver import (
+    DeviceIdentity,
+    DiscoveredDevice,
+    normalize_tokens,
+)
 from ..profile_importer import open_profile_file
 from . import WizardPage, _makePreferencesGroup
 
@@ -130,8 +133,11 @@ class ProfilePage(WizardPage):
         identity = discovered.identity
         name = discovered.probe_name
         if name:
-            identity = replace(
-                identity,
+            identity = DeviceIdentity(
+                firmware=identity.firmware,
+                banner=identity.banner,
+                usb_vid=identity.usb_vid,
+                usb_pid=identity.usb_pid,
                 tokens=identity.tokens | normalize_tokens(name),
             )
         matches = get_context().device_profile_mgr.match_device(

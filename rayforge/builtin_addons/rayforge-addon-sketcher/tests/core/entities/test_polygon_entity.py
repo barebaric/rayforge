@@ -2,18 +2,21 @@
 
 import itertools
 import math
+from typing import cast
 
 import pytest
 from raygeo.geo.shape.polygon import get_polygon_signed_area
+from raygeo.sketch.contour import offset_outline, outline_frame
+from raygeo.sketch.entities import Polygon as PolygonEntity
 from sketcher.core import Sketch
 from sketcher.core.commands import MirrorAxis, MirrorDirection
-from sketcher.core.entities import PolygonEntity
-from sketcher.core.entities.polygon import offset_outline
 
 SQUARE = [(0.0, 0.0), (20.0, 0.0), (20.0, 20.0), (0.0, 20.0)]
 
 
-def _sketch_with_polygon(closed=True):
+def _sketch_with_polygon(
+    closed: bool = True,
+) -> tuple[Sketch, PolygonEntity]:
     sketch = Sketch()
     center_id = sketch.add_point(0.0, 0.0)
     handle_id = sketch.add_point(5.0, 0.0)
@@ -24,14 +27,15 @@ def _sketch_with_polygon(closed=True):
         PolygonEntity.normalize_vertices((0.0, 0.0), (5.0, 0.0), SQUARE),
         closed=closed,
     )
-    sketch.registry.entities.append(polygon)
-    sketch.registry._entity_map[polygon.id] = polygon
-    return sketch, polygon
+    sketch.registry.append_entity(polygon)
+    return sketch, cast(PolygonEntity, polygon)
 
 
 def test_world_vertex_roundtrip():
     sketch, polygon = _sketch_with_polygon()
-    assert polygon.get_world_vertices(sketch.registry) == pytest.approx(SQUARE)
+    assert polygon.get_world_vertices(sketch.registry) == [
+        pytest.approx(p) for p in SQUARE
+    ]
 
 
 def test_frame_translation_follows_center():
@@ -42,18 +46,18 @@ def test_frame_translation_follows_center():
     center.y += 50.0
     handle.x += 100.0
     handle.y += 50.0
-    assert polygon.get_world_vertices(sketch.registry) == pytest.approx(
-        [(x + 100, y + 50) for x, y in SQUARE]
-    )
+    assert polygon.get_world_vertices(sketch.registry) == [
+        pytest.approx((x + 100, y + 50)) for x, y in SQUARE
+    ]
 
 
 def test_frame_rotation_follows_handle():
     sketch, polygon = _sketch_with_polygon()
     handle = sketch.registry.get_point(polygon.handle_idx)
     handle.x, handle.y = 0.0, 5.0
-    assert polygon.get_world_vertices(sketch.registry) == pytest.approx(
-        [(-y, x) for x, y in SQUARE], abs=1e-9
-    )
+    assert polygon.get_world_vertices(sketch.registry) == [
+        pytest.approx((-y, x), abs=1e-9) for x, y in SQUARE
+    ]
 
 
 def test_hit_test_on_edge():
@@ -94,7 +98,7 @@ def test_state_roundtrip():
     polygon.vertices = [(1.0, 2.0), (3.0, 4.0)]
     polygon.set_state(state)
     expected = PolygonEntity.normalize_vertices((0, 0), (5, 0), SQUARE)
-    assert polygon.vertices == pytest.approx(expected)
+    assert polygon.vertices == [pytest.approx(p) for p in expected]
 
 
 def test_mirror_negates_local_v():
@@ -108,9 +112,8 @@ def test_mirror_negates_local_v():
     handle.x, handle.y = axis.apply(handle.x, handle.y)
 
     mirrored = sorted(polygon.get_world_vertices(sketch.registry))
-    assert mirrored == pytest.approx(
-        sorted([(-x, y) for x, y in SQUARE]), abs=1e-9
-    )
+    expected = sorted([(-x, y) for x, y in SQUARE])
+    assert mirrored == [pytest.approx(p, abs=1e-9) for p in expected]
 
 
 def test_constrained_status_follows_frame_points():
@@ -171,10 +174,9 @@ def _handle_on_contour_dist_sq(grown, handle):
 
 def test_frame_closed_center_inside_handle_on_contour():
     from raygeo.geo.shape.polygon import is_point_inside_polygon
-    from sketcher.core.entities.polygon import _frame_for_outline
 
     grown = offset_outline(SQUARE, True, 2.0)[0][0]
-    center, handle = _frame_for_outline(grown, closed=True)
+    center, handle = outline_frame(grown, closed=True)
     assert is_point_inside_polygon(center, grown)
     assert _handle_on_contour_dist_sq(grown, handle) < 1e-6
 
@@ -182,10 +184,8 @@ def test_frame_closed_center_inside_handle_on_contour():
 def test_frame_handle_at_long_axis_end():
     """For an elongated outline the handle sits at the far end of the
     long axis, not at the narrow inscribed-circle edge."""
-    from sketcher.core.entities.polygon import _frame_for_outline
-
     stadium = offset_outline([(0.0, 0.0), (100.0, 0.0)], False, 5.0)[0][0]
-    center, handle = _frame_for_outline(stadium, closed=True)
+    center, handle = outline_frame(stadium, closed=True)
     assert _handle_on_contour_dist_sq(stadium, handle) < 1e-6
     frame_scale = math.hypot(handle[0] - center[0], handle[1] - center[1])
     half_long = 55.0
@@ -193,24 +193,23 @@ def test_frame_handle_at_long_axis_end():
 
 
 def test_frame_open_handle_on_polyline():
-    from sketcher.core.entities.polygon import (
-        _closest_outline_point,
-        _frame_for_outline,
-    )
+    from itertools import pairwise
+
+    from raygeo.geo.shape.line import get_line_segment_closest_point
 
     path = [(0.0, 0.0), (30.0, 10.0), (60.0, 0.0)]
-    _center, handle = _frame_for_outline(path, closed=False)
-    result = _closest_outline_point(path, False, *handle)
-    assert result is not None
-    assert result[1] < 1e-6
+    _center, handle = outline_frame(path, closed=False)
+    distances = [
+        get_line_segment_closest_point(a, b, *handle)[2]
+        for a, b in pairwise(path)
+    ]
+    assert min(distances) < 1e-6
 
 
 def test_frame_diagonal_line_nondegenerate():
     """A straight diagonal through its bbox center still yields a
     usable frame (handle strictly off-center)."""
-    from sketcher.core.entities.polygon import _frame_for_outline
-
-    center, handle = _frame_for_outline([(0.0, 0.0), (40.0, 0.0)], False)
+    center, handle = outline_frame([(0.0, 0.0), (40.0, 0.0)], False)
     assert (center[0], center[1]) != (handle[0], handle[1])
     assert math.hypot(handle[0] - center[0], handle[1] - center[1]) > 1e-6
 
@@ -256,9 +255,8 @@ def _build_solid_sketch():
         closed=True,
         world_holes=[[(5.0, 5.0), (5.0, 9.0), (9.0, 9.0), (9.0, 5.0)]],
     )
-    sketch.registry.points.extend([center_pt, handle_pt])
-    sketch.registry.entities.append(polygon)
-    sketch.registry._entity_map[polygon.id] = polygon
+    sketch.registry.add_points([center_pt, handle_pt])
+    sketch.registry.append_entity(polygon)
     return sketch, polygon
 
 
@@ -295,7 +293,7 @@ def test_multi_ring_serialization_roundtrip():
         clone.get_world_rings(sketch.registry),
         polygon.get_world_rings(sketch.registry),
     ):
-        assert ring_clone == pytest.approx(ring)
+        assert ring_clone == [pytest.approx(p) for p in ring]
 
 
 def test_multi_ring_legacy_dict_without_rings():
@@ -320,7 +318,7 @@ def test_mirror_preserves_winding_convention():
             get_polygon_signed_area(ring_before)
         )
         mirrored = sorted([(x, -y) for x, y in ring_before])
-        assert sorted(ring_after) == pytest.approx(mirrored)
+        assert sorted(ring_after) == [pytest.approx(p) for p in mirrored]
 
 
 def test_transform_offsets_mirror_flips_rings():
@@ -376,7 +374,7 @@ def test_multi_ring_offset_shrinks_holes():
     assert plan.removed_entity_ids == [polygon.id]
     result = plan.entities[0]
     assert isinstance(result, PolygonEntity)
-    sketch.registry.points.extend(plan.points)
+    sketch.registry.add_points(plan.points)
     rings = result.get_world_rings(sketch.registry)
     assert len(rings) == 2
     xs = [p[0] for p in rings[0]]
@@ -396,7 +394,7 @@ def test_multi_ring_offset_vanishes_hole_first():
     assert plan is not None and len(plan.entities) == 1
     result = plan.entities[0]
     assert isinstance(result, PolygonEntity)
-    sketch.registry.points.extend(plan.points)
+    sketch.registry.add_points(plan.points)
     rings = result.get_world_rings(sketch.registry)
     assert len(rings) == 1
 

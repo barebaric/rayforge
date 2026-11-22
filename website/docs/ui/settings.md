@@ -21,6 +21,11 @@ Choose between **System**, **Light**, or **Dark** theme to match your desktop en
 personal preference. You can also configure **Operation Colors** to use either the laser color or
 the layer color for visual distinction on the canvas.
 
+**Shop mode** replaces the bottom panel's Controls tab with a touch-friendly control surface: large
+per-axis position readouts with zero buttons, an offsets card, oversized jog speed/step steppers,
+and a grid of large jog and job buttons. It is meant for operating the machine while standing at it,
+and is disabled by default.
+
 ### Units
 
 Configure the display units used throughout the application. You can set separate units for
@@ -35,6 +40,17 @@ recalculation manually via the toolbar button instead.
 
 Rayforge can **Check for updates** automatically on startup. When enabled, you will be notified when
 a new version is available.
+
+Rayforge can also **Check for addon updates** automatically on startup. Disabling this does not
+prevent manual checks from the Addons page.
+
+With **Watch imported files** enabled, Rayforge monitors the files behind imported workpieces and
+offers to reload them when they change on disk. See
+[Keeping Imported Files in Sync](../files/importing.md#keeping-imported-files-in-sync) for details.
+
+With **Prevent sleep during jobs** enabled, Rayforge blocks automatic system sleep while a job is
+running, so the connection to the machine is not dropped. An explicit suspend or closing the lid
+still works.
 
 You can also configure **Startup behavior** — start with an empty workspace, reopen your last
 project, or always open a specific project file. Note that files specified on the command line will
@@ -73,6 +89,7 @@ The settings dialog also includes pages for managing other parts of the applicat
 own dedicated documentation:
 
 - [Machines](../application-settings/machines.md) — add, remove, and configure your laser cutters
+  (also available from **Machine → Manage Machines…**)
 - [Materials](../application-settings/materials.md) — manage your material libraries
 - [Recipes](../application-settings/recipes.md) — manage saved operation recipes
 - [Color Rules](../application-settings/color-rules.md) — map SVG colors to step types

@@ -7,21 +7,27 @@ explica como importar arquivos e otimizá-los para obter os melhores resultados.
 
 ### Formatos vetoriais
 
-| Formato       | Extensão          | Método de importação           | Ideal para                             |
-| ------------- | ----------------- | ------------------------------ | -------------------------------------- |
-| **SVG**       | `.svg`            | Vetores diretos ou vetorização | Gráficos vetoriais, logos, designs     |
-| **DXF**       | `.dxf`            | Vetores diretos                | Desenhos CAD, projetos técnicos        |
-| **PDF**       | `.pdf`            | Vetores diretos ou vetorização | Documentos com conteúdo vetorial       |
-| **LightBurn** | `.lbrn`, `.lbrn2` | Vetores diretos                | Projetos LightBurn                     |
-| **Ruida**     | `.rd`             | Vetores diretos                | Arquivos de trabalho controlador Ruida |
+| Formato         | Extensão          | Método de importação                                | Ideal para                               |
+| --------------- | ----------------- | --------------------------------------------------- | ---------------------------------------- |
+| **SVG**         | `.svg`, `.svgz`   | Vetores diretos ou vetorização                      | Gráficos vetoriais, logos, designs       |
+| **DXF**         | `.dxf`            | Vetores diretos                                     | Desenhos CAD, projetos técnicos          |
+| **PDF**         | `.pdf`            | Vetores diretos ou vetorização                      | Documentos com conteúdo vetorial         |
+| **LightBurn**   | `.lbrn`, `.lbrn2` | Vetores diretos                                     | Projetos LightBurn                       |
+| **Ruida**       | `.rd`             | Vetores diretos                                     | Arquivos de trabalho controlador Ruida   |
+| **Illustrator** | `.ai`             | Vetores diretos ou vetorização                      | Logotipos do Illustrator                 |
+| **EPS**         | `.eps`, `.ps`     | Vetores diretos ou vetorização (requer Ghostscript) | Logotipos, arte para impressão           |
+| **HPGL**        | `.plt`, `.hpgl`   | Vetores diretos                                     | Arquivos de plotter e plotter de recorte |
 
 ### Formatos raster
 
-| Formato  | Extensão        | Método de importação | Ideal para                         |
-| -------- | --------------- | -------------------- | ---------------------------------- |
-| **PNG**  | `.webp`         | Vetorização          | Fotos, imagens com transparência   |
-| **JPEG** | `.jpg`, `.jpeg` | Vetorização          | Fotos, imagens de tom contínuo     |
-| **BMP**  | `.bmp`          | Vetorização          | Gráficos simples, capturas de tela |
+| Formato  | Extensão        | Método de importação | Ideal para                          |
+| -------- | --------------- | -------------------- | ----------------------------------- |
+| **PNG**  | `.png`          | Vetorização          | Fotos, imagens com transparência    |
+| **JPEG** | `.jpg`, `.jpeg` | Vetorização          | Fotos, imagens de tom contínuo      |
+| **BMP**  | `.bmp`          | Vetorização          | Gráficos simples, capturas de tela  |
+| **GIF**  | `.gif`          | Vetorização          | Gráficos simples, animações         |
+| **TIFF** | `.tif`, `.tiff` | Vetorização          | Digitalizações, arte para impressão |
+| **WebP** | `.webp`         | Vetorização          | Imagens da web                      |
 
 <!-- prettier-ignore-start -->
 :::note[Importação de imagens raster]
@@ -104,6 +110,52 @@ A notificação de redimensionamento aparece como uma mensagem toast:
 Isso garante que seus designs sempre se ajustem às capacidades da sua máquina, dando-lhe a
 flexibilidade de restaurar o tamanho original, se necessário.
 
+### Mantendo os arquivos importados sincronizados
+
+Ao importar um arquivo, o Rayforge mantém um link para ele no disco. Se o arquivo mudar mais tarde —
+por exemplo, depois de editá-lo e salvá-lo novamente no Inkscape ou no seu programa de CAD — o
+Rayforge oferece recarregar o conteúdo importado, para que seu projeto não mantenha geometria
+desatualizada.
+
+![O diálogo de arquivo importado alterado](/screenshots/source-changed-dialog.webp)
+
+Esse comportamento é controlado pela opção **Vigiar arquivos importados** em Configurações → Geral.
+Quando ativada (o padrão), o Rayforge verifica os arquivos vinculados enquanto o projeto está aberto
+— inclusive logo após abri-lo — e mostra um diálogo para cada arquivo que mudou no disco:
+
+- **Recarregar** substitui o conteúdo importado pela nova versão. A posição, o tamanho e as
+  configurações das peças de trabalho afetadas são mantidos, e toda a recarga é uma única etapa de
+  desfazer.
+- **Ignorar** mantém o conteúdo atual. Você será perguntado novamente na próxima vez que o arquivo
+  mudar.
+- Ative **Sempre recarregar este arquivo sem perguntar** para recarregar esse arquivo
+  automaticamente de agora em diante. Arquivos marcados assim são recarregados sem perguntar.
+
+Quando vários arquivos vinculados mudaram ao mesmo tempo, o diálogo os lista e permite escolher
+quais recarregar.
+
+<!-- prettier-ignore-start -->
+:::note[A recarga ajusta o documento]
+Recarregar traz o documento de volta em linha com o arquivo: elementos que foram adicionados a ele
+aparecem no projeto, elementos que não estão mais nele são removidos, e abas de fixação que
+acabarem a mais de 1 mm do novo contorno são descartadas. Elementos que você editou no Rayforge
+ficam inalterados. Uma notificação resume o que a recarga alterou.
+:::
+<!-- prettier-ignore-end -->
+
+### Recarga e revinculação manuais
+
+Você também pode recarregar ou revincular manualmente a qualquer momento via **Arquivo → Recarregar
+do disco** e **Arquivo → Revincular arquivo de origem…**, ou pelo menu de contexto da seleção na
+tela, da lista de camadas ou do navegador de ativos. **Recarregar do disco** relê os arquivos por
+trás das peças de trabalho selecionadas. Quando o arquivo vinculado não pode ser encontrado, o
+Rayforge sugere revinculá-lo em vez disso.
+
+**Revincular arquivo de origem…** aponta uma fonte importada para um arquivo diferente. Isso é útil
+quando um arquivo foi movido ou renomeado, ou quando um projeto é aberto em outro computador e o
+arquivo vinculado está ausente. As peças de trabalho mantêm sua posição e configurações e mostram o
+conteúdo do novo arquivo.
+
 ---
 
 ## Importação SVG
@@ -178,6 +230,14 @@ Desative "Usar vetores originais" para usar este método.
 - SVGs com efeitos, filtros, gradientes
 - Quando a importação direta produz erros
 
+### Seleção de camadas e geometria não agrupada
+
+Com **Usar vetores originais**, a lista **Selecionar camadas** mostra uma entrada por camada SVG
+nomeada (ou por cor, ao agrupar por cores). As formas que ficam fora de qualquer camada nomeada são
+oferecidas como uma camada extra **Não agrupado**, ativada por padrão, para que sejam importadas e
+cortadas como qualquer outra camada. Desmarcar uma camada exclui sua geometria tanto da visualização
+quanto dos percursos de ferramenta gerados.
+
 ### Visualização em tempo real
 
 O diálogo de importação mostra uma visualização em tempo real de como seu SVG será importado:
@@ -237,6 +297,22 @@ O Rayforge suporta formatos DXF padrão:
 - **R2000+** - Geralmente funciona, mas R12 é mais seguro
 
 **Dica:** Exporte como DXF R12/LT2 para compatibilidade máxima.
+
+### Aplanamento das coordenadas Z
+
+Alguns exportadores CAD gravam arquivos DXF com geometria em diferentes alturas de Z — por exemplo,
+um modelo 3D exportado com os contornos das faces superior e inferior de uma peça. O Rayforge é um
+programa 2D: em uma máquina com eixo Z, esses valores de Z se tornam movimentos reais de Z no
+trabalho, e a cabeça pode mergulhar abaixo da superfície do material e colidir.
+
+Quando um arquivo DXF contém geometria em mais de uma altura de Z, o diálogo de importação oferece
+por isso uma opção **Aplanar coordenadas Z** (em "Modo de importação"). Ela vem ativada por padrão e
+projeta toda a geometria importada no plano Z=0. Você pode desativá-la para manter as alturas Z
+originais — o diálogo então avisa que o caminho da ferramenta vai se mover em Z, o que só é seguro
+se você souber que seu arquivo precisa disso (por exemplo, para recriar uma altura de foco
+específica por forma).
+
+Em desenhos planos a opção não é mostrada; não há nada a aplanar.
 
 ### Dicas para importação DXF
 
@@ -354,7 +430,19 @@ configurações de laser ajustáveis.
 
 ---
 
-## Importação de imagens raster (PNG, JPG, BMP)
+## Importação de Illustrator e EPS
+
+Arquivos do Illustrator salvos com compatibilidade com PDF, o padrão desde o Illustrator 9, são
+importados exatamente como arquivos PDF, com a mesma seleção de camadas e as mesmas opções de
+vetorização.
+
+Arquivos EPS, PostScript e arquivos antigos do Illustrator são primeiro convertidos em PDF com o
+Ghostscript. Instale o Ghostscript se a caixa de diálogo de importação informar que ele está
+faltando. Se não puder instalá-lo, exporte o desenho como PDF ou SVG no programa que o criou.
+
+---
+
+## Importação de imagens raster (PNG, JPG, BMP, GIF, TIFF, WebP)
 
 As imagens raster são **vetorizadas** para criar caminhos vetoriais usando o diálogo de importação.
 

@@ -1,8 +1,8 @@
 import pytest
 from raygeo.geo import Arc as GeoArc
 from raygeo.geo import Geometry, Move
-from sketcher.core.entities import Circle
-from sketcher.core.registry import EntityRegistry
+from raygeo.sketch.entities import Circle
+from raygeo.sketch.registry import EntityRegistry
 
 
 @pytest.fixture

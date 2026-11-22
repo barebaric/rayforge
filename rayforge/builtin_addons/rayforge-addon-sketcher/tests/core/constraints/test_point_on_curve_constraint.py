@@ -2,14 +2,14 @@ from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
+from raygeo.sketch import solve_registry
+from raygeo.sketch.constraints import PointOnCurveConstraint
+from raygeo.sketch.constraints.point_on_curve import closest_point_on_bezier
+from raygeo.sketch.params import ParameterContext
+from raygeo.sketch.registry import EntityRegistry
 from scipy.optimize import check_grad
 from sketcher.core import Sketch
-from sketcher.core.constraints import PointOnCurveConstraint
-from sketcher.core.constraints.point_on_curve import closest_point_on_bezier
-from sketcher.core.params import ParameterContext
-from sketcher.core.registry import EntityRegistry
-from sketcher.core.selection import SketchSelection
-from sketcher.core.solver import Solver
+from sketcher.selection import SketchSelection
 
 # Hump-shaped curve: (0,0) -> (10,0) with both control points pulling
 # the curve up to an apex of (5, 7.5).
@@ -124,8 +124,7 @@ def test_point_on_curve_pulls_point_onto_curve(setup_env):
     pt = reg.add_point(5.0, 6.0)
 
     constraints = [PointOnCurveConstraint(pt, bez_id)]
-    solver = Solver(reg, ParameterContext(), constraints)
-    solver.solve()
+    solve_registry(reg, constraints)
 
     c = PointOnCurveConstraint(pt, bez_id)
     assert c.error(reg, ParameterContext()) < 1e-4
@@ -137,8 +136,7 @@ def test_point_on_curve_pulls_curve_to_anchor(setup_env):
     anchor = reg.add_point(5.0, 6.5, fixed=True)
 
     constraints = [PointOnCurveConstraint(anchor, bez_id)]
-    solver = Solver(reg, ParameterContext(), constraints)
-    solver.solve()
+    solve_registry(reg, constraints)
 
     c = PointOnCurveConstraint(anchor, bez_id)
     assert c.error(reg, ParameterContext()) < 1e-4
@@ -149,7 +147,7 @@ def test_point_on_curve_can_apply_to():
     p_start = sketch.add_point(0, 0)
     p_end = sketch.add_point(10, 0)
     bez_id = sketch.registry.add_bezier(
-        start_idx=p_start, end_idx=p_end, cp1=(0.0, 5.0)
+        start=p_start, end=p_end, cp1=(0.0, 5.0)
     )
     free_pt = sketch.add_point(5, 8)
     line_id = sketch.registry.add_line(p_start, p_end)
@@ -239,8 +237,8 @@ def test_point_on_curve_sketch_end_to_end():
     p_start = sketch.add_point(0, 0, fixed=True)
     p_end = sketch.add_point(10, 0, fixed=True)
     bez_id = sketch.registry.add_bezier(
-        start_idx=p_start,
-        end_idx=p_end,
+        start=p_start,
+        end=p_end,
         cp1=(0.0, 10.0),
         cp2=(0.0, 10.0),
     )

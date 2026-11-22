@@ -10,6 +10,7 @@ from gi.repository import Gio, GLib, Gtk
 from ...context import get_context
 from ...machine.device.lightburn_importer import convert_to_profile
 from ...machine.device.profile import DeviceProfile
+from ..shared.gtk import report_dialog_error
 from .lbdev_import_dialog import LBDevImportDialog
 
 logger = logging.getLogger(__name__)
@@ -69,7 +70,9 @@ def _on_file_selected(dialog, result, user_data):
     parent, callback = user_data
     try:
         file = dialog.open_finish(result)
-    except GLib.Error:
+    except GLib.Error as e:
+        if report_dialog_error("Importing profile", e):
+            callback(None, e.message)
         return
     if not file:
         return

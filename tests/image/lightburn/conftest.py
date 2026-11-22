@@ -28,17 +28,7 @@ for _p in (_LASER_ADDON, _POST_ADDON):
 @pytest.fixture(scope="session", autouse=True)
 def _register_laser_addons():
     from laser_essentials.steps import ContourStep, EngraveStep
-    from post_processors.transformers import (
-        BidirScanOffsetTransformer,
-        CropTransformer,
-        LeadInOutTransformer,
-        MergeLinesTransformer,
-        MultiPassTransformer,
-        Optimize,
-        OverscanTransformer,
-        Smooth,
-        TabOpsTransformer,
-    )
+    from post_processors import transformers as post_transformers
 
     from rayforge.core.step_registry import step_registry
     from rayforge.pipeline.transformer.registry import transformer_registry
@@ -48,17 +38,8 @@ def _register_laser_addons():
     if step_registry.get("EngraveStep") is None:
         step_registry.register(EngraveStep)
 
-    for _t in (
-        BidirScanOffsetTransformer,
-        CropTransformer,
-        LeadInOutTransformer,
-        MergeLinesTransformer,
-        MultiPassTransformer,
-        Optimize,
-        OverscanTransformer,
-        Smooth,
-        TabOpsTransformer,
-    ):
+    for _name in post_transformers.__all__:
+        _t = getattr(post_transformers, _name)
         if transformer_registry.get(_t.__name__) is None:
             transformer_registry.register(_t, addon_name="post_processors")
 

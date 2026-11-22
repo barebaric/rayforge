@@ -86,10 +86,7 @@ class StepSettingsPage(DebounceMixin, TrackedPreferencesPage):
         # edits and push the applied values into the rows.
         for widget, var_set in self._varset_widgets:
             widget.cancel_pending()
-            values = {
-                var.key: getattr(self.step, var.key, None) for var in var_set
-            }
-            widget.set_values(values)
+            widget.set_values(self._model_values(var_set))
         self._update_machine_bounds()
 
     def get_machine(self) -> "Machine | None":
@@ -170,9 +167,7 @@ class StepSettingsPage(DebounceMixin, TrackedPreferencesPage):
         if description:
             widget.set_description(escape_title(description))
         widget.populate(var_set)
-        widget.set_values(
-            {var.key: getattr(self.step, var.key, None) for var in var_set}
-        )
+        widget.set_values(self._model_values(var_set))
         widget.data_changed.connect(self._on_varset_data_changed)
         self.add(widget)
         self._sections.append(widget)
@@ -195,6 +190,19 @@ class StepSettingsPage(DebounceMixin, TrackedPreferencesPage):
             )
         return VarSet(vars=[var for var in var_set if var.key in keys])
 
+    def _model_values(self, var_set: VarSet) -> dict[str, Any]:
+        """The step's current values for the rows of ``var_set``.
+
+        Enum-backed attributes are serialized the same way recipes
+        store them, so choice rows can match them to their entries.
+        """
+        return {
+            var.key: self.step.recipe_value(
+                var.key, getattr(self.step, var.key, None)
+            )
+            for var in var_set
+        }
+
     def _on_varset_data_changed(self, widget: VarSetWidget, key: str):
         value = widget.get_values().get(key)
         self.set_step_property(key, value)
@@ -207,10 +215,7 @@ class StepSettingsPage(DebounceMixin, TrackedPreferencesPage):
         :meth:`_on_recipe_applied`.
         """
         for widget, var_set in self._varset_widgets:
-            values = {
-                var.key: getattr(self.step, var.key, None) for var in var_set
-            }
-            widget.sync_from_model(values)
+            widget.sync_from_model(self._model_values(var_set))
         self._update_machine_bounds()
 
     def _on_config_changed(self, *args):
@@ -227,12 +232,7 @@ class StepSettingsPage(DebounceMixin, TrackedPreferencesPage):
             if new_var_set is None:
                 continue
             widget.populate(new_var_set)
-            widget.set_values(
-                {
-                    var.key: getattr(self.step, var.key, None)
-                    for var in new_var_set
-                }
-            )
+            widget.set_values(self._model_values(new_var_set))
             self._varset_widgets[i] = (widget, new_var_set)
         self._on_machine_changed()
 

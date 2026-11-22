@@ -8,7 +8,8 @@ from ....context import get_context
 from ....core.group import Group
 from ....core.item import DocItem
 from ....core.stock import StockItem
-from ....core.workpiece import WorkPiece
+from ....core.undo import ChangePropertyCommand
+from ....core.workpiece import AnchorMode, WorkPiece
 from ....doceditor.transform_cmd import TransformCmd
 from ....shared.units.formatter import format_value
 from ...icons import get_icon
@@ -37,6 +38,7 @@ class TransformPropertyProvider(PropertyProvider):
         logger.debug("Creating transform property widgets.")
         self._rows = []
         self._create_position_rows()
+        self._create_anchor_row()
         self._create_size_rows()
         self._create_angle_shear_rows()
         return self._rows
@@ -60,9 +62,15 @@ class TransformPropertyProvider(PropertyProvider):
             if is_multi:
                 pos_machine = TransformCmd.get_position_group(items)
             else:
-                pos_machine = panel.world_item_to_machine(
-                    items[0].pos, items[0].size
-                )
+                anchored = self._anchored_workpiece(items[0])
+                if anchored is not None:
+                    pos_machine = panel.world_point_to_machine(
+                        *anchored.get_anchor_world()
+                    )
+                else:
+                    pos_machine = panel.world_item_to_machine(
+                        items[0].pos, items[0].size
+                    )
 
             if pos_machine is not None:
                 pos_machine_x, pos_machine_y = pos_machine
@@ -96,7 +104,11 @@ class TransformPropertyProvider(PropertyProvider):
                 ref = TransformCmd.get_position_group(items)
                 pos_ref_x, pos_ref_y = ref if ref is not None else (0.0, 0.0)
             else:
-                pos_ref_x, pos_ref_y = items[0].pos
+                anchored = self._anchored_workpiece(items[0])
+                if anchored is not None:
+                    pos_ref_x, pos_ref_y = anchored.get_anchor_world()
+                else:
+                    pos_ref_x, pos_ref_y = items[0].pos
             self.x_row.set_subtitle("")
             self.y_row.set_subtitle("")
 
@@ -118,6 +130,8 @@ class TransformPropertyProvider(PropertyProvider):
         was_in_update = getattr(self, "_in_update", False)
         self._in_update = True
         try:
+            self._update_anchor_row()
+
             # Use a fixed rounding precision in base units (mm) to
             # prevent float noise. The helpers handle display-side
             # rounding via the unit's precision.
@@ -193,6 +207,17 @@ class TransformPropertyProvider(PropertyProvider):
         self.y_row.add_suffix(self.reset_y_button)
 
         self._rows.extend([self.x_row, self.y_row])
+
+    def _create_anchor_row(self):
+        self._anchor_choices: list[AnchorMode] = []
+        self.anchor_row = Adw.ComboRow(title=_("Position relative to"))
+        self._anchor_handler_id = self.anchor_row.connect(
+            "notify::selected", self._on_anchor_mode_changed
+        )
+        self._anchor_store = Gtk.StringList()
+        self.anchor_row.set_model(self._anchor_store)
+        self.anchor_row.set_visible(False)
+        self._rows.append(self.anchor_row)
 
     def _create_size_rows(self):
         # Fixed Ratio Switch
@@ -328,6 +353,89 @@ class TransformPropertyProvider(PropertyProvider):
         button.connect("clicked", on_clicked)
         return button
 
+    @staticmethod
+    def _anchored_workpiece(item: DocItem) -> WorkPiece | None:
+        """
+        The item as a workpiece whose X/Y position refers to its anchor
+        point rather than the bounding box corner, or None.
+        """
+        if (
+            isinstance(item, WorkPiece)
+            and item.anchor_mode is not AnchorMode.CORNER
+        ):
+            return item
+        return None
+
+    def _update_anchor_row(self):
+        """
+        Rebuilds the anchor mode choices for the selected workpiece. The
+        reference point choice is only offered when the geometry provider
+        declares one.
+        """
+        item = self.items[0] if len(self.items) == 1 else None
+        if not isinstance(item, WorkPiece):
+            self.anchor_row.set_visible(False)
+            self._anchor_choices = []
+            return
+
+        choices = [AnchorMode.CORNER, AnchorMode.CENTER]
+        if item.has_reference_point():
+            choices.append(AnchorMode.REFERENCE)
+        self._anchor_choices = choices
+
+        store = self._anchor_store
+        mode = item.anchor_mode
+        index = choices.index(mode) if mode in choices else 0
+        # The selection notification must not run while the choices are
+        # being replaced; GTK segfaults on re-entrant model updates.
+        with self.anchor_row.handler_block(self._anchor_handler_id):
+            store.splice(0, store.get_n_items(), [m.label() for m in choices])
+            self.anchor_row.set_selected(index)
+        self.anchor_row.set_visible(True)
+
+    def _on_anchor_mode_changed(self, row, pspec):
+        logger.debug("_on_anchor_mode_changed called.")
+        if self._in_update or not self.items:
+            return
+        item = self.items[0]
+        if not isinstance(item, WorkPiece):
+            return
+        index = row.get_selected()
+        if index < 0 or index >= len(self._anchor_choices):
+            return
+        new_mode = self._anchor_choices[index]
+        if new_mode is item.anchor_mode:
+            return
+
+        history = self.editor.history_manager
+        with history.transaction(_("Change position origin")) as t:
+            cmd = ChangePropertyCommand(
+                target=item,
+                property_name="anchor_mode",
+                new_value=new_mode,
+                old_value=item.anchor_mode,
+            )
+            t.execute(cmd)
+
+        self.update_widgets(self.editor, self.items)
+
+    def _set_single_position(self, x_machine: float, y_machine: float):
+        """
+        Positions the single selected item, honoring its anchor mode:
+        non-corner anchor modes move the anchor point to the target
+        instead of the bounding box corner.
+        """
+        item = self.items[0]
+        anchored = self._anchored_workpiece(item)
+        if anchored is not None:
+            self.editor.transform.set_position_at_anchor(
+                anchored, x_machine, y_machine
+            )
+        else:
+            self.editor.transform.set_position(
+                self.items, x_machine, y_machine
+            )
+
     def _on_width_changed(self, _row):
         logger.debug(f"_on_width_changed called. _in_update={self._in_update}")
         if self._in_update or not self.items:
@@ -425,9 +533,7 @@ class TransformPropertyProvider(PropertyProvider):
                     self.items, new_x_machine, current_y_machine
                 )
             else:
-                self.editor.transform.set_position(
-                    self.items, new_x_machine, current_y_machine
-                )
+                self._set_single_position(new_x_machine, current_y_machine)
         finally:
             self._in_update = False
             logger.debug("_on_x_changed finished.")
@@ -467,9 +573,7 @@ class TransformPropertyProvider(PropertyProvider):
                     self.items, current_x_machine, new_y_machine
                 )
             else:
-                self.editor.transform.set_position(
-                    self.items, current_x_machine, new_y_machine
-                )
+                self._set_single_position(current_x_machine, new_y_machine)
         finally:
             self._in_update = False
             logger.debug("_on_y_changed finished.")
@@ -646,9 +750,7 @@ class TransformPropertyProvider(PropertyProvider):
             current_y_wcs = self.y_row.get_value_in_base_units()
             current_y_machine = current_y_wcs + offset_machine[1]
 
-            self.editor.transform.set_position(
-                self.items, target_x_machine, current_y_machine
-            )
+            self._set_single_position(target_x_machine, current_y_machine)
 
     def _on_reset_y_clicked(self, button):
         if not self.items:
@@ -683,6 +785,4 @@ class TransformPropertyProvider(PropertyProvider):
             current_x_wcs = self.x_row.get_value_in_base_units()
             current_x_machine = current_x_wcs + offset_machine[0]
 
-            self.editor.transform.set_position(
-                self.items, current_x_machine, target_y_machine
-            )
+            self._set_single_position(current_x_machine, target_y_machine)

@@ -99,6 +99,7 @@ sua página:
 | [Elipse](arc-ellipse.md)              | `G+C`  |
 | [Retângulo](rectangle.md)             | `G+R`  |
 | [Retângulo arredondado](rectangle.md) | `G+O`  |
+| [Polígono](polygon.md)                | `G+X`  |
 | [Preenchimento de áreas](fill.md)     | `G+F`  |
 | [Caixa de texto](text-box.md)         | `G+T`  |
 | [Matriz Circular](arrays.md)          | `G+Y`  |
@@ -148,9 +149,9 @@ sinalizador; o alternador de construção na barra de ferramentas as oculta quan
 
 As ferramentas de desenho estão documentadas em páginas próprias: [Caminho](path.md) (linhas e
 curvas de Bézier), [Arco e Elipse](arc-ellipse.md), [Retângulo](rectangle.md) (e retângulos
-arredondados), [Preenchimento de áreas](fill.md), [Caixa de texto](text-box.md) e [Grade](grid.md).
-Modificações como [Deslocamento](offset.md) e [Chanfro e arredondamento](chamfer-fillet.md)
-remodelam a geometria existente, [Matrizes](arrays.md) copiam a geometria ao longo de um círculo ou
-de uma curva, e [Expressões](expressions.md) explica parâmetros, expressões e caixas de texto
-paramétricas. Esboços podem ser salvos e reimportados com todas as restrições intactas — veja
-[Importação e exportação](import-export.md).
+arredondados), [Polígono](polygon.md) (e estrelas), [Preenchimento de áreas](fill.md),
+[Caixa de texto](text-box.md) e [Grade](grid.md). Modificações como [Deslocamento](offset.md) e
+[Chanfro e arredondamento](chamfer-fillet.md) remodelam a geometria existente, [Matrizes](arrays.md)
+copiam a geometria ao longo de um círculo ou de uma curva, e [Expressões](expressions.md) explica
+parâmetros, expressões e caixas de texto paramétricas. Esboços podem ser salvos e reimportados com
+todas as restrições intactas — veja [Importação e exportação](import-export.md).

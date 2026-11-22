@@ -7,21 +7,21 @@ edit/regenerate, undo/redo, and solver stability.
 import math
 
 import pytest
-from sketcher.core.arrays import (
+from raygeo.sketch.arrays import (
     CircularArrayStrategy,
     find_array_for_entity,
 )
+from raygeo.sketch.constraints import (
+    DragConstraint,
+    RadiusConstraint,
+)
+from raygeo.sketch.entities import Circle
+from raygeo.sketch.entity_group import EntityGroup
 from sketcher.core.commands import (
     CreateArrayCommand,
     EditArrayCommand,
     RemoveItemsCommand,
 )
-from sketcher.core.constraints import (
-    DragConstraint,
-    RadiusConstraint,
-)
-from sketcher.core.entities import Circle
-from sketcher.core.entity_group import EntityGroup
 from sketcher.core.sketch import Sketch
 
 
@@ -250,7 +250,7 @@ def test_edit_after_deletion_recreates_members(app_flow):
     members_consistent(sketch, array)
 
     # Exactly one master, still found by double-click.
-    circles = [e for e in sketch.registry.entities if e.type == "circle"]
+    circles = [e for e in sketch.registry.entities() if e.type == "circle"]
     assert len(circles) == 1
     assert find_array_for_entity(sketch.arrays, array.guide_circle_id) is array
 
@@ -262,7 +262,7 @@ def test_repeated_edit_cycles_are_stable(app_flow):
         sketch.solve()
         assert len(array.living_entity_ids(sketch.registry)) == count
 
-    circles = [e for e in sketch.registry.entities if e.type == "circle"]
+    circles = [e for e in sketch.registry.entities() if e.type == "circle"]
     assert len(circles) == 1
     radius_constraints = [
         c for c in sketch.constraints if type(c).__name__ == "RadiusConstraint"
@@ -375,3 +375,11 @@ def test_edit_undo_restores_geometry_and_membership(app_flow):
     edit_cmd.undo()
     assert array.members == members_before
     assert len(array.living_members(sketch.registry)) == 3
+
+
+def test_geometry_clone_handles_rust_arrays(app_flow):
+    """get_geometry clones the sketch; Rust arrays must copy cleanly."""
+    sketch, array = app_flow
+    geometry, _fills = sketch.get_geometry()
+    assert geometry is not None
+    assert len(array.living_members(sketch.registry)) > 1

@@ -47,7 +47,7 @@ def _get_executed_command(history: HistoryManager):
 def test_nudge_moves_selected_entity(element_with_line):
     element, sketch, p1, p2, _, _ = element_with_line
     registry = sketch.registry
-    entity_id = registry.entities[0].id
+    entity_id = registry.entities()[0].id
     element.selection.select_entity(
         registry.get_entity(entity_id), is_multi=False
     )
@@ -67,7 +67,7 @@ def test_nudge_moves_selected_entity(element_with_line):
 def test_nudge_creates_undoable_command(element_with_line):
     element, sketch, p1, p2, _, history = element_with_line
     registry = sketch.registry
-    entity = registry.entities[0]
+    entity = registry.entities()[0]
     element.selection.select_entity(entity, is_multi=False)
 
     element.nudge_selection(5.0, 0.0)
@@ -97,7 +97,7 @@ def test_nudge_skips_fixed_points(element_with_line):
     element, sketch, p1, p2, _, _ = element_with_line
     registry = sketch.registry
     registry.get_point(p1).fixed = True
-    element.selection.point_ids.extend([p1, p2])
+    element.selection.point_ids = [p1, p2]
 
     assert element.nudge_selection(1.0, 1.0) is True
     assert (registry.get_point(p1).x, registry.get_point(p1).y) == (

@@ -1,8 +1,8 @@
 import pytest
 from raygeo.geo.shape.text import FontConfig
+from raygeo.sketch.entities import TextBox as TextBoxEntity
 from sketcher.core import Sketch
 from sketcher.core.commands import ModifyTextPropertyCommand, TextBoxCommand
-from sketcher.core.entities.text_box import TextBoxEntity
 
 from rayforge.core.undo import HistoryManager
 
@@ -21,12 +21,8 @@ def sketch_with_text_box():
         p_width,
         p_height,
         content="Original Text",
-        font_config=FontConfig(
-            family="sans-serif",
-            size=10.0,
-            bold=False,
-            italic=False,
-        ),
+        font_family="sans-serif",
+        font_size=10.0,
     )
 
     return sketch, tb_id
@@ -246,12 +242,8 @@ def test_text_property_command_undo_with_history_manager():
         p_width,
         p_height,
         content="Original Text",
-        font_config=FontConfig(
-            family="sans-serif",
-            size=10.0,
-            bold=False,
-            italic=False,
-        ),
+        font_family="sans-serif",
+        font_size=10.0,
     )
 
     history = HistoryManager()
@@ -315,7 +307,8 @@ def test_text_property_command_redo_after_undo():
         p_width,
         p_height,
         content="Original",
-        font_config=FontConfig(family="sans-serif", size=10.0),
+        font_family="sans-serif",
+        font_size=10.0,
     )
 
     history = HistoryManager()
@@ -353,7 +346,8 @@ def test_text_property_command_multiple_edits_with_history():
         p_width,
         p_height,
         content="Initial",
-        font_config=FontConfig(family="sans-serif", size=10.0),
+        font_family="sans-serif",
+        font_size=10.0,
     )
 
     history = HistoryManager()
@@ -417,7 +411,8 @@ def test_should_skip_undo_both_empty():
         p_width,
         p_height,
         content="",
-        font_config=FontConfig(family="sans-serif", size=10.0),
+        font_family="sans-serif",
+        font_size=10.0,
     )
 
     cmd = ModifyTextPropertyCommand(sketch, tb_id, "", FontConfig())
@@ -438,7 +433,8 @@ def test_should_skip_undo_old_empty_new_not_empty():
         p_width,
         p_height,
         content="",
-        font_config=FontConfig(family="sans-serif", size=10.0),
+        font_family="sans-serif",
+        font_size=10.0,
     )
 
     cmd = ModifyTextPropertyCommand(sketch, tb_id, "New Text", FontConfig())
@@ -459,7 +455,8 @@ def test_should_skip_undo_old_not_empty_new_empty():
         p_width,
         p_height,
         content="Original",
-        font_config=FontConfig(family="sans-serif", size=10.0),
+        font_family="sans-serif",
+        font_size=10.0,
     )
 
     cmd = ModifyTextPropertyCommand(sketch, tb_id, "", FontConfig())
@@ -481,7 +478,8 @@ def test_should_skip_undo_both_not_empty():
         p_width,
         p_height,
         content="Original",
-        font_config=FontConfig(family="sans-serif", size=10.0),
+        font_family="sans-serif",
+        font_size=10.0,
     )
 
     cmd = ModifyTextPropertyCommand(sketch, tb_id, "New Text", FontConfig())
@@ -502,7 +500,8 @@ def test_empty_text_box_removed_on_execute():
         p_width,
         p_height,
         content="Original Text",
-        font_config=FontConfig(family="sans-serif", size=10.0),
+        font_family="sans-serif",
+        font_size=10.0,
     )
 
     cmd = ModifyTextPropertyCommand(sketch, tb_id, "", FontConfig())
@@ -530,7 +529,8 @@ def test_empty_text_box_points_removed():
         p_width,
         p_height,
         content="Original Text",
-        font_config=FontConfig(family="sans-serif", size=10.0),
+        font_family="sans-serif",
+        font_size=10.0,
     )
 
     cmd = ModifyTextPropertyCommand(sketch, tb_id, "", FontConfig())
@@ -540,7 +540,7 @@ def test_empty_text_box_points_removed():
     assert len(cmd._removed_points) == 3
 
     point_ids = {pt.id for pt in cmd._removed_points}
-    for pt in sketch.registry.points:
+    for pt in sketch.registry.points():
         assert pt.id not in point_ids
 
 
@@ -557,7 +557,8 @@ def test_empty_text_box_constraints_removed():
         p_width,
         p_height,
         content="Original Text",
-        font_config=FontConfig(family="sans-serif", size=10.0),
+        font_family="sans-serif",
+        font_size=10.0,
     )
 
     cmd = ModifyTextPropertyCommand(sketch, tb_id, "", FontConfig())
@@ -583,7 +584,8 @@ def test_empty_text_box_undo_restores_entity():
         p_width,
         p_height,
         content="Original Text",
-        font_config=FontConfig(family="sans-serif", size=10.0),
+        font_family="sans-serif",
+        font_size=10.0,
     )
 
     cmd = ModifyTextPropertyCommand(sketch, tb_id, "", FontConfig())
@@ -612,7 +614,8 @@ def test_empty_text_box_undo_restores_points():
         p_width,
         p_height,
         content="Original Text",
-        font_config=FontConfig(family="sans-serif", size=10.0),
+        font_family="sans-serif",
+        font_size=10.0,
     )
 
     cmd = ModifyTextPropertyCommand(sketch, tb_id, "", FontConfig())
@@ -620,7 +623,7 @@ def test_empty_text_box_undo_restores_points():
     cmd.execute()
 
     point_ids = {pt.id for pt in cmd._removed_points}
-    for pt in sketch.registry.points:
+    for pt in sketch.registry.points():
         assert pt.id not in point_ids
 
     cmd.undo()
@@ -644,7 +647,8 @@ def test_empty_text_box_with_history_manager():
         p_width,
         p_height,
         content="Original Text",
-        font_config=FontConfig(family="sans-serif", size=10.0),
+        font_family="sans-serif",
+        font_size=10.0,
     )
 
     history = HistoryManager()
@@ -677,7 +681,8 @@ def test_empty_text_box_undo_restores_constraints():
         p_width,
         p_height,
         content="Original Text",
-        font_config=FontConfig(family="sans-serif", size=10.0),
+        font_family="sans-serif",
+        font_size=10.0,
     )
 
     cmd = ModifyTextPropertyCommand(sketch, tb_id, "", FontConfig())
@@ -705,7 +710,7 @@ def test_undo_removes_text_box_when_reverting_to_empty():
     """
     sketch = Sketch()
 
-    initial_point_count = len(sketch.registry.points)
+    initial_point_count = len(sketch.registry.points())
 
     p_origin = sketch.add_point(0, 0)
     p_width = sketch.add_point(50, 0)
@@ -716,7 +721,8 @@ def test_undo_removes_text_box_when_reverting_to_empty():
         p_width,
         p_height,
         content="",
-        font_config=FontConfig(family="sans-serif", size=10.0),
+        font_family="sans-serif",
+        font_size=10.0,
     )
 
     cmd = ModifyTextPropertyCommand(
@@ -733,7 +739,7 @@ def test_undo_removes_text_box_when_reverting_to_empty():
     cmd.undo()
 
     assert sketch.registry.get_entity(tb_id) is None
-    assert len(sketch.registry.points) == initial_point_count
+    assert len(sketch.registry.points()) == initial_point_count
 
 
 def test_redo_restores_text_box_after_undo_to_empty():
@@ -743,7 +749,7 @@ def test_redo_restores_text_box_after_undo_to_empty():
     """
     sketch = Sketch()
 
-    initial_point_count = len(sketch.registry.points)
+    initial_point_count = len(sketch.registry.points())
 
     p_origin = sketch.add_point(0, 0)
     p_width = sketch.add_point(50, 0)
@@ -754,7 +760,8 @@ def test_redo_restores_text_box_after_undo_to_empty():
         p_width,
         p_height,
         content="",
-        font_config=FontConfig(family="sans-serif", size=10.0),
+        font_family="sans-serif",
+        font_size=10.0,
     )
 
     history = HistoryManager()
@@ -773,7 +780,7 @@ def test_redo_restores_text_box_after_undo_to_empty():
     history.undo()
 
     assert sketch.registry.get_entity(tb_id) is None
-    assert len(sketch.registry.points) == initial_point_count
+    assert len(sketch.registry.points()) == initial_point_count
 
     history.redo()
 
@@ -804,8 +811,8 @@ def test_create_box_transaction_undo_redo_no_duplicate_ids():
         t.execute(fin_cmd)
 
     def assert_no_duplicates():
-        pids = [p.id for p in sketch.registry.points]
-        eids = [e.id for e in sketch.registry.entities]
+        pids = [p.id for p in sketch.registry.points()]
+        eids = [e.id for e in sketch.registry.entities()]
         assert len(pids) == len(set(pids))
         assert len(eids) == len(set(eids))
 
@@ -816,7 +823,7 @@ def test_create_box_transaction_undo_redo_no_duplicate_ids():
     assert_no_duplicates()
 
     text_boxes = [
-        e for e in sketch.registry.entities if isinstance(e, TextBoxEntity)
+        e for e in sketch.registry.entities() if isinstance(e, TextBoxEntity)
     ]
     assert len(text_boxes) == 1
     assert text_boxes[0].content == "abc"

@@ -9,13 +9,13 @@ satisfied after every frame.
 import math
 
 import pytest
-from sketcher.core.arrays import (
+from raygeo.sketch.arrays import (
     CurveAlongArrayStrategy,
     resolve_template_center,
 )
+from raygeo.sketch.constraints import CoincidentConstraint
+from raygeo.sketch.params import ParameterContext
 from sketcher.core.commands import CreateArrayCommand
-from sketcher.core.constraints import CoincidentConstraint
-from sketcher.core.params import ParameterContext
 from sketcher.core.sketch import Sketch
 
 
@@ -40,7 +40,7 @@ def _build_sketch():
     p2 = sketch.registry.add_point(3.0, -2.0)
     p3 = sketch.registry.add_point(6.0, -2.0)
     line1 = sketch.registry.add_line(p0, p1)
-    arc = sketch.registry.add_arc(a0, a1, center, cw=False)
+    arc = sketch.registry.add_arc(a0, a1, center, clockwise=False)
     line2 = sketch.registry.add_line(p2, p3)
     sketch.constrain_coincident(p1, a0)
     sketch.constrain_coincident(p2, a1)
@@ -151,7 +151,12 @@ def _template_center(sketch, array):
     else the bbox center of the defining points). For Circle/Ellipse
     templates the pin is exact; for bbox-center templates the center
     wobbles by up to ~|dtangent| x extent under rotation, so pin
-    assertions on such templates need a loose tolerance."""
+    assertions on such templates need a loose tolerance.
+
+    raygeo 1.92.0 samples curve-array guides through the canonical
+    entity discretization (previously a hand-rolled fixed-segment
+    sampler), which changes the guide tangent at the anchor slightly;
+    the wobble allowance below covers both discretizations."""
     eids = array.members[0][1]
     pts = []
     for eid in eids:
@@ -183,7 +188,7 @@ def test_user_repro_drag_template_away_and_back_then_guide(array_flow):
     # guide's start point (the template's position is guide-owned).
     _drag_template(sketch, array, 10.0, 10.0)
     assert _template_center(sketch, array) == pytest.approx(
-        _guide_start(sketch, guide), abs=0.6
+        _guide_start(sketch, guide), abs=0.8
     )
     assert _coincident_residual(sketch) < 1e-6
     _drag_template(sketch, array, -10.0, -10.0)
@@ -196,7 +201,7 @@ def test_user_repro_drag_template_away_and_back_then_guide(array_flow):
         residual = _coincident_residual(sketch)
         assert residual < 1e-6, f"frame {frame}: residual {residual}"
         assert _template_center(sketch, array) == pytest.approx(
-            _guide_start(sketch, guide), abs=0.6
+            _guide_start(sketch, guide), abs=0.8
         )
         _assert_members_follow(sketch, array, frame)
 
@@ -218,7 +223,7 @@ def test_dragging_guide_endpoint_moves_template_with_it(array_flow):
             f"frame {frame}: coincident residual {residual}"
         )
         assert _template_center(sketch, array) == pytest.approx(
-            _guide_start(sketch, guide), abs=0.6
+            _guide_start(sketch, guide), abs=0.8
         )
         _assert_members_follow(sketch, array, frame)
 

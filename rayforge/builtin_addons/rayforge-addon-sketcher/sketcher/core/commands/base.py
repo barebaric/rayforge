@@ -6,7 +6,8 @@ from typing import TYPE_CHECKING
 from rayforge.core.undo.command import Command
 
 if TYPE_CHECKING:
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
+
     from ..sketch import Sketch
     from .dimension import DimensionData
 
@@ -33,6 +34,16 @@ class PreviewState:
         Returns:
             Set of temporary point IDs that tools should ignore during
             hit testing for snap purposes.
+        """
+        return set()
+
+    def get_preview_entity_ids(self) -> set[int]:
+        """
+        Returns IDs of entities created for the preview.
+
+        These entities are kept out of the cached snap index so their
+        geometry can follow the cursor without rebuilding all static
+        snap lines. Their points can still be live snap candidates.
         """
         return set()
 

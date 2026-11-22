@@ -29,6 +29,15 @@ Quando habilitado, você pode fazer homing de eixos individuais independentement
 de requerer todos os eixos juntos. Isso é útil para máquinas onde um eixo já pode estar posicionado
 corretamente.
 
+### Referenciação de Z
+
+Escolhe como o eixo Z encontra sua posição de referência ao fazer homing. Esta configuração só
+aparece quando o driver da máquina suporta mais de um método.
+
+- **Interruptor de Referência**: Z se move até seu interruptor de referência, como os eixos X e Y
+- **Sonda**: Z usa a sonda de foco automático do controlador para encontrar a superfície de trabalho
+  e depois se move para a distância de foco configurada
+
 ## Configurações de Arcos e Curvas
 
 Configurações para controlar como caminhos curvos são convertidos em movimentos de G-code.
@@ -56,6 +65,43 @@ especificado em milímetros. Um valor menor produz caminhos mais precisos mas po
 comandos. Um valor maior permite mais desvio mas gera menos comandos.
 
 Valores típicos variam de 0.01mm para trabalho de precisão a 0.1mm para processamento mais rápido.
+
+## Deslocamento de Varredura Bidirecional por Velocidade {#bidirectional-scan-offset-by-speed}
+
+A tabela de deslocamento de varredura bidirecional por velocidade corrige o desalinhamento
+horizontal entre passagens raster da esquerda para a direita e da direita para a esquerda. Em muitas
+máquinas esse desalinhamento não é constante: quanto mais rápido o cabeçote do laser se move, mais
+as passagens da direita para a esquerda saem do alinhamento, o que aparece como faixas que pioram em
+velocidades de gravação mais altas.
+
+![Deslocamento de Varredura Bidirecional por Velocidade](/screenshots/machine-settings-advanced-bidir-offset-table.webp)
+
+Cada linha da tabela associa uma velocidade de gravação ao deslocamento, em milímetros, de que as
+passagens da direita para a esquerda precisam nessa velocidade:
+
+- Use **Adicionar Linha** para adicionar uma linha e o botão de lixeira de uma linha para removê-la
+- Valores positivos deslocam as passagens da direita para a esquerda para a direita; valores
+  negativos, para a esquerda
+- As linhas são mantidas ordenadas por velocidade; se duas linhas tiverem a mesma velocidade, a
+  última prevalece
+
+Quando uma etapa de gravação é executada, o Rayforge consulta a velocidade da etapa nesta tabela e
+interpola o deslocamento linearmente entre as linhas vizinhas. Velocidades abaixo da primeira linha
+ou acima da última usam o deslocamento da linha mais próxima, e uma tabela vazia significa que todas
+as velocidades usam um deslocamento de 0.
+
+**Sem correção** — o desalinhamento cresce com a velocidade de gravação:
+
+![Passagens raster desalinhadas a 1000, 4000 e 8000 mm/min](/images/bidir-scan-offset-uncorrected.webp)
+
+**Com a tabela de deslocamento aplicada:**
+
+![Passagens raster alinhadas em todas as velocidades](/images/bidir-scan-offset-table-applied.webp)
+
+A tabela se aplica apenas a etapas de gravação cujo próprio **Deslocamento de Varredura
+Bidirecional** é 0; um deslocamento por etapa diferente de zero sempre tem precedência. Consulte
+[Deslocamento de Varredura Bidirecional](../features/operations/engrave.md#bidirectional-scan-offset)
+para ver como fica o desalinhamento e como calibrá-lo.
 
 ## Veja Também
 

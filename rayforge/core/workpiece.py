@@ -3,9 +3,11 @@ from __future__ import annotations
 import logging
 import math
 import warnings
-from collections.abc import Generator
+from collections.abc import Generator, Iterable
 from copy import deepcopy
 from dataclasses import asdict
+from enum import Enum, auto
+from gettext import gettext as _
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -26,8 +28,11 @@ from raygeo.geo.types import Point, Rect
 from raygeo.ops.part import Part
 
 from ..context import get_context
+from ..shared.util.cache import LruCache
 from .asset_registry import asset_type_registry
 from .geometry_provider import IGeometryProvider
+from .image_cache import new_image_cache
+from .image_edit import ImageEditStep, apply_image_edits
 from .item import DocItem
 from .source_asset_segment import SourceAssetSegment
 from .tab import Tab
@@ -46,6 +51,22 @@ logger = logging.getLogger(__name__)
 CAIRO_MAX_DIMENSION = 16384
 
 
+def _with_resolution(
+    image: pyvips.Image, size_mm: tuple[float, float]
+) -> pyvips.Image:
+    """
+    Tags the image with its resolution in pixels per mm, so edits with
+    physical sizes (like a sharpen radius) do not depend on the render
+    size.
+    """
+    width_mm, height_mm = size_mm
+    if width_mm <= 0 or height_mm <= 0:
+        return image
+    return image.copy(
+        xres=image.width / width_mm, yres=image.height / height_mm
+    )
+
+
 class RenderContext(NamedTuple):
     """Encapsulates the resources required for rendering."""
 
@@ -57,6 +78,30 @@ class RenderContext(NamedTuple):
     boundaries: Geometry | None
     fills: list[FillRenderData] | None
     size_mm: tuple[float, float] | None = None
+
+
+class AnchorMode(Enum):
+    """Defines which local point a workpiece is positioned around."""
+
+    CORNER = auto()
+    """The lower-left corner of the geometry's bounding box."""
+    CENTER = auto()
+    """The center of the geometry's bounding box."""
+    REFERENCE = auto()
+    """The geometry provider's reference point, e.g. the sketch origin.
+
+    Falls back to the center when the provider declares no reference
+    point.
+    """
+
+    def label(self) -> str:
+        """Return a translatable label for this anchor mode."""
+        labels = {
+            self.CORNER: _("Corner"),
+            self.CENTER: _("Center"),
+            self.REFERENCE: _("Reference point"),
+        }
+        return labels[self]
 
 
 class WorkPiece(DocItem):
@@ -80,6 +125,13 @@ class WorkPiece(DocItem):
         self.natural_width_mm: float = 0.0
         self.natural_height_mm: float = 0.0
 
+        # Which local point the workpiece is positioned and resized
+        # around.
+        self._anchor_mode: AnchorMode = AnchorMode.CORNER
+        # Position of the provider's reference point in the normalized
+        # 0-1 space, updated whenever the geometry is normalized.
+        self._reference_anchor: tuple[float, float] | None = None
+
         # An optional override for the workpiece geometry. If set, this takes
         # precedence over the source_segment's geometry. It allows for
         # non-destructive editing (like splitting) without modifying the
@@ -87,7 +139,16 @@ class WorkPiece(DocItem):
         self._edited_boundaries: Geometry | None = None
 
         # The cache for rendered vips images. Key is (width, height).
-        self._render_cache: dict[tuple[int, int], pyvips.Image] = {}
+        self._render_cache: LruCache[tuple[int, int], pyvips.Image] = (
+            new_image_cache()
+        )
+
+        # The non-destructive image edit stack and the cache of rendered
+        # images with that stack applied. Key is (width, height, size).
+        self._image_edits: tuple[ImageEditStep, ...] = ()
+        self._processed_cache: LruCache[
+            tuple[int, int, tuple[float, float]], pyvips.Image
+        ] = new_image_cache()
 
         # Transient attributes for deserialized instances in subprocesses
         self._data: bytes | None = None
@@ -192,6 +253,9 @@ class WorkPiece(DocItem):
             geometry.transform(norm_matrix)
             for fd in fill_data:
                 fd.geometry.transform(norm_matrix)
+            instance._reference_anchor = instance._compute_reference_anchor(
+                provider, min_x, min_y, width, height
+            )
 
         # Cache the results (even if empty) to ensure fast rendering
         instance._boundaries_cache = geometry
@@ -199,6 +263,23 @@ class WorkPiece(DocItem):
         instance._resolved_text_cache = instance_cache
 
         return instance
+
+    @staticmethod
+    def _compute_reference_anchor(
+        provider: IGeometryProvider,
+        min_x: float,
+        min_y: float,
+        width: float,
+        height: float,
+    ) -> tuple[float, float] | None:
+        """
+        Maps the provider's reference point into the normalized 0-1
+        space, or returns None when the provider declares none.
+        """
+        ref = provider.get_reference_point()
+        if ref is None:
+            return None
+        return ((ref[0] - min_x) / width, (ref[1] - min_y) / height)
 
     @property
     def source_segment(self) -> SourceAssetSegment | None:
@@ -220,12 +301,70 @@ class WorkPiece(DocItem):
             self.updated.send(self)
 
     @property
+    def image_edits(self) -> tuple[ImageEditStep, ...]:
+        """The image edits applied, in order, on top of the render."""
+        return self._image_edits
+
+    @image_edits.setter
+    def image_edits(self, edits: Iterable[ImageEditStep]):
+        new_edits = tuple(edits)
+        if new_edits == self._image_edits:
+            return
+        self._image_edits = new_edits
+        self._processed_cache.clear()
+        self.updated.send(self)
+
+    @property
+    def has_edited_boundaries(self) -> bool:
+        """
+        True if the shape no longer comes straight from the source, e.g.
+        because the workpiece was split.
+        """
+        return self._edited_boundaries is not None
+
+    @property
     def natural_size(self) -> tuple[float, float]:
         """
         Returns the natural (untransformed) size of the content in mm.
         This is the authoritative source for the workpiece's intrinsic size.
         """
         return (self.natural_width_mm, self.natural_height_mm)
+
+    @property
+    def anchor_mode(self) -> AnchorMode:
+        """
+        Which local point the workpiece is positioned and resized around.
+        """
+        return self._anchor_mode
+
+    @anchor_mode.setter
+    def anchor_mode(self, mode: AnchorMode):
+        if self._anchor_mode != mode:
+            self._anchor_mode = mode
+
+    @property
+    def anchor_point(self) -> tuple[float, float]:
+        """
+        The anchor point in the normalized 0-1 local space, derived from
+        the anchor mode. Reference mode falls back to the center when the
+        geometry provider declares no reference point.
+        """
+        if self._anchor_mode is AnchorMode.CENTER:
+            return (0.5, 0.5)
+        if self._anchor_mode is AnchorMode.REFERENCE:
+            if self._reference_anchor is not None:
+                return self._reference_anchor
+            return (0.5, 0.5)
+        return (0.0, 0.0)
+
+    def get_anchor_world(self) -> Point:
+        """The anchor point's current position in world space (mm)."""
+        return self.get_world_transform().transform_point(self.anchor_point)
+
+    def has_reference_point(self) -> bool:
+        """True if the geometry provider declares a reference point."""
+        provider = self.get_geometry_provider()
+        return bool(provider and provider.get_reference_point() is not None)
 
     def get_local_bbox(self) -> Rect | None:
         """
@@ -243,6 +382,7 @@ class WorkPiece(DocItem):
             f"WP {self.uid[:8]}: Clearing all caches (render and boundaries)."
         )
         self._render_cache.clear()
+        self._processed_cache.clear()
         self._boundaries_cache = None
         self._fills_cache = None
 
@@ -417,6 +557,10 @@ class WorkPiece(DocItem):
             for fill_data in unnormalized_fills:
                 fill_data.geometry.transform(norm_matrix)
 
+            self._reference_anchor = self._compute_reference_anchor(
+                provider, min_x, min_y, width, height
+            )
+
             self._boundaries_cache = unnormalized_geo
             self._fills_cache = unnormalized_fills
             return self._boundaries_cache
@@ -573,7 +717,11 @@ class WorkPiece(DocItem):
             self._geometry_provider_params
         )
         world_wp.source_asset_uid = self.source_asset_uid
+        world_wp._anchor_mode = self._anchor_mode
+        world_wp._reference_anchor = self._reference_anchor
         world_wp._resolved_text_cache = dict(self._resolved_text_cache)
+
+        world_wp._image_edits = self._image_edits
 
         # Ensure any edited boundaries are carried over.
         if self._edited_boundaries is not None:
@@ -804,14 +952,36 @@ class WorkPiece(DocItem):
 
         return processed_image
 
-    def get_vips_image(self, width: int, height: int) -> pyvips.Image | None:
+    def get_processed_image(
+        self, width: int, height: int
+    ) -> pyvips.Image | None:
         """
-        The central hub for rendering a vips image for this workpiece.
+        The image as the user sees it: the render with the image edit
+        stack applied. Everything that consumes the workpiece's pixels
+        (canvas, pipeline, previews) goes through here.
+        """
+        image = self._get_vips_image(width, height)
+        if image is None or not self._image_edits:
+            return image
+        size = self.size
+        key = (width, height, size)
+        processed = self._processed_cache.get(key)
+        if processed is None:
+            processed = apply_image_edits(
+                _with_resolution(image, size), self._image_edits
+            )
+            self._processed_cache.put(key, processed)
+        return processed
+
+    def _get_vips_image(self, width: int, height: int) -> pyvips.Image | None:
+        """
+        Renders the unedited vips image for this workpiece.
         Orchestrates data retrieval, rendering, cropping, and masking.
         """
         key = (width, height)
-        if key in self._render_cache:
-            return self._render_cache[key]
+        cached = self._render_cache.get(key)
+        if cached is not None:
+            return cached
 
         # 1. Resolve Context
         ctx = self._resolve_render_context()
@@ -853,7 +1023,7 @@ class WorkPiece(DocItem):
         )
 
         if final_image:
-            self._render_cache[key] = final_image
+            self._render_cache.put(key, final_image)
 
         return final_image
 
@@ -877,6 +1047,7 @@ class WorkPiece(DocItem):
             "matrix": self._matrix.to_list(),
             "width_mm": self.natural_width_mm,
             "height_mm": self.natural_height_mm,
+            "anchor_mode": self._anchor_mode.name,
             "tabs": [asdict(t) for t in self._tabs],
             "tabs_enabled": self._tabs_enabled,
             "source_segment": (
@@ -887,6 +1058,7 @@ class WorkPiece(DocItem):
                 if self._edited_boundaries is not None
                 else None
             ),
+            "image_edits": [edit.to_dict() for edit in self._image_edits],
             "geometry_provider_uid": self.geometry_provider_uid,
             "geometry_provider_params": self._geometry_provider_params,
             "source_asset_uid": self.source_asset_uid,
@@ -927,10 +1099,12 @@ class WorkPiece(DocItem):
             "matrix",
             "width_mm",
             "height_mm",
+            "anchor_mode",
             "tabs",
             "tabs_enabled",
             "source_segment",
             "edited_boundaries",
+            "image_edits",
             "geometry_provider_uid",
             "geometry_provider_params",
             "source_asset_uid",
@@ -962,6 +1136,10 @@ class WorkPiece(DocItem):
         wp.matrix = Matrix.from_list(data["matrix"])
         wp.natural_width_mm = data.get("width_mm", 0.0)
         wp.natural_height_mm = data.get("height_mm", 0.0)
+        try:
+            wp._anchor_mode = AnchorMode[data.get("anchor_mode", "CORNER")]
+        except KeyError:
+            wp._anchor_mode = AnchorMode.CORNER
 
         loaded_tabs = [Tab(**t_data) for t_data in data.get("tabs", [])]
         wp.tabs = loaded_tabs
@@ -971,6 +1149,9 @@ class WorkPiece(DocItem):
             wp._edited_boundaries = Geometry.from_dict(
                 data["edited_boundaries"]
             )
+        wp._image_edits = tuple(
+            ImageEditStep.from_dict(d) for d in data.get("image_edits", [])
+        )
 
         wp.geometry_provider_uid = data.get(
             "geometry_provider_uid"
@@ -1077,7 +1258,7 @@ class WorkPiece(DocItem):
         from ..image import util
 
         # This now uses the central hub for rendering.
-        final_image = self.get_vips_image(width, height)
+        final_image = self.get_processed_image(width, height)
         if not final_image:
             return None
         normalized_image = util.normalize_to_rgba(final_image)
@@ -1168,7 +1349,9 @@ class WorkPiece(DocItem):
                 "or max_memory_size must be provided."
             )
 
-        vips_image = self.get_vips_image(round(width_px), round(height_px))
+        vips_image = self.get_processed_image(
+            round(width_px), round(height_px)
+        )
         if not vips_image or not isinstance(vips_image, pyvips.Image):
             logger.warning("Failed to load image for chunking.")
             return
@@ -1507,6 +1690,44 @@ class WorkPiece(DocItem):
 
         return new_workpieces
 
+    def apply_provider_geometry(
+        self, provider: IGeometryProvider, geometry: Geometry
+    ) -> None:
+        """
+        Adopts geometry freshly generated by *provider* as the
+        workpiece's new natural size, keeping the anchor point (see
+        `anchor_mode`) at its world position.
+
+        The workpiece is resized around the anchor point's new normalized
+        position and then re-positioned, because that position shifts
+        whenever the bounding box moves relative to the anchor.
+        """
+        anchor_world_before = self.get_anchor_world()
+
+        # Calculate bounding box in mm
+        min_x, min_y, max_x, max_y = geometry.rect()
+        width = max(max_x - min_x, 1e-9)  # Prevent zero size
+        height = max(max_y - min_y, 1e-9)  # Prevent zero size
+
+        self._reference_anchor = self._compute_reference_anchor(
+            provider, min_x, min_y, width, height
+        )
+
+        self.natural_width_mm = width
+        self.natural_height_mm = height
+
+        logger.debug(
+            f"WP {self.uid[:8]}: New natural size: {width:.2f}x{height:.2f}mm"
+        )
+        self.set_size(width, height, anchor=self.anchor_point)
+
+        anchor_world_after = self.get_anchor_world()
+        dx = anchor_world_before[0] - anchor_world_after[0]
+        dy = anchor_world_before[1] - anchor_world_after[1]
+        if abs(dx) > 1e-9 or abs(dy) > 1e-9:
+            pos = self.pos
+            self.pos = (pos[0] + dx, pos[1] + dy)
+
     def regenerate_from_geometry_provider(self) -> None:
         """
         Regenerates the workpiece from its geometry provider.
@@ -1514,10 +1735,9 @@ class WorkPiece(DocItem):
         This method:
         1. Fetches the geometry provider.
         2. Gets geometry with instance-specific parameter overrides.
-        3. Calculates the new natural size from the geometry.
-        4. Updates the instance's `natural_width/height_mm`.
-        5. It resizes the on-canvas item.
-        6. Invalidates caches and signals the UI to redraw.
+        3. Adopts the geometry, keeping the anchor point (see
+           `anchor_mode`) at its world position.
+        4. Invalidates caches and signals the UI to redraw.
         """
         if not self.geometry_provider_uid:
             logger.warning(
@@ -1530,7 +1750,7 @@ class WorkPiece(DocItem):
         if not provider:
             logger.warning(
                 f"WP {self.uid[:8]}: Could not find geometry provider "
-                f"{self.geometry_provider_uid}"
+                f"{self.geometry_provider_uid[:8]}"
             )
             return
 
@@ -1557,20 +1777,7 @@ class WorkPiece(DocItem):
                 "Natural size not updated."
             )
         else:
-            # Calculate bounding box in mm
-            min_x, min_y, max_x, max_y = geometry.rect()
-            width = max(max_x - min_x, 1e-9)  # Prevent zero size
-            height = max(max_y - min_y, 1e-9)  # Prevent zero size
-
-            self.natural_width_mm = width
-            self.natural_height_mm = height
-
-            logger.debug(
-                f"WP {self.uid[:8]}: New natural size: "
-                f"{width:.2f}x{height:.2f}mm"
-            )
-            # Update the workpiece's actual size to match its new natural size.
-            self.set_size(width, height)
+            self.apply_provider_geometry(provider, geometry)
 
         # Invalidate the geometry cache to force regeneration on next render
         self.clear_render_cache()

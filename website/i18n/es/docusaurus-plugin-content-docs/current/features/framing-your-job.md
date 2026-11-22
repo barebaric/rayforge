@@ -28,6 +28,12 @@ Trazar el límite del trabajo sin encender el láser:
 4. **Observe la cabeza láser** trazar el rectángulo delimitador
 5. **Verifique la posición** y ajuste el material si es necesario
 
+El botón Enmarcar abre un pequeño menú emergente con el interruptor **Incluir el margen de
+overscan**. La trayectoria completa de la máquina incluye el margen de overscan del ráster —los
+movimientos de entrada y salida a potencia cero que dan espacio a la cabeza para acelerar—, por lo
+que el contorno trazado puede extenderse más allá de su diseño, principalmente en X. Desactive el
+interruptor para trazar solo la envolvente que el láser realmente quema.
+
 ### Método 2: Vista previa con baja potencia
 
 Algunas máquinas soportan enmarcado a baja potencia con un haz visible:

@@ -1,6 +1,19 @@
 name: laser_essentials
 display_name: "Laser Essentials"
 description: "Core laser cutting functionality"
+long_description: |
+  The core laser cutting and engraving operations:
+
+  - **Engrave**: raster engraving with dithering, constant power, and
+    variable power modes
+  - **Contour**: cut along vector outlines
+  - **Offset Fill**: fill shapes with evenly spaced offset paths
+  - **Wavefront**: adaptive clearing with concentric toolpaths
+  - **Shrink Wrap**: cut a tight boundary around multiple parts
+  - **Material Test**: generate test grids to find the best settings
+screenshots:
+  - website/static/screenshots/operations-offset-fill.webp
+  - website/static/screenshots/step-settings-engrave-general-dither.webp
 api_version: 19
 requires:
   - post_processors

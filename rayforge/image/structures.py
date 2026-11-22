@@ -1,9 +1,9 @@
 from dataclasses import dataclass, field
-from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 from raygeo.geo import Geometry, Matrix
 from raygeo.geo.types import Rect
+from raygeo.sketch.document import FillStyle
 
 from ..core.color import ColorRGBA
 
@@ -11,14 +11,6 @@ if TYPE_CHECKING:
     from ..core.asset import IAsset
     from ..core.item import DocItem
     from ..core.source_asset import SourceAsset
-
-
-class FillStyle(Enum):
-    """Fill rendering style."""
-
-    SOLID = "solid"
-    LINEAR_GRADIENT = "linear_gradient"
-    RADIAL_GRADIENT = "radial_gradient"
 
 
 @dataclass
@@ -72,9 +64,12 @@ class ImportManifest:
     Attributes:
         layers: List of LayerInfo objects describing each layer.
         natural_size_mm: Optional (width, height) in mm for the document.
-        title: Optional title or name for the document.
+        title: Optional title or name of the document.
         warnings: List of non-critical warnings discovered during scan.
         errors: List of errors discovered during scan.
+        has_z_variation: True when the file's geometry does not lie in a
+            single Z plane. Offered by importers that can flatten those
+            Z values into the Z=0 plane during import.
 
     Error Handling:
     ---------------
@@ -90,6 +85,7 @@ class ImportManifest:
     warnings: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
     is_unitless: bool = False
+    has_z_variation: bool = False
 
 
 @dataclass

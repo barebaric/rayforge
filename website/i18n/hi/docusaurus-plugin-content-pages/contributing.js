@@ -132,6 +132,15 @@ export default function Contributing() {
                   <span className={styles.panelLinkLabel}>स्रोत देखें</span>
                   <span className={styles.panelLinkMeta}>GitHub रिपॉज़िटरी</span>
                 </a>
+                <a
+                  href="https://github.com/barebaric/rayforge/blob/main/CONTRIBUTING.md"
+                  className={styles.panelLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <span className={styles.panelLinkLabel}>योगदान नियम</span>
+                  <span className={styles.panelLinkMeta}>CONTRIBUTING.md</span>
+                </a>
                 <Link to="/sponsor" className={styles.panelLink}>
                   <span className={styles.panelLinkLabel}>
                     प्रायोजक बनें

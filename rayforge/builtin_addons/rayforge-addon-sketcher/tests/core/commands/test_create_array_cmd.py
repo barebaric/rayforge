@@ -1,10 +1,14 @@
 import math
 
 import pytest
-from sketcher.core.arrays import CircularArrayStrategy
+from raygeo.sketch.arrays import CircularArrayStrategy
+from raygeo.sketch.constraints import (
+    HorizontalConstraint,
+    RadiusConstraint,
+    VerticalConstraint,
+)
+from raygeo.sketch.entity_group import EntityGroup
 from sketcher.core.commands import CreateArrayCommand
-from sketcher.core.constraints import RadiusConstraint
-from sketcher.core.entity_group import EntityGroup
 from sketcher.core.sketch import Sketch
 
 
@@ -32,7 +36,7 @@ def test_creates_copies_and_master(sketch_with_template):
     cmd = CreateArrayCommand(sketch, make_strategy(), [line])
     cmd.execute()
 
-    entities = sketch.registry.entities
+    entities = sketch.registry.entities()
     assert len(entities) == 5
 
     copies = [e for e in entities if e.array_copy]
@@ -74,18 +78,18 @@ def test_deleting_a_member_keeps_others_in_place(sketch_with_template):
     array = cmd.array
     assert array is not None
     positions_before = sorted(
-        (round(p.x, 3), round(p.y, 3)) for p in sketch.registry.points
+        (round(p.x, 3), round(p.y, 3)) for p in sketch.registry.points()
     )
 
     victim = array.living_entity_ids(sketch.registry)[3]
-    sketch.registry.remove_entities_by_id([victim])
+    sketch.registry.remove_entities([victim])
     sketch.prune_arrays()
 
     assert len(array.living_entity_ids(sketch.registry)) == 3
     # The emptied member group is dropped by pruning.
     assert len(array.members) == 3
     positions_after = sorted(
-        (round(p.x, 3), round(p.y, 3)) for p in sketch.registry.points
+        (round(p.x, 3), round(p.y, 3)) for p in sketch.registry.points()
     )
     # Survivors did not move: only the deleted member is gone.
     removed = set(positions_before) - set(positions_after)
@@ -125,7 +129,7 @@ def test_copy_positions_are_rotated(sketch_with_template):
     cmd.execute()
 
     positions = sorted(
-        (round(p.x, 6), round(p.y, 6)) for p in sketch.registry.points
+        (round(p.x, 6), round(p.y, 6)) for p in sketch.registry.points()
     )
     assert (10.0, 0.0) in positions
     assert (30.0, 0.0) in positions
@@ -145,7 +149,7 @@ def test_apply_places_template_on_the_guide(sketch_with_template):
     cmd.execute()
 
     assert cmd.array is not None
-    circle = next(e for e in sketch.registry.entities if e.type == "circle")
+    circle = next(e for e in sketch.registry.entities() if e.type == "circle")
     center = sketch.registry.get_point(circle.center_idx)
     eids = cmd.array.living_members(sketch.registry)[0][1]
     pids = EntityGroup(sketch.registry, eids).point_ids()
@@ -169,22 +173,22 @@ def test_translate_mode_bakes_static_copies(sketch_with_template):
     )
     cmd = CreateArrayCommand(sketch, strategy, [line])
     cmd.execute()
-    assert len([e for e in sketch.registry.entities if e.array_copy]) == 2
+    assert len([e for e in sketch.registry.entities() if e.array_copy]) == 2
 
 
 def test_undo_removes_everything_including_array(sketch_with_template):
     sketch, line, _p0, _p1 = sketch_with_template
-    num_points_before = len(sketch.registry.points)
-    num_entities_before = len(sketch.registry.entities)
+    num_points_before = len(sketch.registry.points())
+    num_entities_before = len(sketch.registry.entities())
 
     cmd = CreateArrayCommand(sketch, make_strategy(), [line])
     cmd.execute()
-    assert len(sketch.registry.entities) == num_entities_before + 4
+    assert len(sketch.registry.entities()) == num_entities_before + 4
     assert len(sketch.arrays) == 1
 
     cmd.undo()
-    assert len(sketch.registry.entities) == num_entities_before
-    assert len(sketch.registry.points) == num_points_before
+    assert len(sketch.registry.entities()) == num_entities_before
+    assert len(sketch.registry.points()) == num_points_before
     assert sketch.constraints == []
     assert sketch.arrays == []
 
@@ -196,7 +200,7 @@ def test_redo_restores_array(sketch_with_template):
     cmd.undo()
     cmd.execute()
 
-    assert len([e for e in sketch.registry.entities if e.array_copy]) == 3
+    assert len([e for e in sketch.registry.entities() if e.array_copy]) == 3
     assert len(sketch.arrays) == 1
 
 
@@ -206,7 +210,7 @@ def test_serialization_round_trip_preserves_array(sketch_with_template):
     cmd.execute()
 
     restored = Sketch.from_dict(sketch.to_dict())
-    copies = [e for e in restored.registry.entities if e.array_copy]
+    copies = [e for e in restored.registry.entities() if e.array_copy]
     assert len(copies) >= 2
     assert len(restored.arrays) == 1
     assert restored.arrays[0].count == 3
@@ -217,7 +221,7 @@ def test_empty_selection_creates_nothing():
     cmd = CreateArrayCommand(sketch, make_strategy(), [])
     cmd.execute()
     assert cmd.created_entity_ids == []
-    assert sketch.registry.entities == []
+    assert sketch.registry.entities() == []
     assert sketch.arrays == []
 
 
@@ -227,9 +231,46 @@ def test_solver_keeps_geometry_stable_after_apply(sketch_with_template):
     cmd = CreateArrayCommand(sketch, make_strategy(), [line])
     cmd.execute()
 
-    before = [(p.id, p.x, p.y) for p in sketch.registry.points]
+    before = [(p.id, p.x, p.y) for p in sketch.registry.points()]
     sketch.solve()
     for pid, x, y in before:
         pt = sketch.registry.get_point(pid)
         assert pt.x == pytest.approx(x, abs=1e-3)
         assert pt.y == pytest.approx(y, abs=1e-3)
+
+
+def test_axis_pair_closure_survives_extraction():
+    """A horizontal+vertical pair on the same two points pins one
+    point onto the other — a coincidence, not a world anchor. Array
+    extraction must keep it, or a closed shape whose closure is the
+    pair opens when its junction point is dragged."""
+    sketch = Sketch()
+    p1 = sketch.add_point(0, 0)
+    p2 = sketch.add_point(10, 0)
+    p3 = sketch.add_point(0, 10)
+    p4 = sketch.add_point(0, 0)
+    line_a = sketch.add_line(p1, p2)
+    line_b = sketch.add_line(p2, p3)
+    line_c = sketch.add_line(p3, p4)
+    sketch.constrain_horizontal(p1, p4)
+    sketch.constrain_vertical(p1, p4)
+
+    cmd = CreateArrayCommand(sketch, make_strategy(), [line_a, line_b, line_c])
+    cmd.execute()
+
+    closure = [
+        c
+        for c in sketch.constraints
+        if isinstance(c, (HorizontalConstraint, VerticalConstraint))
+        and {c.p1, c.p2} == {p1, p4}
+    ]
+    assert len(closure) == 2
+
+    cmd.undo()
+    closure = [
+        c
+        for c in sketch.constraints
+        if isinstance(c, (HorizontalConstraint, VerticalConstraint))
+        and {c.p1, c.p2} == {p1, p4}
+    ]
+    assert len(closure) == 2

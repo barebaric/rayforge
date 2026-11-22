@@ -48,8 +48,9 @@ Verwende Kontur-Schneiden für:
 
 ## Haupt-Einstellungen
 
-Der Schritt-Einstellungen-Dialog hat drei Registerkarten: **Schritt-Einstellungen**, **Laser** und
-**Nachbearbeitung**. Die Einstellungen werden unten in Registerkarten-Reihenfolge beschrieben.
+Der Schritt-Einstellungen-Dialog hat vier Registerkarten: **Schritt-Einstellungen**, **Laser**,
+**Nachbearbeitung** und **Werkstücke**. Die Einstellungen werden unten in Registerkarten-Reihenfolge
+beschrieben.
 
 ### Kontur-Einstellungen
 
@@ -211,6 +212,8 @@ Siehe [Schnittbreite](../kerf.md) für detaillierte Anleitung.
 Kontur-Operationen unterstützen mehrere Nachbearbeitungsoptionen:
 
 - **[Pfad-Glättung](../smooth.md)** - Gezackte Kanten in Schneidepfaden reduzieren
+- **[Perforation](../perforation.md)** - Gestrichelte Schnitte für Falzlinien, Abreißlinien und
+  Nählöcher
 - **[Halte-Laschen](../holding-tabs.md)** - Geschnittene Teile am Rohmaterial befestigt halten
 - **[Auf Rohmaterial zuschneiden](../crop-to-stock.md)** - Schnitte auf Materialgrenze beschränken
 - **[Pfad-Optimierung](../path-optimization.md)** - Verfahrdistanz zwischen Schnitten reduzieren
