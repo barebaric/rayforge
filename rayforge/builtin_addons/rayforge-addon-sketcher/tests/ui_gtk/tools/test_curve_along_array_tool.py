@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import cairo
 import pytest
-from sketcher.core.arrays import (
+from raygeo.sketch.arrays import (
     CurveAlongArray,
     CurveAlongArrayStrategy,
     path_length,

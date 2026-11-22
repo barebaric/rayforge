@@ -1,7 +1,8 @@
 import pytest
-from sketcher.core.registry import EntityRegistry
-from sketcher.core.snap.producers.intersections import IntersectionsProducer
-from sketcher.core.snap.types import DragContext
+from raygeo.sketch.registry import EntityRegistry
+from raygeo.sketch.snap.engine import geometry_key
+from raygeo.sketch.snap.producers.intersections import IntersectionsProducer
+from raygeo.sketch.snap.types import DragContext
 
 
 @pytest.fixture
@@ -535,3 +536,25 @@ def test_arc_intersection_outside_sweep(producer, registry, drag_context):
     )
 
     assert len(snap_points) == 0
+
+
+def test_cache_key_ignores_dragged_entity_movement(producer, registry):
+    """Preview edits to excluded geometry must not invalidate the cache."""
+    p1 = registry.add_point(0.0, 0.0)
+    p2 = registry.add_point(10.0, 0.0)
+    registry.add_line(p1, p2)
+
+    p3 = registry.add_point(0.0, 10.0)
+    p4 = registry.add_point(10.0, 10.0)
+    registry.add_line(p3, p4)
+
+    context = DragContext(dragged_point_ids={p3})
+    first = geometry_key(registry, context, include_points=False)
+
+    registry.get_point(p3).x = 5.0
+    second = geometry_key(registry, context, include_points=False)
+    assert first == second
+
+    registry.get_point(p1).x = 1.0
+    third = geometry_key(registry, context, include_points=False)
+    assert second != third

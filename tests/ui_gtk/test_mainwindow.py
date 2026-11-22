@@ -248,6 +248,56 @@ def test_click_to_move_shifted_with_alignment(app_and_window, mocker):
 
 
 @pytest.mark.ui
+def test_click_to_move_shifted_with_alignment_workarea_origin(
+    app_and_window, mocker
+):
+    """Click-to-move keeps the pointer shift when the workarea origin
+    is the active reference."""
+    _app, win = app_and_window
+    machine = get_context().config.machine
+    assert machine is not None
+    _enable_pointer_alignment(machine)
+    machine.set_wcs_origin_is_workarea_origin(True)
+    machine.set_work_margins(5.0, 7.0, 0.0, 0.0)
+    machine.set_gcode_precision(2)
+
+    move_to = mocker.patch.object(win.machine_cmd, "move_to")
+
+    win._on_move_head_requested(None, x=100.126, y=50.124)
+
+    move_to.assert_called_once()
+    args = move_to.call_args.args
+    assert args[0] is machine
+    assert args[1] == pytest.approx(85.13)
+    assert args[2] == pytest.approx(30.12)
+
+
+@pytest.mark.ui
+def test_move_head_here_shifted_with_alignment_workarea_origin(
+    app_and_window, mocker
+):
+    """Move-Head-Here keeps the pointer shift when the workarea origin
+    is the active reference."""
+    _app, win = app_and_window
+    machine = get_context().config.machine
+    assert machine is not None
+    _enable_pointer_alignment(machine)
+    machine.set_wcs_origin_is_workarea_origin(True)
+    machine.set_work_margins(5.0, 7.0, 0.0, 0.0)
+    win.surface.right_click_machine_pos = (100.0, 50.0)
+
+    move_to = mocker.patch.object(win.machine_cmd, "move_to")
+
+    win.on_move_head_here_clicked(None, None)
+
+    move_to.assert_called_once()
+    args = move_to.call_args.args
+    assert args[0] is machine
+    assert args[1] == pytest.approx(85.0)
+    assert args[2] == pytest.approx(30.0)
+
+
+@pytest.mark.ui
 def test_click_to_set_work_origin_uses_machine_precision(
     app_and_window, mocker
 ):

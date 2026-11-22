@@ -5,15 +5,17 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point as GeoPoint
+from raygeo.sketch.entities import Arc, Bezier, Circle, Line
+from raygeo.sketch.entities import SketchPoint as Point
+from raygeo.sketch.types import EntityID
 
-from ..entities import Arc, Bezier, Circle, Line, Point
-from ..types import EntityID
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
+    from raygeo.sketch.constraints import Constraint
+
     from rayforge.core.undo.command import Command
 
-    from ..constraints import Constraint
     from ..sketch import Sketch
 
 logger = logging.getLogger(__name__)
@@ -162,7 +164,7 @@ class UnstickJunctionCommand(SketchChangeCommand):
             return
 
         entities_at_junction = []
-        for e in self.sketch.registry.entities:
+        for e in self.sketch.registry.entities():
             if isinstance(e, Line):
                 if self.junction_pid in [e.p1_idx, e.p2_idx]:
                     entities_at_junction.append(e)

@@ -75,7 +75,10 @@ raydriver daemon status
 - **设备主机上的 USB 摄像头**：运行标准流媒体程序（如 `ustreamer`），并将其 MJPEG URL 作为
   HTTP 流摄像头添加。
 
-守护进程会通告已配置的摄像头端点，以便向导预填 URL。
+守护进程会通告已配置的摄像头端点。添加摄像头时，选择 **Daemon camera** 作为来源类型，
+再选择守护进程和通告的摄像头；Rayforge 会填入 URL 和来源类型。
+
+![添加守护进程摄像头](/screenshots/machine-settings-remote-camera.webp)
 
 ## 安全说明
 

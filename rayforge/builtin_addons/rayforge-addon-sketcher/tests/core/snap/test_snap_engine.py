@@ -1,7 +1,7 @@
 import pytest
-from sketcher.core.registry import EntityRegistry
-from sketcher.core.snap.engine import SnapEngine, SnapLineProducer
-from sketcher.core.snap.types import (
+from raygeo.sketch.registry import EntityRegistry
+from raygeo.sketch.snap.engine import SnapEngine, SnapLineProducer
+from raygeo.sketch.snap.types import (
     DragContext,
     SnapLine,
     SnapLineType,
@@ -11,6 +11,8 @@ from sketcher.core.snap.types import (
 
 class MockSnapLineProducer(SnapLineProducer):
     """Mock producer for testing SnapEngine."""
+
+    produce_called: bool
 
     def __init__(self, snap_lines=None, snap_points=None):
         self.snap_lines = snap_lines or []
@@ -146,7 +148,7 @@ def test_snap_engine_query_with_producer(engine, registry, drag_context):
     result = engine.query(registry, (5.0, 12.0), drag_context)
     assert result.snapped is True
     assert result.position == (5.0, 10.0)
-    assert producer.produce_called is True
+    assert producer.produce_called is True  # type: ignore[attr-defined]
 
 
 def test_snap_engine_query_with_snap_point(engine, registry, drag_context):
@@ -221,8 +223,8 @@ def test_snap_engine_multiple_producers(engine, registry, drag_context):
 
     engine.rebuild_index(registry, (15.0, 25.0), drag_context)
 
-    assert producer1.produce_called is True
-    assert producer2.produce_called is True
+    assert producer1.produce_called is True  # type: ignore[attr-defined]
+    assert producer2.produce_called is True  # type: ignore[attr-defined]
     assert len(engine._index._horizontal) == 1
     assert len(engine._index._vertical) == 1
 

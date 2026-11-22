@@ -5,16 +5,17 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point as GeoPoint
+from raygeo.sketch.entities import Bezier, Line
+from raygeo.sketch.entities import SketchPoint as Point
+from raygeo.sketch.types import EntityID, WaypointType
 
-from ..entities import Bezier, Line, Point
-from ..entities.point import WaypointType
-from ..types import EntityID
 from .base import PreviewState, SketchChangeCommand
 from .dimension import DimensionData
 from .items import AddItemsCommand
 
 if TYPE_CHECKING:
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
+
     from ..sketch import Sketch
 
 logger = logging.getLogger(__name__)
@@ -57,6 +58,11 @@ class BezierPreviewState(PreviewState):
         if self.end_temp and self.end_id is not None:
             result.add(self.end_id)
         return result
+
+    def get_preview_entity_ids(self) -> set[EntityID]:
+        if self.temp_entity_id is None:
+            return set()
+        return {self.temp_entity_id}
 
     def get_virtual_cp_absolute(
         self, registry: EntityRegistry
@@ -226,16 +232,8 @@ class BezierCommand(SketchChangeCommand):
 
         preview_state.is_line_preview = False
 
-        registry.entities = [
-            e
-            for e in registry.entities
-            if e.id != preview_state.temp_entity_id
-        ]
-        registry._entity_map = {
-            k: v
-            for k, v in registry._entity_map.items()
-            if k != preview_state.temp_entity_id
-        }
+        if preview_state.temp_entity_id is not None:
+            registry.remove_entities([preview_state.temp_entity_id])
 
         if preview_state.end_id is None:
             return
@@ -334,12 +332,7 @@ class BezierCommand(SketchChangeCommand):
         )
 
         if preview_state.temp_entity_id is not None:
-            registry.entities = [
-                e
-                for e in registry.entities
-                if e.id != preview_state.temp_entity_id
-            ]
-            registry._entity_map = {e.id: e for e in registry.entities}
+            registry.remove_entities([preview_state.temp_entity_id])
 
         if preview_state.end_temp and preview_state.end_id is not None:
             registry.remove_points([preview_state.end_id])
@@ -362,7 +355,7 @@ class BezierCommand(SketchChangeCommand):
         end_pid = self.end_pid
 
         if end_pid is None:
-            temp_id = registry._id_counter
+            temp_id = registry.next_id()
             end_pid = temp_id
             new_point = Point(temp_id, final_x, final_y)
 
@@ -377,10 +370,10 @@ class BezierCommand(SketchChangeCommand):
                 pass
 
         if self.is_line:
-            temp_entity_id = registry._id_counter + (1 if new_point else 0)
+            temp_entity_id = registry.next_id() + (1 if new_point else 0)
             new_entity = Line(temp_entity_id, self.start_id, end_pid)
         else:
-            temp_entity_id = registry._id_counter + (1 if new_point else 0)
+            temp_entity_id = registry.next_id() + (1 if new_point else 0)
             new_entity = Bezier(
                 temp_entity_id,
                 self.start_id,

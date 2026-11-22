@@ -1,9 +1,9 @@
 import math
 
 from raygeo.geo.shape.arc import get_arc_direction
+from raygeo.sketch.entities import Arc
 from sketcher.core import Sketch
 from sketcher.core.commands import ArcCommand, ArcPreviewState
-from sketcher.core.entities import Arc
 
 
 def test_arc_start_preview():
@@ -63,8 +63,8 @@ def test_arc_cleanup_preview():
     center_id = sketch.add_point(0, 0)
     start_id = sketch.add_point(50, 0)
 
-    initial_entity_count = len(sketch.registry.entities)
-    initial_point_count = len(sketch.registry.points)
+    initial_entity_count = len(sketch.registry.entities())
+    initial_point_count = len(sketch.registry.points())
 
     state = ArcCommand.start_preview(
         sketch.registry,
@@ -76,13 +76,13 @@ def test_arc_cleanup_preview():
         start_temp=False,
     )
 
-    assert len(sketch.registry.entities) > initial_entity_count
-    assert len(sketch.registry.points) > initial_point_count
+    assert len(sketch.registry.entities()) > initial_entity_count
+    assert len(sketch.registry.points()) > initial_point_count
 
     ArcCommand.cleanup_preview(sketch.registry, state)
 
-    assert len(sketch.registry.entities) == initial_entity_count
-    assert len(sketch.registry.points) == initial_point_count
+    assert len(sketch.registry.entities()) == initial_entity_count
+    assert len(sketch.registry.points()) == initial_point_count
 
 
 def test_arc_preview_lifecycle():
@@ -147,9 +147,9 @@ def test_arc_command_execute():
     )
     cmd.execute()
 
-    assert len(sketch.registry.entities) == 1
+    assert len(sketch.registry.entities()) == 1
     assert len(sketch.constraints) == 1
-    assert isinstance(sketch.registry.entities[0], Arc)
+    assert isinstance(sketch.registry.entities()[0], Arc)
 
 
 def test_arc_command_with_temp_points():
@@ -171,7 +171,7 @@ def test_arc_command_with_temp_points():
     cmd.execute()
 
     assert cmd.add_cmd is not None
-    assert len(sketch.registry.entities) == 1
+    assert len(sketch.registry.entities()) == 1
 
 
 def test_arc_command_undo():
@@ -180,7 +180,7 @@ def test_arc_command_undo():
     center_id = sketch.add_point(0, 0)
     start_id = sketch.add_point(50, 0)
 
-    initial_entity_count = len(sketch.registry.entities)
+    initial_entity_count = len(sketch.registry.entities())
 
     cmd = ArcCommand(
         sketch,
@@ -193,11 +193,11 @@ def test_arc_command_undo():
     )
     cmd.execute()
 
-    assert len(sketch.registry.entities) > initial_entity_count
+    assert len(sketch.registry.entities()) > initial_entity_count
 
     cmd.undo()
 
-    assert len(sketch.registry.entities) == initial_entity_count
+    assert len(sketch.registry.entities()) == initial_entity_count
 
 
 def test_arc_command_undo_no_dangling_points():
@@ -206,7 +206,7 @@ def test_arc_command_undo_no_dangling_points():
     center_id = sketch.add_point(0, 0)
     start_id = sketch.add_point(50, 0)
 
-    initial_point_count = len(sketch.registry.points)
+    initial_point_count = len(sketch.registry.points())
 
     cmd = ArcCommand(
         sketch,
@@ -220,12 +220,12 @@ def test_arc_command_undo_no_dangling_points():
     cmd.execute()
 
     # Execute adds 1 new end point
-    assert len(sketch.registry.points) == initial_point_count + 1
+    assert len(sketch.registry.points()) == initial_point_count + 1
 
     cmd.undo()
 
     # After undo, should be back to initial count
-    assert len(sketch.registry.points) == initial_point_count
+    assert len(sketch.registry.points()) == initial_point_count
 
 
 def test_arc_command_undo_with_temp_center():
@@ -248,14 +248,14 @@ def test_arc_command_undo_with_temp_center():
 
     # Execute: temp center is removed from registry and re-added
     # by AddItemsCommand, plus 1 new end point
-    assert len(sketch.registry.entities) == 1
+    assert len(sketch.registry.entities()) == 1
 
     cmd.undo()
 
     # After undo: temp center should NOT be restored as it was temp
     # Only the original origin + start point should remain
     # (center was temp and shouldn't come back)
-    assert len(sketch.registry.entities) == 0
+    assert len(sketch.registry.entities()) == 0
 
 
 def test_arc_command_undo_with_temp_start():
@@ -276,12 +276,12 @@ def test_arc_command_undo_with_temp_start():
     )
     cmd.execute()
 
-    assert len(sketch.registry.entities) == 1
+    assert len(sketch.registry.entities()) == 1
 
     cmd.undo()
 
     # After undo: temp start should NOT be restored
-    assert len(sketch.registry.entities) == 0
+    assert len(sketch.registry.entities()) == 0
 
 
 def test_arc_direction_preserved_counter_clockwise():
@@ -305,7 +305,7 @@ def test_arc_direction_preserved_counter_clockwise():
     )
     cmd.execute()
 
-    arc = sketch.registry.entities[0]
+    arc = sketch.registry.entities()[0]
     assert isinstance(arc, Arc)
     assert arc.clockwise == expected_clockwise
 
@@ -331,7 +331,7 @@ def test_arc_direction_preserved_clockwise():
     )
     cmd.execute()
 
-    arc = sketch.registry.entities[0]
+    arc = sketch.registry.entities()[0]
     assert isinstance(arc, Arc)
     assert arc.clockwise == expected_clockwise
 
@@ -359,7 +359,7 @@ def test_arc_direction_with_projected_endpoint():
     )
     cmd.execute()
 
-    arc = sketch.registry.entities[0]
+    arc = sketch.registry.entities()[0]
     assert isinstance(arc, Arc)
     # The arc direction should match what was determined during preview
     assert arc.clockwise == expected_clockwise
@@ -401,7 +401,7 @@ def test_arc_full_workflow_with_preview():
     )
     cmd.execute()
 
-    arc = sketch.registry.entities[0]
+    arc = sketch.registry.entities()[0]
     assert isinstance(arc, Arc)
     # Direction should match what was in preview
     assert arc.clockwise == clockwise
@@ -427,16 +427,16 @@ def test_arc_command_undo_with_both_temp_points():
 
     # After execute: origin + center + start + end = initial + 1 (end)
     # because center and start are removed then re-added
-    assert len(sketch.registry.entities) == 1
+    assert len(sketch.registry.entities()) == 1
 
     cmd.undo()
 
     # After undo: all added points should be removed
     # Only origin should remain
-    assert len(sketch.registry.entities) == 0
+    assert len(sketch.registry.entities()) == 0
     # Check that temp points are NOT left dangling
     # Origin (id=0) should be the only remaining point
-    remaining_ids = [p.id for p in sketch.registry.points]
+    remaining_ids = [p.id for p in sketch.registry.points()]
     assert 0 in remaining_ids  # origin
 
 
@@ -477,7 +477,7 @@ def test_arc_direction_matches_preview_after_off_circle_click():
     )
     cmd.execute()
 
-    arc = sketch.registry.entities[0]
+    arc = sketch.registry.entities()[0]
     assert isinstance(arc, Arc)
     # The arc direction should match the preview, not be recalculated
     assert arc.clockwise == preview_clockwise
@@ -492,7 +492,7 @@ def test_arc_command_undo_restores_temp_points_to_original_state():
     start_id = sketch.add_point(50, 0)
 
     # Record state before command
-    entities_before = len(sketch.registry.entities)
+    entities_before = len(sketch.registry.entities())
 
     cmd = ArcCommand(
         sketch,
@@ -506,17 +506,17 @@ def test_arc_command_undo_restores_temp_points_to_original_state():
     cmd.execute()
 
     # Verify something was added
-    assert len(sketch.registry.entities) > entities_before
+    assert len(sketch.registry.entities()) > entities_before
 
     cmd.undo()
 
     # After undo, entities should be back to original
-    assert len(sketch.registry.entities) == entities_before
+    assert len(sketch.registry.entities()) == entities_before
 
     # Points should be back to original (only origin for a fresh sketch)
     # The temp center and start should NOT be restored since they were temp
-    assert len(sketch.registry.points) == 1  # Only origin
-    assert sketch.registry.points[0].id == 0  # Only origin
+    assert len(sketch.registry.points()) == 1  # Only origin
+    assert sketch.registry.points()[0].id == 0  # Only origin
 
 
 def test_arc_preview_get_dimensions_returns_radius():

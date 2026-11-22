@@ -1,10 +1,10 @@
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+from raygeo.sketch.constraints import HorizontalConstraint, VerticalConstraint
+from raygeo.sketch.entities import SketchPoint
+from raygeo.sketch.snap.types import SnapLine, SnapLineType, SnapResult
 from sketcher.core.commands.bezier import BezierPreviewState
-from sketcher.core.constraints import HorizontalConstraint, VerticalConstraint
-from sketcher.core.entities import Point as SketchPoint
-from sketcher.core.snap.types import SnapLine, SnapLineType, SnapResult
 from sketcher.ui_gtk.tools.path_tool import PathTool
 
 
@@ -14,10 +14,10 @@ def mock_element():
     element = Mock()
     element.sketch = Mock()
     element.sketch.registry = Mock()
-    element.sketch.registry.points = []
-    element.sketch.registry.entities = []
-    element.sketch.registry._id_counter = 0
-    element.sketch.registry._entity_map = {}
+    element.sketch.registry.points.return_value = []
+    element.sketch.registry.entities.return_value = []
+    element.sketch.registry.next_id.return_value = 0
+
     element.sketch.registry.add_point = Mock(return_value=0)
     element.sketch.registry.add_line = Mock(return_value=0)
     element.sketch.registry.add_bezier = Mock(return_value=0)
@@ -337,7 +337,7 @@ def _setup_line_finalization(path_tool, mock_element, start_id=0):
         return end_pt
 
     mock_element.sketch.registry.get_point.side_effect = get_point
-    mock_element.sketch.registry._id_counter = 10
+    mock_element.sketch.registry.next_id.return_value = 10
     mock_element.sketch.constraints = []
     return start_pt
 
@@ -535,9 +535,8 @@ def test_auto_constraint_skips_self_constraint(path_tool, mock_element):
 
 def _real_sketch_element():
     """Mock element wiring a real Sketch and snap engine into the tool."""
-    from sketcher.core.sketch import Sketch
-    from sketcher.core.snap.engine import SnapEngine
-    from sketcher.core.snap.producers import (
+    from raygeo.sketch.snap.engine import SnapEngine
+    from raygeo.sketch.snap.producers import (
         CentersProducer,
         EntityPointsProducer,
         EquidistantLinesProducer,
@@ -545,6 +544,7 @@ def _real_sketch_element():
         MidpointsProducer,
         OnEntityProducer,
     )
+    from sketcher.core.sketch import Sketch
 
     sketch = Sketch("test")
     element = Mock()
@@ -610,7 +610,7 @@ def test_path_tool_near_miss_close_reuses_start_point():
     hover(35.0, 27.5)
     click(35.0, 27.5)
 
-    closing = [e for e in sketch.registry.entities if e.type == "line"][-1]
+    closing = [e for e in sketch.registry.entities() if e.type == "line"][-1]
     assert closing.get_point_ids()[1] == start_id
     assert tool._preview_state is None
     assert sketch.constraints == constraints_before
@@ -640,7 +640,7 @@ def test_path_tool_close_finishes_editing():
     tool.on_press(30.0, 30.0, 1)
 
     assert tool._preview_state is None
-    lines = [e for e in sketch.registry.entities if e.type == "line"]
+    lines = [e for e in sketch.registry.entities() if e.type == "line"]
     assert len(lines) == 3
     closing = lines[-1]
     assert closing.get_point_ids()[1] == start_id

@@ -12,6 +12,18 @@ from typing import (
 import cairo
 from raygeo.geo import Matrix
 from raygeo.geo.types import Point as GeoPoint
+from raygeo.sketch.components import compute_constraint_components
+from raygeo.sketch.constraints import (
+    AngleConstraint,
+    DiameterConstraint,
+    DistanceConstraint,
+    DragConstraint,
+    RadiusConstraint,
+)
+from raygeo.sketch.entities import Arc, Bezier, Circle, Entity, Line
+from raygeo.sketch.entities import TextBox as TextBoxEntity
+from raygeo.sketch.snap import DragContext
+from raygeo.sketch.types import EntityID
 
 from ...core.commands import (
     CreateOrEditConstraintCommand,
@@ -19,30 +31,12 @@ from ...core.commands import (
     MoveEntitiesCommand,
     MovePointCommand,
 )
-from ...core.components import compute_constraint_components
-from ...core.constraints import (
-    AngleConstraint,
-    DiameterConstraint,
-    DistanceConstraint,
-    DragConstraint,
-    RadiusConstraint,
-)
-from ...core.entities import (
-    Arc,
-    Bezier,
-    Circle,
-    Entity,
-    Line,
-    TextBoxEntity,
-)
-from ...core.snap import DragContext
-from ...core.types import EntityID
 from .base import SketcherKey, SketchTool
 from .snap_mixin import SnapMixin
 from .text_box_tool import TextBoxTool
 
 if TYPE_CHECKING:
-    from ...core.selection import SketchSelection
+    from ...selection import SketchSelection
 
 
 logger = logging.getLogger(__name__)
@@ -184,12 +178,12 @@ class SelectTool(SnapMixin, SketchTool):
             registry = self.element.sketch.registry
             entity_ids = self.element.selection.entity_ids
             entity_ids.clear()
-            for entity in registry.entities:
+            for entity in registry.entities():
                 if pid in entity.get_point_ids():
-                    connected = registry.get_connected_entity_ids(entity.id)
+                    connected = registry.connected_entity_ids(entity.id)
                     entity_ids.extend(connected)
             entity_ids[:] = list(set(entity_ids))
-            self.element.selection.point_ids.clear()
+            self.element.selection.clear_points()
             self.element.selection.constraint_idx = None
             self.element.selection.junction_pid = None
             self.element.selection.changed.send(self.element.selection)
@@ -582,11 +576,11 @@ class SelectTool(SnapMixin, SketchTool):
             # Add newly found items
             for pid in points_hit:
                 if pid not in self.element.selection.point_ids:
-                    self.element.selection.point_ids.append(pid)
+                    self.element.selection.add_point(pid)
 
             for eid in entities_hit:
                 if eid not in self.element.selection.entity_ids:
-                    self.element.selection.entity_ids.append(eid)
+                    self.element.selection.add_entity(eid)
         else:
             # Not additive, so the selection is exactly what's in the box
             self.element.selection.point_ids = points_hit
@@ -696,7 +690,7 @@ class SelectTool(SnapMixin, SketchTool):
         dragged_group = coincident_group
         if not any_fixed:
             rigid_points = (
-                self.element.sketch.registry.get_rigidly_connected_points(
+                self.element.sketch.registry.rigidly_connected_points(
                     self.dragged_point_id
                 )
             )
@@ -981,7 +975,7 @@ class SelectTool(SnapMixin, SketchTool):
         self.drag_point_start_pos = (p.x, p.y)
         dragged_group = self.element.sketch.get_coincident_points(pid)
         dragged_group |= set(
-            self.element.sketch.registry.get_rigidly_connected_points(pid)
+            self.element.sketch.registry.rigidly_connected_points(pid)
         )
         self._compute_drag_scope(dragged_group)
         self._cache_drag_start_state()
@@ -1067,13 +1061,13 @@ class SelectTool(SnapMixin, SketchTool):
 
         # Capture Points
         self.drag_initial_positions = {
-            pt.id: (pt.x, pt.y) for pt in self.element.sketch.registry.points
+            pt.id: (pt.x, pt.y) for pt in self.element.sketch.registry.points()
         }
         self.drag_hold_positions = dict(self.drag_initial_positions)
 
         # Capture Entity States
         self.drag_initial_entity_states = {}
-        for e in self.element.sketch.registry.entities:
+        for e in self.element.sketch.registry.entities():
             state = e.get_state()
             if state is not None:
                 self.drag_initial_entity_states[e.id] = state
@@ -1118,14 +1112,14 @@ class SelectTool(SnapMixin, SketchTool):
         using BFS. Results are stored in self.drag_point_distances.
         """
         registry = self.element.sketch.registry
-        if not registry.points:
+        if not registry.points():
             self.drag_point_distances = {}
             return
 
         adj: dict[EntityID, list[EntityID]] = {
-            p.id: [] for p in registry.points
+            p.id: [] for p in registry.points()
         }
-        for entity in registry.entities:
+        for entity in registry.entities():
             if isinstance(entity, Line):
                 p1, p2 = entity.p1_idx, entity.p2_idx
                 if p1 in adj and p2 in adj:
@@ -1144,7 +1138,7 @@ class SelectTool(SnapMixin, SketchTool):
                     adj[r].append(c)
 
         q = [(start_pid, 0)]
-        distances = {p.id: -1 for p in registry.points}
+        distances = {p.id: -1 for p in registry.points()}
         if start_pid in distances:
             distances[start_pid] = 0
 

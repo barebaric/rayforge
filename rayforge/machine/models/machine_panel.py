@@ -617,11 +617,12 @@ class MachinePanel:
         self,
         wcs_offset: Point3D = (0.0, 0.0, 0.0),
         wcs_is_workarea_origin: bool = False,
+        extra_offset: Point = (0.0, 0.0),
     ) -> Point3D:
         """Offset to subtract from machine coordinates to obtain command
         coordinates (G-code output)."""
         return self.space.get_command_offset(
-            wcs_offset, wcs_is_workarea_origin
+            wcs_offset, wcs_is_workarea_origin, extra_offset
         )
 
     @property

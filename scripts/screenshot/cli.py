@@ -62,6 +62,7 @@ TARGETS = {
     "main:item-properties": "item_properties",
     "machine-settings:general": "machine_settings_general",
     "machine-settings:remote": "remote_machine",
+    "machine-settings:remote:camera": "remote_machine",
     "machine-settings:hardware": "machine_settings_hardware",
     "machine-settings:advanced": "machine_settings_advanced",
     "machine-settings:advanced:bidir-offset-table": (

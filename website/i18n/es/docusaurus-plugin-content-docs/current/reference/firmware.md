@@ -12,6 +12,7 @@ compatible con Marlin, Smoothieware y otros tipos de firmware.
 | Firmware         | Version | Estado                  | Controlador                              | Notas                          |
 | ---------------- | ------- | ----------------------- | ---------------------------------------- | ------------------------------ |
 | **GRBL**         | 1.1+    | Completamente soportado | GRBL (USB/Serial) (+ compatibility mode) | Recomendado                    |
+| **GRBL**         | 1.1+    | Experimental | GRBL (Bluetooth) | Dispositivos SPP Bluetooth emparejados |
 | **grblHAL**      | 2023+   | Compatible              | GRBL (USB/Serial) / grblHAL (Telnet)     | Fork moderno de GRBL           |
 | **GRBL**         | 0.9     | Limitado                | GRBL (USB/Serial)                        | Antiguo, puede tener problemas |
 | **FluidNC**      | Todos   | Compatible              | FluidNC / ESP3D (Web API)                | Basado en ESP32                |
@@ -121,6 +122,24 @@ con contador de búfer causa falsas alarmas o errores de comunicación.
 
 ---
 
+## Controlador GRBL (Bluetooth)
+
+**Estado:** Experimental **Firmware:** GRBL **Controlador:** GRBL (Bluetooth)
+
+El controlador GRBL (Bluetooth) conecta controladores mediante el perfil de puerto serie de
+Bluetooth Classic (SPP/RFCOMM), habitual en muchos controladores láser basados en ESP32. La conexión
+la realiza directamente el sistema operativo; no se necesita un puente `/dev/rfcomm*` ni un puerto
+COM saliente.
+
+**Uso del controlador GRBL (Bluetooth):**
+
+1. **Empareja el controlador** en los ajustes de Bluetooth del sistema operativo
+2. **Selecciona "GRBL (Bluetooth)"** en los ajustes de la máquina
+3. **Elige el dispositivo** de la lista o introduce su dirección manualmente
+4. **Mantén el canal RFCOMM 1** salvo que el dispositivo use otro
+
+Se admiten Linux, macOS y Windows. Bluetooth Low Energy (BLE) no es compatible.
+
 ## grblHAL
 
 **Estado:** Compatible **Versiones:** 2023+ **Controlador:** GRBL (USB/Serial), grblHAL (Telnet)
@@ -163,9 +182,11 @@ El controlador grblHAL (Telnet) se conecta a controladores basados en GRBL a tra
 mediante una interfaz Telnet. Ideal para placas con WiFi o Ethernet integrado — sin necesidad de
 cable USB.
 
-Las placas grblHAL en red no se anuncian vía mDNS, por lo que el asistente también ejecuta un
-escaneo de subred acotado (solo puerto telnet, concurrencia y tiempo de espera por host limitados) y
-confirma cada controlador que responde antes de listararlo.
+Las compilaciones de grblHAL con LWIP mDNS anuncian `_telnet._tcp`, así que el asistente las
+encuentra de inmediato y confirma cada placa con el comando de información de compilación `$I` antes
+de listarla. Las placas cuyo firmware no se anuncia por mDNS se encuentran mediante un escaneo de
+subred acotado (solo puerto telnet, concurrencia y tiempo de espera por host limitados) con la misma
+confirmación.
 
 **Características:**
 

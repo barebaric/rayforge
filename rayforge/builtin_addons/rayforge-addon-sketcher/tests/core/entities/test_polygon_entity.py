@@ -2,18 +2,21 @@
 
 import itertools
 import math
+from typing import cast
 
 import pytest
 from raygeo.geo.shape.polygon import get_polygon_signed_area
+from raygeo.sketch.contour import offset_outline, outline_frame
+from raygeo.sketch.entities import Polygon as PolygonEntity
 from sketcher.core import Sketch
 from sketcher.core.commands import MirrorAxis, MirrorDirection
-from sketcher.core.entities import PolygonEntity
-from sketcher.core.entities.polygon import offset_outline
 
 SQUARE = [(0.0, 0.0), (20.0, 0.0), (20.0, 20.0), (0.0, 20.0)]
 
 
-def _sketch_with_polygon(closed=True):
+def _sketch_with_polygon(
+    closed: bool = True,
+) -> tuple[Sketch, PolygonEntity]:
     sketch = Sketch()
     center_id = sketch.add_point(0.0, 0.0)
     handle_id = sketch.add_point(5.0, 0.0)
@@ -24,9 +27,8 @@ def _sketch_with_polygon(closed=True):
         PolygonEntity.normalize_vertices((0.0, 0.0), (5.0, 0.0), SQUARE),
         closed=closed,
     )
-    sketch.registry.entities.append(polygon)
-    sketch.registry._entity_map[polygon.id] = polygon
-    return sketch, polygon
+    sketch.registry.append_entity(polygon)
+    return sketch, cast(PolygonEntity, polygon)
 
 
 def test_world_vertex_roundtrip():
@@ -172,10 +174,9 @@ def _handle_on_contour_dist_sq(grown, handle):
 
 def test_frame_closed_center_inside_handle_on_contour():
     from raygeo.geo.shape.polygon import is_point_inside_polygon
-    from sketcher.core.entities.polygon import _frame_for_outline
 
     grown = offset_outline(SQUARE, True, 2.0)[0][0]
-    center, handle = _frame_for_outline(grown, closed=True)
+    center, handle = outline_frame(grown, closed=True)
     assert is_point_inside_polygon(center, grown)
     assert _handle_on_contour_dist_sq(grown, handle) < 1e-6
 
@@ -183,10 +184,8 @@ def test_frame_closed_center_inside_handle_on_contour():
 def test_frame_handle_at_long_axis_end():
     """For an elongated outline the handle sits at the far end of the
     long axis, not at the narrow inscribed-circle edge."""
-    from sketcher.core.entities.polygon import _frame_for_outline
-
     stadium = offset_outline([(0.0, 0.0), (100.0, 0.0)], False, 5.0)[0][0]
-    center, handle = _frame_for_outline(stadium, closed=True)
+    center, handle = outline_frame(stadium, closed=True)
     assert _handle_on_contour_dist_sq(stadium, handle) < 1e-6
     frame_scale = math.hypot(handle[0] - center[0], handle[1] - center[1])
     half_long = 55.0
@@ -194,24 +193,23 @@ def test_frame_handle_at_long_axis_end():
 
 
 def test_frame_open_handle_on_polyline():
-    from sketcher.core.entities.polygon import (
-        _closest_outline_point,
-        _frame_for_outline,
-    )
+    from itertools import pairwise
+
+    from raygeo.geo.shape.line import get_line_segment_closest_point
 
     path = [(0.0, 0.0), (30.0, 10.0), (60.0, 0.0)]
-    _center, handle = _frame_for_outline(path, closed=False)
-    result = _closest_outline_point(path, False, *handle)
-    assert result is not None
-    assert result[1] < 1e-6
+    _center, handle = outline_frame(path, closed=False)
+    distances = [
+        get_line_segment_closest_point(a, b, *handle)[2]
+        for a, b in pairwise(path)
+    ]
+    assert min(distances) < 1e-6
 
 
 def test_frame_diagonal_line_nondegenerate():
     """A straight diagonal through its bbox center still yields a
     usable frame (handle strictly off-center)."""
-    from sketcher.core.entities.polygon import _frame_for_outline
-
-    center, handle = _frame_for_outline([(0.0, 0.0), (40.0, 0.0)], False)
+    center, handle = outline_frame([(0.0, 0.0), (40.0, 0.0)], False)
     assert (center[0], center[1]) != (handle[0], handle[1])
     assert math.hypot(handle[0] - center[0], handle[1] - center[1]) > 1e-6
 
@@ -258,8 +256,7 @@ def _build_solid_sketch():
         world_holes=[[(5.0, 5.0), (5.0, 9.0), (9.0, 9.0), (9.0, 5.0)]],
     )
     sketch.registry.add_points([center_pt, handle_pt])
-    sketch.registry.entities.append(polygon)
-    sketch.registry._entity_map[polygon.id] = polygon
+    sketch.registry.append_entity(polygon)
     return sketch, polygon
 
 

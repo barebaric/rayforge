@@ -38,8 +38,8 @@ rust = "==1.100.0"
 patchelf = "==0.19.3"
 
 [feature.app.pypi-dependencies]
-raygeo = "==1.78.2"
-raydriver = "==1.7.1"
+raydriver = "==1.18.0"
+raygeo = "==1.92.1"
 rayforge = { editable = true, path = "." }
 ruida-pa = "==0.24.0"
 aiohttp = "==3.14.5"
@@ -89,6 +89,7 @@ appstream = "==1.1.1|==1.2.3"
 pytest-asyncio = "==1.5.0"
 pytest-mock = "==3.17.0"
 pytest-cov = "==7.1.0"
+pytest-xdist = "==3.8.0"
 pygobject-stubs = "==2.20.0"
 flake8 = "==7.5.0"
 pyflakes = "==4.1.0"
@@ -110,7 +111,7 @@ workdir = "."
 
 [tasks]
 pre-commit-install = "pre-commit install"
-lint = { depends-on = ["ruff", "flake", "pyflakes", "pyright", "validate-metainfo"] }
+lint = { depends-on = ["format"], cmd = "bash scripts/lint.sh" }
 update-translations = "bash scripts/update_translations.sh"
 compile-translations = "bash scripts/update_translations.sh --compile-only"
 print-untranslated = "bash scripts/print_untranslated.sh"
@@ -130,24 +131,22 @@ cmd = "ruff format rayforge tests scripts && ruff check --select I --fix rayforg
 
 [tasks.flake]
 depends-on = ["format"]
-cmd = "flake8 --ignore=E127,E128,E121,E123,E126,E203,E226,E24,E704,W503,W504 --builtins=_ rayforge tests"
+cmd = "bash scripts/lint.sh flake"
 
 [tasks.ruff]
 depends-on = ["format"]
-cmd = "ruff check rayforge tests scripts"
+cmd = "bash scripts/lint.sh ruff"
 
 [tasks.pyflakes]
 depends-on = ["format"]
-env = { PYFLAKES_BUILTINS = "_" }
-cmd = "pyflakes rayforge tests"
+cmd = "bash scripts/lint.sh pyflakes"
 
 [tasks.pyright]
 depends-on = ["format"]
-env = { VIRTUAL_ENV = ".pixi/envs/default" }
-cmd = "pyright"
+cmd = "bash scripts/lint.sh pyright"
 
 [tasks.validate-metainfo]
-cmd = "appstreamcli validate --no-net data/org.rayforge.rayforge.metainfo.xml"
+cmd = "bash scripts/lint.sh validate-metainfo"
 
 [tasks.rayforge]
 env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0)"}
@@ -158,12 +157,12 @@ env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection
 cmd = "scripts/with_gdk.sh"
 
 [tasks.test]
-env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0)"}
-cmd = "pytest -v --ignore=tests/ui_gtk"
+env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0)", PYTEST_XDIST_AUTO_NUM_WORKERS = "$(python -c 'import os; print(min(os.cpu_count() or 1, 8))')"}
+cmd = "pytest -v --ignore=tests/ui_gtk -n auto"
 
 [tasks.uitest]
-env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0):/usr/lib/x86_64-linux-gnu/girepository-1.0", GSK_RENDERER = "cairo" }
-cmd = "xvfb-run -a pytest -v -m ui"
+env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0):/usr/lib/x86_64-linux-gnu/girepository-1.0", GSK_RENDERER = "cairo", PYTEST_XDIST_AUTO_NUM_WORKERS = "$(python -c 'import os; print(min(os.cpu_count() or 1, 8))')"}
+cmd = "xvfb-run -a pytest -v -m ui -n auto"
 
 [tasks.screenshot]
 env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0)"}
@@ -208,9 +207,10 @@ libglvnd = "==1.7.0"
 [feature.website.tasks]
 site-gen-api = "python3 scripts/update_api_docs.py"
 site-install = { cmd = "npm install", cwd = "website" }
+site-install-ci = { cmd = "npm ci --prefer-offline --no-audit --no-fund", cwd = "website" }
 site-format = { cmd = "npx prettier --write \"docs/**/*.md\" \"blog/**/*.md\" \"i18n/**/*.md\"", cwd = "website", depends-on = ["site-install"] }
 site-serve = { cmd = "npm start", cwd = "website", depends-on = ["update-api-docs"] }
-site-build = { cmd = "npm run build", cwd = "website", depends-on = ["site-gen-api"] }
+site-build = { cmd = "npm run build --", cwd = "website", depends-on = ["site-gen-api"] }
 site-deploy = { cmd = "bash scripts/deploy_website.sh", depends-on = ["site-gen-api"] }
 
 [tasks.update-api-docs]

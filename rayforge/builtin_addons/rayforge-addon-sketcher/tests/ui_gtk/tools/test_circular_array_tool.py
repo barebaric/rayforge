@@ -3,9 +3,9 @@ from unittest.mock import MagicMock, patch
 
 import cairo
 import pytest
-from sketcher.core.arrays import CircularArray, CircularArrayStrategy
+from raygeo.sketch.arrays import CircularArray, CircularArrayStrategy
+from raygeo.sketch.entities import Circle
 from sketcher.core.commands import CreateArrayCommand, EditArrayCommand
-from sketcher.core.entities import Circle
 from sketcher.core.sketch import Sketch
 from sketcher.ui_gtk.tools import CircularArrayTool
 from sketcher.ui_gtk.tools.base import SketcherKey
@@ -170,12 +170,8 @@ def test_edit_target_builds_edit_command(
 def test_apply_executes_command_and_selects_copies(
     mock_show_dialog, tool, mock_element, sketch_with_selection
 ):
-    sketch, _line, _p0, _p1 = sketch_with_selection
+    _sketch, _line, _p0, _p1 = sketch_with_selection
     tool.on_activate()
-
-    created = MagicMock()
-    created.id = 42
-    created.array_copy = True
 
     fake_cmd = MagicMock()
     fake_cmd.created_entity_ids = [42]
@@ -184,18 +180,12 @@ def test_apply_executes_command_and_selects_copies(
     with (
         patch.object(tool, "_collect_command", return_value=fake_cmd),
         patch.object(tool, "_close_dialog"),
-        patch.object(
-            sketch.registry,
-            "get_entity",
-            side_effect=lambda eid: created if eid == 42 else None,
-        ),
+        patch.object(tool, "_select_entities") as mock_select,
     ):
         tool._on_apply()
 
     mock_element.set_tool.assert_called_once_with("select")
-    mock_element.selection.select_entity.assert_called_once_with(
-        created, False
-    )
+    mock_select.assert_called_once_with([42])
 
 
 def test_draw_overlay_noop_without_dialog(tool):
@@ -282,7 +272,9 @@ def test_full_edit_flow_through_tool_does_not_collapse(
 
     sketch.solve()
 
-    circle = next(e for e in sketch.registry.entities if isinstance(e, Circle))
+    circle = next(
+        e for e in sketch.registry.entities() if isinstance(e, Circle)
+    )
     center = sketch.registry.get_point(circle.center_idx)
 
     living = array.living_entity_ids(sketch.registry)

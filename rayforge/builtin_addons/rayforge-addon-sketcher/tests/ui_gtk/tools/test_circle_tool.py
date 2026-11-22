@@ -1,9 +1,9 @@
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+from raygeo.sketch.entities import SketchPoint
+from raygeo.sketch.snap import SnapLineType
 from sketcher.core.commands.ellipse import EllipsePreviewState
-from sketcher.core.entities import Point as SketchPoint
-from sketcher.core.snap import SnapLineType
 from sketcher.ui_gtk.tools.base import SketcherKey
 from sketcher.ui_gtk.tools.circle_tool import CircleTool
 
@@ -14,10 +14,10 @@ def mock_element():
     element = Mock()
     element.sketch = Mock()
     element.sketch.registry = Mock()
-    element.sketch.registry.points = []
-    element.sketch.registry.entities = []
-    element.sketch.registry._id_counter = 0
-    element.sketch.registry._entity_map = {}
+    element.sketch.registry.points.return_value = []
+    element.sketch.registry.entities.return_value = []
+    element.sketch.registry.next_id.return_value = 0
+
     element.sketch.registry.add_point = Mock(return_value=0)
     element.sketch.registry.add_ellipse = Mock(return_value=0)
     element.sketch.registry.get_point = Mock(

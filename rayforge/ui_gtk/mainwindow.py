@@ -810,11 +810,15 @@ class MainWindow(Adw.ApplicationWindow):
         if not machine:
             return
 
-        panel = machine.panel
-        wcs_offset = machine.get_command_wcs_offset()
-        x_off, y_off, _ = panel.get_command_offset(
-            wcs_offset=wcs_offset,
+        pointer_offset = (
+            machine.get_pointer_offset()
+            if machine.pointer_alignment_enabled
+            else (0.0, 0.0)
+        )
+        x_off, y_off, _ = machine.panel.get_command_offset(
+            wcs_offset=machine.get_active_wcs_offset(),
             wcs_is_workarea_origin=machine.wcs_origin_is_workarea_origin,
+            extra_offset=pointer_offset,
         )
         self.machine_cmd.move_to(
             machine,
@@ -2512,11 +2516,15 @@ class MainWindow(Adw.ApplicationWindow):
             return
 
         machine_x, machine_y = pos
-        panel = machine.panel
-        wcs_offset = machine.get_command_wcs_offset()
-        x_off, y_off, _ = panel.get_command_offset(
-            wcs_offset=wcs_offset,
+        pointer_offset = (
+            machine.get_pointer_offset()
+            if machine.pointer_alignment_enabled
+            else (0.0, 0.0)
+        )
+        x_off, y_off, _ = machine.panel.get_command_offset(
+            wcs_offset=machine.get_active_wcs_offset(),
             wcs_is_workarea_origin=machine.wcs_origin_is_workarea_origin,
+            extra_offset=pointer_offset,
         )
         self.machine_cmd.move_to(
             machine,
@@ -2591,7 +2599,6 @@ class MainWindow(Adw.ApplicationWindow):
             if machine.pointer_alignment_enabled:
                 dialog = PointerAlignmentDialog(
                     parent=self,
-                    machine=machine,
                     on_proceed=_proceed,
                 )
                 dialog.present()

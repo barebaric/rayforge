@@ -29,6 +29,7 @@ def test_tool_page_registered_via_hook(ui_context):
 
 def test_tool_page_present_in_settings_dialog(ui_context):
     """SettingsWindow renders a 'Tools' page from the addon registry."""
+    register_settings_pages(settings_page_registry)
     win = SettingsWindow()
     pages = cast(Any, win.content_stack.get_pages())
     titles = [

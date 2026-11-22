@@ -9,6 +9,16 @@ from gi.repository import PangoCairo
 from raygeo.geo import Geometry, Matrix
 from raygeo.geo.shape.text import text_to_geometry
 from raygeo.geo.types import Point as GeoPoint
+from raygeo.sketch.constraints import (
+    CoincidentConstraint,
+    PointOnCurveConstraint,
+    PointOnLineConstraint,
+)
+from raygeo.sketch.entities import Arc, Bezier, Circle, Ellipse, Entity, Line
+from raygeo.sketch.entities import Polygon as PolygonEntity
+from raygeo.sketch.entities import SketchPoint as Point
+from raygeo.sketch.entities import TextBox as TextBoxEntity
+from raygeo.sketch.types import EntityID
 
 from rayforge.image.geo_renderer import geometry_to_cairo
 from rayforge.ui_gtk.canvas import WorldSurface
@@ -16,24 +26,7 @@ from rayforge.ui_gtk.shared.text import create_text_layout
 
 from ..core.commands import BezierPreviewState
 from ..core.commands.dimension import DimensionData
-from ..core.constraints import (
-    CoincidentConstraint,
-    PointOnCurveConstraint,
-    PointOnLineConstraint,
-)
-from ..core.entities import (
-    Arc,
-    Bezier,
-    Circle,
-    Ellipse,
-    Entity,
-    Line,
-    Point,
-    PolygonEntity,
-    TextBoxEntity,
-)
 from ..core.sketch import FillStyle
-from ..core.types import EntityID
 from .tools import PathTool, TextBoxTool
 
 if TYPE_CHECKING:
@@ -299,7 +292,7 @@ class SketchRenderer:
 
     def _draw_text_box_fills(self, ctx: cairo.Context, exclude_ids: set):
         """Draw fills for text box entities."""
-        for entity in self.element.sketch.registry.entities:
+        for entity in self.element.sketch.registry.entities():
             if entity.id in exclude_ids:
                 continue
             if (
@@ -323,7 +316,7 @@ class SketchRenderer:
         self, ctx: cairo.Context, is_editing: bool, base_line_width: float
     ):
         is_sketch_fully_constrained = self.element.sketch.is_fully_constrained
-        entities = self.element.sketch.registry.entities or []
+        entities = self.element.sketch.registry.entities() or []
         # Draw array copies first (behind) so original geometry like
         # the guide path stays on top and easy to select.
         entities = sorted(entities, key=lambda e: not e.array_copy)
@@ -567,7 +560,7 @@ class SketchRenderer:
         if not (start and end):
             return False
 
-        if bezier.is_line(self.element.sketch.registry):
+        if bezier.is_line:
             ctx.move_to(start.x, start.y)
             ctx.line_to(end.x, end.y)
             return True
@@ -630,7 +623,7 @@ class SketchRenderer:
 
         # Collect all points associated with text boxes to hide their overlays
         text_box_point_ids = set()
-        for entity in self.element.sketch.registry.entities:
+        for entity in self.element.sketch.registry.entities():
             if isinstance(entity, TextBoxEntity):
                 text_box_point_ids.update(
                     entity.get_all_frame_point_ids(
@@ -642,7 +635,7 @@ class SketchRenderer:
         construction_entity_ids = set()
         construction_point_ids = set()
         if not self.element.show_construction_geometry:
-            for entity in self.element.sketch.registry.entities:
+            for entity in self.element.sketch.registry.entities():
                 if entity.construction:
                     construction_entity_ids.add(entity.id)
                     construction_point_ids.update(entity.get_point_ids())
@@ -709,7 +702,7 @@ class SketchRenderer:
         )
 
         point_counts = defaultdict(int)
-        for entity in registry.entities:
+        for entity in registry.entities():
             if isinstance(entity, Line):
                 point_counts[entity.p1_idx] += 1
                 point_counts[entity.p2_idx] += 1
@@ -783,7 +776,7 @@ class SketchRenderer:
     ) -> None:
         """Draws all sketch points, including selection highlights."""
         is_sketch_fully_constrained = self.element.sketch.is_fully_constrained
-        points = self.element.sketch.registry.points or []
+        points = self.element.sketch.registry.points() or []
         origin_id = getattr(self.element.sketch, "origin_id", -1)
         hover_pid = self.element.tools["select"].hovered_point_id
 
@@ -808,7 +801,7 @@ class SketchRenderer:
         # Collect construction point IDs to hide when construction is hidden
         construction_point_ids = set()
         if not self.element.show_construction_geometry:
-            for entity in self.element.sketch.registry.entities:
+            for entity in self.element.sketch.registry.entities():
                 if entity.construction:
                     construction_point_ids.update(entity.get_point_ids())
 

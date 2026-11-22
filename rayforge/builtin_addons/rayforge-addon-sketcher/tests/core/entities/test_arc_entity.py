@@ -3,8 +3,8 @@ import math
 import pytest
 from raygeo.geo import Arc as GeoArc
 from raygeo.geo import Geometry, Move
-from sketcher.core.entities import Arc
-from sketcher.core.registry import EntityRegistry
+from raygeo.sketch.entities import Arc
+from raygeo.sketch.registry import EntityRegistry
 
 
 @pytest.fixture
@@ -68,7 +68,9 @@ def test_arc_to_polygon_vertices(registry):
     center = registry.add_point(0, 0)
     start = registry.add_point(10, 0)
     end = registry.add_point(0, 10)
-    arc = registry.get_entity(registry.add_arc(start, end, center, cw=False))
+    arc = registry.get_entity(
+        registry.add_arc(start, end, center, clockwise=False)
+    )
 
     vertices = arc.to_polygon_vertices(registry, forward=True)
     assert len(vertices) == 9
@@ -95,7 +97,9 @@ def test_arc_hit_test(registry):
     center = registry.add_point(0, 0)
     start = registry.add_point(10, 0)
     end = registry.add_point(0, 10)
-    arc = registry.get_entity(registry.add_arc(start, end, center, cw=False))
+    arc = registry.get_entity(
+        registry.add_arc(start, end, center, clockwise=False)
+    )
     threshold = 2.0
 
     # Point on the arc (radius 10, 45 degrees)
@@ -151,14 +155,14 @@ def test_arc_get_midpoint(registry):
     end = registry.add_point(-10, 0)
 
     # Counter-clockwise arc (upper semi-circle)
-    aid_ccw = registry.add_arc(start, end, center, cw=False)
+    aid_ccw = registry.add_arc(start, end, center, clockwise=False)
     arc_ccw = registry.get_entity(aid_ccw)
     mid_ccw = arc_ccw.get_midpoint(registry)
     assert mid_ccw[0] == pytest.approx(0)
     assert mid_ccw[1] == pytest.approx(10)
 
     # Clockwise arc (lower semi-circle)
-    aid_cw = registry.add_arc(start, end, center, cw=True)
+    aid_cw = registry.add_arc(start, end, center, clockwise=True)
     arc_cw = registry.get_entity(aid_cw)
     mid_cw = arc_cw.get_midpoint(registry)
     assert mid_cw[0] == pytest.approx(0)
@@ -173,7 +177,7 @@ def test_arc_is_angle_within_sweep(registry):
 
     # Counter-clockwise from 0 to 90 degrees
     arc_ccw = registry.get_entity(
-        registry.add_arc(start, end, center, cw=False)
+        registry.add_arc(start, end, center, clockwise=False)
     )
 
     assert (
@@ -188,7 +192,9 @@ def test_arc_is_angle_within_sweep(registry):
     )  # on end boundary
 
     # Clockwise from 0 to 90 (sweep is the long way around)
-    arc_cw = registry.get_entity(registry.add_arc(start, end, center, cw=True))
+    arc_cw = registry.get_entity(
+        registry.add_arc(start, end, center, clockwise=True)
+    )
 
     assert (
         arc_cw.is_angle_within_sweep(math.pi / 4, registry) is False
@@ -260,7 +266,9 @@ def test_arc_to_geometry(registry):
     center = registry.add_point(0, 0)
     start = registry.add_point(10, 0)
     end = registry.add_point(-10, 0)
-    arc = registry.get_entity(registry.add_arc(start, end, center, cw=False))
+    arc = registry.get_entity(
+        registry.add_arc(start, end, center, clockwise=False)
+    )
     geo = arc.to_geometry(registry)
     assert isinstance(geo, Geometry)
     assert len(geo) == 2
@@ -275,9 +283,11 @@ def test_arc_append_to_geometry(registry):
     start = registry.add_point(10, 0)
     end = registry.add_point(-10, 0)
     arc_ccw = registry.get_entity(
-        registry.add_arc(start, end, center, cw=False)
+        registry.add_arc(start, end, center, clockwise=False)
     )
-    arc_cw = registry.get_entity(registry.add_arc(start, end, center, cw=True))
+    arc_cw = registry.get_entity(
+        registry.add_arc(start, end, center, clockwise=True)
+    )
 
     pt_start = registry.get_point(start)
     pt_end = registry.get_point(end)
@@ -316,7 +326,7 @@ def test_arc_get_set_state(registry):
     s = registry.add_point(10, 0)
     e = registry.add_point(0, 10)
     c = registry.add_point(0, 0)
-    aid = registry.add_arc(s, e, c, cw=False)
+    aid = registry.add_arc(s, e, c, clockwise=False)
     arc = registry.get_entity(aid)
 
     # Verify initial state

@@ -4,22 +4,23 @@ from typing import TYPE_CHECKING, Any
 
 import cairo
 from raygeo.geo.types import Point as GeoPoint
-
-from ...core.constraints import (
+from raygeo.sketch.constraints import (
     CoincidentConstraint,
     HorizontalConstraint,
     PointOnLineConstraint,
     SymmetryConstraint,
     VerticalConstraint,
 )
-from ...core.entities import Arc, Circle, Line, Point
-from ...core.snap import (
+from raygeo.sketch.entities import Arc, Circle, Line
+from raygeo.sketch.entities import SketchPoint as Point
+from raygeo.sketch.snap import (
     SNAP_LINE_STYLES,
     DragContext,
     SnapLineType,
     SnapResult,
 )
-from ...core.snap.types import SnapLineStyle
+from raygeo.sketch.snap.types import SnapLineStyle
+
 from .base import SketcherKey
 
 if TYPE_CHECKING:
@@ -95,9 +96,20 @@ class SnapMixin:
             self.current_snap_result = None
             return (model_x, model_y)
 
+        get_preview_state = getattr(self, "get_preview_state", None)
+        preview_state = (
+            get_preview_state() if get_preview_state is not None else None
+        )
+        preview_entities = (
+            preview_state.get_preview_entity_ids()
+            if preview_state is not None
+            else set()
+        )
+
         context = DragContext(
             dragged_point_ids=exclude_points or set(),
             dragged_entity_ids=set(),
+            preview_entity_ids=preview_entities,
             initial_positions={},
             suppress_coincident_points=False,
         )
@@ -438,7 +450,7 @@ class SnapMixin:
         to_screen,
     ) -> None:
         """Draw the indicator for the primary snap point."""
-        from ...core.constraints.symmetry import draw_symmetry_arrows
+        from raygeo.sketch.constraints.symmetry import draw_symmetry_arrows
 
         if not self.current_snap_result:
             return

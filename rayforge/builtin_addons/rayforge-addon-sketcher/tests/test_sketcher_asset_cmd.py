@@ -1,9 +1,9 @@
 from typing import cast
 
 import pytest
+from raygeo.sketch.entities import TextBox as TextBoxEntity
 from sketcher.core import Sketch
 from sketcher.core.commands import TextBoxCommand
-from sketcher.core.entities import TextBoxEntity
 
 from rayforge.core.doc import Doc
 from rayforge.core.workpiece import WorkPiece

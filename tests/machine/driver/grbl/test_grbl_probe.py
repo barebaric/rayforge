@@ -1,195 +1,38 @@
 from unittest.mock import AsyncMock
 
 import pytest
+from raydriver.grbl.probe import describe
 
 from rayforge.machine.driver.grbl.grbl_probe import (
     build_grbl_profile,
 )
 from rayforge.machine.driver.grbl.grbl_serial import GrblSerialDriver
-from rayforge.machine.driver.grbl.grbl_util import (
-    extract_device_name,
-    parse_board,
-    parse_grbl_settings,
-    parse_msg,
-    parse_ver,
-)
 from rayforge.machine.transport import TransportStatus
 from rayforge.shared.units.system import UnitSystem
 
-
-class TestParseGrblSettings:
-    def test_parse_standard_settings(self):
-        lines = [
-            "$0=10",
-            "$1=25",
-            "$130=400.0",
-            "$131=300.0",
-        ]
-        result = parse_grbl_settings(lines)
-        assert result == {
-            "0": 10.0,
-            "1": 25.0,
-            "130": 400.0,
-            "131": 300.0,
-        }
-
-    def test_empty_lines(self):
-        assert parse_grbl_settings([]) == {}
-
-    def test_non_setting_lines_ignored(self):
-        lines = ["ok", "[VER:1.1h:]", "some garbage"]
-        assert parse_grbl_settings(lines) == {}
-
-    def test_negative_value(self):
-        assert parse_grbl_settings(["$23=3"]) == {"23": 3.0}
-
-    def test_float_value(self):
-        assert parse_grbl_settings(["$130=410.000"])["130"] == 410.0
-
-
-class TestParseVer:
-    def test_standard_with_build(self):
-        assert parse_ver("[VER:1.1h.ORTUR:]") == (
-            "1.1h",
-            "ORTUR",
-        )
-
-    def test_standard_no_build(self):
-        assert parse_ver("[VER:1.1h:]") == ("1.1h", None)
-
-    def test_numeric_build(self):
-        assert parse_ver("[VER:1.1h.2023062602:]") == (
-            "1.1h",
-            "2023062602",
-        )
-
-    def test_comma_format(self):
-        assert parse_ver("[VER:1.0.15,20240923:]") == (
-            "1.0.15",
-            None,
-        )
-
-    def test_not_a_ver_line(self):
-        assert parse_ver("[OPT:VMP,31,511]") is None
-        assert parse_ver("") is None
-        assert parse_ver("garbage") is None
-
-    def test_empty_content(self):
-        assert parse_ver("[VER::]") is None
-
-
-class TestParseMsg:
-    def test_machine_name(self):
-        assert parse_msg("[MSG:mechine:Sculpfun iCube]") == (
-            "mechine",
-            "Sculpfun iCube",
-        )
-
-    def test_machine_spelling(self):
-        assert parse_msg("[MSG:Machine:Some Device]") == (
-            "Machine",
-            "Some Device",
-        )
-
-    def test_no_colon(self):
-        assert parse_msg("[MSG:Mode=BT]") is None
-
-    def test_not_a_msg_line(self):
-        assert parse_msg("[VER:1.1h:]") is None
-        assert parse_msg("") is None
-
-
-class TestParseBoard:
-    def test_board_name(self):
-        assert parse_board("[BOARD:A1 Pro Laser Master]") == (
-            "A1 Pro Laser Master"
-        )
-
-    def test_empty_board_ignored(self):
-        assert parse_board("[BOARD: ]") is None
-
-    def test_not_a_board_line(self):
-        assert parse_board("[VER:1.1h:]") is None
-
-
-class TestExtractDeviceName:
-    def test_name_from_ver_with_build_info(self):
-        lines = ["[VER:1.1h.ORTUR:]", "[OPT:VMPH,63,511]"]
-        assert extract_device_name(lines) == "ORTUR"
-
-    def test_no_build_info(self):
-        lines = ["[VER:1.1h:]", "[OPT:VMPH,63,511]"]
-        assert extract_device_name(lines) == "Unknown Grbl Device"
-
-    def test_empty_lines(self):
-        assert extract_device_name([]) == "Unknown Grbl Device"
-
-    def test_numeric_build_info(self):
-        lines = ["[VER:1.1h.2023062602:]"]
-        assert extract_device_name(lines) == "2023062602"
-
-    def test_name_from_msg_machine(self):
-        lines = [
-            "[VER:1.0.15,20240923:]",
-            "[OPT:VMP,31,511]",
-            "[MSG:mechine:Sculpfun iCube]",
-        ]
-        assert extract_device_name(lines) == "Sculpfun iCube"
-
-    def test_name_from_msg_machine_spelling(self):
-        lines = ["[VER:1.1h:]", "[MSG:Machine:Some Device]"]
-        assert extract_device_name(lines) == "Some Device"
-
-    def test_name_from_grblhal_board(self):
-        lines = [
-            "[VER:1.1f.20231005:]",
-            "[BOARD:A1 Pro Laser Master]",
-        ]
-        assert extract_device_name(lines) == "A1 Pro Laser Master"
-
-    def test_msg_takes_priority_over_board(self):
-        lines = [
-            "[BOARD:A1 Pro Laser Master]",
-            "[MSG:machine:Creality Falcon A1 Pro]",
-        ]
-        assert extract_device_name(lines) == "Creality Falcon A1 Pro"
-
-    def test_comma_ver_no_msg(self):
-        lines = ["[VER:1.0.15,20240923:]", "[OPT:VMP,31,511]"]
-        assert extract_device_name(lines) == "Unknown Grbl Device"
-
-    def test_msg_takes_priority_over_ver(self):
-        lines = [
-            "[VER:1.1h.ORTUR:]",
-            "[MSG:mechine:Real Name]",
-        ]
-        assert extract_device_name(lines) == "Real Name"
-
-    def test_msg_without_colon_ignored(self):
-        lines = ["[MSG:Mode=BT]"]
-        assert extract_device_name(lines) == "Unknown Grbl Device"
+FULL_BUILD_INFO = [
+    "[VER:1.1h.ORTUR:]",
+    "[OPT:VMPH,63,511]",
+]
+FULL_SETTINGS_LINES = [
+    "$110=3000.0",
+    "$111=3000.0",
+    "$120=500.0",
+    "$121=500.0",
+    "$130=400.0",
+    "$131=300.0",
+    "$22=1.0",
+    "$30=1000.0",
+    "$32=1.0",
+    "$13=0.0",
+    "$12=0.002",
+]
 
 
 class TestBuildGrblProfile:
     def test_full_profile(self):
-        build_info = [
-            "[VER:1.1h.ORTUR:]",
-            "[OPT:VMPH,63,511]",
-        ]
-        settings_lines = [
-            "$110=3000.0",
-            "$111=3000.0",
-            "$120=500.0",
-            "$121=500.0",
-            "$130=400.0",
-            "$131=300.0",
-            "$22=1.0",
-            "$30=1000.0",
-            "$32=1.0",
-            "$13=0.0",
-            "$12=0.002",
-        ]
-        profile, warnings = build_grbl_profile(build_info, settings_lines)
+        info = describe(FULL_BUILD_INFO, FULL_SETTINGS_LINES)
+        profile, warnings = build_grbl_profile(info)
         assert profile.meta.name == "ORTUR"
         assert profile.machine_config.driver is None
         assert profile.machine_config.driver_args is None
@@ -208,7 +51,7 @@ class TestBuildGrblProfile:
         assert warnings == []
 
     def test_minimal_profile(self):
-        profile, _warnings = build_grbl_profile([], [])
+        profile, _warnings = build_grbl_profile(describe([], []))
         assert profile.meta.name == "Unknown Grbl Device"
         assert profile.machine_config.axis_extents is None
         assert profile.machine_config.max_travel_speed is None
@@ -216,26 +59,28 @@ class TestBuildGrblProfile:
         assert profile.machine_config.home_on_start is None
 
     def test_laser_mode_disabled_warning(self):
-        _profile, warnings = build_grbl_profile([], ["$32=0.0", "$13=0.0"])
+        info = describe([], ["$32=0.0", "$13=0.0"])
+        _profile, warnings = build_grbl_profile(info)
         assert len(warnings) == 1
         assert "laser mode" in warnings[0].lower()
 
     def test_report_inches_warning(self):
-        profile, warnings = build_grbl_profile([], ["$32=1.0", "$13=1.0"])
+        info = describe([], ["$32=1.0", "$13=1.0"])
+        profile, warnings = build_grbl_profile(info)
         assert len(warnings) == 1
         assert "inches" in warnings[0].lower()
         assert profile.machine_config.unit_system == UnitSystem.IMPERIAL
 
     def test_unit_system_defaults_to_metric(self):
-        profile, _ = build_grbl_profile([], [])
+        profile, _ = build_grbl_profile(describe([], []))
         assert profile.machine_config.unit_system == UnitSystem.METRIC
 
     def test_unit_system_metric_when_report_inches_zero(self):
-        profile, _ = build_grbl_profile([], ["$13=0.0"])
+        profile, _ = build_grbl_profile(describe([], ["$13=0.0"]))
         assert profile.machine_config.unit_system == UnitSystem.METRIC
 
     def test_different_speeds_per_axis(self):
-        profile, _warnings = build_grbl_profile(
+        info = describe(
             [],
             [
                 "$110=5000.0",
@@ -244,14 +89,44 @@ class TestBuildGrblProfile:
                 "$121=600.0",
             ],
         )
+        profile, _warnings = build_grbl_profile(info)
         assert profile.machine_config.max_travel_speed == 3000
         assert profile.machine_config.acceleration == 600
+
+
+class TestDialectMapping:
+    def test_stock_grbl_gets_compat_dialect(self):
+        info = describe(FULL_BUILD_INFO[:1], FULL_SETTINGS_LINES[:6])
+        profile, _ = build_grbl_profile(info)
+        assert profile.dialect_config
+        assert "laser_on" in profile.dialect_config
+        assert profile.dialect_config["laser_on"] == "M4 S{power:.0f}"
+
+    def test_grblhal_gets_dynamic_dialect(self):
+        info = describe(
+            ["[VER:grblHAL 1.1f:]", "[OPT:VMP,31,511]"], ["$400=200.0"]
+        )
+        profile, _ = build_grbl_profile(info)
+        assert profile.dialect_config
+        assert profile.dialect_config["laser_on"] == "M4 S0"
+        assert "s_command" in profile.dialect_config["linear_move"]
+
+    def test_fluidnc_gets_dynamic_dialect(self):
+        info = describe(["[VER:FluidNC 3.6.1:]", "[OPT:VMP,31,511]"], [])
+        profile, _ = build_grbl_profile(info)
+        assert profile.dialect_config
+        assert profile.dialect_config["laser_on"] == "M4 S0"
+
+    def test_unknown_firmware_gets_empty_dialect_config(self):
+        profile, _ = build_grbl_profile(describe([], []))
+        assert profile.dialect_config == {}
 
 
 class TestDriverProbe:
     """
     Tests for GrblSerialDriver.probe() verifying that it creates
-    a driver, connects, queries the device, and builds a profile.
+    a driver, connects, runs the device census over the session,
+    and builds a profile.
     """
 
     @pytest.mark.asyncio
@@ -280,25 +155,26 @@ class TestDriverProbe:
                 self, status=TransportStatus.CONNECTED, message=None
             )
 
-        async def fake_interactive(self, command):
-            if command == "$I":
-                return build_info
-            if command == "$$":
-                return settings_lines
-            return []
-
         mocker.patch.object(
             GrblSerialDriver,
             "_connect_implementation",
             fake_connect,
         )
-        mocker.patch.object(
-            GrblSerialDriver,
-            "execute_interactive_command",
-            fake_interactive,
-        )
         mock_cleanup = AsyncMock()
         mocker.patch.object(GrblSerialDriver, "cleanup", mock_cleanup)
+        info = describe(build_info, settings_lines)
+        fake_session = mocker.MagicMock()
+        mocker.patch.object(
+            GrblSerialDriver,
+            "session",
+            new_callable=mocker.PropertyMock,
+            return_value=fake_session,
+        )
+        probe_mock = mocker.patch.object(
+            fake_session,
+            "probe_device",
+            AsyncMock(return_value=info),
+        )
 
         profile, _warnings = await GrblSerialDriver.probe(
             context_initializer,
@@ -306,6 +182,7 @@ class TestDriverProbe:
             baudrate=115200,
         )
 
+        probe_mock.assert_awaited_once()
         mock_cleanup.assert_awaited_once()
         assert profile.meta.name == "ORTUR"
         assert profile.machine_config.driver == ("GrblSerialDriver")

@@ -5,11 +5,11 @@ from gettext import gettext as _
 from typing import ClassVar
 
 import cairo
+from raygeo.sketch.entities import Bezier
 
 from rayforge.ui_gtk.shared.keyboard import PRIMARY_KEY_NAME
 
 from ...core.commands import BezierCommand, BezierPreviewState
-from ...core.entities import Bezier
 from .base import SketcherKey, SketchTool
 from .snap_mixin import SnapMixin
 
@@ -460,7 +460,7 @@ class PathTool(SnapMixin, SketchTool):
 
         end_pid = final_pid
         if end_pid is None:
-            end_pid = self.element.sketch.registry._id_counter
+            end_pid = self.element.sketch.registry.next_id()
 
         constraints = self.build_snap_constraints(
             end_id,
@@ -602,7 +602,7 @@ class PathTool(SnapMixin, SketchTool):
 
         bz_end_pid = final_pid
         if bz_end_pid is None:
-            bz_end_pid = self.element.sketch.registry._id_counter
+            bz_end_pid = self.element.sketch.registry.next_id()
 
         snap_constraints = self.build_snap_constraints(
             end_id,

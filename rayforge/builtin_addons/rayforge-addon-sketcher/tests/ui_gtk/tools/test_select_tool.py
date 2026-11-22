@@ -2,7 +2,8 @@ from unittest.mock import Mock
 
 import cairo
 import pytest
-from sketcher.core.entities import Line
+from raygeo.sketch.entities import Line
+from raygeo.sketch.registry import EntityRegistry
 from sketcher.ui_gtk.tools.select_tool import SelectTool
 
 
@@ -11,9 +12,7 @@ def mock_element():
     """Create a mock SketchElement for testing."""
     element = Mock()
     element.sketch = Mock()
-    element.sketch.registry = Mock()
-    element.sketch.registry.points = []
-    element.sketch.registry.entities = []
+    element.sketch.registry = EntityRegistry()
     element.sketch.constraints = []
     element.sketch.get_coincident_points = Mock(return_value=[])
     element.selection = Mock()
@@ -167,18 +166,16 @@ def _mock_point_drag_state(mock_element):
     constraints and all registry points/entities."""
     mock_element.sketch.get_coincident_points.return_value = set()
     mock_element.sketch.constraints = []
-    mock_element.sketch.registry.get_rigidly_connected_points.return_value = []
-    mock_element.sketch.registry.points = []
-    mock_element.sketch.registry.entities = []
+    registry = mock_element.sketch.registry
+    if not registry.points():
+        for _ in range(5):
+            registry.add_point(0.0, 0.0)
+        registry.add_point(10.0, 20.0)
 
 
 @pytest.mark.ui
 def test_select_tool_prepare_point_drag(select_tool, mock_element):
     """Test _prepare_point_drag sets up drag state."""
-    mock_point = Mock()
-    mock_point.x = 10.0
-    mock_point.y = 20.0
-    mock_element.sketch.registry.get_point.return_value = mock_point
     _mock_point_drag_state(mock_element)
     mock_element.get_world_transform.return_value.invert.return_value = Mock()
     mock_element.content_transform.invert.return_value = Mock()

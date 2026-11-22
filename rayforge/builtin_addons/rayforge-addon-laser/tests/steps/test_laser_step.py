@@ -30,6 +30,7 @@ def test_contour_defaults_preserved():
     s = ContourStep(name="t")
     assert s.power == 0.8, s.power
     assert s.offset_mm == 0.0, s.offset_mm
+    assert s.offset_y_mm == 0.0, s.offset_y_mm
     assert s.cut_speed == 500, s.cut_speed
     assert s.air_assist is False
     assert s.power_mode == PowerMode.DYNAMIC
@@ -72,6 +73,7 @@ def test_laser_step_serialization_roundtrip():
     s = ContourStep(name="t")
     s.power = 0.6
     s.offset_mm = 0.2
+    s.offset_y_mm = 0.3
     s.air_assist = True
     s.frequency = 2000
     s.pulse_width = 100
@@ -81,6 +83,7 @@ def test_laser_step_serialization_roundtrip():
     assert type(r) is ContourStep
     assert r.power == 0.6
     assert r.offset_mm == 0.2
+    assert r.offset_y_mm == 0.3
     assert r.air_assist is True
     assert r.frequency == 2000
     assert r.pulse_width == 100
@@ -485,6 +488,7 @@ def test_create_applies_head_pwm_defaults():
     head = MagicMock(spec=LaserHead)
     head.uid = "laser-1"
     head.spot_size_mm = (0.1, 0.1)
+    head.kerf_xy_mm = (0.05, 0.05)
     machine.get_default_laser_head.return_value = head
     machine.get_pwm_params.return_value = PWMParams(1000, 5000, 50, 5, 500)
     context.machine = machine

@@ -8,9 +8,11 @@ from typing import TYPE_CHECKING, ClassVar
 import cairo
 
 if TYPE_CHECKING:
+    from raygeo.sketch.constraints import Constraint
+    from raygeo.sketch.entities import Entity
+    from raygeo.sketch.entities import SketchPoint as Point
+
     from ...core.commands.base import PreviewState
-    from ...core.constraints import Constraint
-    from ...core.entities import Entity, Point
     from ..sketchelement import SketchElement
 
 

@@ -9,6 +9,7 @@ build
 /media
 *.egg-info
 .msys2_env
+.cache
 .DS_Store
 
 .flatpak-builder
@@ -31,6 +32,7 @@ website/node_modules/
 website/.docusaurus/
 website/build/
 website/docs/developer/raygeo-api/
+website/docs/developer/raydriver-api/
 
 .mac_env
 rayforge/private_addons

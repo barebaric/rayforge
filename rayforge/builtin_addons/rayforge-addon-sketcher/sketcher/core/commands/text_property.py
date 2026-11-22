@@ -5,20 +5,21 @@ from typing import TYPE_CHECKING, Any
 
 from raygeo.geo.shape.text import FontConfig
 from raygeo.geo.types import Point as GeoPoint
-
-from ..constraints import (
+from raygeo.sketch.constraints import (
     AspectRatioConstraint,
     DistanceConstraint,
     EqualLengthConstraint,
 )
-from ..entities.line import Line
-from ..entities.point import Point
-from ..entities.text_box import TextBoxEntity
-from ..types import EntityID
+from raygeo.sketch.entities import Line
+from raygeo.sketch.entities import SketchPoint as Point
+from raygeo.sketch.entities import TextBox as TextBoxEntity
+from raygeo.sketch.types import EntityID
+
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
-    from ..constraints import Constraint
+    from raygeo.sketch.constraints import Constraint
+
     from ..sketch import Sketch
 
 
@@ -236,18 +237,9 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
             ):
                 self._removed_constraints.append(constr)
 
-        registry.entities = [
-            e for e in registry.entities if e.id != text_entity.id
-        ]
-        registry._entity_map = {e.id: e for e in registry.entities}
-
-        registry.remove_points(point_ids)
-
-        for e in self._removed_entities:
-            registry.entities = [
-                ent for ent in registry.entities if ent.id != e.id
-            ]
-        registry._entity_map = {e.id: e for e in registry.entities}
+        registry.remove_entities([text_entity.id])
+        registry.remove_points(list(point_ids))
+        registry.remove_entities([e.id for e in self._removed_entities])
 
         for c in self._removed_constraints:
             if c in self.sketch.constraints:
@@ -327,7 +319,7 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
         corrupts the sketch after a save/reload round-trip."""
         registry = self.sketch.registry
 
-        point_ids = {p.id for p in registry.points}
+        point_ids = {p.id for p in registry.points()}
         new_points = []
         for p in self._removed_points:
             if p.id not in point_ids:
@@ -335,17 +327,15 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
                 point_ids.add(p.id)
         registry.add_points(new_points)
 
-        entity_ids = {e.id for e in registry.entities}
+        entity_ids = {e.id for e in registry.entities()}
         for e in self._removed_entities:
             if e.id not in entity_ids:
-                registry.entities.append(e)
+                registry.append_entity(e)
                 entity_ids.add(e.id)
 
         if self._removed_entity and self._removed_entity.id not in entity_ids:
-            registry.entities.append(self._removed_entity)
+            registry.append_entity(self._removed_entity)
             entity_ids.add(self._removed_entity.id)
-
-        registry._entity_map = {e.id: e for e in registry.entities}
 
         for c in self._removed_constraints:
             if c not in self.sketch.constraints:

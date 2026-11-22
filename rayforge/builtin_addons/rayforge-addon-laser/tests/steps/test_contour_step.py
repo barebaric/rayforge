@@ -3,13 +3,14 @@ from unittest.mock import MagicMock
 import pytest
 from laser_essentials.steps import ContourStep
 from raygeo.cnc.execution.specs import ComputePayload
-from raygeo.geo import Matrix
+from raygeo.geo import Geometry, Matrix
 from raygeo.ops.assembly import Assembler
 from raygeo.ops.assembly.contour import ContourSpec
 
 from rayforge.core.step import Step
 from rayforge.core.step_registry import step_registry
 from rayforge.core.workpiece import WorkPiece
+from rayforge.machine.models.laser import LaserHead
 
 
 @pytest.fixture
@@ -19,7 +20,7 @@ def mock_context():
     machine.max_cut_speed = 5000
     machine.max_travel_speed = 10000
     machine.acceleration = 3000
-    default_head = MagicMock()
+    default_head = LaserHead()
     default_head.uid = "test-laser-uid"
     default_head.spot_size_mm = (0.1, 0.1)
     machine.get_default_laser_head.return_value = default_head
@@ -40,6 +41,17 @@ class TestContourStep:
         assert len(step.per_workpiece_transformers_dicts) == 6
         assert len(step.per_step_transformers_dicts) == 3
         assert step.selected_head_uid == "test-laser-uid"
+        assert step.offset_mm == pytest.approx(0.05)
+        assert step.offset_y_mm == pytest.approx(0.05)
+
+    def test_create_uses_per_axis_kerf(self, mock_context):
+        head = mock_context.machine.get_default_laser_head.return_value
+        head.spot_size_mm = (0.1, 0.3)
+
+        step = ContourStep.create(mock_context)
+
+        assert step.offset_mm == pytest.approx(0.05)
+        assert step.offset_y_mm == pytest.approx(0.15)
 
     def test_create_without_optimize(self, mock_context):
         step = ContourStep.create(mock_context, optimize=False)
@@ -209,6 +221,7 @@ class TestContourStep:
             "cut_order",
             "remove_inner",
             "offset_mm",
+            "offset_y_mm",
             "overcut",
             "arc_tolerance",
             "allow_arcs",
@@ -223,10 +236,12 @@ class TestContourStep:
         step.cut_order = "OUTSIDE_INSIDE"
         step.remove_inner_paths = True
         step.offset_mm = 0.5
+        step.offset_y_mm = 0.8
         step.overcut = 1.0
         data = step.to_dict()
         restored = ContourStep.from_dict(data)
         assert data == restored.to_dict()
+        assert restored.offset_y_mm == pytest.approx(0.8)
 
     def test_from_dict_migrates_legacy_offset_keys(self):
         """Legacy files store path_offset_mm and kerf_mm; the combined
@@ -251,6 +266,7 @@ class TestContourStep:
 
         assert isinstance(restored, ContourStep)
         assert restored.offset_mm == pytest.approx(0.5)
+        assert restored.offset_y_mm == pytest.approx(0.5)
 
     def test_from_dict_new_offset_key_wins(self):
         """A current file's offset_mm is used verbatim, ignoring any
@@ -276,6 +292,7 @@ class TestContourStep:
 
         assert isinstance(restored, ContourStep)
         assert restored.offset_mm == pytest.approx(1.5)
+        assert restored.offset_y_mm == pytest.approx(1.5)
 
     def test_from_dict_migrates_legacy_opsproducer_params(self):
         """True legacy files store contour params in
@@ -287,6 +304,7 @@ class TestContourStep:
             "cut_order",
             "remove_inner_paths",
             "offset_mm",
+            "offset_y_mm",
             "overcut",
             "override_threshold",
             "threshold",
@@ -314,6 +332,19 @@ class TestContourStep:
         assert restored.threshold == 0.7
         assert restored.overcut == 0.2
         assert restored.offset_mm == pytest.approx(0.4)
+        assert restored.offset_y_mm == pytest.approx(0.4)
+
+    def test_apply_import_settings_mirrors_offset_without_y(self):
+        step = ContourStep(name="Test")
+        step.apply_import_settings({"offset_mm": 0.4})
+        assert step.offset_mm == pytest.approx(0.4)
+        assert step.offset_y_mm == pytest.approx(0.4)
+
+    def test_apply_import_settings_uses_explicit_y(self):
+        step = ContourStep(name="Test")
+        step.apply_import_settings({"offset_mm": 0.4, "offset_y_mm": 0.6})
+        assert step.offset_mm == pytest.approx(0.4)
+        assert step.offset_y_mm == pytest.approx(0.6)
 
     def test_step_from_dict_preserves_subclass_attrs(self):
         """Step.from_dict (base call) must delegate to subclass from_dict."""
@@ -377,3 +408,72 @@ class TestContourComputePayload:
         assert token_params == kwargs
         assert token_params is not None
         assert token_params["cut_side"] == "inside"
+
+    def _wp_with_rect(self):
+        wp = MagicMock()
+        wp.size = (10.0, 10.0)
+        wp.boundaries = Geometry.from_points([(0, 0), (1, 0), (1, 1), (0, 1)])
+        return wp
+
+    def test_build_compute_payload_applies_anisotropic_offset(self, machine):
+        step = ContourStep(name="cut")
+        step.cut_side = "OUTSIDE"
+        step.offset_mm = 0.2
+        step.offset_y_mm = 0.4
+
+        part, payload = step.build_compute_payload(
+            machine, self._wp_with_rect()
+        )
+
+        spec = payload.assembler.spec
+        assert spec.offset_mm == 0.0
+        assert part.geometry is not None
+        assert part.geometry.rect() == pytest.approx((-0.2, -0.4, 10.2, 10.4))
+
+    def test_build_compute_payload_applies_inside_anisotropic_offset(
+        self, machine
+    ):
+        step = ContourStep(name="cut")
+        step.cut_side = "INSIDE"
+        step.offset_mm = 0.2
+        step.offset_y_mm = 0.4
+
+        part, payload = step.build_compute_payload(
+            machine, self._wp_with_rect()
+        )
+
+        assert payload.assembler.spec.offset_mm == 0.0
+        assert part.geometry is not None
+        assert part.geometry.rect() == pytest.approx((0.2, 0.4, 9.8, 9.6))
+
+    def test_build_compute_payload_keeps_scalar_offset_when_equal(
+        self, machine
+    ):
+        step = ContourStep(name="cut")
+        step.cut_side = "OUTSIDE"
+        step.offset_mm = 0.3
+        step.offset_y_mm = 0.3
+
+        part, payload = step.build_compute_payload(
+            machine, self._wp_with_rect()
+        )
+
+        assert payload.assembler.spec.offset_mm == 0.3
+        assert part.geometry is not None
+        assert part.geometry.rect() == pytest.approx((0.0, 0.0, 10.0, 10.0))
+
+    def test_build_compute_payload_ignores_offsets_on_centerline(
+        self, machine
+    ):
+        step = ContourStep(name="cut")
+        step.cut_side = "CENTERLINE"
+        step.offset_mm = 0.2
+        step.offset_y_mm = 0.4
+
+        part, payload = step.build_compute_payload(
+            machine, self._wp_with_rect()
+        )
+
+        assert payload.assembler.spec.offset_mm == 0.2
+        assert part.geometry is not None
+        assert part.geometry.rect() == pytest.approx((0.0, 0.0, 10.0, 10.0))

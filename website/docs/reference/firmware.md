@@ -18,6 +18,7 @@ Smoothieware, and other firmware types.
 | Firmware         | Version | Status        | Driver                                   | Notes                   |
 | ---------------- | ------- | ------------- | ---------------------------------------- | ----------------------- |
 | **GRBL**         | 1.1+    | Compatible    | GRBL (USB/Serial) (+ compatibility mode) | Recommended             |
+| **GRBL**         | 1.1+    | Experimental  | GRBL (Bluetooth)                         | Paired Bluetooth SPP    |
 | **grblHAL**      | 2023+   | Compatible    | GRBL (USB/Serial) / grblHAL (Telnet)     | Modern GRBL fork        |
 | **GRBL**         | 0.9     | Limited       | GRBL (USB/Serial)                        | Older, may have issues  |
 | **FluidNC**      | All     | Compatible    | FluidNC / ESP3D (Web API)                | ESP32-based             |
@@ -31,8 +32,8 @@ Smoothieware, and other firmware types.
 
 ## GRBL Firmware
 
-**Status:** Fully Supported **Versions:** 1.1+ **Drivers:** GRBL (USB/Serial), GRBL (USB/Serial —
-compatibility mode)
+**Status:** Fully Supported **Versions:** 1.1+ **Drivers:** GRBL (USB/Serial), GRBL (Bluetooth),
+GRBL (USB/Serial — compatibility mode)
 
 ### GRBL 1.1 (Recommended)
 
@@ -127,6 +128,27 @@ causes false alarms or communication errors.
 
 ---
 
+## GRBL (Bluetooth) Driver
+
+**Status:** Experimental **Firmware:** GRBL **Driver:** GRBL (Bluetooth)
+
+The GRBL (Bluetooth) driver connects to controllers that expose a Bluetooth Classic Serial Port
+Profile (SPP/RFCOMM), such as many ESP32-based laser controllers. The operating system makes the
+connection directly, so no `/dev/rfcomm*` bridge or outgoing COM port is needed.
+
+**Using the GRBL (Bluetooth) driver:**
+
+1. **Pair the controller** in the operating system's Bluetooth settings
+2. **Select "GRBL (Bluetooth)"** in machine settings
+3. **Pick the device** from the list, or enter its address manually
+4. **Keep the default RFCOMM channel 1** unless the device uses another channel
+
+The device list is populated from the operating system's paired devices. Linux, macOS and Windows
+are supported. Bluetooth Low Energy (BLE) devices are not supported. On macOS, Rayforge needs
+Bluetooth permission and must run from an app bundle that carries the Bluetooth entitlement.
+
+---
+
 ## grblHAL
 
 **Status:** Compatible **Versions:** 2023+ **Drivers:** GRBL (USB/Serial), grblHAL (Telnet)
@@ -168,16 +190,17 @@ grblHAL (Telnet)
 The grblHAL (Telnet) driver connects to GRBL-based controllers over the network via a raw TCP
 (telnet) interface. This is ideal for boards with built-in WiFi or Ethernet — no USB cable required.
 
-Networked grblHAL boards announce nothing via mDNS, so the wizard also runs a narrow subnet scan
-(only the telnet port, bounded concurrency and per-host timeout) and confirms each responding
-controller before listing it.
+grblHAL builds with LWIP mDNS announce `_telnet._tcp`, so the wizard finds them immediately and
+confirms each with the `$I` build-info command before listing it. Boards whose firmware announces
+nothing via mDNS are found by a narrow subnet scan (only the telnet port, bounded concurrency and
+per-host timeout) with the same confirmation.
 
 **Features:**
 
 - Network connectivity (Ethernet/WiFi)
 - Compatible with grblHAL and ESP3D-based boards
 - Same GRBL protocol as the serial driver
-- Found by the machine wizard's automatic subnet scan
+- Found via mDNS (`_telnet._tcp`) when announced, or by the wizard's automatic subnet scan
 
 **Using the grblHAL (Telnet) driver:**
 

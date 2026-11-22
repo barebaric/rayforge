@@ -14,6 +14,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  packages: read
+
 jobs:
   lint-test:
     if: github.repository == 'barebaric/rayforge'
@@ -30,35 +34,41 @@ jobs:
         distro:
           - { name: "Ubuntu 24.04", codename: "noble", runner: "ubuntu-24.04" }
     runs-on: ${{ matrix.distro.runner }}
+    container:
+      image: ghcr.io/barebaric/rayforge-ci:55cd9b91e4f01e2f372497c27f761dfd1df3eb24
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           fetch-tags: true
 
-      - name: Install build dependencies
-        run: >
-          sudo apt-get update && sudo apt-get install -y
-          build-essential
-          cargo
-          cython3
-          devscripts
-          debhelper
-          dh-python
-          gettext
-          dput
-          equivs
-          jq
-          python3-all
-          python3-maturin
-          python3-numpy
-          pybuild-plugin-pyproject
-          python3-pip
-          python3-poetry-core
-          python3-pyclipper
-          cython3
-          pkg-config
-          rustc
+      - name: Cache pip wheels
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: deb-pip-${{ hashFiles('debian/requirements-bundle.txt') }}
+          restore-keys: deb-pip-
+
+      - name: Configure fast APT mirror
+        uses: vegardit/fast-apt-mirror.sh@v1
+
+      - name: Cache APT archives
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/apt-archives
+          key: apt-${{ runner.os }}-${{ hashFiles('debian/control', 'debian/requirements-bundle.txt') }}
+          restore-keys: apt-${{ runner.os }}-
+
+      - name: Keep downloaded APT packages
+        run: |
+          mkdir -p "$HOME/.cache/apt-archives"
+          sudo tee /etc/apt/apt.conf.d/99ci-cache >/dev/null <<EOF
+          Dir::Cache::archives "$HOME/.cache/apt-archives";
+          APT::Keep-Downloaded-Packages "true";
+          EOF
 
       - name: Import GPG key
         # Run on tags OR main branch push
@@ -66,6 +76,7 @@ jobs:
         env:
           GPG_PASSPHRASE: ${{ secrets.PPA_GPG_PASSPHRASE }}
           GPG_PRIVATE_KEY: ${{ secrets.PPA_GPG_PRIVATE_KEY }}
+        shell: bash
         run: |
           echo "$GPG_PASSPHRASE" | gpg --batch --yes --pinentry-mode=loopback --passphrase-fd 0 --import <(echo "$GPG_PRIVATE_KEY" | base64 --decode)
           KEY_FINGERPRINT=$(gpg --list-secret-keys --with-colons | grep '^fpr' | head -n 1 | awk -F: '{print $10}')
@@ -75,6 +86,17 @@ jobs:
           fi
           echo "Found key fingerprint: $KEY_FINGERPRINT"
           echo "KEY_ID=$KEY_FINGERPRINT" >> $GITHUB_ENV
+
+      - name: Mark workspace as safe
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Install distro info
+        run: |
+          sudo apt-get update -o Acquire::Retries=5 \
+            -o Acquire::http::Timeout=15
+          sudo apt-get install -y --no-install-recommends \
+            -o Acquire::Retries=5 -o Acquire::http::Timeout=15 \
+            libdistro-info-perl
 
       - name: Build Packages for Testing
         id: build_test_packages
@@ -96,11 +118,15 @@ jobs:
 
       - name: Install runtime dependencies for testing
         run: |
-          sudo mk-build-deps --install --tool="apt-get -y" debian/control
+          sudo mk-build-deps --install \
+            --tool="apt-get -y --no-install-recommends -o Acquire::Retries=5 -o Acquire::http::Timeout=15" \
+            debian/control
 
       - name: Test package installation
         run: |
-          sudo apt-get install -y ./${{ steps.build_test_packages.outputs.deb_file_path }}
+          sudo apt-get install -y --no-install-recommends \
+            -o Acquire::Retries=5 -o Acquire::http::Timeout=15 \
+            ./${{ steps.build_test_packages.outputs.deb_file_path }}
 
       - name: Verify translated catalogs are shipped
         run: |
@@ -129,7 +155,8 @@ jobs:
           # This simple command proves the installation was successful.
           rayforge --version
           # Try running the app and immediately exiting again.
-          sudo apt-get install -y xvfb
+          sudo apt-get install -y --no-install-recommends \
+            -o Acquire::Retries=5 -o Acquire::http::Timeout=15 xvfb
           xvfb-run rayforge --exit
 
       - name: Sign source package

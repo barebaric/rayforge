@@ -75,10 +75,12 @@ Controls where the laser cuts relative to the vector path:
 
 **Offset Distance:**
 
-- How far inside/outside to offset (mm)
+- **Offset X** and **Offset Y**: how far inside/outside to offset on each axis (mm)
+- Both default to half the laser head's spot size on that axis
 - Typically set to half your kerf width
 - Kerf = width of material removed by laser
 - Example: 0.15mm offset for 0.3mm kerf
+- Set them independently when the beam spot is not circular
 
 #### Cut Order
 

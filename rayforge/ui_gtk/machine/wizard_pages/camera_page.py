@@ -1,7 +1,7 @@
 """Step 10 — Camera setup (optional).
 
-Collects which V4L devices the user wants attached to this machine
-and launches the per-device camera wizard for the full setup
+Collects which cameras the user wants attached to this machine and
+launches the per-device camera wizard for the full local setup
 (detection, image settings, lens calibration, world alignment):
 
 * Detect V4L devices
@@ -11,7 +11,11 @@ and launches the per-device camera wizard for the full setup
   optional
 * Align image ↔ world point pairs
 
-Here we only collect which V4L devices the user wants enabled; the
+For a remote machine, cameras advertised by the device host are
+listed beside the local ones. Their stream URLs are network cameras,
+so no local calibration workflow is launched for them.
+
+Here we only collect which cameras the user wants enabled; the
 detailed per-device setup runs on demand. If the user opts out, no
 `cameras` entry is written and the existing machine-level default
 applies.
@@ -23,8 +27,14 @@ from typing import Any
 from gi.repository import Adw
 
 from ....camera.models.camera import Camera
+from ....camera.remote import (
+    RemoteCamera,
+    fetch_remote_cameras,
+    is_remote_driver_args,
+)
 from ....camera.v4l import display_name, get_sorted_by_id_paths
 from ....machine.device.profile import DeviceProfile
+from ....shared.tasker import task_mgr
 from . import WizardPage, _makePreferencesGroup
 
 
@@ -37,6 +47,12 @@ class CameraPage(WizardPage):
     )
 
     def __init__(self, wizard, **kwargs):
+        self._remote_cameras: list[RemoteCamera] = []
+        self._remote_switch_rows: dict[
+            int, tuple[Adw.SwitchRow, RemoteCamera]
+        ] = {}
+        self._remote_status_row: Adw.ActionRow | None = None
+        self._fetch_generation = 0
         super().__init__(wizard, **kwargs)
 
     def build_ui(self) -> None:
@@ -44,9 +60,9 @@ class CameraPage(WizardPage):
             title=_("Cameras"),
             description=_(
                 "Set up cameras now or do it later from machine "
-                "settings. The wizard records which V4L devices you "
-                "mark as 'enabled'; detailed lens calibration is "
-                "performed on the camera settings page."
+                "settings. The wizard records which cameras you mark "
+                "as 'enabled'; detailed lens calibration is performed "
+                "on the camera settings page."
             ),
         )
         self.content.append(self.cameras_group)
@@ -75,47 +91,131 @@ class CameraPage(WizardPage):
                 ids.append(by_id)
         return ids
 
+    def selected_remote_cameras(self) -> list[RemoteCamera]:
+        """Daemon-advertised cameras the user has enabled."""
+        return [
+            camera
+            for row, camera in self._remote_switch_rows.values()
+            if row.get_active()
+        ]
+
     def enter(self, profile: DeviceProfile) -> None:
-        # Clear previous rows
-        for row in self._switch_rows:
-            self.cameras_group.remove(row)
-        self._switch_rows.clear()
-        self._device_id_for_row.clear()
+        self._clear_rows()
+        self._fetch_generation += 1
+        generation = self._fetch_generation
+        self._remote_cameras = []
+        self._remote_switch_rows = {}
 
         try:
             by_id_paths = get_sorted_by_id_paths()
         except OSError:
             by_id_paths = []
 
-        if not by_id_paths:
-            empty = Adw.ActionRow(
-                title=_("No cameras detected"),
-                subtitle=_("You can add cameras later from machine settings."),
-            )
-            self.cameras_group.add(empty)
-            self._switch_rows.append(empty)
-            return
-
-        already_added = {
-            (c.get("device_id"))
+        existing_device_ids = {
+            c.get("device_id")
             for c in (profile.machine_config.cameras or [])
             if c.get("device_id")
         }
-
         for by_id in by_id_paths:
             row = Adw.SwitchRow(
                 title=display_name(by_id),
                 subtitle=by_id,
             )
-            row.set_active(by_id in already_added)
+            row.set_active(by_id in existing_device_ids)
             self.cameras_group.add(row)
             self._switch_rows.append(row)
             self._device_id_for_row[id(row)] = by_id
+
+        driver_args = profile.machine_config.driver_args or {}
+        if is_remote_driver_args(driver_args):
+            self._start_remote_fetch(driver_args, profile, generation)
+        elif not self._switch_rows:
+            self._add_empty_state()
+
+    def _clear_rows(self) -> None:
+        for row in self._switch_rows:
+            self.cameras_group.remove(row)
+        self._switch_rows.clear()
+        self._device_id_for_row.clear()
+        if self._remote_status_row is not None:
+            self.cameras_group.remove(self._remote_status_row)
+            self._remote_status_row = None
+
+    def _add_empty_state(self) -> None:
+        empty = Adw.ActionRow(
+            title=_("No cameras detected"),
+            subtitle=_("You can add cameras later from machine settings."),
+        )
+        self.cameras_group.add(empty)
+        self._switch_rows.append(empty)
+
+    def _start_remote_fetch(
+        self,
+        driver_args: dict[str, Any],
+        profile: DeviceProfile,
+        generation: int,
+    ) -> None:
+        existing_uris = {
+            c.get("source_config", {}).get("uri")
+            for c in (profile.machine_config.cameras or [])
+            if isinstance(c.get("source_config"), dict)
+        }
+        existing_uris.discard(None)
+        self._remote_status_row = Adw.ActionRow(
+            title=_("Looking for cameras on the device host…")
+        )
+        self.cameras_group.add(self._remote_status_row)
+
+        async def _coroutine(exec_ctx: Any) -> list[RemoteCamera]:
+            return await fetch_remote_cameras(driver_args)
+
+        task_mgr.add_coroutine(
+            _coroutine,
+            key=f"camera-page-remote-{id(self)}",
+            when_done=lambda task: self._on_remote_fetched(
+                task, generation, existing_uris
+            ),
+        )
+
+    def _on_remote_fetched(
+        self, task: Any, generation: int, existing_uris: set[Any]
+    ) -> None:
+        def _update() -> None:
+            if generation != self._fetch_generation:
+                return
+            if self._remote_status_row is not None:
+                self.cameras_group.remove(self._remote_status_row)
+                self._remote_status_row = None
+            cameras: list[RemoteCamera] = []
+            if task.get_status() == "completed":
+                cameras = task.result()
+            self._remote_cameras = cameras
+            for camera in cameras:
+                row = Adw.SwitchRow(
+                    title=camera.name,
+                    subtitle=camera.uri,
+                )
+                row.set_active(camera.uri in existing_uris)
+                self.cameras_group.add(row)
+                self._switch_rows.append(row)
+                self._remote_switch_rows[id(row)] = (row, camera)
+            if not self._switch_rows:
+                self._add_empty_state()
+
+        task_mgr.schedule_on_main_thread(_update)
 
     def apply_to_profile(self, profile: DeviceProfile) -> bool:
         selected: list[dict[str, Any]] = []
         for by_id in self.selected_device_ids():
             cam = Camera(name=display_name(by_id), device_id=by_id)
+            cam.enabled = True
+            selected.append(cam.to_dict())
+        for remote in self.selected_remote_cameras():
+            cam = Camera(
+                name=remote.name,
+                source_type=remote.source_type,
+                source_config={"uri": remote.uri},
+            )
             cam.enabled = True
             selected.append(cam.to_dict())
         profile.machine_config.cameras = selected or None

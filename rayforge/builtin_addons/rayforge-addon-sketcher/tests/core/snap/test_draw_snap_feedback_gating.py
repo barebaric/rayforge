@@ -9,7 +9,7 @@ from typing import Any, cast
 
 import cairo
 import pytest
-from sketcher.core.snap.types import SnapResult
+from raygeo.sketch.snap.types import SnapResult
 from sketcher.ui_gtk.tools.snap_mixin import SnapMixin
 
 

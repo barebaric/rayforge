@@ -1,22 +1,22 @@
+import itertools
 import math
 
 import pytest
-from sketcher.core.constraints import (
+from raygeo.sketch import solve_registry
+from raygeo.sketch.constraints import (
     DistanceConstraint,
     DragConstraint,
     HorizontalConstraint,
     VerticalConstraint,
 )
-from sketcher.core.params import ParameterContext
-from sketcher.core.registry import EntityRegistry
+from raygeo.sketch.params import ParameterContext
+from raygeo.sketch.registry import EntityRegistry
 from sketcher.core.sketch import Sketch
-from sketcher.core.solver import Solver
 
 
 def test_solver_simple_move():
     """Test moving a single point to satisfy a distance constraint."""
     reg = EntityRegistry()
-    params = ParameterContext()
 
     # p1 fixed at origin
     p1 = reg.add_point(0, 0, fixed=True)
@@ -29,8 +29,7 @@ def test_solver_simple_move():
         DistanceConstraint(p1, p2, 10.0),
     ]
 
-    solver = Solver(reg, params, constraints)
-    success = solver.solve()
+    success = solve_registry(reg, constraints)
 
     assert success is True
     pt2 = reg.get_point(p2)
@@ -41,7 +40,6 @@ def test_solver_simple_move():
 def test_solver_fixed_point():
     """Test that fixed points do not move."""
     reg = EntityRegistry()
-    params = ParameterContext()
 
     p1 = reg.add_point(0, 0, fixed=True)
     p2 = reg.add_point(10, 0, fixed=True)  # THIS IS FIXED
@@ -49,13 +47,13 @@ def test_solver_fixed_point():
     # Impossible constraint: fixed points are 10 apart, we want 5
     constraints = [DistanceConstraint(p1, p2, 5.0)]
 
-    solver = Solver(reg, params, constraints)
-    solver.solve()
+    solve_registry(reg, constraints)
 
     pt2 = reg.get_point(p2)
     assert pt2.x == 10.0  # Should not have moved
 
     # Check if constraints are actually satisfied
+    params = ParameterContext()
     err = constraints[0].error(reg, params)
     assert abs(err) > 1.0  # Constraint definitely failed
 
@@ -63,7 +61,6 @@ def test_solver_fixed_point():
 def test_solver_degrees_of_freedom():
     """Test a system with multiple moving parts."""
     reg = EntityRegistry()
-    params = ParameterContext()
 
     #    p3 -- p4
     #    |     |
@@ -85,8 +82,7 @@ def test_solver_degrees_of_freedom():
         DistanceConstraint(p1, p3, 4.0),
     ]
 
-    solver = Solver(reg, params, constraints)
-    assert solver.solve() is True
+    assert solve_registry(reg, constraints) is True
 
     dist_hypotenuse = math.hypot(
         reg.get_point(p2).x - reg.get_point(p3).x,
@@ -98,7 +94,6 @@ def test_solver_degrees_of_freedom():
 def test_solver_drag_behavior():
     """Test that DragConstraint moves unconstrained points."""
     reg = EntityRegistry()
-    params = ParameterContext()
 
     # Point at origin
     p1 = reg.add_point(0, 0)
@@ -107,8 +102,7 @@ def test_solver_drag_behavior():
     c = DragConstraint(p1, 10.0, 10.0)
     constraints = [c]
 
-    solver = Solver(reg, params, constraints)
-    success = solver.solve()
+    success = solve_registry(reg, constraints)
 
     assert success is True
     pt = reg.get_point(p1)
@@ -122,7 +116,6 @@ def test_solver_drag_vs_geometry():
     Test that geometric constraints overpower DragConstraint due to weight.
     """
     reg = EntityRegistry()
-    params = ParameterContext()
 
     p1 = reg.add_point(0, 0, fixed=True)
     p2 = reg.add_point(10, 0)
@@ -137,13 +130,11 @@ def test_solver_drag_vs_geometry():
         DragConstraint(p2, 20.0, 0.0, weight=0.05),
     ]
 
-    solver = Solver(reg, params, constraints)
-
     # We do not assert success here because the solver returns False when
     # a soft constraint (DragConstraint) causes the residual cost to remain
     # above the strict tolerance (1e-6), even though it found the optimal
     # solution.
-    solver.solve()
+    solve_registry(reg, constraints)
 
     pt2 = reg.get_point(p2)
 
@@ -160,31 +151,26 @@ def test_solver_no_constraints():
     Test solver behavior when there are mutable points but no constraints.
     """
     reg = EntityRegistry()
-    params = ParameterContext()
     reg.add_point(0, 0)  # Mutable
 
-    solver = Solver(reg, params, [])
     # Should succeed immediately (residuals return [0.0])
-    assert solver.solve() is True
+    assert solve_registry(reg, []) is True
 
 
 def test_solver_no_mutable_points():
     """Test solver behavior when everything is fixed."""
     reg = EntityRegistry()
-    params = ParameterContext()
     reg.add_point(0, 0, fixed=True)
 
     # Constraint exists, but nothing can move
     # Solver calculates error, sees it can't move anything,
     # returns True immediately (optimization check)
-    solver = Solver(reg, params, [])
-    assert solver.solve() is True
+    assert solve_registry(reg, []) is True
 
 
 def test_solver_impossible_constraints():
     """Test solver reporting failure on impossible geometry."""
     reg = EntityRegistry()
-    params = ParameterContext()
     p1 = reg.add_point(0, 0, fixed=True)
 
     # Initialize p2 near the compromise to test failure reporting
@@ -198,8 +184,7 @@ def test_solver_impossible_constraints():
         DistanceConstraint(p1, p2, 20.0),
     ]
 
-    solver = Solver(reg, params, constraints)
-    success = solver.solve()
+    success = solve_registry(reg, constraints)
 
     # success flag should be False because residuals > tolerance
     # even though it is at the best possible location.
@@ -217,7 +202,6 @@ def test_solver_skips_points_no_constraint_references():
     """Points that no constraint references keep their exact
     positions and stay out of the solve."""
     reg = EntityRegistry()
-    params = ParameterContext()
 
     p1 = reg.add_point(0, 0, fixed=True)
     p2 = reg.add_point(5, 0)
@@ -225,8 +209,7 @@ def test_solver_skips_points_no_constraint_references():
     far2 = reg.add_point(-50, 25)
 
     constraints = [DistanceConstraint(p1, p2, 10.0)]
-    solver = Solver(reg, params, constraints)
-    assert solver.solve() is True
+    assert solve_registry(reg, constraints) is True
 
     assert reg.get_point(p2).x == pytest.approx(10.0, abs=1e-4)
     assert reg.get_point(far1).pos() == (100.0, 100.0)
@@ -237,7 +220,6 @@ def test_solver_dof_flags_for_unreferenced_points():
     """DOF analysis flags only the points the constraints touch;
     unreferenced points stay unconstrained."""
     reg = EntityRegistry()
-    params = ParameterContext()
 
     p1 = reg.add_point(0, 0, fixed=True)
     p2 = reg.add_point(5, 0)
@@ -250,12 +232,28 @@ def test_solver_dof_flags_for_unreferenced_points():
         DistanceConstraint(p1, p2, 3.0),
         DistanceConstraint(p1, p3, 4.0),
     ]
-    solver = Solver(reg, params, constraints)
-    assert solver.solve() is True
+    assert solve_registry(reg, constraints) is True
 
     assert reg.get_point(p2).constrained is True
     assert reg.get_point(p3).constrained is True
     assert reg.get_point(free).constrained is False
+
+
+def test_solver_updates_entity_constrained_status():
+    """A global solve refreshes the constrained flags on entities."""
+    reg = EntityRegistry()
+    p1 = reg.add_point(0, 0, fixed=True)
+    p2 = reg.add_point(10, 0, fixed=True)
+    line = reg.add_line(p1, p2)
+    entity = reg.get_entity(line)
+    assert entity is not None
+    assert entity.constrained is False
+
+    assert solve_registry(reg, []) is True
+
+    entity = reg.get_entity(line)
+    assert entity is not None
+    assert entity.constrained is True
 
 
 def test_sketch_solve_with_unconstrained_geometry():
@@ -274,51 +272,49 @@ def test_sketch_solve_with_unconstrained_geometry():
         assert point.constrained is False
 
 
-def test_partition_constraints_separates_islands():
-    """Global solves split into one sub-problem per connected
-    constraint island."""
+def test_solver_separates_independent_islands():
+    """Both disconnected constraint islands are solved in one call."""
     reg = EntityRegistry()
     p1 = reg.add_point(0, 0, fixed=True)
     p2 = reg.add_point(5, 0)
     p3 = reg.add_point(200, 0, fixed=True)
     p4 = reg.add_point(205, 0)
 
-    solver = Solver(
-        reg,
-        ParameterContext(),
-        [DistanceConstraint(p1, p2, 10.0), DistanceConstraint(p3, p4, 50.0)],
-    )
-
-    parts = solver._partition_constraints()
-    point_sets = sorted(sorted(part[2]) for part in parts)
-    assert point_sets == [
-        sorted({p1, p2}),
-        sorted({p3, p4}),
+    constraints = [
+        DistanceConstraint(p1, p2, 10.0),
+        DistanceConstraint(p3, p4, 50.0),
     ]
+    assert solve_registry(reg, constraints) is True
+
+    a, b = reg.get_point(p1), reg.get_point(p2)
+    c, d = reg.get_point(p3), reg.get_point(p4)
+    assert ((b.x - a.x) ** 2 + (b.y - a.y) ** 2) ** 0.5 == pytest.approx(10.0)
+    assert ((d.x - c.x) ** 2 + (d.y - c.y) ** 2) ** 0.5 == pytest.approx(50.0)
 
 
-def test_partition_constraints_merges_bridged_islands():
-    """A constraint coupling two islands merges them into one
-    sub-problem."""
+def test_solver_merges_bridged_islands():
+    """A constraint coupling two islands makes both move consistently."""
     reg = EntityRegistry()
     p1 = reg.add_point(0, 0, fixed=True)
     p2 = reg.add_point(5, 0)
-    p3 = reg.add_point(200, 0, fixed=True)
+    p3 = reg.add_point(200, 0)
     p4 = reg.add_point(205, 0)
 
-    solver = Solver(
-        reg,
-        ParameterContext(),
-        [
-            DistanceConstraint(p1, p2, 10.0),
-            DistanceConstraint(p3, p4, 50.0),
-            DistanceConstraint(p1, p3, 200.0),
-        ],
-    )
+    constraints = [
+        DistanceConstraint(p1, p2, 10.0),
+        DistanceConstraint(p3, p4, 50.0),
+        DistanceConstraint(p2, p3, 100.0),
+    ]
+    assert solve_registry(reg, constraints) is True
 
-    parts = solver._partition_constraints()
-    assert len(parts) == 1
-    assert parts[0][2] == {p1, p2, p3, p4}
+    points = [reg.get_point(pid) for pid in (p1, p2, p3, p4)]
+    distances = [
+        ((b.x - a.x) ** 2 + (b.y - a.y) ** 2) ** 0.5
+        for a, b in itertools.pairwise(points)
+    ]
+    assert distances[0] == pytest.approx(10.0)
+    assert distances[1] == pytest.approx(100.0)
+    assert distances[2] == pytest.approx(50.0)
 
 
 def test_solver_conflict_isolated_to_its_island():
@@ -327,7 +323,6 @@ def test_solver_conflict_isolated_to_its_island():
     constrained points get flagged even though the global result is a
     failure."""
     reg = EntityRegistry()
-    params = ParameterContext()
     p1 = reg.add_point(0, 0, fixed=True)
     p2 = reg.add_point(5, 0)
     p3 = reg.add_point(200, 0, fixed=True)
@@ -339,8 +334,7 @@ def test_solver_conflict_isolated_to_its_island():
         DistanceConstraint(p3, p4, 50.0),
         DistanceConstraint(p3, p4, 60.0),
     ]
-    solver = Solver(reg, params, constraints)
-    assert solver.solve() is False
+    assert solve_registry(reg, constraints) is False
 
     assert reg.get_point(p2).x == pytest.approx(10.0, abs=1e-4)
     assert reg.get_point(p2).constrained is True

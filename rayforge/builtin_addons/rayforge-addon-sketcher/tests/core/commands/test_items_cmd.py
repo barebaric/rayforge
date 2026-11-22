@@ -1,9 +1,10 @@
 import pytest
+from raygeo.sketch.constraints import DistanceConstraint
+from raygeo.sketch.entities import Line
+from raygeo.sketch.entities import SketchPoint as Point
 from sketcher.core import Sketch
 from sketcher.core.commands import AddItemsCommand
 from sketcher.core.commands.items import RemoveItemsCommand
-from sketcher.core.constraints import DistanceConstraint
-from sketcher.core.entities import Line, Point
 
 
 @pytest.fixture
@@ -30,11 +31,11 @@ def test_add_items_command_add_points(sketch):
     p2 = Point(-2, 30.0, 40.0)
     cmd = AddItemsCommand(sketch, "Add Items", points=[p1, p2])
 
-    initial_count = len(sketch.registry.points)
+    initial_count = len(sketch.registry.points())
 
     cmd.execute()
 
-    assert len(sketch.registry.points) == initial_count + 2
+    assert len(sketch.registry.points()) == initial_count + 2
     assert p1.id >= 0
     assert p2.id >= 0
 
@@ -50,7 +51,7 @@ def test_add_items_command_add_entities(sketch):
 
     cmd.execute()
 
-    assert len(sketch.registry.entities) == 1
+    assert len(sketch.registry.entities()) == 1
     assert line.id >= 0
     assert line.p1_idx >= 0
     assert line.p2_idx >= 0
@@ -83,13 +84,13 @@ def test_add_items_command_undo(sketch):
     )
 
     cmd.execute()
-    assert len(sketch.registry.points) > 0
-    assert len(sketch.registry.entities) > 0
+    assert len(sketch.registry.points()) > 0
+    assert len(sketch.registry.entities()) > 0
 
     cmd.undo()
 
-    assert len(sketch.registry.points) == 1
-    assert len(sketch.registry.entities) == 0
+    assert len(sketch.registry.points()) == 1
+    assert len(sketch.registry.entities()) == 0
 
 
 def test_add_items_command_execute_undo_cycle(sketch):
@@ -99,10 +100,10 @@ def test_add_items_command_execute_undo_cycle(sketch):
 
     for _ in range(3):
         cmd.execute()
-        assert len(sketch.registry.points) == 2
+        assert len(sketch.registry.points()) == 2
 
         cmd.undo()
-        assert len(sketch.registry.points) == 1
+        assert len(sketch.registry.points()) == 1
 
 
 def test_remove_items_command_initialization(sketch):
@@ -125,11 +126,11 @@ def test_remove_items_command_remove_points(sketch):
     point2 = sketch.registry.get_point(p2)
     cmd = RemoveItemsCommand(sketch, "Remove Items", points=[point1, point2])
 
-    assert len(sketch.registry.points) == 3
+    assert len(sketch.registry.points()) == 3
 
     cmd.execute()
 
-    assert len(sketch.registry.points) == 1
+    assert len(sketch.registry.points()) == 1
 
 
 def test_remove_items_command_remove_entities(sketch):
@@ -141,11 +142,11 @@ def test_remove_items_command_remove_entities(sketch):
 
     cmd = RemoveItemsCommand(sketch, "Remove Items", entities=[line_ent])
 
-    assert len(sketch.registry.entities) == 1
+    assert len(sketch.registry.entities()) == 1
 
     cmd.execute()
 
-    assert len(sketch.registry.entities) == 0
+    assert len(sketch.registry.entities()) == 0
 
 
 def test_remove_items_command_remove_constraints(sketch):
@@ -177,13 +178,13 @@ def test_remove_items_command_undo(sketch):
     )
 
     cmd.execute()
-    assert len(sketch.registry.points) == 1
-    assert len(sketch.registry.entities) == 0
+    assert len(sketch.registry.points()) == 1
+    assert len(sketch.registry.entities()) == 0
 
     cmd.undo()
 
-    assert len(sketch.registry.points) == 3
-    assert len(sketch.registry.entities) == 1
+    assert len(sketch.registry.points()) == 3
+    assert len(sketch.registry.entities()) == 1
 
 
 def test_remove_items_command_execute_undo_cycle(sketch):
@@ -194,10 +195,10 @@ def test_remove_items_command_execute_undo_cycle(sketch):
 
     for _ in range(3):
         cmd.execute()
-        assert len(sketch.registry.points) == 1
+        assert len(sketch.registry.points()) == 1
 
         cmd.undo()
-        assert len(sketch.registry.points) == 2
+        assert len(sketch.registry.points()) == 2
 
 
 def test_add_and_remove_items_command_interaction(sketch):
@@ -216,13 +217,13 @@ def test_add_and_remove_items_command_interaction(sketch):
     )
 
     remove_cmd.execute()
-    assert len(sketch.registry.points) == 1
+    assert len(sketch.registry.points()) == 1
 
     remove_cmd.undo()
-    assert len(sketch.registry.points) == 3
+    assert len(sketch.registry.points()) == 3
 
     add_cmd.undo()
-    assert len(sketch.registry.points) == 1
+    assert len(sketch.registry.points()) == 1
 
 
 def test_add_items_command_with_temp_ids(sketch):

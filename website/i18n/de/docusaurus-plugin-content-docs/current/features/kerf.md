@@ -40,6 +40,18 @@ Laser folgt:          50.4mm Quadrat
 Nach dem Schneiden:   Teil misst 50.0mm (perfekt!)
 ```
 
+## Unterschiedliche X- und Y-Punktgrößen
+
+Wenn der Laserpunkt nicht rund ist, leitet Rayforge die Kontur-Offsets aus der Punktgröße pro Achse
+ab:
+
+- **Offset X** ist standardmäßig die halbe Punktbreite
+- **Offset Y** ist standardmäßig die halbe Punkthöhe
+
+Beide Werte bleiben nach dem Messen der tatsächlichen Schnittbreite an Testschnitten editierbar.
+Verwende sie unabhängig voneinander, wenn der Strahl entlang einer Achse mehr Material entfernt als
+entlang der anderen.
+
 ---
 
 ## Schnittbreite messen

@@ -209,7 +209,7 @@ class MachineSettingsDialog(PatchedDialogWindow):
         )
 
         # --- Page 11: Camera ---
-        self.camera_page = CameraPreferencesPage()
+        self.camera_page = CameraPreferencesPage(machine=self.machine)
         self.camera_page.camera_add_requested.connect(
             self._on_camera_add_requested
         )

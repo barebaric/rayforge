@@ -40,6 +40,17 @@ El láser sigue:        cuadrado de 50.4mm
 Después de cortar:     La pieza mide 50.0mm (¡perfecto!)
 ```
 
+## Tamaños de punto X e Y diferentes
+
+Si el punto del haz no es circular, Rayforge deriva los desplazamientos del contorno del tamaño del
+punto por eje:
+
+- **Desplazamiento X** usa por defecto la mitad del ancho del punto
+- **Desplazamiento Y** usa por defecto la mitad de la altura del punto
+
+Ambos valores se pueden editar después de medir el kerf real en cortes de prueba. Úsalos de forma
+independiente cuando el haz elimine más material en un eje que en el otro.
+
 ---
 
 ## Midiendo Kerf

@@ -110,6 +110,8 @@ class Config:
         # Whether to watch imported files and offer to reload them when
         # they change on disk.
         self.watch_source_files: bool = True
+        # Whether to prevent automatic system sleep while a job runs.
+        self.prevent_sleep_while_working: bool = True
         # Usage tracking consent date: None = not asked, "" = declined,
         # ISO date string = consent given on that date
         self.usage_consent_date: str | None = None
@@ -269,6 +271,13 @@ class Config:
         self.watch_source_files = enabled
         self.changed.send(self)
 
+    def set_prevent_sleep_while_working(self, enabled: bool):
+        """Sets whether automatic system sleep is blocked during jobs."""
+        if self.prevent_sleep_while_working == enabled:
+            return
+        self.prevent_sleep_while_working = enabled
+        self.changed.send(self)
+
     def set_ops_color_mode(self, mode: OpsColorMode):
         """Sets the ops color mode."""
         if self.ops_color_mode == mode:
@@ -396,6 +405,7 @@ class Config:
                 self.external_addon_services_enabled
             ),
             "watch_source_files": self.watch_source_files,
+            "prevent_sleep_while_working": self.prevent_sleep_while_working,
             "ops_color_mode": self.ops_color_mode.value,
             "usage_consent_date": self.usage_consent_date,
             "import_dpi": self.import_dpi,
@@ -473,6 +483,9 @@ class Config:
             "external_addon_services_enabled", True
         )
         config.watch_source_files = data.get("watch_source_files", True)
+        config.prevent_sleep_while_working = data.get(
+            "prevent_sleep_while_working", True
+        )
 
         ops_color_mode_str = data.get(
             "ops_color_mode", OpsColorMode.LASER.value

@@ -108,8 +108,9 @@ Ao pressionar **Enviar** com o alinhamento ativado, um aviso aparece a cada envi
   modo que o ponto do ponteiro traga o trajeto enquanto o feixe corre deslocado. O laser continua
   disparando na potência do trabalho — certifique-se de que o feixe deslocado não possa atingir nada
   que não deva.
-- **Desativar e gravar**: o alinhamento é desativado e o trabalho grava normalmente com o feixe nas
-  posições do SCT.
+- **Gravar com o feixe**: o trabalho grava normalmente com o feixe nas posições do SCT. O
+  alinhamento do ponteiro permanece ativado, então você pode continuar mirando com o ponto do
+  ponteiro depois do trabalho.
 - **Cancelar**.
 
 Movimentos de jog e trabalhos nunca são deslocados pela chave: o jog é relativo, e a saída G-code é

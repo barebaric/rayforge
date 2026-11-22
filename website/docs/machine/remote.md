@@ -83,7 +83,11 @@ a stream reachable on the device host:
 - **USB camera on the device host**: run a standard streamer such as `ustreamer` and add its MJPEG
   URL as an HTTP stream camera.
 
-The daemon advertises configured camera endpoints so the wizard can prefill the URL.
+The daemon advertises configured camera endpoints. When adding a camera, choose **Daemon camera** as
+the source type, pick the daemon, then pick the advertised camera; Rayforge fills in the URL and
+source type.
+
+![Adding a daemon camera](/screenshots/machine-settings-remote-camera.webp)
 
 ## Security notes
 

@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import itertools
 import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
-from ..contour import OffsetItem, build_offset_items
-from ..entities import OffsetPlan
+from raygeo.sketch.contour import build_offset_items
+from raygeo.sketch.entities import Entity, OffsetPlan, PolygonOutline
+
 from .base import SketchChangeCommand
 from .items import AddItemsCommand, RemoveItemsCommand
 
@@ -45,12 +45,14 @@ class OffsetCommand(SketchChangeCommand):
     @staticmethod
     def prepare_items(
         sketch: Sketch, entity_ids: list[int]
-    ) -> list[OffsetItem] | None:
+    ) -> list[Entity | PolygonOutline] | None:
         """
         Pure function that partitions the selection into offsettable
         items. Returns None when the selection cannot be offset.
         """
-        items = build_offset_items(sketch, entity_ids)
+        items = build_offset_items(
+            sketch.registry, entity_ids, sketch.constraints
+        )
         if not items:
             logger.warning("Selection contains no offsettable geometry.")
             return None
@@ -63,7 +65,7 @@ class OffsetCommand(SketchChangeCommand):
         if items is None:
             return False
 
-        allocate_id = itertools.count(-1, -1).__next__
+        allocate_id = self.sketch.registry.allocate_id
         point_moves: dict[int, tuple[float, float]] = {}
         ops: list[tuple[RemoveItemsCommand | None, AddItemsCommand]] = []
         for item in items:
@@ -122,7 +124,7 @@ class OffsetCommand(SketchChangeCommand):
 
     @staticmethod
     def preview_polylines(
-        items: list[OffsetItem],
+        items: list[Entity | PolygonOutline],
         registry,
         distance: float,
     ) -> list[list[tuple[float, float]]] | None:

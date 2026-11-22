@@ -178,6 +178,27 @@ class TestBuildPartVector:
         part = build_part_vector(empty_workpiece, surface=surface)
         assert part is None
 
+    def test_vector_source_applies_offset_xy(self, vector_workpiece):
+        """offset_xy grows the mm-space geometry per axis."""
+        part = build_part_vector(vector_workpiece, offset_xy=(1.0, 2.0))
+
+        assert part is not None
+        assert part.geometry is not None
+        assert part.geometry.rect() == pytest.approx((-1.0, -2.0, 51.0, 32.0))
+
+    def test_raster_fallback_applies_offset_xy(self, empty_workpiece):
+        """offset_xy also applies to traced raster geometry."""
+        surface = _make_filled_surface(100, 100)
+        part = build_part_vector(
+            empty_workpiece,
+            surface=surface,
+            offset_xy=(1.0, 2.0),
+        )
+
+        assert part is not None
+        assert part.geometry is not None
+        assert part.geometry.rect() == pytest.approx((-1.0, -2.0, 41.0, 42.0))
+
 
 class TestPreprocessRasterImage:
     """Tests for preprocess_raster_image()."""

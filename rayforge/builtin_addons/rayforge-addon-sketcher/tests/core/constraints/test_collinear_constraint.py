@@ -1,8 +1,8 @@
 from unittest.mock import MagicMock
 
 import pytest
+from raygeo.sketch.constraints import CollinearConstraint
 from sketcher.core import Sketch
-from sketcher.core.constraints import CollinearConstraint
 
 
 @pytest.fixture

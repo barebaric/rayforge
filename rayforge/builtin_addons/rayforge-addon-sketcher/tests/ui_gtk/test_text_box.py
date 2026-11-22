@@ -14,9 +14,9 @@ if sys.platform.startswith("linux"):
         )
 
 from raygeo.geo.shape.text import FontConfig
+from raygeo.sketch.entities import TextBox as TextBoxEntity
 from sketcher.core import Sketch
 from sketcher.core.commands import ModifyTextPropertyCommand
-from sketcher.core.entities import TextBoxEntity
 from sketcher.ui_gtk.renderer import SketchRenderer
 from sketcher.ui_gtk.sketchelement import SketchElement
 from sketcher.ui_gtk.tools import TextBoxTool
@@ -39,7 +39,8 @@ def sketch_with_text_box():
         p_width,
         p_height,
         content="Hello",
-        font_config=FontConfig(family="sans-serif", size=10.0),
+        font_family="sans-serif",
+        font_size=10.0,
     )
 
     return sketch, tb_id
@@ -59,7 +60,8 @@ def sketch_with_empty_text_box():
         p_width,
         p_height,
         content="",
-        font_config=FontConfig(family="sans-serif", size=10.0),
+        font_family="sans-serif",
+        font_size=10.0,
     )
 
     return sketch, tb_id

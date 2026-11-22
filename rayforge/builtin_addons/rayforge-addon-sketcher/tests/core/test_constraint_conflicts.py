@@ -2,26 +2,24 @@
 Tests for constraint conflict detection in the sketcher.
 """
 
-from sketcher.core.arrays import CurveAlongArrayStrategy
-from sketcher.core.commands import CreateArrayCommand
-from sketcher.core.constraints import (
-    ConstraintStatus,
+from raygeo.sketch import conflicting_constraints, solve_registry
+from raygeo.sketch.arrays import CurveAlongArrayStrategy
+from raygeo.sketch.constraints import (
     DistanceConstraint,
     HorizontalConstraint,
 )
-from sketcher.core.params import ParameterContext
-from sketcher.core.registry import EntityRegistry
+from raygeo.sketch.registry import EntityRegistry
+from raygeo.sketch.types import ConstraintStatus
+from sketcher.core.commands import CreateArrayCommand
 from sketcher.core.sketch import Sketch
-from sketcher.core.solver import CONFLICT_ERROR_THRESHOLD, Solver
 
 
 class TestSolverConflictDetection:
-    """Tests for the Solver.get_conflicting_constraints method."""
+    """Tests for the conflicting_constraints binding."""
 
     def test_no_conflicts_satisfied_constraints(self):
         """When constraints are satisfied, no conflicts should be reported."""
         reg = EntityRegistry()
-        params = ParameterContext()
 
         p1 = reg.add_point(0, 0, fixed=True)
         p2 = reg.add_point(10, 0, fixed=False)
@@ -31,10 +29,9 @@ class TestSolverConflictDetection:
             DistanceConstraint(p1, p2, 10.0),
         ]
 
-        solver = Solver(reg, params, constraints)
-        solver.solve()
+        solve_registry(reg, constraints)
 
-        conflicting = solver.get_conflicting_constraints()
+        conflicting = set(conflicting_constraints(reg, constraints))
         assert conflicting == set()
 
     def test_conflicting_distance_constraints(self):
@@ -43,7 +40,6 @@ class TestSolverConflictDetection:
         should both be detected as conflicting.
         """
         reg = EntityRegistry()
-        params = ParameterContext()
 
         p1 = reg.add_point(0, 0, fixed=True)
         p2 = reg.add_point(15, 0, fixed=False)
@@ -53,10 +49,9 @@ class TestSolverConflictDetection:
             DistanceConstraint(p1, p2, 20.0),
         ]
 
-        solver = Solver(reg, params, constraints)
-        solver.solve()
+        solve_registry(reg, constraints)
 
-        conflicting = solver.get_conflicting_constraints()
+        conflicting = set(conflicting_constraints(reg, constraints))
         assert 0 in conflicting
         assert 1 in conflicting
 
@@ -66,7 +61,6 @@ class TestSolverConflictDetection:
         only the unsatisfied ones should be marked as conflicting.
         """
         reg = EntityRegistry()
-        params = ParameterContext()
 
         p1 = reg.add_point(0, 0, fixed=True)
         p2 = reg.add_point(10, 0, fixed=True)
@@ -78,10 +72,9 @@ class TestSolverConflictDetection:
             DistanceConstraint(p2, p3, 10.0),
         ]
 
-        solver = Solver(reg, params, constraints)
-        solver.solve()
+        solve_registry(reg, constraints)
 
-        conflicting = solver.get_conflicting_constraints()
+        conflicting = set(conflicting_constraints(reg, constraints))
         assert 0 not in conflicting
         assert 1 in conflicting
         assert 2 in conflicting
@@ -91,17 +84,15 @@ class TestSolverConflictDetection:
         An impossible constraint between two fixed points should be detected.
         """
         reg = EntityRegistry()
-        params = ParameterContext()
 
         p1 = reg.add_point(0, 0, fixed=True)
         p2 = reg.add_point(10, 0, fixed=True)
 
         constraints = [DistanceConstraint(p1, p2, 5.0)]
 
-        solver = Solver(reg, params, constraints)
-        solver.solve()
+        solve_registry(reg, constraints)
 
-        conflicting = solver.get_conflicting_constraints()
+        conflicting = set(conflicting_constraints(reg, constraints))
         assert 0 in conflicting
 
     def test_conflict_threshold(self):
@@ -110,22 +101,20 @@ class TestSolverConflictDetection:
         Constraints with error just below threshold should not be reported.
         """
         reg = EntityRegistry()
-        params = ParameterContext()
 
         p1 = reg.add_point(0, 0, fixed=True)
         p2 = reg.add_point(10.0001, 0, fixed=True)
 
         constraints = [DistanceConstraint(p1, p2, 10.0)]
 
-        solver = Solver(reg, params, constraints)
-        solver.solve()
+        solve_registry(reg, constraints)
 
-        conflicting = solver.get_conflicting_constraints(
-            threshold=CONFLICT_ERROR_THRESHOLD
-        )
+        conflicting = conflicting_constraints(reg, constraints, threshold=1e-3)
         assert 0 not in conflicting
 
-        conflicting_strict = solver.get_conflicting_constraints(threshold=1e-6)
+        conflicting_strict = conflicting_constraints(
+            reg, constraints, threshold=1e-6
+        )
         assert 0 in conflicting_strict
 
 

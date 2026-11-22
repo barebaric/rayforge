@@ -12,7 +12,7 @@ import asyncio
 import logging
 from collections.abc import Awaitable, Callable
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 from raydriver.core import SessionEvent
 
@@ -39,7 +39,81 @@ if TYPE_CHECKING:
     from ..models.laser import Laser
     from ..models.machine import Machine
 
-logger = logging.getLogger(__name__)
+
+@runtime_checkable
+class SessionLike(Protocol):
+    """The uniform session surface every raydriver session exposes.
+
+    The local Rust sessions and the remote daemon proxy implement
+    the same methods with the same signatures; operations a
+    protocol cannot perform raise ``NotImplementedError`` instead
+    of being absent.
+    """
+
+    state: "SessionDeviceState"
+    resource_uri: str | None
+
+    def update_dialect(self, dialect: dict[str, Any]) -> None: ...
+
+    async def connect(self) -> None: ...
+
+    async def disconnect(self) -> None: ...
+
+    def probe_device(
+        self, boot_lines: list[str] | None = None
+    ) -> Awaitable[Any]: ...
+
+    async def execute_interactive_command(self, command: str) -> list[str]: ...
+
+    async def execute_command(self, command: str) -> list[str]: ...
+
+    async def run(
+        self,
+        gcode: str,
+        op_line_map: dict[int, int] | None = None,
+        op_estimates: list[float] | None = None,
+        progress_callback: Callable[[int], None] | None = None,
+    ) -> None: ...
+
+    async def run_raw(self, machine_code: str) -> None: ...
+
+    async def cancel(self, emergency: bool = False) -> None: ...
+
+    async def set_hold(self, hold: bool = True) -> None: ...
+
+    async def home(
+        self, axes: list[str] | None = None, active_wcs: str | None = None
+    ) -> None: ...
+
+    async def move_to(
+        self, speed: float, x: float, y: float, z: float | None = None
+    ) -> None: ...
+
+    async def jog(
+        self, speed: int, deltas: list[tuple[str, float]] | None = None
+    ) -> None: ...
+
+    async def select_tool(self, tool_number: int) -> None: ...
+
+    async def set_power(self, power: float | None = None) -> None: ...
+
+    async def set_focus_power(self, power: float | None = None) -> None: ...
+
+    async def clear_alarm(self) -> None: ...
+
+    async def detect_unit_system(self) -> str | None: ...
+
+    async def set_wcs_offset(
+        self, wcs_slot: str, x: float, y: float, z: float | None
+    ) -> None: ...
+
+    async def read_wcs_offsets(self) -> dict[str, tuple]: ...
+
+    async def read_parser_state(self) -> str | None: ...
+
+    async def run_probe_cycle(
+        self, axis_letter: str, max_travel: float, feed_rate: int
+    ) -> Any: ...
 
 
 class SessionDriverBase(Driver):
@@ -71,12 +145,27 @@ class SessionDriverBase(Driver):
             return None
         return self._session.resource_uri
 
+    @property
+    def session(self) -> SessionLike | None:
+        """The underlying raydriver session, if set up."""
+        return self._session
+
     def _require_session(self) -> Any:
         if self._session is None:
             raise DeviceConnectionError(
                 _("Driver is not set up. Check the connection settings.")
             )
         return self._session
+
+    @property
+    def _logger(self) -> logging.Logger:
+        """The concrete driver's module logger.
+
+        Log records (raw I/O in particular) belong to the driver
+        module, so per-driver log filters keep working as they did
+        when every driver carried its own logging code.
+        """
+        return logging.getLogger(type(self).__module__)
 
     # -- dialect -------------------------------------------------------
 
@@ -130,14 +219,14 @@ class SessionDriverBase(Driver):
             case SessionEvent.RawTx():
                 self._log_raw_line(event.line, received=False)
             case _:
-                logger.debug(f"Ignoring session event: {event!r}")
+                self._logger.debug(f"Ignoring session event: {event!r}")
 
     def _on_state_changed(self, session_state: "SessionDeviceState") -> None:
         state = from_session_state(session_state)
         old_status = self.state.status
         self.state = state
         if state.status != old_status:
-            logger.info(
+            self._logger.info(
                 f"Device state changed: {state.status.name}",
                 extra=self._log_extra("STATE_CHANGE"),
             )
@@ -146,7 +235,7 @@ class SessionDriverBase(Driver):
     def _on_connection_status_changed(
         self, status_str: str, message: str | None
     ) -> None:
-        logger.info(
+        self._logger.info(
             f"Connection status: {status_str}"
             + (f" - {message}" if message else ""),
             extra=self._log_extra("MACHINE_EVENT"),
@@ -180,21 +269,21 @@ class SessionDriverBase(Driver):
                 category = "MACHINE_EVENT"
         else:
             category = "RAW_IO"
-        logger.info(line, extra=self._log_extra(category))
+        self._logger.info(line, extra=self._log_extra(category))
 
     # -- lifecycle -----------------------------------------------------
 
     async def cleanup(self):
-        logger.debug("Cleanup initiated.")
+        self._logger.debug("Cleanup initiated.")
         if self._session is not None:
             await self._session.disconnect()
             self._session = None
         await super().cleanup()
-        logger.debug("Cleanup completed.")
+        self._logger.debug("Cleanup completed.")
 
     async def _connect_implementation(self):
         if self._session is None:
-            logger.error(
+            self._logger.error(
                 "Cannot connect: session not initialized "
                 "(check connection settings)."
             )
@@ -255,24 +344,26 @@ class SessionDriverBase(Driver):
                 None if on_command_done is None else _on_command_done,
             )
         except DeviceConnectionError as e:
-            logger.warning(
+            self._logger.warning(
                 f"Job terminated due to device error: {e}. "
                 "Connection remains active."
             )
         except Exception:
-            logger.exception("Job terminated with unexpected error")
+            self._logger.exception("Job terminated with unexpected error")
 
     async def run_raw(self, machine_code: str) -> None:
         session = self._require_session()
         try:
             await session.run_raw(machine_code)
         except DeviceConnectionError as e:
-            logger.warning(
+            self._logger.warning(
                 f"Raw G-code terminated due to device error: {e}. "
                 "Connection remains active."
             )
         except Exception:
-            logger.exception("Raw G-code terminated with unexpected error")
+            self._logger.exception(
+                "Raw G-code terminated with unexpected error"
+            )
 
     async def cancel(self, emergency: bool = False) -> None:
         if self._session is None:
@@ -341,7 +432,10 @@ class SessionDriverBase(Driver):
         await session.jog(self._to_machine_speed(speed), converted)
 
     async def detect_unit_system(self) -> UnitSystem | None:
-        result = await self._require_session().detect_unit_system()
+        try:
+            result = await self._require_session().detect_unit_system()
+        except NotImplementedError:
+            return None
         if result == "metric":
             return UnitSystem.METRIC
         if result == "imperial":
@@ -367,8 +461,10 @@ class SessionDriverBase(Driver):
     async def read_parser_state(self) -> str | None:
         try:
             return await self._require_session().read_parser_state()
+        except NotImplementedError:
+            return None
         except DeviceConnectionError as e:
-            logger.warning(f"Could not read parser state: {e}")
+            self._logger.warning(f"Could not read parser state: {e}")
             return None
 
     async def run_probe_cycle(

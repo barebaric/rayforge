@@ -55,6 +55,13 @@ jobs:
           cache-key: pixi-${{ runner.os }}-${{ hashFiles('pixi.lock') }}
           environments: appimage
 
+      - name: Cache appimagetool
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/rayforge-build
+          key: appimagetool-${{ runner.os }}-${{ runner.arch }}-continuous
+          restore-keys: appimagetool-${{ runner.os }}-${{ runner.arch }}-
+
       - name: Build AppImage
         run: pixi run --frozen --environment appimage build-appimage
 
@@ -62,10 +69,20 @@ jobs:
         run: |
           APT_OPTIONS=(-o Acquire::Retries=5 -o Acquire::http::Timeout=30 \
             -o Acquire::https::Timeout=30)
+          missing=0
+          command -v xvfb-run >/dev/null 2>&1 || missing=1
+          ldconfig -p | grep -q 'libfuse.so.2' || missing=1
+          if [ "$missing" -eq 0 ]; then
+            echo "Xvfb and FUSE are already installed."
+            exit 0
+          fi
           sudo apt-get update "${APT_OPTIONS[@]}"
-          sudo apt-get install -y "${APT_OPTIONS[@]}" xvfb
-          sudo apt-get install -y "${APT_OPTIONS[@]}" libfuse2t64 \
-            || sudo apt-get install -y "${APT_OPTIONS[@]}" libfuse2
+          sudo apt-get install -y --no-install-recommends \
+            "${APT_OPTIONS[@]}" xvfb
+          sudo apt-get install -y --no-install-recommends \
+            "${APT_OPTIONS[@]}" libfuse2t64 \
+            || sudo apt-get install -y --no-install-recommends \
+              "${APT_OPTIONS[@]}" libfuse2
 
       - name: Upload AppImage Artifact
         uses: actions/upload-artifact@v7
@@ -76,6 +93,8 @@ jobs:
           if-no-files-found: error
 
       - name: Smoke Test AppImage
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: "1"
         run: |
           xvfb-run -a ./dist/Rayforge-*.AppImage --version
           xvfb-run -a ./dist/Rayforge-*.AppImage --exit

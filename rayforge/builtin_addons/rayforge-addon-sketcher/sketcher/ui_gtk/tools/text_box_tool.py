@@ -9,19 +9,21 @@ from blinker import Signal
 from gi.repository import Gdk, GLib
 from raygeo.geo.shape.polygon import is_point_inside_polygon
 from raygeo.geo.shape.text import FontConfig, text_to_geometry
+from raygeo.sketch.constraints import (
+    AspectRatioConstraint,
+    HorizontalConstraint,
+    VerticalConstraint,
+)
+from raygeo.sketch.entities import Line
+from raygeo.sketch.entities import SketchPoint as Point
+from raygeo.sketch.entities import TextBox as TextBoxEntity
+from raygeo.sketch.types import EntityID
 
 from rayforge.image.geo_renderer import geometry_to_cairo
 
 from ...core.commands import TextBoxCommand
 from ...core.commands.live_text_edit import LiveTextEditCommand
 from ...core.commands.text_property import ModifyTextPropertyCommand
-from ...core.constraints import (
-    AspectRatioConstraint,
-    HorizontalConstraint,
-    VerticalConstraint,
-)
-from ...core.entities import Line, Point, TextBoxEntity
-from ...core.types import EntityID
 from .base import SketcherKey, SketchTool
 
 if TYPE_CHECKING:
@@ -287,7 +289,7 @@ class TextBoxTool(SketchTool):
         return is_point_inside_polygon((mx, my), polygon)
 
     def _is_point_inside_any_text_box(self, mx: float, my: float) -> bool:
-        for entity in self.element.sketch.registry.entities:
+        for entity in self.element.sketch.registry.entities():
             if isinstance(
                 entity, TextBoxEntity
             ) and self._is_point_inside_entity_box(entity, mx, my):
@@ -295,7 +297,7 @@ class TextBoxTool(SketchTool):
         return False
 
     def _find_text_box_at_point(self, mx: float, my: float) -> int | None:
-        for entity in reversed(self.element.sketch.registry.entities):
+        for entity in reversed(self.element.sketch.registry.entities()):
             if isinstance(
                 entity, TextBoxEntity
             ) and self._is_point_inside_entity_box(entity, mx, my):

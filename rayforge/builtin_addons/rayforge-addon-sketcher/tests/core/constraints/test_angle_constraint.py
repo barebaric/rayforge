@@ -3,17 +3,17 @@ from types import SimpleNamespace
 
 import cairo
 import pytest
-from sketcher.core import Sketch
-from sketcher.core.constraints import (
+from raygeo.sketch import conflicting_constraints, solve_registry
+from raygeo.sketch.constraints import (
     AngleConstraint,
     Constraint,
     DistanceConstraint,
 )
-from sketcher.core.constraints.angle import ARC_RADIUS
-from sketcher.core.params import ParameterContext
-from sketcher.core.registry import EntityRegistry
-from sketcher.core.selection import SketchSelection
-from sketcher.core.solver import Solver
+from raygeo.sketch.constraints.angle import ARC_RADIUS
+from raygeo.sketch.params import ParameterContext
+from raygeo.sketch.registry import EntityRegistry
+from sketcher.core import Sketch
+from sketcher.selection import SketchSelection
 
 
 @pytest.fixture
@@ -86,16 +86,15 @@ def test_solver_converges_after_parameter_change(setup_env):
     p_first, joints, lines = _chained_lines(reg, 13)
     constraints = _chain_constraints(reg, p_first, joints, lines)
 
-    solver = Solver(reg, params, constraints)
-    assert solver.solve() is True
-    assert solver.get_conflicting_constraints() == set()
+    assert solve_registry(reg, constraints) is True
+    assert conflicting_constraints(reg, constraints) == []
 
     for constraint in constraints:
         if isinstance(constraint, AngleConstraint):
             constraint.value -= 3.0
 
-    assert solver.solve() is True
-    assert solver.get_conflicting_constraints() == set()
+    assert solve_registry(reg, constraints) is True
+    assert conflicting_constraints(reg, constraints) == []
 
     for constraint in constraints:
         error = constraint.error(reg, params)

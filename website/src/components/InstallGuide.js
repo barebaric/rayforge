@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import Translate, { translate } from '@docusaurus/Translate';
 import CodeBlock from '@theme/CodeBlock';
 import Admonition from '@theme/Admonition';
 import './InstallGuide.css';
 
-const VERSION = typeof RAYFORGE_VERSION !== 'undefined' ? RAYFORGE_VERSION : '0.0.0';
 const GITHUB_REPO = 'barebaric/rayforge';
 
 function stripLeadingV(tag) {
@@ -1633,6 +1633,8 @@ function NeedHelp() {
 }
 
 export default function InstallGuide() {
+  const { siteConfig } = useDocusaurusContext();
+  const version = siteConfig.customFields?.latestVersion ?? '0.0.0';
   const hashState = getInitialStateFromHash();
   const [selectedOs, setSelectedOs] = useState(() => hashState.os || detectOs());
   const [linuxMethod, setLinuxMethod] = useState(() => hashState.method || 'snap');
@@ -1683,7 +1685,7 @@ export default function InstallGuide() {
         )}
         {selectedOs === 'windows' && (
           <WindowsInstall
-            version={VERSION}
+            version={version}
             method={windowsMethod}
             onMethodChange={setWindowsMethod}
             latestRelease={latestReleaseState.release}
@@ -1691,7 +1693,7 @@ export default function InstallGuide() {
         )}
         {selectedOs === 'macos' && (
           <MacosInstall
-            version={VERSION}
+            version={version}
             method={macosMethod}
             onMethodChange={setMacosMethod}
             latestRelease={latestReleaseState.release}

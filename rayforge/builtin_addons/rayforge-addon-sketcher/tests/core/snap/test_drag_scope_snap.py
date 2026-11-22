@@ -1,9 +1,9 @@
 from unittest.mock import Mock
 
-from sketcher.core.constraints import CoincidentConstraint
+from raygeo.sketch.constraints import CoincidentConstraint
+from raygeo.sketch.snap.producers import OnEntityProducer
+from raygeo.sketch.snap.types import DragContext
 from sketcher.core.sketch import Sketch
-from sketcher.core.snap.producers import OnEntityProducer
-from sketcher.core.snap.types import DragContext
 
 
 def build_coupled_triangle():

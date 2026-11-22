@@ -29,6 +29,7 @@ description:
 - **GRBL (USB/Serial — compatibility mode)** — Драйвер з протоколом ping-pong. Надсилає один рядок,
   чекає "ok", надсилає наступний. Без керування буфером та виявлення взаємоблокування. Потрібен лише
   тоді, коли стандартний драйвер викликає помилкові спрацьовування або помилки зв'язку
+- **GRBL (Bluetooth)** — З'єднання Bluetooth Classic SPP/RFCOMM для контролерів, спарених в операційній системі
 - **grblHAL (Telnet)** — Сирий TCP/telnet-зв'язок для мережевих контролерів grblHAL та для
   telnet-моста ESP3D
 - **FluidNC / ESP3D (Web API)** — HTTP/WebSocket-драйвер для контролерів FluidNC та ESP3D v3, з

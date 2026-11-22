@@ -17,7 +17,9 @@ ENV_NAME="appimage"
 ROOT_DIR=$(cd "$(dirname "$0")/.." && pwd)
 cd "$ROOT_DIR"
 
-if [[ -n "${GITHUB_REF_NAME:-}" && "${GITHUB_REF_TYPE:-}" == "tag" ]]; then
+if [[ -n "${VERSION:-}" ]]; then
+    :
+elif [[ -n "${GITHUB_REF_NAME:-}" && "${GITHUB_REF_TYPE:-}" == "tag" ]]; then
     VERSION="$GITHUB_REF_NAME"
 else
     VERSION=$(git describe --tags --always)
@@ -233,6 +235,6 @@ fi
 chmod +x "$APPIMAGETOOL"
 
 echo "Packing AppImage..."
-APPIMAGE_EXTRACT_AND_RUN=1 "$APPIMAGETOOL" --comp xz "$APPDIR" "$APPIMAGE_FILE"
+APPIMAGE_EXTRACT_AND_RUN=1 "$APPIMAGETOOL" --comp gzip "$APPDIR" "$APPIMAGE_FILE"
 
 echo "Created: $APPIMAGE_FILE"

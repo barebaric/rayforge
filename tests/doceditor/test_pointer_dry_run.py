@@ -43,11 +43,13 @@ def _add_rect_doc_items(doc_editor, contour_step_class, context):
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("workarea_origin", [False, True])
 async def test_pointer_dry_run_shifts_and_caps_power(
     context_initializer,
     doc_editor,
     contour_step_class,
     mocker,
+    workarea_origin: bool,
 ):
     """Dry-Run with Pointer traces with the pointer dot at framing
     power; regular sends burn unshifted at job power."""
@@ -55,6 +57,7 @@ async def test_pointer_dry_run_shifts_and_caps_power(
     assert machine is not None
     machine.set_dialect_uid("grbl")
     machine.set_origin(Origin.BOTTOM_LEFT)
+    machine.set_wcs_origin_is_workarea_origin(workarea_origin)
 
     head = machine.get_default_laser_head()
     assert head is not None

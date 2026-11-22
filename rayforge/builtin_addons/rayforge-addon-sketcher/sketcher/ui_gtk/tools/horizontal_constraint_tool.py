@@ -2,13 +2,15 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, ClassVar, Union
 
+from raygeo.sketch.constraints import HorizontalConstraint
+from raygeo.sketch.entities import Entity, Line
+from raygeo.sketch.entities import SketchPoint as Point
+
 from ...core.commands import AddItemsCommand
-from ...core.constraints import HorizontalConstraint
-from ...core.entities import Entity, Line, Point
 from .base import SketchTool
 
 if TYPE_CHECKING:
-    from ...core.constraints import Constraint
+    from raygeo.sketch.constraints import Constraint
 
 logger = logging.getLogger(__name__)
 

@@ -5,18 +5,21 @@ import math
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
-from ..constraints import (
+from raygeo.sketch.constraints import (
     CollinearConstraint,
     EqualDistanceConstraint,
     TangentConstraint,
 )
-from ..entities import Arc, Line, Point
-from ..types import EntityID
+from raygeo.sketch.entities import Arc, Line
+from raygeo.sketch.entities import SketchPoint as Point
+from raygeo.sketch.types import EntityID
+
 from .base import SketchChangeCommand
 from .items import AddItemsCommand, RemoveItemsCommand
 
 if TYPE_CHECKING:
-    from ..registry import EntityRegistry
+    from raygeo.sketch.registry import EntityRegistry
+
     from ..sketch import Sketch
 
 logger = logging.getLogger(__name__)

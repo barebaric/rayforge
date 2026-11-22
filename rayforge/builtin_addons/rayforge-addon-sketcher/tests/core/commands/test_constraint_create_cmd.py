@@ -1,11 +1,11 @@
 import pytest
-from sketcher.core import Sketch
-from sketcher.core.commands import CreateOrEditConstraintCommand
-from sketcher.core.constraints import (
+from raygeo.sketch.constraints import (
     DiameterConstraint,
     DistanceConstraint,
     RadiusConstraint,
 )
+from sketcher.core import Sketch
+from sketcher.core.commands import CreateOrEditConstraintCommand
 
 
 @pytest.fixture

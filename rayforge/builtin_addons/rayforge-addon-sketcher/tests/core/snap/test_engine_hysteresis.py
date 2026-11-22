@@ -1,8 +1,8 @@
 import pytest
-from sketcher.core.registry import EntityRegistry
-from sketcher.core.snap.engine import SnapEngine
-from sketcher.core.snap.producers import OnEntityProducer
-from sketcher.core.snap.types import DragContext, SnapLineType
+from raygeo.sketch.registry import EntityRegistry
+from raygeo.sketch.snap.engine import SnapEngine
+from raygeo.sketch.snap.producers import OnEntityProducer
+from raygeo.sketch.snap.types import DragContext, SnapLineType
 
 
 @pytest.fixture
@@ -49,7 +49,7 @@ def test_reacquire_binds_to_same_source(engine):
     engaged_source = first.primary_snap_point.source
 
     second = engine.query(registry, (20.0, 6.5), context)
-    assert second.primary_snap_point.source is engaged_source
+    assert second.primary_snap_point.source.id == engaged_source.id
 
 
 def test_disengagement_allows_fresh_engagement(engine):

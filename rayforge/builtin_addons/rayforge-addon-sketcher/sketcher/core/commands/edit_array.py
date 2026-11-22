@@ -5,22 +5,26 @@ from collections.abc import Sequence
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
-from ..arrays import (
+from raygeo.sketch.arrays import (
     Array,
     ArrayStrategy,
+    CircularArrayStrategy,
     InstancePlacement,
-    resolve_template_center,
 )
-from ..entities import Circle
-from ..entity_group import EntityGroup
-from ..params import ParameterContext
+from raygeo.sketch.constraints import RadiusConstraint
+from raygeo.sketch.entities import Circle
+from raygeo.sketch.entity_group import EntityGroup
+from raygeo.sketch.params import ParameterContext
+
 from .base import SketchChangeCommand
 from .create_array import CreateArrayCommand
 from .items import AddItemsCommand, RemoveItemsCommand
 
 if TYPE_CHECKING:
-    from ..entities import Entity, Point
-    from ..registry import EntityRegistry
+    from raygeo.sketch.entities import Entity
+    from raygeo.sketch.entities import SketchPoint as Point
+    from raygeo.sketch.registry import EntityRegistry
+
     from ..sketch import Sketch
 
 logger = logging.getLogger(__name__)
@@ -143,12 +147,7 @@ class EditArrayCommand(SketchChangeCommand):
                 old_radius,
                 self.strategy,
             )
-            self._frame_state = self.strategy.apply_frame(
-                registry,
-                self.array,
-                self._old_frame,
-                self.sketch.constraints,
-            )
+            self._apply_frame(registry)
 
         occupied = {slot for slot, _eids in living}
         count = max(int(self.strategy.count), 1)
@@ -161,11 +160,8 @@ class EditArrayCommand(SketchChangeCommand):
             # groups that no longer match the template (partial
             # deletions) and slots beyond the count are rebuilt/removed.
             self._reanchor_template(registry, template_eids)
-            template_group = EntityGroup(registry, template_eids)
             placements = self.strategy.member_placements(
-                resolve_template_center(
-                    registry, template_eids, template_group.points()
-                ),
+                EntityGroup(registry, template_eids).center(),
                 registry,
             )
             kept_members = [(0, list(template_eids))]
@@ -240,6 +236,34 @@ class EditArrayCommand(SketchChangeCommand):
         )
         _log_array_residuals(self.sketch)
 
+    def _apply_frame(self, registry) -> None:
+        """Moves the array into the edited guide frame and records the
+        radius-constraint state for undo."""
+        assert self._old_frame is not None
+        self.strategy.apply_frame(registry, self.array, self._old_frame)
+        if not isinstance(self.strategy, CircularArrayStrategy):
+            return
+        radius_constraint = None
+        for constr in self.sketch.constraints:
+            if (
+                isinstance(constr, RadiusConstraint)
+                and constr.entity_id == self.array.guide_circle_id
+            ):
+                radius_constraint = constr
+                break
+        if radius_constraint is None:
+            return
+        old_radius = None
+        if self._frame_state is not None:
+            old_radius = self._frame_state.get("old_radius_value")
+        if old_radius is None:
+            old_radius = radius_constraint.value
+        radius_constraint.value = self.strategy.radius
+        self._frame_state = {
+            "old_radius_value": old_radius,
+            "radius_constraint": radius_constraint,
+        }
+
     def _commit_members(
         self, kept_members: list[tuple[int, list[int]]]
     ) -> None:
@@ -289,7 +313,7 @@ class EditArrayCommand(SketchChangeCommand):
         registry = sketch.registry
         used_by_remaining = {
             pid
-            for e in registry.entities
+            for e in registry.entities()
             if e.id not in removed
             for pid in e.get_point_ids()
         }
@@ -510,13 +534,7 @@ class EditArrayCommand(SketchChangeCommand):
         registry = self.sketch.registry
         if self._old_frame is not None:
             # Re-apply the similarity relative to the pre-edit frame.
-            self.strategy.apply_frame(
-                registry,
-                self.array,
-                self._old_frame,
-                self.sketch.constraints,
-                self._frame_state,
-            )
+            self._apply_frame(registry)
 
         assert self._template_group
         if self._full_regen:

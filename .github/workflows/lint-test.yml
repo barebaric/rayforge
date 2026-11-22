@@ -81,7 +81,7 @@ jobs:
         run: pixi run --frozen compile-translations
 
       - name: Run stress tests
-        run: pixi run --frozen test -m stress --log-cli-level=DEBUG
+        run: pixi run --frozen test -m stress -n 0 --log-cli-level=DEBUG
 
   test-ui:
     name: UI Tests
@@ -102,7 +102,14 @@ jobs:
           cache-key: pixi-${{ runner.os }}-${{ hashFiles('pixi.lock') }}
 
       - name: Install Xvfb
-        run: sudo apt-get update && sudo apt-get install -y xvfb
+        run: |
+          if command -v xvfb-run >/dev/null 2>&1; then
+            echo "Xvfb is already installed."
+            exit 0
+          fi
+          sudo apt-get update -o Acquire::Retries=5
+          sudo apt-get install -y --no-install-recommends \
+            -o Acquire::Retries=5 xvfb
 
       - name: Compile Translations
         run: pixi run --frozen compile-translations

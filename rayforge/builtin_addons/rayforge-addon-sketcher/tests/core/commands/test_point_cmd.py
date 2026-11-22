@@ -169,11 +169,11 @@ def test_unstick_junction_command_execute_with_two_lines(sketch):
 
     cmd = UnstickJunctionCommand(sketch, p2)
 
-    initial_points_count = len(sketch.registry.points)
+    initial_points_count = len(sketch.registry.points())
 
     cmd.execute()
 
-    assert len(sketch.registry.points) == initial_points_count + 1
+    assert len(sketch.registry.points()) == initial_points_count + 1
     assert cmd.new_point is not None
 
     line1 = sketch.registry.get_entity(line1_id)
@@ -195,11 +195,11 @@ def test_unstick_junction_command_execute_with_single_line(sketch):
 
     cmd = UnstickJunctionCommand(sketch, p2)
 
-    initial_points_count = len(sketch.registry.points)
+    initial_points_count = len(sketch.registry.points())
 
     cmd.execute()
 
-    assert len(sketch.registry.points) == initial_points_count
+    assert len(sketch.registry.points()) == initial_points_count
     assert cmd.new_point is None
 
 
@@ -209,11 +209,11 @@ def test_unstick_junction_command_execute_with_no_entities(sketch):
 
     cmd = UnstickJunctionCommand(sketch, p1)
 
-    initial_points_count = len(sketch.registry.points)
+    initial_points_count = len(sketch.registry.points())
 
     cmd.execute()
 
-    assert len(sketch.registry.points) == initial_points_count
+    assert len(sketch.registry.points()) == initial_points_count
     assert cmd.new_point is None
 
 

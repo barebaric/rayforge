@@ -1,8 +1,8 @@
 """Tests for selection preprocessing into offsettable items."""
 
+from raygeo.sketch.contour import build_offset_items
+from raygeo.sketch.entities import Arc, Circle, Ellipse, PolygonOutline
 from sketcher.core import Sketch
-from sketcher.core.contour import build_offset_items
-from sketcher.core.entities import Arc, Circle, Ellipse, PolygonOutline
 
 
 def _square_sketch():
@@ -25,7 +25,7 @@ def _square_sketch():
 
 def test_closed_square_chain():
     sketch, entity_ids = _square_sketch()
-    items = build_offset_items(sketch, entity_ids)
+    items = build_offset_items(sketch.registry, entity_ids, sketch.constraints)
     assert items is not None and len(items) == 1
     outline = items[0]
     assert isinstance(outline, PolygonOutline)
@@ -48,7 +48,9 @@ def test_open_chain_stays_open():
     line_id = sketch.add_line(p1, p2)
     line2_id = sketch.add_line(p2, p3)
 
-    items = build_offset_items(sketch, [line_id, line2_id])
+    items = build_offset_items(
+        sketch.registry, [line_id, line2_id], sketch.constraints
+    )
     assert items is not None and len(items) == 1
     outline = items[0]
     assert isinstance(outline, PolygonOutline)
@@ -63,7 +65,7 @@ def test_lone_line_becomes_open_outline():
     p2 = sketch.add_point(40, 0)
     line_id = sketch.add_line(p1, p2)
 
-    items = build_offset_items(sketch, [line_id])
+    items = build_offset_items(sketch.registry, [line_id], sketch.constraints)
     assert items is not None and len(items) == 1
     outline = items[0]
     assert isinstance(outline, PolygonOutline)
@@ -77,7 +79,9 @@ def test_lone_circle_passes_through():
     radius_pt = sketch.add_point(10, 0)
     circle_id = sketch.add_circle(center, radius_pt)
 
-    items = build_offset_items(sketch, [circle_id])
+    items = build_offset_items(
+        sketch.registry, [circle_id], sketch.constraints
+    )
     assert items is not None and len(items) == 1
     assert isinstance(items[0], Circle)
     assert items[0].id == circle_id
@@ -90,7 +94,7 @@ def test_lone_arc_passes_through():
     center = sketch.add_point(0, 0)
     arc_id = sketch.add_arc(start, end, center, clockwise=False)
 
-    items = build_offset_items(sketch, [arc_id])
+    items = build_offset_items(sketch.registry, [arc_id], sketch.constraints)
     assert items is not None and len(items) == 1
     assert isinstance(items[0], Arc)
     assert items[0].id == arc_id
@@ -103,7 +107,9 @@ def test_lone_ellipse_passes_through():
     ry_pt = sketch.add_point(0, 5)
     ellipse_id = sketch.registry.add_ellipse(center, rx_pt, ry_pt)
 
-    items = build_offset_items(sketch, [ellipse_id])
+    items = build_offset_items(
+        sketch.registry, [ellipse_id], sketch.constraints
+    )
     assert items is not None and len(items) == 1
     assert isinstance(items[0], Ellipse)
     assert items[0].id == ellipse_id
@@ -115,7 +121,9 @@ def test_multiple_components_partitioned():
     circle_radius = sketch.add_point(110, 100)
     circle_id = sketch.add_circle(circle_center, circle_radius)
 
-    items = build_offset_items(sketch, square_ids + [circle_id])
+    items = build_offset_items(
+        sketch.registry, square_ids + [circle_id], sketch.constraints
+    )
     assert items is not None and len(items) == 2
     kinds = sorted(type(item).__name__ for item in items)
     assert kinds == ["Circle", "PolygonOutline"]
@@ -131,7 +139,10 @@ def test_t_junction_rejected():
     e2 = sketch.add_line(corner, p3)
     e3 = sketch.add_line(corner, p4)
 
-    assert build_offset_items(sketch, [e1, e2, e3]) is None
+    assert (
+        build_offset_items(sketch.registry, [e1, e2, e3], sketch.constraints)
+        is None
+    )
 
 
 def test_disconnected_lines_partition_into_two_items():
@@ -143,7 +154,7 @@ def test_disconnected_lines_partition_into_two_items():
     e1 = sketch.add_line(p1, p2)
     e2 = sketch.add_line(p3, p4)
 
-    items = build_offset_items(sketch, [e1, e2])
+    items = build_offset_items(sketch.registry, [e1, e2], sketch.constraints)
     assert items is not None and len(items) == 2
     assert all(
         isinstance(item, PolygonOutline) and not item.closed for item in items
@@ -160,7 +171,7 @@ def test_coincident_endpoints_are_merged():
     e2 = sketch.add_line(p2_dup, p3)
     sketch.constrain_coincident(p2, p2_dup)
 
-    items = build_offset_items(sketch, [e1, e2])
+    items = build_offset_items(sketch.registry, [e1, e2], sketch.constraints)
     assert items is not None and len(items) == 1
     outline = items[0]
     assert isinstance(outline, PolygonOutline)
@@ -170,4 +181,4 @@ def test_coincident_endpoints_are_merged():
 
 def test_empty_selection_returns_none():
     sketch = Sketch()
-    assert build_offset_items(sketch, []) is None
+    assert build_offset_items(sketch.registry, [], sketch.constraints) is None

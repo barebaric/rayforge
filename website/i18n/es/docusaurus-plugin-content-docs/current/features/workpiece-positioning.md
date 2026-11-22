@@ -108,8 +108,9 @@ opción de "no volver a preguntar"). Puedes elegir:
   modo que el punto del puntero traza la trayectoria mientras el haz corre desplazado. El láser
   sigue disparando a potencia de trabajo — asegúrate de que el haz desplazado no pueda tocar nada
   que no deba.
-- **Desactivar y grabar**: la alineación se desactiva y el trabajo se graba normalmente con el haz
-  en las posiciones del SCF.
+- **Grabar con haz**: el trabajo se graba normalmente con el haz en las posiciones del SCF. La
+  alineación del puntero sigue activada, así que puedes seguir apuntando con el punto del puntero
+  después del trabajo.
 - **Cancelar**.
 
 Los movimientos de jog y los trabajos nunca se desplazan con el interruptor: el jog es relativo, y

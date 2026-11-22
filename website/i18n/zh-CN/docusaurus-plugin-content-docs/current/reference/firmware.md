@@ -11,6 +11,7 @@ Rayforge 主要为**基于 GRBL 的控制器**设计，但也支持 Marlin、Smo
 | 固件             | 版本  | 状态     | 驱动程序                                 | 备注                    |
 | ---------------- | ----- | -------- | ---------------------------------------- | ----------------------- |
 | **GRBL**         | 1.1+  | 完全支持 | GRBL (USB/Serial) (+ compatibility mode) | 推荐                    |
+| **GRBL**         | 1.1+    | 实验性   | GRBL (Bluetooth) | 已配对的蓝牙 SPP 设备 |
 | **grblHAL**      | 2023+ | 兼容     | GRBL (USB/Serial) / grblHAL (Telnet)     | 现代 GRBL 分支          |
 | **GRBL**         | 0.9   | 有限     | GRBL (USB/Serial)                        | 较旧，可能有问题        |
 | **FluidNC**      | 全部  | 兼容     | FluidNC / ESP3D (Web API)                | 基于 ESP32              |
@@ -116,6 +117,21 @@ Rayforge 包含第二个串行 GRBL 驱动程序，适用于标准缓冲计数�
 
 ---
 
+## GRBL (Bluetooth) 驱动程序
+
+**状态：** 实验性 **固件：** GRBL **驱动程序：** GRBL (Bluetooth)
+
+GRBL (Bluetooth) 驱动程序通过蓝牙经典串口协议 (SPP/RFCOMM) 连接控制器，许多基于 ESP32 的激光控制器都提供该协议。连接由操作系统直接建立，因此不需要 `/dev/rfcomm*` 桥接或传出 COM 端口。
+
+**使用 GRBL (Bluetooth) 驱动程序：**
+
+1. **在操作系统的蓝牙设置中配对控制器**
+2. **在机器设置中选择“GRBL (Bluetooth)”**
+3. **从列表中选择设备**，或手动输入其地址
+4. **保持默认的 RFCOMM 信道 1**，除非设备使用其他信道
+
+支持 Linux、macOS 和 Windows。不支持低功耗蓝牙 (BLE)。
+
 ## grblHAL
 
 **状态：** 兼容 **版本：** 2023+ **驱动程序：** GRBL (USB/Serial)、grblHAL (Telnet)
@@ -156,7 +172,8 @@ grblHAL 是 GRBL 的现代分支，具有增强功能：
 grblHAL
 (Telnet) 驱动通过网络 Telnet 接口连接基于 GRBL 的控制器。适用于内置 WiFi 或以太网的板子——无需 USB 电缆。
 
-联网的 grblHAL 板不会通过 mDNS 广播，因此向导还会运行一个窄范围子网扫描（仅 telnet 端口、有限并发和每主机超时），并在列出之前确认每个响应的控制器。
+启用 LWIP mDNS 的 grblHAL 构建会广播 `_telnet._tcp`，因此向导能立即找到它们，并在列出之前用 `$I`
+构建信息命令确认每块板子。固件不会通过 mDNS 广播的板子由窄范围子网扫描（仅 telnet 端口、有限并发和每主机超时）发现，并进行同样的确认。
 
 **功能：**
 

@@ -581,12 +581,14 @@ class UnifiedWizard(PatchedDialogWindow):
             # connection page, then probe.
             self.aux_state = {"discovered": device}
             self._source = None
-            if device.probe_profile is not None:
-                self._merge_probe_specs(device.probe_profile)
+            probed = _probed_profile(device)
+            if probed is not None:
+                self._merge_probe_specs(probed)
             self._navigate_to("connect")
             return
-        if device.probe_profile is not None:
-            self._merge_driver_config(device.probe_profile)
+        probed = _probed_profile(device)
+        if probed is not None:
+            self._merge_driver_config(probed)
 
         matches: list[ProfileMatch] = []
         try:
@@ -612,8 +614,9 @@ class UnifiedWizard(PatchedDialogWindow):
         # page-level probe could not produce data.
         self.aux_state = {"discovered": device}
         self._source = None
-        if device.probe_profile is not None:
-            self._merge_probe_specs(device.probe_profile)
+        probed = _probed_profile(device)
+        if probed is not None:
+            self._merge_probe_specs(probed)
         if not self._connection_args_complete():
             self._navigate_to("profile")
             return
@@ -754,8 +757,9 @@ class UnifiedWizard(PatchedDialogWindow):
             if isinstance(discovered, DiscoveredDevice):
                 self.profile.machine_config.driver = discovered.driver_name
                 self._overlay_driver_args(discovered)
-                if discovered.probe_profile is not None:
-                    self._merge_probe_specs(discovered.probe_profile)
+                probed = _probed_profile(discovered)
+                if probed is not None:
+                    self._merge_probe_specs(probed)
             self.aux_state = {}
             self._source = None
         elif kind in ("profile", "import") and profile is not None:
@@ -764,8 +768,9 @@ class UnifiedWizard(PatchedDialogWindow):
             self.profile = self._clone_profile(profile)
             if isinstance(discovered, DiscoveredDevice):
                 self._overlay_driver_args(discovered)
-                if discovered.probe_profile is not None:
-                    self._merge_driver_config(discovered.probe_profile)
+                probed = _probed_profile(discovered)
+                if probed is not None:
+                    self._merge_driver_config(probed)
             self.aux_state = {}
             # Stash chosen source for later sanity feedback
             self._source = {"kind": kind, "profile": profile}
@@ -894,6 +899,13 @@ class UnifiedWizard(PatchedDialogWindow):
 
     def do_close_request(self, *args) -> bool:
         return False
+
+
+def _probed_profile(device: DiscoveredDevice) -> DeviceProfile | None:
+    """The probe data a discovered device carries, if it is a full
+    profile (the census is typed loosely on the raydriver side)."""
+    profile = device.probe_profile
+    return profile if isinstance(profile, DeviceProfile) else None
 
 
 def _clone_meta(src) -> Any:

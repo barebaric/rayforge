@@ -4,13 +4,14 @@ import math
 
 import pytest
 from raygeo.geo.shape.polygon import get_polygon_signed_area
-from sketcher.core import Sketch
-from sketcher.core.boolean import (
+from raygeo.sketch.boolean import (
     BooleanOp,
     apply_boolean,
-    build_boolean_regions,
+    build_boolean_regions_from_constraints,
 )
-from sketcher.core.entities import Circle, PolygonEntity
+from raygeo.sketch.entities import Circle
+from raygeo.sketch.entities import Polygon as PolygonEntity
+from sketcher.core import Sketch
 
 
 def _square_sketch(sketch, x=0.0, y=0.0, size=20.0):
@@ -54,7 +55,9 @@ def _ring_bbox(ring):
 
 
 def _regions(sketch, entity_ids):
-    regions = build_boolean_regions(sketch, entity_ids)
+    regions = build_boolean_regions_from_constraints(
+        sketch.registry, entity_ids, sketch.constraints
+    )
     assert regions is not None
     return regions
 
@@ -93,8 +96,7 @@ def test_regions_include_polygon_holes():
         world_holes=[[(5.0, 5.0), (9.0, 5.0), (9.0, 9.0), (5.0, 9.0)]],
     )
     sketch.registry.add_points([_center_pt, _handle_pt])
-    sketch.registry.entities.append(polygon)
-    sketch.registry._entity_map[polygon.id] = polygon
+    sketch.registry.append_entity(polygon)
     circle = _circle_sketch(sketch, 40.0)
     regions = _regions(sketch, [polygon.id, circle])
     solid = next(r for r in regions if len(r.rings) == 2)
@@ -108,7 +110,12 @@ def test_regions_reject_open_chain():
     p2 = sketch.add_point(20.0, 0.0)
     line = sketch.add_line(p1, p2)
     circle = _circle_sketch(sketch, 40.0)
-    assert build_boolean_regions(sketch, [line, circle]) is None
+    assert (
+        build_boolean_regions_from_constraints(
+            sketch.registry, [line, circle], sketch.constraints
+        )
+        is None
+    )
 
 
 def test_regions_skip_construction_entities():
@@ -118,13 +125,23 @@ def test_regions_skip_construction_entities():
     entity = sketch.registry.get_entity(c2)
     assert entity is not None
     entity.construction = True
-    assert build_boolean_regions(sketch, [c1, c2]) is None
+    assert (
+        build_boolean_regions_from_constraints(
+            sketch.registry, [c1, c2], sketch.constraints
+        )
+        is None
+    )
 
 
 def test_regions_reject_single_region():
     sketch = Sketch()
     c1 = _circle_sketch(sketch, 0.0)
-    assert build_boolean_regions(sketch, [c1]) is None
+    assert (
+        build_boolean_regions_from_constraints(
+            sketch.registry, [c1], sketch.constraints
+        )
+        is None
+    )
 
 
 def test_union_merges_overlapping_circles():

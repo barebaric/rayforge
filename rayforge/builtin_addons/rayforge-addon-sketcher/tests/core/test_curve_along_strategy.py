@@ -1,15 +1,13 @@
 import math
 
 import pytest
-from sketcher.core.arrays import (
+from raygeo.sketch.arrays import (
     CurveAlongArrayStrategy,
     InstancePlacement,
     PlacementKind,
-    sample_path,
-)
-from sketcher.core.arrays.curve_along import (
     _cumulative_lengths,
     _point_at_arclength,
+    sample_path,
 )
 from sketcher.core.sketch import Sketch
 
@@ -55,7 +53,7 @@ def test_sample_line_path_endpoints():
 
 def test_sample_line_path_midpoint():
     sketch, _ = _line_path_sketch(0.0, 0.0, 10.0, 0.0)
-    line_id = sketch.registry.entities[0].id
+    line_id = sketch.registry.entities()[0].id
     samples = sample_path(sketch.registry, line_id, count=3)
     assert samples[1][0] == pytest.approx((5.0, 0.0))
 
@@ -65,7 +63,7 @@ def test_sample_arc_path_tangent_rotates():
     c = sketch.registry.add_point(0.0, 0.0)
     s = sketch.registry.add_point(10.0, 0.0)
     e = sketch.registry.add_point(0.0, 10.0)
-    arc = sketch.registry.add_arc(s, e, c, cw=False)
+    arc = sketch.registry.add_arc(s, e, c, clockwise=False)
     samples = sample_path(sketch.registry, arc, count=4)
     assert len(samples) == 4
     # Start tangent at (10,0) on a CCW arc about origin points roughly
@@ -77,7 +75,7 @@ def test_sample_arc_path_tangent_rotates():
 
 def test_sample_offset_clamps_to_path():
     sketch, _ = _line_path_sketch(0.0, 0.0, 10.0, 0.0)
-    line_id = sketch.registry.entities[0].id
+    line_id = sketch.registry.entities()[0].id
     # Offset larger than the path clamps; the first sample moves
     # forward but the last still lands at the end.
     samples = sample_path(

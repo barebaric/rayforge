@@ -4,21 +4,11 @@ from typing import TYPE_CHECKING, cast
 import cairo
 from blinker import Signal
 from raygeo.geo import Matrix
-
-from rayforge.ui_gtk.canvas import CanvasElement
-
-from ..core.arrays import find_array_for_entity
-from ..core.boolean import BooleanOp
-from ..core.commands import (
-    BooleanCommand,
-    DuplicateCommand,
-    MoveEntitiesCommand,
-)
-from ..core.entities import Entity, Line, Point
-from ..core.selection import SketchSelection
-from ..core.sketch import Sketch
-from ..core.snap import SnapEngine
-from ..core.snap.producers import (
+from raygeo.sketch.boolean import BooleanOp
+from raygeo.sketch.entities import Entity, Line
+from raygeo.sketch.entities import SketchPoint as Point
+from raygeo.sketch.snap import SnapEngine
+from raygeo.sketch.snap.producers import (
     CentersProducer,
     EntityPointsProducer,
     EquidistantLinesProducer,
@@ -26,7 +16,17 @@ from ..core.snap.producers import (
     MidpointsProducer,
     OnEntityProducer,
 )
-from ..core.types import EntityID
+from raygeo.sketch.types import EntityID
+
+from rayforge.ui_gtk.canvas import CanvasElement
+
+from ..core.commands import (
+    BooleanCommand,
+    DuplicateCommand,
+    MoveEntitiesCommand,
+)
+from ..core.sketch import Sketch, find_array_for_entity
+from ..selection import SketchSelection
 from .hittest import SketchHitTester
 from .renderer import SketchRenderer
 from .tools import TOOL_REGISTRY
@@ -218,8 +218,8 @@ class SketchElement(CanvasElement):
         # A sketch is considered "empty" for bounding purposes if it has no
         # entities and at most one point (which would be the origin).
         is_truly_empty = (
-            len(self.sketch.registry.entities) == 0
-            and len(self.sketch.registry.points) <= 1
+            len(self.sketch.registry.entities()) == 0
+            and len(self.sketch.registry.points()) <= 1
         )
 
         new_width: float
@@ -240,11 +240,11 @@ class SketchElement(CanvasElement):
             geometry = self.sketch.to_geometry()
             if geometry.is_empty():
                 # This case handles sketches with only points.
-                if not self.sketch.registry.points:
+                if not self.sketch.registry.points():
                     min_x, max_x, min_y, max_y = 0, 0, 0, 0
                 else:
-                    xs = [p.x for p in self.sketch.registry.points]
-                    ys = [p.y for p in self.sketch.registry.points]
+                    xs = [p.x for p in self.sketch.registry.points()]
+                    ys = [p.y for p in self.sketch.registry.points()]
                     min_x, max_x = min(xs), max(xs)
                     min_y, max_y = min(ys), max(ys)
             else:
@@ -325,7 +325,7 @@ class SketchElement(CanvasElement):
     def get_lines_at_point(self, pid: EntityID) -> list[Line]:
         return [
             e
-            for e in self.sketch.registry.entities
+            for e in self.sketch.registry.entities()
             if isinstance(e, Line) and pid in (e.p1_idx, e.p2_idx)
         ]
 
@@ -373,8 +373,8 @@ class SketchElement(CanvasElement):
         selection cannot be combined.
         """
         try:
-            op = BooleanOp(op_name)
-        except ValueError:
+            op = getattr(BooleanOp, op_name.upper())
+        except AttributeError:
             return False
         entity_ids = list(self.selection.entity_ids)
         if len(entity_ids) < 2:

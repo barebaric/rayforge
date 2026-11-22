@@ -2201,7 +2201,7 @@ class TestConnectClearsServerHeadTail:
         """TUI connect must clear the server driver's head/tail scripts."""
         adapter, client = adapter_pair
         await _run_connect_cycle(
-            adapter, lambda: client.set_head_script.called
+            adapter, lambda: client.set_tail_script.called
         )
         client.set_head_script.assert_any_call([])
         client.set_tail_script.assert_any_call([])

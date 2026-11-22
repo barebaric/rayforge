@@ -5,6 +5,38 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## UNRELEASED
+
+### Added
+
+- Machine: automatic system sleep is inhibited while a job is running,
+  so the connection to the machine is not dropped when the computer
+  goes idle. The new "Prevent sleep during jobs" option on the General
+  settings page can disable it
+
+### Changed
+
+- Machine: the GRBL, GRBL compatibility, Smoothie and Marlin drivers
+  build on the shared session driver now; their protocol-specific code
+  is limited to connection setup, device settings and probing
+- Machine: the device census is fetched through each session's
+  `probe_device()` method now and returned as typed per-protocol
+  result objects, replacing raydriver's module-level probe helper
+- Machine: grblHAL controllers are identified by their `[BOARD:...]`
+  name during probing instead of falling back to the firmware build
+  field
+- Machine: the device census behind GRBL and Marlin probing
+  (firmware identity, motion limits, unit reporting) is computed by
+  the raydriver library now; Rayforge only maps the result onto its
+  device profiles
+- Machine: network discovery of FluidNC/ESP3D devices and the xTool
+  machine-type query now use the raydriver library's HTTP probes
+  instead of local aiohttp code
+- Machine: the xTool drivers share the generic raydriver-session
+  base now; the xTool M2 console additionally shows connection and
+  raw traffic lines when verbose output is enabled
+- Dependencies: raydriver upgraded to 1.12.0
+
 ## 1.14.0
 
 ### Added
@@ -28,6 +60,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Machine: the GRBL (Network) driver now runs its ESP3D/FluidNC
+  protocol stack in Rust through the raydriver library. Class names,
+  setup settings and existing machine configurations stay unchanged;
+  commands and responses move to the Rust HTTP/WebSocket transport,
+  and jobs are uploaded and executed as before (raydriver 1.10.0)
 - Optimize: raster scan lines stay in emission order by default.
   Reordering them makes the machine reverse and hop its Y axis
   between rows, and the mechanical play taken up on every reversal
@@ -42,7 +79,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   square cells, while power-modulated modes keep half the spot
   width, where finer sampling smooths the power ramp (discussion
   #686)
-- Dependencies: raygeo upgraded to 1.76.0, raydriver to 1.3.2
+- Dependencies: raygeo upgraded to 1.76.0, raydriver to 1.10.0
 
 ### Fixed
 

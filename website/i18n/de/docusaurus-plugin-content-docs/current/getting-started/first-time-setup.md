@@ -50,8 +50,8 @@ Der Assistent kann Geräte für dich entdecken, anstatt dass du einen Ausgangspu
 von Hand ausfüllen musst:
 
 - **USB-Seriellgeräte** werden aufgelistet, sobald sie erscheinen.
-- **Netzwerkgeräte** werden über mDNS entdeckt: OctoPrint-Server und ESP3D-Boards erscheinen neben
-  den USB-Seriellgeräten.
+- **Netzwerkgeräte** werden über mDNS entdeckt: OctoPrint-Server, ESP3D-Boards und grblHAL-Boards,
+  die sich über `_telnet._tcp` ankündigen, erscheinen neben den USB-Seriellgeräten.
 - Erkannte Geräte werden **mit eingebauten Profilen abgeglichen**, wenn ein zuverlässiger Treffer
   gefunden wird, sodass du oft nur die erkannten Einstellungen bestätigen musst, anstatt sie
   einzugeben.
@@ -60,9 +60,10 @@ von Hand ausfüllen musst:
 - Geräte, die du bereits konfiguriert hast, werden als **nur lesen** angezeigt, damit du
   versehentlich keine Duplizate erstellst.
 
-- **grblHAL-Boards über Telnet** kündigen sich nicht per mDNS an, daher läuft ein schmaler
-  Subnetz-Scan (nur Telnet-Port, begrenzte Parallelität) zusammen mit den Serial- und mDNS-Scans;
-  Rayforge bestätigt jeden antwortenden Controller, bevor er aufgelistet wird.
+- **grblHAL-Boards über Telnet** werden mit dem `$I`-Befehl bestätigt, bevor sie aufgelistet werden.
+  Boards, deren Firmware sich nicht per mDNS ankündigt, werden durch einen schmalen Subnetz-Scan
+  (nur Telnet-Port, begrenzte Parallelität) gefunden, der zusammen mit den Serial- und mDNS-Scans
+  läuft.
 
 ![Assistent — Geräte erkennen](/screenshots/config-wizard-discover.webp)
 

@@ -3,11 +3,11 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from raygeo.geo.shape.text import FontConfig
+from raygeo.sketch.entities import TextBox as TextBoxEntity
 from sketcher.core import Sketch
 from sketcher.core.commands import TextBoxCommand
 from sketcher.core.commands.live_text_edit import LiveTextEditCommand
 from sketcher.core.commands.text_property import ModifyTextPropertyCommand
-from sketcher.core.entities import TextBoxEntity
 from sketcher.ui_gtk.tools import TextBoxTool
 from sketcher.ui_gtk.tools.base import SketcherKey
 from sketcher.ui_gtk.tools.text_box_tool import TextBoxState
@@ -18,9 +18,9 @@ def mock_element():
     """Create a mock SketchElement for testing tools."""
     element = Mock()
     element.sketch = Mock()
-    element.sketch.registry._id_counter = 0
-    element.sketch.registry.entities = []
-    element.sketch.registry.points = []
+    element.sketch.registry.next_id.return_value = 0
+    element.sketch.registry.entities.return_value = []
+    element.sketch.registry.points.return_value = []
     element.sketch.constraints = []
     element.sketch.is_fully_constrained = False
     element.hittester.get_hit_data.return_value = (None, None)
@@ -54,7 +54,7 @@ def test_text_box_tool_initialization(text_box_tool):
 def test_text_box_tool_on_press_creates_box(text_box_tool, mock_element):
     """Test that first press creates a text box and enters EDITING state."""
     mock_element.hittester.screen_to_model.return_value = (10, 20)
-    mock_element.sketch.registry.entities = []
+    mock_element.sketch.registry.entities.return_value = []
 
     mock_entity = TextBoxEntity(
         5, 0, 1, 2, content="", construction_line_ids=[]
@@ -95,7 +95,7 @@ def test_text_box_tool_on_press_outside_box_creates_new(
 
     mock_element.hittester.screen_to_model.return_value = (1000, 1000)
     mock_element.content_transform.transform_point.return_value = (1000, 1000)
-    mock_element.sketch.registry.entities = []
+    mock_element.sketch.registry.entities.return_value = []
 
     mock_entity = MagicMock(spec=TextBoxEntity)
     mock_entity.origin_id = 0

@@ -1,11 +1,11 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+from raygeo.sketch.entities import SketchPoint as Point
 from sketcher.core.commands import (
     RoundedRectCommand,
     RoundedRectPreviewState,
 )
-from sketcher.core.entities import Point
 from sketcher.ui_gtk.tools import RoundedRectTool
 
 
@@ -14,7 +14,7 @@ def mock_element():
     """Create a mock SketchElement for testing tools."""
     element = MagicMock()
     element.sketch = MagicMock()
-    element.sketch.registry._id_counter = 0
+    element.sketch.registry.next_id.return_value = 0
     element.hittester.get_hit_data.return_value = (None, None)
     element.execute_command = MagicMock()
     return element

@@ -119,7 +119,7 @@ def build_drag_constraints(sketch, target_points, dx, scope):
             DragConstraint(pid, p.x + dx, p.y, weight=STRONG_DRAG_WEIGHT)
         )
     dragged = set(target_points)
-    for p in sketch.registry.points:
+    for p in sketch.registry.points():
         if p.fixed or p.id in dragged:
             continue
         if scope is not None and p.id not in scope:
@@ -251,7 +251,7 @@ def main():
         scoped_ms, snap_ms = measure(num_islands, args.moves, scoped=True)
         sketch, _ = build_sketch(num_islands)
         print(
-            f"{num_islands:>8} {len(sketch.registry.points):>7} "
+            f"{num_islands:>8} {len(sketch.registry.points()):>7} "
             f"{len(sketch.constraints):>7} {global_ms:>11.2f}ms "
             f"{scoped_ms:>11.2f}ms {snap_ms:>9.2f}ms"
         )

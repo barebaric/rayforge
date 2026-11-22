@@ -5,6 +5,7 @@ built-in drivers' DiscoverySpec declarations and end-to-end recognition
 of real firmware banners.
 """
 
+import asyncio
 import os
 import sys
 import threading
@@ -17,6 +18,10 @@ except ImportError:  # Windows has no termios/tty
 import pytest
 from raydriver.core.discovery import mdns_channel
 from raydriver.core.discovery.engine import find_all_devices
+from raydriver.core.discovery.fingerprints import (
+    HttpFingerprint,
+    TcpFingerprint,
+)
 from raydriver.core.discovery.mdns_channel import find_network_devices
 from raydriver.core.discovery.mdns_scan import MDNSService
 from raydriver.core.discovery.spec import DiscoverySpec, MdnsRecognizer
@@ -28,9 +33,6 @@ from rayforge.machine.driver import (
     MarlinSerialDriver,
     OctoPrintDriver,
     drivers,
-)
-from rayforge.machine.driver.grbl.grbl_fingerprint import (
-    fingerprint_grbl_http,
 )
 
 SCULPFUN_ICUBE_BANNER = (
@@ -164,14 +166,22 @@ def test_builtin_discovery_drivers():
         "MarlinSerialDriver",
         "OctoPrintDriver",
     }
-    # Telnet devices are found by the subnet channel, not the serial
-    # one: a telnet connection has no serial port to claim.
+    # Telnet devices are found by the mDNS and subnet channels, not
+    # the serial one: a telnet connection has no serial port to claim.
     telnet_spec = GrblTelnetDriver.DISCOVERY
     assert telnet_spec is not None
     assert telnet_spec.serial is None
+    assert telnet_spec.mdns is not None
+    assert telnet_spec.mdns.services == ()
+    assert telnet_spec.mdns.fingerprint_services == ("_telnet._tcp",)
+    fingerprint = telnet_spec.mdns.fingerprint
+    assert isinstance(fingerprint, TcpFingerprint)
+    assert fingerprint.probe_command == "$I\n"
+    assert fingerprint.match_prefix == "[VER:"
     assert telnet_spec.tcp is not None
     assert telnet_spec.tcp.port == 23
     assert telnet_spec.tcp.probe_command == "$I\n"
+    assert telnet_spec.tcp.match_prefix == "[VER:"
     grbl_spec = GrblSerialDriver.DISCOVERY
     assert grbl_spec is not None
     assert grbl_spec.serial is not None
@@ -234,10 +244,65 @@ def test_builtin_mdns_declarations():
     assert declared == {
         "OctoPrintDriver": ("_octoprint._tcp.local.",),
         "GrblNetworkDriver": ("_esp3d._tcp.local.",),
+        "GrblTelnetDriver": (),
     }
     octo_spec = OctoPrintDriver.DISCOVERY
     assert octo_spec is not None and octo_spec.mdns is not None
     assert octo_spec.mdns.txt_map == {"path": "path"}
     grbl_net_spec = GrblNetworkDriver.DISCOVERY
     assert grbl_net_spec is not None and grbl_net_spec.mdns is not None
-    assert grbl_net_spec.mdns.fingerprint is fingerprint_grbl_http
+    fingerprint = grbl_net_spec.mdns.fingerprint
+    assert isinstance(fingerprint, HttpFingerprint)
+    assert fingerprint.path == "/command?plain=%5BESP800%5D&PAGEID="
+    assert fingerprint.match_regex == r"\b(fluidnc|esp3d|grblhal|grbl)\b"
+    assert grbl_net_spec.mdns.fingerprint_services == ("_http._tcp",)
+    telnet_spec = GrblTelnetDriver.DISCOVERY
+    assert telnet_spec is not None and telnet_spec.mdns is not None
+    assert isinstance(telnet_spec.mdns.fingerprint, TcpFingerprint)
+    assert telnet_spec.mdns.fingerprint_services == ("_telnet._tcp",)
+
+
+@pytest.mark.asyncio
+async def test_telnet_mdns_candidate_is_claimed(monkeypatch):
+    """A board announcing _telnet._tcp is confirmed by the driver's
+    shared TCP fingerprint and claimed with SRV host/port params."""
+
+    async def handler(reader, writer):
+        try:
+            await reader.readline()
+            writer.write(b"[VER:1.1h.20240101:]\r\n[OPT:V,15,128]\r\n")
+            await writer.drain()
+            await reader.read()
+        finally:
+            writer.close()
+
+    server = await asyncio.start_server(handler, "127.0.0.1", 0)
+    port = server.sockets[0].getsockname()[1]
+    seen = []
+
+    async def fake_scan(service_types):
+        seen.append(set(service_types))
+        return [
+            MDNSService(
+                service_type="_telnet._tcp",
+                name="grblHAL",
+                host="127.0.0.1",
+                port=port,
+                server="grblhal.local",
+                txt={},
+            )
+        ]
+
+    monkeypatch.setattr(mdns_channel, "scan_mdns_services", fake_scan)
+    try:
+        devices = await find_network_devices([GrblTelnetDriver])
+    finally:
+        server.close()
+        await server.wait_closed()
+    assert seen == [{"_telnet._tcp"}]
+    assert len(devices) == 1
+    device = devices[0]
+    assert device.driver_name == "GrblTelnetDriver"
+    assert device.params == {"host": "127.0.0.1", "port": port}
+    assert device.label == "grblHAL (Telnet)"
+    assert device.identity.banner == "grblHAL"

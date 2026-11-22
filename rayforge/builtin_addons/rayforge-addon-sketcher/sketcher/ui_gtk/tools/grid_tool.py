@@ -2,15 +2,16 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING, ClassVar, Union, cast
 
 from gi.repository import Adw, Gtk
+from raygeo.sketch.entities import Entity
+from raygeo.sketch.entities import SketchPoint as Point
 
 from rayforge.ui_gtk.shared.pref_rows import SpinRow
 
 from ...core.commands import GridCommand
-from ...core.entities import Entity, Point
 from .base import SketchTool
 
 if TYPE_CHECKING:
-    from ...core.constraints import Constraint
+    from raygeo.sketch.constraints import Constraint
 
 
 class GridTool(SketchTool):
