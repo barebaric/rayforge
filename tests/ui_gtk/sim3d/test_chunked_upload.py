@@ -20,6 +20,21 @@ if TYPE_CHECKING:
     from rayforge.ui_gtk.sim3d.renderer.scene_renderer import UploadItem
 
 
+_CREATED_CONTROLLERS: list[ChunkedUploadController] = []
+
+
+@pytest.fixture(autouse=True)
+def _cancel_upload_controllers():
+    """Cancel every controller so no idle source leaks into the global
+    main context, where a later test could pump it and start tasks that
+    belong to this test's task manager."""
+    try:
+        yield
+    finally:
+        while _CREATED_CONTROLLERS:
+            _CREATED_CONTROLLERS.pop().cancel()
+
+
 def _make_controller(artifact=None, gl_initialized=True):
     scene = MagicMock()
     scene.prepare_chunked_upload.return_value = []
@@ -41,6 +56,7 @@ def _make_controller(artifact=None, gl_initialized=True):
         on_luts_required=lambda: luts_called.append(True),
     )
     controller.upload_complete.connect(_on_upload_complete, weak=False)
+    _CREATED_CONTROLLERS.append(controller)
     return (
         controller,
         scene,
