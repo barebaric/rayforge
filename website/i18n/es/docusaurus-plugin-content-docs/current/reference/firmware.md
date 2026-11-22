@@ -19,7 +19,7 @@ compatible con Marlin, Smoothieware y otros tipos de firmware.
 | **Smoothieware** | Todos   | Compatible              | SmoothieDriver (Telnet)                  | Basado en red                  |
 | **Marlin**       | 2.0+    | Compatible              | Marlin Serial                            | Requiere modo láser            |
 | **ESP3D**        | Todos   | Compatible              | grblHAL (Telnet) / Web API               | v2: Telnet, v3: Web API        |
-| **OctoPrint**    | Todos   | Experimental            | OctoPrint                                | Ver notas abajo                |
+| **OctoPrint**    | Todos   | Compatible              | OctoPrint                                | Ver notas abajo                |
 | **Otros**        | -       | No soportado            | -                                        | Solicitar soporte              |
 
 ---
@@ -314,7 +314,6 @@ Rayforge incluye un MarlinSerialDriver dedicado que se conecta al firmware Marli
 
 **Limitaciones:**
 
-- Experimental — comentarios bienvenidos
 - Lectura/escritura de ajustes (como `$$` de GRBL) no soportada
 - Sin conectividad de red (solo USB)
 
@@ -390,7 +389,7 @@ Rayforge incluye un MarlinSerialDriver dedicado que se conecta al firmware Marli
 | **Arduino CNC Shield** | GRBL 1.1        | Excelente        |
 | **MKS DLC32**          | grblHAL         | Excelente        |
 | **Ruida**              | Propietario     | Experimental     |
-| **OctoPrint (Pi)**     | Varios          | Experimental     |
+| **OctoPrint (Pi)**     | Varios          | Bueno            |
 
 ### Controladores Recomendados
 
@@ -592,11 +591,9 @@ MP-570 60W CO2 proporcionan puntos de partida para máquinas nuevas.
 
 ---
 
-## Controladores Experimentales
+## OctoPrint
 
-### OctoPrint
-
-Rayforge incluye un controlador OctoPrint experimental que envía G-code directamente a un servidor
+Rayforge incluye un controlador OctoPrint que envía G-code directamente a un servidor
 OctoPrint a través de la red. Esto es útil si tu láser está conectado a una Raspberry Pi u otra
 máquina ejecutando OctoPrint.
 
@@ -620,7 +617,6 @@ máquina ejecutando OctoPrint.
 
 **Limitaciones:**
 
-- Experimental y no probado en hardware real — comentarios bienvenidos
 - No es posible leer o escribir ajustes del firmware a través de OctoPrint
 - Los resultados de sondeo no son reportados por OctoPrint
 - La lectura de desplazamientos WCS no es compatible
@@ -637,7 +633,7 @@ Los usuarios han solicitado soporte para:
 
 **Estado:** Actualmente no soportados. Las solicitudes de funciones son bienvenidas en GitHub.
 
-### Contribuyendo
+## Contribuyendo
 
 Para añadir soporte de firmware:
 

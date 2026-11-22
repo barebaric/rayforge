@@ -32,7 +32,6 @@ from ...transport.serial import (
 from ..driver import (
     Axis,
     DeviceStatus,
-    DriverMaturity,
     DriverPrecheckError,
     DriverSetupError,
     Pos,
@@ -61,7 +60,6 @@ class MarlinSerialDriver(SessionDriverBase):
     label = _("Marlin (Serial)")
     subtitle = _("Marlin firmware via serial connection")
     supports_settings = False
-    maturity = DriverMaturity.EXPERIMENTAL
     supports_probing = True
     supports_unit_detection = True
     DISCOVERY = DiscoverySpec(

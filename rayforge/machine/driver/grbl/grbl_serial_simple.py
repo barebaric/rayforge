@@ -32,7 +32,6 @@ from ...transport.serial import (
 )
 from ..driver import (
     DeviceError,
-    DriverMaturity,
     DriverPrecheckError,
     DriverSetupError,
 )
@@ -69,7 +68,6 @@ class GrblSerialSimpleDriver(SessionDriverBase):
     supports_settings = True
     supports_probing = True
     supports_unit_detection = True
-    maturity = DriverMaturity.EXPERIMENTAL
 
     @classmethod
     def precheck(cls, **kwargs: Any) -> None:
