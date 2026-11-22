@@ -97,6 +97,17 @@ def test_track_machines_reports_machine_types():
     }
 
 
+def test_track_app_reports_version_and_os():
+    tracker = UsageTracker()
+    tracker.set_enabled(True)
+    payload = _capture_payload(tracker, "track_app")
+    assert payload["name"] == "app"
+    assert payload["data"] == {
+        "app_version": tracker._version,
+        "os": tracker._os,
+    }
+
+
 def test_track_machines_skips_placeholder_machines():
     tracker = UsageTracker()
     tracker.set_enabled(True)
