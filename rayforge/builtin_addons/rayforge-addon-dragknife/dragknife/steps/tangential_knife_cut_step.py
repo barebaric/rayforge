@@ -79,7 +79,7 @@ class TangentialKnifeCutStep(KnifeCutStep):
     def recipe_varset(cls) -> VarSet:
         return VarSet(
             vars=[
-                *KnifeCutStep.recipe_varset().vars,
+                *super().recipe_varset().vars,
                 AngleVar(
                     key="angle_tolerance_deg",
                     label=_("Angle Tolerance"),

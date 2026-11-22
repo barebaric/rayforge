@@ -43,6 +43,8 @@ automatisch aus, damit die Klinge dem Umriss folgt statt dem Drehpunkt.
 3. Wähle den **Messer**-Kopf und stelle **Klingenversatz**, **Sichere Z-Höhe**, **Drehwinkel** und
    die Schnittgeschwindigkeit ein.
 
+![Einstellungen für den Schleppmesser-Schnitt](/screenshots/step-settings-drag-knife-general.webp)
+
 Der Schritt schreibt jede Kontur in den Pfad um, den die Maschine fahren muss: Ein Einlaufbogen
 richtet die Klinge auf die erste Schnittrichtung aus, gerade Segmente werden um den Klingenversatz
 vorwärts verschoben, Ecken innerhalb des Drehwinkels werden mit abgesenkter Klinge umfahren,
@@ -64,6 +66,8 @@ drehen kann.
 2. Füge eine Operation **Tangentialmesser-Schnitt** hinzu.
 3. Wähle den **Messer**-Kopf und stelle **Winkeltoleranz**, **Radiustoleranz**, **Spindeldrehzahl**,
    **Sichere Z-Höhe** und die Schnittgeschwindigkeit ein.
+
+![Einstellungen für den Tangentialmesser-Schnitt](/screenshots/step-settings-tangential-knife-general.webp)
 
 Richtungsänderungen über der **Winkeltoleranz** oder Bögen enger als die **Radiustoleranz** heben
 das Messer auf die sichere Z, drehen es und tauchen wieder ein. Kleinere Änderungen drehen die

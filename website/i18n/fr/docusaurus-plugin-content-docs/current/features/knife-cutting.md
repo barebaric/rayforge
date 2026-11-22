@@ -43,6 +43,8 @@ automatiquement le décalage, afin que la lame suive le contour plutôt que le p
 3. Choisissez la tête **Lame** et réglez le **Décalage de la lame**, la **Hauteur Z de sécurité**,
    l'**Angle de pivotement** et la vitesse de découpe.
 
+![Réglages de la découpe à la lame traînante](/screenshots/step-settings-drag-knife-general.webp)
+
 L'étape réécrit chaque contour en la trajectoire que la machine doit suivre : un arc d'entrée aligne
 la lame sur la première direction de coupe, les segments droits sont décalés vers l'avant du
 décalage de la lame, les angles dans l'angle de pivotement sont parcourus lame baissée, les angles
@@ -64,6 +66,8 @@ mouvement de coupe, afin que le contrôleur puisse tourner la lame.
 2. Ajoutez une opération **Découpe à la lame tangentielle**.
 3. Choisissez la tête **Lame** et réglez la **Tolérance d'angle**, la **Tolérance de rayon**, la
    **Vitesse de broche**, la **Hauteur Z de sécurité** et la vitesse de découpe.
+
+![Réglages de la découpe à la lame tangentielle](/screenshots/step-settings-tangential-knife-general.webp)
 
 Les changements de direction supérieurs à la **Tolérance d'angle** ou les arcs plus serrés que la
 **Tolérance de rayon** relèvent la lame à la Z de sécurité, la font pivoter et la replongent. Les

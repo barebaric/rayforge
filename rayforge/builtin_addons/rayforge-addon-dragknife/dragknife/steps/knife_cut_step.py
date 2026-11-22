@@ -164,7 +164,7 @@ class KnifeCutStep(Step):
     @classmethod
     def recipe_varset_groups(cls) -> list[tuple[str, VarSet]]:
         full = cls.recipe_varset()
-        knife_keys = {v.key for v in KnifeCutStep.recipe_varset()}
+        knife_keys = {"selected_head_uid", "offset_mm", "safe_z"}
         knife_vars = [v for v in full if v.key in knife_keys]
         step_vars = [v for v in full if v.key not in knife_keys]
         knife_description = _(

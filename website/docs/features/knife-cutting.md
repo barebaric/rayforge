@@ -41,6 +41,8 @@ automatically, so the blade follows the outline instead of the pivot.
 3. Pick the **Knife** head, and set **Blade Offset**, **Safe Z Height**, **Swivel Angle** and the
    cut speed.
 
+![Drag Knife Cut settings](/screenshots/step-settings-drag-knife-general.webp)
+
 The step rewrites each contour into the path the machine must follow: an arc-in aligns the blade
 with the first cut direction, straight segments are shifted forward by the blade offset, corners
 within the swivel angle are pivoted with the blade down, sharper corners lift and pivot in the air,
@@ -59,6 +61,8 @@ path heading as an **A** axis value to every cutting move, so the controller can
 2. Add a **Tangential Knife Cut** operation.
 3. Pick the **Knife** head, and set **Angle Tolerance**, **Radius Tolerance**, **Spindle RPM**,
    **Safe Z Height** and the cut speed.
+
+![Tangential Knife Cut settings](/screenshots/step-settings-tangential-knife-general.webp)
 
 Heading changes larger than **Angle Tolerance** or arcs tighter than **Radius Tolerance** lift the
 knife to the safe Z, rotate it and plunge back in. Smaller changes rotate the blade in place with

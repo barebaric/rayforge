@@ -43,6 +43,8 @@ deslocamento automaticamente, para que a lâmina siga o contorno em vez do ponto
 3. Escolha o cabeçote **Faca** e ajuste **Deslocamento da lâmina**, **Altura Z segura**, **Ângulo de
    giro** e a velocidade de corte.
 
+![Configurações do corte com faca de arrasto](/screenshots/step-settings-drag-knife-general.webp)
+
 O passo reescreve cada contorno no caminho que a máquina deve seguir: um arco de entrada alinha a
 lâmina com a primeira direção de corte, segmentos retos são deslocados para a frente pelo
 deslocamento da lâmina, cantos dentro do ângulo de giro são girados com a lâmina abaixada, cantos
@@ -63,6 +65,8 @@ controlador possa girar a lâmina.
 2. Adicione uma operação **Corte com faca tangencial**.
 3. Escolha o cabeçote **Faca** e ajuste **Tolerância de ângulo**, **Tolerância de raio**, **RPM do
    spindle**, **Altura Z segura** e a velocidade de corte.
+
+![Configurações do corte com faca tangencial](/screenshots/step-settings-tangential-knife-general.webp)
 
 Mudanças de direção maiores que a **Tolerância de ângulo** ou arcos mais fechados que a **Tolerância
 de raio** levantam a faca até a Z segura, giram-na e mergulham de volta. Mudanças menores giram a

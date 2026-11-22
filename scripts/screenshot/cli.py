@@ -153,6 +153,8 @@ TARGETS = {
     ),
     "step-settings:contour:general": "step_settings",
     "step-settings:contour:laser": "step_settings",
+    "step-settings:drag-knife:general": "knife_step_settings",
+    "step-settings:tangential-knife:general": "knife_step_settings",
     "step-settings:contour:post": "step_settings",
     "step-settings:contour:post:optimize": "step_settings_optimize",
     "step-settings:contour:post:perforation": "step_settings_perforation",

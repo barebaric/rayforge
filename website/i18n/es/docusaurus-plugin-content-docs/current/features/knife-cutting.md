@@ -43,6 +43,8 @@ desplazamiento automáticamente, de modo que la hoja sigue el contorno en lugar 
 3. Elige el cabezal **Cuchilla** y ajusta **Desplazamiento de la hoja**, **Altura Z segura**,
    **Ángulo de giro** y la velocidad de corte.
 
+![Ajustes del corte con cuchilla de arrastre](/screenshots/step-settings-drag-knife-general.webp)
+
 El paso reescribe cada contorno en la trayectoria que debe seguir la máquina: un arco de entrada
 alinea la hoja con la primera dirección de corte, los segmentos rectos se desplazan hacia delante
 por el desplazamiento de la hoja, las esquinas dentro del ángulo de giro se giran con la hoja abajo,
@@ -64,6 +66,8 @@ para que el controlador pueda girar la hoja.
 2. Añade una operación **Corte con cuchilla tangencial**.
 3. Elige el cabezal **Cuchilla** y ajusta **Tolerancia de ángulo**, **Tolerancia de radio**, **RPM
    del husillo**, **Altura Z segura** y la velocidad de corte.
+
+![Ajustes del corte con cuchilla tangencial](/screenshots/step-settings-tangential-knife-general.webp)
 
 Los cambios de dirección mayores que la **Tolerancia de ángulo** o los arcos más cerrados que la
 **Tolerancia de radio** levantan la cuchilla a la Z segura, la giran y vuelven a bajar. Los cambios
