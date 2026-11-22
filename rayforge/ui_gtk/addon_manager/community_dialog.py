@@ -7,7 +7,7 @@ from gettext import gettext as _
 from gi.repository import Adw, GLib, Gtk, Pango
 
 
-class CommunityAddonDialog(Adw.MessageDialog):
+class CommunityAddonDialog(Adw.AlertDialog):
     """
     Confirmation dialog shown before installing a community addon.
 
@@ -55,7 +55,7 @@ class CommunityAddonDialog(Adw.MessageDialog):
         # libadwaita stacks the response buttons vertically whenever
         # their combined width exceeds the dialog width, so give the
         # dialog enough width to keep them on one row.
-        self.set_default_size(480, -1)
+        self.set_content_width(480)
 
         self.connect("response", self._on_response)
 

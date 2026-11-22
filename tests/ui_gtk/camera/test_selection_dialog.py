@@ -73,7 +73,7 @@ def test_daemon_source_is_listed_without_daemons(ui_context_initializer):
         "rayforge.ui_gtk.camera.selection_dialog.list_local_device_ids",
         return_value=[],
     ):
-        dialog = CameraSelectionDialog(None)
+        dialog = CameraSelectionDialog()
         assert "Daemon camera" in _type_labels(dialog)
 
         dialog.type_row.set_selected(dialog.type_values.index("daemon"))
@@ -86,7 +86,7 @@ def test_daemon_source_is_listed_without_daemons(ui_context_initializer):
         assert dialog.camera_payload is None
         assert dialog.get_response_enabled("select") is False
 
-    dialog.destroy()
+    dialog.close()
     _pump(time.monotonic() + 0.2)
 
 
@@ -113,7 +113,7 @@ def test_dialog_opens_instantly_with_scanning_placeholder(
         "rayforge.ui_gtk.camera.selection_dialog.list_local_device_ids",
         side_effect=slow_scan,
     ):
-        dialog = CameraSelectionDialog(None)
+        dialog = CameraSelectionDialog()
 
         assert time.monotonic() - scan_started < 1.0
         assert dialog.device_row.get_sensitive() is False
@@ -125,7 +125,7 @@ def test_dialog_opens_instantly_with_scanning_placeholder(
         assert dialog._available_devices == ["/dev/video0"]
         assert dialog.device_row.get_sensitive() is True
 
-    dialog.destroy()
+    dialog.close()
     _pump(time.monotonic() + 0.2)
 
 
@@ -145,11 +145,11 @@ def test_scan_result_arriving_after_close_is_ignored(ui_context_initializer):
         "rayforge.ui_gtk.camera.selection_dialog.list_local_device_ids",
         side_effect=slow_scan,
     ):
-        dialog = CameraSelectionDialog(None)
+        dialog = CameraSelectionDialog()
         # Mirrors the real shutdown path (camera_preferences_page.py
-        # handles "response" and only then calls destroy()); the
+        # handles "response" and only then calls close()); the
         # "response" signal is what actually marks the dialog closed.
-        dialog.response("cancel")
+        dialog.emit("response", "cancel")
         _pump(time.monotonic() + 0.2)
         assert dialog._closed is True
 
@@ -184,9 +184,7 @@ def test_preview_reuses_active_controller_frame_without_reopening_device(
         "rayforge.ui_gtk.camera.selection_dialog.list_local_device_ids",
         return_value=[device_id],
     ):
-        dialog = CameraSelectionDialog(
-            None, active_controllers=[active_controller]
-        )
+        dialog = CameraSelectionDialog(active_controllers=[active_controller])
         assert _pump_until(lambda: dialog._available_devices != [])
 
         with patch.object(
@@ -199,9 +197,9 @@ def test_preview_reuses_active_controller_frame_without_reopening_device(
             # No new controller/device open should have happened.
             mock_capture_image.assert_not_called()
 
-        assert dialog._preview_pixbuf is not None
+        assert dialog._preview_texture is not None
 
-    dialog.destroy()
+    dialog.close()
     _pump(time.monotonic() + 0.2)
 
 
@@ -215,7 +213,7 @@ def test_new_camera_defaults_to_local_and_selects_first_device(
         "rayforge.ui_gtk.camera.selection_dialog.list_local_device_ids",
         return_value=[device_id],
     ):
-        dialog = CameraSelectionDialog(None)
+        dialog = CameraSelectionDialog()
         assert _pump_until(lambda: dialog.camera_payload is not None)
 
         assert dialog.type_row.get_selected() == 1
@@ -225,7 +223,7 @@ def test_new_camera_defaults_to_local_and_selects_first_device(
         assert payload["source_config"] == {"device_id": device_id}
         assert not hasattr(dialog, "name_entry")
 
-    dialog.destroy()
+    dialog.close()
     _pump(time.monotonic() + 0.2)
 
 
@@ -246,7 +244,7 @@ def test_configured_mode_selects_existing_camera(
         "rayforge.ui_gtk.camera.selection_dialog.get_context",
         return_value=context,
     ):
-        dialog = CameraSelectionDialog(None, mode="configured")
+        dialog = CameraSelectionDialog(mode="configured")
 
         assert dialog.type_row.get_visible() is False
         assert dialog.device_row.get_selected() == 0
@@ -254,7 +252,7 @@ def test_configured_mode_selects_existing_camera(
         assert dialog.camera_payload == {"camera_id": camera.id}
         assert dialog.get_response_enabled("select") is True
 
-    dialog.destroy()
+    dialog.close()
     _pump(time.monotonic() + 0.2)
 
 
@@ -284,7 +282,7 @@ def test_daemon_camera_asks_for_daemon_then_camera(ui_context_initializer):
             fake_fetch,
         ),
     ):
-        dialog = CameraSelectionDialog(None, remote_daemons=[daemon])
+        dialog = CameraSelectionDialog(remote_daemons=[daemon])
         daemon_index = dialog.type_values.index("daemon")
         assert "Daemon camera" in _type_labels(dialog)
         assert dialog.daemon_picker.get_visible() is False
@@ -307,7 +305,7 @@ def test_daemon_camera_asks_for_daemon_then_camera(ui_context_initializer):
             "source_config": {"uri": camera.uri},
         }
 
-    dialog.destroy()
+    dialog.close()
     _pump(time.monotonic() + 0.2)
 
 
@@ -347,7 +345,7 @@ def test_daemon_picker_switches_the_offered_cameras(ui_context_initializer):
             fake_fetch,
         ),
     ):
-        dialog = CameraSelectionDialog(None, remote_daemons=[workshop, office])
+        dialog = CameraSelectionDialog(remote_daemons=[workshop, office])
         dialog.type_row.set_selected(dialog.type_values.index("daemon"))
         assert _pump_until(lambda: dialog.daemon_row.get_sensitive())
         assert dialog._remote_cameras == [workshop_camera]
@@ -366,5 +364,5 @@ def test_daemon_picker_switches_the_offered_cameras(ui_context_initializer):
             )
         )
 
-    dialog.destroy()
+    dialog.close()
     _pump(time.monotonic() + 0.2)

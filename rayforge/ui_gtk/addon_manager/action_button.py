@@ -54,15 +54,15 @@ def build_action_button(
     if status == UpdateStatus.NOT_INSTALLED:
         if is_premium and not is_license_valid(addon):
             btn.set_label(_("Unlock"))
-            btn.get_style_context().add_class("suggested-action")
+            btn.add_css_class("suggested-action")
             btn.connect("clicked", lambda _b: on_unlock(addon))
         else:
             btn.set_label(_("Install"))
-            btn.get_style_context().add_class("suggested-action")
+            btn.add_css_class("suggested-action")
             btn.connect("clicked", lambda _b: on_install(addon, False))
     elif status == UpdateStatus.UPDATE_AVAILABLE:
         btn.set_label(_("Update"))
-        btn.get_style_context().add_class("suggested-action")
+        btn.add_css_class("suggested-action")
         btn.connect("clicked", lambda _b: on_install(addon, True))
     elif status == UpdateStatus.UP_TO_DATE:
         btn.set_label(_("Installed"))

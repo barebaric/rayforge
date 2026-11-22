@@ -3,7 +3,7 @@ import logging
 import threading
 from gettext import gettext as _
 
-from gi.repository import Adw, Gdk, Gtk
+from gi.repository import Adw, Gtk
 
 from ...camera.controller import CameraController
 from ...camera.models.camera import Camera, CameraSourceType
@@ -12,7 +12,7 @@ from ...camera.source import list_local_device_ids, validate_source_uri
 from ...camera.v4l import display_name
 from ...context import get_context
 from ...shared.util.glib import idle_add
-from .capture_surface import numpy_to_pixbuf
+from .capture_surface import numpy_to_texture
 
 logger = logging.getLogger(__name__)
 
@@ -22,18 +22,15 @@ _SCANNING_PLACEHOLDER = _("Scanning for devices\u2026")
 _DAEMON_SOURCE = "daemon"
 
 
-class CameraSelectionDialog(Adw.MessageDialog):
+class CameraSelectionDialog(Adw.AlertDialog):
     def __init__(
         self,
-        parent,
         active_controllers: list[CameraController] | None = None,
         mode: str = "new",
         remote_daemons: list[RemoteDaemon] | None = None,
         **kwargs,
     ):
         super().__init__(
-            transient_for=parent,
-            modal=True,
             heading=_("Add Camera"),
             body=_("Choose a camera source."),
             close_response="cancel",
@@ -62,7 +59,7 @@ class CameraSelectionDialog(Adw.MessageDialog):
         self._available_devices: list[str] = []
         self._remote_cameras: list[RemoteCamera] = []
         self._remote_scan_generation = 0
-        self._preview_pixbuf = None
+        self._preview_texture = None
         self._build_ui()
         self.add_response("cancel", _("Cancel"))
         self.add_response(
@@ -323,7 +320,7 @@ class CameraSelectionDialog(Adw.MessageDialog):
         )
         if not is_local and not is_daemon:
             self.preview_image.set_paintable(None)
-            self._preview_pixbuf = None
+            self._preview_texture = None
 
     def _build_payload(self) -> dict | None:
         source_type = self._selected_source_type()
@@ -395,7 +392,7 @@ class CameraSelectionDialog(Adw.MessageDialog):
         idx = self.device_row.get_selected()
         if idx <= 0 or idx - 1 >= len(self._available_devices):
             self.preview_image.set_paintable(None)
-            self._preview_pixbuf = None
+            self._preview_texture = None
             return
         device_id = self._available_devices[idx - 1]
 
@@ -415,7 +412,7 @@ class CameraSelectionDialog(Adw.MessageDialog):
             return
 
         self.preview_image.set_paintable(None)
-        self._preview_pixbuf = None
+        self._preview_texture = None
         self._capture_preview_async(device_id, generation)
 
     def _find_active_local_controller(
@@ -472,16 +469,9 @@ class CameraSelectionDialog(Adw.MessageDialog):
         self._show_preview_frame(image)
 
     def _show_preview_frame(self, image) -> None:
-        if image is None:
-            self.preview_image.set_paintable(None)
-            self._preview_pixbuf = None
-            return
-        pixbuf = numpy_to_pixbuf(image)
-        self._preview_pixbuf = pixbuf
-        paintable = (
-            Gdk.Texture.new_for_pixbuf(pixbuf) if pixbuf is not None else None
-        )
-        self.preview_image.set_paintable(paintable)
+        texture = numpy_to_texture(image)
+        self._preview_texture = texture
+        self.preview_image.set_paintable(texture)
 
     def _start_device_scan(self) -> None:
         """Scans for local camera devices on a worker thread.
@@ -521,7 +511,7 @@ class CameraSelectionDialog(Adw.MessageDialog):
     def _on_response(self, dialog, response_id) -> None:
         self._closed = True
         self.preview_image.set_paintable(None)
-        self._preview_pixbuf = None
+        self._preview_texture = None
 
     def _on_destroy(self, *args) -> None:
         self._closed = True

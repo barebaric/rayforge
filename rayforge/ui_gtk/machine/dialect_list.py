@@ -104,8 +104,7 @@ class DialectRow(Gtk.Box):
 
     def _on_delete_clicked(self, button: Gtk.Button):
         parent = cast(Gtk.Window, self.get_ancestor(Gtk.Window))
-        dialog = Adw.MessageDialog(
-            transient_for=parent,
+        dialog = Adw.AlertDialog(
             heading=_("Delete '{label}'?").format(label=self.dialect.label),
             body=_(
                 "This custom dialect will be permanently removed. "
@@ -118,9 +117,9 @@ class DialectRow(Gtk.Box):
             "delete", Adw.ResponseAppearance.DESTRUCTIVE
         )
         dialog.connect("response", self._on_delete_response)
-        dialog.present()
+        dialog.present(parent)
 
-    def _on_delete_response(self, dialog: Adw.MessageDialog, response_id: str):
+    def _on_delete_response(self, dialog: Adw.AlertDialog, response_id: str):
         if response_id == "delete":
             machines = get_context().machine_mgr.get_machines()
             machines_using = self.dialect_mgr.get_machines_using_dialect(
@@ -129,8 +128,7 @@ class DialectRow(Gtk.Box):
             if machines_using:
                 machine_names = ", ".join(m.name for m in machines_using)
                 parent = cast(Gtk.Window, self.get_ancestor(Gtk.Window))
-                error_dialog = Adw.MessageDialog(
-                    transient_for=parent,
+                error_dialog = Adw.AlertDialog(
                     heading=_("Cannot Delete Dialect"),
                     body=_(
                         "This dialect is still used by the following "
@@ -139,7 +137,7 @@ class DialectRow(Gtk.Box):
                 )
                 error_dialog.add_response("ok", _("OK"))
                 error_dialog.set_default_response("ok")
-                error_dialog.present()
+                error_dialog.present(parent)
                 return
             self.dialect_mgr.delete_dialect(self.dialect, machines)
 
@@ -182,8 +180,7 @@ class DialectListEditor(PreferencesGroupWithButton):
         )
         parent = cast(Gtk.Window, self.get_ancestor(Gtk.Window))
         if not unused:
-            dialog = Adw.MessageDialog(
-                transient_for=parent,
+            dialog = Adw.AlertDialog(
                 heading=_("No Unused Dialects"),
                 body=_(
                     "Every custom dialect is used by at least one machine."
@@ -191,12 +188,11 @@ class DialectListEditor(PreferencesGroupWithButton):
             )
             dialog.add_response("ok", _("OK"))
             dialog.set_default_response("ok")
-            dialog.present()
+            dialog.present(parent)
             return
 
         listing = "\n".join(f"• {d.label}" for d in unused)
-        dialog = Adw.MessageDialog(
-            transient_for=parent,
+        dialog = Adw.AlertDialog(
             heading=_("Delete Unused Dialects?"),
             body=(
                 _("The following dialects are not used by any machine:")
@@ -214,11 +210,9 @@ class DialectListEditor(PreferencesGroupWithButton):
             "delete", Adw.ResponseAppearance.DESTRUCTIVE
         )
         dialog.connect("response", self._on_cleanup_response)
-        dialog.present()
+        dialog.present(parent)
 
-    def _on_cleanup_response(
-        self, dialog: Adw.MessageDialog, response_id: str
-    ):
+    def _on_cleanup_response(self, dialog: Adw.AlertDialog, response_id: str):
         if response_id == "delete":
             machines = get_context().machine_mgr.get_machines()
             self.dialect_mgr.delete_unused_dialects(machines)

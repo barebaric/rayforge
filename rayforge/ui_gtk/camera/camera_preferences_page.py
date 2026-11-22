@@ -376,12 +376,12 @@ class CameraPreferencesPage(TrackedPreferencesPage):
         machines = list(get_context().machine_mgr.get_machines())
         if machine is not None and machine not in machines:
             machines.append(machine)
+        parent = self.get_ancestor(Gtk.Window)
         dialog = CameraSelectionDialog(
-            self.get_ancestor(Gtk.Window),
             active_controllers=self._controllers,
             remote_daemons=collect_remote_daemons(machines),
         )
-        dialog.present()
+        dialog.present(parent)
         dialog.connect("response", self.on_camera_selection_dialog_response)
 
     def on_camera_selection_dialog_response(self, dialog, response_id):
@@ -389,7 +389,7 @@ class CameraPreferencesPage(TrackedPreferencesPage):
             payload = dialog.camera_payload
             if payload:
                 self.camera_add_requested.send(self, **payload)
-        dialog.destroy()
+        dialog.close()
 
     def on_remove_camera(self, sender, camera: Camera):
         """Emit a signal to request removal of the selected Camera."""

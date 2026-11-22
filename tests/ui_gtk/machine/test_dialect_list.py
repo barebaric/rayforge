@@ -21,15 +21,22 @@ def _pump(seconds: float) -> None:
         time.sleep(0.01)
 
 
-def _get_dialog_for(window: Gtk.Window) -> Adw.MessageDialog:
-    dialogs = [
-        toplevel
-        for toplevel in Gtk.Window.list_toplevels()
-        if isinstance(toplevel, Adw.MessageDialog)
-        and toplevel.get_transient_for() is window
-    ]
-    assert dialogs
-    return dialogs[-1]
+def _find_dialog(widget: Gtk.Widget) -> Adw.AlertDialog | None:
+    child = widget.get_first_child()
+    while child is not None:
+        if isinstance(child, Adw.AlertDialog):
+            return child
+        found = _find_dialog(child)
+        if found is not None:
+            return found
+        child = child.get_next_sibling()
+    return None
+
+
+def _get_dialog_for(window: Gtk.Window) -> Adw.AlertDialog:
+    dialog = _find_dialog(window)
+    assert dialog is not None
+    return dialog
 
 
 def _create_editor(machine):
@@ -74,7 +81,7 @@ def test_cleanup_dialog_lists_unused_dialects_and_deletes_on_confirm(
         assert unused_one.label in body
         assert unused_two.label in body
 
-        dialog.response("delete")
+        dialog.emit("response", "delete")
         _pump(0.1)
 
         registry_uids = get_context().dialect_mgr._registry.keys()
@@ -103,7 +110,7 @@ def test_cleanup_shows_no_unused_dialog_when_all_dialects_in_use(
             "Every custom dialect is used by at least one machine."
         )
 
-        dialog.response("ok")
+        dialog.emit("response", "ok")
         _pump(0.1)
         assert in_use.uid.lower() in get_context().dialect_mgr._registry
     finally:
