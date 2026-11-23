@@ -40,6 +40,7 @@ class SvgImporter(Importer):
     label = "SVG files"
     mime_types = ("image/svg+xml", "image/svg+xml-compressed")
     extensions = (".svg", ".svgz")
+    native_mime_type = "image/svg+xml"
     features: ClassVar[set[ImporterFeature]] = {
         ImporterFeature.DIRECT_VECTOR,
         ImporterFeature.BITMAP_TRACING,

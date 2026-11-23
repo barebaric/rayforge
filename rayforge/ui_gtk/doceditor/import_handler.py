@@ -301,6 +301,11 @@ def start_reimport(
     file_path = source_asset.source_file or Path(
         source_asset.name or "Untitled"
     )
+    if not mime_type:
+        # Projects written before the importer's own MIME type was
+        # recorded store whatever the system guessed for the file,
+        # which may be a foreign type the importer cannot read.
+        mime_type = importer_cls.own_mime_type() or ""
     features = importer_cls.features
 
     initial_spec = None

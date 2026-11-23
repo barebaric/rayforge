@@ -11,6 +11,39 @@
   </mime-type>
   <mime-type type="application/x-ruida">
     <comment>Ruida laser cutter file</comment>
-    <glob pattern="*.rd"/>
+    <generic-icon name="application-x-ruida"/>
+    <glob pattern="*.rd" weight="100"/>
+  </mime-type>
+  <mime-type type="text/x.gcode">
+    <comment>G-code file</comment>
+    <generic-icon name="text-x-generic"/>
+    <glob pattern="*.gcode" weight="100"/>
+    <glob pattern="*.ngc" weight="100"/>
+    <glob pattern="*.gco" weight="100"/>
+    <glob pattern="*.gc" weight="100"/>
+    <glob pattern="*.tap" weight="100"/>
+    <glob pattern="*.nc" weight="100"/>
+  </mime-type>
+  <mime-type type="application/vnd.hp-hpgl">
+    <comment>HPGL file</comment>
+    <glob pattern="*.plt" weight="100"/>
+    <glob pattern="*.hpg" weight="100"/>
+    <glob pattern="*.hgl" weight="100"/>
+  </mime-type>
+  <mime-type type="application/x-lightburn">
+    <comment>LightBurn project file</comment>
+    <glob pattern="*.lbrn" weight="100"/>
+    <glob pattern="*.lbrn2" weight="100"/>
+  </mime-type>
+  <mime-type type="application/illustrator">
+    <comment>Adobe Illustrator file</comment>
+    <sub-class-of type="application/pdf"/>
+    <glob pattern="*.ai" weight="100"/>
+  </mime-type>
+  <mime-type type="image/x-eps">
+    <comment>EPS image</comment>
+    <sub-class-of type="application/postscript"/>
+    <glob pattern="*.eps" weight="100"/>
+    <glob pattern="*.epsf" weight="100"/>
   </mime-type>
 </mime-info>

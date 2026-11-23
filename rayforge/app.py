@@ -334,6 +334,9 @@ def main():
                     continue
 
                 mime_type, __ = mimetypes.guess_type(file_path)
+                mime_type = editor.file.resolve_import_mime_type(
+                    file_path, mime_type
+                )
 
                 importer_cls, features = editor.file.get_importer_info(
                     file_path, mime_type

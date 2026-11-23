@@ -168,6 +168,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Import: G-code files with a `.nc` or `.tap` extension now import
+  through the G-code importer. The system MIME database maps those
+  extensions to NetCDF and to a bitmap format, which previously won
+  over the extension and made Rayforge reject the file. The same
+  guard covers `.hgl` and G-code files with other extensions that no
+  MIME database knows
+- Desktop integration: every import format is now registered with
+  the operating system. Linux gets MIME definitions and a `.desktop`
+  entry, the macOS app bundle declares its document types, and the
+  Windows installer lists the formats in the "Open with" menu
+
 - Import: SVG geometry that lives outside named layers is now
   offered as an "Ungrouped" layer in the import dialog and enabled
   by default, so shapes that were visible in the preview but

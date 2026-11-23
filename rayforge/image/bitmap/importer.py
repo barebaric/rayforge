@@ -161,6 +161,7 @@ class GifImporter(_BitmapImporter):
     mime_types = ("image/gif",)
     extensions = (".gif",)
     image_format = "GIF"
+    native_mime_type = "image/gif"
 
 
 class TiffImporter(_BitmapImporter):

@@ -14,6 +14,70 @@ hiddenimports.append('rayforge.ui_gtk.canvas2d.elements.workpiece')
 _use_car = os.path.exists('Assets.car')
 _icon = None if _use_car else 'rayforge.icns'
 
+# File types Rayforge can open. The first entry owns the project
+# extensions, so launching a project never asks for an importer.
+_document_types = [
+    {
+        'CFBundleTypeName': 'Rayforge Project',
+        'CFBundleTypeRole': 'Editor',
+        'LSHandlerRank': 'Owner',
+        'CFBundleTypeExtensions': ['ryp', 'rfs'],
+    },
+    {
+        'CFBundleTypeName': 'Ruida Laser Cutter File',
+        'CFBundleTypeRole': 'Viewer',
+        'LSHandlerRank': 'Owner',
+        'CFBundleTypeExtensions': ['rd'],
+    },
+    {
+        'CFBundleTypeName': 'G-code File',
+        'CFBundleTypeRole': 'Viewer',
+        'LSHandlerRank': 'Alternate',
+        'CFBundleTypeExtensions': [
+            'gcode', 'ngc', 'nc', 'tap', 'gc',
+        ],
+        'CFBundleTypeMIMETypes': ['text/x.gcode'],
+    },
+    {
+        'CFBundleTypeName': 'LightBurn Project File',
+        'CFBundleTypeRole': 'Viewer',
+        'LSHandlerRank': 'Alternate',
+        'CFBundleTypeExtensions': ['lbrn', 'lbrn2'],
+        'CFBundleTypeMIMETypes': ['application/x-lightburn'],
+    },
+    {
+        'CFBundleTypeName': 'HPGL Plot File',
+        'CFBundleTypeRole': 'Viewer',
+        'LSHandlerRank': 'Alternate',
+        'CFBundleTypeExtensions': ['plt', 'hpgl', 'hpg', 'hgl'],
+        'CFBundleTypeMIMETypes': ['application/vnd.hp-hpgl'],
+    },
+    {
+        'CFBundleTypeName': 'Vector Drawing',
+        'CFBundleTypeRole': 'Viewer',
+        'LSHandlerRank': 'Alternate',
+        'CFBundleTypeExtensions': [
+            'dxf', 'svg', 'svgz', 'pdf', 'ai', 'eps', 'epsf', 'ps',
+        ],
+        'CFBundleTypeMIMETypes': [
+            'image/vnd.dxf', 'image/svg+xml', 'application/pdf',
+        ],
+    },
+    {
+        'CFBundleTypeName': 'Raster Image',
+        'CFBundleTypeRole': 'Viewer',
+        'LSHandlerRank': 'Alternate',
+        'CFBundleTypeOSTypes': ['PNG ', 'JPEG', 'GIFf', 'TIFF', 'BMP '],
+        'CFBundleTypeExtensions': [
+            'png', 'jpg', 'jpeg', 'gif', 'tif', 'tiff', 'bmp', 'webp',
+        ],
+        'CFBundleTypeMIMETypes': [
+            'image/png', 'image/jpeg', 'image/gif', 'image/tiff',
+            'image/bmp', 'image/webp',
+        ],
+    },
+]
+
 _datas = [
     ('rayforge/version.txt', 'rayforge'),
     ('rayforge/resources', 'rayforge/resources'),
@@ -82,6 +146,7 @@ app = BUNDLE(
     bundle_identifier='org.rayforge.rayforge',
     info_plist={
         **({'CFBundleIconName': 'rayforge'} if _use_car else {}),
+        'CFBundleDocumentTypes': _document_types,
         'LSMinimumSystemVersion': '12.0',
         # Without this key, macOS TCC kills the process the moment any
         # camera is opened (even just enumerating devices), so it must

@@ -33,6 +33,7 @@ class PdfImporter(Importer):
     label = "PDF files"
     mime_types = ("application/pdf",)
     extensions = (".pdf",)
+    native_mime_type = "application/pdf"
     features: ClassVar[set[ImporterFeature]] = {
         ImporterFeature.DIRECT_VECTOR,
         ImporterFeature.BITMAP_TRACING,

@@ -33,7 +33,9 @@ from rayforge.image import (
     ParsingResult,
 )
 from rayforge.image.dxf.importer import DxfImporter
+from rayforge.image.gcode.importer import GcodeImporter
 from rayforge.image.lightburn.importer import LightBurnImporter
+from rayforge.image.registry import importer_registry
 from rayforge.image.ruida.importer import RuidaImporter
 from rayforge.image.svg.renderer import SVG_RENDERER
 from rayforge.machine.models.coordspace import (
@@ -943,6 +945,89 @@ class TestGetImporterInfo:
         )
         assert cls is RuidaImporter
         assert ImporterFeature.DIRECT_VECTOR in features
+
+
+class TestResolveImportMimeType:
+    """
+    Tests for replacing MIME types that the system database assigns to a
+    foreign format with the importer's own type.
+    """
+
+    def test_own_mime_wins_for_foreign_type(self, file_cmd):
+        assert (
+            file_cmd.resolve_import_mime_type(
+                Path("bracket.nc"), "application/x-netcdf"
+            )
+            == "text/x.gcode"
+        )
+
+    def test_imported_mime_matches_importer_for_every_extension(
+        self, file_cmd
+    ):
+        for ext in GcodeImporter.extensions:
+            mime_type = file_cmd.resolve_import_mime_type(
+                Path(f"part{ext}"), "application/octet-stream"
+            )
+            assert mime_type == "text/x.gcode"
+
+    def test_type_known_to_an_importer_is_kept(self, file_cmd):
+        assert (
+            file_cmd.resolve_import_mime_type(
+                Path("plot.hpgl"), "application/vnd.hp-HPGL"
+            )
+            == "application/vnd.hp-HPGL"
+        )
+
+    def test_unmapped_extension_gets_importer_mime(self, file_cmd):
+        assert (
+            file_cmd.resolve_import_mime_type(Path("plot.plt"), None)
+            == "application/vnd.hp-hpgl"
+        )
+
+    def test_matching_type_is_kept(self, file_cmd):
+        assert (
+            file_cmd.resolve_import_mime_type(
+                Path("part.dxf"), "image/vnd.dxf"
+            )
+            == "image/vnd.dxf"
+        )
+
+    def test_missing_type_is_filled_from_extension(self, file_cmd):
+        assert (
+            file_cmd.resolve_import_mime_type(Path("part.gcode"), None)
+            == "text/x.gcode"
+        )
+
+    def test_unknown_extension_is_left_alone(self, file_cmd):
+        assert (
+            file_cmd.resolve_import_mime_type(Path("notes.txt"), "text/plain")
+            == "text/plain"
+        )
+
+
+class TestImporterIdentity:
+    """Tests for the MIME type recorded in the project file."""
+
+    def test_own_mime_type_is_recorded_not_guessed_type(self):
+        result = GcodeImporter(
+            b"G21 G90\nG0 X0 Y0\nG1 X10 Y0\nY10\nX0\nY0\n",
+            Path("bracket.nc"),
+        ).get_doc_items(PassthroughSpec())
+
+        assert result is not None and result.payload is not None
+        metadata = result.payload.source.metadata
+        assert metadata["_importer_class"] == "GcodeImporter"
+        assert metadata["_importer_mime"] == "text/x.gcode"
+
+    def test_recorded_mime_type_resolves_after_reload(self):
+        result = GcodeImporter(
+            b"G21 G90\nG0 X0 Y0\nG1 X10 Y0\n",
+            Path("part.tap"),
+        ).get_doc_items(PassthroughSpec())
+
+        assert result is not None and result.payload is not None
+        mime_type = result.payload.source.metadata["_importer_mime"]
+        assert importer_registry.get_by_mime_type(mime_type) is GcodeImporter
 
 
 class TestAnalyzeImportTarget:

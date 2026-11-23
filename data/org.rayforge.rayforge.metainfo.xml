@@ -51,9 +51,24 @@
     <mediatype>image/png</mediatype>
     <mediatype>image/bmp</mediatype>
     <mediatype>image/jpeg</mediatype>
+    <mediatype>image/gif</mediatype>
+    <mediatype>image/tiff</mediatype>
+    <mediatype>image/webp</mediatype>
     <mediatype>image/svg+xml</mediatype>
     <mediatype>image/svg+xml-compressed</mediatype>
     <mediatype>image/vnd.dxf</mediatype>
+    <mediatype>application/pdf</mediatype>
+    <mediatype>application/illustrator</mediatype>
+    <mediatype>application/vnd.adobe.illustrator</mediatype>
+    <mediatype>image/x-eps</mediatype>
+    <mediatype>application/eps</mediatype>
+    <mediatype>image/eps</mediatype>
+    <mediatype>application/postscript</mediatype>
+    <mediatype>application/vnd.hp-hpgl</mediatype>
+    <mediatype>application/vnd.hp-HPGL</mediatype>
+    <mediatype>application/x-lightburn</mediatype>
+    <mediatype>text/x.gcode</mediatype>
+    <mediatype>application/x-gcode</mediatype>
   </provides>
 
   <recommends>

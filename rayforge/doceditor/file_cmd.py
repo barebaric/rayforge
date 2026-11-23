@@ -394,6 +394,47 @@ class FileCmd:
             importer.get_doc_items, vectorization_spec
         )
 
+    def resolve_import_mime_type(
+        self, file_path: Path, mime_type: str | None
+    ) -> str | None:
+        """
+        Returns the MIME type that identifies `mime_type` to an importer.
+
+        System databases map some extensions to a foreign type, such as
+        `.nc` (NetCDF) or `.tap` (a bitmap), which hides the importer
+        the extension is meant for. When the given type is not one that
+        any importer reads but the extension does resolve to an
+        importer, that importer's own MIME type is used instead.
+
+        Args:
+            file_path: Path of the file being imported.
+            mime_type: The MIME type guessed or reported for the file.
+
+        Returns:
+            The MIME type to hand to the import pipeline.
+        """
+        if mime_type and importer_registry.get_by_mime_type(mime_type):
+            return mime_type
+
+        if not file_path.suffix:
+            return mime_type
+
+        importer_cls = importer_registry.get_by_extension(
+            file_path.suffix.lower()
+        )
+        if not importer_cls:
+            return mime_type
+
+        native_mime = importer_cls.own_mime_type()
+        if not native_mime:
+            return mime_type
+
+        logger.info(
+            f"Replacing foreign MIME type '{mime_type}' of "
+            f"{file_path.name} with '{native_mime}'"
+        )
+        return native_mime
+
     def _get_positionable_content(self, items: list[DocItem]) -> list[DocItem]:
         """
         Extracts the actual content (WorkPieces, Groups) from a list of
@@ -691,6 +732,7 @@ class FileCmd:
                 )
 
                 # 1. Run blocking I/O and CPU work in a background thread.
+                mt = self.resolve_import_mime_type(fn, mt)
                 import_result = await self._load_file_async(fn, mt, vec_spec)
 
                 # 2. Validate the result.
