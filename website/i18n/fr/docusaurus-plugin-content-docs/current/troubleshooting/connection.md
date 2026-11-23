@@ -157,8 +157,9 @@ Les contrôleurs GRBL utilisent généralement un de ces débits en bauds :
 - **9600** (anciennes versions GRBL)
 - **250000** (moins courant, certains firmwares personnalisés)
 
-Essayez différents débits en bauds dans les paramètres d'appareil de Rayforge. Le plus courant est
-**115200**.
+Essayez différents débits en bauds dans les paramètres d'appareil de Rayforge. Si le débit utilisé
+par votre firmware n'est pas dans la liste, choisissez **Personnalisé...** et saisissez-le. Le plus
+courant est **115200**.
 
 ### La connexion se coupe constamment
 

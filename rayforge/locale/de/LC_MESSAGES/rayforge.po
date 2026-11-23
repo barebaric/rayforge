@@ -3518,7 +3518,7 @@ msgstr "Bildqualität und Darstellungsparameter anpassen."
 msgid "Default"
 msgstr "Standard"
 
-#: rayforge/ui_gtk/camera/image_settings_widget.py
+#: rayforge/ui_gtk/camera/image_settings_widget.py rayforge/ui_gtk/varset/adapter/combo.py
 msgid "Custom..."
 msgstr "Benutzerdefiniert..."
 
@@ -11363,3 +11363,19 @@ msgstr ""
 "kann sie nur mit Ghostscript lesen, das nicht gefunden wurde. Installiere "
 "Ghostscript oder speichere die Datei in Illustrator erneut mit aktivierter "
 "Option „PDF-kompatible Datei erstellen“."
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "Custom Baud Rate"
+msgstr "Benutzerdefinierte Baudrate"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "Baud rate (bits per second)"
+msgstr "Baudrate (Bit pro Sekunde)"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+#, python-brace-format
+msgid ""
+"Enter a baud rate between {min_rate} and {max_rate} bits per second."
+msgstr ""
+"Gib eine Baudrate zwischen {min_rate} und {max_rate} Bit pro "
+"Sekunde ein."

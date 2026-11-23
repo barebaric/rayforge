@@ -60,6 +60,13 @@ encontrar o VID:PID de um dispositivo na saída do `lsusb` (Linux) ou no Gerenci
 Após selecionar um driver, as definições específicas de conexão aparecem abaixo do seletor (ex.:
 porta serial, baud rate). Elas variam conforme o driver escolhido.
 
+### Taxas de Transmissão Personalizadas
+
+O seletor de taxa de transmissão lista as taxas comuns, mas aceita qualquer valor entre 300 e
+4000000 bits por segundo. Escolha **Personalizado...** no final da lista e insira a taxa usada pelo
+seu firmware — por exemplo `500000`. Uma taxa personalizada configurada permanece visível no
+seletor.
+
 <!-- prettier-ignore-start -->
 :::tip
 Um banner de erro no topo da página avisa você se o driver não estiver configurado ou

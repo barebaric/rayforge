@@ -5,26 +5,67 @@ from rayforge.core.varset.varset import VarSet
 
 
 class TestBaudrateVar:
-    def test_validation_default_choices(self):
-        """Test BaudrateVar validation with default standard rates."""
+    def test_validation_accepts_custom_rates(self):
+        """Rates outside the choices list are valid custom rates."""
         v = BaudrateVar(key="baud", label="Baud Rate")
 
         v.value = 115200
         v.validate()
 
+        v.value = 500000
+        v.validate()
+
         v.value = 9601
-        with pytest.raises(ValidationError, match="not a standard baud rate"):
+        v.validate()
+
+    def test_validation_rejects_out_of_range_rates(self):
+        """Custom rates still have to fit the min/max bounds."""
+        v = BaudrateVar(key="baud", label="Baud Rate")
+
+        v.value = 100
+        with pytest.raises(ValidationError, match="at least"):
+            v.validate()
+
+        v.value = 5000000
+        with pytest.raises(ValidationError, match="at most"):
+            v.validate()
+
+    def test_validation_rejects_empty_rate(self):
+        v = BaudrateVar(key="baud", label="Baud Rate", default=None)
+
+        with pytest.raises(ValidationError, match="cannot be empty"):
             v.validate()
 
     def test_validation_custom_choices(self):
-        """Test BaudrateVar with custom choices list."""
+        """A custom choices list does not restrict the accepted rates."""
         v = BaudrateVar(key="baud", label="Baud Rate", choices=[9600, 115200])
 
         v.value = 9600
         v.validate()
 
         v.value = 19200
-        with pytest.raises(ValidationError, match="not a standard baud rate"):
+        v.validate()
+
+    def test_custom_bounds(self):
+        v = BaudrateVar(
+            key="baud",
+            label="Baud Rate",
+            min_val=9600,
+            max_val=115200,
+        )
+
+        v.value = 9600
+        v.validate()
+
+        v.value = 19200
+        v.validate()
+
+        v.value = 4800
+        with pytest.raises(ValidationError, match="at least"):
+            v.validate()
+
+        v.value = 230400
+        with pytest.raises(ValidationError, match="at most"):
             v.validate()
 
     def test_serialization_and_rehydration(self):
@@ -55,6 +96,7 @@ class TestBaudrateVar:
                 57600,
                 115200,
                 230400,
+                250000,
                 460800,
                 921600,
                 1000000,

@@ -58,6 +58,12 @@ machine is unplugged and reconnected. You can find a device's VID:PID in the out
 After selecting a driver, connection-specific settings appear below the selector (e.g. serial port,
 baud rate). These vary depending on the chosen driver.
 
+### Custom Baud Rates
+
+The baud rate selector lists common rates, but any value between 300 and 4000000 bits per second is
+accepted. Choose **Custom...** at the end of the list and enter the rate your firmware uses — for
+example `500000`. A configured custom rate stays visible in the selector.
+
 <!-- prettier-ignore-start -->
 :::tip
 An error banner at the top of the page warns you if the driver is not configured or

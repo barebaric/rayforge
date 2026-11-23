@@ -9,6 +9,7 @@ import serial
 from raydriver.core.discovery import ports as _ports
 from raydriver.core.discovery.ports import SerialPortInfo
 
+from ...core.varset.baudratevar import STANDARD_BAUD_RATES
 from ...core.varset.serialportvar import format_vidpid, parse_vidpid
 from .transport import Transport, TransportStatus
 
@@ -131,18 +132,7 @@ class SerialTransport(Transport):
     @staticmethod
     def list_baud_rates() -> list[int]:
         """Returns a list of common serial baud rates."""
-        return [
-            9600,
-            19200,
-            38400,
-            57600,
-            115200,
-            230400,
-            460800,
-            921600,
-            1000000,
-            1843200,
-        ]
+        return list(STANDARD_BAUD_RATES)
 
     # Non-blocking read to prevent holding OS driver locks.
     _READ_TIMEOUT = 0

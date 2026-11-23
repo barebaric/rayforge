@@ -3475,7 +3475,7 @@ msgstr "Налаштувати параметри якості та зовніш
 msgid "Default"
 msgstr "Типово"
 
-#: rayforge/ui_gtk/camera/image_settings_widget.py
+#: rayforge/ui_gtk/camera/image_settings_widget.py rayforge/ui_gtk/varset/adapter/combo.py
 msgid "Custom..."
 msgstr "Довільне..."
 
@@ -11253,3 +11253,19 @@ msgstr ""
 "його лише за допомогою Ghostscript, але його не знайдено. Встановіть "
 "Ghostscript або збережіть файл в Illustrator ще раз з увімкненим параметром "
 "«Створити PDF-сумісний файл»."
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "Custom Baud Rate"
+msgstr "Власна швидкість передачі"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "Baud rate (bits per second)"
+msgstr "Швидкість передачі (біт за секунду)"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+#, python-brace-format
+msgid ""
+"Enter a baud rate between {min_rate} and {max_rate} bits per second."
+msgstr ""
+"Введіть швидкість передачі від {min_rate} до {max_rate} біт за "
+"секунду."

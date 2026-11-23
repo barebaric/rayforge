@@ -61,6 +61,13 @@ de dispositivos → Identificadores de hardware (Windows).
 Tras seleccionar un controlador, aparecerán debajo del selector los ajustes específicos de conexión
 (p. ej., puerto serie, baud rate). Estos varían según el controlador elegido.
 
+### Velocidades de Transmisión Personalizadas
+
+El selector de velocidad de transmisión enumera las velocidades comunes, pero acepta cualquier valor
+entre 300 y 4000000 bits por segundo. Elige **Personalizado...** al final de la lista e introduce la
+velocidad que usa tu firmware — por ejemplo `500000`. Una velocidad personalizada configurada
+permanece visible en el selector.
+
 <!-- prettier-ignore-start -->
 :::tip
 Un banner de error en la parte superior de la página te avisa si el controlador no está

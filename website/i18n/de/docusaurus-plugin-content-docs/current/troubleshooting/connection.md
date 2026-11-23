@@ -156,7 +156,9 @@ GRBL-Controller verwenden typischerweise eine dieser Baudraten:
 - **9600** (ältere GRBL-Versionen)
 - **250000** (weniger häufig, einige benutzerdefinierte Firmware)
 
-Versuche verschiedene Baudraten in Rayforge's Geräteeinstellungen. Die häufigste ist **115200**.
+Versuche verschiedene Baudraten in Rayforge's Geräteeinstellungen. Wenn die Rate deiner Firmware
+nicht in der Liste steht, wähle **Benutzerdefiniert...** und gib sie ein. Die häufigste ist
+**115200**.
 
 ### Verbindung bricht ständig ab
 
