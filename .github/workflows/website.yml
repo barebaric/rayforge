@@ -101,7 +101,7 @@ jobs:
           cache-key: pixi-website-${{ runner.os }}-${{ hashFiles('pixi.lock') }}
 
       - name: Cache npm
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.npm
           key: npm-website-${{ runner.os }}-${{ hashFiles('website/package-lock.json') }}
@@ -112,7 +112,7 @@ jobs:
         run: pixi run --frozen -e website site-install-ci
 
       - name: Cache Docusaurus build
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: website/node_modules/.cache/rspack
           key: docusaurus-${{ runner.os }}-${{ matrix.locale }}-${{ hashFiles('website/package-lock.json', 'website/docusaurus.config.js') }}-${{ github.sha }}
