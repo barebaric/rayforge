@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   height="24px"
+   viewBox="0 0 24 24"
+   width="24px"
+   fill="#000000"
+   version="1.1"
+   xmlns="http://www.w3.org/2000/svg">
+  <rect x="3" y="4" width="1.5" height="16" />
+  <rect x="5.5" y="4" width="0.8" height="16" />
+  <rect x="7.3" y="4" width="2.2" height="16" />
+  <rect x="10.5" y="4" width="0.8" height="16" />
+  <rect x="12.3" y="4" width="1.5" height="16" />
+  <rect x="15" y="4" width="0.8" height="16" />
+  <rect x="16.8" y="4" width="2.2" height="16" />
+  <rect x="20" y="4" width="1" height="16" />
+</svg>

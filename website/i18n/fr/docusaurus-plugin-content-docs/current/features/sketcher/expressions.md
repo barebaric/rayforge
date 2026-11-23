@@ -143,7 +143,7 @@ Créez un fichier Python (par ex. `~/.config/rayforge/mes_fonctions.py`) :
 """Enregistrer des fonctions pour modèles de texte."""
 import sqlite3
 
-from sketcher.core.template_functions import (
+from rayforge.core.template_functions import (
     register_template_function,
 )
 
@@ -208,7 +208,7 @@ Si vous écrivez une extension ou une bibliothèque réutilisable, vous pouvez a
 l'esquisse :
 
 ```python
-from sketcher.core.template_functions import (
+from rayforge.core.template_functions import (
     register_template_function,
 )
 

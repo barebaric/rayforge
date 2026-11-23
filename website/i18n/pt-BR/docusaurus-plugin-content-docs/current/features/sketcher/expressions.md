@@ -139,7 +139,7 @@ Crie um arquivo Python (ex. `~/.config/rayforge/minhas_funcoes.py`):
 """Registrar funções personalizadas para modelos de texto."""
 import sqlite3
 
-from sketcher.core.template_functions import (
+from rayforge.core.template_functions import (
     register_template_function,
 )
 
@@ -202,7 +202,7 @@ Se você está escrevendo um addon ou biblioteca reutilizável, pode chamar
 `register_template_function` de qualquer código Python que execute antes da resolução do esboço:
 
 ```python
-from sketcher.core.template_functions import (
+from rayforge.core.template_functions import (
     register_template_function,
 )
 

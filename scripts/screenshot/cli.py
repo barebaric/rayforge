@@ -21,6 +21,7 @@ TEST_CONFIG_DIR = PROJECT_ROOT / "tests" / "config"
 
 TARGETS = {
     "addon:ai-workpiece-generator": "ai_workpiece_generator",
+    "addon:barcodes": "barcode_properties",
     "addon:cnc:adaptive-clearing": "cnc_adaptive_clearing",
     "addon:deepnest": "deepnest",
     "addon:image-editing:adjust": "adjust_image_dialog",
