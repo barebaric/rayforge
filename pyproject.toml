@@ -36,6 +36,9 @@ include = ["rayforge*"]
 
 [tool.setuptools-git-versioning]
 enabled = true
+# Ignore non-release tags (e.g. issue-800-artifacts), which would otherwise
+# be picked up as the current version and break package builds.
+tag_filter = '^\d+\.\d+'
 
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
