@@ -4,6 +4,7 @@ import asyncio
 import logging
 from collections.abc import Callable, Generator
 from contextlib import contextmanager
+from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -80,6 +81,11 @@ class Pipeline:
         self._material_state_handles: dict[str, BaseArtifactHandle] = {}
         self._last_aggregate_output: Any = None
         self._last_job_handle: BaseArtifactHandle | None = None
+        # Why the last job encode failed, keyed to the build generation
+        # it failed in.  A caller that asks for the job again without
+        # anything having changed gets the same answer instead of
+        # re-running an encode known to fail (issue #800).
+        self._encode_failure: tuple[int, str] | None = None
 
         self.processing_state_changed = Signal()
         self.workpiece_starting = Signal()
@@ -180,6 +186,7 @@ class Pipeline:
         self._material_state_handles.clear()
         self._last_job_handle = None
         self._last_aggregate_output = None
+        self._encode_failure = None
         self._intent_ctl.set_doc(new_doc)
 
     @property
@@ -271,6 +278,7 @@ class Pipeline:
         if self._machine is not None:
             self._machine.changed.disconnect(self._on_machine_changed)
         self._machine = machine
+        self._encode_failure = None
         self._intent_ctl.set_machine(machine)
         machine.changed.connect(self._on_machine_changed)
 
@@ -351,6 +359,7 @@ class Pipeline:
             self._store.release(self._last_job_handle)
             self._last_job_handle = None
         self._last_aggregate_output = None
+        self._encode_failure = None
 
     def _on_pipeline_warnings(self, sender, *, warnings) -> None:
         """Forward assembler warnings to the UI for translation."""
@@ -439,12 +448,35 @@ class Pipeline:
             time_est = output.time_estimate
             self.job_time_updated.send(self, total_seconds=time_est)
 
-    def _on_job_encoded(self, sender, *, handle, task_status) -> None:
+    def _record_encode_failure(self, message: str | None) -> None:
+        """Remember why the job encode failed at the current build
+        generation, so repeated job requests do not re-run it."""
+        reason = message or _("Job generation failed")
+        self._encode_failure = (self._intent_ctl.generation_id, reason)
+
+    def _job_encoding_failure(self) -> str | None:
+        """Why the job encode failed for the current build, if it did.
+
+        A failure recorded for an older build generation no longer
+        applies: the document or machine changed since.
+        """
+        if self._encode_failure is None:
+            return None
+        generation, reason = self._encode_failure
+        if generation != self._intent_ctl.generation_id:
+            return None
+        return reason
+
+    def _on_job_encoded(
+        self, sender, *, handle, task_status, message=None
+    ) -> None:
         if self._is_shutting_down:
             return
         if handle is None:
+            if task_status == "failed":
+                self._record_encode_failure(message)
             self.job_generation_finished.send(
-                self, handle=None, task_status=task_status
+                self, handle=None, task_status=task_status, message=message
             )
             return
         agg = self._last_aggregate_output
@@ -557,6 +589,14 @@ class Pipeline:
             when_done(self._last_job_handle, None)
             return
 
+        # Nothing changed since the encode failed, so it would fail
+        # again: answer at once instead of starting another rebuild
+        # that reintroduces the failure and its retriggering loop.
+        failure = self._job_encoding_failure()
+        if failure is not None:
+            when_done(None, RuntimeError(failure))
+            return
+
         if not self._can_generate_job():
             when_done(
                 None,
@@ -569,13 +609,15 @@ class Pipeline:
 
         request_generation = self._intent_ctl.generation_id
 
-        def _on_finished(sender, *, handle, task_status):
+        def _on_finished(sender, *, handle, task_status, message=None):
             self._intent_ctl.rebuild_finished.disconnect(_on_settled)
             self.job_generation_finished.disconnect(_on_finished)
             if task_status == "failed":
                 when_done(
                     None,
-                    RuntimeError("Job generation failed — see logs."),
+                    RuntimeError(
+                        message or "Job generation failed — see logs."
+                    ),
                 )
                 return
             when_done(handle, None)
@@ -596,9 +638,14 @@ class Pipeline:
                 return
             self._intent_ctl.rebuild_finished.disconnect(_on_settled)
             self.job_generation_finished.disconnect(_on_finished)
+            # When the encode node failed, its reason is already
+            # recorded; report that rather than a generic message.
+            failure = self._job_encoding_failure()
             when_done(
                 None,
-                RuntimeError("Job generation did not produce a result."),
+                RuntimeError(
+                    failure or "Job generation did not produce a result."
+                ),
             )
 
         self.job_generation_finished.connect(_on_finished, weak=False)

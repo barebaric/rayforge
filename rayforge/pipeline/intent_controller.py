@@ -465,7 +465,7 @@ class IntentController:
             _worker, when_done=_on_done, key="intent-rebuild"
         )
 
-    def _emit_job_generation_failed(self) -> None:
+    def _emit_job_generation_failed(self, message: str | None = None) -> None:
         """
         Completes job-generation waiters after an unexpected failure.
 
@@ -474,8 +474,18 @@ class IntentController:
         wedging all future send attempts behind the stuck job guard.
         """
         self.job_generation_finished.send(
-            self, handle=None, task_status="failed"
+            self, handle=None, task_status="failed", message=message
         )
+
+    def _report_job_encode_failure(self, message: str) -> None:
+        """Report an encode failure to the user and to job waiters.
+
+        Runs on the main thread.  The pipeline records the failure, the
+        job request in flight fails with the real message, and the
+        error is shown rather than only logged.
+        """
+        self._emit_configuration_error(message)
+        self._emit_job_generation_failed(message)
 
     def _emit_rebuild_finished(self, generation_id: int) -> None:
         """Emit ``rebuild_finished`` on the main thread."""
@@ -531,6 +541,18 @@ class IntentController:
                 logger.error("Node %s failed: %s", node.key, node.error)
                 self._task_manager.schedule_on_main_thread(
                     self._emit_pipeline_error, kind
+                )
+                return
+            # Any other failure of the encode node means this rebuild
+            # can never produce a job.  Report it as a finished job so
+            # callers awaiting a job artifact fail with the real
+            # message, and surface it to the user instead of leaving
+            # the failure visible only in the log.
+            if node.key == "job:encode":
+                logger.error("Node %s failed: %s", node.key, node.error)
+                message = str(node.error)
+                self._task_manager.schedule_on_main_thread(
+                    self._report_job_encode_failure, message
                 )
                 return
             # Internal errors (cache type mismatch, etc.) — log only.
