@@ -11053,3 +11053,18 @@ msgstr ""
 "यह Illustrator फ़ाइल PDF संगतता के बिना सहेजी गई थी. Rayforge इसे केवल Ghostscript "
 "से पढ़ सकता है, जो नहीं मिला. Ghostscript इंस्टॉल करें, या Illustrator में \"Create "
 "PDF Compatible File\" चालू करके फ़ाइल फिर से सहेजें."
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "Custom Baud Rate"
+msgstr "कस्टम बॉड दर"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "Baud rate (bits per second)"
+msgstr "बॉड दर (बिट प्रति सेकंड)"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+#, python-brace-format
+msgid ""
+"Enter a baud rate between {min_rate} and {max_rate} bits per second."
+msgstr ""
+"{min_rate} और {max_rate} बिट प्रति सेकंड के बीच बॉड दर दर्ज करें."

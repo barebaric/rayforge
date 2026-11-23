@@ -11333,3 +11333,19 @@ msgstr ""
 "solo puede leerlo con Ghostscript, que no se encontró. Instala Ghostscript o "
 "vuelve a guardar el archivo en Illustrator con la opción «Crear archivo "
 "compatible con PDF» activada."
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "Custom Baud Rate"
+msgstr "Tasa de baudios personalizada"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "Baud rate (bits per second)"
+msgstr "Tasa de baudios (bits por segundo)"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+#, python-brace-format
+msgid ""
+"Enter a baud rate between {min_rate} and {max_rate} bits per second."
+msgstr ""
+"Introduce una tasa de baudios entre {min_rate} y {max_rate} "
+"bits por segundo."

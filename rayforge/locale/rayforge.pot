@@ -10719,3 +10719,17 @@ msgid ""
 "read it with Ghostscript, which was not found. Install Ghostscript, or save "
 "the file again in Illustrator with \"Create PDF Compatible File\" enabled."
 msgstr ""
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "Custom Baud Rate"
+msgstr ""
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "Baud rate (bits per second)"
+msgstr ""
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+#, python-brace-format
+msgid ""
+"Enter a baud rate between {min_rate} and {max_rate} bits per second."
+msgstr ""
