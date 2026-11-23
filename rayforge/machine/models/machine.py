@@ -57,9 +57,6 @@ if TYPE_CHECKING:
     from .controller import MachineController
 from .coordinate_system import CoordinateSystem
 
-# Origin lives in its own module so the driver layer (which the
-# machine model imports) can name it without a circular import.
-
 
 class JogDirection(Enum):
     """Visual direction for jog operations."""
