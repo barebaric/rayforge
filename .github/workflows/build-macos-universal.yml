@@ -73,14 +73,14 @@ jobs:
           cache-dependency-path: requirements.txt
 
       - name: Cache Homebrew downloads
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/Library/Caches/Homebrew
           key: brew-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/mac/Brewfile') }}
           restore-keys: brew-${{ runner.os }}-${{ runner.arch }}-
 
       - name: Cache freetype build
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.rayforge-macos-deps
           key: macdeps-${{ runner.os }}-${{ runner.arch }}-freetype-2.15.0
@@ -147,14 +147,14 @@ jobs:
           cache-dependency-path: requirements.txt
 
       - name: Cache Homebrew downloads
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/Library/Caches/Homebrew
           key: brew-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/mac/Brewfile') }}
           restore-keys: brew-${{ runner.os }}-${{ runner.arch }}-
 
       - name: Cache freetype build
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.rayforge-macos-deps
           key: macdeps-${{ runner.os }}-${{ runner.arch }}-freetype-2.15.0
