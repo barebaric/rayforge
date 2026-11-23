@@ -222,3 +222,10 @@ register_template_function(
 
 Les fonctions intégrées (`today`, `now`, `uuid`, etc.) ne peuvent pas être désenregistrées. Si vous
 devez modifier leur comportement, enregistrez une fonction avec un nom différent.
+
+## Compteur de travaux
+
+Le projet fournit aussi un compteur de travaux pour les plaques et étiquettes numérotées :
+`No. {counter:03d}` affiche `No. 007` et avance après chaque travail. Voir
+[Compteur de travaux](../job-counter.md) pour les réglages, la numérotation des copies et les
+variables G-code.

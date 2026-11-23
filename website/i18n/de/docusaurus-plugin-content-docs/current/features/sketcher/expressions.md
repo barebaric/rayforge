@@ -209,3 +209,10 @@ register_template_function("part_number", lambda: f"P-{hash('x') % 10000:04d}")
 
 Die eingebauten Funktionen (`today`, `now`, `uuid` usw.) können nicht deregistriert werden. Wenn du
 ihr Verhalten ändern möchtest, registriere eine Funktion mit einem anderen Namen.
+
+## Jobzähler
+
+Das Projekt stellt außerdem einen Jobzähler für nummerierte Schilder und Etiketten bereit:
+`No. {counter:03d}` zeigt `No. 007` und zählt nach jedem Auftrag weiter. Siehe
+[Jobzähler](../job-counter.md) für die Einstellungen, die Nummerierung von Kopien und die
+G-code-Variablen.

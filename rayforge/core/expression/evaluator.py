@@ -1,19 +1,18 @@
 import logging
-import math
 from typing import Any
 
-logger = logging.getLogger(__name__)
+from raygeo.template import evaluate_number
 
-# Allowed functions and constants in expressions
-MATH_CONTEXT = {
-    k: v for k, v in math.__dict__.items() if not k.startswith("__")
-}
+logger = logging.getLogger(__name__)
 
 
 def safe_evaluate(expression: str, context: dict[str, Any]) -> float:
     """
     Evaluates a mathematical expression string using a specific context
-    (variable names) and standard math functions.
+    (variable names) and the built-in math functions.
+
+    The evaluator lives in raygeo's wasm-safe template module, so the
+    same expression semantics are available to every host.
 
     Args:
         expression: The string to evaluate (e.g., "width / 2 + 5").
@@ -28,22 +27,8 @@ def safe_evaluate(expression: str, context: dict[str, Any]) -> float:
     if not expression:
         return 0.0
 
-    # Clean whitespace
-    expr = expression.strip()
-
-    # Create the evaluation namespace
-    # Note: Context overrides math functions if names collide.
-    namespace = MATH_CONTEXT.copy()
-    namespace.update(context)
-
-    # Add the restricted builtins to the same namespace
-    namespace["__builtins__"] = {}
-
     try:
-        # Use Python's eval, passing the unified namespace as globals.
-        # Eval will use this for both globals and locals.
-        result = eval(expr, namespace)
-        return float(result)
+        return evaluate_number(expression.strip(), context)
     except Exception as e:  # noqa: BLE001 - arbitrary user expression
         logger.error(f"Failed to evaluate expression '{expression}': {e}")
         raise ValueError(f"Invalid expression: {e}")

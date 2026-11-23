@@ -212,3 +212,10 @@ register_template_function("part_number", lambda: f"P-{hash('x') % 10000:04d}")
 
 Las funciones integradas (`today`, `now`, `uuid`, etc.) no se pueden eliminar del registro. Si
 necesita cambiar su comportamiento, registre una función con un nombre diferente.
+
+## Contador de trabajos
+
+El proyecto también ofrece un contador de trabajos para placas y etiquetas numeradas:
+`No. {counter:03d}` muestra `No. 007` y avanza después de cada trabajo. Consulta
+[Contador de trabajos](../job-counter.md) para la configuración, la numeración de copias y las
+variables de G-code.

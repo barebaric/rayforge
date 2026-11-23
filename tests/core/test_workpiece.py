@@ -112,8 +112,13 @@ class _FakeProvider:
     def renderer(self):
         return None
 
-    def get_geometry(self, params=None, *, resolved_text_cache=None):
+    def get_geometry(
+        self, params=None, *, text_values=None, resolved_text_cache=None
+    ):
         return self._geometry.copy(), []
+
+    def variables_used(self):
+        return set()
 
     def get_reference_point(self):
         return None
@@ -145,7 +150,9 @@ class _FakeParametricProvider:
     def renderer(self):
         return None
 
-    def get_geometry(self, params=None, *, resolved_text_cache=None):
+    def get_geometry(
+        self, params=None, *, text_values=None, resolved_text_cache=None
+    ):
         values = {
             "width": self.width,
             "height": self.height,
@@ -161,6 +168,9 @@ class _FakeParametricProvider:
             ]
         )
         return geo, []
+
+    def variables_used(self):
+        return set()
 
     def get_reference_point(self):
         return (0.0, 0.0)

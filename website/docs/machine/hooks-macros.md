@@ -222,6 +222,7 @@ Variables use `{variable_name}` syntax and are replaced during G-code generation
 | `{job_name}` | Name of the current job/document | "test-job"    |
 | `{date}`     | Current date                     | "2025-10-03"  |
 | `{time}`     | Current time                     | "14:30:25"    |
+| `{counter}`  | Job counter value for this job   | 7             |
 
 **Layer-level variables:**
 
@@ -233,11 +234,15 @@ Variables use `{variable_name}` syntax and are replaced during G-code generation
 
 **Workpiece-level variables:**
 
-| Variable             | Description                           | Example Value |
-| -------------------- | ------------------------------------- | ------------- |
-| `{workpiece_name}`   | Name of the workpiece                 | "Circle 1"    |
-| `{workpiece_index}`  | Zero-based index of current workpiece | 0, 1, 2...    |
-| `{total_workpieces}` | Total number of workpieces            | 5             |
+| Variable              | Description                           | Example Value |
+| --------------------- | ------------------------------------- | ------------- |
+| `{workpiece_name}`    | Name of the workpiece                 | "Circle 1"    |
+| `{workpiece_index}`   | Zero-based index of current workpiece | 0, 1, 2...    |
+| `{total_workpieces}`  | Total number of workpieces            | 5             |
+| `{workpiece.counter}` | Job counter value for this workpiece  | 7             |
+
+The job counter also accepts a Python format spec, for example `{counter:04d}` for `0007`. See
+[Job Counter](../features/job-counter.md) for the counter settings and how copies are numbered.
 
 **Machine variables:**
 

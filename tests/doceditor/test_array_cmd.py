@@ -224,3 +224,22 @@ def test_compute_plan_is_pure(array_cmd, multilayer_selection):
     assert deltas[0].is_identity()
     # No mutation happened.
     assert len(sel["layer_a"].get_content_items()) == before_count
+
+
+def test_array_copies_get_increasing_offsets(array_cmd, doc_editor):
+    source = WorkPiece(name="source")
+    source.set_size(10, 10)
+    doc_editor.doc.active_layer.add_child(source)
+    params = ArrayParams(
+        mode=ArrayMode.GRID,
+        grid=GridArrayParams(
+            rows=1,
+            cols=3,
+            spacing_mode=SpacingMode.DISPLACEMENT,
+            col_spacing_mm=20.0,
+        ),
+    )
+    created = array_cmd.create_array([source], params)
+    offsets = [item.variable_offset for item in created]
+    assert offsets == [1, 2]
+    assert source.variable_offset == 0

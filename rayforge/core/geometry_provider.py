@@ -49,6 +49,7 @@ class IGeometryProvider(Protocol):
         self,
         params: dict[str, Any] | None = None,
         *,
+        text_values: dict[str, Any] | None = None,
         resolved_text_cache: dict | None = None,
     ) -> tuple["Geometry", list["FillRenderData"]]:
         """
@@ -57,12 +58,23 @@ class IGeometryProvider(Protocol):
         Args:
             params: Optional dictionary of parameter values to override
                     the provider's default values.
+            text_values: Optional dictionary of extra values available
+                    to text templates, e.g. the job counter.
             resolved_text_cache: Optional mutable dict that carries
                     resolved template text across calls so volatile
                     expressions like ``uuid4()`` stay consistent.
 
         Returns:
             A tuple of (stroke_geometry, fill_render_data).
+        """
+        ...
+
+    def variables_used(self) -> set[str]:
+        """
+        The template variable names this provider reads.
+
+        Callers use this to know which variables this provider depends
+        on; the provider itself decides what its templates reference.
         """
         ...
 
