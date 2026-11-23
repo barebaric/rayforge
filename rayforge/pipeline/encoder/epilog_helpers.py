@@ -13,6 +13,8 @@ from typing import TYPE_CHECKING
 
 from raygeo.ops.convert import EpilogSpec
 
+from ...machine.driver.epilog.epilog_driver import DEFAULT_SPEED_REFERENCE
+
 if TYPE_CHECKING:
     from ...core.doc import Doc
     from ...machine.models.machine import Machine
@@ -34,7 +36,13 @@ def build_epilog_context(machine: "Machine", doc: "Doc") -> dict:
             float(machine.axis_extents[0]),
             float(machine.axis_extents[1]),
         ],
-        "max_cut_speed": float(machine.max_cut_speed),
+        # The machine's percentage scale is its own calibrated
+        # reference, not the machine's speed limit (that would scale
+        # every job by the wrong factor).
+        "speed_reference_mm_min": float(
+            machine.driver_args.get("speed_reference")
+            or DEFAULT_SPEED_REFERENCE
+        ),
         "origin_top_left": origin == SUPPORTED_ORIGIN,
         "rotary": any(layer.rotary_enabled for layer in doc.layers),
     }

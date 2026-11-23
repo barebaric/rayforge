@@ -26,6 +26,7 @@ from ....core.varset import (
     HostnameVar,
     IntVar,
     PortVar,
+    SpeedVar,
     TextAreaVar,
     VarSet,
 )
@@ -59,6 +60,15 @@ DEFAULT_QUEUE = "Laser"
 #: Supported raster and vector resolutions in dots per inch.
 RESOLUTIONS = ("100", "200", "250", "400", "500", "1000")
 DEFAULT_RESOLUTION = "500"
+
+#: Cutting speed the machine reaches at 100 %, in mm/min.
+#:
+#: The machine's speed control is a percentage of its own reference,
+#: which is a property of the model: the reference driver calibrates a
+#: Helix at 21.3 mm/s (1278 mm/min). It is not the machine's maximum
+#: travel speed. Zing-specific calibration is still owed; this default
+#: matches the 600 mm/min = 10 % figure the profile notes used.
+DEFAULT_SPEED_REFERENCE = 6000
 
 DEFAULT_FREQUENCY = 1000
 MIN_FREQUENCY = 10
@@ -164,6 +174,14 @@ class EpilogZingDriver(SessionDriverBase):
                     description=_("The LPD print port of the laser"),
                     default=DEFAULT_PORT,
                 ),
+                SpeedVar(
+                    key="speed_reference",
+                    label=_("100 % Speed"),
+                    description=_(
+                        "The cutting speed the machine reaches at 100 %"
+                    ),
+                    default=DEFAULT_SPEED_REFERENCE,
+                ),
                 TextAreaVar(
                     key="queue",
                     label=_("Print Queue"),
@@ -198,6 +216,9 @@ class EpilogZingDriver(SessionDriverBase):
             raise DriverSetupError(str(exc)) from exc
         host = cast(str, kwargs["host"])
         port = cast(int, kwargs.get("port", DEFAULT_PORT))
+        self._speed_reference = float(
+            kwargs.get("speed_reference") or DEFAULT_SPEED_REFERENCE
+        )
         self._session = EpilogSession(
             config={
                 "host": host,
@@ -209,6 +230,11 @@ class EpilogZingDriver(SessionDriverBase):
 
     def get_setting_vars(self) -> list[VarSet]:
         return []
+
+    @property
+    def speed_reference(self) -> float:
+        """Cutting speed the machine reaches at 100 %, in mm/min."""
+        return self._speed_reference
 
     # -- capabilities --------------------------------------------------
 
