@@ -12,7 +12,7 @@ class TestBaudrateVar:
         v.value = 115200
         v.validate()
 
-        v.value = 250000
+        v.value = 500000
         v.validate()
 
         v.value = 9601

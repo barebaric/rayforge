@@ -64,16 +64,16 @@ def test_standard_choices_plus_custom_entry(ui_context_initializer):
 
 
 def test_custom_value_shown_in_numeric_order(ui_context_initializer):
-    var = BaudrateVar(key="baudrate", label="Baud Rate", value=250000)
+    var = BaudrateVar(key="baudrate", label="Baud Rate", value=500000)
 
     row, adapter = _create(var)
 
     strings = _strings(row)
     assert strings[-1] == CUSTOM_BAUD_ENTRY_LABEL
-    assert strings.index("230400") < strings.index("250000")
-    assert strings.index("250000") < strings.index("460800")
-    assert row.get_selected() == strings.index("250000")
-    assert adapter.get_value() == 250000
+    assert strings.index("460800") < strings.index("500000")
+    assert strings.index("500000") < strings.index("921600")
+    assert row.get_selected() == strings.index("500000")
+    assert adapter.get_value() == 500000
 
 
 def test_apply_custom_value(ui_context_initializer):
@@ -96,11 +96,11 @@ def test_switching_back_to_standard_rate_drops_custom_entry(
     var = BaudrateVar(key="baudrate", label="Baud Rate")
     row, adapter = _create(var)
 
-    adapter._apply_custom_value(250000)
+    adapter._apply_custom_value(500000)
     adapter.set_value(115200)
 
     strings = _strings(row)
-    assert "250000" not in strings
+    assert "500000" not in strings
     assert row.get_selected() == strings.index("115200")
     assert adapter.get_value() == 115200
 
