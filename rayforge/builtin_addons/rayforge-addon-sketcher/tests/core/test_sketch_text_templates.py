@@ -291,7 +291,7 @@ def test_resolve_date_alias():
 
 def test_register_template_function():
     """Addons can register custom template functions."""
-    from sketcher.template_functions import (
+    from rayforge.core.template_functions import (
         register_template_function,
         unregister_template_function,
     )
@@ -309,7 +309,7 @@ def test_register_template_function():
 
 def test_unregister_template_function():
     """Unregistering removes a custom function; built-ins remain."""
-    from sketcher.template_functions import (
+    from rayforge.core.template_functions import (
         get_template_functions,
         register_template_function,
         unregister_template_function,
@@ -325,7 +325,7 @@ def test_unregister_template_function():
 
 def test_unregister_builtin_is_noop():
     """Built-in functions cannot be removed."""
-    from sketcher.template_functions import (
+    from rayforge.core.template_functions import (
         get_template_functions,
         unregister_template_function,
     )
