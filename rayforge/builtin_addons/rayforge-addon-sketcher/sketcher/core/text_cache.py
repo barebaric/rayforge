@@ -25,9 +25,8 @@ from rayforge.core.expression import (
     names_in_expression,
     referenced_template_names,
 )
+from rayforge.core.template_functions import get_template_functions
 from rayforge.image.structures import FillRenderData
-
-from ..template_functions import get_template_functions
 
 DEFAULT_FILL_COLOR = (0.85, 0.85, 0.85, 0.7)
 GEOMETRY_CACHE_SIZE = 8

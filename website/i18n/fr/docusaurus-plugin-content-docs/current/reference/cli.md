@@ -103,7 +103,7 @@ ctx = get_context()
 
 Exécuter avec : rayforge --script enregistrer_fn.py
 """
-from sketcher.core.template_functions import (
+from rayforge.core.template_functions import (
     register_template_function,
 )
 

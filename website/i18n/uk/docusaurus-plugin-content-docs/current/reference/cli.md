@@ -103,7 +103,7 @@ ctx = get_context()
 
 Запуск: rayforge --script реєстрація_fn.py
 """
-from sketcher.core.template_functions import (
+from rayforge.core.template_functions import (
     register_template_function,
 )
 

@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Optional
 from gi.repository import Gio, GLib
 
 from rayforge.context import get_context
-from rayforge.core.workpiece import WorkPiece
 from rayforge.ui_gtk.action_registry import (
     MenuPlacement,
     action_registry,
@@ -19,6 +18,7 @@ from rayforge.ui_gtk.doceditor.property_providers import (
 )
 from rayforge.ui_gtk.shared.keyboard import PRIMARY_ACCEL
 
+from ..core.workpieces import is_sketch_workpiece
 from .property_provider import SketchPropertyProvider
 from .sketch_mode_cmd import SketchModeCmd
 from .sketchelement import SketchElement
@@ -53,10 +53,7 @@ def _build_sketch_context_menu_items(
     Adds "Edit Sketch" and "Export Object" items when the context menu
     is shown for a sketch-based workpiece.
     """
-    if not isinstance(item, WorkPiece):
-        return
-
-    if not item.geometry_provider_uid:
+    if not is_sketch_workpiece(item):
         return
 
     # Create a section for sketch-specific items at the top of the menu
@@ -230,7 +227,7 @@ def _update_action_states(action_manager: "ActionManager"):
     can_export_object = False
     if len(selected_wps) == 1:
         wp = selected_wps[0]
-        if wp.geometry_provider_uid:
+        if is_sketch_workpiece(wp):
             can_edit_sketch = True
         if wp.boundaries is not None and not wp.boundaries.is_empty():
             can_export_object = True

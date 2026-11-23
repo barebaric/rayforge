@@ -138,7 +138,7 @@ Create a Python file (e.g. `~/.config/rayforge/my_functions.py`):
 """Register custom template functions for text box expressions."""
 import sqlite3
 
-from sketcher.core.template_functions import register_template_function
+from rayforge.core.template_functions import register_template_function
 
 DB_PATH = "/home/you/production.db"
 
@@ -196,7 +196,7 @@ If you're writing an addon or a reusable library, you can call `register_templat
 Python code that runs before the sketch is solved:
 
 ```python
-from sketcher.core.template_functions import register_template_function
+from rayforge.core.template_functions import register_template_function
 
 register_template_function("part_number", lambda: f"P-{hash('x') % 10000:04d}")
 ```

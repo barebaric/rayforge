@@ -1,13 +1,13 @@
-"""Public registry for text-box template functions.
+"""Public registry for text-template functions.
 
-Text-box content may contain ``{expression}`` placeholders that are
-evaluated at render time.  Besides the sketch's parameters and the
-``math`` module, a set of named callables is available inside those
-expressions (e.g. ``{today()}``, ``{uuid8()}``).
+Text templates may contain ``{expression}`` placeholders that are
+evaluated at render time.  Besides the available variables, a set of
+named callables is available inside those expressions (e.g.
+``{today()}``, ``{uuid8()}``).  The same registry serves sketch text
+boxes and barcode content.
 
 Addons and scripts can extend the available callables via
-:func:`register_template_function` without modifying the sketcher
-package itself.
+:func:`register_template_function` without modifying core or an addon.
 
 Built-in functions
 ------------------
@@ -58,7 +58,7 @@ _register_builtin("uuid4", lambda: _uuid.uuid4().hex[:8])
 
 
 def register_template_function(name: str, func: TemplateFunction) -> None:
-    """Register a callable available inside text-box ``{...}`` templates.
+    """Register a callable available inside ``{...}`` templates.
 
     Args:
         name: The name as used in template expressions (e.g. ``"foo"``
@@ -66,10 +66,6 @@ def register_template_function(name: str, func: TemplateFunction) -> None:
         func: A zero-argument callable returning the substitution value.
             It is invoked on every render, so volatile values (uuids,
             timestamps) produce a fresh result each time.
-
-    Raises:
-        ValueError: If *name* shadows a built-in name unless
-            ``override`` is True.
     """
     _REGISTRY[name] = func
 

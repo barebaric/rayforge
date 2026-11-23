@@ -22,6 +22,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `{workpiece.counter}` for the current copy. Every change is
   undoable and stored in the project
 
+- Barcodes addon: QR codes, Code 128 and EAN-13 as first-class
+  assets. Object → Add Barcode places a centered workpiece whose
+  content, symbology, module size, bar height, quiet zone,
+  human-readable text and inverted variant are edited in the Barcode
+  properties group. The same assets appear in the asset browser, can
+  be dragged onto the canvas or placed by double-clicking, and their
+  content is a template, so `{counter}` gives each copy its own
+  value. Requires raygeo 1.95.0
+
 ## 1.15.0-beta1
 
 ### Added

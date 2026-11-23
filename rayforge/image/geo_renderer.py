@@ -1,5 +1,6 @@
 """Geometry rendering utilities using Cairo."""
 
+import io
 import math
 
 import cairo
@@ -116,7 +117,64 @@ def render_geometry_to_png(
 
     surface.flush()
 
-    import io
+    buf = io.BytesIO()
+    surface.write_to_png(buf)
+    return buf.getvalue()
+
+
+def render_geometry_fill_to_png(
+    geometry: Geometry,
+    size: int,
+    color: tuple[float, float, float, float] | None = None,
+) -> bytes | None:
+    """
+    Render filled geometry to PNG bytes within a square of ``size`` pixels.
+
+    Holes are preserved by the non-zero winding rule, so this is suitable
+    for symbols such as barcodes that are drawn as filled outlines.
+
+    Returns None if the geometry is empty.
+
+    Args:
+        geometry: The geometry to fill.
+        size: The square size of the output image in pixels.
+        color: Optional RGBA color tuple. Defaults to
+            (0.15, 0.15, 0.15, 1.0).
+
+    Returns:
+        PNG bytes or None if geometry is empty.
+    """
+    if geometry.is_empty():
+        return None
+
+    x1, y1, x2, y2 = geometry.rect()
+    gw = x2 - x1
+    gh = y2 - y1
+    if gw < 1e-9 or gh < 1e-9:
+        return None
+
+    padding = 4
+    available = size - 2 * padding
+    scale = min(available / gw, available / gh)
+
+    surface = cairo.ImageSurface(cairo.Format.ARGB32, size, size)
+    ctx = cairo.Context(surface)
+
+    ctx.set_source_rgba(0, 0, 0, 0)
+    ctx.set_operator(cairo.Operator.SOURCE)
+    ctx.paint()
+    ctx.set_operator(cairo.Operator.OVER)
+
+    ctx.translate(size / 2, size / 2)
+    ctx.scale(scale, -scale)
+    ctx.translate(-(x1 + gw / 2), -(y1 + gh / 2))
+
+    ctx.set_source_rgba(*(color or (0.15, 0.15, 0.15, 1.0)))
+    ctx.set_fill_rule(cairo.FILL_RULE_WINDING)
+    geometry_to_cairo(geometry, ctx)
+    ctx.fill()
+
+    surface.flush()
 
     buf = io.BytesIO()
     surface.write_to_png(buf)
