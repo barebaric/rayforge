@@ -56,8 +56,9 @@ queue name (`Laser`, as in Epilog's setup instructions), the raster resolution (
 the vector frequency (10–5000 Hz).
 
 The print protocol offers no remote control, so Rayforge cannot home, jog, query the status or move
-the head on these machines, and focus and air assist are set at the laser. **Send** uploads the job
-and **Frame** uploads a beam-off outline job you start the same way. Speed is converted to the
+the head on these machines, and focus and air assist are set at the laser. The job language always
+addresses a top-left page, so the coordinate origin is fixed to **Top Left**. **Send** uploads the
+job and **Frame** uploads a beam-off outline job you start the same way. Speed is converted to the
 machine's percentage scale: Rayforge uses 6000 mm/min as the 100% reference, so 600 mm/min is 10%.
 Dither and threshold engravings are sent as native 1-bit raster rows; power-modulated (grayscale)
 engravings use the machine's per-dot power mode. Rotary jobs are not supported.

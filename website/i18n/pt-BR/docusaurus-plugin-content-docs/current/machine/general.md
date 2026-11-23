@@ -58,12 +58,13 @@ o nome da fila de impressão (`Laser`), a resolução de raster (100–1000 DPI)
 
 O protocolo de impressão não oferece controle remoto, então o Rayforge não pode referenciar, mover,
 consultar o status nem movimentar o cabeçote nessas máquinas, e o foco e o ar assistido são
-ajustados no laser. **Enviar** envia o trabalho e **Enquadrar** envia um trabalho de contorno com o
-feixe desligado que você inicia da mesma forma. A velocidade é convertida para a escala percentual
-da máquina: o Rayforge usa 6000 mm/min como referência de 100%, então 600 mm/min são 10%. Gravações
-com pontilhado e limiar são enviadas como linhas de raster de 1 bit nativas; gravações com modulação
-de potência (escala de cinza) usam o modo de potência por ponto da máquina. Trabalhos rotativos não
-são suportados.
+ajustados no laser. A linguagem de trabalho sempre endereça uma página com origem superior esquerda,
+então a origem das coordenadas é fixa em **Superior esquerda**. **Enviar** envia o trabalho e
+**Enquadrar** envia um trabalho de contorno com o feixe desligado que você inicia da mesma forma. A
+velocidade é convertida para a escala percentual da máquina: o Rayforge usa 6000 mm/min como
+referência de 100%, então 600 mm/min são 10%. Gravações com pontilhado e limiar são enviadas como
+linhas de raster de 1 bit nativas; gravações com modulação de potência (escala de cinza) usam o modo
+de potência por ponto da máquina. Trabalhos rotativos não são suportados.
 
 ### Vínculo da Porta Serial
 

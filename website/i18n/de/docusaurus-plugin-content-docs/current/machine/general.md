@@ -58,12 +58,14 @@ den Druckport (standardmäßig 515), den Namen der Druckwarteschlange (`Laser`),
 
 Das Druckprotokoll bietet keine Fernsteuerung, daher kann Rayforge diese Maschinen nicht
 referenzieren, verfahren, ihren Status abfragen oder den Kopf bewegen; Fokus und Luftunterstützung
-werden am Laser eingestellt. **Senden** überträgt den Auftrag, **Rahmen** überträgt einen
-Rahmenauftrag mit ausgeschaltetem Strahl, den Sie genauso starten. Die Geschwindigkeit wird in die
-prozentuale Skala der Maschine umgerechnet: Rayforge verwendet 6000 mm/min als 100-%-Referenz, 600
-mm/min entsprechen also 10 %. Gravierungen per Dithering und Schwellenwert werden als native
-1-Bit-Rasterzeilen gesendet; leistungsmodulierte (Graustufen-)Gravierungen nutzen den
-Punktleistungsmodus der Maschine. Rundaufträge werden nicht unterstützt.
+werden am Laser eingestellt. Die Auftragssprache adressiert stets eine Seite mit Ursprung oben
+links, daher ist der Koordinatenursprung fest auf **Oben links** gesetzt. **Senden** überträgt den
+Auftrag, **Rahmen** überträgt einen Rahmenauftrag mit ausgeschaltetem Strahl, den Sie genauso
+starten. Die Geschwindigkeit wird in die prozentuale Skala der Maschine umgerechnet: Rayforge
+verwendet 6000 mm/min als 100-%-Referenz, 600 mm/min entsprechen also 10 %. Gravierungen per
+Dithering und Schwellenwert werden als native 1-Bit-Rasterzeilen gesendet; leistungsmodulierte
+(Graustufen-)Gravierungen nutzen den Punktleistungsmodus der Maschine. Rundaufträge werden nicht
+unterstützt.
 
 ### Serieller Port binden
 

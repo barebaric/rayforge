@@ -147,6 +147,7 @@ class TestSetup:
         keys = EpilogZingDriver.get_setup_vars().keys()
         assert "queue" in keys
         var = EpilogZingDriver.get_setup_vars().get("queue")
+        assert var is not None
         assert var.default == "Laser"
 
 

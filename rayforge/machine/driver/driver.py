@@ -29,6 +29,7 @@ if TYPE_CHECKING:
     from ..models.head import Head
     from ..models.laser import Laser
     from ..models.machine import Machine
+    from ..models.origin import Origin
 
 
 logger = logging.getLogger(__name__)
@@ -305,6 +306,27 @@ class Driver(ABC):
     # The Z homing modes the driver can perform. The first entry is
     # the default for machines that have not chosen a mode.
     z_homing_modes: ClassVar[tuple[ZHomingMode, ...]] = (ZHomingMode.SWITCH,)
+    # The coordinate origins the controller can use, in preference
+    # order. The machine's origin is constrained to this set: drivers
+    # whose protocol fixes the layout (e.g. print-job devices that
+    # only address a top-left page) narrow it, and the setting then
+    # offers only those choices instead of letting the user pick a
+    # value that cannot be encoded.
+    supported_origins: ClassVar[tuple["Origin", ...] | None] = None
+
+    @classmethod
+    def resolve_origin(cls, origin: "Origin") -> "Origin":
+        """
+        Returns the origin to use for a requested one.
+
+        Keeps *origin* when the driver supports it, otherwise falls
+        back to the driver's first supported origin (or the requested
+        one when the driver does not constrain the layout).
+        """
+        supported = cls.supported_origins
+        if not supported or origin in supported:
+            return origin
+        return supported[0]
 
     @classmethod
     def supports_probing_for(cls, driver_args: dict[str, Any]) -> bool:

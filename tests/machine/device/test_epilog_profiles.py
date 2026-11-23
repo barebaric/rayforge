@@ -79,3 +79,76 @@ class TestFramingCapability:
 
         machine.heads.clear()
         assert machine.can_frame() is False
+
+
+def _settle(task_mgr) -> None:
+    """Wait for the controller's debounced driver rebuild to finish."""
+    task_mgr.wait_until_settled(5000)
+
+
+class TestOriginConstraint:
+    """The machine enforces the driver's layout instead of letting a
+    user pick an origin the protocol cannot encode."""
+
+    def _machine(
+        self,
+        lite_context,
+        task_mgr,
+        driver: type = EpilogZingDriver,
+        args: dict | None = None,
+    ):
+        from rayforge.machine.models.machine import Machine
+
+        machine = Machine(lite_context)
+        machine.auto_connect = False
+        lite_context.machine_mgr.add_machine(machine)
+        machine.set_driver(driver, args or {"host": "10.0.0.1"})
+        _settle(task_mgr)
+        return machine
+
+    def test_driver_declares_top_left(self):
+        from rayforge.machine.models.machine import Origin
+
+        assert EpilogZingDriver.supported_origins == (Origin.TOP_LEFT,)
+
+    def test_set_origin_resolves_to_supported(self, lite_context, task_mgr):
+        from rayforge.machine.models.machine import Origin
+
+        machine = self._machine(lite_context, task_mgr)
+        machine.set_origin(Origin.BOTTOM_LEFT)
+        assert machine.origin is Origin.TOP_LEFT
+
+    def test_driver_switch_moves_origin(self, lite_context, task_mgr):
+        from rayforge.machine.driver.dummy import NoDeviceDriver
+        from rayforge.machine.models.machine import Origin
+
+        machine = self._machine(lite_context, task_mgr)
+        machine.set_origin(Origin.TOP_LEFT)
+        machine.set_driver(NoDeviceDriver, {})
+        _settle(task_mgr)
+        machine.set_origin(Origin.TOP_RIGHT)
+        assert machine.origin is Origin.TOP_RIGHT
+
+        machine.set_driver(EpilogZingDriver, {"host": "10.0.0.1"})
+        _settle(task_mgr)
+        assert machine.origin is Origin.TOP_LEFT
+
+    def test_stored_value_is_normalized_on_read(self, lite_context, task_mgr):
+        from rayforge.machine.models.machine import Machine, Origin
+
+        machine = Machine(lite_context)
+        machine.auto_connect = False
+        lite_context.machine_mgr.add_machine(machine)
+        # Simulate a config saved under another driver.
+        machine._origin = Origin.BOTTOM_LEFT
+        machine.set_driver(EpilogZingDriver, {"host": "10.0.0.1"})
+        _settle(task_mgr)
+        assert machine.origin is Origin.TOP_LEFT
+        assert machine.to_dict()["machine"]["origin"] == "top_left"
+
+    def test_supported_origins_defaults_to_all(self, lite_context, task_mgr):
+        from rayforge.machine.driver.dummy import NoDeviceDriver
+        from rayforge.machine.models.machine import Origin
+
+        machine = self._machine(lite_context, task_mgr, NoDeviceDriver, {})
+        assert set(machine.supported_origins) == set(Origin)

@@ -45,6 +45,7 @@ from .laser import Laser, LaserHead, effective_focal_distance
 from .machine_hours import MachineHours
 from .machine_panel import MachinePanel, PanelOrientation
 from .macro import Macro, MacroTrigger
+from .origin import Origin
 from .rotary_module import RotaryMode, RotaryModule
 from .zone import Zone
 
@@ -56,12 +57,8 @@ if TYPE_CHECKING:
     from .controller import MachineController
 from .coordinate_system import CoordinateSystem
 
-
-class Origin(Enum):
-    TOP_LEFT = "top_left"
-    BOTTOM_LEFT = "bottom_left"
-    TOP_RIGHT = "top_right"
-    BOTTOM_RIGHT = "bottom_right"
+# Origin lives in its own module so the driver layer (which the
+# machine model imports) can name it without a circular import.
 
 
 class JogDirection(Enum):
@@ -231,7 +228,7 @@ class Machine:
             0.0,
         )
         self._soft_limits: Rect | None = None
-        self.origin: Origin = Origin.BOTTOM_LEFT
+        self._origin: Origin = Origin.BOTTOM_LEFT
         self.panel = MachinePanel(self)
         self.rotary_enabled_default: bool = False
         self.default_rotary_module_uid: str | None = None
@@ -696,6 +693,10 @@ class Machine:
         self.driver_name = new_driver_name
         self.driver_args = new_args
         self._sync_dialect_with_driver(driver_cls)
+        # Switching to a driver that constrains the layout moves the
+        # origin to a supported value, so a machine carried over from
+        # another driver cannot keep an origin it cannot encode.
+        self.set_origin(self._origin)
         self.changed.send(self)
 
     def _sync_dialect_with_driver(self, driver_cls: type["Driver"]):
@@ -1029,11 +1030,41 @@ class Machine:
         self._soft_limits = None
         self.changed.send(self)
 
+    @property
+    def origin(self) -> Origin:
+        """The coordinate origin in use.
+
+        Always a value the current driver can encode: the stored value
+        is resolved against the driver on read, so a machine saved
+        under one driver reports the effective origin under another.
+        """
+        driver_cls = get_driver_cls(self.driver_name or "")
+        return driver_cls.resolve_origin(self._origin)
+
+    @origin.setter
+    def origin(self, origin: Origin) -> None:
+        self.set_origin(origin)
+
     def set_origin(self, origin: Origin):
-        if self.origin == origin:
+        """Sets the coordinate origin.
+
+        The driver constrains the layout: a driver whose protocol fixes
+        the origin (e.g. an Epilog print job, which always addresses a
+        top-left page) resolves the request to a supported value
+        instead of accepting one that could never be encoded.
+        """
+        driver_cls = get_driver_cls(self.driver_name or "")
+        origin = driver_cls.resolve_origin(origin)
+        if self._origin == origin:
             return
-        self.origin = origin
+        self._origin = origin
         self.changed.send(self)
+
+    @property
+    def supported_origins(self) -> tuple[Origin, ...]:
+        """The origins the current driver can use, in preference order."""
+        driver_cls = get_driver_cls(self.driver_name or "")
+        return driver_cls.supported_origins or tuple(Origin)
 
     @property
     def panel_orientation(self) -> PanelOrientation:
@@ -2210,13 +2241,16 @@ class Machine:
 
         origin_value = ma_data.pop("origin", None)
         if origin_value is not None:
-            ma.origin = Origin(origin_value)
+            requested_origin = Origin(origin_value)
         else:  # Legacy support for y_axis_down
-            ma.origin = (
+            requested_origin = (
                 Origin.BOTTOM_LEFT
                 if ma_data.pop("y_axis_down", False) is False
                 else Origin.TOP_LEFT
             )
+        # Normalised against the saved driver, which may already be
+        # set at this point.
+        ma.set_origin(requested_origin)
 
         ma.rotary_enabled_default = ma_data.pop(
             "rotary_enabled_default", False

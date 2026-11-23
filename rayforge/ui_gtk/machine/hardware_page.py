@@ -9,6 +9,14 @@ from ..shared.preferences_page import TrackedPreferencesPage
 
 _PANEL_ORIENTATIONS = tuple(PanelOrientation)
 
+#: Labels for the coordinate origins, in display order.
+ORIGIN_LABELS = {
+    Origin.BOTTOM_LEFT: _("Bottom Left"),
+    Origin.TOP_LEFT: _("Top Left"),
+    Origin.TOP_RIGHT: _("Top Right"),
+    Origin.BOTTOM_RIGHT: _("Bottom Right"),
+}
+
 
 class HardwarePage(TrackedPreferencesPage):
     key = "hardware"
@@ -49,11 +57,12 @@ class HardwarePage(TrackedPreferencesPage):
         self.y_extent_row.value_changed.connect(self.on_y_extent_changed)
         axes_group.add(self.y_extent_row)
 
+        # A driver whose protocol fixes the layout offers only the
+        # origins it can encode.
+        self._origin_choices = self.machine.supported_origins
         origin_store = Gtk.StringList()
-        origin_store.append(_("Bottom Left"))
-        origin_store.append(_("Top Left"))
-        origin_store.append(_("Top Right"))
-        origin_store.append(_("Bottom Right"))
+        for origin in self._origin_choices:
+            origin_store.append(ORIGIN_LABELS[origin])
         origin_combo_row = Adw.ComboRow(
             title=_("Coordinate Origin (0,0)"),
             subtitle=_(
@@ -62,13 +71,11 @@ class HardwarePage(TrackedPreferencesPage):
             model=origin_store,
         )
         origin_combo_row.set_selected(
-            {
-                Origin.BOTTOM_LEFT: 0,
-                Origin.TOP_LEFT: 1,
-                Origin.TOP_RIGHT: 2,
-                Origin.BOTTOM_RIGHT: 3,
-            }.get(self.machine.origin, 0)
+            self._origin_choices.index(self.machine.origin)
+            if self.machine.origin in self._origin_choices
+            else 0
         )
+        origin_combo_row.set_sensitive(len(self._origin_choices) > 1)
         origin_combo_row.connect("notify::selected", self.on_origin_changed)
         self.origin_combo_row = origin_combo_row
         axes_group.add(origin_combo_row)
@@ -334,14 +341,8 @@ class HardwarePage(TrackedPreferencesPage):
 
     def on_origin_changed(self, row, _):
         selected_index = row.get_selected()
-        origin_map = {
-            0: Origin.BOTTOM_LEFT,
-            1: Origin.TOP_LEFT,
-            2: Origin.TOP_RIGHT,
-            3: Origin.BOTTOM_RIGHT,
-        }
-        origin = origin_map.get(selected_index, Origin.BOTTOM_LEFT)
-        self.machine.set_origin(origin)
+        if 0 <= selected_index < len(self._origin_choices):
+            self.machine.set_origin(self._origin_choices[selected_index])
 
     def on_panel_orientation_changed(self, row, _):
         selected = row.get_selected()

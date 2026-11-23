@@ -31,6 +31,7 @@ from ....core.varset import (
 )
 from ....core.varset.hostnamevar import hostname_validator
 from ....pipeline.encoder.base import EncodedOutput
+from ...models.origin import Origin
 from ..driver import (
     Axis,
     DriverMaturity,
@@ -84,6 +85,10 @@ class EpilogZingDriver(SessionDriverBase):
     supports_unit_detection = False
     supports_multi_depth_raster = False
     DISCOVERY = None
+    # The print job always addresses a top-left page: Y grows towards
+    # the front of the machine and the job language cannot express
+    # another corner. The machine's origin is constrained to match.
+    supported_origins = (Origin.TOP_LEFT,)
 
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         super().__init__(context, machine)

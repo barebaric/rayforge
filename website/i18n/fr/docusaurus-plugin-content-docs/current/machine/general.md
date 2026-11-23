@@ -59,12 +59,14 @@ trame (100–1000 DPI) et la fréquence vectorielle (10–5000 Hz).
 
 Le protocole d'impression n'offre aucun contrôle à distance : Rayforge ne peut donc ni référencer ni
 déplacer ni interroger l'état de ces machines, et la mise au point comme l'assistance d'air se
-règlent sur le laser. **Envoyer** téléverse le travail et **Cadrer** téléverse un travail de contour
-faisceau éteint que vous démarrez de la même manière. La vitesse est convertie dans l'échelle en
-pourcentage de la machine : Rayforge utilise 6000 mm/min comme référence de 100 %, donc 600 mm/min
-correspondent à 10 %. Les gravures en tramage et en seuil sont envoyées en lignes de trame 1 bit
-natives ; les gravures en modulation de puissance (niveaux de gris) utilisent le mode de puissance
-par point de la machine. Les travaux rotatifs ne sont pas pris en charge.
+règlent sur le laser. Le langage du travail adresse toujours une page dont l'origine est en haut à
+gauche : l'origine des coordonnées est donc fixée à **Haut gauche**. **Envoyer** téléverse le
+travail et **Cadrer** téléverse un travail de contour faisceau éteint que vous démarrez de la même
+manière. La vitesse est convertie dans l'échelle en pourcentage de la machine : Rayforge utilise
+6000 mm/min comme référence de 100 %, donc 600 mm/min correspondent à 10 %. Les gravures en tramage
+et en seuil sont envoyées en lignes de trame 1 bit natives ; les gravures en modulation de puissance
+(niveaux de gris) utilisent le mode de puissance par point de la machine. Les travaux rotatifs ne
+sont pas pris en charge.
 
 ### Liaison du Port Série
 
