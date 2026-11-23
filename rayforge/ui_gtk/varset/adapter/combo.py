@@ -27,6 +27,7 @@ from .base import (
 )
 
 VIDPID_ENTRY_LABEL = _("Match by USB VID:PID…")
+CUSTOM_BAUD_ENTRY_LABEL = _("Custom…")
 
 
 @register_adapter(ChoiceVar)
@@ -153,20 +154,167 @@ class ComboAdapter(RowAdapter):
 
 @register_adapter(BaudrateVar)
 class BaudRateAdapter(ComboAdapter):
+    """
+    A baud rate selector offering the standard rates plus a
+    ``Custom…`` entry that prompts for an arbitrary rate.
+
+    A configured rate that is not one of the standard choices is
+    inserted into the list in numeric order, so the dropdown always
+    displays the active value.
+    """
+
+    def __init__(self, row: Adw.ComboRow, var: Var) -> None:
+        assert isinstance(var, BaudrateVar)
+        super().__init__(row, var)
+        self._var = var
+        self._value: int | None = None
+        self._row.connect(
+            "notify::selected-item", self._on_selected_item_changed
+        )
+
     @classmethod
     def create(
         cls, var: Var, target_property: str
     ) -> tuple[Adw.PreferencesRow, "BaudRateAdapter"]:
         assert isinstance(var, BaudrateVar)
-        choices_str = [str(rate) for rate in var.choices]
-        store = Gtk.StringList.new(choices_str)
-        row = Adw.ComboRow(model=store, title=escape_title(var.label))
+        row = Adw.ComboRow(title=escape_title(var.label))
         if var.description:
             row.set_subtitle(var.description)
-        initial_val = getattr(var, target_property)
-        if initial_val is not None and str(initial_val) in choices_str:
-            row.set_selected(choices_str.index(str(initial_val)))
-        return row, cls(row, var)
+        adapter = cls(row, var)
+        adapter._refresh(getattr(var, target_property))
+        return row, adapter
+
+    def _display_items(self) -> list[str]:
+        """The dropdown entries: standard rates, the active custom
+        rate (if any), and the custom entry."""
+        rates = [str(rate) for rate in self._var.choices]
+        if self._value is not None and self._value not in self._var.choices:
+            rates.append(str(self._value))
+            rates.sort(key=int)
+        return rates + [CUSTOM_BAUD_ENTRY_LABEL]
+
+    def _refresh(self, value: Any | None) -> None:
+        self._value = int(value) if value is not None else None
+        self._row.set_model(Gtk.StringList.new(self._display_items()))
+        self._select_value(self._value)
+
+    def _select_value(self, value: int | None) -> None:
+        model = self._row.get_model()
+        if not isinstance(model, Gtk.StringList):
+            return
+        selected = Gtk.INVALID_LIST_POSITION
+        if value is not None:
+            for i in range(model.get_n_items()):
+                if model.get_string(i) == str(value):
+                    selected = i
+                    break
+        self._row.set_selected(selected)
+
+    def get_value(self) -> Any | None:
+        selected = self._row.get_selected_item()
+        if not isinstance(selected, Gtk.StringObject):
+            return self._value
+        text = selected.get_string()
+        if text == CUSTOM_BAUD_ENTRY_LABEL:
+            return self._value
+        try:
+            return int(text)
+        except ValueError:
+            return self._value
+
+    def set_value(self, value: Any) -> None:
+        self._refresh(value)
+
+    def needs_rebuild(self, old_var: Var, new_var: Var) -> bool:
+        if super().needs_rebuild(old_var, new_var):
+            return True
+        if isinstance(old_var, BaudrateVar) and isinstance(
+            new_var, BaudrateVar
+        ):
+            return (
+                old_var.choices != new_var.choices
+                or old_var.min_val != new_var.min_val
+                or old_var.max_val != new_var.max_val
+            )
+        return False
+
+    def update_from_var(self, var: Var):
+        super().update_from_var(var)
+        if isinstance(var, BaudrateVar):
+            self._var = var
+
+    def _on_selected_item_changed(
+        self, row: Adw.ComboRow, _pspec: Any
+    ) -> None:
+        selected = row.get_selected_item()
+        if not isinstance(selected, Gtk.StringObject):
+            return
+        if selected.get_string() != CUSTOM_BAUD_ENTRY_LABEL:
+            return
+        self._prompt_custom_value()
+
+    def _apply_custom_value(self, rate: int) -> None:
+        """Applies a rate entered through the custom dialog."""
+        self._refresh(rate)
+
+    def _prompt_custom_value(self) -> None:
+        """Asks for an arbitrary baud rate and applies it."""
+        min_rate = self._var.min_val
+        max_rate = self._var.max_val
+        entry = Adw.EntryRow(title=_("Baud rate (bits per second)"))
+        if self._value is not None:
+            entry.set_text(str(self._value))
+        dialog = Adw.MessageDialog(
+            transient_for=cast(Gtk.Window, self._row.get_root()),
+            modal=True,
+            heading=_("Custom Baud Rate"),
+            body=_(
+                "Enter a baud rate between {min_rate} and {max_rate} "
+                "bits per second."
+            ).format(min_rate=min_rate, max_rate=max_rate),
+        )
+        dialog.set_extra_child(entry)
+        dialog.add_response("cancel", _("Cancel"))
+        dialog.add_response("apply", _("Apply"))
+        dialog.set_response_appearance(
+            "apply", Adw.ResponseAppearance.SUGGESTED
+        )
+        dialog.set_default_response("apply")
+        dialog.set_close_response("cancel")
+
+        def parse_rate() -> int | None:
+            try:
+                rate = int(entry.get_text().strip())
+            except ValueError:
+                return None
+            if min_rate is not None and rate < min_rate:
+                return None
+            if max_rate is not None and rate > max_rate:
+                return None
+            return rate
+
+        def on_validate(_entry: Adw.EntryRow, _pspec: Any) -> None:
+            valid = parse_rate() is not None
+            if valid:
+                entry.remove_css_class("error")
+            else:
+                entry.add_css_class("error")
+            dialog.set_response_enabled("apply", valid)
+
+        entry.connect("notify::text", on_validate)
+        on_validate(entry, None)
+
+        def on_response(d: Adw.MessageDialog, response: str) -> None:
+            rate = parse_rate() if response == "apply" else None
+            if rate is None:
+                # Restore the previous selection instead of leaving the
+                # row on the Custom… entry.
+                self._select_value(self._value)
+                return
+            self._apply_custom_value(rate)
+
+        dialog.connect("response", on_response)
+        dialog.present()
 
 
 @register_adapter(SerialPortVar)

@@ -159,7 +159,8 @@ GRBL controllers typically use one of these baud rates:
 - **9600** (older GRBL versions)
 - **250000** (less common, some custom firmware)
 
-Try different baud rates in Rayforge's device settings. The most common is **115200**.
+Try different baud rates in Rayforge's device settings. If the rate your firmware uses is not in the
+list, choose **Custom…** and enter it. The most common is **115200**.
 
 ### Connection Keeps Dropping
 

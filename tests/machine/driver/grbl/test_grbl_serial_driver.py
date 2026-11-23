@@ -213,6 +213,10 @@ class TestRegistry:
         keys = set(varset.keys())
         assert {"port", "baudrate", "deadlock_detection"} <= keys
 
+        baudrate = varset["baudrate"]
+        baudrate.value = 250000
+        baudrate.validate()
+
     def test_create_encoder(self, context_initializer, machine):
         drv = GrblSerialDriver(context_initializer, machine)
         encoder = drv.get_encoder()

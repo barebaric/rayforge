@@ -17,19 +17,24 @@ STANDARD_BAUD_RATES: list[int] = [
     1843200,
 ]
 
+DEFAULT_MIN_BAUD_RATE = 300
+DEFAULT_MAX_BAUD_RATE = 4000000
 
-def validate_baud_rate(rate: int | None, choices: list[int]):
-    """Raises ValidationError if the baud rate is not in the choices list."""
+
+def validate_baud_rate(rate: int | None):
+    """Raises ValidationError if the baud rate is empty."""
     if rate is None:
         raise ValidationError(_("Baud rate cannot be empty."))
-    if rate not in choices:
-        raise ValidationError(
-            _("'{rate}' is not a standard baud rate.").format(rate=rate)
-        )
 
 
 class BaudrateVar(IntVar):
-    """A Var subclass for serial port baud rates, for use with a dropdown."""
+    """
+    A Var subclass for serial port baud rates, for use with a dropdown.
+
+    ``choices`` holds the rates offered as shortcuts in the dropdown.
+    Any rate within the min/max bounds is accepted as well, so users
+    can enter a custom rate for their device.
+    """
 
     display_name = _("Baud Rate")
 
@@ -56,9 +61,9 @@ class BaudrateVar(IntVar):
             default=default,
             value=value,
             # Provide sensible, non-None bounds for serialization
-            min_val=300,
-            max_val=4000000,
-            validator=lambda v: validate_baud_rate(v, self.choices),
+            min_val=(DEFAULT_MIN_BAUD_RATE if min_val is None else min_val),
+            max_val=(DEFAULT_MAX_BAUD_RATE if max_val is None else max_val),
+            validator=validate_baud_rate,
             visible_when=visible_when,
         )
 
