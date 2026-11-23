@@ -58,8 +58,10 @@ continues with the 21st.
 Arrays made inside a sketch are different: their copies belong to one workpiece and all show the
 same number. Make the array on the canvas instead to number the copies.
 
-For copies you placed yourself, select them all and choose **Arrange → Array → Number Copies**: the
-offsets are assigned in reading order, rows from top to bottom and each row from left to right.
+A new copy of a sketch that reads the counter is numbered automatically: the next instance gets the
+next offset, so placing two instances of the same numbered sketch shows consecutive values. To
+renumber copies you placed earlier, select them all and choose **Arrange → Array → Number Copies**:
+the offsets are assigned in reading order, rows from top to bottom and each row from left to right.
 
 The counter advances by the number of copies in the job: the highest variable offset plus one. If
 the counter is only used in G-code templates, every workpiece in the job counts.

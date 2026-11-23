@@ -67,3 +67,7 @@ le postscript du dialecte :
 
 Par exemple, une ligne de préambule `; Travail {counter:04d}` imprime le numéro de départ, et un
 hook de début de pièce avec `; Pièce {workpiece.counter:04d}` imprime le numéro de chaque pièce.
+
+Une nouvelle copie d'une esquisse qui lit le compteur est numérotée automatiquement : l'instance
+suivante reçoit le décalage suivant. Pour renuméroter des copies déjà placées, sélectionnez-les et
+utilisez **Organiser → Réseau → Numéroter les copies**.

@@ -12,8 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Job counter for text templates and G-code. A project-level counter
   advances after each completed job and is available as `{counter}`
   in sketch text boxes, with optional formatting such as
-  `{counter:04d}`. Canvas arrays and Arrange → Array → Number Copies
-  assign consecutive offsets to copies, so one job can engrave
+  `{counter:04d}`. New copies of a sketch that reads the counter are
+  numbered automatically; canvas arrays and Arrange → Array → Number
+  Copies assign consecutive offsets as well, so one job can engrave
   numbered plates. Tools → Job Counter sets the current, start and
   end values, the step, wrapping, and whether a finished job or a
   G-code export advances the counter. G-code hooks and macros can use

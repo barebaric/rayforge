@@ -79,6 +79,39 @@ def test_counter_and_offset_survive_save_and_load():
     assert restored_wp._resolved_text_cache[1][1] == "11"
 
 
+def test_new_copy_is_numbered_automatically():
+    doc = Doc()
+    doc.job_counter.counter = CounterSettings(current=5)
+    first, _provider = place(doc, "{counter}")
+    second, _provider = place(doc, "{counter}")
+    assert first.variable_offset == 0
+    assert second.variable_offset == 1
+    assert _resolved(first) == "5"
+    assert _resolved(second) == "6"
+
+
+def test_saved_copy_keeps_its_explicit_offset():
+    doc = Doc()
+    doc.job_counter.counter = CounterSettings(current=5)
+    place(doc, "{counter}")
+    second, _provider = place(doc, "{counter}", offset=4)
+    assert second.variable_offset == 4
+
+
+def test_readded_copy_keeps_its_offset():
+    doc = Doc()
+    doc.job_counter.counter = CounterSettings(current=5)
+    first, _provider = place(doc, "{counter}")
+    second, _provider = place(doc, "{counter}")
+    layer = doc.active_layer
+    layer.remove_child(first)
+    layer.add_child(first)
+    assert first.variable_offset == 0
+    assert second.variable_offset == 1
+    assert _resolved(first) == "5"
+    assert _resolved(second) == "6"
+
+
 def test_provider_without_counter_is_not_refreshed():
     doc = Doc()
     _wp, provider = place(doc, "Hello")

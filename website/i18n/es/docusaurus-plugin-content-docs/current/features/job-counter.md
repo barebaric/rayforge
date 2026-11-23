@@ -68,3 +68,7 @@ del dialecto:
 
 Por ejemplo, una línea de preámbulo `; Trabajo {counter:04d}` imprime el número inicial, y un hook
 de inicio de pieza con `; Pieza {workpiece.counter:04d}` imprime el número de cada pieza.
+
+Una copia nueva de un boceto que lee el contador se numera automáticamente: la siguiente instancia
+recibe el siguiente desplazamiento. Para renumerar copias ya colocadas, selecciónalas y usa
+**Organizar → Matriz → Numerar copias**.

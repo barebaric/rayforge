@@ -66,3 +66,7 @@ dialeto:
 
 Por exemplo, uma linha de preâmbulo `; Trabalho {counter:04d}` imprime o número inicial, e um hook
 de início de peça com `; Peça {workpiece.counter:04d}` imprime o número de cada peça.
+
+Uma nova cópia de um esboço que lê o contador é numerada automaticamente: a próxima instância recebe
+o próximo deslocamento. Para renumerar cópias já colocadas, selecione-as e use **Organizar → Matriz
+→ Numerar cópias**.

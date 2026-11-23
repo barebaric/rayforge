@@ -47,6 +47,7 @@ class Doc(DocItem):
         self.assets: dict[str, IAsset] = {}
         self.asset_order: list[str] = []
         self._loading = False
+        self._known_workpiece_keys: set[object] = set()
 
         # The job counter, passed to text templates as {counter}
         self._job_counter = JobCounter()
@@ -158,6 +159,9 @@ class Doc(DocItem):
         doc._active_layer_index = data.get("active_layer_index", 0)
         doc.adopt_legacy_image_edits()
         doc._loading = False
+        doc._known_workpiece_keys = {
+            _workpiece_key(wp) for wp in doc.all_workpieces
+        }
 
         return doc
 
@@ -242,8 +246,49 @@ class Doc(DocItem):
     ) -> None:
         if self._loading:
             return
-        for wp in self._counter_readers(workpieces_in(origin)):
-            wp.refresh_template_values()
+        new_workpieces = workpieces_in(origin)
+        keys = {_workpiece_key(wp) for wp in new_workpieces}
+        added_keys = keys - self._known_workpiece_keys
+        self._known_workpiece_keys.update(keys)
+        self._number_new_counter_copies(new_workpieces, added_keys)
+
+    def _number_new_counter_copies(
+        self,
+        new_workpieces: list[WorkPiece],
+        added_keys: set[object],
+    ) -> None:
+        """
+        Numbers a newly added copy automatically.
+
+        A genuinely new workpiece whose provider reads the counter gets
+        the next offset, so placing a second instance of a numbered
+        sketch shows the next number without a manual step. Array copies
+        already have their offset set by the array command. Workpieces
+        re-added by undo or a layer move keep their offset.
+        """
+        new_readers = self._counter_readers(new_workpieces)
+        if not new_readers:
+            return
+        new_ids = {id(wp) for wp in new_workpieces}
+        existing = [
+            wp
+            for wp in self._counter_readers(self.all_workpieces)
+            if id(wp) not in new_ids
+        ]
+        next_offset = (
+            max(wp.variable_offset for wp in existing) + 1
+            if existing
+            else None
+        )
+        for wp in new_readers:
+            if (
+                _workpiece_key(wp) in added_keys
+                and next_offset is not None
+                and wp.variable_offset == 0
+            ):
+                wp.variable_offset = next_offset
+            else:
+                wp.refresh_template_values()
 
     def add_asset(
         self, asset: IAsset, index: int | None = None, silent: bool = False
@@ -631,6 +676,12 @@ def _append_image_edits(
 
 
 _COUNTER_PLACEHOLDERS = {"counter", "job.counter", "workpiece.counter"}
+
+
+def _workpiece_key(workpiece: WorkPiece) -> object:
+    """A stable key for a workpiece, including mocks without a uid."""
+    uid = getattr(workpiece, "uid", None)
+    return uid if isinstance(uid, str) else id(workpiece)
 
 
 def _machine_uses_counter(machine) -> bool:

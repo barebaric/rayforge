@@ -66,3 +66,7 @@ Dialektvorlage zur Verfügung:
 
 Eine Präambelzeile `; Job {counter:04d}` druckt beispielsweise die Startnummer, und ein
 Workpiece-Start-Hook mit `; Teil {workpiece.counter:04d}` druckt die Nummer jedes Teils.
+
+Eine neue Kopie einer Skizze, die den Zähler liest, wird automatisch nummeriert: Die nächste Instanz
+erhält den nächsten Offset. Bereits platzierte Kopien lassen sich mit **Anordnen → Array → Kopien
+nummerieren** neu nummerieren.
