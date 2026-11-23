@@ -17,6 +17,7 @@ explica como importar arquivos e otimizá-los para obter os melhores resultados.
 | **Illustrator** | `.ai`             | Vetores diretos ou vetorização                      | Logotipos do Illustrator                 |
 | **EPS**         | `.eps`, `.ps`     | Vetores diretos ou vetorização (requer Ghostscript) | Logotipos, arte para impressão           |
 | **HPGL**        | `.plt`, `.hpgl`   | Vetores diretos                                     | Arquivos de plotter e plotter de recorte |
+| **G-code**      | `.gcode`, `.nc`   | Vetores diretos                                     | Saída de G-code de CAM e laser           |
 
 ### Formatos raster
 
@@ -427,6 +428,33 @@ configurações de laser ajustáveis.
 - **Formato binário** — Edição direta dos arquivos .lbrn originais não é suportada
 - **Recursos proprietários** — Alguns recursos avançados do LightBurn podem não ser totalmente
   suportados
+
+---
+
+## Importação de G-code
+
+G-code (`.gcode`, `.ngc`, `.nc`, `.tap`, `.gc`) é importado apenas como geometria. O Rayforge lê
+movimentos G0/G1/G2/G3, unidades G20/G21 e modos de distância G90/G91, incluindo arcos I/J e R.
+Movimentos rápidos e movimentos de avanço com velocidade do fuso zero são tratados como
+deslocamentos, para que as passadas de preenchimento e a sobrevarredura do LightBurn não se tornem
+linhas de corte. Avanço, potência, fuso e refrigerante são ignorados e o arquivo chega como uma
+única camada.
+
+**Após a importação:**
+
+- **Atribuir operações** — Escolha você mesmo as configurações de corte ou gravação; elas não são
+  lidas do arquivo
+- **Verificar a escala** — Confirme se as dimensões correspondem ao sistema de coordenadas da
+  máquina
+- **Revisar instruções ignoradas** — Uma notificação lista as instruções que o Rayforge não pôde
+  aplicar
+
+### Limitações
+
+- **Sem configurações de laser** — Velocidade e potência não são importadas
+- **Deslocamentos excluídos** — Apenas movimentos de corte se tornam geometria
+- **Instruções não suportadas** — Ciclos fixos, compensação de ferramenta, sub-rotinas e planos
+  diferentes de XY são ignorados
 
 ---
 

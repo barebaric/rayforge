@@ -7,25 +7,25 @@ Rayforge, incluindo capacidades, limitações e recomendações.
 
 ### Referência rápida
 
-| Formato              | Tipo     | Importação        | Exportação      | Uso recomendado                          |
-| -------------------- | -------- | ----------------- | --------------- | ---------------------------------------- |
-| **SVG**              | Vetor    | ✓ Direto / Traçar | ✓ Exportar obj. | Formato de design principal              |
-| **DXF**              | Vetor    | ✓ Direto          | ✓ Exportar obj. | Intercâmbio CAD                          |
-| **PDF**              | Misto    | ✓ Direto / Traçar | –               | Documentos com conteúdo vet.             |
-| **Illustrator**      | Vetor    | ✓ Direto / Traçar | –               | Logotipos do Illustrator                 |
-| **EPS**              | Vetor    | ✓ Direto / Traçar | –               | Logotipos, arte para impressão           |
-| **LightBurn**        | Vetor    | ✓ Direto          | –               | Projetos LightBurn                       |
-| **Ruida**            | Vetor    | ✓ Direto          | –               | Arquivos de trabalho Ruida               |
-| **HPGL**             | Vetor    | ✓ Direto          | –               | Arquivos de plotter e plotter de recorte |
-| **PNG**              | Raster   | ✓ Traçar          | –               | Fotos, imagens                           |
-| **JPEG**             | Raster   | ✓ Traçar          | –               | Fotos                                    |
-| **BMP**              | Raster   | ✓ Traçar          | –               | Gráficos simples                         |
-| **GIF**              | Raster   | ✓ Traçar          | –               | Gráficos simples, animações              |
-| **TIFF**             | Raster   | ✓ Traçar          | –               | Digitalizações, arte para impressão      |
-| **WebP**             | Raster   | ✓ Traçar          | –               | Imagens da web                           |
-| **RFS**              | Esboço   | ✓ Direto          | ✓ Exportar obj. | Esboços paramétricos                     |
-| **G-code**           | Controle | –                 | ✓ Principal     | Saída da máquina                         |
-| **Projeto Rayforge** | Projeto  | ✓                 | ✓               | Salvar/carregar projetos                 |
+| Formato              | Tipo    | Importação        | Exportação      | Uso recomendado                          |
+| -------------------- | ------- | ----------------- | --------------- | ---------------------------------------- |
+| **SVG**              | Vetor   | ✓ Direto / Traçar | ✓ Exportar obj. | Formato de design principal              |
+| **DXF**              | Vetor   | ✓ Direto          | ✓ Exportar obj. | Intercâmbio CAD                          |
+| **PDF**              | Misto   | ✓ Direto / Traçar | –               | Documentos com conteúdo vet.             |
+| **Illustrator**      | Vetor   | ✓ Direto / Traçar | –               | Logotipos do Illustrator                 |
+| **EPS**              | Vetor   | ✓ Direto / Traçar | –               | Logotipos, arte para impressão           |
+| **LightBurn**        | Vetor   | ✓ Direto          | –               | Projetos LightBurn                       |
+| **Ruida**            | Vetor   | ✓ Direto          | –               | Arquivos de trabalho Ruida               |
+| **HPGL**             | Vetor   | ✓ Direto          | –               | Arquivos de plotter e plotter de recorte |
+| **PNG**              | Raster  | ✓ Traçar          | –               | Fotos, imagens                           |
+| **JPEG**             | Raster  | ✓ Traçar          | –               | Fotos                                    |
+| **BMP**              | Raster  | ✓ Traçar          | –               | Gráficos simples                         |
+| **GIF**              | Raster  | ✓ Traçar          | –               | Gráficos simples, animações              |
+| **TIFF**             | Raster  | ✓ Traçar          | –               | Digitalizações, arte para impressão      |
+| **WebP**             | Raster  | ✓ Traçar          | –               | Imagens da web                           |
+| **RFS**              | Esboço  | ✓ Direto          | ✓ Exportar obj. | Esboços paramétricos                     |
+| **G-code**           | Vetor   | ✓ Direto          | ✓ Principal     | Saída da máquina e arquivos CAM          |
+| **Projeto Rayforge** | Projeto | ✓                 | ✓               | Salvar/carregar projetos                 |
 
 ---
 
@@ -274,6 +274,34 @@ caixa de diálogo de importação.
 - ✗ Escala (SC) e rotação (RO) são ignoradas; a caixa de diálogo de importação lista as instruções
   ignoradas
 - As coordenadas usam as 40 unidades de plotter por milímetro padrão
+
+---
+
+### G-code (.gcode / .ngc / .nc / .tap / .gc)
+
+**Extensão:** `.gcode`, `.ngc`, `.nc`, `.tap`, `.gc` **Tipo MIME:** `text/x.gcode` **Importação:**
+Análise vetorial direta **Exportação:** Saída G-code principal
+
+G-code é a linguagem de máquinas CNC e lasers, e o formato que o LightBurn e os programas CAM
+escrevem. O Rayforge importa apenas a geometria: o resultado é uma única camada, sem ajustes de
+avanço, potência ou ferramenta.
+
+**Recursos suportados:**
+
+- ✓ Movimentos rápidos G0 e lineares G1, e arcos G2/G3 na forma de centro I/J ou raio R
+- ✓ Modos de distância absoluta e incremental (G90/G91)
+- ✓ Unidades em polegadas e milímetros (G20/G21), inclusive trocas no meio do programa
+- ✓ Centros de arco absolutos ou incrementais (G90.1/G91.1)
+- ✓ Comentários, exclusão de bloco (`/`), delimitadores de programa `%` e finais de linha CRLF
+
+**Limitações:**
+
+- ✗ Velocidade, potência, fuso, refrigerante e trocas de ferramenta são ignorados
+- ✗ Movimentos rápidos são deslocamentos e não são importados; movimentos de avanço com velocidade
+  do fuso zero (passadas de preenchimento e sobrevarredura do LightBurn) também são tratados como
+  deslocamentos
+- ✗ Ciclos fixos (G81–G89), compensação de ferramenta (G41/G42), sub-rotinas (palavras O) e planos
+  diferentes de XY (G18/G19) são ignorados; a importação informa quais instruções foram puladas
 
 ---
 

@@ -30,7 +30,7 @@ capabilities, limitations, and recommendations.
 | **TIFF**             | Raster  | ✓ Trace          | –               | Scans, print artwork           |
 | **WebP**             | Raster  | ✓ Trace          | –               | Web images                     |
 | **RFS**              | Sketch  | ✓ Direct         | ✓ Object export | Parametric sketches            |
-| **G-code**           | Control | –                | ✓ Primary       | Machine output                 |
+| **G-code**           | Vector  | ✓ Direct         | ✓ Primary       | Machine output and CAM files   |
 | **Rayforge Project** | Project | ✓                | ✓               | Save/load projects             |
 
 ---
@@ -273,6 +273,33 @@ rectangles (EA, ER, RA, RR). Each pen becomes a layer that you can pick in the i
 - ✗ Text labels (LB) are skipped; convert text to paths before plotting
 - ✗ Scaling (SC) and rotation (RO) are ignored; the import dialog lists any skipped instructions
 - Coordinates use the standard 40 plotter units per millimetre
+
+---
+
+### G-code (.gcode / .ngc / .nc / .tap / .gc)
+
+**Extension:** `.gcode`, `.ngc`, `.nc`, `.tap`, `.gc` **MIME Type:** `text/x.gcode` **Import:**
+Direct vector parsing **Export:** Primary G-code output
+
+G-code is the language of CNC machines and lasers, and the format LightBurn and CAM programs write.
+Rayforge imports the geometry only: the result is a single layer without feed, power or tool
+settings.
+
+**Supported Features:**
+
+- ✓ G0 rapid and G1 linear moves, and G2/G3 arcs in I/J centre-offset or R radius form
+- ✓ Absolute and incremental distance modes (G90/G91)
+- ✓ Inch and millimetre units (G20/G21), including mid-program changes
+- ✓ Absolute or incremental arc centres (G90.1/G91.1)
+- ✓ Comments, block delete (`/`), `%` program delimiters and CRLF line endings
+
+**Limitations:**
+
+- ✗ Speed, power, spindle, coolant and tool changes are ignored
+- ✗ Rapid moves are travel and are not imported; feed moves at spindle speed zero (LightBurn fill
+  passes and overscan) are treated as travel too
+- ✗ Canned cycles (G81–G89), cutter compensation (G41/G42), subroutines (O-words) and non-XY planes
+  (G18/G19) are skipped; the import reports which instructions were skipped
 
 ---
 

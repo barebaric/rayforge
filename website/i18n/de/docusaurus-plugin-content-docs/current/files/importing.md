@@ -17,6 +17,7 @@ Rasterformate. Diese Seite erklärt, wie du Dateien importierst und für beste E
 | **Illustrator** | `.ai`             | Direkte Vektoren oder Tracing                        | Logos aus Illustrator                |
 | **EPS**         | `.eps`, `.ps`     | Direkte Vektoren oder Tracing (benötigt Ghostscript) | Logos, Druckvorlagen                 |
 | **HPGL**        | `.plt`, `.hpgl`   | Direkte Vektoren                                     | Plotter- und Schneideplotter-Dateien |
+| **G-code**      | `.gcode`, `.nc`   | Direkte Vektoren                                     | CAM- und Laser-G-code                |
 
 ### Rasterformate
 
@@ -432,6 +433,31 @@ farbcodierten Ebenen mit konfigurierbaren Laser-Einstellungen organisiert ist.
 - **Binärformat** — Direktes Bearbeiten von Original-.lbrn-Dateien nicht unterstützt
 - **Proprietäre Funktionen** — Einige fortgeschrittene LightBurn-Funktionen werden möglicherweise
   nicht vollständig unterstützt
+
+---
+
+## G-code-Import
+
+G-code (`.gcode`, `.ngc`, `.nc`, `.tap`, `.gc`) wird nur als Geometrie importiert. Rayforge liest
+G0/G1/G2/G3-Bewegungen, G20/G21-Einheiten und G90/G91-Entfernungsmodi, einschließlich I/J- und
+R-Bögen. Eilgänge und Vorschubbewegungen mit Spindeldrehzahl null gelten als Verfahrwege, damit
+LightBurn-Füllungen und Overscan keine Schnittlinien werden. Vorschub, Leistung, Spindel und
+Kühlmittel werden ignoriert; die Datei kommt als einzelne Ebene an.
+
+**Nach dem Import:**
+
+- **Operationen zuweisen** — Schnitt- oder Gravureinstellungen selbst wählen; sie werden nicht aus
+  der Datei gelesen
+- **Maßstab prüfen** — Prüfe, ob die Abmessungen zum Koordinatensystem der Maschine passen
+- **Übersprungene Befehle prüfen** — Eine Benachrichtigung listet Befehle, die Rayforge nicht
+  anwenden konnte
+
+### Einschränkungen
+
+- **Keine Lasereinstellungen** — Geschwindigkeit und Leistung werden nicht importiert
+- **Verfahrwege ausgeschlossen** — Nur Schneidbewegungen werden zu Geometrie
+- **Nicht unterstützte Befehle** — Bohrzyklen, Werkzeugradiuskorrektur, Unterprogramme und
+  Nicht-XY-Ebenen werden übersprungen
 
 ---
 

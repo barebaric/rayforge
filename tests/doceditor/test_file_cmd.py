@@ -1,5 +1,5 @@
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from raygeo.geo import Matrix
@@ -767,6 +767,75 @@ class TestLoadFileFromPath:
         file_cmd.load_file_from_path(filename, "image/svg+xml", None, None)
 
         file_cmd._task_manager.add_coroutine.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_import_warnings_are_shown_as_notification(self, file_cmd):
+        result = ImportResult(
+            payload=ImportPayload(source=MagicMock(), items=[]),
+            parse_result=None,
+            warnings=["Some G-code instructions were skipped: G81"],
+        )
+        send = MagicMock()
+        with (
+            patch.object(
+                file_cmd,
+                "_load_file_async",
+                AsyncMock(return_value=result),
+            ),
+            patch.object(file_cmd, "_finalize_import_on_main_thread"),
+            patch.object(
+                file_cmd._editor.notification_requested, "send", send
+            ),
+        ):
+            file_cmd._task_manager.schedule_on_main_thread.side_effect = (
+                lambda fn, *args, **kwargs: fn(*args, **kwargs)
+            )
+            file_cmd.load_file_from_path(
+                Path("part.gcode"), "text/x.gcode", None
+            )
+            wrapper = file_cmd._task_manager.add_coroutine.call_args.args[0]
+            await wrapper(
+                MagicMock(), Path("part.gcode"), "text/x.gcode", None, None
+            )
+
+        send.assert_called_once()
+        message = send.call_args.kwargs["message"]
+        assert "G81" in message
+
+    @pytest.mark.asyncio
+    async def test_import_errors_are_shown_in_failure_message(self, file_cmd):
+        result = ImportResult(
+            payload=None,
+            parse_result=None,
+            errors=["empty.gcode contains no G-code cut moves."],
+        )
+        send = MagicMock()
+        with (
+            patch.object(
+                file_cmd,
+                "_load_file_async",
+                AsyncMock(return_value=result),
+            ),
+            patch.object(
+                file_cmd._editor.notification_requested, "send", send
+            ),
+        ):
+            file_cmd._task_manager.schedule_on_main_thread.side_effect = (
+                lambda fn, *args, **kwargs: fn(*args, **kwargs)
+            )
+            file_cmd.load_file_from_path(
+                Path("empty.gcode"), "text/x.gcode", None
+            )
+            wrapper = file_cmd._task_manager.add_coroutine.call_args.args[0]
+            await wrapper(
+                MagicMock(), Path("empty.gcode"), "text/x.gcode", None, None
+            )
+
+        send.assert_called_once()
+        assert (
+            send.call_args.kwargs["message"]
+            == "empty.gcode contains no G-code cut moves."
+        )
 
 
 class TestExportGcodeToPath:
