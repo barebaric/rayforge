@@ -763,6 +763,17 @@ class Driver(ABC):
         """
         return True
 
+    def can_frame(self) -> bool:
+        """
+        Whether the driver can trace the job outline (framing).
+
+        Defaults to True: most controllers frame either with a
+        dedicated move sequence or by running a beam-off job. Drivers
+        whose protocol cannot trace at all override this to False so
+        the Frame action is disabled instead of failing on click.
+        """
+        return True
+
     @abstractmethod
     async def home(self, axes: Optional["Axis"] = None) -> None:
         """

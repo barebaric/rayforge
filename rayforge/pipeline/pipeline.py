@@ -458,12 +458,15 @@ class Pipeline:
         text = handle.text or ""
         op_to_mc = handle.op_to_machine_code
         mc_to_op = handle.machine_code_to_op
+        payload = getattr(handle, "payload", None)
+        driver_data = {"payload": bytes(payload)} if payload else {}
         encoded = EncodedOutput(
             text=text,
             op_map=MachineCodeOpMap(
                 op_to_machine_code=op_to_mc,
                 machine_code_to_op=mc_to_op,
             ),
+            driver_data=driver_data,
         )
 
         ops = agg.ops

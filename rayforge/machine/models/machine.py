@@ -1692,8 +1692,10 @@ class Machine:
     def can_frame(self):
         """Framing works at any frame power, including 0% (tracing
         the outline with the beam off, e.g. for machines with an
-        auxiliary alignment laser), so any laser head qualifies."""
-        return any(isinstance(h, LaserHead) for h in self.heads)
+        auxiliary alignment laser), so a laser head and a driver that
+        can trace are both required."""
+        has_laser = any(isinstance(h, LaserHead) for h in self.heads)
+        return has_laser and self.controller.can_frame()
 
     def can_focus(self):
         return any(

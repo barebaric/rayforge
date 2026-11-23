@@ -1,0 +1,43 @@
+api_version: 1
+device:
+  name: Epilog Zing 24
+  vendor: Epilog
+  model: Zing 24 (6030)
+  description: >-
+    Epilog Zing 24 (24 x 12 in) with Ethernet job upload. Jobs are
+    started at the laser's control panel; focus and air assist are
+    manual, and the machine cannot be homed, jogged or queried
+    remotely.
+  notes: |-
+    Speed is a percentage of the machine's maximum. Rayforge uses
+    6000 mm/min as the 100% reference, so 600 mm/min is 10%.
+
+    Upload a job with Send and start it from the laser's job list.
+    Frame uploads a beam-off outline job you can start the same way.
+machine:
+  driver: EpilogZingDriver
+  axis_extents:
+  - 609.6
+  - 304.8
+  origin: top_left
+  has_z: false
+  home_on_start: false
+  max_cut_speed: 6000
+  max_travel_speed: 6000
+  capabilities:
+  - LASER
+  driver_args:
+    host: ''
+    port: 515
+    resolution: '500'
+    frequency: 1000
+  heads:
+  - name: Laser
+    max_power: 100
+    wavelength_nm: 10600
+    laser_type: co2
+    frame_power_percent: 0.0
+    focus_power_percent: 0.0
+    spot_size_mm:
+    - 0.1
+    - 0.1

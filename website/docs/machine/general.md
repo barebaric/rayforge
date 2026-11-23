@@ -47,6 +47,20 @@ raises the emitted minimum power as the layer's cut speed decreases, the vector 
 compensates over-burn at the ends of lines, and the image bias compensates for CO2 tubes that do not
 fire at very low power.
 
+### Epilog
+
+Epilog lasers with an Ethernet port (Zing 16, Zing 24/6030) use the **Epilog** driver. Jobs are
+encoded as Epilog print jobs and uploaded to the machine's print queue; start them from the laser's
+own job list. The driver offers the machine's IP address, the print port (515 by default), the
+raster resolution (100–1000 DPI) and the vector frequency (10–5000 Hz).
+
+The print protocol offers no remote control, so Rayforge cannot home, jog, query the status or move
+the head on these machines, and focus and air assist are set at the laser. **Send** uploads the job
+and **Frame** uploads a beam-off outline job you start the same way. Speed is converted to the
+machine's percentage scale: Rayforge uses 6000 mm/min as the 100% reference, so 600 mm/min is 10%.
+Dither and threshold engravings are sent as native 1-bit raster rows; power-modulated (grayscale)
+engravings use the machine's per-dot power mode. Rotary jobs are not supported.
+
 ### Serial Port Binding
 
 Instead of a device path (e.g. `/dev/ttyUSB0` or `COM3`), the serial port field also accepts a USB

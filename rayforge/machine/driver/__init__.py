@@ -16,6 +16,7 @@ from .driver import (
     PWMParams,
 )
 from .dummy import NoDeviceDriver
+from .epilog import EpilogZingDriver
 from .grbl import (
     GrblBluetoothDriver,
     GrblNetworkDriver,
@@ -64,6 +65,7 @@ __all__ = [
     "DiscoveredDevice",
     "Driver",
     "DriverMaturity",
+    "EpilogZingDriver",
     "GrblBluetoothDriver",
     "GrblNetworkDriver",
     "GrblSerialDriver",

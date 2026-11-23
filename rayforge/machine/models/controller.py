@@ -712,6 +712,12 @@ class MachineController:
             return False
         return self.driver.can_jog(axis)
 
+    def can_frame(self) -> bool:
+        """Check if the machine's driver can trace the job outline."""
+        if self.driver is None:
+            return False
+        return self.driver.can_frame()
+
     @property
     def machine_space_wcs(self) -> str:
         """

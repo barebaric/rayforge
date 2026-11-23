@@ -83,6 +83,7 @@ from ..machine.models.dialect import GRBL_DIALECT
 from ..machine.models.laser import LaserHead
 from ..machine.models.rotary_module import RotaryMode, RotaryType
 from .encoder.base import EncodedOutput
+from .encoder.epilog_helpers import epilog_spec
 from .encoder.rust_helpers import build_encode_context, dialect_to_spec
 from .transformer import OpsTransformer
 from .transformer.registry import transformer_registry
@@ -1270,7 +1271,8 @@ class IntentBuilder:
         """Resolve the encoder for the configured machine.
 
         Routes G-code drivers on the Grbl dialect to the native Rust
-        ``GcodeSpec`` and every other machine to a
+        ``GcodeSpec``, Epilog machines to the native ``EpilogSpec``
+        print-job encoder, and every other machine to a
         :class:`PythonEncoder` wrapping the driver-specific encoder
         callable.  The pre-processing transforms are handled by the
         upstream machine-transform stage.
@@ -1287,6 +1289,8 @@ class IntentBuilder:
             dialect = machine.dialect
             if dialect is not None and _is_grbl(dialect):
                 return self._grbl_encoder_spec(doc)
+        elif machine.driver_name == "EpilogZingDriver":
+            return epilog_spec(machine, doc)
 
         return PythonEncoder(
             self._make_python_encoder_callable(machine, doc),

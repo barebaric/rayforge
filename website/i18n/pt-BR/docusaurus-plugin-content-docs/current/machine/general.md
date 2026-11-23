@@ -48,6 +48,22 @@ conforme a velocidade de corte da camada diminui, o piso de potência vector com
 excessiva nas extremidades das linhas, e o viés de imagem compensa tubos CO2 que não disparam com
 potências muito baixas.
 
+### Epilog
+
+Lasers Epilog com porta Ethernet (Zing 16, Zing 24/6030) usam o driver **Epilog**. Os trabalhos são
+codificados como trabalhos de impressão Epilog e enviados à fila de impressão da máquina; inicie-os
+na lista de trabalhos do laser. O driver pede o endereço IP, a porta de impressão (515 por padrão),
+a resolução de raster (100–1000 DPI) e a frequência vetorial (10–5000 Hz).
+
+O protocolo de impressão não oferece controle remoto, então o Rayforge não pode referenciar, mover,
+consultar o status nem movimentar o cabeçote nessas máquinas, e o foco e o ar assistido são
+ajustados no laser. **Enviar** envia o trabalho e **Enquadrar** envia um trabalho de contorno com o
+feixe desligado que você inicia da mesma forma. A velocidade é convertida para a escala percentual
+da máquina: o Rayforge usa 6000 mm/min como referência de 100%, então 600 mm/min são 10%. Gravações
+com pontilhado e limiar são enviadas como linhas de raster de 1 bit nativas; gravações com modulação
+de potência (escala de cinza) usam o modo de potência por ponto da máquina. Trabalhos rotativos não
+são suportados.
+
 ### Vínculo da Porta Serial
 
 Em vez de um caminho de dispositivo (ex.: `/dev/ttyUSB0` ou `COM3`), o campo da porta serial também

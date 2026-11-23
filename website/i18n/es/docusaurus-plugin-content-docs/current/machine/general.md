@@ -49,6 +49,23 @@ mínima emitida a medida que la velocidad de corte de la capa disminuye, el suel
 compensa el sobre-quemado en los extremos de las líneas, y el sesgo de imagen compensa los tubos CO2
 que no disparan con potencias muy bajas.
 
+### Epilog
+
+Los láseres Epilog con puerto Ethernet (Zing 16, Zing 24/6030) usan el controlador **Epilog**. Los
+trabajos se codifican como trabajos de impresión de Epilog y se suben a la cola de impresión de la
+máquina; inícielos desde la lista de trabajos del láser. El controlador solicita la dirección IP, el
+puerto de impresión (515 por defecto), la resolución de trama (100–1000 DPI) y la frecuencia
+vectorial (10–5000 Hz).
+
+El protocolo de impresión no ofrece control remoto, por lo que Rayforge no puede llevar a origen,
+desplazar, consultar el estado ni mover el cabezal en estas máquinas, y el enfoque y el aire
+asistido se ajustan en el láser. **Enviar** sube el trabajo y **Enmarcar** sube un trabajo de
+contorno con el haz apagado que se inicia de la misma forma. La velocidad se convierte a la escala
+porcentual de la máquina: Rayforge usa 6000 mm/min como referencia del 100 %, de modo que 600 mm/min
+son el 10 %. Los grabados con tramado y umbral se envían como filas de trama de 1 bit nativas; los
+grabados con modulación de potencia (escala de grises) usan el modo de potencia por punto de la
+máquina. Los trabajos rotativos no son compatibles.
+
 ### Vinculación del Puerto Serie
 
 En lugar de una ruta de dispositivo (p. ej. `/dev/ttyUSB0` o `COM3`), el campo del puerto serie

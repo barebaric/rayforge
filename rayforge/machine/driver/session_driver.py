@@ -197,6 +197,14 @@ class SessionDriverBase(Driver):
     # -- dialect -------------------------------------------------------
 
     def _dialect_templates(self) -> dict[str, Any]:
+        """Resolve the command templates the session needs.
+
+        Drivers that do not speak G-code carry no dialect (the machine
+        clears it on driver selection, issue #420), and their session
+        takes no template data.
+        """
+        if not self.uses_gcode:
+            return {}
         dialect = self.dialect
         templates: dict[str, Any] = {
             "home_all": dialect.home_all,
