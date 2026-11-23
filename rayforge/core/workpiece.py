@@ -163,6 +163,14 @@ class WorkPiece(DocItem):
 
         self._resolved_text_cache: dict = {}
 
+        # Shifts the document's job counter for this copy, so array
+        # copies show consecutive counter values.
+        self._variable_offset: int = 0
+
+        # The text values a copy captured when it was detached from the
+        # document (subprocess rendering).
+        self._text_values_override: dict[str, Any] | None = None
+
         self.source_asset_uid: str | None = None
 
         self._tabs: list[Tab] = []
@@ -469,6 +477,88 @@ class WorkPiece(DocItem):
         return source.renderer if source else None
 
     @property
+    def variable_offset(self) -> int:
+        """
+        The copy offset applied to the document's job counter.
+
+        A copy with offset ``n`` shows the counter value ``n`` copies
+        after the current one, i.e. ``current + n * step``.
+        """
+        return self._variable_offset
+
+    @variable_offset.setter
+    def variable_offset(self, value: int) -> None:
+        value = int(value)
+        if value == self._variable_offset:
+            return
+        self._variable_offset = value
+        self.refresh_template_values()
+
+    def _text_values(self) -> dict[str, Any]:
+        """
+        Extra values available to this copy's text templates.
+
+        The document's job counter is the only source today. A detached
+        copy carries the values it was created with so subprocess
+        rendering sees the same numbers.
+        """
+        if self._text_values_override is not None:
+            return dict(self._text_values_override)
+        doc = self.doc
+        if doc is None:
+            return {}
+        return doc.job_counter.template_values(self._variable_offset)
+
+    def refresh_template_values(self) -> None:
+        """
+        Regenerates the geometry after the job counter changed.
+
+        The current scale relative to the natural size is kept, so a
+        longer text grows instead of being squeezed into the old box,
+        and the anchor point (see `anchor_mode`) stays where it was.
+        """
+        if not self.geometry_provider_uid:
+            return
+        provider = self.get_geometry_provider()
+        if provider is None:
+            return
+        old_w, old_h = self.natural_width_mm, self.natural_height_mm
+        size_w, size_h = self.size
+        anchor_world = self.get_anchor_world()
+        self.clear_render_cache()
+        if self.boundaries is None:
+            self.updated.send(self)
+            return
+        if old_w > 1e-9 and old_h > 1e-9:
+            self.set_size(
+                self.natural_width_mm * size_w / old_w,
+                self.natural_height_mm * size_h / old_h,
+                anchor=self.anchor_point,
+            )
+        else:
+            self.set_size(
+                self.natural_width_mm,
+                self.natural_height_mm,
+                anchor=self.anchor_point,
+            )
+        self._move_anchor_to(anchor_world)
+        self.updated.send(self)
+
+    def _move_anchor_to(self, anchor_world: Point) -> None:
+        """
+        Moves the workpiece so its anchor point lies at *anchor_world*.
+
+        Needed after new geometry, because the anchor's normalized
+        position shifts when the bounding box moves relative to it.
+        """
+        anchor_world_after = self.get_anchor_world()
+        dx = anchor_world[0] - anchor_world_after[0]
+        dy = anchor_world[1] - anchor_world_after[1]
+        if abs(dx) > 1e-9 or abs(dy) > 1e-9:
+            pos = self.pos
+            self.pos = (pos[0] + dx, pos[1] + dy)
+
+    @property
     def boundaries(self) -> Geometry | None:
         """
         The normalized vector geometry defining the workpiece shape.
@@ -514,6 +604,7 @@ class WorkPiece(DocItem):
             )
             unnormalized_geo, unnormalized_fills = provider.get_geometry(
                 self._geometry_provider_params,
+                text_values=self._text_values(),
                 resolved_text_cache=self._resolved_text_cache,
             )
 
@@ -720,6 +811,8 @@ class WorkPiece(DocItem):
         world_wp._anchor_mode = self._anchor_mode
         world_wp._reference_anchor = self._reference_anchor
         world_wp._resolved_text_cache = dict(self._resolved_text_cache)
+        world_wp._variable_offset = self._variable_offset
+        world_wp._text_values_override = self._text_values()
 
         world_wp._image_edits = self._image_edits
 
@@ -1063,6 +1156,8 @@ class WorkPiece(DocItem):
             "geometry_provider_params": self._geometry_provider_params,
             "source_asset_uid": self.source_asset_uid,
         }
+        if self._variable_offset:
+            state["variable_offset"] = self._variable_offset
         if self._resolved_text_cache:
             cache = {
                 str(k): v
@@ -1109,6 +1204,7 @@ class WorkPiece(DocItem):
             "geometry_provider_params",
             "source_asset_uid",
             "resolved_text_cache",
+            "variable_offset",
             "data",
             "original_data",
             "source_px_dims",
@@ -1160,6 +1256,7 @@ class WorkPiece(DocItem):
             "geometry_provider_params", {}
         ) or data.get("sketch_params", {})
         wp.source_asset_uid = data.get("source_asset_uid")
+        wp._variable_offset = int(data.get("variable_offset", 0))
         raw_cache = data.get("resolved_text_cache")
         if raw_cache:
             wp._resolved_text_cache = {
@@ -1768,6 +1865,7 @@ class WorkPiece(DocItem):
         self._resolved_text_cache = {}
         geometry, _ = provider.get_geometry(
             params=variable_overrides,
+            text_values=self._text_values(),
             resolved_text_cache=self._resolved_text_cache,
         )
 
@@ -1784,3 +1882,10 @@ class WorkPiece(DocItem):
 
         # Send updated signal to trigger UI updates
         self.updated.send(self)
+
+
+def workpieces_in(item: DocItem) -> list[WorkPiece]:
+    """The item itself if it is a workpiece, else its workpieces."""
+    if isinstance(item, WorkPiece):
+        return [item]
+    return item.get_descendants(of_type=WorkPiece)

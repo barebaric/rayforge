@@ -9,15 +9,17 @@ from typing import (
 
 from blinker import Signal
 from raygeo.geo import Geometry
+from raygeo.template import placeholder_names
 
 from ..core.undo import HistoryManager
 from .asset import IAsset, UnknownAsset
 from .color import COLOR_PALETTE
 from .image_edit import ImageEditStep, missing_image_edit_ops
 from .item import DocItem
+from .job_counter import JobCounter
 from .layer import Layer
 from .source_asset import SourceAsset
-from .workpiece import WorkPiece
+from .workpiece import WorkPiece, workpieces_in
 
 if TYPE_CHECKING:
     from .stock import StockItem
@@ -44,6 +46,12 @@ class Doc(DocItem):
         # Asset Management
         self.assets: dict[str, IAsset] = {}
         self.asset_order: list[str] = []
+        self._loading = False
+
+        # The job counter, passed to text templates as {counter}
+        self._job_counter = JobCounter()
+        self._job_counter.changed.connect(self._on_job_counter_changed)
+        self.descendant_added.connect(self._on_item_added_for_templates)
 
         # A new document starts with three empty workpiece layers
         for i in range(3):
@@ -89,7 +97,9 @@ class Doc(DocItem):
             return item_class.from_dict(item_data)
 
         doc = cls()
+        doc._loading = True
         doc.uid = data.get("uid", doc.uid)
+        doc.job_counter = JobCounter.from_dict(data.get("job_counter"))
 
         # Clear the default layer created by __init__
         doc.set_children([])
@@ -147,6 +157,7 @@ class Doc(DocItem):
         doc.set_children(children)
         doc._active_layer_index = data.get("active_layer_index", 0)
         doc.adopt_legacy_image_edits()
+        doc._loading = False
 
         return doc
 
@@ -173,7 +184,66 @@ class Doc(DocItem):
             "active_layer_index": self._active_layer_index,
             "children": [child.to_dict() for child in self.children],
             "assets": [asset.to_dict() for asset in self.get_all_assets()],
+            "job_counter": self._job_counter.to_dict(),
         }
+
+    @property
+    def job_counter(self) -> JobCounter:
+        """The document's job counter."""
+        return self._job_counter
+
+    @job_counter.setter
+    def job_counter(self, value: JobCounter) -> None:
+        self._job_counter.changed.disconnect(self._on_job_counter_changed)
+        self._job_counter = value
+        value.changed.connect(self._on_job_counter_changed)
+        self._on_job_counter_changed(value)
+
+    def job_counter_copies(self, machine=None) -> int:
+        """
+        How many consecutive counter values one job uses.
+
+        This is the highest variable offset of a workpiece that reads
+        the counter plus one, or 0 if no workpiece and no G-code
+        template reads it. When only G-code templates use the counter,
+        every workpiece in the job counts.
+        """
+        readers = self._counter_readers(self.all_workpieces)
+        if readers:
+            return max(wp.variable_offset for wp in readers) + 1
+        if machine is not None and _machine_uses_counter(machine):
+            offsets = [wp.variable_offset for wp in self.all_workpieces]
+            if offsets:
+                return max(offsets) + 1
+        return 0
+
+    def _counter_readers(
+        self, workpieces: Iterable[WorkPiece]
+    ) -> list[WorkPiece]:
+        """The workpieces whose geometry provider reads the counter."""
+        names = self._job_counter.names
+        readers = []
+        for wp in workpieces:
+            provider = wp.get_geometry_provider()
+            variables_used = getattr(provider, "variables_used", None)
+            if not callable(variables_used):
+                continue
+            used = variables_used()
+            if isinstance(used, (set, frozenset)) and names & used:
+                readers.append(wp)
+        return readers
+
+    def _on_job_counter_changed(self, sender: JobCounter) -> None:
+        for wp in self._counter_readers(self.all_workpieces):
+            wp.refresh_template_values()
+
+    def _on_item_added_for_templates(
+        self, sender: DocItem, *, origin: DocItem, parent_of_origin: DocItem
+    ) -> None:
+        if self._loading:
+            return
+        for wp in self._counter_readers(workpieces_in(origin)):
+            wp.refresh_template_values()
 
     def add_asset(
         self, asset: IAsset, index: int | None = None, silent: bool = False
@@ -558,3 +628,24 @@ def _append_image_edits(
         new = [e for e in edits if e not in wp.image_edits]
         if new:
             wp.image_edits = (*wp.image_edits, *new)
+
+
+_COUNTER_PLACEHOLDERS = {"counter", "job.counter", "workpiece.counter"}
+
+
+def _machine_uses_counter(machine) -> bool:
+    """Whether any G-code template of *machine* reads the counter."""
+    templates: list[str] = []
+    for macro in getattr(machine, "macros", {}).values():
+        templates.extend(macro.code or ())
+    for macro in getattr(machine, "hookmacros", {}).values():
+        templates.extend(macro.code or ())
+    dialect = getattr(machine, "dialect", None)
+    if dialect is not None:
+        templates.extend(dialect.preamble or ())
+        templates.extend(dialect.postscript or ())
+    return any(
+        placeholder_names(line) & _COUNTER_PLACEHOLDERS
+        for line in templates
+        if line
+    )

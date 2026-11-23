@@ -3,10 +3,12 @@ from unittest.mock import MagicMock
 from raygeo.ops import Ops
 from raygeo.ops.convert import GcodeDialectSpec
 from raygeo.ops.state import AirAssistMode, PowerMode
+from raygeo.template import CounterSettings
 
 from rayforge.machine.models.dialect.grbl import GRBL_DIALECT
 from rayforge.machine.models.laser import LaserHead
 from rayforge.pipeline.encoder.gcode import GcodeEncoder
+from rayforge.pipeline.encoder.rust_helpers import build_encode_context
 from rayforge.shared.units.system import UnitSystem
 
 
@@ -473,3 +475,22 @@ def test_encode_constant_power_uses_focus_template():
     result = GcodeEncoder(GRBL_DIALECT).encode(ops, machine, doc)
     assert "M3 S1000" in result.text
     assert "M4 S1000" not in result.text
+
+
+def test_build_encode_context_includes_counter():
+    from rayforge.core.doc import Doc
+    from rayforge.core.workpiece import WorkPiece
+
+    machine = _make_machine_mock()
+    doc = Doc()
+    doc.job_counter.counter = CounterSettings(current=7, step=2)
+    wp = WorkPiece("part")
+    wp.variable_offset = 2
+    doc.active_layer.add_child(wp)
+
+    ops = Ops()
+    context = build_encode_context(ops, machine, doc)
+
+    assert context["path_vars"]["counter"] == "7"
+    assert context["path_vars"]["job.counter"] == "7"
+    assert context["workpiece_path_vars"][wp.uid]["workpiece.counter"] == "11"

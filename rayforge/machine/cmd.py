@@ -54,6 +54,7 @@ class MachineCmd:
         self._editor = editor
         self._scheduler = editor.task_manager.schedule_on_main_thread
         self.job_started = Signal()
+        self.job_finished = Signal()
         self._current_monitor: JobMonitor | None = None
         self._on_progress_callback: Callable[[dict], None] | None = None
 
@@ -98,6 +99,7 @@ class MachineCmd:
         ]
         | None = None,
         kind: JobKind = JobKind.SEND,
+        report_completion: bool = True,
     ):
         """
         Internal helper to execute a job on a driver while managing
@@ -203,6 +205,8 @@ class MachineCmd:
                 )
 
             self._end_monitor(JobOutcome.COMPLETED)
+            if report_completion:
+                self._emit_job_finished(kind, JobOutcome.COMPLETED, machine)
 
             estimated_hours = estimated_seconds / 3600.0
             machine.add_machine_hours(estimated_hours)
@@ -212,12 +216,26 @@ class MachineCmd:
             )
         except asyncio.CancelledError:
             self._end_monitor(JobOutcome.CANCELLED)
+            self._emit_job_finished(kind, JobOutcome.CANCELLED, machine)
             raise
         except Exception as e:
             self._end_monitor(JobOutcome.FAILED, message=str(e))
+            self._emit_job_finished(kind, JobOutcome.FAILED, machine)
             raise
         finally:
             cleanup_monitor()
+
+    def _emit_job_finished(
+        self, kind: JobKind, outcome: JobOutcome, machine: Machine
+    ) -> None:
+        """Reports a finished job on the main thread."""
+        self._scheduler(
+            self.job_finished.send,
+            self,
+            kind=kind,
+            outcome=outcome,
+            machine=machine,
+        )
 
     def _end_monitor(self, outcome: JobOutcome, message: str = "") -> None:
         """Finalizes the active job monitor with the given outcome."""
@@ -343,6 +361,7 @@ class MachineCmd:
         artifact: JobArtifact,
         machine: Machine,
         on_progress: Callable[[dict], None] | None,
+        report_completion: bool = True,
     ):
         """The specific machine action for a send job.
 
@@ -360,6 +379,7 @@ class MachineCmd:
             on_progress=on_progress,
             encoded=artifact.encoded_output,
             kind=JobKind.SEND,
+            report_completion=report_completion,
         )
 
     async def _start_job(
@@ -485,7 +505,10 @@ class MachineCmd:
         try:
             await self._start_job(
                 machine,
-                final_job_action=self._run_send_action,
+                final_job_action=partial(
+                    self._run_send_action,
+                    report_completion=not pointer_dry_run,
+                ),
                 on_progress=on_progress,
                 pointer_dry_run=pointer_dry_run,
             )

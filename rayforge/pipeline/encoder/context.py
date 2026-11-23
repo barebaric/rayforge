@@ -72,6 +72,14 @@ class GcodeContext:
                 _("The name of the current document file (if saved)."),
             ),
             (
+                "counter",
+                _("The job counter value the current job starts with."),
+            ),
+            (
+                "job.counter",
+                _("Alias for the job counter value."),
+            ),
+            (
                 "job.extents[0]",
                 _("The minimum X coordinate of the entire job."),
             ),
@@ -101,6 +109,10 @@ class GcodeContext:
             (
                 "workpiece.name",
                 _("The name of the current workpiece being processed."),
+            ),
+            (
+                "workpiece.counter",
+                _("The job counter value for the current workpiece."),
             ),
             ("workpiece.pos[0]", _("The X position of the workpiece.")),
             ("workpiece.pos[1]", _("The Y position of the workpiece.")),

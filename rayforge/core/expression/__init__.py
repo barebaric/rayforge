@@ -3,6 +3,7 @@ from .errors import ValidationResult, ValidationStatus
 from .evaluator import safe_evaluate
 from .expression_map import ExpressionMap
 from .parser import ExpressionParser
+from .placeholders import names_in_expression, referenced_template_names
 from .tokenizer import ExpressionTokenizer, Token, TokenType
 from .validator import ExpressionValidator
 
@@ -16,5 +17,7 @@ __all__ = [
     "TokenType",
     "ValidationResult",
     "ValidationStatus",
+    "names_in_expression",
+    "referenced_template_names",
     "safe_evaluate",
 ]

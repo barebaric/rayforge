@@ -11,18 +11,18 @@ from raygeo.geo import Geometry
 from raygeo.geo import Line as GeoLine
 from raygeo.geo import Move as GeoMove
 from raygeo.sketch import Sketch as RaygeoSketch
-from raygeo.sketch.document import Fill
+from raygeo.sketch.document import Fill, FillStyle
 from raygeo.sketch.entities import TextBox as TextBoxEntity
 from raygeo.sketch.types import EntityID, WaypointType
 
 from rayforge.core.asset import IAsset
-from rayforge.core.expression import ExpressionMap
 from rayforge.core.geometry_provider import IGeometryProvider
 from rayforge.core.varset import VarSet
 from rayforge.image.geo_renderer import render_geometry_to_png
-from rayforge.image.structures import FillRenderData, FillStyle
+from rayforge.image.structures import FillRenderData
 
 from ..template_functions import get_template_functions
+from . import text_cache
 
 DEFAULT_FILL_COLOR = (0.85, 0.85, 0.85, 0.7)
 FORMAT_VERSION = 1
@@ -30,6 +30,14 @@ _DEFAULT_VARSET_TITLE = _("Sketch Parameters")
 _DEFAULT_VARSET_DESCRIPTION = _(
     "Parameters that control this sketch's geometry"
 )
+
+__all__ = [
+    "DEFAULT_FILL_COLOR",
+    "Fill",
+    "FillStyle",
+    "Sketch",
+    "find_array_for_entity",
+]
 
 logger = logging.getLogger(__name__)
 
@@ -63,8 +71,9 @@ class Sketch(IAsset, IGeometryProvider):
             description=_DEFAULT_VARSET_DESCRIPTION,
         )
         self._last_solve_values: dict[str, Any] = {}
-        self._resolved_text_cache: dict[EntityID, tuple[str, str | None]] = {}
+        self._resolved_text_cache: dict[EntityID, tuple] = {}
         self._solved_ctx: dict[str, Any] | None = None
+        self._geometry_cache = text_cache.GeometryCache()
 
     def __getattr__(self, name: str):
         document = self.__dict__.get("document")
@@ -184,6 +193,7 @@ class Sketch(IAsset, IGeometryProvider):
     def notify_update(self):
         if self._solving:
             return
+        self._geometry_cache.clear()
         self._updated.send(self)
 
     def get_reference_point(self) -> tuple[float, float]:
@@ -194,31 +204,21 @@ class Sketch(IAsset, IGeometryProvider):
         self,
         params: dict[str, Any] | None = None,
         *,
+        text_values: dict[str, Any] | None = None,
         resolved_text_cache: dict | None = None,
     ) -> tuple[Geometry, list[FillRenderData]]:
-        clone = self._clone_for_geometry()
-        if resolved_text_cache is not None:
-            clone._resolved_text_cache = dict(resolved_text_cache)
-        clone.solve(variable_overrides=params)
-        if resolved_text_cache is not None:
-            for key, value in resolved_text_cache.items():
-                if key not in clone._resolved_text_cache:
-                    clone._resolved_text_cache[key] = value
-        geo = clone.to_geometry()
-        fills = clone.get_fill_render_data()
-        if resolved_text_cache is not None:
-            resolved_text_cache.update(clone._resolved_text_cache)
-        return geo, fills
+        return text_cache.render(
+            self.document,
+            params,
+            initial_values=self.input_parameters.get_values(),
+            text_values=text_values,
+            resolved_text_cache=resolved_text_cache,
+            cache=self._geometry_cache,
+        )
 
-    def _clone_for_geometry(self) -> "Sketch":
-        clone = Sketch.__new__(Sketch)
-        clone._updated = Signal()
-        clone.document = self.document.clone_for_geometry()
-        clone.input_parameters = self.input_parameters
-        clone._last_solve_values = {}
-        clone._resolved_text_cache = {}
-        clone._solved_ctx = None
-        return clone
+    def variables_used(self) -> set[str]:
+        """The template variable names this sketch's text boxes read."""
+        return text_cache.variables_used(self.document)
 
     def get_thumbnail(self, size: int) -> bytes | None:
         try:
@@ -262,6 +262,7 @@ class Sketch(IAsset, IGeometryProvider):
         sketch._last_solve_values = {}
         sketch._resolved_text_cache = {}
         sketch._solved_ctx = None
+        sketch._geometry_cache = text_cache.GeometryCache()
         return sketch
 
     @classmethod
@@ -371,6 +372,7 @@ class Sketch(IAsset, IGeometryProvider):
             return True
         self._solving = True
         self._resolved_text_cache = {}
+        self._geometry_cache.clear()
         try:
             initial_values: dict[str, Any] = {}
             if self.input_parameters:
@@ -427,101 +429,27 @@ class Sketch(IAsset, IGeometryProvider):
         cmd.execute()
 
     def _resolve_text_content(self, entity: TextBoxEntity) -> str | None:
-        cached = self._resolved_text_cache.get(entity.id)
-        if isinstance(cached, (tuple, list)):
-            source, resolved = cached
-            if source == entity.content:
-                return resolved
-
-        if not entity.content:
-            self._resolved_text_cache[entity.id] = ("", None)
-            return None
-
-        try:
-            if self._solved_ctx is not None:
-                ctx = self._solved_ctx
-            else:
-                solve_params = type(self.params).from_dict(
-                    self.params.to_dict()
-                )
-                initial_values = dict(self._last_solve_values)
-                if not initial_values and self.input_parameters:
-                    initial_values.update(self.input_parameters.get_values())
-                solve_params.evaluate_all(initial_values=initial_values)
-                ctx: dict[str, Any] = dict(solve_params.get_all_values())
-                ctx.update(get_template_functions())
-
-            expr_map = ExpressionMap(ctx)
-            resolved = expr_map.format(entity.content)
-            self._resolved_text_cache[entity.id] = (
-                entity.content,
-                resolved,
-            )
-            return resolved
-        except (KeyError, IndexError, ValueError) as e:
-            logger.debug(
-                "Template resolution failed for '%s': %s", entity.content, e
-            )
-            self._resolved_text_cache[entity.id] = (entity.content, None)
-            return None
+        """Resolves one text box, keeping the live document's cache."""
+        resolved = text_cache.resolve_text(
+            self.document,
+            resolved_text_cache=self._resolved_text_cache,
+        )
+        return resolved.get(entity.id)
 
     def to_geometry(self) -> Geometry:
-        resolved_text: dict[EntityID, str | None] = {}
-        for entity in self.registry.entities():
-            if isinstance(entity, TextBoxEntity):
-                resolved_text[entity.id] = self._resolve_text_content(entity)
-        return self.document.to_geometry(resolved_text)
-
-    def _create_fill_geometry(
-        self, fill: Fill, exclude_ids: set[EntityID]
-    ) -> Geometry | None:
-        return self.document.create_fill_geometry(fill, exclude_ids)
+        return text_cache.to_geometry(
+            self.document,
+            resolved_text_cache=self._resolved_text_cache,
+        )
 
     def get_fill_render_data(
         self, exclude_ids: set[EntityID] | None = None
     ) -> list[FillRenderData]:
-        if exclude_ids is None:
-            exclude_ids = set()
-
-        render_data = []
-        for fill in self.fills:
-            if not fill.boundary:
-                continue
-            geo = self._create_fill_geometry(fill, exclude_ids)
-            if geo is not None:
-                render_data.append(
-                    FillRenderData(
-                        geometry=geo,
-                        style=fill.style,
-                        color=fill.color,
-                        gradient_stops=fill.gradient_stops,
-                        gradient_angle=fill.gradient_angle,
-                    )
-                )
-
-        for entity in self.registry.entities():
-            if entity.id in exclude_ids:
-                continue
-            if not entity.construction and isinstance(entity, TextBoxEntity):
-                resolved = self._resolve_text_content(entity)
-                text_geo = entity.to_geometry(
-                    self.registry, resolved_content=resolved
-                )
-                if text_geo:
-                    color = (
-                        entity.fill_color
-                        if entity.fill_color is not None
-                        else DEFAULT_FILL_COLOR
-                    )
-                    render_data.append(
-                        FillRenderData(
-                            geometry=text_geo,
-                            style=FillStyle.SOLID,
-                            color=color,
-                        )
-                    )
-
-        return render_data
+        return text_cache.get_fill_render_data(
+            self.document,
+            resolved_text_cache=self._resolved_text_cache,
+            exclude_ids=exclude_ids,
+        )
 
 
 def find_array_for_entity(arrays: list, entity_id: int):

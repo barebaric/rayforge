@@ -24,6 +24,7 @@ from .command_registry import command_registry
 from .edit_cmd import EditCmd
 from .file_cmd import FileCmd
 from .group_cmd import GroupCmd
+from .job_counter_cmd import JobCounterCmd
 from .layer_cmd import LayerCmd
 from .layout_cmd import LayoutCmd
 from .node_edit_cmd import NodeEditCmd
@@ -152,6 +153,7 @@ class DocEditor:
         self.edit = EditCmd(self)
         self.file = FileCmd(self, self.task_manager)
         self.group = GroupCmd(self, self.task_manager)
+        self.job_counter = JobCounterCmd(self)
         self.layer = LayerCmd(self)
         self.layout = LayoutCmd(self, self.task_manager)
         self.path_cleanup = PathCleanupCmd(self)

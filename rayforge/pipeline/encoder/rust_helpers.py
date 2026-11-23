@@ -90,8 +90,11 @@ def _build_machine_path_vars(machine: "Machine") -> dict[str, str]:
 def _build_job_path_vars(ops: Ops, doc: "Doc") -> dict[str, str]:
     """Job-level path variables (depend on ops extents and doc name)."""
     xmin, ymin, xmax, ymax = ops.rect()
+    counter = str(doc.job_counter.counter.current) if doc else ""
     return {
         "doc.name": doc.name if doc else "",
+        "counter": counter,
+        "job.counter": counter,
         "job.extents[0]": _repr_val(xmin),
         "job.extents[1]": _repr_val(ymin),
         "job.extents[2]": _repr_val(xmax),
@@ -127,8 +130,10 @@ def _build_workpiece_path_vars_for_doc(
         for wp in layer.all_workpieces:
             pos = wp.pos
             size = wp.size
+            counter = doc.job_counter.counter.value_at(wp.variable_offset)
             result[wp.uid] = {
                 "workpiece.name": wp.name,
+                "workpiece.counter": str(counter),
                 "workpiece.pos[0]": _repr_val(pos[0]),
                 "workpiece.pos[1]": _repr_val(pos[1]),
                 "workpiece.size[0]": _repr_val(size[0]),
