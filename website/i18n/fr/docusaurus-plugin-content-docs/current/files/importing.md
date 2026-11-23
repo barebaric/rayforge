@@ -18,6 +18,7 @@ meilleurs résultats.
 | **Illustrator** | `.ai`             | Vecteurs directs ou vectorisation                         | Logos issus d'Illustrator                    |
 | **EPS**         | `.eps`, `.ps`     | Vecteurs directs ou vectorisation (nécessite Ghostscript) | Logos, fichiers d'impression                 |
 | **HPGL**        | `.plt`, `.hpgl`   | Vecteurs directs                                          | Fichiers de traceur et de plotter de découpe |
+| **G-code**      | `.gcode`, `.nc`   | Vecteurs directs                                          | Sortie G-code de FAO et laser                |
 
 ### Formats matriciels
 
@@ -438,6 +439,33 @@ colorés avec des paramètres laser configurables.
 - **Format binaire** — L'édition directe des fichiers .lbrn originaux n'est pas prise en charge
 - **Fonctionnalités propriétaires** — Certaines fonctionnalités avancées de LightBurn peuvent ne pas
   être entièrement prises en charge
+
+---
+
+## Importation de G-code
+
+Le G-code (`.gcode`, `.ngc`, `.nc`, `.tap`, `.gc`) est importé uniquement comme géométrie. Rayforge
+lit les mouvements G0/G1/G2/G3, les unités G20/G21 et les modes de distance G90/G91, y compris les
+arcs I/J et R. Les mouvements rapides et les mouvements d'avance à vitesse de broche nulle sont
+traités comme des déplacements, afin que les passes de remplissage et le surbalayage de LightBurn ne
+deviennent pas des lignes de découpe. L'avance, la puissance, la broche et le liquide de
+refroidissement sont ignorés et le fichier arrive sous forme d'un calque unique.
+
+**Après l'importation :**
+
+- **Attribuer les opérations** — Choisissez vous-même les réglages de découpe ou de gravure ; ils ne
+  sont pas lus dans le fichier
+- **Vérifier l'échelle** — Vérifiez que les dimensions correspondent au système de coordonnées de la
+  machine
+- **Examiner les instructions ignorées** — Une notification liste les instructions que Rayforge n'a
+  pas pu appliquer
+
+### Limitations
+
+- **Aucun réglage laser** — La vitesse et la puissance ne sont pas importées
+- **Déplacements exclus** — Seuls les mouvements de découpe deviennent de la géométrie
+- **Instructions non prises en charge** — Les cycles fixes, la compensation d'outil, les
+  sous-programmes et les plans autres que XY sont ignorés
 
 ---
 

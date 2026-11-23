@@ -24,7 +24,7 @@ Rayforge, incluyendo capacidades, limitaciones y recomendaciones.
 | **TIFF**              | Raster   | ✓ Traza           | –               | Escaneos, arte para impresión        |
 | **WebP**              | Raster   | ✓ Traza           | –               | Imágenes web                         |
 | **RFS**               | Bosquejo | ✓ Directo         | ✓ Exportar obj. | Bosquejos paramétricos               |
-| **G-code**            | Control  | –                 | ✓ Principal     | Salida de máquina                    |
+| **G-code**            | Vector   | ✓ Directo         | ✓ Principal     | Salida de máquina y archivos CAM     |
 | **Proyecto Rayforge** | Proyecto | ✓                 | ✓               | Guardar/cargar proyectos             |
 
 ---
@@ -274,6 +274,35 @@ elegir en el diálogo de importación.
 - ✗ El escalado (SC) y la rotación (RO) se ignoran; el diálogo de importación enumera las
   instrucciones omitidas
 - Las coordenadas usan las 40 unidades de plóter por milímetro habituales
+
+---
+
+### G-code (.gcode / .ngc / .nc / .tap / .gc)
+
+**Extensión:** `.gcode`, `.ngc`, `.nc`, `.tap`, `.gc` **Tipo MIME:** `text/x.gcode` **Importación:**
+Análisis vectorial directo **Exportación:** Salida G-code principal
+
+G-code es el lenguaje de las máquinas CNC y los láseres, y el formato que escriben LightBurn y los
+programas CAM. Rayforge importa solo la geometría: el resultado es una sola capa sin ajustes de
+avance, potencia ni herramienta.
+
+**Funciones compatibles:**
+
+- ✓ Movimientos rápidos G0 y lineales G1, y arcos G2/G3 en forma de centro I/J o radio R
+- ✓ Modos de distancia absoluta e incremental (G90/G91)
+- ✓ Unidades en pulgadas y milímetros (G20/G21), incluso cambios a mitad del programa
+- ✓ Centros de arco absolutos o incrementales (G90.1/G91.1)
+- ✓ Comentarios, eliminación de bloques (`/`), delimitadores de programa `%` y finales de línea CRLF
+
+**Limitaciones:**
+
+- ✗ Se ignoran la velocidad, la potencia, el husillo, el refrigerante y los cambios de herramienta
+- ✗ Los movimientos rápidos son desplazamientos y no se importan; los movimientos de avance con
+  velocidad del husillo cero (pasadas de relleno y sobreexploración de LightBurn) también se tratan
+  como desplazamientos
+- ✗ Se omiten los ciclos fijos (G81–G89), la compensación de herramienta (G41/G42), las subrutinas
+  (palabras O) y los planos que no son XY (G18/G19); la importación informa qué instrucciones se
+  omitieron
 
 ---
 

@@ -695,7 +695,10 @@ class FileCmd:
 
                 # 2. Validate the result.
                 if not import_result or not import_result.payload:
-                    if mt and mt.startswith("image/"):
+                    errors = import_result.errors if import_result else []
+                    if errors:
+                        msg = "\n".join(dict.fromkeys(errors))
+                    elif mt and mt.startswith("image/"):
                         msg = _(
                             "Failed to import {filename}. The image file "
                             "may be corrupted or in an unsupported format."
@@ -749,6 +752,14 @@ class FileCmd:
 
                 # Wait here until the main thread signals completion or error.
                 await main_thread_done
+
+                warnings = list(dict.fromkeys(import_result.warnings))
+                if warnings:
+                    self._task_manager.schedule_on_main_thread(
+                        self._editor.notification_requested.send,
+                        self,
+                        message="\n".join(warnings),
+                    )
 
                 ctx.set_message(_("Import complete!"))
             except Exception as e:

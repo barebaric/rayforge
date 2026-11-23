@@ -17,6 +17,7 @@ bits. Esta página explica cómo importar archivos y optimizarlos para obtener l
 | **Illustrator** | `.ai`             | Vectores directos o trazo                        | Logotipos de Illustrator              |
 | **EPS**         | `.eps`, `.ps`     | Vectores directos o trazo (requiere Ghostscript) | Logotipos, arte para impresión        |
 | **HPGL**        | `.plt`, `.hpgl`   | Vectores directos                                | Archivos de plóter y plóter de corte  |
+| **G-code**      | `.gcode`, `.nc`   | Vectores directos                                | Salida de G-code de CAM y láser       |
 
 ### Formatos de mapa de bits
 
@@ -429,6 +430,32 @@ configuraciones láser ajustables.
 - **Formato binario** — La edición directa de archivos .lbrn originales no es compatible
 - **Funciones propietarias** — Algunas funciones avanzadas de LightBurn pueden no ser totalmente
   compatibles
+
+---
+
+## Importación de G-code
+
+G-code (`.gcode`, `.ngc`, `.nc`, `.tap`, `.gc`) se importa solo como geometría. Rayforge lee los
+movimientos G0/G1/G2/G3, las unidades G20/G21 y los modos de distancia G90/G91, incluidos los arcos
+I/J y R. Los movimientos rápidos y los movimientos de avance con velocidad del husillo cero se
+tratan como desplazamientos, para que las pasadas de relleno y la sobreexploración de LightBurn no
+se conviertan en líneas de corte. El avance, la potencia, el husillo y el refrigerante se ignoran y
+el archivo llega como una sola capa.
+
+**Después de la importación:**
+
+- **Asignar operaciones** — Elige tú mismo los ajustes de corte o grabado; no se leen del archivo
+- **Comprobar la escala** — Verifica que las dimensiones coincidan con el sistema de coordenadas de
+  la máquina
+- **Revisar las instrucciones omitidas** — Una notificación enumera las instrucciones que Rayforge
+  no pudo aplicar
+
+### Limitaciones
+
+- **Sin ajustes de láser** — La velocidad y la potencia no se importan
+- **Los desplazamientos se excluyen** — Solo los movimientos de corte se convierten en geometría
+- **Instrucciones no compatibles** — Se omiten los ciclos fijos, la compensación de herramienta, las
+  subrutinas y los planos que no son XY
 
 ---
 

@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- G-code import: `.gcode`, `.ngc`, `.nc`, `.tap` and `.gc` files are
+  imported as geometry only. Supported motion covers G0/G1/G2/G3,
+  absolute and incremental distance modes, inch and millimetre units,
+  and I/J or R arcs; comments, block delete and `%` delimiters are
+  handled. Rapid moves and feed moves at zero spindle speed are treated
+  as travel, so LightBurn fill passes and overscan do not become cut
+  lines. Feed, power and spindle settings are ignored, the result is a
+  single layer, and unsupported instructions such as canned cycles,
+  cutter compensation or subroutines are reported. Requires raygeo
+  1.96.0
+
 - Job counter for text templates and G-code. A project-level counter
   advances after each completed job and is available as `{counter}`
   in sketch text boxes, with optional formatting such as

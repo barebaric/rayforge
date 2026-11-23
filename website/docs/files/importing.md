@@ -23,6 +23,7 @@ import files and optimize them for best results.
 | **Illustrator** | `.ai`             | Direct vectors or trace                     | Logos from Illustrator          |
 | **EPS**         | `.eps`, `.ps`     | Direct vectors or trace (needs Ghostscript) | Logos, print artwork            |
 | **HPGL**        | `.plt`, `.hpgl`   | Direct vectors                              | Plotter and vinyl cutter files  |
+| **G-code**      | `.gcode`, `.nc`   | Direct vectors                              | CAM and laser G-code output     |
 
 ### Raster Formats
 
@@ -418,6 +419,30 @@ settings.
 - **Read-only import** — LightBurn files can only be imported, not exported
 - **Binary format** — Direct editing of original .lbrn files is not supported
 - **Proprietary features** — Some advanced LightBurn-specific features may not be fully supported
+
+---
+
+## G-code Import
+
+G-code (`.gcode`, `.ngc`, `.nc`, `.tap`, `.gc`) is imported as geometry only. Rayforge reads
+G0/G1/G2/G3 moves, G20/G21 units and G90/G91 distance modes, including I/J and R arcs. Rapid moves
+and feed moves at spindle speed zero are treated as travel, so LightBurn fill passes and overscan do
+not become cut lines. Feed, power, spindle and coolant settings are ignored and the file arrives as
+a single layer.
+
+**After import:**
+
+- **Assign operations** — Choose the cut or engrave settings yourself; they are not read from the
+  file
+- **Check the scale** — Verify the dimensions match the machine's coordinate system
+- **Review skipped instructions** — A notification lists any instructions Rayforge could not apply
+
+### Limitations
+
+- **No laser settings** — Speed and power are not imported
+- **Travel is excluded** — Only cutting moves become geometry
+- **Unsupported instructions** — Canned cycles, cutter compensation, subroutines and non-XY planes
+  are skipped
 
 ---
 

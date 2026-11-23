@@ -7,25 +7,25 @@ einschließlich Fähigkeiten, Einschränkungen und Empfehlungen.
 
 ### Schnellreferenz
 
-| Format               | Typ       | Import             | Export          | Empfohlene Verwendung                |
-| -------------------- | --------- | ------------------ | --------------- | ------------------------------------ |
-| **SVG**              | Vektor    | ✓ Direkt / Tracing | ✓ Objekt-Export | Primäres Design-Format               |
-| **DXF**              | Vektor    | ✓ Direkt           | ✓ Objekt-Export | CAD-Datenaustausch                   |
-| **PDF**              | Gemischt  | ✓ Direkt / Tracing | –               | Dokumente mit Vektorinhalt           |
-| **Illustrator**      | Vektor    | ✓ Direkt / Tracing | –               | Logos aus Illustrator                |
-| **EPS**              | Vektor    | ✓ Direkt / Tracing | –               | Logos, Druckvorlagen                 |
-| **LightBurn**        | Vektor    | ✓ Direkt           | –               | LightBurn-Projekte                   |
-| **Ruida**            | Vektor    | ✓ Direkt           | –               | Ruida-Aufgabendateien                |
-| **HPGL**             | Vektor    | ✓ Direkt           | –               | Plotter- und Schneideplotter-Dateien |
-| **PNG**              | Raster    | ✓ Tracing          | –               | Fotos, Bilder                        |
-| **JPEG**             | Raster    | ✓ Tracing          | –               | Fotos                                |
-| **BMP**              | Raster    | ✓ Tracing          | –               | Einfache Grafiken                    |
-| **GIF**              | Raster    | ✓ Tracing          | –               | Einfache Grafiken, Animationen       |
-| **TIFF**             | Raster    | ✓ Tracing          | –               | Scans, Druckvorlagen                 |
-| **WebP**             | Raster    | ✓ Tracing          | –               | Webbilder                            |
-| **RFS**              | Skizze    | ✓ Direkt           | ✓ Objekt-Export | Parametrische Skizzen                |
-| **G-Code**           | Steuerung | –                  | ✓ Primär        | Maschinenausgabe                     |
-| **Rayforge-Projekt** | Projekt   | ✓                  | ✓               | Projekte speichern/laden             |
+| Format               | Typ      | Import             | Export          | Empfohlene Verwendung                |
+| -------------------- | -------- | ------------------ | --------------- | ------------------------------------ |
+| **SVG**              | Vektor   | ✓ Direkt / Tracing | ✓ Objekt-Export | Primäres Design-Format               |
+| **DXF**              | Vektor   | ✓ Direkt           | ✓ Objekt-Export | CAD-Datenaustausch                   |
+| **PDF**              | Gemischt | ✓ Direkt / Tracing | –               | Dokumente mit Vektorinhalt           |
+| **Illustrator**      | Vektor   | ✓ Direkt / Tracing | –               | Logos aus Illustrator                |
+| **EPS**              | Vektor   | ✓ Direkt / Tracing | –               | Logos, Druckvorlagen                 |
+| **LightBurn**        | Vektor   | ✓ Direkt           | –               | LightBurn-Projekte                   |
+| **Ruida**            | Vektor   | ✓ Direkt           | –               | Ruida-Aufgabendateien                |
+| **HPGL**             | Vektor   | ✓ Direkt           | –               | Plotter- und Schneideplotter-Dateien |
+| **PNG**              | Raster   | ✓ Tracing          | –               | Fotos, Bilder                        |
+| **JPEG**             | Raster   | ✓ Tracing          | –               | Fotos                                |
+| **BMP**              | Raster   | ✓ Tracing          | –               | Einfache Grafiken                    |
+| **GIF**              | Raster   | ✓ Tracing          | –               | Einfache Grafiken, Animationen       |
+| **TIFF**             | Raster   | ✓ Tracing          | –               | Scans, Druckvorlagen                 |
+| **WebP**             | Raster   | ✓ Tracing          | –               | Webbilder                            |
+| **RFS**              | Skizze   | ✓ Direkt           | ✓ Objekt-Export | Parametrische Skizzen                |
+| **G-Code**           | Vektor   | ✓ Direkt           | ✓ Primär        | Maschinenausgabe und CAM-Dateien     |
+| **Rayforge-Projekt** | Projekt  | ✓                  | ✓               | Projekte speichern/laden             |
 
 ---
 
@@ -272,6 +272,33 @@ auswählen kannst.
 - ✗ Skalierung (SC) und Drehung (RO) werden ignoriert; der Importdialog listet übersprungene Befehle
   auf
 - Koordinaten verwenden die üblichen 40 Plottereinheiten pro Millimeter
+
+---
+
+### G-code (.gcode / .ngc / .nc / .tap / .gc)
+
+**Erweiterung:** `.gcode`, `.ngc`, `.nc`, `.tap`, `.gc` **MIME-Typ:** `text/x.gcode` **Import:**
+Direkte Vektoranalyse **Export:** Primäre G-code-Ausgabe
+
+G-code ist die Sprache von CNC-Maschinen und Lasern und das Format, das LightBurn und CAM-Programme
+schreiben. Rayforge importiert nur die Geometrie: Das Ergebnis ist eine einzelne Ebene ohne
+Vorschub-, Leistungs- oder Werkzeugeinstellungen.
+
+**Unterstützte Funktionen:**
+
+- ✓ G0-Eil- und G1-Linearwege sowie G2/G3-Bögen in I/J-Mittelpunkt- oder R-Radiusform
+- ✓ Absolute und inkrementelle Entfernungsmodi (G90/G91)
+- ✓ Zoll- und Millimeter-Einheiten (G20/G21), auch Wechsel im Programm
+- ✓ Absolute oder inkrementelle Bogenmittelpunkte (G90.1/G91.1)
+- ✓ Kommentare, Block Delete (`/`), `%`-Programmtrenner und CRLF-Zeilenenden
+
+**Einschränkungen:**
+
+- ✗ Geschwindigkeit, Leistung, Spindel, Kühlmittel und Werkzeugwechsel werden ignoriert
+- ✗ Eilgänge sind Verfahrwege und werden nicht importiert; Vorschubbewegungen mit Spindeldrehzahl
+  null (LightBurn-Füllungen und Overscan) gelten ebenfalls als Verfahrwege
+- ✗ Bohrzyklen (G81–G89), Werkzeugradiuskorrektur (G41/G42), Unterprogramme (O-Wörter) und
+  Nicht-XY-Ebenen (G18/G19) werden übersprungen; der Import meldet übersprungene Befehle
 
 ---
 

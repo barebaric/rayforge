@@ -24,7 +24,7 @@ Rayforge, y compris les capacités, les limitations et les recommandations.
 | **TIFF**            | Matriciel | ✓ Trace          | –             | Numérisations, fichiers d'impression         |
 | **WebP**            | Matriciel | ✓ Trace          | –             | Images web                                   |
 | **RFS**             | Croquis   | ✓ Direct         | ✓ Export obj. | Croquis paramétriques                        |
-| **G-code**          | Commande  | –                | ✓ Principal   | Sortie machine                               |
+| **G-code**          | Vecteur   | ✓ Direct         | ✓ Principal   | Sortie machine et fichiers CAM               |
 | **Projet Rayforge** | Projet    | ✓                | ✓             | Enregistrer/charger projets                  |
 
 ---
@@ -276,6 +276,35 @@ pouvez choisir dans la boîte de dialogue d'importation.
 - ✗ La mise à l'échelle (SC) et la rotation (RO) sont ignorées ; la boîte de dialogue d'importation
   liste les instructions ignorées
 - Les coordonnées utilisent les 40 unités traceur par millimètre habituelles
+
+---
+
+### G-code (.gcode / .ngc / .nc / .tap / .gc)
+
+**Extension :** `.gcode`, `.ngc`, `.nc`, `.tap`, `.gc` **Type MIME :** `text/x.gcode` **Importation
+:** Analyse vectorielle directe **Exportation :** Sortie G-code principale
+
+Le G-code est le langage des machines CNC et des lasers, et le format produit par LightBurn et les
+logiciels de FAO. Rayforge importe uniquement la géométrie : le résultat est un calque unique, sans
+réglages d'avance, de puissance ni d'outil.
+
+**Fonctions prises en charge :**
+
+- ✓ Mouvements rapides G0 et linéaires G1, et arcs G2/G3 sous forme de centre I/J ou de rayon R
+- ✓ Modes de distance absolue et incrémentale (G90/G91)
+- ✓ Unités en pouces et en millimètres (G20/G21), y compris les changements en cours de programme
+- ✓ Centres d'arc absolus ou incrémentaux (G90.1/G91.1)
+- ✓ Commentaires, bloc supprimé (`/`), délimiteurs de programme `%` et fins de ligne CRLF
+
+**Limitations :**
+
+- ✗ La vitesse, la puissance, la broche, le liquide de refroidissement et les changements d'outil
+  sont ignorés
+- ✗ Les mouvements rapides sont des déplacements et ne sont pas importés ; les mouvements d'avance à
+  vitesse de broche nulle (passes de remplissage et surbalayage de LightBurn) sont eux aussi traités
+  comme des déplacements
+- ✗ Les cycles fixes (G81–G89), la compensation d'outil (G41/G42), les sous-programmes (mots O) et
+  les plans autres que XY (G18/G19) sont ignorés ; l'importation indique les instructions sautées
 
 ---
 
