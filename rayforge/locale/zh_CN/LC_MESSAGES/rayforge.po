@@ -3355,7 +3355,7 @@ msgstr "调整图像质量和外观参数。"
 msgid "Default"
 msgstr "默认"
 
-#: rayforge/ui_gtk/camera/image_settings_widget.py
+#: rayforge/ui_gtk/camera/image_settings_widget.py rayforge/ui_gtk/varset/adapter/combo.py
 msgid "Custom..."
 msgstr "自定义..."
 

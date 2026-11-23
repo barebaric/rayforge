@@ -3475,7 +3475,7 @@ msgstr "Налаштувати параметри якості та зовніш
 msgid "Default"
 msgstr "Типово"
 
-#: rayforge/ui_gtk/camera/image_settings_widget.py
+#: rayforge/ui_gtk/camera/image_settings_widget.py rayforge/ui_gtk/varset/adapter/combo.py
 msgid "Custom..."
 msgstr "Довільне..."
 

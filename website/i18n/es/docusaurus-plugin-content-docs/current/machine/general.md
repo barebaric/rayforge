@@ -64,7 +64,7 @@ Tras seleccionar un controlador, aparecerán debajo del selector los ajustes esp
 ### Velocidades de Transmisión Personalizadas
 
 El selector de velocidad de transmisión enumera las velocidades comunes, pero acepta cualquier valor
-entre 300 y 4000000 bits por segundo. Elige **Custom…** al final de la lista e introduce la
+entre 300 y 4000000 bits por segundo. Elige **Personalizado...** al final de la lista e introduce la
 velocidad que usa tu firmware — por ejemplo `500000`. Una velocidad personalizada configurada
 permanece visible en el selector.
 

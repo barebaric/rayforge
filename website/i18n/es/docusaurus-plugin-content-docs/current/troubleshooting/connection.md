@@ -157,8 +157,8 @@ Los controladores GRBL típicamente usan una de estas velocidades de transmisió
 - **250000** (menos común, algunos firmware personalizados)
 
 Prueba diferentes velocidades de transmisión en los ajustes de dispositivo de Rayforge. Si la
-velocidad que usa tu firmware no está en la lista, elige **Custom…** e introdúcela. La más común es
-**115200**.
+velocidad que usa tu firmware no está en la lista, elige **Personalizado...** e introdúcela. La más
+común es **115200**.
 
 ### La Conexión Se Caé Continuamente
 

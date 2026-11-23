@@ -62,8 +62,8 @@ angezeigt (z. B. serieller Port, Baudrate). Diese variieren je nach gewähltem T
 ### Eigene Baudraten
 
 Die Baudraten-Auswahl listet gängige Werte auf, akzeptiert aber jeden Wert zwischen 300 und 4000000
-Bit pro Sekunde. Wähle **Custom…** am Ende der Liste und gib die Rate deiner Firmware ein — zum
-Beispiel `500000`. Eine konfigurierte eigene Rate bleibt in der Auswahl sichtbar.
+Bit pro Sekunde. Wähle **Benutzerdefiniert...** am Ende der Liste und gib die Rate deiner Firmware
+ein — zum Beispiel `500000`. Eine konfigurierte eigene Rate bleibt in der Auswahl sichtbar.
 
 <!-- prettier-ignore-start -->
 :::tip

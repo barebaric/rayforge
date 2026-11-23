@@ -3507,7 +3507,7 @@ msgstr "Ajustar parámetros de calidad y apariencia de la imagen."
 msgid "Default"
 msgstr "Predeterminado"
 
-#: rayforge/ui_gtk/camera/image_settings_widget.py
+#: rayforge/ui_gtk/camera/image_settings_widget.py rayforge/ui_gtk/varset/adapter/combo.py
 msgid "Custom..."
 msgstr "Personalizado..."
 

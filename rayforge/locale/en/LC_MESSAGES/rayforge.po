@@ -3309,7 +3309,7 @@ msgstr ""
 msgid "Default"
 msgstr ""
 
-#: rayforge/ui_gtk/camera/image_settings_widget.py
+#: rayforge/ui_gtk/camera/image_settings_widget.py rayforge/ui_gtk/varset/adapter/combo.py
 msgid "Custom..."
 msgstr ""
 

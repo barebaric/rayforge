@@ -3421,7 +3421,7 @@ msgstr "छवि गुणवत्ता और रूप पैरामी�
 msgid "Default"
 msgstr "डिफ़ॉल्ट"
 
-#: rayforge/ui_gtk/camera/image_settings_widget.py
+#: rayforge/ui_gtk/camera/image_settings_widget.py rayforge/ui_gtk/varset/adapter/combo.py
 msgid "Custom..."
 msgstr "कस्टम..."
 

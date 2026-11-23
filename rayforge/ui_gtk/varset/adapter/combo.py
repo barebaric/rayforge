@@ -27,7 +27,7 @@ from .base import (
 )
 
 VIDPID_ENTRY_LABEL = _("Match by USB VID:PID…")
-CUSTOM_BAUD_ENTRY_LABEL = _("Custom…")
+CUSTOM_BAUD_ENTRY_LABEL = _("Custom...")
 
 
 @register_adapter(ChoiceVar)
@@ -156,7 +156,7 @@ class ComboAdapter(RowAdapter):
 class BaudRateAdapter(ComboAdapter):
     """
     A baud rate selector offering the standard rates plus a
-    ``Custom…`` entry that prompts for an arbitrary rate.
+    ``Custom...`` entry that prompts for an arbitrary rate.
 
     A configured rate that is not one of the standard choices is
     inserted into the list in numeric order, so the dropdown always
@@ -308,7 +308,7 @@ class BaudRateAdapter(ComboAdapter):
             rate = parse_rate() if response == "apply" else None
             if rate is None:
                 # Restore the previous selection instead of leaving the
-                # row on the Custom… entry.
+                # row on the Custom... entry.
                 self._select_value(self._value)
                 return
             self._apply_custom_value(rate)

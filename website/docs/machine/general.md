@@ -61,7 +61,7 @@ baud rate). These vary depending on the chosen driver.
 ### Custom Baud Rates
 
 The baud rate selector lists common rates, but any value between 300 and 4000000 bits per second is
-accepted. Choose **Custom…** at the end of the list and enter the rate your firmware uses — for
+accepted. Choose **Custom...** at the end of the list and enter the rate your firmware uses — for
 example `500000`. A configured custom rate stays visible in the selector.
 
 <!-- prettier-ignore-start -->

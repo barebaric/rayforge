@@ -63,8 +63,9 @@ porta serial, baud rate). Elas variam conforme o driver escolhido.
 ### Taxas de Transmissão Personalizadas
 
 O seletor de taxa de transmissão lista as taxas comuns, mas aceita qualquer valor entre 300 e
-4000000 bits por segundo. Escolha **Custom…** no final da lista e insira a taxa usada pelo seu
-firmware — por exemplo `500000`. Uma taxa personalizada configurada permanece visível no seletor.
+4000000 bits por segundo. Escolha **Personalizado...** no final da lista e insira a taxa usada pelo
+seu firmware — por exemplo `500000`. Uma taxa personalizada configurada permanece visível no
+seletor.
 
 <!-- prettier-ignore-start -->
 :::tip
