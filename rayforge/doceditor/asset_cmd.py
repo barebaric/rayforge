@@ -86,7 +86,11 @@ class UpdateAssetCommand(Command):
                 continue
 
             params = workpiece.geometry_provider_params or {}
-            geometry, _ = provider.get_geometry(params=params)
+            geometry, _ = provider.get_geometry(
+                params=params,
+                text_values=workpiece._text_values(),
+                resolved_text_cache=workpiece._resolved_text_cache,
+            )
 
             if geometry.is_empty():
                 workpiece.natural_width_mm = 0.0

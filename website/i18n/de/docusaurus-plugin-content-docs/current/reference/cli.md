@@ -105,7 +105,7 @@ ctx = get_context()
 Ausführen mit: rayforge --script registrieren_fn.py
 """
 from rayforge.context import get_context
-from sketcher.core.template_functions import (
+from rayforge.core.template_functions import (
     register_template_function,
 )
 

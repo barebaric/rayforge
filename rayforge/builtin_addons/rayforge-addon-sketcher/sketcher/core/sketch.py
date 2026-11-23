@@ -17,11 +17,11 @@ from raygeo.sketch.types import EntityID, WaypointType
 
 from rayforge.core.asset import IAsset
 from rayforge.core.geometry_provider import IGeometryProvider
+from rayforge.core.template_functions import get_template_functions
 from rayforge.core.varset import VarSet
 from rayforge.image.geo_renderer import render_geometry_to_png
 from rayforge.image.structures import FillRenderData
 
-from ..template_functions import get_template_functions
 from . import text_cache
 
 DEFAULT_FILL_COLOR = (0.85, 0.85, 0.85, 0.7)

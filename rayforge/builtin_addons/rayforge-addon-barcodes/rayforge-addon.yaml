@@ -1,0 +1,24 @@
+name: barcodes
+display_name: "Barcodes"
+description: "QR codes, Code 128 and EAN-13 as first-class assets"
+long_description: |
+  Create QR codes, Code 128 and EAN-13 symbols as reusable assets.
+
+  - **Multiple symbologies**: QR Code with L/M/Q/H error correction,
+    Code 128 with automatic code-set switching, and EAN-13 with a
+    computed or verified check digit
+  - **Asset browser integration**: create, duplicate, delete and drag
+    barcode assets just like sketches
+  - **Template content**: use `{counter}` and the other template
+    functions, so every copy can carry its own value
+  - **Vector output**: dark modules are merged into closed outlines, so
+    engraving and contouring both work
+api_version: 24
+author:
+  name: "Rayforge Team"
+  email: "noreply@rayforge.org"
+provides:
+  worker: "barcodes.worker"
+  frontend: "barcodes.frontend"
+license:
+  name: "MIT"

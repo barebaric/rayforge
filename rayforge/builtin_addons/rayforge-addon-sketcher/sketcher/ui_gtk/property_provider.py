@@ -13,6 +13,7 @@ from rayforge.ui_gtk.doceditor.property_providers.base import (
 from rayforge.ui_gtk.shared.pref_rows import SpinRow
 from rayforge.ui_gtk.varset.varsetwidget import VarSetRowList
 
+from ..core.workpieces import is_sketch_workpiece
 from .sketch_cmd import SketchCmd
 
 if TYPE_CHECKING:
@@ -42,10 +43,7 @@ class SketchPropertyProvider(PropertyProvider):
 
         first_sketch_uid = None
         for item in items:
-            if (
-                not isinstance(item, WorkPiece)
-                or not item.geometry_provider_uid
-            ):
+            if not is_sketch_workpiece(item):
                 return False
 
             if first_sketch_uid is None:
