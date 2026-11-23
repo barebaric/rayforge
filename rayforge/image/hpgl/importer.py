@@ -36,6 +36,9 @@ class HpglImporter(DxfImporter):
     label = "HPGL plot files"
     mime_types = ("application/vnd.hp-hpgl", "application/vnd.hp-HPGL")
     extensions = (".plt", ".hpgl", ".hpg", ".hgl")
+    # The system database spells the canonical type with a lowercase
+    # subtype, so only the legacy alias is what .hpgl files resolve to.
+    native_mime_type = "application/vnd.hp-hpgl"
     features: ClassVar[set[ImporterFeature]] = {
         ImporterFeature.DIRECT_VECTOR,
         ImporterFeature.LAYER_SELECTION,

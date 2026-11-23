@@ -35,6 +35,9 @@ class GcodeImporter(DxfImporter):
     label = "G-code files"
     mime_types = ("text/x.gcode", "application/x-gcode")
     extensions = (".gcode", ".ngc", ".nc", ".tap", ".gc")
+    # System databases map .nc to NetCDF and .tap to other formats, so
+    # a guessed type must never be recorded for a G-code asset.
+    native_mime_type = "text/x.gcode"
     features: ClassVar[set[ImporterFeature]] = {
         ImporterFeature.DIRECT_VECTOR,
     }

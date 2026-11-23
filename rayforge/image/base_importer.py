@@ -145,6 +145,10 @@ class Importer(ABC):
     label: str
     mime_types: tuple[str, ...]
     extensions: tuple[str, ...]
+    # The MIME type to record in the project file. Left unset, this is
+    # the importer's "own" MIME type (see `own_mime_type`), which is not
+    # necessarily the first entry in `mime_types`.
+    native_mime_type: ClassVar[str | None] = None
 
     # The base set of features is empty. Subclasses MUST override this.
     features: ClassVar[set[ImporterFeature]] = set()
@@ -291,10 +295,27 @@ class Importer(ABC):
         """
         raise NotImplementedError
 
+    @classmethod
+    def own_mime_type(cls) -> str | None:
+        """
+        The MIME type this importer wants recorded in the project file.
+
+        System MIME databases may map an extension to a foreign type,
+        so recording whatever the system guessed for the file would
+        make the asset unresolvable after a project reload. The
+        importer's own MIME type is therefore recorded instead.
+        """
+        if cls.native_mime_type:
+            return cls.native_mime_type
+        if cls.mime_types:
+            return cls.mime_types[0]
+        return None
+
     def _stamp_importer_identity(self, source_asset: SourceAsset) -> None:
         source_asset.metadata["_importer_class"] = type(self).__name__
-        if self.mime_types:
-            source_asset.metadata["_importer_mime"] = self.mime_types[0]
+        native_mime = self.own_mime_type()
+        if native_mime:
+            source_asset.metadata["_importer_mime"] = native_mime
 
     @staticmethod
     def _render_thumbnail_from_vips(image, size: int = 256) -> bytes | None:
