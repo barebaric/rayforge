@@ -21,6 +21,7 @@ gi.require_version("Adw", "1")
 gi.require_version("Gdk", "4.0")
 from gi.repository import Adw, GLib
 
+from rayforge.ui_gtk import sim3d
 from rayforge.ui_gtk.mainwindow import MainWindow
 
 
@@ -35,8 +36,6 @@ def _process_events_for(duration: float) -> None:
 
 @pytest.fixture
 def app_and_window(ui_context_initializer, request):
-    from rayforge.ui_gtk import sim3d
-
     sim3d.initialize()
     assert sim3d.initialized, "Canvas3D failed to initialize"
 

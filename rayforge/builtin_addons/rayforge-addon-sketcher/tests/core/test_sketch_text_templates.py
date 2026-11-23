@@ -4,6 +4,11 @@ from typing import cast
 from raygeo.sketch.entities import TextBox as TextBoxEntity
 from sketcher.core import Sketch
 
+from rayforge.core.template_functions import (
+    get_template_functions,
+    register_template_function,
+    unregister_template_function,
+)
 from rayforge.core.varset import FloatVar, Var
 
 
@@ -291,11 +296,6 @@ def test_resolve_date_alias():
 
 def test_register_template_function():
     """Addons can register custom template functions."""
-    from rayforge.core.template_functions import (
-        register_template_function,
-        unregister_template_function,
-    )
-
     register_template_function("greet", lambda: "hello")
     try:
         s = Sketch()
@@ -309,12 +309,6 @@ def test_register_template_function():
 
 def test_unregister_template_function():
     """Unregistering removes a custom function; built-ins remain."""
-    from rayforge.core.template_functions import (
-        get_template_functions,
-        register_template_function,
-        unregister_template_function,
-    )
-
     register_template_function("tmp", lambda: "x")
     assert "tmp" in get_template_functions()
     unregister_template_function("tmp")
@@ -325,10 +319,5 @@ def test_unregister_template_function():
 
 def test_unregister_builtin_is_noop():
     """Built-in functions cannot be removed."""
-    from rayforge.core.template_functions import (
-        get_template_functions,
-        unregister_template_function,
-    )
-
     unregister_template_function("today")
     assert "today" in get_template_functions()

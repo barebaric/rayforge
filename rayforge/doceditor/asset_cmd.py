@@ -6,12 +6,12 @@ from typing import TYPE_CHECKING, Any
 
 from ..core.asset import IAsset
 from ..core.asset_registry import asset_type_registry
+from ..core.geometry_provider import IGeometryProvider
 from ..core.stock_asset import StockAsset
 from ..core.undo import ChangePropertyCommand, Command, ListItemCommand
 
 if TYPE_CHECKING:
     from ..core.doc import Doc
-    from ..core.geometry_provider import IGeometryProvider
     from .editor import DocEditor
 
 logger = logging.getLogger(__name__)
@@ -69,8 +69,6 @@ class UpdateAssetCommand(Command):
         self.doc.assets[self.asset_uid] = asset_instance
 
         # 2. If this is a geometry provider, update dependent workpieces
-        from ..core.geometry_provider import IGeometryProvider
-
         if isinstance(asset_instance, IGeometryProvider):
             self._update_dependent_workpieces(asset_instance)
 
