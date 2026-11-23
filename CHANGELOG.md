@@ -5,6 +5,22 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## UNRELEASED
+
+### Added
+
+- Job counter for text templates and G-code. A project-level counter
+  advances after each completed job and is available as `{counter}`
+  in sketch text boxes, with optional formatting such as
+  `{counter:04d}`. Canvas arrays and Arrange → Array → Number Copies
+  assign consecutive offsets to copies, so one job can engrave
+  numbered plates. Tools → Job Counter sets the current, start and
+  end values, the step, wrapping, and whether a finished job or a
+  G-code export advances the counter. G-code hooks and macros can use
+  `{counter}` for the job's starting value and
+  `{workpiece.counter}` for the current copy. Every change is
+  undoable and stored in the project
+
 ## 1.15.0-beta1
 
 ### Added

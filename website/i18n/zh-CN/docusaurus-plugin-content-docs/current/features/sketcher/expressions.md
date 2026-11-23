@@ -176,3 +176,8 @@ register_template_function("part_number", lambda: f"P-{hash('x') % 10000:04d}")
 
 内置函数（`today`、`now`、`uuid`
 等）不能被注销。如果需要改变它们的行为，请用不同的名称注册一个函数。
+
+## 作业计数器
+
+项目还提供用于编号铭牌和标签的作业计数器：`No. {counter:03d}` 显示 `No. 007`，并在每个作业后递增。
+有关设置、副本编号和 G-code 变量，请参阅[作业计数器](../job-counter.md)。

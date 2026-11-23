@@ -349,3 +349,16 @@ incorrectamente puede:
 - [Dialectos de Código G](../reference/gcode-dialects.md) - Compatibilidad de código G
 - [Ajustes Generales](general) - Configuración de máquina
 - [Flujo de Trabajo Multi-Capa](../features/multi-layer.md) - Usando hooks con capas
+
+## Variables del contador de trabajos
+
+Además de las variables anteriores, están disponibles el contador de trabajos y el contador de la
+pieza actual:
+
+| Variable              | Descripción                             | Ejemplo |
+| --------------------- | --------------------------------------- | ------- |
+| `{counter}`           | Valor con el que empieza el trabajo     | 7       |
+| `{workpiece.counter}` | Valor del contador para la pieza actual | 7       |
+
+Las especificaciones de formato también funcionan: `{counter:04d}` produce `0007`. Consulta
+[Contador de trabajos](../features/job-counter.md).

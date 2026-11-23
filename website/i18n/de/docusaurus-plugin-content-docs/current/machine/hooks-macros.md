@@ -348,3 +348,16 @@ Teste Makros und Hooks immer im **Simulationsmodus** oder mit
 - [G-Code-Dialekte](../reference/gcode-dialects.md) - G-Code-Kompatibilität
 - [Allgemeine Einstellungen](general) - Maschinenkonfiguration
 - [Mehrschicht-Workflow](../features/multi-layer.md) - Hooks mit Ebenen verwenden
+
+## Jobzähler-Variablen
+
+Zusätzlich zu den Variablen oben stehen der Jobzähler und der Zähler des aktuellen Werkstücks zur
+Verfügung:
+
+| Variable              | Beschreibung                            | Beispielwert |
+| --------------------- | --------------------------------------- | ------------ |
+| `{counter}`           | Zählerwert, mit dem der Auftrag beginnt | 7            |
+| `{workpiece.counter}` | Zählerwert für das aktuelle Werkstück   | 7            |
+
+Formatangaben funktionieren auch: `{counter:04d}` ergibt `0007`. Siehe
+[Jobzähler](../features/job-counter.md).

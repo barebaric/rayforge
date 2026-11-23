@@ -108,6 +108,7 @@ module.exports = {
               ],
             },
             'features/arrays',
+            'features/job-counter',
             'features/knife-cutting',
             'features/path-cleanup',
             'features/multi-layer',

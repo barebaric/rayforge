@@ -121,6 +121,10 @@ Typical uses include unique serial numbers per solve (`Part # {uuid4()}`), live 
 (`W={width:.1f} H={height:.1f}`), date stamps (`Date: {today()}`), production counters
 (`{name} - {count:.0f}pcs`), or Unix timestamps for production logging (`{timestamp():.0f}`).
 
+The project also provides a job counter for numbered plates and tags: `No. {counter:03d}` shows
+`No. 007` and advances after each job. See [Job Counter](../job-counter.md) for the settings, array
+numbering, and the G-code variables.
+
 ## Custom template functions
 
 You can register your own functions to use inside text box templates. This is useful for pulling

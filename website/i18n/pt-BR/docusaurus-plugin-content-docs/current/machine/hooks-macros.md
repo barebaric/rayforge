@@ -347,3 +347,15 @@ laser **desabilitado** antes de executar em trabalhos reais. G-code configurado 
 - [Dialetos de G-code](../reference/gcode-dialects.md) - Compatibilidade de G-code
 - [Configurações Gerais](general) - Configuração da máquina
 - [Fluxo de Trabalho Multi-Camadas](../features/multi-layer.md) - Usando hooks com camadas
+
+## Variáveis do contador de trabalhos
+
+Além das variáveis acima, o contador de trabalhos e o contador da peça atual estão disponíveis:
+
+| Variável              | Descrição                           | Exemplo |
+| --------------------- | ----------------------------------- | ------- |
+| `{counter}`           | Valor com que o trabalho começa     | 7       |
+| `{workpiece.counter}` | Valor do contador para a peça atual | 7       |
+
+As especificações de formato também funcionam: `{counter:04d}` produz `0007`. Consulte
+[Contador de trabalhos](../features/job-counter.md).

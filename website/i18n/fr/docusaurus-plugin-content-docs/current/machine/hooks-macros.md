@@ -350,3 +350,16 @@ le laser **désactivé** avant de les exécuter sur de vrais travaux. Un G-code 
 - [Dialectes G-code](../reference/gcode-dialects.md) - Compatibilité G-code
 - [Paramètres Généraux](general) - Configuration de la machine
 - [Flux de Travail Multi-Couches](../features/multi-layer.md) - Utiliser les hooks avec les calques
+
+## Variables du compteur de travaux
+
+En plus des variables ci-dessus, le compteur de travaux et le compteur de la pièce courante sont
+disponibles :
+
+| Variable              | Description                               | Exemple |
+| --------------------- | ----------------------------------------- | ------- |
+| `{counter}`           | Valeur avec laquelle le travail commence  | 7       |
+| `{workpiece.counter}` | Valeur du compteur pour la pièce courante | 7       |
+
+Les spécifications de format fonctionnent aussi : `{counter:04d}` donne `0007`. Voir
+[Compteur de travaux](../features/job-counter.md).
