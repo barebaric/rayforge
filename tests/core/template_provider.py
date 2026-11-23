@@ -6,12 +6,10 @@ from typing import Any
 
 from blinker import Signal
 from raygeo.geo import Geometry
+from raygeo.template import resolve_text as resolve_template
 
 from rayforge.core.doc import Doc
-from rayforge.core.expression import (
-    ExpressionMap,
-    referenced_template_names,
-)
+from rayforge.core.expression import referenced_template_names
 from rayforge.core.workpiece import WorkPiece
 
 
@@ -39,10 +37,12 @@ class TemplateProvider:
         self.calls.append((dict(params or {}), dict(text_values or {})))
         context = dict(params or {})
         context.update(text_values or {})
-        resolved = ExpressionMap(context).format(self.template)
+        resolved, entry, _volatile = resolve_template(
+            self.template, context, {}, None
+        )
         if resolved_text_cache is not None:
-            resolved_text_cache[1] = (self.template, resolved)
-        width = max(float(len(resolved)), 1.0)
+            resolved_text_cache[1] = entry
+        width = max(float(len(resolved or "")), 1.0)
         height = 5.0
         geo = Geometry()
         geo.move_to(0.0, 0.0)

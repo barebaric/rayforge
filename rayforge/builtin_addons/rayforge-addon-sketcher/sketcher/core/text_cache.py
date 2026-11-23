@@ -1,19 +1,16 @@
 """Text-template resolution and geometry caching for sketch documents.
 
-The sketch document owns the text boxes and the parameter context, so
-the dependency tracking between a template and the values it reads
-belongs with the sketch. A cached geometry result is reused only when
-the values of the names the sketch reads and the resolved text entries
-are unchanged, which keeps unrelated document changes cheap without
-ever serving stale text.
+Raygeo evaluates expressions and resolves the individual placeholders,
+including their dependency stamps; this module connects that wasm-safe
+Rust machinery to the sketch document and caches the generated geometry.
 
-Expression evaluation is host-specific and stays in Rayforge; raygeo
-provides the wasm-safe placeholder scanner and the job counter.
+A cached geometry result is reused only when the values of the names the
+sketch reads and the resolved text entries are unchanged, which keeps
+unrelated document changes cheap without ever serving stale text.
 """
 
 from __future__ import annotations
 
-import re
 from collections import OrderedDict
 from collections.abc import Iterable
 from typing import Any
@@ -22,9 +19,9 @@ from raygeo.geo import Geometry
 from raygeo.sketch.document import FillStyle
 from raygeo.sketch.entities import TextBox
 from raygeo.sketch.params import ParameterContext
+from raygeo.template import resolve_text as resolve_template
 
 from rayforge.core.expression import (
-    ExpressionMap,
     names_in_expression,
     referenced_template_names,
 )
@@ -34,7 +31,6 @@ from ..template_functions import get_template_functions
 
 DEFAULT_FILL_COLOR = (0.85, 0.85, 0.85, 0.7)
 GEOMETRY_CACHE_SIZE = 8
-_PLACEHOLDER_RE = re.compile(r"\{([^{}]+)\}")
 
 
 def _copy_fill(fill: FillRenderData) -> FillRenderData:
@@ -109,9 +105,7 @@ def resolve_text(
     """Resolves the document's text templates without building geometry."""
     context = _text_context(document, text_values)
     entries = resolved_text_cache if resolved_text_cache is not None else {}
-    resolved, _volatile = _resolve_text(
-        document, context, entries, set(get_template_functions())
-    )
+    resolved, _volatile = _resolve_text(document, context, entries)
     return resolved
 
 
@@ -158,11 +152,8 @@ def render(
     )
     context = dict(clone.solved_ctx or {})
     context.update(text_values or {})
-    context.update(get_template_functions())
 
-    resolved, volatile = _resolve_text(
-        clone, context, cache_entries, function_names
-    )
+    resolved, volatile = _resolve_text(clone, context, cache_entries)
     geometry = clone.to_geometry(resolved)
     fills = _build_fills(clone, resolved)
 
@@ -184,9 +175,7 @@ def to_geometry(
     """Returns the document's geometry with text templates resolved."""
     context = _text_context(document, text_values)
     entries = resolved_text_cache if resolved_text_cache is not None else {}
-    resolved, _volatile = _resolve_text(
-        document, context, entries, set(get_template_functions())
-    )
+    resolved, _volatile = _resolve_text(document, context, entries)
     return document.to_geometry(resolved)
 
 
@@ -200,9 +189,7 @@ def get_fill_render_data(
     """Returns the document's fill areas with text templates resolved."""
     context = _text_context(document, text_values)
     entries = resolved_text_cache if resolved_text_cache is not None else {}
-    resolved, _volatile = _resolve_text(
-        document, context, entries, set(get_template_functions())
-    )
+    resolved, _volatile = _resolve_text(document, context, entries)
     return _build_fills(document, resolved, set(exclude_ids or ()))
 
 
@@ -219,7 +206,6 @@ def _text_context(
 ) -> dict[str, Any]:
     context = dict(document.solved_ctx or {})
     context.update(text_values or {})
-    context.update(get_template_functions())
     return context
 
 
@@ -277,108 +263,31 @@ def _text_key(entries: dict) -> tuple:
     )
 
 
-def _value_stamp(
-    content: str,
-    context: dict[str, Any],
-    function_names: set[str],
-) -> list[list[str]]:
-    names = referenced_template_names([content]) - function_names
-    return [
-        [name, repr(context[name])]
-        for name in sorted(names)
-        if name in context
-    ]
-
-
-def _is_current(cached: Any, content: str, stamp: list[list[str]]) -> bool:
-    if not isinstance(cached, (tuple, list)) or not cached:
-        return False
-    if cached[0] != content:
-        return False
-    if len(cached) < 3:
-        return True
-    resolved_with = {tuple(pair) for pair in cached[2]}
-    return all(tuple(pair) in resolved_with for pair in stamp)
-
-
 def _resolve_text(
     document: Any,
     context: dict[str, Any],
     cache: dict,
-    function_names: set[str],
 ) -> tuple[dict[int, str | None], bool]:
     """Resolves every text box, reusing current cache entries.
 
-    Returns the resolved text by entity id and whether a newly resolved
-    placeholder used a volatile template function.
+    Raygeo owns the placeholder-level stamps and reuse rules; this
+    function only walks the document's text boxes and stores the
+    returned entries.
     """
+    functions = get_template_functions()
     resolved: dict[int, str | None] = {}
     volatile = False
     for entity in _text_boxes(document):
-        content = entity.content
-        if not content:
-            cache[entity.id] = ("", None)
-            resolved[entity.id] = None
-            continue
-        stamp = _value_stamp(content, context, function_names)
-        cached = cache.get(entity.id)
-        if cached is not None and _is_current(cached, content, stamp):
-            resolved[entity.id] = cached[1]
-            continue
-        previous_parts = (
-            cached[3]
-            if isinstance(cached, (tuple, list)) and len(cached) >= 4
-            else []
+        value, entry, part_volatile = resolve_template(
+            entity.content,
+            context,
+            functions,
+            cache.get(entity.id),
         )
-        value, parts, part_volatile = _resolve_template(
-            content, context, function_names, previous_parts
-        )
-        volatile = volatile or part_volatile
-        cache[entity.id] = (content, value, stamp, parts)
+        cache[entity.id] = entry
         resolved[entity.id] = value
+        volatile = volatile or part_volatile
     return resolved, volatile
-
-
-def _resolve_template(
-    content: str,
-    context: dict[str, Any],
-    function_names: set[str],
-    previous_parts: list,
-) -> tuple[str, list, bool]:
-    """Resolves the placeholders of *content* individually.
-
-    Unchanged placeholders reuse their previous resolution, so a
-    volatile function next to a counter keeps its value when only the
-    counter changes.
-    """
-    out: list[str] = []
-    parts: list[list] = []
-    volatile = False
-    position = 0
-    for index, match in enumerate(_PLACEHOLDER_RE.finditer(content)):
-        out.append(content[position : match.start()])
-        placeholder = match.group(0)
-        stamp = _value_stamp(placeholder, context, function_names)
-        previous = (
-            previous_parts[index]
-            if index < len(previous_parts)
-            and isinstance(previous_parts[index], (tuple, list))
-            else None
-        )
-        if previous is not None and _is_current(previous, placeholder, stamp):
-            out.append(previous[1])
-        else:
-            try:
-                resolved_part = ExpressionMap(context).format(placeholder)
-            except (KeyError, IndexError, ValueError):
-                resolved_part = placeholder
-            if referenced_template_names([placeholder]) & function_names:
-                volatile = True
-            out.append(resolved_part)
-        parts.append([placeholder, out[-1], stamp])
-        position = match.end()
-    out.append(content[position:])
-    return "".join(out), parts, volatile
 
 
 def _build_fills(
