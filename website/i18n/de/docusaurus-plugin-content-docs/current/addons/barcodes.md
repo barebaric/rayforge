@@ -12,6 +12,8 @@ graviert und eine Kontur-Operation ihn nachfahren kann.
 
 ## Einen Barcode hinzufügen
 
+![Die Barcode-Gruppe im Eigenschaftenbereich mit einem Code-128-Symbol](/screenshots/addon-barcodes.webp)
+
 Wähle **Objekt - Barcode hinzufügen**. In der Mitte des Arbeitsbereichs erscheint ein QR-Code und
 ist ausgewählt. Bearbeite ihn in der Gruppe **Barcode** des Eigenschaftenbereichs:
 

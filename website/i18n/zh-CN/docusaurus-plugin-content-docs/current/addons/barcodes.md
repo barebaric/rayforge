@@ -11,6 +11,8 @@ description:
 
 ## 添加条码
 
+![带有 Code 128 符号的条码属性组](/screenshots/addon-barcodes.webp)
+
 选择 **对象 - 添加条码**。工作区中央会出现一个二维码并被选中。在属性面板的 **条码** 组中
 编辑它：
 

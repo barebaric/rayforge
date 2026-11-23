@@ -12,6 +12,8 @@ description:
 
 ## बारकोड जोड़ना
 
+![Code 128 प्रतीक के साथ Barcode समूह](/screenshots/addon-barcodes.webp)
+
 **Object - Add Barcode** चुनें। कार्य क्षेत्र के बीच में एक QR कोड दिखाई देता है और चयनित रहता है। उसे गुण पैनल के
 **Barcode** समूह में संपादित करें:
 

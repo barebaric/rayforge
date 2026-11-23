@@ -12,6 +12,8 @@ still trace it.
 
 ## Adding a Barcode
 
+![The Barcode properties group with a Code 128 symbol](/screenshots/addon-barcodes.webp)
+
 Choose **Object - Add Barcode**. A QR code appears in the middle of the work area and is selected.
 Edit it in the **Barcode** group of the properties panel:
 

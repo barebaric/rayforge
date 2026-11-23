@@ -12,6 +12,8 @@ limpiamente y una de Contorno aún puede seguirlos.
 
 ## Añadir un código de barras
 
+![El grupo Código de barras con un símbolo Code 128](/screenshots/addon-barcodes.webp)
+
 Elige **Objeto - Añadir código de barras**. Aparece un código QR en el centro del área de trabajo,
 ya seleccionado. Edítalo en el grupo **Código de barras** del panel de propiedades:
 
