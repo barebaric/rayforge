@@ -1,9 +1,11 @@
 """Epilog laser driver backed by the raydriver LPD session.
 
 Epilog laser cutters are print devices: Rayforge encodes the job as
-PJL/PCL/HPGL and uploads it to the machine's network print queue, and
-the operator starts it at the control panel. The machine exposes no
-status channel and cannot be homed, jogged or moved remotely.
+an Epilog print job (the reverse-engineered reference format is PCL5
+carrying HPGL vector output) and uploads it to the machine's network
+print queue, and the operator starts it at the control panel. The
+machine exposes no status channel and cannot be homed, jogged or
+moved remotely.
 
 The encoder itself lives in raygeo (``raygeo.ops.convert.EpilogSpec``)
 and is selected by :class:`~rayforge.pipeline.intent_builder.IntentBuilder`.
@@ -24,6 +26,7 @@ from ....core.varset import (
     HostnameVar,
     IntVar,
     PortVar,
+    TextAreaVar,
     VarSet,
 )
 from ....core.varset.hostnamevar import hostname_validator
@@ -48,6 +51,9 @@ logger = logging.getLogger(__name__)
 
 #: LPD port of an Epilog printer.
 DEFAULT_PORT = 515
+
+#: Print queue name Epilog's setup instructions use.
+DEFAULT_QUEUE = "Laser"
 
 #: Supported raster and vector resolutions in dots per inch.
 RESOLUTIONS = ("100", "200", "250", "400", "500", "1000")
@@ -153,6 +159,15 @@ class EpilogZingDriver(SessionDriverBase):
                     description=_("The LPD print port of the laser"),
                     default=DEFAULT_PORT,
                 ),
+                TextAreaVar(
+                    key="queue",
+                    label=_("Print Queue"),
+                    description=_(
+                        "The print queue name the laser expects. "
+                        "Epilog's setup names it 'Laser'"
+                    ),
+                    default=DEFAULT_QUEUE,
+                ),
                 ChoiceVar(
                     key="resolution",
                     label=_("Resolution (DPI)"),
@@ -179,7 +194,11 @@ class EpilogZingDriver(SessionDriverBase):
         host = cast(str, kwargs["host"])
         port = cast(int, kwargs.get("port", DEFAULT_PORT))
         self._session = EpilogSession(
-            config={"host": host, "port": int(port)},
+            config={
+                "host": host,
+                "port": int(port),
+                "queue": str(kwargs.get("queue") or DEFAULT_QUEUE),
+            },
             event_callback=self._on_session_event,
         )
 

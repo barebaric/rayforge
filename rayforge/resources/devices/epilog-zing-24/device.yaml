@@ -29,6 +29,7 @@ machine:
   driver_args:
     host: ''
     port: 515
+    queue: Laser
     resolution: '500'
     frequency: 1000
   heads:

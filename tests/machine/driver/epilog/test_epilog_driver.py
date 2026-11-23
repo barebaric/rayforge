@@ -143,6 +143,12 @@ class TestSetup:
     def test_no_settings_pages(self, driver):
         assert driver.get_setting_vars() == []
 
+    def test_queue_defaults_to_laser(self):
+        keys = EpilogZingDriver.get_setup_vars().keys()
+        assert "queue" in keys
+        var = EpilogZingDriver.get_setup_vars().get("queue")
+        assert var.default == "Laser"
+
 
 class TestRun:
     @pytest.mark.asyncio
