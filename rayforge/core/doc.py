@@ -22,6 +22,7 @@ from .source_asset import SourceAsset
 from .workpiece import WorkPiece, workpieces_in
 
 if TYPE_CHECKING:
+    from ..machine.models.machine import Machine
     from .stock import StockItem
     from .stock_asset import StockAsset
 
@@ -47,7 +48,7 @@ class Doc(DocItem):
         self.assets: dict[str, IAsset] = {}
         self.asset_order: list[str] = []
         self._loading = False
-        self._known_workpiece_keys: set[object] = set()
+        self._known_workpiece_keys: set[str] = set()
 
         # The job counter, passed to text templates as {counter}
         self._job_counter = JobCounter()
@@ -229,11 +230,9 @@ class Doc(DocItem):
         readers = []
         for wp in workpieces:
             provider = wp.get_geometry_provider()
-            variables_used = getattr(provider, "variables_used", None)
-            if not callable(variables_used):
+            if provider is None:
                 continue
-            used = variables_used()
-            if isinstance(used, (set, frozenset)) and names & used:
+            if names & provider.variables_used():
                 readers.append(wp)
         return readers
 
@@ -255,7 +254,7 @@ class Doc(DocItem):
     def _number_new_counter_copies(
         self,
         new_workpieces: list[WorkPiece],
-        added_keys: set[object],
+        added_keys: set[str],
     ) -> None:
         """
         Numbers a newly added copy automatically.
@@ -678,20 +677,19 @@ def _append_image_edits(
 _COUNTER_PLACEHOLDERS = {"counter", "job.counter", "workpiece.counter"}
 
 
-def _workpiece_key(workpiece: WorkPiece) -> object:
-    """A stable key for a workpiece, including mocks without a uid."""
-    uid = getattr(workpiece, "uid", None)
-    return uid if isinstance(uid, str) else id(workpiece)
+def _workpiece_key(workpiece: WorkPiece) -> str:
+    """The stable uid a workpiece is tracked by."""
+    return workpiece.uid
 
 
-def _machine_uses_counter(machine) -> bool:
+def _machine_uses_counter(machine: "Machine") -> bool:
     """Whether any G-code template of *machine* reads the counter."""
     templates: list[str] = []
-    for macro in getattr(machine, "macros", {}).values():
+    for macro in machine.macros.values():
         templates.extend(macro.code or ())
-    for macro in getattr(machine, "hookmacros", {}).values():
+    for macro in machine.hookmacros.values():
         templates.extend(macro.code or ())
-    dialect = getattr(machine, "dialect", None)
+    dialect = machine.dialect
     if dialect is not None:
         templates.extend(dialect.preamble or ())
         templates.extend(dialect.postscript or ())

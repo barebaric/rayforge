@@ -36,9 +36,11 @@ def mock_workpiece_with_signals():
     mock_wp.descendant_transform_changed = Signal()
     mock_wp.descendant_renamed = Signal()
     mock_wp.parent = None
+    mock_wp.uid = "mock-workpiece-uid"
     mock_wp.name = "Mock WP"
     mock_wp.natural_size = (10.0, 10.0)
     mock_wp.get_local_bbox.return_value = (0.0, 0.0, 10.0, 10.0)
+    mock_wp.get_geometry_provider.return_value = None
     mock_wp.matrix = Matrix.identity()
     return mock_wp
 

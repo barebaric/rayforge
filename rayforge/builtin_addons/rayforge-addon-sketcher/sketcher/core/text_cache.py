@@ -217,9 +217,8 @@ def _read_names(
     for expression in expressions.values():
         names |= names_in_expression(str(expression))
     for constraint in document.constraints:
-        expression = getattr(constraint, "expression", None)
-        if expression:
-            names |= names_in_expression(str(expression))
+        if constraint.expression:
+            names |= names_in_expression(str(constraint.expression))
     names |= variables_used(document)
     return names
 
