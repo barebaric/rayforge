@@ -9,6 +9,7 @@ from ...machine.driver.driver import Driver
 from ...machine.models.machine import Machine
 from ...shared.units.system import UnitSystem
 from ..icons import get_icon
+from ..shared.command_row import CommandRow, set_command_rows, split_commands
 from ..shared.pref_rows.acceleration_spin_row import AccelerationSpinRow
 from ..shared.pref_rows.speed_spin_row import SpeedSpinRow
 from ..shared.preferences_page import TrackedPreferencesPage
@@ -40,12 +41,18 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         # Error Banner Group
         error_group = Adw.PreferencesGroup()
         self.add(error_group)
+        self._error_group = error_group
 
         # Configuration Error Banner
         self.error_banner = Adw.Banner()
         self.error_banner.set_use_markup(True)
         self.error_banner.set_revealed(False)
         error_group.add(self.error_banner)
+
+        # Terminal commands carried by the precheck error, one copy
+        # row each: they sit right under the banner that explains them.
+        self._command_rows: list[CommandRow] = []
+
         # Hide the group if the banner is not revealed to avoid extra spacing
         self.error_banner.connect(
             "notify::revealed",
@@ -274,11 +281,14 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
     def _update_error_state(self):
         """Shows or hides the error banner based on all possible errors."""
         errors = []
+        commands: list[str] = []
         if self.machine.precheck_error:
+            prose, precheck_commands = split_commands(
+                self.machine.precheck_error
+            )
+            commands.extend(precheck_commands)
             errors.append(
-                _("<b>Configuration required:</b> {error}").format(
-                    error=self.machine.precheck_error
-                )
+                _("<b>Configuration required:</b> {error}").format(error=prose)
             )
         if self.machine.driver and self.machine.driver.state.error:
             errors.append(
@@ -286,6 +296,10 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
                     error=self.machine.driver.state.error.title
                 )
             )
+
+        self._command_rows = set_command_rows(
+            self._error_group, self._command_rows, commands
+        )
 
         if errors:
             full_error_msg = " \n".join(errors)

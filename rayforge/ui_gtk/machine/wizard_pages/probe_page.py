@@ -17,6 +17,7 @@ The page offers:
   Step 5 (AI lookup, if applicable) or Step 6 manual entry.
 """
 
+from collections.abc import Sequence
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
@@ -29,6 +30,7 @@ from ....machine.driver import Driver, get_driver_cls
 from ....machine.driver.driver import DriverPrecheckError
 from ....shared.tasker import Task, task_mgr
 from ....shared.tasker.context import ExecutionContext
+from ...shared.command_row import CommandRow, set_command_rows, split_commands
 from . import WizardPage, _makePreferencesGroup
 
 if TYPE_CHECKING:
@@ -52,6 +54,9 @@ class ProbePage(WizardPage):
         # so re-entering via Back does not auto-restart a probe.
         self._probed: bool = False
         self.probe_succeeded = Signal()
+        # Copy rows for the terminal commands an error message hands
+        # the user; rebuilt whenever the status changes.
+        self._command_rows: list[CommandRow] = []
         super().__init__(wizard, **kwargs)
 
     def build_ui(self) -> None:
@@ -107,6 +112,7 @@ class ProbePage(WizardPage):
         self.status_row.set_title(_("Status"))
         self.status_row.set_subtitle(_("Idle"))
         self.status_row.remove_css_class("error")
+        self._set_commands([])
         self.spinner.stop()
         self.spinner.set_visible(False)
         self.probe_button.set_label(_("Probe Now"))
@@ -172,6 +178,7 @@ class ProbePage(WizardPage):
             self.status_row.set_subtitle(
                 _("Working area and speeds auto-detected.")
             )
+            self._set_commands([])
             self.spinner.stop()
             self.spinner.set_visible(False)
             self.probe_button.set_label(_("Probe Now"))
@@ -182,14 +189,22 @@ class ProbePage(WizardPage):
         task_mgr.schedule_on_main_thread(_update)
 
     def _show_error(self, message: str) -> None:
+        prose, commands = split_commands(message)
         self.status_row.set_title(_("Error"))
-        self.status_row.set_subtitle(message)
+        self.status_row.set_subtitle(prose)
         self.status_row.add_css_class("error")
+        self._set_commands(commands)
         self.spinner.stop()
         self.spinner.set_visible(False)
         self.probe_button.set_label(_("Retry"))
         self.probe_button.set_sensitive(True)
         self.set_ready(True)
+
+    def _set_commands(self, commands: Sequence[str]) -> None:
+        """Show each terminal command the message carries as a copy row."""
+        self._command_rows = set_command_rows(
+            self.group, self._command_rows, commands
+        )
 
 
 __all__ = ["ProbePage"]
