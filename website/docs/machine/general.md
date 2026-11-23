@@ -55,15 +55,14 @@ it to its new port after the OS re-enumerates USB devices — for example after 
 machine is unplugged and reconnected. You can find a device's VID:PID in the output of `lsusb`
 (Linux) or Device Manager → Hardware IDs (Windows).
 
+After selecting a driver, connection-specific settings appear below the selector (e.g. serial port,
+baud rate). These vary depending on the chosen driver.
+
 ### Custom Baud Rates
 
 The baud rate selector lists common rates, but any value between 300 and 4000000 bits per second is
 accepted. Choose **Custom…** at the end of the list and enter the rate your firmware uses — for
-example `250000`, which some Marlin builds default to. A configured custom rate stays visible in the
-selector.
-
-After selecting a driver, connection-specific settings appear below the selector (e.g. serial port,
-baud rate). These vary depending on the chosen driver.
+example `500000`. A configured custom rate stays visible in the selector.
 
 <!-- prettier-ignore-start -->
 :::tip

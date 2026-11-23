@@ -59,6 +59,12 @@ findest du in der Ausgabe von `lsusb` (Linux) oder im Geräte-Manager unter Hard
 Nach der Auswahl eines Treibers werden verbindungsspezifische Einstellungen unter der Auswahl
 angezeigt (z. B. serieller Port, Baudrate). Diese variieren je nach gewähltem Treiber.
 
+### Eigene Baudraten
+
+Die Baudraten-Auswahl listet gängige Werte auf, akzeptiert aber jeden Wert zwischen 300 und 4000000
+Bit pro Sekunde. Wähle **Custom…** am Ende der Liste und gib die Rate deiner Firmware ein — zum
+Beispiel `500000`. Eine konfigurierte eigene Rate bleibt in der Auswahl sichtbar.
+
 <!-- prettier-ignore-start -->
 :::tip
 Ein Fehlerbanner oben auf der Seite warnt dich, wenn der Treiber nicht konfiguriert ist oder

@@ -61,6 +61,13 @@ débranchement/rebranchement. Vous pouvez trouver le VID:PID d'un périphérique
 Après avoir sélectionné un pilote, des paramètres de connexion spécifiques apparaissent sous le
 sélecteur (ex. : port série, baud rate). Ils varient selon le pilote choisi.
 
+### Débits en Bauds Personnalisés
+
+Le sélecteur de débit en bauds liste les débits courants, mais accepte toute valeur comprise entre
+300 et 4000000 bits par seconde. Choisissez **Custom…** en bas de la liste et saisissez le débit
+utilisé par votre firmware — par exemple `500000`. Un débit personnalisé configuré reste visible
+dans le sélecteur.
+
 <!-- prettier-ignore-start -->
 :::tip
 Une bannière d'erreur en haut de la page vous avertit si le pilote n'est pas configuré ou

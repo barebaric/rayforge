@@ -14,6 +14,7 @@ from raygeo.ops import Ops
 from raygeo.ops.axis import Axis
 
 from rayforge.core.doc import Doc
+from rayforge.core.varset import BaudrateVar
 from rayforge.machine.driver import get_driver_cls
 from rayforge.machine.driver.driver import (
     DeviceStatus,
@@ -214,6 +215,8 @@ class TestRegistry:
         assert {"port", "baudrate", "deadlock_detection"} <= keys
 
         baudrate = varset["baudrate"]
+        assert isinstance(baudrate, BaudrateVar)
+        assert 250000 in baudrate.choices
         baudrate.value = 250000
         baudrate.validate()
 

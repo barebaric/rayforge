@@ -154,8 +154,8 @@ Controladores GRBL tipicamente usam uma destas taxas de transmissão:
 - **9600** (versões GRBL mais antigas)
 - **250000** (menos comum, alguns firmwares personalizados)
 
-Tente diferentes taxas de transmissão nas configurações de dispositivo do Rayforge. A mais comum é
-**115200**.
+Tente diferentes taxas de transmissão nas configurações de dispositivo do Rayforge. Se a taxa usada
+pelo seu firmware não estiver na lista, escolha **Custom…** e insira-a. A mais comum é **115200**.
 
 ### Conexão Cai Continuamente
 
