@@ -1,5 +1,5 @@
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Union, cast
+from typing import TYPE_CHECKING, Union
 
 from raygeo.sketch.entities import Bezier, Entity, Line
 from raygeo.sketch.entities import SketchPoint as Point
@@ -39,7 +39,7 @@ class WaypointSharpTool(SketchTool):
         pass
 
     def on_activate(self):
-        self._set_waypoint_type(cast(WaypointType, WaypointType.SHARP))
+        self._set_waypoint_type(WaypointType.SHARP)
         self.element.set_tool("select")
 
     def _get_waypoint_pid(self) -> EntityID | None:
