@@ -74,6 +74,10 @@ class MachineController:
         self._last_driver_name = self.machine.driver_name
         self._last_driver_args = self.machine.driver_args.copy()
 
+        # Identifies the most recent rebuild request so a superseded
+        # debounce task can tell that a newer one took over.
+        self._rebuild_generation = 0
+
         # Listen to machine's changed signal to rebuild driver when
         # driver configuration changes
         self.machine.changed.connect(self._on_machine_changed)
@@ -133,7 +137,8 @@ class MachineController:
         Triggers driver rebuild only if the driver configuration has
         changed. The rebuild is debounced so that bursts of changes
         (e.g. per-keystroke edits in the settings UI) coalesce into a
-        single driver rebuild and a single connection attempt.
+        single driver rebuild and a single connection attempt. Each
+        change supersedes every rebuild requested before it.
         """
         current_driver_name = self.machine.driver_name
         current_driver_args = self.machine.driver_args
@@ -144,24 +149,30 @@ class MachineController:
         ):
             self._last_driver_name = current_driver_name
             self._last_driver_args = current_driver_args.copy()
+            self._rebuild_generation += 1
             task_mgr.add_coroutine(
                 self._debounced_rebuild,
+                self._rebuild_generation,
                 key=(self.machine.id, "rebuild-driver-on-change"),
             )
 
-    async def _debounced_rebuild(self, ctx: Optional["ExecutionContext"]):
+    async def _debounced_rebuild(
+        self, ctx: Optional["ExecutionContext"], generation: int
+    ):
         """
-        Waits for a quiet period before rebuilding the driver. Because
-        re-scheduling with the same task key cancels the pending sleep,
+        Waits for a quiet period before rebuilding the driver so that
         only the last change of a burst reaches rebuild_driver.
 
-        The cancellation flag is re-checked after the sleep: a cancel
-        that raced with the task starting up does not necessarily
-        propagate to the running coroutine, and a cancelled rebuild
-        must never touch driver state.
+        Superseding a pending debounce is tracked by generation, not
+        only by the task's cancellation flag: re-scheduling with the
+        same task key requests cancellation, but that request is
+        delivered to the event loop asynchronously and may be dropped
+        once the previous task completed, letting a stale task rebuild
+        the driver and tear it down again for the change that
+        superseded it.
         """
         await asyncio.sleep(_REBUILD_DEBOUNCE_SECONDS)
-        if ctx is not None and ctx.is_cancelled():
+        if generation != self._rebuild_generation:
             return
         await self._safe_rebuild_driver(ctx)
 

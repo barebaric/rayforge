@@ -117,6 +117,35 @@ class TestDriverRebuildDebounce:
         assert rebuild_spy.call_count == 1
         assert machine.driver_name == "TestDriver"
 
+    @pytest.mark.asyncio
+    async def test_burst_rebuild_uses_latest_configuration(
+        self, machine, mocker, task_mgr
+    ):
+        """
+        No superseded debounce may rebuild the driver, and the rebuild
+        that survives a burst must see the final configuration, even
+        when a superseded debounce was cancelled only after it started.
+        """
+        await wait_until_settled(task_mgr)
+        machine.auto_connect = False
+        seen = []
+        real_rebuild = machine.controller.rebuild_driver
+
+        async def recording_rebuild(ctx=None):
+            seen.append(dict(machine.driver_args))
+            await real_rebuild(ctx)
+
+        mocker.patch.object(
+            machine.controller, "rebuild_driver", recording_rebuild
+        )
+
+        machine.set_driver_args({"port": "/dev/one"})
+        machine.set_driver_args({"port": "/dev/one-two"})
+        machine.set_driver_args({"port": "/dev/one-two-three"})
+        await wait_until_settled(task_mgr)
+
+        assert seen == [{"port": "/dev/one-two-three"}]
+
 
 @pytest.mark.usefixtures("lite_context")
 class TestRebuildFailureLogging:
