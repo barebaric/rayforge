@@ -1,7 +1,5 @@
 """Tests for the error-diffusion and screen dithering algorithms."""
 
-from typing import cast
-
 import numpy as np
 import pytest
 from raygeo.image.dither import (
@@ -10,7 +8,6 @@ from raygeo.image.dither import (
     apply_halftone_dither,
 )
 from raygeo.image.srgb import srgb_to_linear
-from scipy import ndimage
 
 from rayforge.image.dither import DitherAlgorithm, grayscale_to_dithered_array
 
@@ -39,8 +36,51 @@ NEW_ALGORITHMS = [
 
 
 def _label(image: np.ndarray) -> tuple[np.ndarray, int]:
-    """Connected dots of a binary image and their count."""
-    return cast(tuple[np.ndarray, int], ndimage.label(image))
+    """Label 4-connected dots of a binary image and count them."""
+    binary = np.asarray(image) != 0
+    labels = np.zeros(binary.shape, dtype=np.int32)
+    height, width = binary.shape
+    count = 0
+
+    for y in range(height):
+        for x in range(width):
+            if not binary[y, x] or labels[y, x]:
+                continue
+            count += 1
+            stack = [(y, x)]
+            labels[y, x] = count
+            while stack:
+                row, col = stack.pop()
+                for next_row, next_col in (
+                    (row - 1, col),
+                    (row + 1, col),
+                    (row, col - 1),
+                    (row, col + 1),
+                ):
+                    if (
+                        0 <= next_row < height
+                        and 0 <= next_col < width
+                        and binary[next_row, next_col]
+                        and labels[next_row, next_col] == 0
+                    ):
+                        labels[next_row, next_col] = count
+                        stack.append((next_row, next_col))
+
+    return labels, count
+
+
+def _find_objects(labels: np.ndarray) -> list[tuple[slice, slice]]:
+    """Bounding-box slices for each label, like ndimage.find_objects."""
+    objects = []
+    for label in range(1, int(labels.max()) + 1):
+        rows, cols = np.where(labels == label)
+        objects.append(
+            (
+                slice(int(rows.min()), int(rows.max()) + 1),
+                slice(int(cols.min()), int(cols.max()) + 1),
+            )
+        )
+    return objects
 
 
 class TestAlgorithmCatalogue:
@@ -220,7 +260,7 @@ class TestHalftone:
         img = np.full((100, 200), 220, dtype=np.uint8)
         result = self._halftone(img, 2.0, 0.0, (20.0, 10.0))
         labels, _count = _label(result)
-        boxes = ndimage.find_objects(labels)
+        boxes = _find_objects(labels)
         interior = [
             b
             for b in boxes

@@ -133,7 +133,6 @@ def get_dependency_info() -> dict:
     for pkg_name, display_name in [
         ("opencv-python", "OpenCV"),
         ("numpy", "NumPy"),
-        ("scipy", "SciPy"),
         ("vtracer", "vtracer"),
     ]:
         ver = _get_version(pkg_name)

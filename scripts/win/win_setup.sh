@@ -160,7 +160,6 @@ if [[ "$1" == "pacman" || -z "$1" ]]; then
       mingw-w64-ucrt-x86_64-python-pymupdf
       mingw-w64-ucrt-x86_64-python-pyopengl
       mingw-w64-ucrt-x86_64-python-pyopengl-accelerate
-      mingw-w64-ucrt-x86_64-python-scipy
       mingw-w64-ucrt-x86_64-pyinstaller 
 
       # Pure Python dependencies needed for environment
