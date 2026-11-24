@@ -1,8 +1,7 @@
 import cairo
 import numpy as np
 import pytest
-from _grad_check import check_grad
-from raygeo.sketch.constraints import EqualDistanceConstraint
+from raygeo.sketch.constraints import EqualDistanceConstraint, check_grad
 from raygeo.sketch.params import ParameterContext
 from raygeo.sketch.registry import EntityRegistry
 

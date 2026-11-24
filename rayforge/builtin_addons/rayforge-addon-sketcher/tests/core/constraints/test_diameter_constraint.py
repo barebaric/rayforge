@@ -4,8 +4,7 @@ from unittest.mock import MagicMock
 import cairo
 import numpy as np
 import pytest
-from _grad_check import check_grad
-from raygeo.sketch.constraints import DiameterConstraint
+from raygeo.sketch.constraints import DiameterConstraint, check_grad
 from raygeo.sketch.params import ParameterContext
 from raygeo.sketch.registry import EntityRegistry
 from sketcher.core import Sketch
