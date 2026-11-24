@@ -154,6 +154,27 @@ def test_label_width_includes_submenu_labels(menu):
     assert menu._get_max_label_width() == 0
 
 
+def test_drawing_area_grows_for_long_labels(menu):
+    """The label is drawn outside the ring, so the drawing area must
+    grow or the label gets clipped at the widget edge."""
+    child = make_item(
+        "A very long submenu label that definitely needs the room "
+        "(Ctrl+Shift+L)"
+    )
+    group = make_item("group", children=[child, make_item("short")])
+    menu.set_items([make_item(f"i{i}") for i in range(9)] + [group])
+    assert menu._collapsed
+
+    needed = (
+        menu.sub_radius_outer + menu.label_gap + menu._get_max_label_width()
+    )
+    assert needed > menu.radius_outer + menu.text_margin
+    assert menu.total_radius == pytest.approx(needed)
+    expected = int(menu.total_radius * 2)
+    assert menu.drawing_area.get_content_width() == expected
+    assert menu.drawing_area.get_content_height() == expected
+
+
 @pytest.mark.parametrize(
     "text",
     ["Text (T)", "\u6587\u672c", "\u0646\u0635", "\u092a\u093e\u0920"],
