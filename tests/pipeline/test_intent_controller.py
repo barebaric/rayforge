@@ -358,6 +358,25 @@ def test_rotary_panel_error_is_reported(isolated_machine):
     ctrl.shutdown()
 
 
+def test_unavailable_driver_error_is_not_notified(isolated_machine):
+    """The main window's machine warning banner names a missing driver,
+    so rebuilding must not add a notification on top of it."""
+    doc = _make_doc(_TestStep(name="s1"), WorkPiece(name="wp"))
+    isolated_machine.driver_name = "RemovedAddonDriver"
+    tm = ImmediateMainThreadTaskManager()
+    ctrl = IntentController(doc, tm, machine=isolated_machine)
+    messages: list[str] = []
+    ctrl.pipeline_error.connect(
+        lambda _sender, *, message: messages.append(message), weak=False
+    )
+
+    ctrl.force_rebuild()
+
+    assert messages == []
+    assert ctrl.intent is not None
+    ctrl.shutdown()
+
+
 def test_unexpected_build_error_completes_job_waiters(
     monkeypatch, isolated_machine
 ):
