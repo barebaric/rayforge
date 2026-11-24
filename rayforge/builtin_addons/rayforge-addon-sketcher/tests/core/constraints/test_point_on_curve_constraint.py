@@ -3,11 +3,10 @@ from unittest.mock import MagicMock
 import numpy as np
 import pytest
 from raygeo.sketch import solve_registry
-from raygeo.sketch.constraints import PointOnCurveConstraint
+from raygeo.sketch.constraints import PointOnCurveConstraint, check_grad
 from raygeo.sketch.constraints.point_on_curve import closest_point_on_bezier
 from raygeo.sketch.params import ParameterContext
 from raygeo.sketch.registry import EntityRegistry
-from scipy.optimize import check_grad
 from sketcher.core import Sketch
 from sketcher.selection import SketchSelection
 

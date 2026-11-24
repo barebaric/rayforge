@@ -17,8 +17,8 @@ import cairo
 import numpy as np
 from raygeo.geo import Matrix
 from raygeo.geo.types import Point, Rect
-from scipy.ndimage import binary_dilation
-from scipy.signal import fftconvolve
+from raygeo.image.pack import Packer
+from raygeo.image.preprocess import dilate_binary
 
 from ...context import get_context
 from ...core.group import Group
@@ -369,9 +369,9 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
                     # Dilate the padded mask. Using iterations is an efficient
                     # way to expand the shape by `margin_px` pixels.
                     # The default 3x3 cross-shaped structure is used.
-                    dilated_mask = binary_dilation(
-                        padded_mask, iterations=margin_px
-                    )
+                    dilated_mask = dilate_binary(
+                        padded_mask.view(np.uint8), margin_px
+                    ).view(bool)
                 else:
                     dilated_mask = mask
 
@@ -430,27 +430,27 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
             - A list of `DocItem`s that could not be placed.
         """
         placements: list[PlacedItem] = []
-        placed_bounds_px: list[tuple[int, int, int, int]] = []
         # Create a dictionary of all items to be placed, for easy removal.
         item_dict = {group[0].item.uid: group[0].item for group in item_groups}
         total_items = len(item_groups)
+        packer = Packer(canvas.view(np.uint8))
 
         for i, variants in enumerate(item_groups):
             item_obj = variants[0].item
             logger.debug(f"Placing item: {item_obj.name}")
 
-            placement = self._find_best_placement(
-                variants, canvas, placed_bounds_px
+            result = packer.place(
+                [variant.mask.view(np.uint8) for variant in variants]
             )
 
-            if placement:
-                item, pos = placement.variant, placement.position_px
-                y_px, x_px = pos
-                h_px, w_px = item.mask.shape
-
-                canvas[y_px : y_px + h_px, x_px : x_px + w_px] |= item.mask
-                placed_bounds_px.append((x_px, y_px, x_px + w_px, y_px + h_px))
-                placements.append(placement)
+            if result is not None:
+                variant_index, y_px, x_px = result
+                variant = variants[variant_index]
+                logger.debug(
+                    f"  - Best fit: offset {variant.angle_offset}°, "
+                    f"pos {(y_px, x_px)}"
+                )
+                placements.append(PlacedItem(variant, (y_px, x_px)))
                 # Remove successfully placed item from the dictionary.
                 del item_dict[item_obj.uid]
 
@@ -469,89 +469,6 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         # Any items remaining in the dictionary are the ones that failed.
         unplaced_items = list(item_dict.values())
         return placements, unplaced_items
-
-    @staticmethod
-    def _get_placement_bounds(
-        placement: PlacedItem,
-    ) -> tuple[int, int, int, int]:
-        """Calculates the (x0, y0, x1, y1) bounds of a placed item."""
-        y_px, x_px = placement.position_px
-        h_px, w_px = placement.variant.mask.shape
-        return (x_px, y_px, x_px + w_px, y_px + h_px)
-
-    def _find_best_placement(
-        self,
-        variants: list[WorkpieceVariant],
-        canvas: np.ndarray,
-        placed_bounds: list[tuple[int, int, int, int]],
-    ) -> PlacedItem | None:
-        """
-        Finds the best rotation and position for an item.
-
-        The "best" placement is the one that results in the smallest
-        overall bounding box for all items placed so far.
-
-        Args:
-            variants: A list of possible rotations for a workpiece.
-            canvas: The packing canvas.
-            placed_bounds: A list of bounding boxes for already-placed items.
-
-        Returns:
-            The best `PlacedItem` if a fit is found, otherwise None.
-        """
-        best_fit: dict | None = None
-        best_score = float("inf")
-
-        for variant in variants:
-            pos_px = self._find_first_fit(canvas, variant.mask)
-            if not pos_px:
-                continue
-
-            # Score the placement by the area of the new total bounding box.
-            score = self._calculate_placement_score(
-                pos_px, variant.mask.shape, placed_bounds
-            )
-
-            if score < best_score:
-                best_score = score
-                best_fit = {"pos": pos_px, "variant": variant}
-
-        if best_fit:
-            logger.debug(
-                f"  - Best fit: offset {best_fit['variant'].angle_offset}°, "
-                f"pos {best_fit['pos']}, score {best_score:.0f}"
-            )
-            return PlacedItem(
-                variant=best_fit["variant"], position_px=best_fit["pos"]
-            )
-        return None
-
-    @staticmethod
-    def _calculate_placement_score(
-        pos_px: tuple[int, int],
-        mask_shape: tuple[int, int],
-        placed_bounds: list[tuple[int, int, int, int]],
-    ) -> float:
-        """
-        Calculates the area of the bounding box of a potential placement.
-
-        Args:
-            pos_px: The (y, x) position of the new item's top-left corner.
-            mask_shape: The (h, w) shape of the new item's mask.
-            placed_bounds: Bboxes of items already on the canvas, as
-                           (x0, y0, x1, y1) tuples.
-
-        Returns:
-            The total area of the new combined bounding box.
-        """
-        y_px, x_px = pos_px
-        h_px, w_px = mask_shape
-        temp_bounds = placed_bounds + [(x_px, y_px, x_px + w_px, y_px + h_px)]
-        min_x = min(b[0] for b in temp_bounds)
-        min_y = min(b[1] for b in temp_bounds)
-        max_x = max(b[2] for b in temp_bounds)
-        max_y = max(b[3] for b in temp_bounds)
-        return (max_x - min_x) * (max_y - min_y)
 
     def _compute_deltas_from_placements(
         self,
@@ -825,61 +742,3 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         # We only care about the actual width, not the stride.
         mask = mask[:, :width_px] > 0
         return np.flipud(mask), local_bbox, (unrotated_w_mm, unrotated_h_mm)
-
-    @staticmethod
-    def _find_first_fit(
-        canvas: np.ndarray, item_mask: np.ndarray
-    ) -> tuple[int, int] | None:
-        """
-        Finds the first top-left position where an item fits on the canvas.
-
-        This method uses FFT-based convolution to quickly find all
-        collision-free locations, then returns the first one (top-most, then
-        left-most). This is a significant optimization over a naive
-        pixel-by-pixel scan, especially on large canvases.
-
-        Args:
-            canvas: The boolean 2D array representing occupied space.
-            item_mask: The boolean 2D array of the item to place.
-
-        Returns:
-            A tuple (y, x) of the top-left corner for placement, or None
-            if no fit is found.
-        """
-        canvas_h, canvas_w = canvas.shape
-        item_h, item_w = item_mask.shape
-
-        if item_h > canvas_h or item_w > canvas_w:
-            return None
-
-        # The core of the check is a 2D cross-correlation:
-        # result(y, x) = sum(canvas[y:y+h, x:x+w] * item_mask)
-        # We look for a (y,x) where the result is 0.
-        # fftconvolve computes convolution, which is correlation with a
-        # flipped kernel.
-        # We use floating point numbers for fftconvolve performance.
-        canvas_f = canvas.astype(np.float32)
-        # The kernel must be flipped for cross-correlation.
-        item_mask_f = np.flip(item_mask.astype(np.float32))
-
-        # `mode='valid'` ensures the output size is correct for checking
-        # every possible top-left placement. The result is a map where each
-        # pixel value is the sum of products of overlapping areas.
-        collision_map = fftconvolve(canvas_f, item_mask_f, mode="valid")
-
-        # Due to floating point inaccuracies, results may not be exactly zero.
-        # We round to the nearest integer to check for collisions. A collision
-        # exists if the sum of overlapping pixels is > 0.
-        collision_map_int = np.round(collision_map).astype(np.int32)
-
-        # Find the coordinates of the first zero (no collision).
-        # np.argwhere finds all non-zero elements. We want the first zero.
-        potential_fits = np.argwhere(collision_map_int == 0)
-
-        if potential_fits.size > 0:
-            # np.argwhere returns results sorted first by row, then by column,
-            # so the first result is the top-most, left-most fit.
-            y, x = potential_fits[0]
-            return int(y), int(x)
-
-        return None
