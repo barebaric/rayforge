@@ -12,6 +12,7 @@ from ...shared.units.definitions import (
     get_units_for_quantity,
 )
 from ...shared.util.localized import SUPPORTED_LANGUAGES
+from ...shared.util.platform import supports_self_update
 from ...ui_gtk.doceditor import file_dialogs
 from ...usage import get_usage_tracker
 from ..shared.gtk import report_dialog_error
@@ -339,6 +340,7 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         self.auto_download_updates_row.set_active(
             config.auto_download_app_updates
         )
+        self.auto_download_updates_row.set_visible(supports_self_update())
         self.auto_download_updates_row.connect(
             "notify::active", self.on_auto_download_updates_changed
         )
