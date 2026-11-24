@@ -413,6 +413,33 @@ class TestDXFImporter:
             "Circle should contain curve commands, not be linearized"
         )
 
+    def test_spline_with_simple_interior_knots_has_no_loop(self):
+        """A cubic spline whose interior knots have multiplicity one must
+        be split into exact bezier spans. Readers that fell back to
+        sampled fitting used to emit control points far outside the
+        drawing, so the workpiece spanned a loop that does not exist in
+        the file.
+        """
+        importer = _importer("spline_simple_knots.dxf")
+        manifest = importer.scan()
+        assert manifest.natural_size_mm == pytest.approx((15.0, 40.0))
+
+        parse_result = importer.parse()
+        assert parse_result is not None
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
+        vec_result = importer.vectorize(parse_result, spec)
+        geo = vec_result.geometries_by_layer[None]
+
+        assert geo.rect() == pytest.approx(
+            (
+                499.5215204169139,
+                273.4515044987481,
+                514.5215204169139,
+                313.4515044987481,
+            )
+        )
+        assert _has_curves(geo.data)
+
     def test_acdbcircle_dxf_not_linearized(
         self, acdbcircle_dxf_importer_from_file: DxfImporter
     ):
