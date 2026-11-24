@@ -2,7 +2,7 @@
 import os
 from PyInstaller.utils.hooks import collect_submodules
 
-hiddenimports = ['gi._gi_cairo', 'cairosvg']
+hiddenimports = ['gi._gi_cairo']
 hiddenimports += collect_submodules('rayforge.ui_gtk.canvas2d')
 hiddenimports += collect_submodules('rayforge.ui_gtk.canvas2d.elements')
 hiddenimports += collect_submodules('rayforge.ui_gtk.shared')

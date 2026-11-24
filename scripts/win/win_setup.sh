@@ -161,8 +161,6 @@ if [[ "$1" == "pacman" || -z "$1" ]]; then
       mingw-w64-ucrt-x86_64-python-pyopengl
       mingw-w64-ucrt-x86_64-python-pyopengl-accelerate
       mingw-w64-ucrt-x86_64-python-scipy
-      mingw-w64-ucrt-x86_64-python-threadpoolctl
-      mingw-w64-ucrt-x86_64-python-svgelements
       mingw-w64-ucrt-x86_64-pyinstaller 
 
       # Pure Python dependencies needed for environment
@@ -174,7 +172,6 @@ if [[ "$1" == "pacman" || -z "$1" ]]; then
       mingw-w64-ucrt-x86_64-python-pytest-asyncio
       mingw-w64-ucrt-x86_64-python-pytest-cov
       mingw-w64-ucrt-x86_64-python-pytest-mock
-      mingw-w64-ucrt-x86_64-python-websockets
       mingw-w64-ucrt-x86_64-python-yaml
     )
 
@@ -277,10 +274,8 @@ EOF
         "pyserial$(req_version pyserial)" \
         "raygeo$(req_version raygeo)" \
         "raydriver$(req_version raydriver)" \
-        "ezdxf$(req_version ezdxf)" \
         "pypdf$(req_version pypdf)" \
         "trimesh$(req_version trimesh)" \
-        "zeroconf$(req_version zeroconf)" \
         "ruida-pa$(req_version ruida-pa)" \
         "pytest-xdist==3.8.0" \
         --break-system-packages
