@@ -39,7 +39,7 @@ class SetWaypointTypeCommand(SketchChangeCommand):
         self,
         sketch: Sketch,
         waypoint_id: EntityID,
-        new_type: WaypointType,
+        new_type: str,
     ):
         label = _("Set Waypoint Type")
         super().__init__(sketch, label)

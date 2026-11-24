@@ -13,15 +13,17 @@ from raygeo.sketch.constraints import (
 )
 from raygeo.sketch.entities import Arc, Circle, Line
 from raygeo.sketch.entities import SketchPoint as Point
-from raygeo.sketch.snap import (
-    SNAP_LINE_STYLES,
+from raygeo.sketch.snap.types import (
     DragContext,
+    SnapLineStyle,
     SnapLineType,
     SnapResult,
+    snap_line_styles,
 )
-from raygeo.sketch.snap.types import SnapLineStyle
 
 from .base import SketcherKey
+
+SNAP_LINE_STYLES = snap_line_styles()
 
 if TYPE_CHECKING:
     from ..sketchelement import SketchElement

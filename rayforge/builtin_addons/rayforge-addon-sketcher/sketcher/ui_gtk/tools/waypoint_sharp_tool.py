@@ -70,7 +70,7 @@ class WaypointSharpTool(SketchTool):
                 return True
         return False
 
-    def _set_waypoint_type(self, new_type: WaypointType):
+    def _set_waypoint_type(self, new_type: str):
         editor = self.element.editor
         sketch = self.element.sketch
 

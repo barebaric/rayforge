@@ -295,6 +295,39 @@ class TestDXFImporter:
         assert inches_workpiece is not None
         assert inches_workpiece.size == pytest.approx((25.4, 25.4))
 
+    def test_unitless_file_without_header_is_metres(self, tmp_path):
+        """A drawing that omits the HEADER section entirely carries no
+        unit information, and such exports are conventionally in metres.
+        Reading them as millimetres shrinks them by a factor of a
+        thousand."""
+        path = tmp_path / "noheader.dxf"
+        path.write_text(
+            "  0\nSECTION\n  2\nENTITIES\n"
+            "  0\nLINE\n  8\n0\n"
+            " 10\n0.0\n 20\n0.0\n 11\n0.1\n 21\n0.0\n"
+            "  0\nENDSEC\n  0\nEOF\n"
+        )
+
+        manifest = DxfImporter(path.read_bytes(), path).scan()
+
+        assert manifest.natural_size_mm == pytest.approx((100.0, 0.0))
+
+    def test_header_without_insunits_is_native_units(self, tmp_path):
+        """A file with a HEADER section but no $INSUNITS is read as
+        written, not rescaled."""
+        path = tmp_path / "nounits.dxf"
+        path.write_text(
+            "  0\nSECTION\n  2\nHEADER\n  9\n$ACADVER\n  1\nAC1015\n"
+            "  0\nENDSEC\n  0\nSECTION\n  2\nENTITIES\n"
+            "  0\nLINE\n  8\n0\n"
+            " 10\n0.0\n 20\n0.0\n 11\n0.1\n 21\n0.0\n"
+            "  0\nENDSEC\n  0\nEOF\n"
+        )
+
+        manifest = DxfImporter(path.read_bytes(), path).scan()
+
+        assert manifest.natural_size_mm == pytest.approx((0.1, 0.0))
+
     def test_get_natural_size(self, line_workpiece: WorkPiece):
         assert line_workpiece is not None
         size = line_workpiece.natural_size

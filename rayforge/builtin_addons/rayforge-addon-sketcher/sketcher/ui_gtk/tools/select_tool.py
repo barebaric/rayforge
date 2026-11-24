@@ -22,7 +22,7 @@ from raygeo.sketch.constraints import (
 )
 from raygeo.sketch.entities import Arc, Bezier, Circle, Entity, Line
 from raygeo.sketch.entities import TextBox as TextBoxEntity
-from raygeo.sketch.snap import DragContext
+from raygeo.sketch.snap.types import DragContext
 from raygeo.sketch.types import EntityID
 
 from ...core.commands import (

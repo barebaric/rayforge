@@ -387,19 +387,26 @@ class DxfImporter(Importer):
         geometries_by_layer: dict[str | None, Geometry],
         doc_bounds: Rect,
     ) -> None:
-        """Bridges hairline gaps between consecutive sub-paths.
+        """Chains sub-paths into contours and bridges hairline gaps.
 
-        CAD exporters routinely leave sub-paths a fraction of a unit
-        apart. Closing gaps of that size is always safe; wider gaps are
+        DXF entities arrive as independent sub-paths, one per LINE, ARC
+        or SPLINE, regardless of how they relate on the drawing. Joining
+        those whose ends meet restores the contours the author drew, so
+        parts come back as closed outlines rather than loose segments.
+
+        CAD exporters also routinely leave the ends a fraction of a unit
+        apart. Bridging gaps of that size is always safe; wider gaps are
         left for the optional outline repair, which the user enables in
         the import dialog.
         """
         w, h = doc_bounds[2], doc_bounds[3]
         diag = math.hypot(w, h)
         tolerance = max(0.01, diag / 20000.0)
-        for geo in geometries_by_layer.values():
+        for layer_id, geo in geometries_by_layer.items():
             if geo and not geo.is_empty():
-                geo.close_gaps(tolerance=tolerance)
+                joined, _ = geo.join_open_contours(tolerance)
+                geometries_by_layer[layer_id] = joined
+                joined.close_gaps(tolerance=tolerance)
 
     @staticmethod
     def _flatten_z(geo: Geometry) -> Geometry:

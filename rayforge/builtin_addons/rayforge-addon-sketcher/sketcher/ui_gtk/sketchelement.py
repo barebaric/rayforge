@@ -7,7 +7,7 @@ from raygeo.geo import Matrix
 from raygeo.sketch.boolean import BooleanOp
 from raygeo.sketch.entities import Entity, Line
 from raygeo.sketch.entities import SketchPoint as Point
-from raygeo.sketch.snap import SnapEngine
+from raygeo.sketch.snap.engine import SnapEngine
 from raygeo.sketch.snap.producers import (
     CentersProducer,
     EntityPointsProducer,
