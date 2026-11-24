@@ -1,5 +1,5 @@
 raydriver==1.19.0
-raygeo==1.99.3
+raygeo==1.101.0
 aiohttp==3.14.5
 asyncudp==0.11.0
 blinker==1.9.0
