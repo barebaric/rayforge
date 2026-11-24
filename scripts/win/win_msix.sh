@@ -92,7 +92,7 @@ if [ -z "$MAKEAPPX_PATH" ]; then
 fi
 
 echo "Packing MSIX with $MAKEAPPX_PATH..."
-"$MAKEAPPX_PATH" pack /o \
+MSYS2_ARG_CONV_EXCL='*' "$MAKEAPPX_PATH" pack /o \
     /d "$(to_windows_path "$STAGE_DIR")" \
     /p "$(to_windows_path "$PACKAGE_PATH")"
 
@@ -124,7 +124,8 @@ if [ -n "${MSIX_CERT_PFX:-}" ]; then
     fi
 
     echo "Signing MSIX with $SIGNTOOL_PATH..."
-    "$SIGNTOOL_PATH" sign /fd SHA256 "${TIMESTAMP_ARGS[@]}" \
+    MSYS2_ARG_CONV_EXCL='*' "$SIGNTOOL_PATH" sign /fd SHA256 \
+        "${TIMESTAMP_ARGS[@]}" \
         /f "$(to_windows_path "$CERT_PFX")" \
         /p "$MSIX_CERT_PASSWORD" \
         "$(to_windows_path "$PACKAGE_PATH")"
