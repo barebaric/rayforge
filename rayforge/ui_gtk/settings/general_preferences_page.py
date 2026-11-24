@@ -12,7 +12,7 @@ from ...shared.units.definitions import (
     get_units_for_quantity,
 )
 from ...shared.util.localized import SUPPORTED_LANGUAGES
-from ...shared.util.platform import supports_self_update
+from ...shared.util.platform import is_msix, supports_self_update
 from ...ui_gtk.doceditor import file_dialogs
 from ...usage import get_usage_tracker
 from ..shared.gtk import report_dialog_error
@@ -328,6 +328,7 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         self.check_updates_row.connect(
             "notify::active", self.on_check_updates_changed
         )
+        self.check_updates_row.set_visible(not is_msix())
         startup_group.add(self.check_updates_row)
 
         self.auto_download_updates_row = Adw.SwitchRow(

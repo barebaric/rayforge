@@ -20,6 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.set-version.outputs.version }}
+      msix_version: ${{ steps.set-version.outputs.msix_version }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -41,14 +42,29 @@ jobs:
             echo "Error: No git version number found!"
             exit 1
           fi
+          if [[ "$VERSION" == *-* || "$VERSION" == *~* ]]; then
+            MSIX_VERSION="1.0.0.$(( GITHUB_RUN_NUMBER % 60000 + 1 ))"
+          else
+            MSIX_VERSION="$VERSION"
+          fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "msix_version=$MSIX_VERSION" >> "$GITHUB_OUTPUT"
           echo "Version: $VERSION"
+          echo "MSIX version: $MSIX_VERSION"
 
   build:
     runs-on: windows-2025
     needs: version
+    outputs:
+      msix_identity_name: ${{ steps.msix.outputs.identity_name }}
     env:
       VERSION: ${{ needs.version.outputs.version }}
+      MSIX_VERSION: ${{ needs.version.outputs.msix_version }}
+      MSIX_IDENTITY_NAME: ${{ vars.MSIX_IDENTITY_NAME || 'Rayforge.Dev' }}
+      MSIX_PUBLISHER: ${{ vars.MSIX_PUBLISHER || 'CN=Rayforge Dev' }}
+      MSIX_PUBLISHER_DISPLAY_NAME: ${{ vars.MSIX_PUBLISHER_DISPLAY_NAME || 'Rayforge' }}
+      MSIX_CERT_PFX_BASE64: ${{ secrets.MSIX_CERT_PFX_BASE64 }}
+      MSIX_CERT_PASSWORD: ${{ secrets.MSIX_CERT_PASSWORD }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -116,6 +132,48 @@ jobs:
           $MSYS2_PATH/ucrt64/bin/objdump -p $MSYS2_PATH/ucrt64/bin/libcairo-2.dll | grep "DLL Name"
           $MSYS2_PATH/ucrt64/bin/objdump -p $MSYS2_PATH/ucrt64/bin/libcairo-gobject-2.dll | grep "DLL Name"
 
+      - name: Prepare MSIX Signing Certificate
+        shell: pwsh
+        run: |
+          $pfxPath = Join-Path $env:RUNNER_TEMP "rayforge-msix.pfx"
+          $cerPath = Join-Path $env:RUNNER_TEMP "rayforge-msix.cer"
+          if ($env:MSIX_CERT_PFX_BASE64) {
+              if (-not $env:MSIX_CERT_PASSWORD) {
+                  throw "MSIX_CERT_PASSWORD is required with MSIX_CERT_PFX_BASE64."
+              }
+              [IO.File]::WriteAllBytes(
+                  $pfxPath,
+                  [Convert]::FromBase64String($env:MSIX_CERT_PFX_BASE64)
+              )
+              $password = ConvertTo-SecureString `
+                  -String $env:MSIX_CERT_PASSWORD `
+                  -Force -AsPlainText
+              $cert = Import-PfxCertificate `
+                  -FilePath $pfxPath `
+                  -CertStoreLocation Cert:\CurrentUser\My `
+                  -Password $password
+          } else {
+              $cert = New-SelfSignedCertificate `
+                  -Type CodeSigningCert `
+                  -Subject $env:MSIX_PUBLISHER `
+                  -CertStoreLocation Cert:\CurrentUser\My `
+                  -KeyUsage DigitalSignature `
+                  -NotAfter (Get-Date).AddDays(30)
+              $password = [guid]::NewGuid().ToString("N")
+              $securePassword = ConvertTo-SecureString `
+                  -String $password -Force -AsPlainText
+              Export-PfxCertificate `
+                  -Cert $cert `
+                  -FilePath $pfxPath `
+                  -Password $securePassword | Out-Null
+              "MSIX_CERT_PASSWORD=$password" >> $env:GITHUB_ENV
+          }
+          Export-Certificate -Cert $cert -FilePath $cerPath | Out-Null
+          New-Item -ItemType Directory -Force `
+              "$env:GITHUB_WORKSPACE\dist\msix" | Out-Null
+          Copy-Item $cerPath "$env:GITHUB_WORKSPACE\dist\msix\test-cert.cer"
+          "MSIX_CERT_PFX=$pfxPath" >> $env:GITHUB_ENV
+
       - name: Run Test Suite (win_test.sh)
         shell: msys2 {0}
         run: |
@@ -132,6 +190,19 @@ jobs:
         run: |
           # The build script will source .msys2_env internally.
           bash scripts/win/win_build.sh "${{ env.VERSION }}"
+
+      - name: Build MSIX Package
+        shell: msys2 {0}
+        env:
+          MSIX_TIMESTAMP_URL: http://timestamp.digicert.com
+        run: |
+          # The build script will source .msys2_env internally.
+          bash scripts/win/win_msix.sh "${{ env.VERSION }}"
+
+      - name: Record MSIX Identity
+        id: msix
+        shell: bash
+        run: echo "identity_name=$MSIX_IDENTITY_NAME" >> "$GITHUB_OUTPUT"
 
       - name: Compress PyInstaller Bundle
         shell: msys2 {0}
@@ -152,6 +223,77 @@ jobs:
           name: rayforge-v${{ needs.version.outputs.version }}-installer.zip
           path: dist/rayforge-v${{ needs.version.outputs.version }}-installer.exe
           compression-level: 0
+
+      - name: Upload MSIX Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: rayforge-v${{ needs.version.outputs.version }}-msix
+          path: |
+            dist/rayforge-v${{ needs.version.outputs.version }}-x64.msix
+            dist/msix/test-cert.cer
+          compression-level: 0
+
+  test-msix:
+    name: Test MSIX Package
+    needs: [version, build]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Download MSIX Artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: rayforge-v${{ needs.version.outputs.version }}-msix
+
+      - name: Install and Launch MSIX
+        shell: pwsh
+        run: |
+          $cert = Get-ChildItem -Recurse -Filter "test-cert.cer" |
+              Select-Object -First 1
+          if (-not $cert) {
+              throw "MSIX test certificate not found."
+          }
+          Import-Certificate `
+              -FilePath $cert.FullName `
+              -CertStoreLocation Cert:\LocalMachine\TrustedPeople | Out-Null
+
+          $package = Get-ChildItem -Recurse -Filter "*.msix" |
+              Select-Object -First 1
+          if (-not $package) {
+              throw "MSIX package not found."
+          }
+          Add-AppxPackage -Path $package.FullName
+
+          $app = Get-AppxPackage `
+              -Name "${{ needs.build.outputs.msix_identity_name }}"
+          if (-not $app) {
+              throw "Rayforge package was not registered."
+          }
+
+          $alias = Join-Path $env:LOCALAPPDATA `
+              "Microsoft\WindowsApps\rayforge.exe"
+          if (-not (Test-Path $alias)) {
+              throw "The rayforge.exe execution alias is missing."
+          }
+          & $alias --version
+          if ($LASTEXITCODE -ne 0) {
+              throw "rayforge.exe --version failed."
+          }
+
+          Start-Process $alias
+          Start-Sleep -Seconds 15
+          $process = Get-Process |
+              Where-Object {
+                  $_.Path -like "$($app.InstallLocation)\*"
+              }
+          if (-not $process) {
+              throw "Rayforge did not start from the MSIX package."
+          }
+          $process | Stop-Process -Force
+
+          Remove-AppxPackage -Package $app.PackageFullName
 
   test-exe:
     name: Test Executable
@@ -197,9 +339,14 @@ jobs:
 
   release:
     name: Create GitHub Release
+    # Keep the MSIX test out of the release gate while the NSIS installer
+    # remains the primary Windows download. Add test-msix here when the
+    # MSIX becomes a public release asset.
     needs: [version, build, test-exe]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/') && github.repository == 'barebaric/rayforge'
+    env:
+      MSIX_CERT_PFX_BASE64: ${{ secrets.MSIX_CERT_PFX_BASE64 }}
     outputs:
       is_prerelease: ${{ steps.release_info.outputs.is_prerelease }}
     steps:
@@ -220,11 +367,34 @@ jobs:
           # For the release, we use the installer artifact
           name: rayforge-v${{ needs.version.outputs.version }}-installer.zip
 
+      - name: Download MSIX Artifact
+        if: >-
+          env.MSIX_CERT_PFX_BASE64 != '' &&
+          !contains(github.ref_name, '-') &&
+          !contains(github.ref_name, '~')
+        uses: actions/download-artifact@v8
+        with:
+          name: rayforge-v${{ needs.version.outputs.version }}-msix
+
+      - name: Determine Release Files
+        id: release_files
+        shell: bash
+        run: |
+          FILES="rayforge-v${{ needs.version.outputs.version }}-installer.exe"
+          MSIX="rayforge-v${{ needs.version.outputs.version }}-x64.msix"
+          if [ -f "$MSIX" ]; then
+            FILES="$FILES"$'\n'"$MSIX"
+          fi
+          {
+            echo "files<<EOF"
+            echo "$FILES"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          # The file to attach to the release is the installer
-          files: rayforge-v${{ needs.version.outputs.version }}-installer.exe
+          files: ${{ steps.release_files.outputs.files }}
           draft: false
           prerelease: ${{ steps.release_info.outputs.is_prerelease }}
           name: Release ${{ needs.version.outputs.version }}

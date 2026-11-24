@@ -51,3 +51,25 @@ def test_auto_download_row_shown_with_self_update(monkeypatch):
     page = _make_page()
 
     assert page.auto_download_updates_row.get_visible()
+
+
+def test_check_updates_row_hidden_with_msix(monkeypatch):
+    monkeypatch.setattr(
+        "rayforge.ui_gtk.settings.general_preferences_page.is_msix",
+        lambda: True,
+    )
+
+    page = _make_page()
+
+    assert not page.check_updates_row.get_visible()
+
+
+def test_check_updates_row_shown_without_msix(monkeypatch):
+    monkeypatch.setattr(
+        "rayforge.ui_gtk.settings.general_preferences_page.is_msix",
+        lambda: False,
+    )
+
+    page = _make_page()
+
+    assert page.check_updates_row.get_visible()

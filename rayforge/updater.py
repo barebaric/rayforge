@@ -12,7 +12,7 @@ from blinker import Signal
 
 from . import __version__
 from .const import DOWNLOAD_URL, GITHUB_RELEASES_API
-from .shared.util.platform import supports_self_update
+from .shared.util.platform import is_msix, supports_self_update
 from .shared.util.versioning import is_newer_version
 
 if TYPE_CHECKING:
@@ -57,6 +57,9 @@ class AppUpdateChecker:
         self._download_dir = Path(tempfile.gettempdir()) / "rayforge-update"
 
     def check_on_startup(self):
+        if is_msix():
+            logger.info("App updates are managed by the MSIX package.")
+            return
         config = self._context.config
         if not config.check_for_app_updates:
             logger.info("App update check disabled by user.")
