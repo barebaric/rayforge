@@ -440,6 +440,27 @@ class TestDXFImporter:
         )
         assert _has_curves(geo.data)
 
+    def test_lines_meeting_at_a_junction_are_not_chained(self):
+        """Most lines of this drawing share endpoints with several
+        others, so there is no unambiguous continuation. Chaining through
+        such a junction used to trace a closed path whose windings cancel
+        (zero area), which the contour assembler drops, leaving the
+        operation with nothing to cut.
+        """
+        importer = _importer("junction.dxf")
+        parse_result = importer.parse()
+        assert parse_result is not None
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
+        vec_result = importer.vectorize(parse_result, spec)
+        geo = vec_result.geometries_by_layer[None]
+
+        contours = geo.split_drawn_contours()
+        assert len(contours) == 12
+        drawn_closed = [
+            c for c in contours if c.is_closed(1e-6) and c.distance() > 1e-6
+        ]
+        assert drawn_closed == []
+
     def test_acdbcircle_dxf_not_linearized(
         self, acdbcircle_dxf_importer_from_file: DxfImporter
     ):
