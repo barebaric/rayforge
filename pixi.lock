@@ -286,8 +286,8 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/c9/31/5f0ac2f1a1c67423c995c731a11cd4ad05d081a2be969d74f868bdb9cc70/markdown_it_py-4.3.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/ce/4e/58b9b1460afc97a4c0b17ee89af701c4011d4d7f46470eba3aaff76a8069/propcache-0.5.4-cp315-cp315-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/cf/f5/2fcc5e30053a938286f17d0edf3f0850b8061b984256fa7c26850b9c8809/aiohttp-3.14.5-cp315-cp315-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+      - pypi: https://files.pythonhosted.org/packages/d6/3a/d2469c63571ffe7c1053747df5bba924c9371e9344897d98ea427904a4f5/raygeo-1.99.1.tar.gz
       - pypi: https://files.pythonhosted.org/packages/df/f3/90993aab504fa2e1f28fcc09aa16b6ea4f00e75a037d9136e737855833e2/pyvips-3.2.0.tar.gz
-      - pypi: https://files.pythonhosted.org/packages/e0/3c/cb54622adc23b3192345218817007f29c5f8acc92817bd330be9ab5dddb5/raygeo-1.99.0.tar.gz
       - pypi: https://files.pythonhosted.org/packages/e4/62/c3c23511ebe3d76dc679db0bb045dfd20ed3452bec12dcbbe8d655498a7d/vtracer-0.6.15.tar.gz
       - pypi: https://files.pythonhosted.org/packages/f8/a1/c7f78207d0fcc2d655b9a15598d64da14edf0808db2a86df24459d31cc56/opencv_python-5.1.0.95-cp37-abi3-manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/fb/76/641ae371508676492379f16e2fa48f4e2c11741bd63c48be4b12a6b09cba/aiosignal-1.4.0-py3-none-any.whl
@@ -505,8 +505,8 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/bd/59/6b1daa3b94de8970e2a2787ba73616c2d0675d2f948ef4cad8bef7f21bc6/cssselect2-0.10.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/be/ab/ae3e624d0f994098bd6d3b985499e997f89507bb9e44013050a5848de4bf/zeroconf-0.154.0-cp315-cp315-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/c1/d4/59e74daffcb57a07668852eeeb6035af9f32cbfd7a1d2511f17d2fe6a738/smmap-5.0.3-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/c6/4d/9c51c1dde3bc08d53976ae98383ee7d059692c69cb7779af6155c83bcfa7/raygeo-1.99.1-cp311-abi3-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/c9/31/5f0ac2f1a1c67423c995c731a11cd4ad05d081a2be969d74f868bdb9cc70/markdown_it_py-4.3.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/da/c2/0d5832f197c63cb7d4173668a7b57a0365b105acf1ef2095a3eff1d217a8/raygeo-1.99.0-cp311-abi3-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/df/f3/90993aab504fa2e1f28fcc09aa16b6ea4f00e75a037d9136e737855833e2/pyvips-3.2.0.tar.gz
       - pypi: https://files.pythonhosted.org/packages/e4/62/c3c23511ebe3d76dc679db0bb045dfd20ed3452bec12dcbbe8d655498a7d/vtracer-0.6.15.tar.gz
       - pypi: https://files.pythonhosted.org/packages/fa/01/3591f781b417b382a8487a2356e927acfe858b1043bab0ec47f6805bb109/pymupdf-1.28.2-cp310-abi3-macosx_11_0_arm64.whl
@@ -988,10 +988,10 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/ca/31/d4e37e9e550c2b92a9cbc2e4d0b7420a27224968580b5a447f420847c975/pytest_xdist-3.8.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/ce/4e/58b9b1460afc97a4c0b17ee89af701c4011d4d7f46470eba3aaff76a8069/propcache-0.5.4-cp315-cp315-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/cf/f5/2fcc5e30053a938286f17d0edf3f0850b8061b984256fa7c26850b9c8809/aiohttp-3.14.5-cp315-cp315-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+      - pypi: https://files.pythonhosted.org/packages/d6/3a/d2469c63571ffe7c1053747df5bba924c9371e9344897d98ea427904a4f5/raygeo-1.99.1.tar.gz
       - pypi: https://files.pythonhosted.org/packages/d7/ba/18b6e682ead424ad24bcc134339ae5d1b931cd9ae260540592a058a91279/pyright-1.1.414-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/db/3c/33bac158f8ab7f89b2e59426d5fe2e4f63f7ed25df84c036890172b412b5/cfgv-3.5.0-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/df/f3/90993aab504fa2e1f28fcc09aa16b6ea4f00e75a037d9136e737855833e2/pyvips-3.2.0.tar.gz
-      - pypi: https://files.pythonhosted.org/packages/e0/3c/cb54622adc23b3192345218817007f29c5f8acc92817bd330be9ab5dddb5/raygeo-1.99.0.tar.gz
       - pypi: https://files.pythonhosted.org/packages/e4/62/c3c23511ebe3d76dc679db0bb045dfd20ed3452bec12dcbbe8d655498a7d/vtracer-0.6.15.tar.gz
       - pypi: https://files.pythonhosted.org/packages/e8/ea/47fbdc8f37410956fd445720e927589b1e2a47772c5f28109f0ce2fa26d9/pytest_mock-3.17.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/eb/83/ce0a196e4f7b20b11ce3aa1fc72fb973f64b7628d51c1b8aebad37fb7f81/pre_commit-4.7.0-py2.py3-none-any.whl
@@ -1234,10 +1234,10 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/c1/2b/238f02a4927fa2e27aa995371d240a468b52e42eae44a678434aff736b38/distlib-0.4.4-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/c1/d4/59e74daffcb57a07668852eeeb6035af9f32cbfd7a1d2511f17d2fe6a738/smmap-5.0.3-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/c4/34/65e66e8c384dc08f0e58c474587c05c4bc952f60facd8a15e80748118bd1/python_discovery-1.9.6-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/c6/4d/9c51c1dde3bc08d53976ae98383ee7d059692c69cb7779af6155c83bcfa7/raygeo-1.99.1-cp311-abi3-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/c9/31/5f0ac2f1a1c67423c995c731a11cd4ad05d081a2be969d74f868bdb9cc70/markdown_it_py-4.3.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/ca/31/d4e37e9e550c2b92a9cbc2e4d0b7420a27224968580b5a447f420847c975/pytest_xdist-3.8.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/d7/ba/18b6e682ead424ad24bcc134339ae5d1b931cd9ae260540592a058a91279/pyright-1.1.414-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/da/c2/0d5832f197c63cb7d4173668a7b57a0365b105acf1ef2095a3eff1d217a8/raygeo-1.99.0-cp311-abi3-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/db/3c/33bac158f8ab7f89b2e59426d5fe2e4f63f7ed25df84c036890172b412b5/cfgv-3.5.0-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/df/f3/90993aab504fa2e1f28fcc09aa16b6ea4f00e75a037d9136e737855833e2/pyvips-3.2.0.tar.gz
       - pypi: https://files.pythonhosted.org/packages/e4/62/c3c23511ebe3d76dc679db0bb045dfd20ed3452bec12dcbbe8d655498a7d/vtracer-0.6.15.tar.gz
@@ -9425,7 +9425,7 @@ packages:
   name: rayforge
   requires_dist:
   - raydriver==1.19.0
-  - raygeo==1.99.0
+  - raygeo==1.99.1
   - aiohttp==3.14.5
   - asyncudp==0.11.0
   - blinker==1.9.0
@@ -10189,6 +10189,26 @@ packages:
   requires_dist:
   - filelock>=3.16.1
   requires_python: '>=3.9'
+- pypi: https://files.pythonhosted.org/packages/c6/4d/9c51c1dde3bc08d53976ae98383ee7d059692c69cb7779af6155c83bcfa7/raygeo-1.99.1-cp311-abi3-macosx_11_0_arm64.whl
+  name: raygeo
+  version: 1.99.1
+  sha256: 6d16798b990b81cdeb96ad1034eb714d901a1f07a2e0c9bfe4af56da750d2636
+  requires_dist:
+  - msgpack
+  - numpy>=1.20.0
+  - matplotlib ; extra == 'cli'
+  - matplotlib ; extra == 'docs'
+  - mdformat ; extra == 'docs'
+  - mdformat-frontmatter ; extra == 'docs'
+  - mdformat-tables ; extra == 'docs'
+  - pillow ; extra == 'docs'
+  - pycairo ; extra == 'test'
+  - pytest ; extra == 'test'
+  - pytest-mock ; extra == 'test'
+  - streamlit ; extra == 'test'
+  - streamlit ; extra == 'visual'
+  - matplotlib ; extra == 'visual'
+  requires_python: '>=3.10'
 - pypi: https://files.pythonhosted.org/packages/c7/06/dace3e27af26690cb20bead80dbac42941b0841eb689b8aabbd67dde16f0/pymupdf-1.28.2-cp310-abi3-manylinux_2_28_x86_64.whl
   name: pymupdf
   version: 1.28.2
@@ -10263,6 +10283,26 @@ packages:
   - brotlicffi>=1.2 ; platform_python_implementation != 'CPython' and extra == 'speedups'
   - backports-zstd ; python_full_version < '3.14' and platform_python_implementation == 'CPython' and sys_platform != 'android' and sys_platform != 'ios' and extra == 'speedups'
   requires_python: '>=3.10'
+- pypi: https://files.pythonhosted.org/packages/d6/3a/d2469c63571ffe7c1053747df5bba924c9371e9344897d98ea427904a4f5/raygeo-1.99.1.tar.gz
+  name: raygeo
+  version: 1.99.1
+  sha256: 2c53d478f40cc52303f49b08ed13593dbc58aadbe3592d6c8eac26968696b773
+  requires_dist:
+  - msgpack
+  - numpy>=1.20.0
+  - pycairo ; extra == 'test'
+  - pytest ; extra == 'test'
+  - pytest-mock ; extra == 'test'
+  - streamlit ; extra == 'test'
+  - streamlit ; extra == 'visual'
+  - matplotlib ; extra == 'visual'
+  - matplotlib ; extra == 'docs'
+  - mdformat ; extra == 'docs'
+  - mdformat-frontmatter ; extra == 'docs'
+  - mdformat-tables ; extra == 'docs'
+  - pillow ; extra == 'docs'
+  - matplotlib ; extra == 'cli'
+  requires_python: '>=3.10'
 - pypi: https://files.pythonhosted.org/packages/d7/ba/18b6e682ead424ad24bcc134339ae5d1b931cd9ae260540592a058a91279/pyright-1.1.414-py3-none-any.whl
   name: pyright
   version: 1.1.414
@@ -10275,26 +10315,6 @@ packages:
   - twine>=3.4.1 ; extra == 'all'
   - nodejs-wheel-binaries ; extra == 'all'
   requires_python: '>=3.7'
-- pypi: https://files.pythonhosted.org/packages/da/c2/0d5832f197c63cb7d4173668a7b57a0365b105acf1ef2095a3eff1d217a8/raygeo-1.99.0-cp311-abi3-macosx_11_0_arm64.whl
-  name: raygeo
-  version: 1.99.0
-  sha256: 8a2b59bc2f2af102ab89e5e383b44ef1e63fd95799079b53552750eb0878b01e
-  requires_dist:
-  - msgpack
-  - numpy>=1.20.0
-  - matplotlib ; extra == 'cli'
-  - matplotlib ; extra == 'docs'
-  - mdformat ; extra == 'docs'
-  - mdformat-frontmatter ; extra == 'docs'
-  - mdformat-tables ; extra == 'docs'
-  - pillow ; extra == 'docs'
-  - pycairo ; extra == 'test'
-  - pytest ; extra == 'test'
-  - pytest-mock ; extra == 'test'
-  - streamlit ; extra == 'test'
-  - streamlit ; extra == 'visual'
-  - matplotlib ; extra == 'visual'
-  requires_python: '>=3.10'
 - pypi: https://files.pythonhosted.org/packages/db/3c/33bac158f8ab7f89b2e59426d5fe2e4f63f7ed25df84c036890172b412b5/cfgv-3.5.0-py2.py3-none-any.whl
   name: cfgv
   version: 3.5.0
@@ -10314,26 +10334,6 @@ packages:
   - sphinx ; extra == 'doc'
   - sphinx-rtd-theme ; extra == 'doc'
   requires_python: '>=3.7'
-- pypi: https://files.pythonhosted.org/packages/e0/3c/cb54622adc23b3192345218817007f29c5f8acc92817bd330be9ab5dddb5/raygeo-1.99.0.tar.gz
-  name: raygeo
-  version: 1.99.0
-  sha256: d869c53839553039a18e15ca04891412ad9109c9c03e870519c9bb273b354375
-  requires_dist:
-  - msgpack
-  - numpy>=1.20.0
-  - pycairo ; extra == 'test'
-  - pytest ; extra == 'test'
-  - pytest-mock ; extra == 'test'
-  - streamlit ; extra == 'test'
-  - streamlit ; extra == 'visual'
-  - matplotlib ; extra == 'visual'
-  - matplotlib ; extra == 'docs'
-  - mdformat ; extra == 'docs'
-  - mdformat-frontmatter ; extra == 'docs'
-  - mdformat-tables ; extra == 'docs'
-  - pillow ; extra == 'docs'
-  - matplotlib ; extra == 'cli'
-  requires_python: '>=3.10'
 - pypi: https://files.pythonhosted.org/packages/e4/62/c3c23511ebe3d76dc679db0bb045dfd20ed3452bec12dcbbe8d655498a7d/vtracer-0.6.15.tar.gz
   name: vtracer
   version: 0.6.15
