@@ -395,9 +395,10 @@ class DxfImporter(Importer):
         parts come back as closed outlines rather than loose segments.
 
         CAD exporters also routinely leave the ends a fraction of a unit
-        apart. Bridging gaps of that size is always safe; wider gaps are
-        left for the optional outline repair, which the user enables in
-        the import dialog.
+        apart. Bridging those gaps within a contour is always safe; wider
+        gaps are left for the optional outline repair, which the user
+        enables in the import dialog. Separate sub-paths are never
+        bridged here: that would draw lines the file does not contain.
         """
         w, h = doc_bounds[2], doc_bounds[3]
         diag = math.hypot(w, h)
@@ -405,8 +406,8 @@ class DxfImporter(Importer):
         for layer_id, geo in geometries_by_layer.items():
             if geo and not geo.is_empty():
                 joined, _ = geo.join_open_contours(tolerance)
-                geometries_by_layer[layer_id] = joined
-                joined.close_gaps(tolerance=tolerance)
+                closed, _ = joined.close_open_contours(tolerance)
+                geometries_by_layer[layer_id] = closed
 
     @staticmethod
     def _flatten_z(geo: Geometry) -> Geometry:
