@@ -1,12 +1,8 @@
-import io
 import logging
 import warnings
 from gettext import gettext as _
 from pathlib import Path
 from typing import ClassVar
-
-from pypdf import PdfReader
-from pypdf.errors import PdfReadError
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -27,6 +23,7 @@ from ..structures import (
 )
 from ..tracing import trace_surface
 from ..util import to_mm
+from .metadata import PdfInfoError, read_pdf_info
 from .renderer import PDF_RENDERER
 
 logger = logging.getLogger(__name__)
@@ -54,24 +51,23 @@ class PdfTraceImporter(Importer):
 
     def scan(self) -> ImportManifest:
         try:
-            reader = PdfReader(io.BytesIO(self.raw_data))
-            if not reader.pages:
+            info = read_pdf_info(self.raw_data)
+            if info.page_count == 0:
                 self.add_error(_("PDF file contains no pages."))
                 return ImportManifest(
                     title=self.source_file.name, errors=self._errors
                 )
-            media_box = reader.pages[0].mediabox
-            width_pt = float(media_box.width)
-            height_pt = float(media_box.height)
-            size_mm = (to_mm(width_pt, "pt"), to_mm(height_pt, "pt"))
-            title = reader.metadata.title if reader.metadata else None
+            size_mm = (
+                to_mm(info.width_pt, "pt"),
+                to_mm(info.height_pt, "pt"),
+            )
             return ImportManifest(
-                title=title or self.source_file.name,
+                title=info.title or self.source_file.name,
                 natural_size_mm=size_mm,
                 warnings=self._warnings,
                 errors=self._errors,
             )
-        except PdfReadError as e:
+        except PdfInfoError as e:
             logger.warning(f"PDF scan failed for {self.source_file.name}: {e}")
             self.add_error(_("Could not read PDF: {}").format(e))
             return ImportManifest(
@@ -139,18 +135,24 @@ class PdfTraceImporter(Importer):
 
     def parse(self) -> ParsingResult | None:
         try:
-            reader = PdfReader(io.BytesIO(self.raw_data))
-            media_box = reader.pages[0].mediabox
-            width_pt = float(media_box.width)
-            height_pt = float(media_box.height)
-            size_mm = (to_mm(width_pt, "pt"), to_mm(height_pt, "pt"))
-        except (PdfReadError, ValueError, TypeError, KeyError) as e:
+            info = read_pdf_info(self.raw_data)
+        except PdfInfoError as e:
             logger.error(f"Failed to read PDF size: {e}")
             self.add_error(
                 _("Failed to read PDF page dimensions: {}").format(e)
             )
             self._image = None
             return None
+
+        if info.page_count == 0:
+            self._image = None
+            self.add_error(_("PDF file contains no pages."))
+            return None
+
+        size_mm = (
+            to_mm(info.width_pt, "pt"),
+            to_mm(info.height_pt, "pt"),
+        )
 
         w_mm, h_mm = size_mm
         if w_mm <= 0 or h_mm <= 0:
