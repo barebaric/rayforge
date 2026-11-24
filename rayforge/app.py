@@ -6,6 +6,7 @@ import locale
 import logging
 import mimetypes
 import os
+import subprocess
 import sys
 import traceback
 import warnings
@@ -173,6 +174,25 @@ def handle_exception(exc_type, exc_value, exc_traceback):
     logging.shutdown()
 
 
+def _restart_process():
+    """Starts a new Rayforge process and lets the current one exit."""
+    if hasattr(sys, "_MEIPASS"):
+        # In a bundle sys.executable is Rayforge.exe, which does not
+        # exist on disk. Running it again launches the new instance.
+        subprocess.Popen([sys.executable] + sys.argv[1:])
+    else:
+        os.execv(sys.executable, [sys.executable] + sys.argv)
+
+
+def _run_installer(installer_path: Path):
+    """Starts the downloaded installer and lets the current one exit.
+
+    The installer runs the installation silently, replacing the files
+    of this process, and starts Rayforge again when it is done.
+    """
+    subprocess.Popen([str(installer_path), "/S"])
+
+
 def main():
     # ===================================================================
     # SECTION 2: MAIN APPLICATION ENTRY POINT
@@ -210,6 +230,7 @@ def main():
             self.args = args
             self.win = None
             self._restart_requested = False
+            self._pending_installer = None
             self._register_app_actions()
             self.set_accels_for_action("app.quit", [f"{PRIMARY_ACCEL}q"])
             self.set_accels_for_action(
@@ -242,10 +263,22 @@ def main():
 
             Closes the main window, which triggers the unsaved-changes
             dialog if needed. After the main loop exits, the process
-            is re-executed with the same arguments so the new language
-            takes effect.
+            is started again with the same arguments so that settings
+            changed during the session take effect.
             """
             self._restart_requested = True
+            self._close_for_restart()
+
+        def request_install_update(self, installer_path):
+            """Mark a downloaded update for installation and shut down.
+
+            Once the process has exited, the installer replaces the
+            running version and starts Rayforge again.
+            """
+            self._pending_installer = Path(installer_path)
+            self._close_for_restart()
+
+        def _close_for_restart(self):
             if self.win is not None:
                 self.win.close()
             else:
@@ -684,11 +717,18 @@ def main():
     rayforge.shared.tasker.task_mgr.shutdown()
     logger.info("Task manager shut down.")
 
+    # If the user requested an update installation, hand over to the
+    # installer, which replaces this version and starts Rayforge again.
+    if app._pending_installer is not None:
+        logger.info(f"Installing update from {app._pending_installer}")
+        _run_installer(app._pending_installer)
+        return exit_code
+
     # If the user requested a restart (e.g. after changing the
-    # language), re-exec the process with the same arguments.
+    # language), start the process again with the same arguments.
     if app._restart_requested:
-        logger.info("Restart requested, re-executing process.")
-        os.execv(sys.executable, [sys.executable] + sys.argv)
+        logger.info("Restart requested, restarting process.")
+        _restart_process()
 
     return exit_code
 

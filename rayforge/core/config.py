@@ -105,6 +105,9 @@ class Config:
         self.auto_pipeline: bool = True
         self.ops_color_mode: OpsColorMode = OpsColorMode.LASER
         self.check_for_app_updates: bool = True
+        # Whether to download new Windows packages in the background when
+        # an update is available.
+        self.auto_download_app_updates: bool = True
         self.check_for_addon_updates: bool = True
         self.external_addon_services_enabled: bool = True
         # Whether to watch imported files and offer to reload them when
@@ -248,6 +251,13 @@ class Config:
         if self.check_for_app_updates == enabled:
             return
         self.check_for_app_updates = enabled
+        self.changed.send(self)
+
+    def set_auto_download_app_updates(self, enabled: bool):
+        """Sets whether new packages are downloaded in the background."""
+        if self.auto_download_app_updates == enabled:
+            return
+        self.auto_download_app_updates = enabled
         self.changed.send(self)
 
     def set_check_for_addon_updates(self, enabled: bool):
@@ -400,6 +410,7 @@ class Config:
             "shop_mode": self.shop_mode,
             "auto_pipeline": self.auto_pipeline,
             "check_for_app_updates": self.check_for_app_updates,
+            "auto_download_app_updates": self.auto_download_app_updates,
             "check_for_addon_updates": self.check_for_addon_updates,
             "external_addon_services_enabled": (
                 self.external_addon_services_enabled
@@ -476,6 +487,9 @@ class Config:
         config.shop_mode = data.get("shop_mode", False)
         config.auto_pipeline = data.get("auto_pipeline", True)
         config.check_for_app_updates = data.get("check_for_app_updates", True)
+        config.auto_download_app_updates = data.get(
+            "auto_download_app_updates", True
+        )
         config.check_for_addon_updates = data.get(
             "check_for_addon_updates", True
         )
