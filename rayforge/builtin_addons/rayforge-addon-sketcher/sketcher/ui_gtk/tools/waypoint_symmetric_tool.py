@@ -1,5 +1,5 @@
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union, cast
 
 from raygeo.sketch.entities import Bezier, Entity, Line
 from raygeo.sketch.entities import SketchPoint as Point
@@ -39,7 +39,7 @@ class WaypointSymmetricTool(SketchTool):
         pass
 
     def on_activate(self):
-        self._set_waypoint_type(WaypointType.SYMMETRIC)
+        self._set_waypoint_type(cast(WaypointType, WaypointType.SYMMETRIC))
         self.element.set_tool("select")
 
     def _get_waypoint_pid(self) -> EntityID | None:
@@ -70,7 +70,7 @@ class WaypointSymmetricTool(SketchTool):
                 return True
         return False
 
-    def _set_waypoint_type(self, new_type: str):
+    def _set_waypoint_type(self, new_type: WaypointType):
         editor = self.element.editor
         sketch = self.element.sketch
 
