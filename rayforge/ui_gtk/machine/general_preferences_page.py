@@ -384,13 +384,23 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         also understands. Serial drivers share keys like ``port`` and
         ``baudrate``, so switching between them keeps the connection
         settings instead of silently resetting them.
+
+        A matching key is not enough: ``port`` is a network port number
+        for network drivers but a device path for serial drivers.
+        Values whose type does not match the target Var are dropped so
+        the new driver starts from its own default instead of failing
+        in setup with the previous driver's value.
         """
-        keys = set(driver_cls.get_setup_vars().keys())
-        return {
-            key: value
-            for key, value in self.machine.driver_args.items()
-            if key in keys
-        }
+        var_set = driver_cls.get_setup_vars()
+        keys = set(var_set.keys())
+        compatible: dict[str, Any] = {}
+        for key, value in self.machine.driver_args.items():
+            if key not in keys:
+                continue
+            if not isinstance(value, var_set[key].var_type):
+                continue
+            compatible[key] = value
+        return compatible
 
     def on_name_changed(self, entry_row, _):
         """Update the machine name when the text changes."""

@@ -261,6 +261,15 @@ class TestRegistry:
         assert drv.state.error is None
         assert drv._session is not None
 
+    def test_setup_rejects_non_string_port(self, context_initializer, machine):
+        """A network port number left over from another driver is a
+        configuration error, not an AttributeError."""
+        drv = GrblSerialDriver(context_initializer, machine)
+        drv.setup(port=515, baudrate=115200)
+        assert drv.did_setup
+        assert drv.state.error is not None
+        assert "Port must be configured" in drv.state.error.title
+
     @pytest.mark.asyncio
     async def test_commands_without_session_raise(
         self, context_initializer, machine

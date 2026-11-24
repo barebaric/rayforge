@@ -188,6 +188,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and fails job generation. It no longer falls back to the dummy
   driver, which silently encoded G-code with the machine's leftover
   dialect
+- Machines: switching drivers keeps only the setup values whose type
+  matches the new driver. A network port number left over from another
+  driver no longer breaks a serial driver's setup, and a serial device
+  path is no longer carried into a network port setting
 
 - Import: SVG geometry that lives outside named layers is now
   offered as an "Ungrouped" layer in the import dialog and enabled
