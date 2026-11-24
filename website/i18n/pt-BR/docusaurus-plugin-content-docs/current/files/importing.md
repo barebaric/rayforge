@@ -315,6 +315,24 @@ específica por forma).
 
 Em desenhos planos a opção não é mostrada; não há nada a aplanar.
 
+### Reparar contornos abertos
+
+Exportadores CAD costumam gravar um contorno como muitas linhas e arcos separados cujas extremidades
+apenas se aproximam. Um arquivo assim é importado como um monte de fragmentos abertos, que não podem
+ser deslocados, divididos em peças nem cortados como trajeto fechado — o sintoma típico é que
+**Objeto → Dividir** parece não fazer nada.
+
+Exportadores propensos a isso oferecem a opção **Reparar contornos abertos** no diálogo de
+importação. Ela vem desligada e aparece em “Reparo de contornos”. Quando ativada, o Rayforge une
+segmentos cujas extremidades ficam dentro da tolerância **Folga de junção**, fecha qualquer contorno
+cujas próprias extremidades se encontrem em seguida e descarta contornos duplicados. Nenhum ponto
+existente é movido: cada junção é preenchida com um segmento reto, então a forma cresce no máximo a
+tolerância em cada ponto de junção.
+
+Mantenha **Folga de junção** no mínimo para que o Rayforge escolha uma tolerância adequada ao
+tamanho do desenho. Aumente-a se ainda restarem contornos abertos após a importação — o diálogo
+informa quantos sobraram. Um valor alto demais pode unir contornos sem relação.
+
 ### Dicas para importação DXF
 
 **Antes de exportar do CAD:**

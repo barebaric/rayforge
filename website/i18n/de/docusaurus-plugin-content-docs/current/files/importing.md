@@ -321,6 +321,25 @@ bestimmte Fokushöhe pro Form nachzubilden).
 
 Bei flachen Zeichnungen wird die Option nicht angezeigt; es gibt nichts abzuflachen.
 
+### Offene Konturen reparieren
+
+CAD-Exporteure schreiben eine Kontur häufig als viele einzelne Linien und Bögen, deren Enden nur
+fast aneinanderstoßen. Eine solche Datei wird als Ansammlung offener Fragmente importiert, die sich
+nicht versetzen, nicht in Teile zerlegen und nicht als geschlossene Bahn schneiden lassen –
+typisches Symptom: **Objekt → Teilen** scheint nichts zu tun.
+
+Bei Exporteuren, die dazu neigen, bietet der Import-Dialog die Option **Offene Konturen reparieren**
+an. Sie ist standardmäßig ausgeschaltet und erscheint unter „Kontur-Reparatur“. Wenn sie aktiviert
+ist, verbindet Rayforge Segmente, deren Enden innerhalb der Toleranz **Verbindungslücke** liegen,
+schließt Konturen, deren eigene Enden danach zusammenfallen, und entfernt Konturen, die doppelt
+vorkommen. Bestehende Punkte werden nie verschoben: Jede Verbindung wird mit einer geraden Strecke
+überbrückt, sodass eine Form an jeder Verbindungsstelle höchstens um die Toleranz wächst.
+
+Lassen Sie **Verbindungslücke** auf dem Mindestwert, damit Rayforge eine zur Zeichnungsgröße
+passende Toleranz wählt. Erhöhen Sie den Wert, wenn nach dem Import noch Konturen offen sind – der
+Import-Dialog meldet, wie viele übrig blieben. Bei zu hohen Werten können fremde Konturen fälschlich
+verbunden werden.
+
 ### DXF-Import-Tipps
 
 **Vor dem Export aus CAD:**

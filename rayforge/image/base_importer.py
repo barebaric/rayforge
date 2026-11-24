@@ -38,6 +38,7 @@ class ImporterFeature(enum.Flag):
     COLOR_LAYERS = enum.auto()
     PROCEDURAL_GENERATION = enum.auto()
     Z_FLATTENING = enum.auto()
+    GEOMETRY_REPAIR = enum.auto()
 
 
 class Importer(ABC):

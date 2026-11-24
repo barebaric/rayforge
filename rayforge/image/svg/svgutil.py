@@ -8,11 +8,11 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     import pyvips
 
+from raygeo.formats.svg import svg_string_to_geometries_by_color
+from raygeo.formats.svg.color import ColorAttr
+from raygeo.formats.svg.length import parse_svg_length, svg_length_to_mm
+from raygeo.formats.svg.metadata import extract_svg_metadata
 from raygeo.geo.types import Rect
-from raygeo.svg import svg_string_to_geometries_by_color
-from raygeo.svg.color import ColorAttr
-from raygeo.svg.length import parse_svg_length, svg_length_to_mm
-from raygeo.svg.metadata import extract_svg_metadata
 
 from .svg_fallback import (
     SVG_LOAD_AVAILABLE,
