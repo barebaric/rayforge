@@ -57,10 +57,11 @@ _document_types = [
         'CFBundleTypeRole': 'Viewer',
         'LSHandlerRank': 'Alternate',
         'CFBundleTypeExtensions': [
-            'dxf', 'svg', 'svgz', 'pdf', 'ai', 'eps', 'epsf', 'ps',
+            'dxf', 'cdr', 'svg', 'svgz', 'pdf', 'ai', 'eps', 'epsf', 'ps',
         ],
         'CFBundleTypeMIMETypes': [
-            'image/vnd.dxf', 'image/svg+xml', 'application/pdf',
+            'image/vnd.dxf', 'application/vnd.corel-draw',
+            'image/svg+xml', 'application/pdf',
         ],
     },
     {

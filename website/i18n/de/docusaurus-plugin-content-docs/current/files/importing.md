@@ -11,6 +11,7 @@ Rasterformate. Diese Seite erklärt, wie du Dateien importierst und für beste E
 | --------------- | ----------------- | ---------------------------------------------------- | ------------------------------------ |
 | **SVG**         | `.svg`, `.svgz`   | Direkte Vektoren oder Tracing                        | Vektorgrafiken, Logos, Designs       |
 | **DXF**         | `.dxf`            | Direkte Vektoren                                     | CAD-Zeichnungen, technische Designs  |
+| **CorelDRAW**   | `.cdr`            | Direkte Vektoren                                     | CorelDRAW-Zeichnungen                |
 | **PDF**         | `.pdf`            | Direkte Vektoren oder Tracing                        | Dokumente mit Vektorinhalt           |
 | **LightBurn**   | `.lbrn`, `.lbrn2` | Direkte Vektoren                                     | LightBurn-Projekte                   |
 | **Ruida**       | `.rd`             | Direkte Vektoren                                     | Ruida-Controller-Auftragsdateien     |
@@ -366,6 +367,35 @@ verbunden werden.
 - Maßstab prüfen (DXF-Einheiten benötigen möglicherweise Anpassung)
 - Verifizieren, dass alle Pfade korrekt importiert wurden
 - Unerwünschte Konstruktionselemente löschen
+
+---
+
+## CorelDRAW-Import
+
+CorelDRAW-Dateien (`.cdr`) werden nativ gelesen; CorelDRAW muss dafür nicht installiert sein.
+Rayforge liest die Zeichnungen von CorelDRAW 7 bis X7, sowohl als reine Dateien als auch als
+ZIP-basierte Pakete späterer Versionen.
+
+**Unterstützte Funktionen:**
+
+- ✓ Kurven, Pfade, Bögen, Ellipsen und abgerundete Rechtecke
+- ✓ Text als Konturen importiert
+- ✓ Benannte Ebenen, im Importdialog auswählbar
+- ✓ Objekt-, Gruppen- und Ebenentransformationen
+- ✓ Ausgeblendete Ebenen und Objekte werden ausgelassen
+
+**Einschränkungen:**
+
+- ✗ Nur die erste Zeichnungsseite wird importiert; weitere Seiten werden gemeldet
+- ✗ Bitmaps und nicht unterstützte Objekttypen werden als Warnungen gemeldet und ausgelassen
+- ✗ Füllungen, Konturen und eingebettete Schriften werden ignoriert; Text wird mit der am besten
+  passenden installierten Schrift gezeichnet, sodass Glyphen von CorelDRAW abweichen können
+- ✗ CMX-Dateien werden erkannt, können aber nicht gelesen werden
+
+**Wann verwenden:**
+
+- Entwürfe öffnen, die nur als CorelDRAW-Datei vorliegen
+- Einen bestehenden CorelDRAW-Workflow nach Rayforge überführen
 
 ---
 

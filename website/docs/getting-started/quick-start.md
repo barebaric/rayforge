@@ -12,8 +12,8 @@ machine.
 
 ## Step 1: Import a Design
 
-Rayforge supports various file formats including SVG, DXF, PDF, Ruida (.rd), and raster images
-(JPEG, PNG, BMP).
+Rayforge supports various file formats including SVG, DXF, CorelDRAW (.cdr), PDF, Ruida (.rd), and
+raster images (JPEG, PNG, BMP).
 
 1. **Click** **File → Open** or press <kbd>ctrl+o</kbd>
 2. Navigate to your design file and select it

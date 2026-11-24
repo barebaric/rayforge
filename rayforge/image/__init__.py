@@ -17,6 +17,12 @@ from .bitmap.importer import GifImporter, TiffImporter, WebpImporter
 from .bitmap.renderer import BITMAP_RENDERER
 from .bmp.importer import BmpImporter
 from .bmp.renderer import BMP_RENDERER
+from .coreldraw.exporter import (
+    CorelDrawExporter,
+    MultiGeometryCorelDrawExporter,
+)
+from .coreldraw.importer import CorelDrawImporter
+from .coreldraw.renderer import CDR_RENDERER
 from .dxf.exporter import GeometryDxfExporter
 from .dxf.importer import DxfImporter
 from .dxf.renderer import DXF_RENDERER
@@ -233,6 +239,7 @@ def import_file(
 _RENDERERS = [
     BITMAP_RENDERER,
     BMP_RENDERER,
+    CDR_RENDERER,
     DXF_RENDERER,
     GCODE_RENDERER,
     HPGL_RENDERER,
@@ -259,6 +266,8 @@ def get_renderer_for_asset(asset_type: str) -> Renderer | None:
 __all__ = [
     "AiImporter",
     "BmpImporter",
+    "CorelDrawExporter",
+    "CorelDrawImporter",
     "DxfImporter",
     "EpsImporter",
     "GcodeImporter",
@@ -273,6 +282,7 @@ __all__ = [
     "JpgImporter",
     "LayerInfo",
     "LightBurnImporter",
+    "MultiGeometryCorelDrawExporter",
     "ParsingResult",
     "PdfImporter",
     "PngImporter",

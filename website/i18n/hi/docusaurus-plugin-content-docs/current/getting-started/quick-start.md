@@ -11,8 +11,8 @@ description:
 
 ## चरण 1: डिज़ाइन आयात करें
 
-Rayforge SVG, DXF, PDF, Ruida (.rd), और रास्टर छवियों (JPEG, PNG, BMP) सहित विभिन्न फ़ाइल फ़ॉर्मेट समर्थन
-करता है.
+Rayforge SVG, DXF, CorelDRAW (.cdr), PDF, Ruida (.rd), और रास्टर छवियों (JPEG, PNG, BMP) सहित विभिन्न
+फ़ाइल फ़ॉर्मेट समर्थन करता है.
 
 1. **File → Open** पर **क्लिक करें** या <kbd>ctrl+o</kbd> दबाएँ
 2. अपनी डिज़ाइन फ़ाइल पर जाएँ और उसे चुनें

@@ -6,8 +6,8 @@ envío de código G a tu máquina.
 
 ## Paso 1: Importar un Diseño
 
-Rayforge soporta varios formatos de archivo incluyendo SVG, DXF, PDF, Ruida (.rd) e imágenes
-rasterizadas (JPEG, PNG, BMP).
+Rayforge soporta varios formatos de archivo incluyendo SVG, DXF, CorelDRAW (.cdr), PDF, Ruida (.rd)
+e imágenes rasterizadas (JPEG, PNG, BMP).
 
 1. **Haz clic** en **Archivo → Abrir** o presiona <kbd>ctrl+o</kbd>
 2. Navega hasta tu archivo de diseño y selecciónalo
