@@ -23,6 +23,7 @@
 ; Variables
 Var PreviousInstallDir
 Var MovedInstallDir
+Var LaunchAfterInstall
 
 ;--------------------------------
 ; General
@@ -51,12 +52,18 @@ UninstPage instfiles
 ; The bundled executable name contains the version, so processes are
 ; matched on the product name instead of a fixed file name. The
 ; installer process itself shares that name prefix, so it is excluded
-; from the match.
+; from the match. A silent install is started by the running app when
+; it installs an update, so closing that app is expected; it is started
+; again once the new version is in place.
 
 !macro CheckAppNotRunningBody LABEL
 ${LABEL}:
   ExecWait `"$SYSDIR\cmd.exe" /C tasklist /FI "IMAGENAME eq ${PRODUCT_NAME}*" /FO CSV /NH | "$SYSDIR\find.exe" /I "${PRODUCT_NAME}" | "$SYSDIR\find.exe" /V /I "installer.exe" > nul` $0
   ${If} $0 = 0
+    ${If} ${Silent}
+      StrCpy $LaunchAfterInstall "1"
+      Return
+    ${EndIf}
     MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION "${PRODUCT_NAME} is still running.$\n$\nPlease close it and click Retry, or click Cancel to stop." /SD IDCANCEL IDRETRY ${LABEL}
     Abort
   ${EndIf}
@@ -202,6 +209,12 @@ Section "MainSection" SEC01
   ; previous version is no longer needed.
   ${If} $MovedInstallDir != ""
     RMDir /r "$MovedInstallDir"
+  ${EndIf}
+
+  ; Start the new version again when an update was installed over a
+  ; running instance.
+  ${If} $LaunchAfterInstall == "1"
+    Exec '"$INSTDIR\${EXECUTABLE_NAME}"'
   ${EndIf}
 SectionEnd
 

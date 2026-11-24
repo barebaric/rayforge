@@ -5,6 +5,7 @@ from collections.abc import Callable, Coroutine
 from concurrent.futures import Future
 from gettext import gettext as _
 from pathlib import Path
+from typing import Any, cast
 
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
@@ -192,7 +193,9 @@ class MainWindow(Adw.ApplicationWindow):
         )
 
         # Instantiate the app version update checker
-        self.app_update_checker = AppUpdateChecker(task_mgr, context)
+        self.app_update_checker = AppUpdateChecker(
+            task_mgr, context, on_update_requested=self._prompt_app_update
+        )
         self.app_update_checker.notification_requested.connect(
             self._on_editor_notification
         )
@@ -2804,6 +2807,42 @@ class MainWindow(Adw.ApplicationWindow):
 
     def show_about_dialog(self, action, param):
         dialog = AboutDialog(transient_for=self)
+        dialog.present()
+
+    def _prompt_app_update(self, installer_path: Path, version: str):
+        """Asks the user to install a downloaded app update.
+
+        On confirmation, Rayforge closes, the installer replaces the
+        running version, and Rayforge starts again.
+        """
+        dialog = Adw.MessageDialog(
+            transient_for=self,
+            heading=_("Update to Rayforge {version}?").format(version=version),
+            body=_(
+                "Rayforge will close, install the update and start again.\n\n"
+                "Windows may warn that the publisher is unknown because the "
+                "installer is not code-signed. Choose “More info”, then "
+                "“Run anyway” to continue. The downloaded package is the "
+                "official one from the Rayforge release page."
+            ),
+        )
+        dialog.add_response("cancel", _("_Later"))
+        dialog.add_response("install", _("_Update"))
+        dialog.set_default_response("install")
+        dialog.set_close_response("cancel")
+        dialog.set_response_appearance(
+            "install", Adw.ResponseAppearance.SUGGESTED
+        )
+
+        def on_response(d, response_id):
+            d.destroy()
+            if response_id != "install":
+                return
+            app = cast(Any, self.get_application())
+            if app is not None:
+                app.request_install_update(installer_path)
+
+        dialog.connect("response", on_response)
         dialog.present()
 
     def on_donate_clicked(self, action, param):

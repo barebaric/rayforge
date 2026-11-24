@@ -26,6 +26,7 @@ canvas_view:
   show_travel_lines: false
   show_workpiece_image: false
   show_workpieces: true
+auto_download_app_updates: true
 check_for_app_updates: true
 check_for_addon_updates: true
 default_stock_material_uid: null

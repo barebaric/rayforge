@@ -1081,5 +1081,11 @@
   },
   "install.appimageExtractRun": {
     "message": "Alternativ kannst du das AppImage ohne FUSE starten, indem du es zuerst entpacken lässt:"
+  },
+  "install.windowsSmartScreen": {
+    "message": "Windows zeigt möglicherweise „Windows hat den PC geschützt“, weil der Installer nicht signiert ist. Klicke auf Weitere Informationen und dann auf Trotzdem ausführen. Rayforge ist Open Source, und jeder Download wird automatisch von GitHub aus dem veröffentlichten Quellcode erstellt."
+  },
+  "install.windowsUpdates": {
+    "message": "Rayforge lädt neue Versionen im Hintergrund herunter, während es läuft. Wenn eine bereit ist, klicke in der Benachrichtigung auf Aktualisieren und bestätige; Rayforge installiert sie und startet von selbst neu."
   }
 }

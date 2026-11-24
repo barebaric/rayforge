@@ -329,6 +329,21 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         )
         startup_group.add(self.check_updates_row)
 
+        self.auto_download_updates_row = Adw.SwitchRow(
+            title=_("Download updates automatically"),
+            subtitle=_(
+                "Download new Rayforge versions in the background, so they "
+                "can be installed with one click when ready"
+            ),
+        )
+        self.auto_download_updates_row.set_active(
+            config.auto_download_app_updates
+        )
+        self.auto_download_updates_row.connect(
+            "notify::active", self.on_auto_download_updates_changed
+        )
+        startup_group.add(self.auto_download_updates_row)
+
         self.check_addon_updates_row = Adw.SwitchRow(
             title=_("Check for addon updates"),
             subtitle=_("Automatically check for addon updates on startup"),
@@ -631,6 +646,11 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         """Called when the user toggles the update check setting."""
         enabled = switch_row.get_active()
         get_context().config.set_check_for_app_updates(enabled)
+
+    def on_auto_download_updates_changed(self, switch_row, _):
+        """Called when the user toggles automatic update downloads."""
+        enabled = switch_row.get_active()
+        get_context().config.set_auto_download_app_updates(enabled)
 
     def on_check_addon_updates_changed(self, switch_row, _):
         """Called when the user toggles addon update checks."""

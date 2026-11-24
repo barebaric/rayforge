@@ -983,6 +983,14 @@ function WindowsInstallerInstall({ version, latestRelease }) {
               as Administrator (right-click - Run as Administrator).
             </Translate>
           </Admonition>
+          <Admonition type="note">
+            <Translate id="install.windowsSmartScreen">
+              Windows may show "Windows protected your PC" because the
+              installer is not code-signed. Click More info, then Run anyway
+              to continue. Rayforge is open source, and every download is
+              built automatically by GitHub from the published source code.
+            </Translate>
+          </Admonition>
         </div>
       </div>
 
@@ -995,6 +1003,13 @@ function WindowsInstallerInstall({ version, latestRelease }) {
               Launch Rayforge from the Start Menu or Desktop shortcut.
             </Translate>
           </p>
+          <Admonition type="tip">
+            <Translate id="install.windowsUpdates">
+              Rayforge downloads new versions in the background while it
+              runs. When one is ready, click Update in the notification,
+              confirm, and Rayforge installs it and starts again by itself.
+            </Translate>
+          </Admonition>
         </div>
       </div>
     </div>
