@@ -7,9 +7,9 @@ import cairo
 import cv2
 import numpy as np
 import vtracer
+from raygeo.formats.svg import svg_string_to_geometries
 from raygeo.geo import Geometry, Matrix
 from raygeo.image.preprocess import denoise_binary, grayscale_to_binary
-from raygeo.svg import svg_string_to_geometries
 
 from ..core.vectorization_spec import TraceSpec, VectorizationSpec
 from .hull import get_enclosing_hull, get_hulls_from_image

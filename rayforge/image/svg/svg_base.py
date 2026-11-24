@@ -6,10 +6,10 @@ from pathlib import Path
 from typing import Any
 from xml.etree import ElementTree as ET
 
+from raygeo.formats.svg import svg_string_to_geometry
+from raygeo.formats.svg.metadata import extract_svg_metadata
 from raygeo.geo import Geometry, Matrix
 from raygeo.geo.types import Rect
-from raygeo.svg import svg_string_to_geometry
-from raygeo.svg.metadata import extract_svg_metadata
 
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import PassthroughSpec

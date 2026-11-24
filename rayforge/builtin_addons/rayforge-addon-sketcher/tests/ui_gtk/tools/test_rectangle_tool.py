@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from raygeo.sketch.entities import SketchPoint
 from raygeo.sketch.entities import SketchPoint as Point
-from raygeo.sketch.snap import SnapLineType
+from raygeo.sketch.snap.types import SnapLineType
 from sketcher.core.commands import (
     RectangleCommand,
     RectanglePreviewState,

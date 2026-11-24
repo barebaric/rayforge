@@ -324,6 +324,25 @@ parcours de l'outil se déplacera en Z, ce qui n'est sûr que si tu sais que ton
 
 Pour les dessins plats, l'option n'est pas affichée ; il n'y a rien à aplatir.
 
+### Réparer les contours ouverts
+
+Les exportateurs CAO écrivent souvent un contour sous forme de nombreuses lignes et arcs séparés
+dont les extrémités ne se touchent qu'à peine. Un tel fichier s'importe comme un tas de fragments
+ouverts, impossibles à décaler, à diviser en pièces ou à découper comme tracé fermé — le symptôme
+typique étant que **Objet → Diviser** semble ne rien faire.
+
+Les exportateurs sujets à ce problème proposent l'option **Réparer les contours ouverts** dans la
+boîte de dialogue d'importation. Elle est désactivée par défaut et apparaît sous « Réparation de
+contours ». Une fois activée, Rayforge joint les segments dont les extrémités se situent dans la
+tolérance **Écart de jonction**, ferme les contours dont les extrémités se rejoignent ensuite et
+supprime les contours en double. Aucun point existant n'est déplacé : chaque jonction est comblée
+par un segment droit, la forme ne s'agrandit donc qu'au plus de la tolérance à chaque point de
+jonction.
+
+Laissez **Écart de jonction** au minimum pour que Rayforge choisisse une tolérance adaptée à la
+taille du dessin. Augmentez-la s'il reste des contours ouverts après l'importation : la boîte de
+dialogue indique combien. Si elle est trop élevée, des contours sans rapport risquent d'être joints.
+
 ### Conseils pour l'importation DXF
 
 **Avant d'exporter depuis la CAO :**

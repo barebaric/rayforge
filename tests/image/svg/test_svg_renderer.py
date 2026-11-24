@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock
 
 import pytest
-from raygeo.svg.color import ColorAttr
+from raygeo.formats.svg.color import ColorAttr
 
 from rayforge.core.vectorization_spec import (
     LayerSource,

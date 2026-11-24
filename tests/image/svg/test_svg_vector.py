@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import pytest
-from raygeo.svg.color import ColorAttr
+from raygeo.formats.svg.color import ColorAttr
 
 from rayforge.core.layer import Layer
 from rayforge.core.vectorization_spec import (

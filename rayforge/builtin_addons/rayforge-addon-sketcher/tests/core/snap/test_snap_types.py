@@ -1,13 +1,15 @@
 import pytest
 from raygeo.sketch.snap.types import (
-    SNAP_LINE_STYLES,
     DragContext,
     SnapLine,
     SnapLineStyle,
     SnapLineType,
     SnapPoint,
     SnapResult,
+    snap_line_styles,
 )
+
+SNAP_LINE_STYLES = snap_line_styles()
 
 
 def test_snap_line_type_priority():

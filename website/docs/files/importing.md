@@ -314,6 +314,22 @@ needs it (for example to re-create a specific focus height per shape).
 
 For flat drawings the option is not shown; there is nothing to flatten.
 
+### Repairing Open Outlines
+
+CAD exporters often write one outline as many separate lines and arcs whose ends only almost meet.
+Such a file imports as a pile of open fragments, which cannot be offset, split into parts, or cut as
+a closed path — the classic symptom is that **Object → Split** appears to do nothing.
+
+Exporters that are prone to this offer a **Repair Open Outlines** option in the import dialog. It is
+off by default and appears under "Outline Repair". When enabled, Rayforge joins segments whose ends
+lie within the **Join Gap** tolerance, closes any contour whose own ends then meet, and drops
+outlines that appear twice. Existing points are never moved: each join is bridged with a straight
+segment, so a shape grows by at most the tolerance at each joining point.
+
+Leave **Join Gap** at its minimum to have Rayforge pick a tolerance that suits the drawing's size.
+Raise it if outlines are still open after import — the import dialog reports how many remained. Set
+it too high and unrelated outlines may be joined into one.
+
 ### DXF Import Tips
 
 **Before exporting from CAD:**

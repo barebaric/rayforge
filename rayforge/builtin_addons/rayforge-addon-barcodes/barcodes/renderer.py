@@ -2,7 +2,7 @@ import logging
 import warnings
 from typing import TYPE_CHECKING, Optional
 
-from raygeo.svg import geometry_to_svg_path
+from raygeo.formats.svg import geometry_to_svg_path
 
 from rayforge.image.base_renderer import Renderer, RenderSpecification
 from rayforge.image.svg.svg_fallback import (

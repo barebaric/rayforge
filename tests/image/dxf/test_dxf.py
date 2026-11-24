@@ -1,11 +1,9 @@
-import io
 from pathlib import Path
 from typing import cast
 from unittest.mock import Mock
 
-import ezdxf
 import pytest
-from raygeo.geo import Bezier, Geometry, Matrix
+from raygeo.geo import Arc, Bezier, Geometry, Matrix
 
 from rayforge.core.layer import Layer
 from rayforge.core.vectorization_spec import LayerImportMode, PassthroughSpec
@@ -14,47 +12,48 @@ from rayforge.image.base_importer import ImporterFeature
 from rayforge.image.dxf.importer import DxfImporter
 from rayforge.image.structures import ImportPayload
 
-
 # Fixtures
+FIXTURES = Path(__file__).parent
+
+
+def _importer(name: str) -> DxfImporter:
+    """Builds an importer for a checked-in DXF fixture.
+
+    The fixtures are static files rather than documents assembled by a
+    third-party DXF library, so the test suite exercises the reader
+    against exactly the bytes that are committed.
+    """
+    path = FIXTURES / name
+    return DxfImporter(path.read_bytes(), path)
+
+
+def _has_curves(commands) -> bool:
+    """True when the geometry keeps analytic curves rather than polylines.
+
+    raygeo represents a circle as a few exact arcs, where the previous
+    reader emitted beziers; either is acceptable, line segments are not.
+    """
+    return any(isinstance(cmd, (Arc, Bezier)) for cmd in commands)
+
+
 @pytest.fixture
 def empty_dxf_importer():
-    doc = ezdxf.new()  # type: ignore
-    buffer = io.StringIO()
-    doc.write(buffer)
-    return DxfImporter(buffer.getvalue().encode("utf-8"))
+    return _importer("empty.dxf")
 
 
 @pytest.fixture
 def line_dxf_importer():
-    doc = ezdxf.new()  # type: ignore
-    doc.header["$INSUNITS"] = 4  # Millimeters
-    msp = doc.modelspace()
-    msp.add_line((0, 0), (100, 50))
-    buffer = io.StringIO()
-    doc.write(buffer)
-    return DxfImporter(buffer.getvalue().encode("utf-8"))
+    return _importer("line.dxf")
 
 
 @pytest.fixture
 def circle_dxf_importer():
-    doc = ezdxf.new()  # type: ignore
-    doc.header["$INSUNITS"] = 4  # Millimeters
-    msp = doc.modelspace()
-    msp.add_circle(center=(50, 50), radius=25)
-    buffer = io.StringIO()
-    doc.write(buffer)
-    return DxfImporter(buffer.getvalue().encode("utf-8"))
+    return _importer("circle50.dxf")
 
 
 @pytest.fixture
 def inches_dxf_importer():
-    doc = ezdxf.new()  # type: ignore
-    doc.header["$INSUNITS"] = 1  # Inches
-    msp = doc.modelspace()
-    msp.add_line((0, 0), (1, 1))  # 1 inch line
-    buffer = io.StringIO()
-    doc.write(buffer)
-    return DxfImporter(buffer.getvalue().encode("utf-8"))
+    return _importer("inches.dxf")
 
 
 @pytest.fixture
@@ -62,82 +61,26 @@ def dxf3d_importer():
     """A DXF whose outlines exist at two Z levels (z=0 and z=-10),
     like a 3D CAD edge export of a 10mm thick part.
     """
-    doc = ezdxf.new()  # type: ignore
-    doc.header["$INSUNITS"] = 4  # Millimeters
-    msp = doc.modelspace()
-    msp.add_line((0, 0, 0), (100, 0, 0))
-    msp.add_line((0, 0, -10), (100, 0, -10))
-    msp.add_arc(center=(50, 25, -10), radius=10, start_angle=0, end_angle=90)
-    buffer = io.StringIO()
-    doc.write(buffer)
-    return DxfImporter(buffer.getvalue().encode("utf-8"))
+    return _importer("z_variation.dxf")
 
 
 @pytest.fixture
 def multi_layer_dxf_importer():
-    doc = ezdxf.new()  # type: ignore
-    doc.header["$INSUNITS"] = 4  # Millimeters
-    msp = doc.modelspace()
-
-    # Layer 1: Line
-    doc.layers.new("Layer1")
-    msp.add_line((0, 0), (100, 50), dxfattribs={"layer": "Layer1"})
-
-    # Layer 2: Circle
-    doc.layers.new("Layer2")
-    msp.add_circle(center=(150, 25), radius=25, dxfattribs={"layer": "Layer2"})
-
-    # Layer 3: Rectangle
-    doc.layers.new("Layer3")
-    msp.add_lwpolyline(
-        [(200, 0), (250, 0), (250, 50), (200, 50)],
-        dxfattribs={"layer": "Layer3"},
-    )
-
-    buffer = io.StringIO()
-    doc.write(buffer)
-    return DxfImporter(buffer.getvalue().encode("utf-8"))
+    return _importer("multi_layer.dxf")
 
 
 @pytest.fixture
 def block_layer_dxf_importer():
     """A DXF with a block spanning two layers, where LAYER_B is used
     only inside the block (mirrors issue #773)."""
-    doc = ezdxf.new()  # type: ignore
-    doc.header["$INSUNITS"] = 4  # Millimeters
-    doc.layers.new("LAYER_A")
-    doc.layers.new("LAYER_B")
-    block = doc.blocks.new("TestBlock")
-    block.add_lwpolyline(
-        [(0, 0), (10, 0), (10, 10), (0, 10)],
-        dxfattribs={"layer": "LAYER_A"},
-    )
-    block.add_circle(center=(20, 5), radius=5, dxfattribs={"layer": "LAYER_B"})
-    msp = doc.modelspace()
-    msp.add_line((0, 0), (5, 5), dxfattribs={"layer": "LAYER_A"})
-    msp.add_blockref("TestBlock", (50, 50))
-    buffer = io.StringIO()
-    doc.write(buffer)
-    return DxfImporter(buffer.getvalue().encode("utf-8"))
+    return _importer("block_layers.dxf")
 
 
 @pytest.fixture
 def block_layer0_dxf_importer():
     """A DXF whose block content sits on layer "0", so it inherits the
     layer of the block insertion."""
-    doc = ezdxf.new()  # type: ignore
-    doc.header["$INSUNITS"] = 4  # Millimeters
-    doc.layers.new("LAYER_A")
-    block = doc.blocks.new("TestBlock")
-    block.add_lwpolyline(
-        [(0, 0), (10, 0), (10, 10), (0, 10)],
-        dxfattribs={"layer": "0"},
-    )
-    msp = doc.modelspace()
-    msp.add_blockref("TestBlock", (50, 50), dxfattribs={"layer": "LAYER_A"})
-    buffer = io.StringIO()
-    doc.write(buffer)
-    return DxfImporter(buffer.getvalue().encode("utf-8"))
+    return _importer("block_layer0.dxf")
 
 
 def _setup_workpiece_with_context(
@@ -232,13 +175,14 @@ class TestDXFImporterContract:
             ImporterFeature.DIRECT_VECTOR,
             ImporterFeature.LAYER_SELECTION,
             ImporterFeature.Z_FLATTENING,
+            ImporterFeature.GEOMETRY_REPAIR,
         }
 
     def test_scan_returns_manifest(self, line_dxf_importer):
         """Tests that scan() returns ImportManifest with correct data."""
         manifest = line_dxf_importer.scan()
 
-        assert manifest.title == "Untitled"
+        assert manifest.title == "line.dxf"
         assert manifest.natural_size_mm is not None
         width_mm, height_mm = manifest.natural_size_mm
         assert width_mm > 0
@@ -351,6 +295,39 @@ class TestDXFImporter:
         assert inches_workpiece is not None
         assert inches_workpiece.size == pytest.approx((25.4, 25.4))
 
+    def test_unitless_file_without_header_is_metres(self, tmp_path):
+        """A drawing that omits the HEADER section entirely carries no
+        unit information, and such exports are conventionally in metres.
+        Reading them as millimetres shrinks them by a factor of a
+        thousand."""
+        path = tmp_path / "noheader.dxf"
+        path.write_text(
+            "  0\nSECTION\n  2\nENTITIES\n"
+            "  0\nLINE\n  8\n0\n"
+            " 10\n0.0\n 20\n0.0\n 11\n0.1\n 21\n0.0\n"
+            "  0\nENDSEC\n  0\nEOF\n"
+        )
+
+        manifest = DxfImporter(path.read_bytes(), path).scan()
+
+        assert manifest.natural_size_mm == pytest.approx((100.0, 0.0))
+
+    def test_header_without_insunits_is_native_units(self, tmp_path):
+        """A file with a HEADER section but no $INSUNITS is read as
+        written, not rescaled."""
+        path = tmp_path / "nounits.dxf"
+        path.write_text(
+            "  0\nSECTION\n  2\nHEADER\n  9\n$ACADVER\n  1\nAC1015\n"
+            "  0\nENDSEC\n  0\nSECTION\n  2\nENTITIES\n"
+            "  0\nLINE\n  8\n0\n"
+            " 10\n0.0\n 20\n0.0\n 11\n0.1\n 21\n0.0\n"
+            "  0\nENDSEC\n  0\nEOF\n"
+        )
+
+        manifest = DxfImporter(path.read_bytes(), path).scan()
+
+        assert manifest.natural_size_mm == pytest.approx((0.1, 0.0))
+
     def test_get_natural_size(self, line_workpiece: WorkPiece):
         assert line_workpiece is not None
         size = line_workpiece.natural_size
@@ -432,9 +409,8 @@ class TestDXFImporter:
         assert not boundaries.is_empty()
         data = boundaries.data
         assert data is not None
-        has_bezier_commands = any(isinstance(cmd, Bezier) for cmd in data)
-        assert has_bezier_commands, (
-            "Circle should contain bezier commands, not be linearized"
+        assert _has_curves(data), (
+            "Circle should contain curve commands, not be linearized"
         )
 
     def test_acdbcircle_dxf_not_linearized(
@@ -459,9 +435,8 @@ class TestDXFImporter:
         assert not boundaries.is_empty()
         data = boundaries.data
         assert data is not None
-        has_bezier_commands = any(isinstance(cmd, Bezier) for cmd in data)
-        assert has_bezier_commands, (
-            "ACDB circle should contain bezier commands, not be linearized"
+        assert _has_curves(data), (
+            "ACDB circle should contain curve commands, not be linearized"
         )
 
     def test_multi_layer_dxf(self, multi_layer_dxf_importer: DxfImporter):
@@ -562,9 +537,7 @@ class TestDXFZFlattening:
         }
 
     def test_flatten_preserves_curves(self, dxf3d_importer):
-        """Flattening must not degrade curves (DXF arcs arrive as
-        beziers) into line segments.
-        """
+        """Flattening must not degrade curves into line segments."""
         parse_result = dxf3d_importer.parse()
         assert parse_result is not None
 
@@ -583,7 +556,7 @@ class TestDXFZFlattening:
             return sum(
                 1
                 for cmd in geo.iter_typed_commands()
-                if isinstance(cmd, Bezier)
+                if isinstance(cmd, (Arc, Bezier))
             )
 
         assert curve_count(flat) == curve_count(

@@ -1,19 +1,12 @@
-import io
 import logging
 import math
-from collections import defaultdict
 from collections.abc import Iterable
 from dataclasses import replace
 from gettext import gettext as _
 from pathlib import Path
 from typing import ClassVar
 
-import ezdxf
-import ezdxf.math
-from ezdxf import bbox
-from ezdxf.addons import text2path
-from ezdxf.lldxf.const import DXFStructureError
-from ezdxf.path import Command
+from raygeo.formats.dxf.reader import ReadOutput, read
 from raygeo.geo import Geometry
 from raygeo.geo.types import Rect
 
@@ -54,17 +47,12 @@ PROJECT_ONTO_Z0 = [
     [0.0, 0.0, 0.0, 1.0],
 ]
 
-units_to_mm = {
-    0: 1.0,
-    1: 25.4,
-    2: 304.8,
-    4: 1.0,
-    5: 10.0,
-    6: 1000.0,
-    8: 0.0254,
-    9: 0.0254,
-    10: 914.4,
-}
+# The layer DXF uses for content that never named one.
+DEFAULT_LAYER = "0"
+
+# The layer AutoCAD reserves for construction geometry. It is never cut,
+# so it is hidden from the layer list.
+HIDDEN_LAYER = "defpoints"
 
 
 class DxfImporter(Importer):
@@ -75,56 +63,74 @@ class DxfImporter(Importer):
         ImporterFeature.DIRECT_VECTOR,
         ImporterFeature.LAYER_SELECTION,
         ImporterFeature.Z_FLATTENING,
+        ImporterFeature.GEOMETRY_REPAIR,
     }
 
     def __init__(self, data: bytes, source_file: Path | None = None):
         super().__init__(data, source_file)
-        self._dxf_doc: ezdxf.document.Drawing | None = None  # type: ignore
+        self._read_output: ReadOutput | None = None
         self._geometries_by_layer: dict[str | None, Geometry] = {}
 
-    def scan(self) -> ImportManifest:
+    def _read_document(self) -> ReadOutput | None:
+        """Reads the file once, caching the result between the phases."""
+        if self._read_output is not None:
+            return self._read_output
+        data_str = self.raw_data.decode("utf-8", errors="replace")
         try:
-            data_str = self.raw_data.decode("utf-8", errors="replace")
-            normalized_str = data_str.replace("\r\n", "\n")
-            doc = ezdxf.read(io.StringIO(normalized_str))  # type: ignore
-        except DXFStructureError as e:
-            logger.warning(f"DXF scan failed: {e}")
-            self.add_error(_("DXF file structure is invalid: {}").format(e))
-            return ImportManifest(
-                title=self.source_file.name, errors=self._errors
-            )
+            self._read_output = read(data_str)
+        except ValueError as e:
+            logger.warning(f"DXF read failed: {e}")
+            self.add_error(_("DXF file is corrupt or invalid: {}").format(e))
+            return None
         except Exception as e:
-            logger.exception("DXF scan error")
+            logger.exception("Unexpected error while reading DXF")
             self.add_error(
-                _("Unexpected error while scanning DXF: {}").format(e)
+                _("Unexpected error while reading DXF: {}").format(e)
             )
+            return None
+        output = self._read_output
+        assert output is not None
+        for issue in output.issues:
+            self.add_warning(_("DXF import: {}").format(issue))
+        return output
+
+    def scan(self) -> ImportManifest:
+        output = self._read_document()
+        if output is None:
             return ImportManifest(
                 title=self.source_file.name, errors=self._errors
             )
 
-        # Count entities per layer to detect empty layers
-        counts = self._count_features(doc)
-
-        manifest_data = self._get_layer_manifest(doc)
-        layers = []
-        for m in manifest_data:
-            lid = m["id"]
-            count = counts.get(lid, 0)
-            layers.append(
-                LayerInfo(id=lid, name=m["name"], feature_count=count)
-            )
-
-        bounds = self._get_bounds_mm(doc)
-        size_mm = (bounds[2], bounds[3]) if bounds else None
+        scale = output.units_to_mm
+        min_x, min_y, max_x, max_y = output.bounds
+        size_mm = None
+        if not output.is_empty():
+            size_mm = ((max_x - min_x) * scale, (max_y - min_y) * scale)
 
         return ImportManifest(
             title=self.source_file.name,
-            layers=layers,
+            layers=self._layer_infos(output),
             natural_size_mm=size_mm,
             warnings=self._warnings,
             errors=self._errors,
-            has_z_variation=self._has_z_variation(doc),
+            has_z_variation=output.has_z_variation(Z_VARIATION_TOLERANCE),
         )
+
+    @staticmethod
+    def _layer_infos(output: ReadOutput) -> list[LayerInfo]:
+        """One entry per layer that draws something, in document order."""
+        infos = []
+        for name, geometry in output.layers:
+            if name.lower() == HIDDEN_LAYER:
+                continue
+            infos.append(
+                LayerInfo(
+                    id=name,
+                    name=name,
+                    feature_count=len(geometry.split_drawn_contours()),
+                )
+            )
+        return infos
 
     def create_source_asset(self, parse_result: ParsingResult) -> SourceAsset:
         _, _, w, h = parse_result.document_bounds
@@ -145,11 +151,8 @@ class DxfImporter(Importer):
         return source
 
     def _render_thumbnail(self, size: int = 256) -> bytes | None:
-        merged = Geometry()
-        for geo in self._geometries_by_layer.values():
-            if geo:
-                merged.extend(geo)
-        if merged.is_empty():
+        merged = self._merged_geometry()
+        if merged is None:
             return None
         return render_geometry_to_png(
             merged,
@@ -165,7 +168,9 @@ class DxfImporter(Importer):
         for geo in self._geometries_by_layer.values():
             if geo:
                 merged.extend(geo)
-        return merged if not merged.is_empty() else None
+        if merged.is_empty():
+            return None
+        return merged
 
     def vectorize(
         self,
@@ -211,6 +216,12 @@ class DxfImporter(Importer):
         if isinstance(spec, PassthroughSpec) and spec.flatten_z:
             final_geometries = {
                 layer_id: self._flatten_z(geo)
+                for layer_id, geo in final_geometries.items()
+            }
+
+        if isinstance(spec, PassthroughSpec) and spec.repair_outlines:
+            final_geometries = {
+                layer_id: self._repair(geo, spec.repair_tolerance_mm)
                 for layer_id, geo in final_geometries.items()
             }
 
@@ -302,86 +313,31 @@ class DxfImporter(Importer):
             background_world_transform=bg_item.world_matrix,
         )
 
-    def _get_layer_manifest(self, doc) -> list[dict[str, str]]:
-        return [
-            {"id": layer.dxf.name, "name": layer.dxf.name}
-            for layer in doc.layers
-            if layer.dxf.name.lower() != "defpoints"
-        ]
-
-    def _count_features(self, doc) -> defaultdict[str, int]:
-        """
-        Counts entities per layer, descending into INSERT blocks.
-        Entities on layer "0" inside a block inherit the layer of the
-        block insertion, following the DXF specification.
-        """
-
-        def effective_layer(layer: str, insert_layer: str | None) -> str:
-            if layer != "0" or insert_layer is None:
-                return layer
-            return insert_layer
-
-        counts: defaultdict[str, int] = defaultdict(int)
-
-        def walk(entity, insert_layer: str | None):
-            if entity.dxftype() == "INSERT":
-                layer = effective_layer(entity.dxf.layer, insert_layer)
-                block_name = entity.dxf.name
-                if block_name in doc.blocks:
-                    for sub_entity in doc.blocks.get(block_name):
-                        walk(sub_entity, layer)
-                return
-
-            counts[effective_layer(entity.dxf.layer, insert_layer)] += 1
-
-        for entity in doc.modelspace():
-            walk(entity, None)
-
-        return counts
-
-    def _has_z_variation(self, doc) -> bool:
-        """Returns True when the drawing's geometry spans more than one
-        Z level (3D CAD exports often carry the top and bottom face
-        outlines of a part at different Z heights).
-        """
-        entity_bbox = bbox.extents(doc.modelspace(), fast=True)
-        if not entity_bbox.has_data:
-            return False
-        min_z = entity_bbox.extmin.z
-        max_z = entity_bbox.extmax.z
-        return abs(max_z - min_z) > Z_VARIATION_TOLERANCE
-
     def parse(self) -> ParsingResult | None:
-        try:
-            data_str = self.raw_data.decode("utf-8", errors="replace")
-            normalized_str = data_str.replace("\r\n", "\n")
-            doc = ezdxf.read(io.StringIO(normalized_str))  # type: ignore
-            self._dxf_doc = doc
-        except DXFStructureError as e:
-            self._dxf_doc = None
-            self.add_error(_("DXF file is corrupt or invalid: {}").format(e))
+        output = self._read_document()
+        if output is None:
             return None
 
-        # 1. Bounds
-        doc_bounds = self._get_bounds_native(self._dxf_doc)
-        if not doc_bounds:
-            doc_bounds = (0.0, 0.0, 0.0, 0.0)
-
-        # 2. Extract with Flattening & Sorting
-        geometries_by_layer = self._extract_geometries(self._dxf_doc)
+        geometries_by_layer: dict[str | None, Geometry] = {
+            name: geometry.copy() for name, geometry in output.layers
+        }
         self._geometries_by_layer = geometries_by_layer
 
-        # 3. Consolidate (Adaptive Tolerance)
-        w, h = doc_bounds[2], doc_bounds[3]
-        diag = math.hypot(w, h)
-        adaptive_tolerance = max(0.01, diag / 20000.0)
+        min_x, min_y, max_x, max_y = output.bounds
+        doc_bounds: Rect = (
+            min_x,
+            min_y,
+            max_x - min_x,
+            max_y - min_y,
+        )
+        if output.is_empty():
+            doc_bounds = (0.0, 0.0, 0.0, 0.0)
 
-        for layer_name, geo in geometries_by_layer.items():
-            if geo and not geo.is_empty():
-                geo.close_gaps(tolerance=adaptive_tolerance)
+        self._close_gaps(geometries_by_layer, doc_bounds)
 
-        # 4. Create temporary result to calculate transforms
-        native_unit_to_mm = self._get_scale_to_mm(self._dxf_doc)
+        native_unit_to_mm = output.units_to_mm
+
+        # Create a temporary result to calculate transforms
         temp_result = ParsingResult(
             document_bounds=doc_bounds,
             native_unit_to_mm=native_unit_to_mm,
@@ -392,7 +348,6 @@ class DxfImporter(Importer):
             background_world_transform=None,  # type: ignore
         )
 
-        # 5. Calculate authoritative frames using centralized logic
         x, y, w, h = doc_bounds
         world_frame = (
             x * native_unit_to_mm,
@@ -404,7 +359,6 @@ class DxfImporter(Importer):
             doc_bounds, temp_result
         )
 
-        # 6. Final Result
         result = ParsingResult(
             document_bounds=doc_bounds,
             native_unit_to_mm=native_unit_to_mm,
@@ -417,193 +371,42 @@ class DxfImporter(Importer):
         for layer_name, geo in geometries_by_layer.items():
             if layer_name is None or geo.is_empty():
                 continue
-
-            min_x, min_y, max_x, max_y = geo.rect()
-            w = max_x - min_x
-            h = max_y - min_y
-
+            gx1, gy1, gx2, gy2 = geo.rect()
             result.layers.append(
                 LayerGeometry(
                     layer_id=layer_name,
                     name=layer_name,
-                    content_bounds=(min_x, min_y, w, h),
+                    content_bounds=(gx1, gy1, gx2 - gx1, gy2 - gy1),
                 )
             )
 
         return result
 
-    def _extract_geometries(self, doc) -> dict[str | None, Geometry]:
+    @staticmethod
+    def _close_gaps(
+        geometries_by_layer: dict[str | None, Geometry],
+        doc_bounds: Rect,
+    ) -> None:
+        """Chains sub-paths into contours and bridges hairline gaps.
+
+        DXF entities arrive as independent sub-paths, one per LINE, ARC
+        or SPLINE, regardless of how they relate on the drawing. Joining
+        those whose ends meet restores the contours the author drew, so
+        parts come back as closed outlines rather than loose segments.
+
+        CAD exporters also routinely leave the ends a fraction of a unit
+        apart. Bridging gaps of that size is always safe; wider gaps are
+        left for the optional outline repair, which the user enables in
+        the import dialog.
         """
-        Recursively extracts, flattens, sorts, and consumes DXF entities.
-        Sorting is critical for creating continuous paths from scrambled
-        modelspace entities.
-        """
-        raw_paths_by_layer: defaultdict[str, list] = defaultdict(list)
-
-        def process_entity(
-            entity,
-            parent_transform: ezdxf.math.Matrix44,
-            insert_layer: str | None = None,
-        ):
-            # Transform Composition
-            if hasattr(entity, "matrix44"):
-                transform = parent_transform @ entity.matrix44()
-            else:
-                transform = parent_transform
-
-            if entity.dxftype() == "INSERT":
-                # Recurse into blocks (Flattening)
-                block_name = entity.dxf.name
-                if block_name in doc.blocks:
-                    block_def = doc.blocks.get(block_name)
-                    inherited = entity.dxf.layer
-                    if inherited == "0" and insert_layer is not None:
-                        inherited = insert_layer
-                    for sub_entity in block_def:
-                        process_entity(sub_entity, transform, inherited)
-                return
-
-            layer_name = entity.dxf.layer
-            if layer_name == "0" and insert_layer is not None:
-                layer_name = insert_layer
-            if layer_name.lower() == "defpoints":
-                return
-
-            try:
-                # Convert entities to ezdxf Paths
-                if entity.dxftype() in ("TEXT", "MTEXT"):
-                    paths = text2path.make_paths_from_entity(entity)
-                    for path in paths:
-                        raw_paths_by_layer[layer_name].append(
-                            path.transform(transform)
-                        )
-                else:
-                    path = ezdxf.path.make_path(entity)  # type: ignore
-                    raw_paths_by_layer[layer_name].append(
-                        path.transform(transform)
-                    )
-            except Exception:
-                logger.debug(
-                    "Failed to convert DXF entity %s",
-                    entity.dxftype(),
-                    exc_info=True,
-                )
-
-        # 1. Collect all paths (Disordered)
-        identity = ezdxf.math.Matrix44()
-        for entity in doc.modelspace():
-            process_entity(entity, identity)
-
-        # 2. Sort/Chain paths and Consume
-        final_geometries = {}
-        for layer_name, paths in raw_paths_by_layer.items():
-            if not paths:
-                continue
-
-            # Sort paths so end[i] approx== start[i+1]
-            sorted_paths = self._chain_paths(paths)
-
-            geo = Geometry()
-            for path in sorted_paths:
-                self._consume_native_path(geo, path)
-
-            if not geo.is_empty():
-                final_geometries[layer_name] = geo
-
-        return final_geometries
-
-    def _chain_paths(self, paths: list) -> list:
-        """
-        Greedy sorting of paths to restore continuity.
-        Groups paths that share endpoints into contiguous chains.
-        """
-        if not paths:
-            return []
-
-        # Index start points for O(1) lookups
-        # Precision: 3 decimal places ensures visual continuity matches
-        start_map: defaultdict[tuple[int, int], list[int]] = defaultdict(list)
-
-        for i, p in enumerate(paths):
-            s = p.start
-            key = (int(s.x * 1000), int(s.y * 1000))
-            start_map[key].append(i)
-
-        ordered = []
-        visited = [False] * len(paths)
-
-        for i in range(len(paths)):
-            if visited[i]:
-                continue
-
-            # Start a new chain
-            current_idx = i
-            while True:
-                visited[current_idx] = True
-                p = paths[current_idx]
-                ordered.append(p)
-
-                # Look for a path starting where this one ends
-                e = p.end
-                end_key = (int(e.x * 1000), int(e.y * 1000))
-
-                candidates = start_map.get(end_key)
-                next_idx = -1
-
-                if candidates:
-                    for c_idx in candidates:
-                        if not visited[c_idx]:
-                            next_idx = c_idx
-                            break
-
-                if next_idx != -1:
-                    current_idx = next_idx
-                else:
-                    # Chain broken
-                    break
-
-        return ordered
-
-    def _consume_native_path(self, geo: Geometry, path):
-        if not path:
-            return
-
-        start = path.start
-
-        # Check continuity with the *internal* geometry cursor
-        is_continuous = False
-        if not geo.is_empty():
-            lx, ly, lz = geo.get_last_point()
-            if (lx - start.x) ** 2 + (ly - start.y) ** 2 + (
-                lz - start.z
-            ) ** 2 < 1e-8:
-                is_continuous = True
-
-        if not is_continuous:
-            geo.move_to(start.x, start.y, start.z)
-
-        for cmd in path.commands():
-            end = cmd.end
-            if cmd.type == Command.LINE_TO:
-                geo.line_to(end.x, end.y, end.z)
-            elif cmd.type == Command.CURVE4_TO:
-                c1, c2 = cmd.ctrl1, cmd.ctrl2
-                geo.bezier_to(end.x, end.y, c1.x, c1.y, c2.x, c2.y, z=end.z)
-            elif cmd.type == Command.CURVE3_TO:
-                start_x, start_y, _ = geo.get_last_point()
-                ctrl = cmd.ctrl
-                c1x = start_x + (2 / 3) * (ctrl.x - start_x)
-                c1y = start_y + (2 / 3) * (ctrl.y - start_y)
-                c2x = end.x + (2 / 3) * (ctrl.x - end.x)
-                c2y = end.y + (2 / 3) * (ctrl.y - end.y)
-                geo.bezier_to(end.x, end.y, c1x, c1y, c2x, c2y, z=end.z)
-            elif cmd.type == Command.MOVE_TO:
-                # Check internal continuity of the path object itself
-                cx, cy, cz = geo.get_last_point()
-                if (cx - end.x) ** 2 + (cy - end.y) ** 2 + (
-                    cz - end.z
-                ) ** 2 > 1e-8:
-                    geo.move_to(end.x, end.y, end.z)
+        w, h = doc_bounds[2], doc_bounds[3]
+        diag = math.hypot(w, h)
+        tolerance = max(0.01, diag / 20000.0)
+        for layer_id, geo in geometries_by_layer.items():
+            if geo and not geo.is_empty():
+                joined, _ = geo.join_open_contours(tolerance)
+                geometries_by_layer[layer_id] = joined
+                joined.close_gaps(tolerance=tolerance)
 
     @staticmethod
     def _flatten_z(geo: Geometry) -> Geometry:
@@ -616,26 +419,52 @@ class DxfImporter(Importer):
         flat.transform(PROJECT_ONTO_Z0)
         return flat
 
-    def _get_scale_to_mm(self, doc, default: float = 1.0) -> float:
-        insunits = doc.header.get("$INSUNITS", 0)
-        return units_to_mm.get(insunits, default) or default
+    def _repair(self, geo: Geometry, tolerance_mm: float | None) -> Geometry:
+        """Joins and closes fragmented outlines in native units.
 
-    def _get_bounds_native(self, doc):
-        entity_bbox = bbox.extents(doc.modelspace(), fast=True)
-        if not entity_bbox.has_data:
-            return None
-        min_p, max_p = entity_bbox.extmin, entity_bbox.extmax
-        return (min_p.x, min_p.y, (max_p.x - min_p.x), (max_p.y - min_p.y))
+        The tolerance is chosen in millimetres, because that is what the
+        user thinks in and what the import dialog shows. It is converted
+        back to native units using the drawing's own scale.
+        """
+        if geo is None or geo.is_empty():
+            return geo
+        if tolerance_mm is None:
+            tolerance_mm = self._adaptive_repair_tolerance_mm(geo)
+        native = tolerance_mm / self._native_unit_to_mm()
+        repaired, report = geo.repair_outlines(native)
+        if report.joins or report.closed or report.duplicates_removed:
+            self.add_warning(
+                _(
+                    "Repaired {joins} gap(s), closed {closed} outline(s) "
+                    "and removed {duplicates} duplicate(s)."
+                ).format(
+                    joins=report.joins,
+                    closed=report.closed,
+                    duplicates=report.duplicates_removed,
+                )
+            )
+        if report.open_remaining:
+            self.add_warning(
+                _(
+                    "{count} outline(s) are still open after repair; "
+                    "raising the tolerance may close them."
+                ).format(count=report.open_remaining)
+            )
+        return repaired
 
-    def _get_bounds_mm(self, doc):
-        entity_bbox = bbox.extents(doc.modelspace(), fast=True)
-        if not entity_bbox.has_data:
-            return None
-        min_p, max_p = entity_bbox.extmin, entity_bbox.extmax
-        scale = self._get_scale_to_mm(doc)
-        return (
-            min_p.x * scale,
-            min_p.y * scale,
-            (max_p.x - min_p.x) * scale,
-            (max_p.y - min_p.y) * scale,
-        )
+    def _native_unit_to_mm(self) -> float:
+        if self._read_output is None:
+            return 1.0
+        return self._read_output.units_to_mm or 1.0
+
+    @staticmethod
+    def _adaptive_repair_tolerance_mm(geo: Geometry) -> float:
+        """A tolerance that suits the drawing's own size.
+
+        A fixed default would be too small for a large panel and too
+        large for a tiny engraving. Scaling with the diagonal keeps the
+        repair proportional to the work.
+        """
+        min_x, min_y, max_x, max_y = geo.rect()
+        diagonal = math.hypot(max_x - min_x, max_y - min_y)
+        return max(0.05, diagonal / 5000.0)

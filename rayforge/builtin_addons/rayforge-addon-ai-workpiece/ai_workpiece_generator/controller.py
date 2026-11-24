@@ -4,8 +4,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Optional, Protocol, cast
 
+from raygeo.formats.svg import svg_string_to_geometry
 from raygeo.geo import Geometry
-from raygeo.svg import svg_string_to_geometry
 
 from rayforge.core.asset_registry import asset_type_registry
 from rayforge.shared.tasker import task_mgr

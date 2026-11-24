@@ -157,7 +157,6 @@ def get_dependency_info() -> dict:
 
     comm_deps = []
     for pkg in [
-        "ezdxf",
         "pypdf",
         "PyYAML",
         "pyserial",
