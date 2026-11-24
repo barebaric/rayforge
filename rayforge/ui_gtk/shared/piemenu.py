@@ -259,6 +259,7 @@ class PieMenu(Gtk.Popover):
         )
         self._active_index = -1
         self._active_child_index = -1
+        self._update_size()
 
     def _get_max_inner_items(self) -> int:
         """

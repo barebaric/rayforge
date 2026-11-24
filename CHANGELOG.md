@@ -178,6 +178,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the operating system. Linux gets MIME definitions and a `.desktop`
   entry, the macOS app bundle declares its document types, and the
   Windows installer lists the formats in the "Open with" menu
+- Sketch tool: the right-click fan menu grows its drawing area with
+  the longest entry label again, so labels are no longer clipped at
+  the edge of the menu
 
 - Import: SVG geometry that lives outside named layers is now
   offered as an "Ungrouped" layer in the import dialog and enabled
