@@ -79,8 +79,8 @@ werden.
 
 ## Vektordatei-Import
 
-Beim Importieren von Vektordateien (SVG, DXF, PDF) bietet der Import-Dialog drei Möglichkeiten, um
-Ebenen aus der Quelldatei zu behandeln:
+Beim Importieren von Vektordateien (SVG, DXF, CorelDRAW, PDF) bietet der Import-Dialog drei
+Möglichkeiten, um Ebenen aus der Quelldatei zu behandeln:
 
 - **Bestehenden Ebenen zuordnen** — importiert jede Quell-Ebene in die entsprechende Dokument-Ebene
   nach Position

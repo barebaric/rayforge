@@ -79,7 +79,7 @@ FunctionEnd
 
 ;--------------------------------
 ; File type registration
-; .png, .bmp, .jpeg, .jpg, .svg, .svgz and .dxf are shared with other
+; .png, .bmp, .jpeg, .jpg, .svg, .svgz, .dxf and .cdr are shared with other
 ; applications, so Rayforge never claims their default association:
 ; it only registers its ProgIDs and lists them under the extension's
 ; OpenWithProgids subkey, which adds Rayforge to the "Open with" menu.
@@ -183,6 +183,7 @@ Section "MainSection" SEC01
   !insertmacro RegisterSharedFileType "svg" "Rayforge.SvgFile" "SVG Image"
   !insertmacro RegisterSharedFileType "svgz" "Rayforge.SvgzFile" "Compressed SVG Image"
   !insertmacro RegisterSharedFileType "dxf" "Rayforge.DxfFile" "DXF Drawing"
+  !insertmacro RegisterSharedFileType "cdr" "Rayforge.CdrFile" "CorelDRAW Drawing"
   !insertmacro RegisterSharedFileType "pdf" "Rayforge.PdfFile" "PDF Document"
   !insertmacro RegisterSharedFileType "ai" "Rayforge.AiFile" "Adobe Illustrator File"
   !insertmacro RegisterSharedFileType "eps" "Rayforge.EpsFile" "EPS Image"
@@ -252,6 +253,7 @@ Section "Uninstall"
   !insertmacro UnregisterSharedFileType "svg" "Rayforge.SvgFile"
   !insertmacro UnregisterSharedFileType "svgz" "Rayforge.SvgzFile"
   !insertmacro UnregisterSharedFileType "dxf" "Rayforge.DxfFile"
+  !insertmacro UnregisterSharedFileType "cdr" "Rayforge.CdrFile"
   !insertmacro UnregisterSharedFileType "pdf" "Rayforge.PdfFile"
   !insertmacro UnregisterSharedFileType "ai" "Rayforge.AiFile"
   !insertmacro UnregisterSharedFileType "eps" "Rayforge.EpsFile"

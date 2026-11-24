@@ -1,7 +1,7 @@
 ---
 description:
-  "Import SVG, DXF, PDF, LightBurn, Ruida, and raster image files into Rayforge. Supported formats
-  and import options for laser cutting and engraving projects."
+  "Import SVG, DXF, CorelDRAW, PDF, LightBurn, Ruida, and raster image files into Rayforge.
+  Supported formats and import options for laser cutting and engraving projects."
 ---
 
 # Importing Files
@@ -17,6 +17,7 @@ import files and optimize them for best results.
 | --------------- | ----------------- | ------------------------------------------- | ------------------------------- |
 | **SVG**         | `.svg`, `.svgz`   | Direct vectors or trace                     | Vector graphics, logos, designs |
 | **DXF**         | `.dxf`            | Direct vectors                              | CAD drawings, technical designs |
+| **CorelDRAW**   | `.cdr`            | Direct vectors                              | CorelDRAW drawings              |
 | **PDF**         | `.pdf`            | Direct vectors or trace                     | Documents with vector content   |
 | **LightBurn**   | `.lbrn`, `.lbrn2` | Direct vectors                              | LightBurn project files         |
 | **Ruida**       | `.rd`             | Direct vectors                              | Ruida controller job files      |
@@ -356,6 +357,35 @@ it too high and unrelated outlines may be joined into one.
 - Check scale (DXF units may need adjustment)
 - Verify all paths imported correctly
 - Delete any unwanted construction elements
+
+---
+
+## CorelDRAW Import
+
+CorelDRAW (`.cdr`) files are read natively, so CorelDRAW does not need to be installed. Rayforge
+reads the drawing files of CorelDRAW 7 through X7, both as plain files and as the ZIP-based packages
+of later versions.
+
+**Supported Features:**
+
+- ✓ Curves, paths, arcs, ellipses and rounded rectangles
+- ✓ Text imported as outlines
+- ✓ Named layers, selectable in the import dialog
+- ✓ Object, group and layer transformations
+- ✓ Hidden layers and objects left out
+
+**Limitations:**
+
+- ✗ Only the first drawing page is imported; later pages are reported
+- ✗ Bitmaps and unsupported object types are reported as warnings and left out
+- ✗ Fills, outlines and embedded fonts are ignored; text is drawn with the closest installed font,
+  so glyphs may differ from CorelDRAW's own rendering
+- ✗ CMX files are recognized but cannot be read
+
+**When to Use:**
+
+- Opening designs that only exist as a CorelDRAW file
+- Moving an existing CorelDRAW workflow to Rayforge
 
 ---
 

@@ -26,10 +26,11 @@ CAD, o para archivar.
 | **RFS** | `.rfs`    | Formato de bosquejo paramétrico nativo de Rayforge. Preserva todas las restricciones y puede reimportarse para edición.      |
 | **SVG** | `.svg`    | Gráficos Vectoriales Escalables. Ampliamente compatible con software de diseño como Inkscape, Illustrator y navegadores web. |
 | **DXF** | `.dxf`    | Formato de Intercambio de Dibujos. Compatible con la mayoría de aplicaciones CAD como AutoCAD, FreeCAD y LibreCAD.           |
+| **CDR** | `.cdr`    | Dibujo de CorelDRAW. Se abre en CorelDRAW y otros editores vectoriales.                                                      |
 
 ### Notas de Exportación
 
-- **SVG y DXF** exportan la geometría resuelta (no restricciones paramétricas)
+- **SVG, DXF y CDR** exportan la geometría resuelta (no restricciones paramétricas)
 - Las exportaciones usan **unidades de milímetros**
 - La geometría se escala a dimensiones reales (espacio del mundo)
 - Múltiples subtrayectorias (formas desconectadas) se preservan como elementos separados
@@ -43,12 +44,12 @@ CAD, o para archivar.
 
 **Edición posterior:**
 
-- Exporta a SVG/DXF, edita en software externo, reimporta
+- Exporta a SVG/DXF/CDR, edita en software externo, reimporta
 
 **Archivando:**
 
 - Usa RFS para diseños basados en bosquejo para preservar editabilidad
-- Usa SVG/DXF para almacenamiento a largo plazo o usuarios sin Rayforge
+- Usa SVG/DXF/CDR para almacenamiento a largo plazo o usuarios sin Rayforge
 
 ---
 
@@ -60,7 +61,7 @@ compartir proyectos completos o crear respaldos en formatos estándar.
 ### Cómo Exportar
 
 1. **Elige Archivo → Exportar Documento...**
-2. **Selecciona formato** (SVG o DXF)
+2. **Selecciona formato** (SVG, DXF o CDR)
 3. **Elige ubicación de guardado**
 
 ### Formatos Disponibles
@@ -69,6 +70,7 @@ compartir proyectos completos o crear respaldos en formatos estándar.
 | ------- | --------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | **SVG** | `.svg`    | Gráficos Vectoriales Escalables. Ampliamente compatible con software de diseño como Inkscape, Illustrator y navegadores web. |
 | **DXF** | `.dxf`    | Formato de Intercambio de Dibujos. Compatible con la mayoría de aplicaciones CAD como AutoCAD, FreeCAD y LibreCAD.           |
+| **CDR** | `.cdr`    | Dibujo de CorelDRAW. Se abre en CorelDRAW y otros editores vectoriales.                                                      |
 
 ### Notas de Exportación
 
@@ -76,6 +78,8 @@ compartir proyectos completos o crear respaldos en formatos estándar.
 - Las posiciones de las piezas se preservan
 - Las piezas vacías se omiten
 - El cuadro delimitador abarca toda la geometría
+- **CDR** escribe un dibujo de CorelDRAW (versión 12) con la geometría como curvas en una capa y un
+  contorno negro fino
 
 ### Casos de Uso
 

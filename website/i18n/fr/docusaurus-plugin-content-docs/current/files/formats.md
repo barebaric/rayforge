@@ -11,6 +11,7 @@ Rayforge, y compris les capacités, les limitations et les recommandations.
 | ------------------- | --------- | ---------------- | ------------- | -------------------------------------------- |
 | **SVG**             | Vecteur   | ✓ Direct / Trace | ✓ Export obj. | Format de conception principal               |
 | **DXF**             | Vecteur   | ✓ Direct         | ✓ Export obj. | Échange CAO                                  |
+| **CorelDRAW**       | Vecteur   | ✓ Direct         | ✓ Export obj. | Dessins CorelDRAW                            |
 | **PDF**             | Mixte     | ✓ Direct / Trace | –             | Documents avec contenu vectoriel             |
 | **Illustrator**     | Vecteur   | ✓ Direct / Trace | –             | Logos issus d'Illustrator                    |
 | **EPS**             | Vecteur   | ✓ Direct / Trace | –             | Logos, fichiers d'impression                 |
@@ -130,6 +131,38 @@ Lors de l'exportation d'une pièce vers DXF, Rayforge exporte :
 - Les arcs en tant qu'entités ARC
 - Les courbes de Bézier en tant qu'entités SPLINE
 - Les unités en millimètres (INSUNITS = 4)
+
+---
+
+### CorelDRAW (.cdr)
+
+**Extension :** `.cdr` **Type MIME :** `application/vnd.corel-draw` **Importation :** Analyse vectorielle
+directe **Exportation :** Export d'objets (géométrie uniquement)
+
+Les dessins CorelDRAW sont lus nativement — CorelDRAW n'est pas nécessaire. Rayforge lit le format
+d'enregistrements de CorelDRAW 7 à X7, aussi bien les fichiers simples que les paquets ZIP des
+versions ultérieures, y compris leurs listes de chunks compressées.
+
+**Fonctionnalités prises en charge :**
+
+- ✓ Courbes, tracés, arcs, ellipses et rectangles arrondis
+- ✓ Texte converti en contours
+- ✓ Calques nommés, sélectionnables à l'importation
+- ✓ Transformations des objets, des groupes et des calques
+
+**Limites :**
+
+- ✗ Seule la première page du dessin est importée
+- ✗ Les images matricielles et les types d'objets inconnus sont signalés et ignorés
+- ✗ Les remplissages, contours et polices incorporées sont ignorés ; le texte utilise la police
+  installée la plus proche, les glyphes peuvent donc différer de CorelDRAW
+- ✗ Les fichiers CMX sont reconnus mais ne peuvent pas être lus
+
+**Notes d'exportation :**
+
+Lors de l'export d'une pièce vers CorelDRAW, Rayforge écrit un dessin de version 12 avec la
+géométrie sous forme de courbes sur un calque, un contour noir fin et la page ajustée à la
+géométrie.
 
 ---
 

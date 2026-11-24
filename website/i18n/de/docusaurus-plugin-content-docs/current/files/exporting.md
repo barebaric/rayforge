@@ -26,10 +26,11 @@ CAD-Anwendungen oder zur Archivierung.
 | **RFS** | `.rfs`      | Rayforge's natives parametrisches Skizzenformat. Bewahrt alle Bedingungen und kann zum Bearbeiten wieder importiert werden. |
 | **SVG** | `.svg`      | Scalable Vector Graphics. Weit kompatibel mit Design-Software wie Inkscape, Illustrator und Webbrowsern.                    |
 | **DXF** | `.dxf`      | Drawing Exchange Format. Kompatibel mit den meisten CAD-Anwendungen wie AutoCAD, FreeCAD und LibreCAD.                      |
+| **CDR** | `.cdr`      | CorelDRAW-Zeichnung. Öffnet in CorelDRAW und anderen Vektoreditoren.                                                        |
 
 ### Export-Hinweise
 
-- **SVG und DXF** exportieren die aufgelöste Geometrie (nicht parametrische Bedingungen)
+- **SVG, DXF und CDR** exportieren die aufgelöste Geometrie (nicht parametrische Bedingungen)
 - Exporte verwenden **Millimeter-Einheiten**
 - Geometrie ist auf tatsächliche Abmessungen skaliert (Weltkoordinaten)
 - Mehrere Teilpfade (getrennte Formen) werden als separate Elemente bewahrt
@@ -43,12 +44,12 @@ CAD-Anwendungen oder zur Archivierung.
 
 **Weiterbearbeitung:**
 
-- Nach SVG/DXF exportieren, in externer Software bearbeiten, wieder importieren
+- Nach SVG/DXF/CDR exportieren, in externer Software bearbeiten, wieder importieren
 
 **Archivierung:**
 
 - RFS für skizzenbasierte Designs verwenden um Bearbeitbarkeit zu bewahren
-- SVG/DXF für langfristige Speicherung oder Nicht-Rayforge-Benutzer
+- SVG/DXF/CDR für langfristige Speicherung oder Nicht-Rayforge-Benutzer
 
 ---
 
@@ -60,7 +61,7 @@ nützlich zum Teilen kompletter Projekte oder Erstellen von Backups in Standardf
 ### Wie man exportiert
 
 1. **Datei → Dokument exportieren... wählen**
-2. **Format auswählen** (SVG oder DXF)
+2. **Format auswählen** (SVG, DXF oder CDR)
 3. **Speicherort wählen**
 
 ### Verfügbare Formate
@@ -69,6 +70,7 @@ nützlich zum Teilen kompletter Projekte oder Erstellen von Backups in Standardf
 | ------- | ----------- | -------------------------------------------------------------------------------------------------------- |
 | **SVG** | `.svg`      | Scalable Vector Graphics. Weit kompatibel mit Design-Software wie Inkscape, Illustrator und Webbrowsern. |
 | **DXF** | `.dxf`      | Drawing Exchange Format. Kompatibel mit den meisten CAD-Anwendungen wie AutoCAD, FreeCAD und LibreCAD.   |
+| **CDR** | `.cdr`      | CorelDRAW-Zeichnung. Öffnet in CorelDRAW und anderen Vektoreditoren.                                     |
 
 ### Export-Hinweise
 
@@ -76,6 +78,8 @@ nützlich zum Teilen kompletter Projekte oder Erstellen von Backups in Standardf
 - Werkstückpositionen werden bewahrt
 - Leere Werkstücke werden übersprungen
 - Der Begrenzungsrahmen umfasst die gesamte Geometrie
+- **CDR** schreibt eine CorelDRAW-Zeichnung (Version 12) mit der Geometrie als Kurven auf einer
+  Ebene und einer schwarzen Haarlinien-Kontur
 
 ### Anwendungsfälle
 

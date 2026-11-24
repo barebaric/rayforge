@@ -76,8 +76,8 @@ uma camada. As etapas podem ser reordenadas arrastando e soltando.
 
 ## Importação de arquivos vetoriais
 
-Ao importar arquivos vetoriais (SVG, DXF, PDF), o diálogo de importação oferece três formas de lidar
-com as camadas do arquivo de origem:
+Ao importar arquivos vetoriais (SVG, DXF, CorelDRAW, PDF), o diálogo de importação oferece três
+formas de lidar com as camadas do arquivo de origem:
 
 - **Mapear para camadas existentes** — importa cada camada de origem para a camada do documento
   correspondente por posição

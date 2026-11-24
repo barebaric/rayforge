@@ -32,10 +32,11 @@ archiving.
 | **RFS** | `.rfs`    | Rayforge's native parametric sketch format. Preserves all constraints and can be re-imported for editing.      |
 | **SVG** | `.svg`    | Scalable Vector Graphics. Widely compatible with design software like Inkscape, Illustrator, and web browsers. |
 | **DXF** | `.dxf`    | Drawing Exchange Format. Compatible with most CAD applications like AutoCAD, FreeCAD, and LibreCAD.            |
+| **CDR** | `.cdr`    | CorelDRAW drawing. Opens in CorelDRAW and other vector editors.                                                |
 
 ### Export Notes
 
-- **SVG and DXF** export the resolved geometry (not parametric constraints)
+- **SVG, DXF and CDR** export the resolved geometry (not parametric constraints)
 - Exports use **millimeter units**
 - Geometry is scaled to actual dimensions (world space)
 - Multiple subpaths (disconnected shapes) are preserved as separate elements
@@ -49,12 +50,12 @@ archiving.
 
 **Further editing:**
 
-- Export to SVG/DXF, edit in external software, re-import
+- Export to SVG/DXF/CDR, edit in external software, re-import
 
 **Archiving:**
 
 - Use RFS for sketch-based designs to preserve editability
-- Use SVG/DXF for long-term storage or non-Rayforge users
+- Use SVG/DXF/CDR for long-term storage or non-Rayforge users
 
 ---
 
@@ -66,7 +67,7 @@ complete projects or creating backups in standard formats.
 ### How to Export
 
 1. **Choose File → Export Document...**
-2. **Select format** (SVG or DXF)
+2. **Select format** (SVG, DXF or CDR)
 3. **Choose save location**
 
 ### Available Formats
@@ -75,6 +76,7 @@ complete projects or creating backups in standard formats.
 | ------- | --------- | -------------------------------------------------------------------------------------------------------------- |
 | **SVG** | `.svg`    | Scalable Vector Graphics. Widely compatible with design software like Inkscape, Illustrator, and web browsers. |
 | **DXF** | `.dxf`    | Drawing Exchange Format. Compatible with most CAD applications like AutoCAD, FreeCAD, and LibreCAD.            |
+| **CDR** | `.cdr`    | CorelDRAW drawing. Opens in CorelDRAW and other vector editors.                                                |
 
 ### Export Notes
 
@@ -82,6 +84,8 @@ complete projects or creating backups in standard formats.
 - Workpiece positions are preserved
 - Empty workpieces are skipped
 - The bounding box encompasses all geometry
+- **CDR** writes a version 12 CorelDRAW drawing with the geometry as curves on one layer and a black
+  hairline outline
 
 ### Use Cases
 

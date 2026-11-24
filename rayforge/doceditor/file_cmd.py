@@ -45,9 +45,19 @@ from ..image import (
     importer_registry,
 )
 from ..image.base_exporter import Exporter
-from ..image.dxf.exporter import GeometryDxfExporter
+from ..image.coreldraw.exporter import (
+    CorelDrawExporter,
+    MultiGeometryCorelDrawExporter,
+)
+from ..image.dxf.exporter import (
+    GeometryDxfExporter,
+    MultiGeometryDxfExporter,
+)
 from ..image.structures import ImportPayload, ImportResult, ParsingResult
-from ..image.svg.exporter import GeometrySvgExporter
+from ..image.svg.exporter import (
+    GeometrySvgExporter,
+    MultiGeometrySvgExporter,
+)
 from ..pipeline.artifact import JobArtifact
 from ..pipeline.artifact.handle import BaseArtifactHandle
 from .layout.align import PositionAtStrategy
@@ -1139,6 +1149,7 @@ class FileCmd:
         - .rfs: Rayforge Sketch (parametric, sketch-based only)
         - .svg: SVG format
         - .dxf: DXF format
+        - .cdr: CorelDRAW format
 
         This is a synchronous method for the UI.
         """
@@ -1156,6 +1167,8 @@ class FileCmd:
             exporter = GeometrySvgExporter(geo)
         elif ext == ".dxf":
             exporter = GeometryDxfExporter(geo)
+        elif ext == ".cdr":
+            exporter = CorelDrawExporter(geo)
         else:
             raise ValueError(f"Unsupported export format: {ext}")
 
@@ -1199,6 +1212,7 @@ class FileCmd:
         Supports multiple formats based on file extension:
         - .svg: SVG format
         - .dxf: DXF format
+        - .cdr: CorelDRAW format
 
         This is a synchronous method for the UI.
         """
@@ -1217,13 +1231,11 @@ class FileCmd:
 
         ext = file_path.suffix.lower()
         if ext == ".svg":
-            from ..image.svg.exporter import MultiGeometrySvgExporter
-
             exporter = MultiGeometrySvgExporter(geometries)
         elif ext == ".dxf":
-            from ..image.dxf.exporter import MultiGeometryDxfExporter
-
             exporter = MultiGeometryDxfExporter(geometries)
+        elif ext == ".cdr":
+            exporter = MultiGeometryCorelDrawExporter(geometries)
         else:
             raise ValueError(f"Unsupported export format: {ext}")
 

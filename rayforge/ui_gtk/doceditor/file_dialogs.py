@@ -186,6 +186,7 @@ def show_export_document_dialog(
     Supports formats:
     - SVG (.svg) - scalable vector graphics
     - DXF (.dxf) - CAD exchange format
+    - CDR (.cdr) - CorelDRAW drawing
 
     Args:
         win: The parent Gtk.Window.
@@ -212,6 +213,12 @@ def show_export_document_dialog(
     dxf_filter.add_pattern("*.dxf")
     dxf_filter.add_mime_type("image/vnd.dxf")
     filter_list.append(dxf_filter)
+
+    cdr_filter = Gtk.FileFilter()
+    cdr_filter.set_name(_("CorelDRAW (CDR)"))
+    cdr_filter.add_pattern("*.cdr")
+    cdr_filter.add_mime_type("application/vnd.corel-draw")
+    filter_list.append(cdr_filter)
 
     dialog.set_filters(filter_list)
     dialog.set_default_filter(svg_filter)

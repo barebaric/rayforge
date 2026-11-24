@@ -12,6 +12,7 @@ meilleurs résultats.
 | --------------- | ----------------- | --------------------------------------------------------- | -------------------------------------------- |
 | **SVG**         | `.svg`, `.svgz`   | Vecteurs directs ou vectorisation                         | Graphiques vectoriels, logos, dessins        |
 | **DXF**         | `.dxf`            | Vecteurs directs                                          | Dessins CAO, plans techniques                |
+| **CorelDRAW**   | `.cdr`            | Vecteurs directs                                          | Dessins CorelDRAW                            |
 | **PDF**         | `.pdf`            | Vecteurs directs ou vectorisation                         | Documents avec contenu vectoriel             |
 | **LightBurn**   | `.lbrn`, `.lbrn2` | Vecteurs directs                                          | Projets LightBurn                            |
 | **Ruida**       | `.rd`             | Vecteurs directs                                          | Fichiers de tâches contrôleur Ruida          |
@@ -369,6 +370,36 @@ dialogue indique combien. Si elle est trop élevée, des contours sans rapport r
 - Vérifier l'échelle (les unités DXF peuvent nécessiter un ajustement)
 - Confirmer que tous les tracés ont été importés correctement
 - Supprimer les éléments de construction indésirables
+
+---
+
+## Importation CorelDRAW
+
+Les fichiers CorelDRAW (`.cdr`) sont lus nativement, sans que CorelDRAW soit installé. Rayforge lit
+les dessins de CorelDRAW 7 à X7, aussi bien les fichiers simples que les paquets ZIP des versions
+ultérieures.
+
+**Fonctionnalités prises en charge :**
+
+- ✓ Courbes, tracés, arcs, ellipses et rectangles arrondis
+- ✓ Texte importé sous forme de contours
+- ✓ Calques nommés, sélectionnables dans la boîte de dialogue d'importation
+- ✓ Transformations des objets, des groupes et des calques
+- ✓ Les calques et objets masqués sont ignorés
+
+**Limites :**
+
+- ✗ Seule la première page du dessin est importée ; les suivantes sont signalées
+- ✗ Les images matricielles et les types d'objets non pris en charge sont signalés comme
+  avertissements et ignorés
+- ✗ Les remplissages, contours et polices incorporées sont ignorés ; le texte est dessiné avec la
+  police installée la plus proche, les glyphes peuvent donc différer de CorelDRAW
+- ✗ Les fichiers CMX sont reconnus mais ne peuvent pas être lus
+
+**Quand l'utiliser :**
+
+- Ouvrir des conceptions qui n'existent que sous forme de fichier CorelDRAW
+- Transférer un flux de travail CorelDRAW vers Rayforge
 
 ---
 

@@ -11,6 +11,7 @@ einschließlich Fähigkeiten, Einschränkungen und Empfehlungen.
 | -------------------- | -------- | ------------------ | --------------- | ------------------------------------ |
 | **SVG**              | Vektor   | ✓ Direkt / Tracing | ✓ Objekt-Export | Primäres Design-Format               |
 | **DXF**              | Vektor   | ✓ Direkt           | ✓ Objekt-Export | CAD-Datenaustausch                   |
+| **CorelDRAW**        | Vektor   | ✓ Direkt           | ✓ Objekt-Export | CorelDRAW-Zeichnungen                |
 | **PDF**              | Gemischt | ✓ Direkt / Tracing | –               | Dokumente mit Vektorinhalt           |
 | **Illustrator**      | Vektor   | ✓ Direkt / Tracing | –               | Logos aus Illustrator                |
 | **EPS**              | Vektor   | ✓ Direkt / Tracing | –               | Logos, Druckvorlagen                 |
@@ -128,6 +129,38 @@ Beim Exportieren eines Werkstücks nach DXF exportiert Rayforge:
 - Bögen als ARC-Entitäten
 - Bezier-Kurven als SPLINE-Entitäten
 - Millimeter-Einheiten (INSUNITS = 4)
+
+---
+
+### CorelDRAW (.cdr)
+
+**Erweiterung:** `.cdr` **MIME-Typ:** `application/vnd.corel-draw` **Import:** Direkte Vektoranalyse
+**Export:** Objekt-Export (nur Geometrie)
+
+CorelDRAW-Zeichnungen werden nativ gelesen — CorelDRAW selbst ist nicht nötig. Rayforge liest das
+Datensatzformat von CorelDRAW 7 bis X7, sowohl als reine Dateien als auch als ZIP-basierte Pakete
+späterer Versionen, einschließlich ihrer komprimierten Chunk-Listen.
+
+**Unterstützte Funktionen:**
+
+- ✓ Kurven, Pfade, Bögen, Ellipsen und abgerundete Rechtecke
+- ✓ Text in Konturen umgewandelt
+- ✓ Benannte Ebenen, beim Import auswählbar
+- ✓ Objekt-, Gruppen- und Ebenentransformationen
+
+**Einschränkungen:**
+
+- ✗ Nur die erste Zeichnungsseite wird importiert
+- ✗ Bitmaps und unbekannte Objekttypen werden gemeldet und übersprungen
+- ✗ Füllungen, Konturen und eingebettete Schriften werden ignoriert; Text verwendet die am besten
+  passende installierte Schrift, sodass Glyphen von CorelDRAW abweichen können
+- ✗ CMX-Dateien werden erkannt, können aber nicht gelesen werden
+
+**Export-Hinweise:**
+
+Beim Export eines Werkstücks nach CorelDRAW schreibt Rayforge eine Zeichnung der Version 12 mit der
+Geometrie als Kurven auf einer Ebene, einer schwarzen Haarlinien-Kontur und der auf die Geometrie
+angepassten Seite.
 
 ---
 

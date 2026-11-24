@@ -77,8 +77,8 @@ Cliquez sur une étape pour la configurer. Utilisez le bouton **+** du pipeline 
 
 ## Import de fichiers vectoriels
 
-Lors de l'importation de fichiers vectoriels (SVG, DXF, PDF), le dialogue d'importation propose
-trois façons de gérer les calques du fichier source :
+Lors de l'importation de fichiers vectoriels (SVG, DXF, CorelDRAW, PDF), le dialogue d'importation
+propose trois façons de gérer les calques du fichier source :
 
 - **Mapper vers les calques existants** — importe chaque calque source dans le calque de document
   correspondant par position

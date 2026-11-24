@@ -77,8 +77,8 @@ capa. Los pasos se pueden reordenar arrastrando y soltando.
 
 ## Importación de archivos vectoriales
 
-Al importar archivos vectoriales (SVG, DXF, PDF), el diálogo de importación ofrece tres formas de
-manejar las capas del archivo de origen:
+Al importar archivos vectoriales (SVG, DXF, CorelDRAW, PDF), el diálogo de importación ofrece tres
+formas de manejar las capas del archivo de origen:
 
 - **Asignar a capas existentes** — importa cada capa de origen a la capa del documento
   correspondiente por posición

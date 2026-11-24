@@ -1,7 +1,7 @@
 ---
 description:
-  "Supported file formats in Rayforge — SVG, DXF, PDF, LightBurn, Ruida, PNG, JPG, BMP and more.
-  Import vector and raster designs for laser cutting and engraving."
+  "Supported file formats in Rayforge — SVG, DXF, CorelDRAW, PDF, LightBurn, Ruida, PNG, JPG, BMP
+  and more. Import vector and raster designs for laser cutting and engraving."
 ---
 
 # Supported File Formats
@@ -17,6 +17,7 @@ capabilities, limitations, and recommendations.
 | -------------------- | ------- | ---------------- | --------------- | ------------------------------ |
 | **SVG**              | Vector  | ✓ Direct / Trace | ✓ Object export | Primary design format          |
 | **DXF**              | Vector  | ✓ Direct         | ✓ Object export | CAD interchange                |
+| **CorelDRAW**        | Vector  | ✓ Direct         | ✓ Object export | CorelDRAW drawings             |
 | **PDF**              | Mixed   | ✓ Direct / Trace | –               | Documents with vector content  |
 | **Illustrator**      | Vector  | ✓ Direct / Trace | –               | Logos from Illustrator         |
 | **EPS**              | Vector  | ✓ Direct / Trace | –               | Logos, print artwork           |
@@ -134,6 +135,37 @@ When exporting a workpiece to DXF, Rayforge exports:
 - Arcs as ARC entities
 - Bezier curves as SPLINE entities
 - Millimeter units (INSUNITS = 4)
+
+---
+
+### CorelDRAW (.cdr)
+
+**Extension:** `.cdr` **MIME Type:** `application/vnd.corel-draw` **Import:** Direct vector parsing
+**Export:** Object export (geometry only)
+
+CorelDRAW drawings are read natively — CorelDRAW itself is not needed. Rayforge reads the record
+format of CorelDRAW 7 through X7, both as plain files and as the ZIP-based packages of later
+versions, including their compressed chunk lists.
+
+**Supported Features:**
+
+- ✓ Curves, paths, arcs, ellipses and rounded rectangles
+- ✓ Text converted to outlines
+- ✓ Named layers, selectable on import
+- ✓ Object, group and layer transformations
+
+**Limitations:**
+
+- ✗ Only the first drawing page is imported
+- ✗ Bitmaps and unknown object types are reported and skipped
+- ✗ Fills, outlines and embedded fonts are ignored; text uses the closest installed font, so glyphs
+  may differ from CorelDRAW's own rendering
+- ✗ CMX files are recognized but cannot be read
+
+**Export Notes:**
+
+When exporting a workpiece to CorelDRAW, Rayforge writes a version 12 drawing with the geometry as
+curves on one layer, a black hairline outline and the page fitted to the geometry.
 
 ---
 

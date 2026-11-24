@@ -4,7 +4,8 @@
 
 ## 第 1 步：导入设计
 
-Rayforge 支持多种文件格式，包括 SVG、DXF、PDF、Ruida (.rd) 和光栅图像（JPEG、PNG、BMP）。
+Rayforge 支持多种文件格式，包括 SVG、DXF、CorelDRAW (.cdr)、PDF、Ruida
+(.rd) 和光栅图像（JPEG、PNG、BMP）。
 
 1. **点击** **文件 → 打开** 或按 <kbd>ctrl+o</kbd>
 2. 导航到您的设计文件并选择它
