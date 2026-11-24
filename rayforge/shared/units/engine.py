@@ -86,6 +86,10 @@ class ConversionEngine:
                     self.unitmap[(f"{p}m", imp_unit)] = f * factor
                     self.unitmap[(imp_unit, f"{p}m")] = 1 / (f * factor)
 
+        # Build conversions between registered imperial length units
+        self.unitmap[("ft", "in")] = 12.0
+        self.unitmap[("in", "ft")] = 1 / 12.0
+
         # Build time conversions
         for (t1, t2), factor in self._base_conversions.items():
             if t1 in self._time_units and t2 in self._time_units:
