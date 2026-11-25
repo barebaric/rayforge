@@ -19,7 +19,7 @@ from raygeo.ops.state import PowerMode
 
 from ...context import RayforgeContext
 from ...core.varset import IntVar, VarSet
-from ...pipeline.encode_inputs import encode_gcode
+from ...pipeline.encode_inputs import build_gcode_spec, encode_ops
 from ...shared.units.system import UnitSystem
 
 if TYPE_CHECKING:
@@ -30,6 +30,7 @@ if TYPE_CHECKING:
     from ..models.head import Head
     from ..models.laser import Laser
     from ..models.machine import Machine
+    from ..models.origin import Origin
 
 
 logger = logging.getLogger(__name__)
@@ -306,6 +307,27 @@ class Driver(ABC):
     # The Z homing modes the driver can perform. The first entry is
     # the default for machines that have not chosen a mode.
     z_homing_modes: ClassVar[tuple[ZHomingMode, ...]] = (ZHomingMode.SWITCH,)
+    # The coordinate origins the controller can use, in preference
+    # order. The machine's origin is constrained to this set: drivers
+    # whose protocol fixes the layout (e.g. print-job devices that
+    # only address a top-left page) narrow it, and the setting then
+    # offers only those choices instead of letting the user pick a
+    # value that cannot be encoded.
+    supported_origins: ClassVar[tuple["Origin", ...] | None] = None
+
+    @classmethod
+    def resolve_origin(cls, origin: "Origin") -> "Origin":
+        """
+        Returns the origin to use for a requested one.
+
+        Keeps *origin* when the driver supports it, otherwise falls
+        back to the driver's first supported origin (or the requested
+        one when the driver does not constrain the layout).
+        """
+        supported = cls.supported_origins
+        if not supported or origin in supported:
+            return origin
+        return supported[0]
 
     @classmethod
     def supports_probing_for(cls, driver_args: dict[str, Any]) -> bool:
@@ -348,6 +370,23 @@ class Driver(ABC):
         if not cls.uses_gcode:
             return True
         return bool(dialect and dialect.can_g0_with_speed)
+
+    @classmethod
+    def create_encoder_spec(
+        cls, machine: "Machine", doc: "Doc", ops: Ops
+    ) -> Any | None:
+        """Return the native encoder spec for a job on *machine*.
+
+        G-code drivers use the native ``GcodeSpec`` for their dialect.
+        Drivers with their own machine language override this and
+        return their spec, or ``None`` when they only provide a Python
+        encoder through :meth:`create_encoder`. The pipeline and the
+        default :meth:`frame` call this, so neither knows about a
+        specific encoder.
+        """
+        if not cls.uses_gcode:
+            return None
+        return build_gcode_spec(machine, doc, ops)
 
     @property
     @abstractmethod
@@ -690,8 +729,8 @@ class Driver(ABC):
 
         The default implementation encodes a well-formed job opstream
         (job → layer → workpiece markers with the head state ops, then
-        the trace) and executes it like a minimal job, which is how
-        G-code controllers frame. Drivers whose controllers frame better
+        the trace) with the driver's native encoder spec and executes
+        it like a minimal job. Drivers whose controllers frame better
         with protocol-native commands override this; e.g. the Ruida
         driver frames with beam-off absolute moves.
 
@@ -715,7 +754,12 @@ class Driver(ABC):
             corner_pause_s=corner_pause_s,
             power_fraction=power_fraction,
         )
-        encoded = encode_gcode(ops, self._machine, doc)
+        spec = self.create_encoder_spec(self._machine, doc, ops)
+        if spec is None:
+            raise NotImplementedError(
+                _("This driver cannot encode a frame outline.")
+            )
+        encoded = encode_ops(ops, spec)
         await self.run(encoded, doc, ops, on_command_done=on_command_done)
 
     @abstractmethod
@@ -746,6 +790,17 @@ class Driver(ABC):
         Returns:
             True if the device supports homing the specified axis/axes,
             False otherwise
+        """
+        return True
+
+    def can_frame(self) -> bool:
+        """
+        Whether the driver can trace the job outline (framing).
+
+        Defaults to True: most controllers frame either with a
+        dedicated move sequence or by running a beam-off job. Drivers
+        whose protocol cannot trace at all override this to False so
+        the Frame action is disabled instead of failing on click.
         """
         return True
 

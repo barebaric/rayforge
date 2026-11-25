@@ -86,6 +86,19 @@ class JobArtifact(BaseArtifact):
         return encoded.text if encoded else None
 
     @property
+    def payload(self) -> bytes | None:
+        """The device byte stream for binary machine languages.
+
+        Encoders for print-job devices (e.g. Epilog) return the exact
+        bytes the device consumes alongside the readable ``text``.
+        ``None`` for text-only languages such as G-code.
+        """
+        encoded = self.encoded_output
+        if not encoded:
+            return None
+        return encoded.driver_data.get("payload")
+
+    @property
     def op_map(self) -> MachineCodeOpMap | None:
         """
         Lazily decodes and caches the MachineCodeOpMap from encoded_output.
