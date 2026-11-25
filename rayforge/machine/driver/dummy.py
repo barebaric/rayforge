@@ -1,37 +1,31 @@
 import asyncio
-import inspect
 import logging
-from collections.abc import Awaitable, Callable
 from gettext import gettext as _
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, cast
 
+import raydriver.simulator
 from raygeo.ops.axis import Axis
 
 from ...context import RayforgeContext
 from ...core.varset import VarSet
-from ...pipeline.artifact.encoded import EncodedOutput
-from ..transport import TransportStatus
-from .driver import DeviceStatus, Driver, Pos
+from .driver import Pos
+from .native import NativeDriver
 
 if TYPE_CHECKING:
-    from raygeo.ops import Ops
-
-    from ...core.doc import Doc
-    from ..models.laser import Laser
     from ..models.machine import Machine
-
 
 logger = logging.getLogger(__name__)
 
 
-class NoDeviceDriver(Driver):
+class NoDeviceDriver(NativeDriver):
     """
-    A dummy driver that is used if the user has no machine.
+    A simulated machine used when the user has no device.
+
+    The simulation itself runs in the native raydriver simulator; this
+    binding supplies the machine state and the presentation data.
     """
+
+    NATIVE = raydriver.simulator.NoDeviceDriver
 
     label = _("No driver")
     subtitle = _("No connection")
@@ -43,41 +37,20 @@ class NoDeviceDriver(Driver):
 
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         super().__init__(context, machine)
-        # Internal state for WCS offsets to behave like a stateful machine
-        # Initialize from machine's persisted state to prevent overwriting
-        # loaded configuration with defaults upon connection.
-        self._offsets: dict[str, Pos] = cast(
-            dict[str, Pos],
-            {k: v.offset for k, v in machine.coordinate_systems.items()},
-        )
-
-        # Ensure standard keys exist
-        defaults = ["G54", "G55", "G56", "G57", "G58", "G59"]
-        for key in defaults:
-            if key not in self._offsets:
-                self._offsets[key] = (0.0, 0.0, 0.0)
+        # The simulator is usable without an explicit setup() call;
+        # tests and the UI construct it directly.
+        self._session = self._create_session(self.build_config({}))
 
     @property
     def machine_space_wcs(self) -> str:
-        """
-        Returns the machine space coordinate system identifier.
-        This is an immutable coordinate system with zero offset.
-        """
         return "MACHINE"
 
     @property
     def machine_space_wcs_display_name(self) -> str:
-        """
-        Returns a human-readable display name for the machine space
-        coordinate system.
-        """
         return _("Machine Coordinates")
 
     @classmethod
     def precheck(cls, **kwargs: Any) -> None:
-        pass
-
-    def _setup_implementation(self, **kwargs: Any) -> None:
         pass
 
     @classmethod
@@ -87,166 +60,41 @@ class NoDeviceDriver(Driver):
     def get_setting_vars(self) -> list["VarSet"]:
         return [VarSet(title=_("No settings"))]
 
-    async def _connect_implementation(self) -> None:
-        # Simulate connection sequence
-        self.connection_status_changed.send(
-            self, status=TransportStatus.CONNECTING
+    def build_config(self, kwargs: dict[str, Any]) -> dict[str, Any]:
+        coordinate_systems = cast(
+            dict[str, Pos],
+            {
+                key: tuple(value.offset)
+                for key, value in self._machine.coordinate_systems.items()
+            },
         )
-        await asyncio.sleep(0.1)
+        return {
+            "step_delay": self.simulation_step_delay_s,
+            "active_wcs": self._machine.active_wcs,
+            "coordinate_systems": coordinate_systems,
+        }
 
-        # Set IDLE state so the UI knows we are ready and not "busy"
-        self.state.status = DeviceStatus.IDLE
-        self.state_changed.send(self, state=self.state)
-
-        self.connection_status_changed.send(
-            self, status=TransportStatus.CONNECTED
+    def _create_session(self, config: dict[str, Any]) -> Any:
+        return raydriver.simulator.NoDeviceDriver(
+            config=config,
+            event_callback=self._on_session_event,
         )
-
-        # Upon connect, broadcast WCS state (matches loaded machine state)
-        self.wcs_updated.send(self, offsets=self._offsets)
-
-    async def run(
-        self,
-        encoded: EncodedOutput,
-        doc: "Doc",
-        ops: "Ops",
-        on_command_done: Callable[[int], None | Awaitable[None]] | None = None,
-    ) -> None:
-        """
-        Dummy implementation that simulates command execution.
-
-        This implementation iterates through the ops defined in op_map and
-        simulates execution by calling the on_command_done callback for each
-        command with a small delay.
-        """
-        op_map = encoded.op_map
-        # We assume ops are indexed 0..N-1.
-        num_ops = op_map.op_count if op_map else 0
-
-        # Simulate command execution with delays
-        for op_index in range(num_ops):
-            # Small delay to simulate execution time
-            await asyncio.sleep(self.simulation_step_delay_s)
-
-            # Call the callback if provided, awaiting it if it's a coroutine
-            if on_command_done is not None:
-                try:
-                    result = on_command_done(op_index)
-                    if inspect.isawaitable(result):
-                        await result
-                except Exception:
-                    # Don't let callback exceptions stop execution
-                    logger.debug(
-                        "Job callback raised on op %d", op_index, exc_info=True
-                    )
-        self.job_finished.send(self)
-
-    async def run_raw(self, machine_code: str) -> None:
-        """
-        Dummy implementation that simulates raw G-code execution.
-        """
-        lines = [
-            line.strip() for line in machine_code.splitlines() if line.strip()
-        ]
-        for line in lines:
-            logger.info(line, extra=self._log_extra("USER_COMMAND"))
-            await asyncio.sleep(self.simulation_step_delay_s)
-        self.job_finished.send(self)
-
-    async def set_hold(self, hold: bool = True) -> None:
-        pass
-
-    async def cancel(self, emergency: bool = False) -> None:
-        pass
-
-    def can_home(self, axis: Axis | None = None) -> bool:
-        """Dummy driver supports homing for all axes."""
-        return True
-
-    async def home(self, axes: Axis | None = None) -> None:
-        pass
-
-    async def move_to(self, pos_x, pos_y, pos_z=None, speed=None) -> None:
-        pass
-
-    async def select_tool(self, tool_number: int) -> None:
-        pass
-
-    async def read_settings(self) -> None:
-        pass
-
-    async def write_setting(self, key: str, value: Any) -> None:
-        pass
-
-    async def clear_alarm(self) -> None:
-        pass
-
-    async def set_power(self, head: "Laser", percent: float) -> None:
-        """
-        Sets the laser power to the specified percentage of max power.
-
-        Args:
-            head: The laser head to control.
-            percent: Power percentage (0.0-1.0). 0 disables power.
-        """
-        # Dummy driver doesn't control any hardware, so just log the call
-        logger.info(
-            f"set_power called with head {head.uid} at {percent * 100:.1f}%",
-            extra={"log_category": "DRIVER_CMD"},
-        )
-
-    async def set_focus_power(self, head: "Laser", percent: float) -> None:
-        """
-        Sets the laser power for focus mode.
-
-        Args:
-            head: The laser head to control.
-            percent: Power percentage (0.0-1.0). 0 disables power.
-        """
-        logger.info(
-            f"set_focus_power: head {head.uid} at {percent * 100:.1f}%",
-            extra={"log_category": "DRIVER_CMD"},
-        )
-
-    def can_jog(self, axis: Axis | None = None) -> bool:
-        """Dummy driver supports jogging for all axes."""
-        return True
-
-    async def jog(self, speed: int, **deltas: float) -> None:
-        pass
-
-    async def set_wcs_offset(
-        self, wcs_slot: str, x: float, y: float, z: float | None
-    ) -> None:
-        """Dummy implementation, updates internal state."""
-        self._offsets[wcs_slot] = (x, y, z if z is not None else 0.0)
-        # Notify machine that the driver updated offsets
-        self.wcs_updated.send(self, offsets=self._offsets)
 
     async def read_wcs_offsets(self) -> dict[str, Pos]:
-        """Dummy implementation, returns internal state."""
-        self.wcs_updated.send(self, offsets=self._offsets)
-        return self._offsets
+        offsets = await super().read_wcs_offsets()
+        self.wcs_updated.send(self, offsets=offsets)
+        return offsets
 
     async def read_parser_state(self) -> str | None:
-        """
-        Simulate reading the active WCS state.
-        Returns the machine's active WCS to treat the client's selection
-        as the source of truth for the dummy driver.
-        """
         return self._machine.active_wcs
 
     async def run_probe_cycle(
         self, axis: Axis, target: float, feed_rate: int
     ) -> Pos | None:
-        """
-        Dummy implementation, simulates a successful probe after a short delay.
-        """
         self.probe_status_changed.send(
             self, message=f"Simulating probe cycle for axis {axis.name}..."
         )
         await asyncio.sleep(0.5)
-        # Simulate a successful probe at a fixed position
         simulated_pos = (10.0, 15.0, -1.0)
         self.probe_status_changed.send(
             self, message=f"Probe triggered at {simulated_pos}"
