@@ -7,7 +7,6 @@ from raydriver.octoprint.emulator import OctoPrintEmulator
 from raygeo.ops.axis import Axis
 
 from rayforge.machine.driver.driver import (
-    MOVE_TO_SPEED_MM_MIN,
     DeviceStatus,
     DriverMaturity,
     DriverPrecheckError,
@@ -599,7 +598,6 @@ class TestJogMove:
                     "x": 10.5,
                     "y": 20.3,
                     "absolute": True,
-                    "speed": MOVE_TO_SPEED_MM_MIN,
                 }
                 in octoprint_device.commands
             )
@@ -616,7 +614,6 @@ class TestJogMove:
                     "y": 20.3,
                     "z": 5.0,
                     "absolute": True,
-                    "speed": MOVE_TO_SPEED_MM_MIN,
                 }
                 in octoprint_device.commands
             )

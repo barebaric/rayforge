@@ -15,11 +15,7 @@ from ....core.varset import (
 )
 from ....core.varset.hostnamevar import is_valid_hostname_or_ip
 from ....core.varset.var import Var
-from ..driver import (
-    MOVE_TO_SPEED_MM_MIN,
-    DriverPrecheckError,
-    DriverSetupError,
-)
+from ..driver import DriverPrecheckError, DriverSetupError
 from ..native import NativeDriver
 from .octoprint_util import build_octoprint_profile
 
@@ -193,13 +189,11 @@ class OctoPrintDriver(NativeDriver):
         speed: float | None = None,
     ) -> None:
         """Moves to an absolute position via the printhead jog API."""
-        if speed is None:
-            speed = MOVE_TO_SPEED_MM_MIN
-        await self._require_session().move_to(
-            self._to_machine_speed(speed),
+        await self._require_session().move_to_absolute(
             self._to_machine_length(float(pos_x)),
             self._to_machine_length(float(pos_y)),
             self._to_machine_length(pos_z) if pos_z is not None else None,
+            self._to_machine_speed(speed) if speed is not None else None,
         )
 
     def build_config(self, kwargs: dict[str, Any]) -> dict[str, Any]:
