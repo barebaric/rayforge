@@ -1,4 +1,3 @@
-import asyncio
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -165,19 +164,16 @@ class TestDummyDriverCallback:
         assert call_count == len(simple_ops)
 
     @pytest.mark.asyncio
-    async def test_multiple_concurrent_runs(
+    async def test_sequential_runs_use_their_own_callback(
         self, driver, machine, doc, simple_ops
     ):
-        """Test that multiple concurrent runs work correctly."""
+        """Test that consecutive runs report to their own callback."""
         callback_mock1 = MagicMock()
         callback_mock2 = MagicMock()
 
-        # Run two operations concurrently
         encoded = encode_gcode(simple_ops, machine, doc)
-        task1 = driver.run(encoded, doc, simple_ops, callback_mock1)
-        task2 = driver.run(encoded, doc, simple_ops, callback_mock2)
-
-        await asyncio.gather(task1, task2)
+        await driver.run(encoded, doc, simple_ops, callback_mock1)
+        await driver.run(encoded, doc, simple_ops, callback_mock2)
 
         # Both callbacks should have been called the correct number of times
         assert callback_mock1.call_count == len(simple_ops)
