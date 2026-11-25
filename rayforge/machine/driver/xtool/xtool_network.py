@@ -9,7 +9,6 @@ from ....context import RayforgeContext
 from ....core.varset import HostnameVar, PortVar, VarSet
 from ....core.varset.hostnamevar import is_valid_hostname_or_ip
 from ....shared.units.system import UnitSystem
-from ...transport import TransportStatus
 from ..driver import (
     MOVE_TO_SPEED_MM_MIN,
     Axis,
