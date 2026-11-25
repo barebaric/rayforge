@@ -1,4 +1,3 @@
-import json
 from typing import Any, cast
 from unittest.mock import AsyncMock, MagicMock
 
@@ -9,59 +8,16 @@ from rayforge.machine.driver.octoprint.octoprint_util import (
     build_octoprint_profile,
 )
 
-_AIOHTTP_PATCH = (
-    "rayforge.machine.driver.octoprint.octoprint_driver.aiohttp.ClientSession"
-)
+_PROBE_PATCH = "rayforge.machine.driver.octoprint.octoprint_driver.raydriver"
 
 
-def _mock_aiohttp_session(responses: dict[str, Any]):
-    """Builds a mock aiohttp.ClientSession that returns canned JSON
-    per request URL path. ``responses`` maps path substrings to return
-    values (dicts). A path not in the map returns 200 with an empty
-    dict. Paths mapped to ``None`` return a 403 (auth failure)."""
-
-    def _make_response(url):
-        for path, data in responses.items():
-            if path in url:
-                if data is None:
-                    resp = AsyncMock()
-                    resp.status = 403
-                    resp.raise_for_status = MagicMock(
-                        side_effect=Exception("forbidden")
-                    )
-                    ctx = AsyncMock()
-                    ctx.__aenter__ = AsyncMock(return_value=resp)
-                    ctx.__aexit__ = AsyncMock(return_value=False)
-                    return ctx
-                resp = AsyncMock()
-                resp.status = 200
-                resp.content_type = "application/json"
-                resp.raise_for_status = MagicMock()
-                resp.json = AsyncMock(return_value=data)
-                resp.text = AsyncMock(return_value=json.dumps(data))
-                ctx = AsyncMock()
-                ctx.__aenter__ = AsyncMock(return_value=resp)
-                ctx.__aexit__ = AsyncMock(return_value=False)
-                return ctx
-        # Default: empty 200
-        resp = AsyncMock()
-        resp.status = 200
-        resp.content_type = "application/json"
-        resp.raise_for_status = MagicMock()
-        resp.json = AsyncMock(return_value={})
-        resp.text = AsyncMock(return_value="{}")
-        ctx = AsyncMock()
-        ctx.__aenter__ = AsyncMock(return_value=resp)
-        ctx.__aexit__ = AsyncMock(return_value=False)
-        return ctx
-
-    mock_session = MagicMock()
-    mock_session.__aenter__ = AsyncMock(return_value=mock_session)
-    mock_session.__aexit__ = AsyncMock(return_value=False)
-    mock_session.request = MagicMock(
-        side_effect=lambda method, url, **kw: _make_response(url)
-    )
-    return mock_session
+def _fake_native_probe(mocker, *, result=None, error=None):
+    """Patch the native OctoPrint class used by ``probe``."""
+    session = MagicMock()
+    session.probe_info = AsyncMock(return_value=result, side_effect=error)
+    native = MagicMock()
+    native.OctoPrintDriver.return_value = session
+    mocker.patch(_PROBE_PATCH, MagicMock(octoprint=native))
 
 
 class TestBuildOctoPrintProfile:
@@ -158,16 +114,12 @@ class TestBuildOctoPrintProfile:
 class TestDriverProbe:
     @pytest.mark.asyncio
     async def test_probe_without_api_key(self, context_initializer, mocker):
-        responses = {
-            "/api/version": {"server": "1.9.0", "version": "1.9.0"},
-            "/api/printer": {
-                "state": {"text": "Operational", "flags": {}},
-                "printer": {"name": "Workshop Printer"},
-            },
+        version = {"server": "1.9.0", "version": "1.9.0"}
+        printer = {
+            "state": {"text": "Operational", "flags": {}},
+            "printer": {"name": "Workshop Printer"},
         }
-        mocker.patch(
-            _AIOHTTP_PATCH, return_value=_mock_aiohttp_session(responses)
-        )
+        _fake_native_probe(mocker, result=[version, printer])
 
         profile, warnings = await OctoPrintDriver.probe(
             context_initializer,
@@ -192,10 +144,7 @@ class TestDriverProbe:
     async def test_probe_connection_failure(self, context_initializer, mocker):
         """When the server is unreachable, the probe returns a
         minimal profile with a warning instead of raising."""
-        responses = {"/api/version": None}
-        mocker.patch(
-            _AIOHTTP_PATCH, return_value=_mock_aiohttp_session(responses)
-        )
+        _fake_native_probe(mocker, error=ConnectionError("unreachable"))
 
         profile, warnings = await OctoPrintDriver.probe(
             context_initializer,
@@ -209,16 +158,12 @@ class TestDriverProbe:
 
     @pytest.mark.asyncio
     async def test_probe_with_path_prefix(self, context_initializer, mocker):
-        responses = {
-            "/api/version": {"version": "1.8.0"},
-            "/api/printer": {
-                "state": {"text": "Operational", "flags": {}},
-                "printer": {},
-            },
+        version = {"version": "1.8.0"}
+        printer = {
+            "state": {"text": "Operational", "flags": {}},
+            "printer": {},
         }
-        mocker.patch(
-            _AIOHTTP_PATCH, return_value=_mock_aiohttp_session(responses)
-        )
+        _fake_native_probe(mocker, result=[version, printer])
 
         profile, _ = await OctoPrintDriver.probe(
             context_initializer,
