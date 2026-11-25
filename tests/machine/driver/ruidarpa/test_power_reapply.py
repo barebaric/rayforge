@@ -17,9 +17,12 @@ from raygeo.ops.types import RasterMode, SectionType
 
 from rayforge.core.doc import Doc
 from rayforge.core.step import Step
-from rayforge.machine.driver.ruidarpa.rpa_encoder import RuidaRPAEncoder
 from rayforge.machine.models.laser import Laser
 from rayforge.machine.models.machine import Machine
+from rayforge.pipeline.encode_inputs import (
+    build_ruida_spec,
+    encode_ops,
+)
 
 
 class CutStep(Step):
@@ -30,6 +33,11 @@ class CutStep(Step):
 
     def __init__(self):
         super().__init__(typelabel="cut")
+
+
+def _encode(ops, doc) -> str:
+    machine = _build_machine()
+    return encode_ops(ops, build_ruida_spec(machine, doc)).text
 
 
 def _build_machine() -> Machine:
@@ -114,7 +122,7 @@ class TestDuplicateWorkpiecePower:
     def test_duplicates_share_one_layer(self):
         doc = _build_doc()
         ops = _build_duplicated_workpieces_job(doc)
-        text = RuidaRPAEncoder().encode(ops, _build_machine(), doc).text
+        text = _encode(ops, doc)
 
         declared = [
             line
@@ -126,7 +134,7 @@ class TestDuplicateWorkpiecePower:
     def test_power_survives_later_workpiece_starts(self):
         doc = _build_doc()
         ops = _build_duplicated_workpieces_job(doc)
-        text = RuidaRPAEncoder().encode(ops, _build_machine(), doc).text
+        text = _encode(ops, doc)
 
         lines = text.split("\n")
         power_lines = [
@@ -157,7 +165,7 @@ class TestDuplicateWorkpiecePower:
         ops.layer_end(layer_uid=layer_uid)
         ops.job_end()
 
-        text = RuidaRPAEncoder().encode(ops, _build_machine(), doc).text
+        text = _encode(ops, doc)
         assert "power_range(" not in text
 
 
@@ -167,7 +175,7 @@ class TestModeChangePower:
     def test_new_layer_reapplies_last_requested_power(self):
         doc = _build_doc()
         ops = _build_mode_changing_job(doc)
-        text = RuidaRPAEncoder().encode(ops, _build_machine(), doc).text
+        text = _encode(ops, doc)
 
         lines = text.split("\n")
         declare_lines = [

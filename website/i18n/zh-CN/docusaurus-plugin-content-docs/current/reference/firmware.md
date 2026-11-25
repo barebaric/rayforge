@@ -543,13 +543,13 @@ $22=1       ; 归零启用
 
 ## Ruida 控制器
 
-Rayforge 通过 **Ruida RPA** 驱动程序连接基于 Ruida 的控制器（例如 RDC6442、RDC6445、Ruida
-R5），该驱动程序通过 USB 或 UDP 使用控制器原生协议通信，或经由 Ruida Protocol Analyzer 通过 TUI
-RPC 连接。Generic Ruida RPA 和 Monport MP-570 60W CO2 设备配置文件为新机器提供起点。
+Rayforge 通过 **Ruida** 驱动程序连接基于 Ruida 的控制器（例如 RDC6442、RDC6445、Ruida
+R5），该驱动程序使用原生 raydriver 栈，通过 USB、UDP 或 TCP 与控制器原生协议通信。Generic
+Ruida 和 Monport MP-570 60W CO2 设备配置文件为新机器提供起点。
 
 **功能：**
 
-- USB 和 UDP 连接；两者都配置时，Rayforge 会在插拔线缆时自动在两者之间切换
+- 支持 USB、UDP 和 TCP 连接；同时配置 USB 和网络时，Rayforge 会随着线缆的连接和断开自动切换
 - 发送作业，支持位置报告、点动、回零和移动到位置
 - 边框定位以关束绝对移动描画作业轮廓，因此无需触发激光即可工作
 - 遵循每个步骤的 Power Mode 设置：Dynamic 启用控制器的功率缩放，Constant 将其禁用

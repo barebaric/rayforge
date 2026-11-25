@@ -528,15 +528,15 @@ $22=1       ; Homing enabled
 
 ## Ruida Controllers
 
-Rayforge connects to Ruida-based controllers (e.g. RDC6442, RDC6445, Ruida R5) through the **Ruida
-RPA** driver, which talks the controller's native protocol over USB or UDP, or via TUI RPC through
-the Ruida Protocol Analyzer. The Generic Ruida RPA and Monport MP-570 60W CO2 device profiles
-provide starting points for new machines.
+Rayforge connects to Ruida-based controllers (e.g. RDC6442, RDC6445, Ruida R5) through the **Ruida**
+driver, which talks the controller's native protocol over USB, UDP or TCP using the native raydriver
+stack. The Generic Ruida and Monport MP-570 60W CO2 device profiles provide starting points for new
+machines.
 
 **Features:**
 
-- USB and UDP connectivity; when both are configured, Rayforge swaps automatically between them as
-  cables are connected and disconnected
+- USB, UDP and TCP connectivity; when both USB and network are configured, Rayforge swaps
+  automatically between them as cables are connected and disconnected
 - Job sending with position reporting, jogging, homing, and Move to Position
 - Framing traces the job outline with beam-off absolute moves, so it works without firing the laser
 - Honors each step's Power Mode setting: Dynamic (M4) enables the controller's power scaling and

@@ -26,9 +26,12 @@ import re
 from pathlib import Path
 from typing import Any
 
-from ruida_pa.ruidadriver.rd_gluescript import GlueScript
+from raydriver.ruida import encode_script
 
-from rayforge.machine.driver.ruidarpa.rpa_encoder import RuidaRPAEncoder
+from rayforge.pipeline.encode_inputs import (
+    build_ruida_spec,
+    encode_ops,
+)
 
 GOLDEN_DIR = Path(__file__).parent / "golden"
 GOLDEN_FILE = GOLDEN_DIR / "transcript.cglu"
@@ -56,11 +59,14 @@ def _load_regen_builder():
 build_representative_job = _load_regen_builder()
 
 
-def _encode_representative_job():
-    """Encode the representative job exactly as the fixture was built."""
+def _encode_representative_output():
+    """Encode the representative job with the native encoder."""
     doc, ops, machine = build_representative_job()
-    result = RuidaRPAEncoder().encode(ops, machine, doc)
-    return result.text
+    return encode_ops(ops, build_ruida_spec(machine, doc))
+
+
+def _encode_representative_job():
+    return _encode_representative_output().text
 
 
 class TestGoldenFixture:
@@ -149,12 +155,10 @@ class TestTranscriptStaging:
     """The transcript compiles to controller-facing rpascript."""
 
     def test_transcript_stages_to_rpascript(self):
-        """stage_gluescript on the transcript yields near/far forms,
-        LAST_LAYER, and END_JOB/EOF framing."""
-        transcript = _encode_representative_job().split("\n")
-        gs = GlueScript()
-        gs.stage_gluescript(transcript)
-        rpascript = gs.rpascript
+        """The native compiler yields near/far forms, LAST_LAYER, and
+        END_JOB/EOF framing."""
+        payload = _encode_representative_output().driver_data["payload"]
+        rpascript = payload.decode().splitlines()
 
         assert any(line.startswith("MOVE_NEAR_XY") for line in rpascript)
         assert any(line.startswith("MOVE_FAR_XY") for line in rpascript)
@@ -163,3 +167,9 @@ class TestTranscriptStaging:
         assert any(line.startswith("LAST_LAYER") for line in rpascript)
         assert rpascript[-2] == "END_JOB"
         assert rpascript[-1] == "EOF"
+
+    def test_compiled_job_matches_the_golden_wire_bytes(self):
+        payload = _encode_representative_output().driver_data["payload"]
+        actual = bytes(encode_script(payload.decode().splitlines()))
+        expected = bytes.fromhex((GOLDEN_DIR / "job.hex").read_text().strip())
+        assert actual == expected

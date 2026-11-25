@@ -47,4 +47,3 @@ before working on them:
 - docs/agents/raygeo.md: our Rust/PyO3 geometry library; fix root causes
   there instead of building workarounds
 - docs/agents/raydriver.md: our Rust/PyO3 GRBL serial driver
-- rayforge/machine/driver/ruidarpa/AGENTS.md: rules for the Ruida driver

@@ -39,14 +39,14 @@ GRBL-Geräte können über USB/Serial oder über das Netzwerk verbunden werden:
 xTool-Maschinen im WLAN nutzen eigene experimentelle Treiber; siehe [xTool über WLAN](xtool) für
 D1/D1 Pro und M2.
 
-Ruida-basierte Controller werden vom Treiber **Ruida RPA** unterstützt, der sich direkt über USB
-oder UDP verbindet oder per TUI-RPC über den Ruida Protocol Analyzer. Sein USB-Feld bietet eine
-Auswahl verbundener Geräte mit VID:PID-Abgleich, und er beachtet die Power-Mode-Einstellung jedes
-Schritts — Dynamic aktiviert die Leistungsskalierung des Controllers, Constant deaktiviert sie. Das
-Leistungsverhalten wird über die Treiberoptionen **Power Scaling**, **VECTOR power floor** und
-**IMAGE power bias** abgestimmt: Power Scaling erhöht die ausgegebene Mindestleistung, wenn die
-Schrittgeschwindigkeit der Lage sinkt, der Vector Power Floor gleicht Nachbrennen an den Enden von
-Linien aus, und der Image Bias gleicht CO2-Röhren aus, die bei sehr geringer Leistung nicht zünden.
+Ruida-basierte Controller werden vom **Ruida**-Treiber unterstützt, der über USB, UDP oder TCP mit
+dem nativen raydriver-Stack verbindet. Sein USB-Feld bietet eine Auswahl verbundener Geräte mit
+VID:PID-Abgleich, und er beachtet die Power-Mode-Einstellung jedes Schritts — Dynamic aktiviert die
+Leistungsskalierung des Controllers, Constant deaktiviert sie. Das Leistungsverhalten wird mit den
+Optionen **Power Scaling**, **VECTOR power floor** und **IMAGE power bias** eingestellt: Die
+Skalierung hebt die ausgegebene Mindestleistung, wenn die Schnittgeschwindigkeit der Lage sinkt, der
+Vector Power Floor gleicht Nachbrennen an den Enden von Linien aus, und der Image Bias gleicht
+CO2-Röhren aus, die bei sehr geringer Leistung nicht zünden.
 
 ### Serieller Port binden
 

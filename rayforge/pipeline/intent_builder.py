@@ -85,7 +85,7 @@ from ..machine.models.coordspace import MachineSpace
 from ..machine.models.laser import LaserHead
 from ..machine.models.rotary_module import RotaryMode, RotaryType
 from .artifact.encoded import EncodedOutput
-from .encode_inputs import build_gcode_spec
+from .encode_inputs import build_gcode_spec, build_ruida_spec
 from .transformer import OpsTransformer
 from .transformer.registry import transformer_registry
 
@@ -1316,9 +1316,9 @@ class IntentBuilder:
 
         G-code drivers get the native ``GcodeSpec`` for their dialect,
         which raygeo's pipeline runs on a rayon thread without crossing
-        the GIL. Drivers that do not speak G-code (e.g. Ruida) get a
-        :class:`PythonEncoder` wrapping their own encoder until they are
-        ported into raydriver.
+        the GIL. Ruida gets the native ``RuidaSpec``. Any other
+        non-G-code driver gets a :class:`PythonEncoder` wrapping its own
+        encoder.
 
         The route is decided by the driver's G-code capability, never
         by the dialect alone: a driver that does not speak G-code
@@ -1335,6 +1335,8 @@ class IntentBuilder:
         driver_cls = resolve_driver_cls(machine)
         if driver_cls.uses_gcode:
             return self._gcode_encoder_spec(doc)
+        if getattr(driver_cls, "native_encoder", None) == "ruida":
+            return build_ruida_spec(machine, doc)
 
         return PythonEncoder(
             self._make_python_encoder_callable(machine, doc),

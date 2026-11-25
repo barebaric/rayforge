@@ -21,9 +21,12 @@ from raygeo.ops.types import RasterMode, SectionType
 
 from rayforge.core.doc import Doc
 from rayforge.core.step import Step
-from rayforge.machine.driver.ruidarpa.rpa_encoder import RuidaRPAEncoder
 from rayforge.machine.models.laser import Laser
 from rayforge.machine.models.machine import Machine
+from rayforge.pipeline.encode_inputs import (
+    build_ruida_spec,
+    encode_ops,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[5]
 sys.path.insert(0, str(REPO_ROOT))
@@ -150,8 +153,7 @@ def build_representative_job():
 
 def main():
     """Encode the representative job and write the golden fixture."""
-    doc, ops, machine = build_representative_job()
-    result = RuidaRPAEncoder().encode(ops, machine, doc)
+    result = encode_representative_job()
     GOLDEN_FILE.write_text(result.text + "\n", encoding="utf-8")
     line_count = len(result.text.split("\n"))
     print(f"Wrote {GOLDEN_FILE} ({line_count} lines)")
@@ -159,3 +161,9 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+def encode_representative_job():
+    """Encode the representative job with the native Ruida encoder."""
+    doc, ops, machine = build_representative_job()
+    return encode_ops(ops, build_ruida_spec(machine, doc))

@@ -13,9 +13,9 @@ types in JSON-serialisable dicts.
 
 import json
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from raydriver.encode import GcodeDialectSpec, GcodeSpec
+from raydriver.encode import GcodeDialectSpec, GcodeSpec, RuidaSpec
 from raygeo.ops import Ops
 from raygeo.ops.convert import Encoder
 
@@ -262,16 +262,115 @@ def build_gcode_spec(machine: "Machine", doc: "Doc", ops: Ops) -> GcodeSpec:
     )
 
 
-def encode_ops(ops: Ops, spec: GcodeSpec) -> EncodedOutput:
+def encode_ops(ops: Ops, spec: Any) -> EncodedOutput:
     """Run an encoder spec on *ops* and wrap the result."""
     result = ops.encode(Encoder(spec))
+    driver_data: dict[str, Any] = {}
+    payload = result.payload
+    if payload:
+        driver_data["payload"] = bytes(payload)
     return EncodedOutput(
         text=result.text or "",
         op_map=MachineCodeOpMap(
             op_to_machine_code=result.op_to_machine_code,
             machine_code_to_op=result.machine_code_to_op,
         ),
+        driver_data=driver_data,
     )
+
+
+_RUIDA_WCS_TO_REF_POINT = {
+    "MACHINE": "MACHINE",
+    "ANCHOR": "ABSOLUTE",
+    "CURRENT": "CURRENT",
+    "SET_POINT": "SET_POINT",
+}
+
+_RUIDA_DEFAULT_LAYER_SPEED_MMS = 100.0
+_RUIDA_DEFAULT_LAYER_POWER = 0.2
+_RUIDA_DEFAULT_LAYER_FREQUENCY_HZ = 20000
+_RUIDA_DEFAULT_POWER_FLOOR = 8.0
+_RUIDA_DEFAULT_IMAGE_POWER_BIAS = 8.0
+
+
+def _ruida_layer_settings(layer: Any) -> dict[str, Any]:
+    """Flatten one document layer's workflow settings for the encoder."""
+    speed_mms = _RUIDA_DEFAULT_LAYER_SPEED_MMS
+    power_fraction = _RUIDA_DEFAULT_LAYER_POWER
+    frequency_hz = _RUIDA_DEFAULT_LAYER_FREQUENCY_HZ
+    min_power_pct = None
+    if layer.workflow is not None and layer.workflow.steps:
+        step = layer.workflow.steps[0]
+        speed_mms = float(step.cut_speed) / 60.0
+        if hasattr(step, "power"):
+            power_fraction = float(step.power)
+            frequency_hz = int(step.frequency)
+        else:
+            power_fraction = float(
+                step.extra.get("power", _RUIDA_DEFAULT_LAYER_POWER)
+            )
+            frequency_hz = int(
+                step.extra.get("frequency", _RUIDA_DEFAULT_LAYER_FREQUENCY_HZ)
+            )
+        raw_min = getattr(step, "min_power", None)
+        if raw_min is None:
+            raw_min = step.extra.get("min_power", None)
+        if raw_min is None:
+            raw_min = layer.extra.get("min_power", None)
+        if raw_min is not None:
+            min_power_pct = float(raw_min) * 100.0
+    frequency_khz = frequency_hz / 1000.0 if frequency_hz > 0 else 20.0
+    return {
+        "uid": layer.uid,
+        "name": layer.name,
+        "color": layer.color,
+        "speed_mm_s": speed_mms,
+        "frequency_khz": frequency_khz,
+        "power_pct": power_fraction * 100.0,
+        "min_power_pct": min_power_pct,
+    }
+
+
+def build_ruida_spec(machine: "Machine", doc: "Doc") -> RuidaSpec:
+    """Build the native Ruida encoder context from the machine and doc.
+
+    Only plain data crosses the boundary: the encoder policy (layer
+    modes, overscan, power ramps, per-section handling, op map) lives
+    in raydriver.
+    """
+    wcs = machine.active_wcs
+    ref_point = _RUIDA_WCS_TO_REF_POINT.get(wcs)
+    if ref_point is None:
+        if wcs == "G54":
+            ref_point = "MACHINE"
+        else:
+            raise ValueError(
+                f"Unsupported WCS for Ruida reference point: {wcs!r} — "
+                f"valid names: {', '.join(_RUIDA_WCS_TO_REF_POINT)}"
+            )
+    driver_args = machine.driver_args
+    context = {
+        "job_label": doc.name or "Rayforge Job",
+        "ref_point": ref_point,
+        "power_cap": machine.get_job_power_cap(),
+        "power_floor_pct": driver_args.get(
+            "power_floor", _RUIDA_DEFAULT_POWER_FLOOR
+        ),
+        "power_floor_enabled": bool(
+            driver_args.get("power_floor_enabled", False)
+        ),
+        "image_power_bias_pct": driver_args.get(
+            "image_power_bias", _RUIDA_DEFAULT_IMAGE_POWER_BIAS
+        ),
+        "power_scaling_enabled": bool(
+            driver_args.get("power_scaling_enabled", True)
+        ),
+        "head_tool_numbers": {
+            head.uid: head.tool_number for head in machine.heads
+        },
+        "layers": [_ruida_layer_settings(layer) for layer in doc.layers],
+    }
+    return RuidaSpec(context_json=json.dumps(context))
 
 
 def encode_gcode(ops: Ops, machine: "Machine", doc: "Doc") -> EncodedOutput:

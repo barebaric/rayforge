@@ -214,7 +214,7 @@ La meilleure façon d'apprendre est de regarder les pilotes existants dans
 
 - `grbl/` - Machines basées sur GRBL (série, série simple, série Rust, telnet, réseau)
 - `marlin/` - Machines basées sur le firmware Marlin (série)
-- `ruidarpa/` - Contrôleurs Ruida via le Ruida Protocol Analyzer (USB, UDP ou TUI RPC)
+- `ruidarpa/` - Contrôleurs Ruida en USB, UDP ou TCP via la pile native de raydriver
 - `octoprint/` - Machines pilotées via un serveur OctoPrint
 - `smoothie/` - Machines basées sur Smoothieboard
 - `dummy.py` - Un pilote de test pour le développement

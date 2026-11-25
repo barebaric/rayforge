@@ -16,12 +16,11 @@ Rayforge's bindings subclass `NativeDriver`
 config, presentation, probing/profile mapping and settings policy. The
 remote driver uses the same typed driver metadata.
 
-The following Rayforge driver is still on its Python stack:
-
-- Ruida (`rayforge/machine/driver/ruidarpa`) uses `ruida-pa`. The
-  native `raydriver.ruida` stack (codec, USB/UDP/TCP session,
-  GlueScript compiler and Ops encoder) is available but not wired up
-  yet.
+Ruida (`rayforge/machine/driver/ruidarpa`) is native too: its binding
+uses the `raydriver.ruida` codec, USB/UDP/TCP session, GlueScript
+compiler and Ops encoder. The old ruida-pa TUI RPC host mode was removed;
+raydriver's `raydriver analyzer tui` is a protocol monitor, not an RPC
+host.
 
 The `python/raydriver/*/emulator.py` modules contain firmware and
 server emulators (not mocks) used by the tests.
