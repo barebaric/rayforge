@@ -54,7 +54,7 @@ def test_z_homing_hidden_without_a_choice(ui_context_initializer):
 
 def test_z_homing_shows_driver_default(ui_context_initializer):
     machine = Machine(ui_context_initializer)
-    machine.driver_name = "RuidaRPAAdapter"
+    machine.driver_name = "RuidaDriver"
     page = AdvancedPreferencesPage(machine)
 
     assert page.z_homing_row.get_visible()
@@ -64,7 +64,7 @@ def test_z_homing_shows_driver_default(ui_context_initializer):
 
 def test_z_homing_selection_updates_machine(ui_context_initializer):
     machine = Machine(ui_context_initializer)
-    machine.driver_name = "RuidaRPAAdapter"
+    machine.driver_name = "RuidaDriver"
     page = AdvancedPreferencesPage(machine)
 
     page.z_homing_row.set_selected(1)
@@ -77,7 +77,7 @@ def test_z_homing_follows_driver_change(ui_context_initializer):
     machine.driver_name = "GrblSerialDriver"
     page = AdvancedPreferencesPage(machine)
 
-    machine.driver_name = "RuidaRPAAdapter"
+    machine.driver_name = "RuidaDriver"
     machine.changed.send(machine)
 
     assert page.z_homing_row.get_visible()

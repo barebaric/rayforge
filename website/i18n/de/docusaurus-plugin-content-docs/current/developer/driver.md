@@ -214,7 +214,7 @@ wie:
 
 - `grbl/` - GRBL-basierte Maschinen (seriell, seriell simple, Rust-seriell, Telnet, Netzwerk)
 - `marlin/` - Marlin-Firmware-basierte Maschinen (seriell)
-- `ruidarpa/` - Ruida-Controller über USB, UDP oder TCP mit dem nativen raydriver-Stack
+- `ruida/` - Ruida-Controller über USB, UDP oder TCP mit dem nativen raydriver-Stack
 - `octoprint/` - Maschinen, die über einen OctoPrint-Server gesteuert werden
 - `smoothie/` - Smoothieboard-basierte Maschinen
 - `dummy.py` - Ein Test-Treiber für die Entwicklung

@@ -85,7 +85,7 @@ from ..machine.models.coordspace import MachineSpace
 from ..machine.models.laser import LaserHead
 from ..machine.models.rotary_module import RotaryMode, RotaryType
 from .artifact.encoded import EncodedOutput
-from .encode_inputs import build_gcode_spec, build_ruida_spec
+from .encode_inputs import build_gcode_spec
 from .transformer import OpsTransformer
 from .transformer.registry import transformer_registry
 
@@ -1316,14 +1316,14 @@ class IntentBuilder:
 
         G-code drivers get the native ``GcodeSpec`` for their dialect,
         which raygeo's pipeline runs on a rayon thread without crossing
-        the GIL. Ruida gets the native ``RuidaSpec``. Any other
-        non-G-code driver gets a :class:`PythonEncoder` wrapping its own
-        encoder.
+        the GIL. A driver with a native encoder provides it through its
+        ``create_encoder_spec`` hook. Any other non-G-code driver gets a
+        :class:`PythonEncoder` wrapping its own encoder.
 
         The route is decided by the driver's G-code capability, never
-        by the dialect alone: a driver that does not speak G-code
-        (e.g. Ruida) must always use its own encoder, even when the
-        machine still carries a leftover Grbl dialect (issue #420).
+        by the dialect alone: a driver that does not speak G-code must
+        always use its own encoder, even when the machine still carries
+        a leftover Grbl dialect (issue #420).
 
         A driver that is named in the machine configuration but not
         installed fails here instead of silently encoding G-code with
@@ -1335,8 +1335,9 @@ class IntentBuilder:
         driver_cls = resolve_driver_cls(machine)
         if driver_cls.uses_gcode:
             return self._gcode_encoder_spec(doc)
-        if getattr(driver_cls, "native_encoder", None) == "ruida":
-            return build_ruida_spec(machine, doc)
+        encoder_spec = getattr(driver_cls, "create_encoder_spec", None)
+        if callable(encoder_spec):
+            return encoder_spec(machine, doc)
 
         return PythonEncoder(
             self._make_python_encoder_callable(machine, doc),

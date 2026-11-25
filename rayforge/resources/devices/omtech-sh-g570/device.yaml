@@ -14,7 +14,7 @@ device:
     tube. Raise Min Power in the Engrave step to keep light tones above
     that threshold.
 machine:
-  driver: RuidaRPAAdapter
+  driver: RuidaDriver
   gcode_precision: 3
   axis_extents:
   - 700.0

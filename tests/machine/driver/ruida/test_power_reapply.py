@@ -17,12 +17,10 @@ from raygeo.ops.types import RasterMode, SectionType
 
 from rayforge.core.doc import Doc
 from rayforge.core.step import Step
+from rayforge.machine.driver.ruida.ruida_encoder import build_ruida_spec
 from rayforge.machine.models.laser import Laser
 from rayforge.machine.models.machine import Machine
-from rayforge.pipeline.encode_inputs import (
-    build_ruida_spec,
-    encode_ops,
-)
+from rayforge.pipeline.encode_inputs import encode_ops
 
 
 class CutStep(Step):

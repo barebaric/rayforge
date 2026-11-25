@@ -47,9 +47,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ruida: the driver now runs on the native raydriver stack (wire codec,
   USB/UDP/TCP session, GlueScript compiler and Ops encoder). The
   `ruida-pa` dependency and its TUI RPC host mode are removed; direct
-  USB, UDP and TCP connections are unchanged, and machine profiles keep
-  the `RuidaRPAAdapter` driver name. Raydriver's `analyzer tui` is a
-  protocol monitor, not an RPC host.
+  USB, UDP and TCP connections are unchanged. The driver is now called
+  `RuidaDriver`, and machines saved with `RuidaRPAAdapter` keep
+  resolving. Raydriver's `analyzer tui` is a protocol monitor, not an
+  RPC host.
 
 ### Fixed
 

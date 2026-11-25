@@ -1,9 +1,9 @@
-"""Regenerate the ruidarpa golden fixture.
+"""Regenerate the ruida golden fixture.
 
 Run from the repo root inside the default pixi environment:
 
     pixi run python \\
-        tests/machine/driver/ruidarpa/golden/regen_golden.py
+        tests/machine/driver/ruida/golden/regen_golden.py
 
 The fixture locks the encoder's GlueScript transcript byte-for-byte.
 Regenerate it only when the encoder or upstream GlueScript legitimately
@@ -21,12 +21,10 @@ from raygeo.ops.types import RasterMode, SectionType
 
 from rayforge.core.doc import Doc
 from rayforge.core.step import Step
+from rayforge.machine.driver.ruida.ruida_encoder import build_ruida_spec
 from rayforge.machine.models.laser import Laser
 from rayforge.machine.models.machine import Machine
-from rayforge.pipeline.encode_inputs import (
-    build_ruida_spec,
-    encode_ops,
-)
+from rayforge.pipeline.encode_inputs import encode_ops
 
 REPO_ROOT = Path(__file__).resolve().parents[5]
 sys.path.insert(0, str(REPO_ROOT))

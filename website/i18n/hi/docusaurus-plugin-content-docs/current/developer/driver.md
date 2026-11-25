@@ -196,7 +196,7 @@ UI से संवाद करने के लिए, आपके ड्र�
 
 - `grbl/` - GRBL-आधारित मशीनें (सीरियल, सरल सीरियल, Rust-समर्थित सीरियल, टेलनेट, नेटवर्क)
 - `marlin/` - Marlin फ़र्मवेयर-आधारित मशीनें (सीरियल)
-- `ruidarpa/` - नेटिव raydriver स्टैक के माध्यम से USB, UDP या TCP पर Ruida नियंत्रक
+- `ruida/` - नेटिव raydriver स्टैक के माध्यम से USB, UDP या TCP पर Ruida नियंत्रक
 - `octoprint/` - OctoPrint सर्वर द्वारा संचालित मशीनें
 - `smoothie/` - Smoothieboard-आधारित मशीनें
 - `dummy.py` - विकास के लिए एक परीक्षण ड्राइवर

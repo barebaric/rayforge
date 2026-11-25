@@ -105,7 +105,7 @@ class RuidaUsbDeviceVar(SerialPortVar):
         self.required_when = required_when
 
 
-class RuidaRPAAdapter(NativeDriver):
+class RuidaDriver(NativeDriver):
     """Driver for Ruida laser controllers over USB, UDP or TCP.
 
     The native Rust stack handles the rpascript codec, the transport,
@@ -113,7 +113,6 @@ class RuidaRPAAdapter(NativeDriver):
     """
 
     NATIVE = raydriver.ruida.RuidaDriver
-    native_encoder = "ruida"
 
     label = _("Ruida")
     subtitle = _("Connect via Ruida Protocol")
@@ -350,6 +349,14 @@ class RuidaRPAAdapter(NativeDriver):
             if key in kwargs:
                 config[key] = kwargs[key]
         return config
+
+    @classmethod
+    def create_encoder_spec(cls, machine: "Machine", doc: "Doc") -> Any:
+        from rayforge.machine.driver.ruida.ruida_encoder import (
+            build_ruida_spec,
+        )
+
+        return build_ruida_spec(machine, doc)
 
     def _create_session(self, config: dict[str, Any]) -> Any:
         return raydriver.ruida.RuidaDriver(

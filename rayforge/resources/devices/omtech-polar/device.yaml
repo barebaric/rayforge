@@ -5,7 +5,7 @@ device:
   model: Polar 50W
   description: Desktop 50W CO2 laser cutter with 508x305mm work area and Ruida controller
 machine:
-  driver: RuidaRPAAdapter
+  driver: RuidaDriver
   gcode_precision: 3
   axis_extents:
   - 508.0

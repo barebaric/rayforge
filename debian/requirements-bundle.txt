@@ -1,6 +1,6 @@
 asyncudp==0.11.0
 pyvips==3.2.0
-raydriver==1.22.0
+raydriver==1.22.1
 raygeo==1.102.0
 trimesh==5.2.2
 vtracer==0.6.15

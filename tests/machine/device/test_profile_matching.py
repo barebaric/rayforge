@@ -34,7 +34,7 @@ device:
   name: {name}
   vendor: {vendor}{extra}
 machine:
-  driver: RuidaRPAAdapter
+  driver: RuidaDriver
 """
 
 
@@ -420,7 +420,7 @@ device:
   usb_ids:
     - not-an-id
 machine:
-  driver: RuidaRPAAdapter
+  driver: RuidaDriver
 """
     )
     with pytest.raises(ValueError, match="Invalid USB id"):

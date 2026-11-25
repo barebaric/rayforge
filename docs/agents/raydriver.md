@@ -16,7 +16,7 @@ Rayforge's bindings subclass `NativeDriver`
 config, presentation, probing/profile mapping and settings policy. The
 remote driver uses the same typed driver metadata.
 
-Ruida (`rayforge/machine/driver/ruidarpa`) is native too: its binding
+Ruida (`rayforge/machine/driver/ruida`) is native too: its binding
 uses the `raydriver.ruida` codec, USB/UDP/TCP session, GlueScript
 compiler and Ops encoder. The old ruida-pa TUI RPC host mode was removed;
 raydriver's `raydriver analyzer tui` is a protocol monitor, not an RPC

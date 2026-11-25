@@ -49,10 +49,10 @@ external/
 Assets.car
 rayforge.icns
 
-# For ruidarpa driver
+# For ruida driver
 .codesearch.db
 .opencode
-rayforge/machine/driver/ruidarpa/docs/
+rayforge/machine/driver/ruida/docs/
 commit.txt
 rayforge/rayforge.code-workspace
 

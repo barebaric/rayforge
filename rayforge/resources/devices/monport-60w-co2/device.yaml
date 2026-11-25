@@ -5,7 +5,7 @@ device:
   model: 60W CO2
   description: 60W CO2 laser cutter with 600x400mm work area and Ruida controller
 machine:
-  driver: RuidaRPAAdapter
+  driver: RuidaDriver
   gcode_precision: 3
   axis_extents:
   - 600.0

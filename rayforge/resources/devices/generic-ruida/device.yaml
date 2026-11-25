@@ -4,7 +4,7 @@ device:
   vendor: Generic
   description: A generic Ruida laser controller over USB, UDP or TCP.
 machine:
-  driver: RuidaRPAAdapter
+  driver: RuidaDriver
   origin: top_right
   driver_args:
     udp_host: ''

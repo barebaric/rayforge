@@ -204,7 +204,7 @@ The best way to learn is to look at the existing drivers in `rayforge/machine/dr
 
 - `grbl/` - GRBL-based machines (serial, serial simple, Rust-backed serial, telnet, network)
 - `marlin/` - Marlin firmware-based machines (serial)
-- `ruidarpa/` - Ruida controllers over USB, UDP or TCP via the native raydriver stack
+- `ruida/` - Ruida controllers over USB, UDP or TCP via the native raydriver stack
 - `octoprint/` - Machines driven through an OctoPrint server
 - `smoothie/` - Smoothieboard-based machines
 - `dummy.py` - A test driver for development

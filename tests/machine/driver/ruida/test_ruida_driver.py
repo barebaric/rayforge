@@ -19,12 +19,14 @@ from rayforge.machine.driver.driver import (
     DriverPrecheckError,
     ZHomingMode,
 )
-from rayforge.machine.driver.ruidarpa import RuidaRPAAdapter
+from rayforge.machine.driver.ruida import RuidaDriver
+from rayforge.machine.driver.ruida.ruida_encoder import (
+    build_ruida_spec,
+)
 from rayforge.pipeline.artifact.encoded import (
     EncodedOutput,
     MachineCodeOpMap,
 )
-from rayforge.pipeline.encode_inputs import build_ruida_spec
 
 
 async def wait_until(predicate, timeout=5.0):
@@ -64,7 +66,7 @@ async def emulator():
 
 @pytest_asyncio.fixture
 async def driver(lite_context, machine, emulator):
-    drv = RuidaRPAAdapter(lite_context, machine)
+    drv = RuidaDriver(lite_context, machine)
     drv.setup(
         udp_host="127.0.0.1",
         port=emulator.port,
@@ -86,12 +88,11 @@ async def connected_driver(driver):
 
 class TestMetadata:
     def test_native_class(self):
-        assert RuidaRPAAdapter.NATIVE is NativeRuidaDriver
-        assert RuidaRPAAdapter.native_encoder == "ruida"
-        assert RuidaRPAAdapter.uses_gcode is False
+        assert RuidaDriver.NATIVE is NativeRuidaDriver
+        assert RuidaDriver.uses_gcode is False
 
     def test_setup_vars(self):
-        keys = set(RuidaRPAAdapter.get_setup_vars().keys())
+        keys = set(RuidaDriver.get_setup_vars().keys())
         assert {
             "connection",
             "tcp_proto",
@@ -107,20 +108,20 @@ class TestMetadata:
 
     def test_precheck_requires_an_endpoint(self):
         with pytest.raises(DriverPrecheckError, match="At least one"):
-            RuidaRPAAdapter.precheck(connection="auto")
+            RuidaDriver.precheck(connection="auto")
         with pytest.raises(DriverPrecheckError, match="Hostname"):
-            RuidaRPAAdapter.precheck(connection="network", udp_host="")
+            RuidaDriver.precheck(connection="network", udp_host="")
         with pytest.raises(DriverPrecheckError, match="USB"):
-            RuidaRPAAdapter.precheck(connection="usb", usb_device="")
+            RuidaDriver.precheck(connection="usb", usb_device="")
 
     def test_precheck_rejects_tui(self):
         with pytest.raises(DriverPrecheckError, match="TUI"):
-            RuidaRPAAdapter.precheck(
+            RuidaDriver.precheck(
                 connection="network", udp_host="host", tui=True
             )
 
     def test_build_config_network_tcp(self, lite_context, machine):
-        drv = RuidaRPAAdapter(lite_context, machine)
+        drv = RuidaDriver(lite_context, machine)
         config = drv.build_config(
             {
                 "connection": "network",
@@ -139,7 +140,7 @@ class TestMetadata:
         }
 
     def test_build_config_usb(self, lite_context, machine):
-        drv = RuidaRPAAdapter(lite_context, machine)
+        drv = RuidaDriver(lite_context, machine)
         config = drv.build_config(
             {
                 "connection": "usb",
@@ -152,7 +153,7 @@ class TestMetadata:
         assert config["protocol"] == "udp"
 
     def test_build_config_rejects_bad_magic(self, lite_context, machine):
-        drv = RuidaRPAAdapter(lite_context, machine)
+        drv = RuidaDriver(lite_context, machine)
         with pytest.raises(Exception, match="Magic"):
             drv.build_config(
                 {
@@ -165,7 +166,7 @@ class TestMetadata:
     def test_setup_seeds_machine_speeds(self, lite_context, machine):
         machine.set_max_cut_speed(1000)
         machine.set_max_travel_speed(3000)
-        drv = RuidaRPAAdapter(lite_context, machine)
+        drv = RuidaDriver(lite_context, machine)
         drv.setup(host="x", connection="network")
         assert machine.max_cut_speed == 24000
         assert machine.max_travel_speed == 36000

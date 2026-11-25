@@ -1,4 +1,4 @@
-"""Golden-file regression tests for the ruidarpa encoder transcript.
+"""Golden-file regression tests for the ruida encoder transcript.
 
 The committed fixture ``golden/transcript.cglu`` locks the encoder's
 GlueScript transcript byte-for-byte. The representative job covers
@@ -28,10 +28,8 @@ from typing import Any
 
 from raydriver.ruida import encode_script
 
-from rayforge.pipeline.encode_inputs import (
-    build_ruida_spec,
-    encode_ops,
-)
+from rayforge.machine.driver.ruida.ruida_encoder import build_ruida_spec
+from rayforge.pipeline.encode_inputs import encode_ops
 
 GOLDEN_DIR = Path(__file__).parent / "golden"
 GOLDEN_FILE = GOLDEN_DIR / "transcript.cglu"

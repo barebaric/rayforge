@@ -147,7 +147,7 @@ class YourDriver(Driver):
 
 - `grbl/` - 基于 GRBL 的机器（串口、串口简易版、Rust 串口、Telnet、网络）
 - `marlin/` - 基于 Marlin 固件的机器（串口）
-- `ruidarpa/` - 通过原生 raydriver 栈使用 USB、UDP 或 TCP 的 Ruida 控制器
+- `ruida/` - 通过原生 raydriver 栈使用 USB、UDP 或 TCP 的 Ruida 控制器
 - `octoprint/` - 通过 OctoPrint 服务器驱动的机器
 - `smoothie/` - 基于 Smoothieboard 的机器
 - `dummy.py` - 用于开发的测试驱动程序
