@@ -1,0 +1,867 @@
+# Russian translations for laser-essentials.
+# Copyright (C) 2025 The Rayforge Project
+# This file is distributed under the same license as the Rayforge package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-11-09 13:59+0100\n"
+"PO-Revision-Date: 2026-11-13 00:00+0000\n"
+"Last-Translator: mushketer888\n"
+"Language-Team: Russian\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Cut"
+msgstr "Рез"
+
+#: laser_essentials/material_test_helpers.py
+#: laser_essentials/widgets/raster_page.py
+#: laser_essentials/steps/raster_step.py
+msgid "Engrave"
+msgstr "Гравировка"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Power vs Speed"
+msgstr "Мощность против скорости"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Power vs Passes"
+msgstr "Мощность против проходов"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Speed vs Passes"
+msgstr "Скорость против проходов"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Speed vs Offset"
+msgstr "Скорость против смещения"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Columns (Power Steps)"
+msgstr "Столбцы (шаги мощности)"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Rows (Speed Steps)"
+msgstr "Строки (шаги скорости)"
+
+#: laser_essentials/material_test_helpers.py
+#: laser_essentials/steps/material_test.py
+msgid "Number of power variations"
+msgstr "Количество вариаций мощности"
+
+#: laser_essentials/material_test_helpers.py
+#: laser_essentials/steps/material_test.py
+msgid "Number of speed variations"
+msgstr "Количество вариаций скорости"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Rows (Passes Steps)"
+msgstr "Строки (шаги проходов)"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Number of passes variations"
+msgstr "Количество вариаций проходов"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Columns (Speed Steps)"
+msgstr "Столбцы (шаги скорости)"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Rows (Offset Steps)"
+msgstr "Строки (шаги смещения)"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Number of offset variations"
+msgstr "Количество вариаций смещения"
+
+#: laser_essentials/widgets/shrinkwrap_page.py
+#: laser_essentials/steps/shrinkwrap_step.py
+msgid "Shrink Wrap"
+msgstr "Обтяжка"
+
+#: laser_essentials/widgets/shrinkwrap_page.py
+msgid "Fit a hull around the content and trace it."
+msgstr "Обвести содержимое оболочкой и обвести её контур."
+
+#: laser_essentials/widgets/wavefront_page.py
+#: laser_essentials/steps/wavefront_step.py
+msgid "Wavefront"
+msgstr "Волновой фронт"
+
+#: laser_essentials/widgets/wavefront_page.py
+msgid "Clear pockets with a wavefront toolpath."
+msgstr "Очищать карманы траекторией волнового фронта."
+
+#: laser_essentials/widgets/laser_step_page.py
+msgid "Cut Speed"
+msgstr "Скорость реза"
+
+#: laser_essentials/widgets/laser_step_page.py
+#: laser_essentials/steps/laser_step.py
+msgid "Laser power, speed, and head selection for this operation."
+msgstr "Мощность лазера, скорость и выбор головки для этой операции."
+
+#: laser_essentials/widgets/laser_step_page.py
+msgid "Settings provided by the machine's hardware for this head."
+msgstr "Параметры, заданные оборудованием станка для этой головки."
+
+#: laser_essentials/widgets/laser_step_page.py
+#: laser_essentials/steps/laser_step.py
+msgid "Laser"
+msgstr "Лазер"
+
+#: laser_essentials/widgets/laser_step_page.py
+msgid "Machine"
+msgstr "Станок"
+
+#: laser_essentials/widgets/laser_step_page.py
+msgid "Change Head"
+msgstr "Сменить головку"
+
+#: laser_essentials/widgets/contour_page.py
+msgid "Contour Settings"
+msgstr "Параметры контура"
+
+#: laser_essentials/widgets/contour_page.py
+msgid "Trace the outline of the selected shapes."
+msgstr "Обвести контур выбранных фигур."
+
+#: laser_essentials/widgets/frame_page.py
+msgid "Geometry"
+msgstr "Геометрия"
+
+#: laser_essentials/widgets/frame_page.py
+msgid "Cut a frame around the selected content."
+msgstr "Вырезать рамку вокруг выбранного содержимого."
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Grid"
+msgstr "Сетка"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Test cell dimensions, shape, and spacing."
+msgstr "Размеры ячеек теста, форма и интервалы."
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Labels"
+msgstr "Метки"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Speed/power annotations on the grid."
+msgstr "Аннотации скорости/мощности на сетке."
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Parameters"
+msgstr "Параметры"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Define the parameter ranges for the test grid."
+msgstr "Задайте диапазоны параметров для тестовой сетки."
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Diode Engrave"
+msgstr "Гравировка диодом"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Diode Cut"
+msgstr "Рез диодом"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "CO2 Engrave"
+msgstr "Гравировка CO2"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "CO2 Cut"
+msgstr "Рез CO2"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Select"
+msgstr "Выбор"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Preset"
+msgstr "Пресет"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Load common test configurations."
+msgstr "Загрузить типовые конфигурации теста."
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Presets"
+msgstr "Пресеты"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Load common test configurations"
+msgstr "Загрузить типовые конфигурации теста"
+
+#: laser_essentials/widgets/raster_power_widget.py
+msgid "Min Power (White)"
+msgstr "Мин. мощность (белый)"
+
+#: laser_essentials/widgets/raster_power_widget.py
+#: laser_essentials/steps/raster_step.py
+msgid "Power for lightest areas, as a percentage of the step's main power"
+msgstr "Мощность для самых светлых участков, в процентах от основной мощности шага"
+
+#: laser_essentials/widgets/raster_power_widget.py
+msgid "Max Power (Black)"
+msgstr "Макс. мощность (чёрный)"
+
+#: laser_essentials/widgets/raster_power_widget.py
+#: laser_essentials/steps/raster_step.py
+msgid "Power for darkest areas, as a percentage of the step's main power"
+msgstr "Мощность для самых тёмных участков, в процентах от основной мощности шага"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Engrave Speed"
+msgstr "Скорость гравировки"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Raster the image onto the material."
+msgstr "Нанести изображение на материал растром."
+
+#: laser_essentials/widgets/raster_page.py
+#: laser_essentials/steps/laser_step.py
+msgid "Power"
+msgstr "Мощность"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Power modulation and brightness range."
+msgstr "Модуляция мощности и диапазон яркости."
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Change Power Range"
+msgstr "Изменить диапазон мощности"
+
+#: laser_essentials/widgets/offset_fill_page.py
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Offset Fill"
+msgstr "Заливка смещением"
+
+#: laser_essentials/widgets/offset_fill_page.py
+msgid "Fill closed shapes with rings that follow the outline."
+msgstr "Заполнить замкнутые фигуры кольцами, повторяющими контур."
+
+#: laser_essentials/widgets/levels_adapter.py
+msgid "Auto-adjusted based on image content"
+msgstr "Автоматически настраивается по содержимому изображения"
+
+#: laser_essentials/widgets/levels_adapter.py
+msgid "Drag markers to set black/white points"
+msgstr "Перетащите маркеры, чтобы задать точки чёрного/белого"
+
+#: laser_essentials/steps/laser_step.py
+msgid ""
+"Laser head used for this step; the machine's first head is used when unset"
+msgstr ""
+"Головка лазера, используемая для этого шага; если не задана, используется "
+"первая головка станка"
+
+#: laser_essentials/steps/laser_step.py
+msgid "Laser power as a percentage"
+msgstr "Мощность лазера в процентах"
+
+#: laser_essentials/steps/laser_step.py
+msgid "Power Mode"
+msgstr "Режим мощности"
+
+#: laser_essentials/steps/laser_step.py
+msgid ""
+"Dynamic power (M4) scales power with head speed; constant power (M3) keeps "
+"it fixed. Use constant power if corners and curves burn too lightly"
+msgstr ""
+"Динамическая мощность (M4) масштабирует мощность вместе со скоростью головки; "
+"постоянная мощность (M3) держит её фиксированной. Используйте постоянную "
+"мощность, если углы и кривые прожигаются слишком слабо"
+
+#: laser_essentials/steps/laser_step.py
+msgid "Dynamic (M4)"
+msgstr "Динамическая (M4)"
+
+#: laser_essentials/steps/laser_step.py
+msgid "Constant (M3)"
+msgstr "Постоянная (M3)"
+
+#: laser_essentials/steps/laser_step.py
+msgid "Air Assist"
+msgstr "Воздушный обдув"
+
+#: laser_essentials/steps/laser_step.py
+msgid "Blow air over the cut to clear debris"
+msgstr "Продувать рез воздухом для удаления продуктов горения"
+
+#: laser_essentials/steps/laser_step.py
+msgid "Tab Power"
+msgstr "Мощность на перемычках"
+
+#: laser_essentials/steps/laser_step.py
+msgid "Laser power at tab positions as a percentage"
+msgstr "Мощность лазера в местах перемычек, в процентах"
+
+#: laser_essentials/steps/laser_step.py
+msgid "Frequency"
+msgstr "Частота"
+
+#: laser_essentials/steps/laser_step.py
+msgid "Laser pulse frequency in Hz (0 = head default)"
+msgstr "Частота импульсов лазера в Гц (0 = по умолчанию для головки)"
+
+#: laser_essentials/steps/laser_step.py
+msgid "Pulse Width"
+msgstr "Длительность импульса"
+
+#: laser_essentials/steps/laser_step.py
+msgid "Laser pulse width in ns (0 = head default)"
+msgstr "Длительность импульса лазера в нс (0 = по умолчанию для головки)"
+
+#: laser_essentials/steps/laser_step.py
+msgid "Step Settings"
+msgstr "Параметры шага"
+
+#: laser_essentials/steps/laser_step.py
+#, python-brace-format
+msgid "{power_percent}% power, {speed_str}"
+msgstr "{power_percent}% мощность, {speed_str}"
+
+#: laser_essentials/steps/shrinkwrap_step.py
+msgid "Gravity"
+msgstr "Сила сжатия"
+
+#: laser_essentials/steps/shrinkwrap_step.py
+msgid "Pulls the hull inward. 0.0 is a standard convex hull"
+msgstr "Стягивает оболочку внутрь. 0.0 — стандартная выпуклая оболочка"
+
+#: laser_essentials/steps/shrinkwrap_step.py
+#: laser_essentials/steps/frame_step.py
+#: laser_essentials/steps/contour_step.py
+msgid "Cut Side"
+msgstr "Сторона реза"
+
+#: laser_essentials/steps/shrinkwrap_step.py
+#: laser_essentials/steps/wavefront_step.py
+#: laser_essentials/steps/frame_step.py
+#: laser_essentials/steps/offset_fill_step.py
+#: laser_essentials/steps/contour_step.py
+msgid "Offset"
+msgstr "Смещение"
+
+#: laser_essentials/steps/shrinkwrap_step.py
+msgid ""
+"Shifts the contour inward/outward per Cut Side (none on Centerline). "
+"Defaults to kerf compensation for the head"
+msgstr ""
+"Смещает контур внутрь/наружу согласно стороне реза (нет на осевой линии). "
+"По умолчанию — компенсация реза для головки"
+
+#: laser_essentials/steps/wavefront_step.py
+msgid "Step Over"
+msgstr "Шаг между проходами"
+
+#: laser_essentials/steps/wavefront_step.py
+msgid "Lateral step-over between wavefront passes"
+msgstr "Боковой шаг между проходами волнового фронта"
+
+#: laser_essentials/steps/wavefront_step.py
+msgid "Extra offset from walls"
+msgstr "Дополнительное смещение от стенок"
+
+#: laser_essentials/steps/frame_step.py
+msgid "Frame"
+msgstr "Рамка"
+
+#: laser_essentials/steps/frame_step.py
+msgid ""
+"Shifts the frame inward/outward per Cut Side (none on Centerline). Defaults "
+"to kerf compensation for the head"
+msgstr ""
+"Смещает рамку внутрь/наружу согласно стороне реза (нет на осевой линии). "
+"По умолчанию — компенсация реза для головки"
+
+#: laser_essentials/steps/frame_step.py
+msgid "Round Corners"
+msgstr "Скруглённые углы"
+
+#: laser_essentials/steps/frame_step.py
+msgid "Round the frame's corners instead of cutting right angles"
+msgstr "Скруглять углы рамки вместо резки под прямым углом"
+
+#: laser_essentials/steps/frame_step.py
+msgid "Corner Radius"
+msgstr "Радиус скругления"
+
+#: laser_essentials/steps/frame_step.py
+msgid "Radius used to round the frame's corners"
+msgstr "Радиус, используемый для скругления углов рамки"
+
+#: laser_essentials/steps/offset_fill_step.py
+#: laser_essentials/steps/material_test.py
+msgid "Line Interval"
+msgstr "Интервал линий"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid ""
+"Distance between neighbouring fill rings. Defaults to the laser spot size"
+msgstr ""
+"Расстояние между соседними кольцами заливки. По умолчанию — размер "
+"лазерного пятна"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Distance of the first ring inside the outline"
+msgstr "Расстояние до первого кольца внутри контура"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Fill Direction"
+msgstr "Направление заливки"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Order in which the rings are cut"
+msgstr "Порядок, в котором вырезаются кольца"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Mode"
+msgstr "Режим"
+
+#: laser_essentials/steps/raster_step.py
+#: laser_essentials/steps/contour_step.py
+msgid "Threshold"
+msgstr "Порог"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Brightness cutoff for black/white (0-255)"
+msgstr "Порог яркости для чёрного/белого (0-255)"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Engraving Method"
+msgstr "Метод гравировки"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Algorithm for converting grayscale to binary"
+msgstr "Алгоритм преобразования оттенков серого в двоичное изображение"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Serpentine"
+msgstr "Змейка"
+
+#: laser_essentials/steps/raster_step.py
+msgid ""
+"Alternate the dither direction on every row to avoid directional artifacts"
+msgstr ""
+"Чередовать направление дизеринга в каждой строке, чтобы избежать "
+"направленных артефактов"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Min Feature Size"
+msgstr "Мин. размер элемента"
+
+#: laser_essentials/steps/raster_step.py
+msgid ""
+"Smallest dot width in scan-line pixels. The auto value matches the laser "
+"spot size; smaller values allow finer but fainter dots"
+msgstr ""
+"Минимальная ширина точки в пикселях строки сканирования. Значение «авто» "
+"соответствует размеру лазерного пятна; меньшие значения дают более мелкие, "
+"но более бледные точки"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Linear Light"
+msgstr "Линейная яркость"
+
+#: laser_essentials/steps/raster_step.py
+msgid ""
+"Diffuse in linear light instead of on the raw sRGB values, which engraves "
+"mid-tones darker"
+msgstr ""
+"Выполнять диффузию в линейном свете вместо исходных значений sRGB, что "
+"делает полутоновые участки темнее при гравировке"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Halftone Cell Size"
+msgstr "Размер ячейки полутонов"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Distance between halftone dot centers"
+msgstr "Расстояние между центрами полутоновых точек"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Halftone Angle"
+msgstr "Угол полутонов"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Rotation of the halftone dot grid"
+msgstr "Поворот сетки полутоновых точек"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Cross-Hatch"
+msgstr "Перекрёстная штриховка"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Add a second pass at 90 degrees"
+msgstr "Добавить второй проход под 90 градусов"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Scan Mode"
+msgstr "Режим сканирования"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Segmented"
+msgstr "Сегментированный"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Full Sweep"
+msgstr "Полная строка"
+
+#: laser_essentials/steps/raster_step.py
+msgid ""
+"Segmented: moves between content regions. Full Sweep: scans full width with "
+"laser toggling"
+msgstr ""
+"Сегментированный: перемещения между областями содержимого. Полная строка: "
+"сканирование всей ширины с переключением лазера"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Line Spacing"
+msgstr "Шаг линий"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Distance between scan lines"
+msgstr "Расстояние между строками сканирования"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Sample Interval"
+msgstr "Интервал выборки"
+
+#: laser_essentials/steps/raster_step.py
+msgid ""
+"Distance between power samples along scan line. Lower values improve "
+"accuracy, but increase output size"
+msgstr ""
+"Расстояние между выборками мощности вдоль строки сканирования. Меньшие "
+"значения повышают точность, но увеличивают размер вывода"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Dot Width Correction"
+msgstr "Коррекция ширины точки"
+
+#: laser_essentials/steps/raster_step.py
+msgid ""
+"Reduces engrave length at both ends to compensate for physical dot width"
+msgstr ""
+"Уменьшает длину гравировки на обоих концах для компенсации физической "
+"ширины точки"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Bidirectional Scan Offset"
+msgstr "Смещение двунаправленного сканирования"
+
+#: laser_essentials/steps/raster_step.py
+msgid ""
+"Corrects X misalignment between left-to-right and right-to-left raster passes"
+msgstr ""
+"Исправляет смещение по X между проходами растра слева направо и справа налево"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Number of Depth Levels"
+msgstr "Количество уровней глубины"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Z Step-Down per Level"
+msgstr "Опускание по Z на уровень"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Rotate Angle Per Pass"
+msgstr "Угол поворота за проход"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Degrees to rotate each successive pass"
+msgstr "Градусы поворота для каждого следующего прохода"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Auto Levels"
+msgstr "Автоуровни"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Automatically adjust black/white points"
+msgstr "Автоматически настраивать точки чёрного/белого"
+
+#: laser_essentials/steps/raster_step.py
+msgid "White Point"
+msgstr "Точка белого"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Min Power"
+msgstr "Мин. мощность"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Max Power"
+msgstr "Макс. мощность"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Power Levels"
+msgstr "Уровни мощности"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Number of discrete power steps (lower = fewer moves)"
+msgstr "Количество дискретных шагов мощности (меньше = меньше перемещений)"
+
+#: laser_essentials/steps/raster_step.py
+#, python-brace-format
+msgid "The {mode} depth mode is not supported by this machine's driver."
+msgstr "Режим глубины {mode} не поддерживается драйвером этого станка."
+
+#: laser_essentials/steps/contour_step.py
+msgid "Contour"
+msgstr "Контур"
+
+#: laser_essentials/steps/contour_step.py
+msgid ""
+"Shifts the cut path inward/outward per Cut Side (none on Centerline). "
+"Defaults to kerf compensation for the head"
+msgstr ""
+"Смещает траекторию реза внутрь/наружу согласно стороне реза (нет на осевой "
+"линии). По умолчанию — компенсация реза для головки"
+
+#: laser_essentials/steps/contour_step.py
+msgid "Cut Order"
+msgstr "Порядок реза"
+
+#: laser_essentials/steps/contour_step.py
+msgid "Processing order for nested paths"
+msgstr "Порядок обработки вложенных путей"
+
+#: laser_essentials/steps/contour_step.py
+msgid "Remove Inner Paths"
+msgstr "Удалить внутренние пути"
+
+#: laser_essentials/steps/contour_step.py
+msgid "If enabled, only trace the outer outline of shapes"
+msgstr "Если включено, обводится только внешний контур фигур"
+
+#: laser_essentials/steps/contour_step.py
+msgid "Overcut"
+msgstr "Надрез"
+
+#: laser_essentials/steps/contour_step.py
+msgid ""
+"Extend closed contours past their start point so the cut overlaps itself"
+msgstr ""
+"Продлевать замкнутые контуры за точку начала, чтобы рез перекрывал сам себя"
+
+#: laser_essentials/steps/contour_step.py
+msgid "Rescan Content"
+msgstr "Пересканировать содержимое"
+
+#: laser_essentials/steps/contour_step.py
+msgid "Ignore source geometry and re-trace within the workpiece"
+msgstr "Игнорировать исходную геометрию и заново обвести внутри детали"
+
+#: laser_essentials/steps/contour_step.py
+msgid "Brightness level (0.0-1.0) to define edges"
+msgstr "Уровень яркости (0.0-1.0) для определения границ"
+
+#: laser_essentials/steps/material_test.py
+#: laser_essentials/commands/material_test_cmd.py
+msgid "Material Test Grid"
+msgstr "Сетка теста материала"
+
+#: laser_essentials/steps/material_test.py
+msgid "Test Type"
+msgstr "Тип теста"
+
+#: laser_essentials/steps/material_test.py
+msgid "Cut: outlines; Engrave: fills with raster lines"
+msgstr "Рез: контуры; Гравировка: заливка растровыми линиями"
+
+#: laser_essentials/steps/material_test.py
+msgid "Grid Mode"
+msgstr "Режим сетки"
+
+#: laser_essentials/steps/material_test.py
+msgid "Choose which parameters to vary on axes"
+msgstr "Выберите, какие параметры менять по осям"
+
+#: laser_essentials/steps/material_test.py
+msgid "Grid Dimensions"
+msgstr "Размеры сетки"
+
+#: laser_essentials/steps/material_test.py
+msgid "Columns"
+msgstr "Столбцы"
+
+#: laser_essentials/steps/material_test.py
+msgid "Rows"
+msgstr "Строки"
+
+#: laser_essentials/steps/material_test.py
+msgid "Shape Size"
+msgstr "Размер фигуры"
+
+#: laser_essentials/steps/material_test.py
+msgid "Size of each test square"
+msgstr "Размер каждого тестового квадрата"
+
+#: laser_essentials/steps/material_test.py
+msgid "Spacing"
+msgstr "Интервал"
+
+#: laser_essentials/steps/material_test.py
+msgid "Gap between test squares"
+msgstr "Промежуток между тестовыми квадратами"
+
+#: laser_essentials/steps/material_test.py
+msgid ""
+"Distance between scan lines in machine units (for Engrave mode). Leave at 0 "
+"to use laser spot size"
+msgstr ""
+"Расстояние между строками сканирования в единицах станка (для режима "
+"гравировки). Оставьте 0, чтобы использовать размер лазерного пятна"
+
+#: laser_essentials/steps/material_test.py
+msgid "Include Labels"
+msgstr "Включить метки"
+
+#: laser_essentials/steps/material_test.py
+msgid "Add speed/power annotations to the grid"
+msgstr "Добавить на сетку аннотации скорости/мощности"
+
+#: laser_essentials/steps/material_test.py
+msgid "Label Engrave Power"
+msgstr "Мощность гравировки меток"
+
+#: laser_essentials/steps/material_test.py
+msgid "Label Engrave Speed"
+msgstr "Скорость гравировки меток"
+
+#: laser_essentials/steps/material_test.py
+msgid "Speed for engraving labels"
+msgstr "Скорость для гравировки меток"
+
+#: laser_essentials/steps/material_test.py
+msgid "Fixed Speed"
+msgstr "Фиксированная скорость"
+
+#: laser_essentials/steps/material_test.py
+msgid "Constant speed for all cells"
+msgstr "Постоянная скорость для всех ячеек"
+
+#: laser_essentials/steps/material_test.py
+msgid "Fixed Power (%)"
+msgstr "Фиксированная мощность (%)"
+
+#: laser_essentials/steps/material_test.py
+msgid "Constant power for all cells"
+msgstr "Постоянная мощность для всех ячеек"
+
+#: laser_essentials/steps/material_test.py
+msgid "Power Range"
+msgstr "Диапазон мощности"
+
+#: laser_essentials/steps/material_test.py
+msgid "Minimum Power (%)"
+msgstr "Минимальная мощность (%)"
+
+#: laser_essentials/steps/material_test.py
+msgid "Maximum Power (%)"
+msgstr "Максимальная мощность (%)"
+
+#: laser_essentials/steps/material_test.py
+msgid "For first column"
+msgstr "Для первого столбца"
+
+#: laser_essentials/steps/material_test.py
+msgid "For last column"
+msgstr "Для последнего столбца"
+
+#: laser_essentials/steps/material_test.py
+msgid "Speed Range"
+msgstr "Диапазон скорости"
+
+#: laser_essentials/steps/material_test.py
+msgid "Minimum Speed"
+msgstr "Минимальная скорость"
+
+#: laser_essentials/steps/material_test.py
+msgid "Maximum Speed"
+msgstr "Максимальная скорость"
+
+#: laser_essentials/steps/material_test.py
+msgid "Starting speed"
+msgstr "Начальная скорость"
+
+#: laser_essentials/steps/material_test.py
+msgid "Ending speed"
+msgstr "Конечная скорость"
+
+#: laser_essentials/steps/material_test.py
+msgid "Passes Range"
+msgstr "Диапазон проходов"
+
+#: laser_essentials/steps/material_test.py
+msgid "Minimum Passes"
+msgstr "Минимум проходов"
+
+#: laser_essentials/steps/material_test.py
+msgid "Maximum Passes"
+msgstr "Максимум проходов"
+
+#: laser_essentials/steps/material_test.py
+msgid "Starting number of passes"
+msgstr "Начальное количество проходов"
+
+#: laser_essentials/steps/material_test.py
+msgid "Ending number of passes"
+msgstr "Конечное количество проходов"
+
+#: laser_essentials/steps/material_test.py
+msgid "Offset Range"
+msgstr "Диапазон смещения"
+
+#: laser_essentials/steps/material_test.py
+msgid "Minimum Offset"
+msgstr "Минимальное смещение"
+
+#: laser_essentials/steps/material_test.py
+msgid "Maximum Offset"
+msgstr "Максимальное смещение"
+
+#: laser_essentials/steps/material_test.py
+msgid "Bidir scan X-offset for first row"
+msgstr "Смещение двунаправленного сканирования по X для первой строки"
+
+#: laser_essentials/steps/material_test.py
+msgid "Bidir scan X-offset for last row"
+msgstr "Смещение двунаправленного сканирования по X для последней строки"
+
+#: laser_essentials/steps/material_test.py
+#, python-brace-format
+msgid "Cut speed ({value}) exceeds the machine's maximum ({max})."
+msgstr "Скорость реза ({value}) превышает максимум станка ({max})."
+
+#: laser_essentials/frontend.py
+msgid "Create Material Test Grid"
+msgstr "Создать сетку теста материала"
+
+#: laser_essentials/scan_angle_var.py
+msgid "Angle"
+msgstr "Угол"
+
+#: laser_essentials/scan_angle_var.py
+msgid "Angle of scan lines in degrees"
+msgstr "Угол строк сканирования в градусах"
+
+#: laser_essentials/levels_range_var.py
+msgid "Brightness Range"
+msgstr "Диапазон яркости"
+
+#: laser_essentials/laser_head_var.py
+msgid "Laser Head"
+msgstr "Головка лазера"
+
+#: laser_essentials/commands/material_test_cmd.py
+msgid "Add Material Test"
+msgstr "Добавить тест материала"
