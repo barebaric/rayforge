@@ -6,6 +6,7 @@ import pytest_asyncio
 from raydriver.octoprint.emulator import OctoPrintEmulator
 from raygeo.ops.axis import Axis
 
+from rayforge.core.varset import AppKeyVar, HostnameVar, PortVar
 from rayforge.machine.driver.driver import (
     DeviceStatus,
     DriverMaturity,
@@ -150,8 +151,6 @@ class TestPrecheck:
 
 class TestGetSetupVars:
     def test_returns_varset(self):
-        from rayforge.core.varset import AppKeyVar, HostnameVar, PortVar
-
         vs = OctoPrintDriver.get_setup_vars()
         keys = list(vs.keys())
         assert "host" in keys
