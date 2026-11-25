@@ -30,7 +30,7 @@ GRBL 设备可以通过 USB/串口或网络连接：
 通过 Wi-Fi 连接的 xTool 机器使用它们自己的实验性驱动程序；D1/D1 Pro 和 M2 请参阅
 [xTool Wi-Fi](xtool)。
 
-基于 Ruida 的控制器由 **Ruida** 驱动程序支持，该驱动程序使用原生 raydriver 栈通过 USB、UDP 或 TCP
+基于 Ruida 的控制器由 **Ruida** 驱动程序支持，该驱动程序通过 USB、UDP 或 TCP
 连接。其 USB 字段提供带有 VID:PID 匹配的已连接设备下拉列表，并遵循每个步骤的 Power Mode
 设置——Dynamic 启用控制器的功率缩放，Constant 则禁用。功率行为通过 **Power Scaling**、
 **VECTOR power floor** 和 **IMAGE power bias** 选项调整：功率缩放会在层切割速度降低时提高输出的

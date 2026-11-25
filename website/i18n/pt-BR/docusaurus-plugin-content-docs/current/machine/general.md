@@ -39,13 +39,13 @@ Máquinas xTool por Wi-Fi usam drivers experimentais próprios; veja [xTool por 
 D1/D1 Pro e M2.
 
 Controladores baseados em Ruida são suportados pelo driver **Ruida**, que se conecta via USB, UDP ou
-TCP usando a pilha nativa do raydriver. Seu campo USB oferece um menu de dispositivos conectados com
-correspondência VID:PID, e ele respeita a configuração de Modo de Potência de cada etapa — Dinâmico
-ativa o escalonamento de potência do controlador, Constante o desativa. O comportamento de potência
-é ajustado com as opções **Power Scaling**, **VECTOR power floor** e **IMAGE power bias**: o
-escalonamento eleva a potência mínima emitida conforme a velocidade de corte da camada diminui, o
-piso de potência vetorial compensa o sobreaquecimento nas extremidades das linhas, e o viés de
-imagem compensa tubos CO2 que não disparam em potências muito baixas.
+TCP. Seu campo USB oferece um menu de dispositivos conectados com correspondência VID:PID, e ele
+respeita a configuração de Modo de Potência de cada etapa — Dinâmico ativa o escalonamento de
+potência do controlador, Constante o desativa. O comportamento de potência é ajustado com as opções
+**Power Scaling**, **VECTOR power floor** e **IMAGE power bias**: o escalonamento eleva a potência
+mínima emitida conforme a velocidade de corte da camada diminui, o piso de potência vetorial
+compensa o sobreaquecimento nas extremidades das linhas, e o viés de imagem compensa tubos CO2 que
+não disparam em potências muito baixas.
 
 ### Vínculo da Porta Serial
 

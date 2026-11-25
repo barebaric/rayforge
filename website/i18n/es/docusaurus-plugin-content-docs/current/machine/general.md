@@ -40,13 +40,13 @@ Las máquinas xTool por Wi-Fi usan sus propios controladores experimentales; con
 [xTool por Wi-Fi](xtool) para D1/D1 Pro y M2.
 
 Los controladores basados en Ruida son compatibles con el controlador **Ruida**, que se conecta por
-USB, UDP o TCP usando la pila nativa de raydriver. Su campo USB ofrece un desplegable de
-dispositivos conectados con coincidencia VID:PID, y respeta el Modo de Potencia de cada paso —
-Dinámico activa el escalado de potencia del controlador y Constante lo desactiva. El comportamiento
-de potencia se ajusta con las opciones **Power Scaling**, **VECTOR power floor** e **IMAGE power
-bias**: el escalado eleva la potencia mínima emitida a medida que disminuye la velocidad de corte de
-la capa, el suelo de potencia vector compensa el sobre-quemado en los extremos de las líneas, y el
-sesgo de imagen compensa los tubos CO2 que no disparan a potencias muy bajas.
+USB, UDP o TCP. Su campo USB ofrece un desplegable de dispositivos conectados con coincidencia
+VID:PID, y respeta el Modo de Potencia de cada paso — Dinámico activa el escalado de potencia del
+controlador y Constante lo desactiva. El comportamiento de potencia se ajusta con las opciones
+**Power Scaling**, **VECTOR power floor** e **IMAGE power bias**: el escalado eleva la potencia
+mínima emitida a medida que disminuye la velocidad de corte de la capa, el suelo de potencia vector
+compensa el sobre-quemado en los extremos de las líneas, y el sesgo de imagen compensa los tubos CO2
+que no disparan a potencias muy bajas.
 
 ### Vinculación del Puerto Serie
 

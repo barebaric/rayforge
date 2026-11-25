@@ -555,9 +555,8 @@ $22=1       ; Referenzfahrt aktiviert
 ## Ruida-Controller
 
 Rayforge verbindet sich mit Ruida-basierten Controllern (z. B. RDC6442, RDC6445, Ruida R5) über den
-Treiber **Ruida**, der das native Protokoll des Controllers über USB, UDP oder TCP mit dem nativen
-raydriver-Stack spricht. Die Geräteprofile Generic Ruida und Monport MP-570 60W CO2 bieten
-Ausgangspunkte für neue Maschinen.
+Treiber **Ruida**, der das native Protokoll des Controllers über USB, UDP oder TCP spricht. Die
+Geräteprofile Generic Ruida und Monport MP-570 60W CO2 bieten Ausgangspunkte für neue Maschinen.
 
 **Funktionen:**
 

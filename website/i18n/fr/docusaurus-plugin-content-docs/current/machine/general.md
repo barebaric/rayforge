@@ -40,13 +40,13 @@ Les machines xTool en Wi-Fi utilisent leurs propres pilotes expérimentaux ; voi
 [xTool en Wi-Fi](xtool) pour la D1/D1 Pro et la M2.
 
 Les contrôleurs basés sur Ruida sont pris en charge par le pilote **Ruida**, qui se connecte en USB,
-UDP ou TCP avec la pile native de raydriver. Son champ USB propose une liste des appareils connectés
-avec correspondance VID:PID, et il respecte le Mode de Puissance de chaque étape — Dynamique active
-la mise à l'échelle de puissance du contrôleur, Constante la désactive. Le comportement de puissance
-se règle avec les options **Power Scaling**, **VECTOR power floor** et **IMAGE power bias** : la
-mise à l'échelle augmente la puissance minimale émise lorsque la vitesse de couche diminue, le
-plancher de puissance vectoriel compense le sur-brûlage aux extrémités des lignes, et le biais
-d'image compense les tubes CO2 qui ne s'allument pas à très faible puissance.
+UDP ou TCP. Son champ USB propose une liste des appareils connectés avec correspondance VID:PID, et
+il respecte le Mode de Puissance de chaque étape — Dynamique active la mise à l'échelle de puissance
+du contrôleur, Constante la désactive. Le comportement de puissance se règle avec les options
+**Power Scaling**, **VECTOR power floor** et **IMAGE power bias** : la mise à l'échelle augmente la
+puissance minimale émise lorsque la vitesse de couche diminue, le plancher de puissance vectoriel
+compense le sur-brûlage aux extrémités des lignes, et le biais d'image compense les tubes CO2 qui ne
+s'allument pas à très faible puissance.
 
 ### Liaison du Port Série
 

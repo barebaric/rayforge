@@ -38,13 +38,13 @@ GRBL devices can connect over USB/serial or over the network:
 xTool machines on Wi-Fi use their own experimental drivers; see [xTool Wi-Fi](xtool) for the D1/D1
 Pro and the M2.
 
-Ruida-based controllers are supported by the **Ruida** driver, which connects over USB, UDP or TCP
-using the native raydriver stack. Its USB field offers a dropdown of connected devices with VID:PID
-matching, and it honors each step's Power Mode setting — Dynamic enables the controller's power
-scaling, Constant disables it. Power behavior is tuned with the driver's **Power Scaling**, **VECTOR
-power floor** and **IMAGE power bias** options: power scaling raises the emitted minimum power as
-the layer's cut speed decreases, the vector power floor compensates over-burn at the ends of lines,
-and the image bias compensates for CO2 tubes that do not fire at very low power.
+Ruida-based controllers are supported by the **Ruida** driver, which connects over USB, UDP or TCP.
+Its USB field offers a dropdown of connected devices with VID:PID matching, and it honors each
+step's Power Mode setting — Dynamic enables the controller's power scaling, Constant disables it.
+Power behavior is tuned with the driver's **Power Scaling**, **VECTOR power floor** and **IMAGE
+power bias** options: power scaling raises the emitted minimum power as the layer's cut speed
+decreases, the vector power floor compensates over-burn at the ends of lines, and the image bias
+compensates for CO2 tubes that do not fire at very low power.
 
 ### Serial Port Binding
 
