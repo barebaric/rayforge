@@ -14,10 +14,10 @@ from raygeo.ops.axis import Axis
 from raygeo.ops.types import CommandType
 
 from ..context import get_context
+from ..machine.models.dialect_context import GcodeContext, JobInfo
 from ..pipeline.artifact import JobArtifact
+from ..pipeline.artifact.encoded import EncodedOutput
 from ..pipeline.artifact.handle import BaseArtifactHandle
-from ..pipeline.encoder.base import EncodedOutput
-from ..pipeline.encoder.context import GcodeContext, JobInfo
 from ..shared.util.template import TemplateFormatter
 from .driver.driver import FrameCorner
 from .job_monitor import JobMonitor

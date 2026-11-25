@@ -13,8 +13,7 @@ from raygeo.ops.axis import Axis
 
 from ...context import RayforgeContext
 from ...core.varset import VarSet
-from ...pipeline.encoder.base import EncodedOutput, OpsEncoder
-from ...pipeline.encoder.gcode import GcodeEncoder
+from ...pipeline.artifact.encoded import EncodedOutput
 from ..transport import TransportStatus
 from .driver import DeviceStatus, Driver, Pos
 
@@ -84,12 +83,6 @@ class NoDeviceDriver(Driver):
     @classmethod
     def get_setup_vars(cls) -> "VarSet":
         return VarSet(title=_("No settings"))
-
-    @classmethod
-    def create_encoder(cls, machine: "Machine") -> "OpsEncoder":
-        """Returns a GcodeEncoder configured for the machine's dialect."""
-        assert machine.dialect is not None
-        return GcodeEncoder(machine.dialect)
 
     def get_setting_vars(self) -> list["VarSet"]:
         return [VarSet(title=_("No settings"))]

@@ -1,7 +1,7 @@
 """
 Helpers for the Epilog print-job encoder.
 
-The Epilog encoder lives in raygeo (`raygeo.ops.convert.EpilogSpec`).
+The Epilog encoder lives in raydriver (`raydriver.encode.EpilogSpec`).
 This module converts the Rayforge domain models (`Machine`, `Doc`)
 into the plain, JSON-serialisable job context the encoder accepts, so
 no domain model crosses the Python/Rust boundary.
@@ -11,13 +11,13 @@ import json
 import logging
 from typing import TYPE_CHECKING
 
-from raygeo.ops.convert import EpilogSpec
+from raydriver.encode import EpilogSpec
 
-from ...machine.driver.epilog.epilog_driver import DEFAULT_SPEED_REFERENCE
+from ..machine.driver.epilog.epilog_driver import DEFAULT_SPEED_REFERENCE
 
 if TYPE_CHECKING:
-    from ...core.doc import Doc
-    from ...machine.models.machine import Machine
+    from ..core.doc import Doc
+    from ..machine.models.machine import Machine
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ SUPPORTED_ORIGIN = "top_left"
 
 
 def build_epilog_context(machine: "Machine", doc: "Doc") -> dict:
-    """Build the job context dict for `raygeo.ops.convert.EpilogSpec`."""
+    """Build the job context dict for `raydriver.encode.EpilogSpec`."""
     origin = machine.origin.value
     return {
         "title": doc.name or "Rayforge",

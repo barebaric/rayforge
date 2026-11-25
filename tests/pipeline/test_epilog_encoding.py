@@ -9,6 +9,7 @@ import asyncio
 from pathlib import Path
 
 import pytest
+from raydriver.encode import EpilogSpec
 from raygeo.geo import Geometry
 
 from rayforge.core.doc import Doc
@@ -20,7 +21,7 @@ from rayforge.image import SVG_RENDERER
 from rayforge.machine.driver.epilog import EpilogZingDriver
 from rayforge.machine.models.laser import LaserHead
 from rayforge.machine.models.machine import Origin
-from rayforge.pipeline.encoder.epilog_helpers import (
+from rayforge.pipeline.epilog_inputs import (
     build_epilog_context,
     epilog_spec,
 )
@@ -148,8 +149,6 @@ class TestEncoderRouting:
 
     @pytest.mark.asyncio
     async def test_intent_builder_selects_epilog_spec(self, machine, task_mgr):
-        from raygeo.ops.convert import EpilogSpec
-
         await self._epilog_machine(machine, task_mgr)
         builder = IntentBuilder(machine=machine, generation_id=1)
         assert isinstance(builder._build_encoder(Doc()), EpilogSpec)

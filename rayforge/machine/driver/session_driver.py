@@ -18,8 +18,7 @@ from raydriver.core import SessionEvent
 
 from ...context import RayforgeContext
 from ...core.varset import VarSet
-from ...pipeline.encoder.base import EncodedOutput, OpsEncoder
-from ...pipeline.encoder.gcode import GcodeEncoder
+from ...pipeline.artifact.encoded import EncodedOutput
 from ...shared.units.system import UnitSystem
 from ..transport import TransportStatus
 from .driver import (
@@ -513,12 +512,7 @@ class SessionDriverBase(Driver):
             self._to_machine_speed(feed_rate),
         )
 
-    # -- encoder / settings --------------------------------------------
-
-    @classmethod
-    def create_encoder(cls, machine: "Machine") -> "OpsEncoder":
-        assert machine.dialect is not None
-        return GcodeEncoder(machine.dialect)
+    # -- settings -----------------------------------------------------
 
     def get_setting_vars(self) -> list["VarSet"]:
         return []

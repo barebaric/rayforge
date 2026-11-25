@@ -22,10 +22,9 @@ from raygeo.ops.state import AirAssistMode, CoolantMode, PowerMode
 from raygeo.ops.types import CommandType, RasterMode, SectionType
 from ruida_pa.ruidadriver.rd_gluescript import GlueScript
 
-from rayforge.pipeline.encoder.base import (
+from rayforge.pipeline.artifact.encoded import (
     EncodedOutput,
     MachineCodeOpMap,
-    OpsEncoder,
 )
 
 if TYPE_CHECKING:
@@ -95,7 +94,7 @@ _WCS_TO_REF_POINT = {
 _last_fallback_wcs: str | None = None
 
 
-class RuidaRPAEncoder(OpsEncoder):
+class RuidaRPAEncoder:
     """Encodes Ops commands into a GlueScript transcript.
 
     The transcript is the source: each Ops command is translated into a

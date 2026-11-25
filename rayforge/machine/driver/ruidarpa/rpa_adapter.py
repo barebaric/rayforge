@@ -66,7 +66,7 @@ if TYPE_CHECKING:
     from rayforge.machine.models.head import Head
     from rayforge.machine.models.laser import Laser
     from rayforge.machine.models.machine import Machine
-    from rayforge.pipeline.encoder.base import EncodedOutput, OpsEncoder
+    from rayforge.pipeline.artifact.encoded import EncodedOutput
 
 logger = logging.getLogger(__name__)
 
@@ -481,7 +481,7 @@ class RuidaRPAAdapter(Driver):
         )
 
     @classmethod
-    def create_encoder(cls, machine: Machine) -> OpsEncoder:
+    def create_encoder(cls, machine: Machine) -> Any:
         from rayforge.machine.driver.ruidarpa.rpa_encoder import (
             RuidaRPAEncoder,
         )

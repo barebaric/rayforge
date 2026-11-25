@@ -11,6 +11,7 @@ from raygeo.ops.state import PowerMode
 from raygeo.ops.types import CommandType
 
 from rayforge.core.config import ConfigManager
+from rayforge.core.doc import Doc
 from rayforge.machine.cmd import (
     JobAlreadyRunningError,
     MachineCmd,
@@ -28,6 +29,7 @@ from rayforge.machine.driver.driver import (
 from rayforge.machine.job_status import JobKind, JobOutcome
 from rayforge.machine.models.machine import Machine
 from rayforge.pipeline.artifact import JobArtifact
+from rayforge.pipeline.encode_inputs import encode_gcode
 from rayforge.shared.tasker.manager import TaskManager
 
 hookimpl = pluggy.HookimplMarker("rayforge")
@@ -120,7 +122,7 @@ def simple_ops():
 @pytest.fixture
 def job_artifact(simple_ops, machine):
     """Creates a JobArtifact containing simple_ops with encoded G-code."""
-    encoded = machine.driver.get_encoder().encode(simple_ops, machine, None)
+    encoded = encode_gcode(simple_ops, machine, Doc())
     return JobArtifact(
         ops=simple_ops,
         distance=simple_ops.distance(),
@@ -1023,7 +1025,7 @@ class TestFrameOverscan:
         ops.set_power(0.0)
         ops.move_to(30, 10, 0)
         ops.line_to(35, 10, 0)
-        encoded = machine.driver.get_encoder().encode(ops, machine, None)
+        encoded = encode_gcode(ops, machine, Doc())
         return JobArtifact(
             ops=ops,
             distance=ops.distance(),

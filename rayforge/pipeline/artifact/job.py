@@ -8,7 +8,7 @@ from .base import BaseArtifact
 from .handle import BaseArtifactHandle
 
 if TYPE_CHECKING:
-    from ..encoder.base import EncodedOutput, MachineCodeOpMap
+    from .encoded import EncodedOutput, MachineCodeOpMap
 
 
 class JobArtifactHandle(BaseArtifactHandle):

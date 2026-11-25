@@ -16,7 +16,7 @@ from rayforge.machine.driver.xtool import (
     DEFAULT_WS_PORT,
     XtoolNetworkDriver,
 )
-from rayforge.pipeline.encoder.base import EncodedOutput, MachineCodeOpMap
+from rayforge.pipeline.artifact.encoded import EncodedOutput, MachineCodeOpMap
 
 FAST_CONFIG = {
     "host": "127.0.0.1",

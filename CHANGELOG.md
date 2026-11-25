@@ -52,6 +52,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   content is a template, so `{counter}` gives each copy its own
   value. Requires raygeo 1.95.0
 
+### Fixed
+
+- Icons: the sketcher pie menu and the canvas tool cursors keep their
+  icons on macOS, where gdk-pixbuf's SVG loader is not available in
+  the app bundle. Icons that gdk-pixbuf cannot load are now rendered
+  with GTK's SVG renderer instead of being dropped silently
+
 ## 1.15.0-beta1
 
 ### Added

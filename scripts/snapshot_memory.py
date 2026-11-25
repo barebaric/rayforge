@@ -47,8 +47,8 @@ if TYPE_CHECKING:
 
     from rayforge.core.doc import Doc
     from rayforge.doceditor.editor import DocEditor
+    from rayforge.pipeline.artifact.encoded import EncodedOutput
     from rayforge.pipeline.artifact.store import ArtifactStore
-    from rayforge.pipeline.encoder.base import EncodedOutput
     from rayforge.pipeline.pipeline import Pipeline
     from rayforge.pipeline.view.view_manager import ViewManager
     from rayforge.ui_gtk.mainwindow import MainWindow

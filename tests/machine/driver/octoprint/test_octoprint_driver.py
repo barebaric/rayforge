@@ -20,7 +20,6 @@ from rayforge.machine.driver.octoprint.octoprint_driver import (
 )
 from rayforge.machine.models.dialect_manager import DialectManager
 from rayforge.machine.models.machine import Machine
-from rayforge.pipeline.encoder.gcode import GcodeEncoder
 
 
 def _api_key_json(key="test-api-key-123"):
@@ -188,13 +187,6 @@ class TestGetSetupVars:
         assert isinstance(vs.get("host"), HostnameVar)
         assert isinstance(vs.get("port"), PortVar)
         assert isinstance(vs.get("api_key"), AppKeyVar)
-
-
-class TestCreateEncoder:
-    def test_returns_gcode_encoder(self, machine):
-        machine.dialect_uid = "grbl"
-        enc = OctoPrintDriver.create_encoder(machine)
-        assert isinstance(enc, GcodeEncoder)
 
 
 class TestExtractApiKey:
@@ -1081,9 +1073,3 @@ class TestConnectionNoHost:
         driver.host = None
         await driver._connect_implementation()
         assert driver._connection_task is None
-
-
-class TestGetEncoder:
-    def test_get_encoder_returns_gcode(self, setup_driver):
-        enc = setup_driver.get_encoder()
-        assert isinstance(enc, GcodeEncoder)

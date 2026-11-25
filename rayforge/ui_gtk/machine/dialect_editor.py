@@ -6,7 +6,7 @@ from typing import cast
 from gi.repository import Adw, Gtk
 
 from ...machine.models.dialect import GcodeDialect
-from ...pipeline.encoder.context import GcodeContext
+from ...machine.models.dialect_context import GcodeContext
 from ..icons import get_icon
 from ..shared.patched_dialog_window import PatchedDialogWindow
 from ..varset.varsetwidget import VarSetWidget

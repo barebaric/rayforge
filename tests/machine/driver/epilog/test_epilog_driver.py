@@ -23,7 +23,10 @@ from rayforge.machine.driver.epilog import EpilogZingDriver
 from rayforge.machine.driver.epilog.epilog_driver import DEFAULT_PORT
 from rayforge.machine.models.laser import LaserHead
 from rayforge.machine.models.machine import Machine
-from rayforge.pipeline.encoder.base import EncodedOutput, MachineCodeOpMap
+from rayforge.pipeline.artifact.encoded import (
+    EncodedOutput,
+    MachineCodeOpMap,
+)
 
 
 @pytest_asyncio.fixture

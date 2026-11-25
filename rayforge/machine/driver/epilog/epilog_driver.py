@@ -7,7 +7,7 @@ print queue, and the operator starts it at the control panel. The
 machine exposes no status channel and cannot be homed, jogged or
 moved remotely.
 
-The encoder itself lives in raygeo (``raygeo.ops.convert.EpilogSpec``)
+The encoder itself lives in raydriver (``raydriver.encode.EpilogSpec``)
 and is selected by :class:`~rayforge.pipeline.intent_builder.IntentBuilder`.
 That encoder returns both the printable listing Rayforge shows and
 the exact byte stream this driver uploads.
@@ -31,7 +31,7 @@ from ....core.varset import (
     VarSet,
 )
 from ....core.varset.hostnamevar import hostname_validator
-from ....pipeline.encoder.base import EncodedOutput
+from ....pipeline.artifact.encoded import EncodedOutput
 from ...models.origin import Origin
 from ..driver import (
     Axis,

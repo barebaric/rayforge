@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 from ruida_pa.rpalib.version import __version__
 from ruida_pa.ruidadriver.ruida_driver import RdDriver
 
-from rayforge.pipeline.encoder.base import EncodedOutput
+from rayforge.pipeline.artifact.encoded import EncodedOutput
 
 if TYPE_CHECKING:
     from raygeo.ops import Ops

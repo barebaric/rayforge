@@ -29,7 +29,7 @@ from rayforge.core.step import Step
 from rayforge.machine.driver.ruidarpa import rpa_encoder
 from rayforge.machine.driver.ruidarpa.rpa_encoder import RuidaRPAEncoder
 from rayforge.machine.models.laser import Laser
-from rayforge.pipeline.encoder.base import EncodedOutput, MachineCodeOpMap
+from rayforge.pipeline.artifact.encoded import EncodedOutput, MachineCodeOpMap
 
 
 class CutStep(Step):
