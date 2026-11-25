@@ -3,16 +3,16 @@ device:
   name: Epilog Helix 24
   vendor: Epilog
   model: Helix 24
-  description: >-
-    Epilog Helix 24 (24 x 12 in) with Ethernet job upload. Jobs are
-    started at the laser's control panel; focus and air assist are
-    manual, and the machine cannot be homed, jogged or queried
-    remotely.
+  description: Epilog Helix 24 (24 x 12 in) with Ethernet job upload
   notes: |-
     The machine's speed control is a percentage of its own reference
     speed, set as "100 % Speed" in the driver options (6000 mm/min
     here, so 600 mm/min is 10 %). This should be calibrated to your
     machine.
+
+    Jobs are started at the laser's control panel; focus and air assist
+    are manual, and the machine cannot be homed, jogged or queried
+    remotely.
 
     Upload a job with Send and start it from the laser's job list.
     Frame uploads a beam-off outline job you can start the same way.
