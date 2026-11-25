@@ -11,8 +11,7 @@ from raydriver.xtool.m2 import M2Session
 
 from ....core.varset import BoolVar, HostnameVar, PortVar, VarSet
 from ....core.varset.hostnamevar import is_valid_hostname_or_ip
-from ....pipeline.encoder.base import EncodedOutput, OpsEncoder
-from ....pipeline.encoder.gcode import GcodeEncoder
+from ....pipeline.artifact.encoded import EncodedOutput
 from ....shared.units.system import UnitSystem
 from ...transport import TransportStatus
 from ..driver import (
@@ -31,7 +30,6 @@ if TYPE_CHECKING:
 
     from ....core.doc import Doc
     from ...models.laser import Laser
-    from ...models.machine import Machine
 
 logger = logging.getLogger(__name__)
 
@@ -111,16 +109,6 @@ class XtoolM2Driver(SessionDriverBase):
                 ),
             ]
         )
-
-    @classmethod
-    def create_encoder(cls, machine: "Machine") -> "OpsEncoder":
-        """Returns a GcodeEncoder configured for the machine's dialect.
-
-        The M2 session cannot stream G-code jobs, so the encoder is
-        currently unused; it keeps the frame() fallback working once
-        job upload is implemented."""
-        assert machine.dialect is not None
-        return GcodeEncoder(machine.dialect)
 
     def _setup_implementation(self, **kwargs: Any) -> None:
         host = cast(str, kwargs.get("host", ""))

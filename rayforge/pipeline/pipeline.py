@@ -23,8 +23,8 @@ from .artifact import (
     MaterialStateArtifact,
     WorkPieceArtifact,
 )
+from .artifact.encoded import EncodedOutput, MachineCodeOpMap
 from .artifact.store import ArtifactStore
-from .encoder.base import EncodedOutput, MachineCodeOpMap
 from .intent_builder import (
     PipelineConfigurationError,
     validate_machine_configuration,

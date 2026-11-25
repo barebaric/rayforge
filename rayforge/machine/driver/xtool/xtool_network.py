@@ -13,7 +13,7 @@ from raydriver.xtool import XtoolSession, query_machine_type
 from ....context import RayforgeContext
 from ....core.varset import HostnameVar, PortVar, VarSet
 from ....core.varset.hostnamevar import is_valid_hostname_or_ip
-from ....pipeline.encoder.base import EncodedOutput
+from ....pipeline.artifact.encoded import EncodedOutput
 from ....shared.units.system import UnitSystem
 from ...transport import TransportStatus
 from ..driver import (

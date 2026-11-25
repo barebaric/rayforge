@@ -19,11 +19,12 @@ from raygeo.ops.state import PowerMode
 
 from ...context import RayforgeContext
 from ...core.varset import IntVar, VarSet
+from ...pipeline.encode_inputs import encode_gcode
 from ...shared.units.system import UnitSystem
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
-    from ...pipeline.encoder.base import EncodedOutput, OpsEncoder
+    from ...pipeline.artifact.encoded import EncodedOutput
     from ..device.profile import DeviceProfile
     from ..models.dialect import GcodeDialect
     from ..models.head import Head
@@ -558,14 +559,6 @@ class Driver(ABC):
         """
 
     @classmethod
-    @abstractmethod
-    def create_encoder(cls, machine: "Machine") -> "OpsEncoder":
-        """
-        Factory method to return an OpsEncoder instance suitable for this
-        driver class and the specific machine configuration.
-        """
-
-    @classmethod
     async def probe(
         cls, context: "RayforgeContext", **kwargs: Any
     ) -> tuple["DeviceProfile", list[str]]:
@@ -577,13 +570,6 @@ class Driver(ABC):
         Raises on connection failure or timeout.
         """
         raise NotImplementedError
-
-    def get_encoder(self) -> "OpsEncoder":
-        """
-        Convenience wrapper to get the encoder for this driver instance's
-        machine. Delegates to the static factory method.
-        """
-        return self.create_encoder(self._machine)
 
     def supports_pwm(self, head: "Head") -> bool:
         """
@@ -729,7 +715,7 @@ class Driver(ABC):
             corner_pause_s=corner_pause_s,
             power_fraction=power_fraction,
         )
-        encoded = self.get_encoder().encode(ops, self._machine, doc)
+        encoded = encode_gcode(ops, self._machine, doc)
         await self.run(encoded, doc, ops, on_command_done=on_command_done)
 
     @abstractmethod

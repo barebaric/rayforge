@@ -25,7 +25,7 @@ from rayforge.machine.driver.marlin.marlin_serial import MarlinSerialDriver
 from rayforge.machine.models.dialect_manager import DialectManager
 from rayforge.machine.models.machine import Machine
 from rayforge.machine.transport.serial import SerialPortPermissionError
-from rayforge.pipeline.encoder.gcode import GcodeEncoder
+from rayforge.pipeline.encode_inputs import encode_gcode
 
 FAST_CONFIG = {
     "handshake_timeout": 2.0,
@@ -85,12 +85,6 @@ class TestMarlinSerialDriverProperties:
         keys = {v.key for v in setup_vars.vars}
         assert "port" in keys
         assert "baudrate" in keys
-
-    def test_create_encoder(self, driver):
-        machine = driver._machine
-        machine.set_dialect_uid("marlin")
-        encoder = MarlinSerialDriver.create_encoder(machine)
-        assert isinstance(encoder, GcodeEncoder)
 
     def test_get_setting_vars(self, driver):
         setting_vars = driver.get_setting_vars()
@@ -324,7 +318,7 @@ class TestMarlinSerialDriverRealSerial:
         ops.move_to(10, 10, 0)
         ops.line_to(20, 20, 0)
         doc = Doc()
-        encoded = driver.get_encoder().encode(ops, machine, doc)
+        encoded = encode_gcode(ops, machine, doc)
         await asyncio.wait_for(driver.run(encoded, doc, ops), timeout=5.0)
         job_finished.assert_called_once()
         assert b"G1" in b"".join(mock.sent())

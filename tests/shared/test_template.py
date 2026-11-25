@@ -6,7 +6,7 @@ from rayforge.machine.models.macro import Macro
 from rayforge.shared.util.template import TemplateFormatter
 
 if TYPE_CHECKING:
-    from rayforge.pipeline.encoder.context import GcodeContext
+    from rayforge.machine.models.dialect_context import GcodeContext
 
 
 class TestTemplateFormatter:

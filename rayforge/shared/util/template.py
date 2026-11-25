@@ -2,9 +2,9 @@ import re
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from ...machine.models.dialect_context import GcodeContext
     from ...machine.models.machine import Machine
     from ...machine.models.macro import Macro
-    from ...pipeline.encoder.context import GcodeContext
 
 
 class TemplateFormatter:

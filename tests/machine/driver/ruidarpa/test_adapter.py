@@ -77,7 +77,7 @@ from rayforge.machine.driver.ruidarpa.rpa_encoder import (
 from rayforge.machine.models.laser import Laser
 from rayforge.machine.models.machine import Origin
 from rayforge.machine.transport import TransportStatus
-from rayforge.pipeline.encoder.base import EncodedOutput, MachineCodeOpMap
+from rayforge.pipeline.artifact.encoded import EncodedOutput, MachineCodeOpMap
 
 DIRECT_MODE = False
 RPC_MODE = True

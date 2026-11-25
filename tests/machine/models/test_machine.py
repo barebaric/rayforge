@@ -36,7 +36,7 @@ from rayforge.machine.models.laser import Laser
 from rayforge.machine.models.machine import JogDirection, Machine, Origin
 from rayforge.machine.models.macro import MacroTrigger
 from rayforge.machine.transport import TransportStatus
-from rayforge.pipeline.encoder.base import EncodedOutput
+from rayforge.pipeline.artifact.encoded import EncodedOutput
 from rayforge.shared.tasker.manager import TaskManager
 
 
@@ -710,7 +710,6 @@ class TestMachine:
         # --- Assert ---
         run_spy.assert_called_once()
         encoded, received_doc, _received_ops = run_spy.call_args.args
-        from rayforge.pipeline.encoder.base import EncodedOutput
 
         assert isinstance(encoded, EncodedOutput)
         assert received_doc is doc

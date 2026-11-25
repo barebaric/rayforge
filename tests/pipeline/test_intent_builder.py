@@ -11,6 +11,7 @@ from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
+from raydriver.encode import GcodeSpec
 from raygeo.cnc.execution.intent import create_intent_from_nodes
 from raygeo.cnc.execution.specs import (
     AggregateGroup,
@@ -27,7 +28,7 @@ from raygeo.geo import Geometry, Matrix
 from raygeo.ops.assembly import Assembler
 from raygeo.ops.assembly.contour import ContourSpec
 from raygeo.ops.axis import Axis
-from raygeo.ops.convert import Encoder, GcodeSpec, PythonEncoder
+from raygeo.ops.convert import Encoder, PythonEncoder
 from raygeo.ops.material.spec import CylinderStock, MaterialFoldSpec
 from raygeo.ops.part import Part
 from raygeo.ops.transform.bidir_scan_offset import BidirScanOffsetSpec
@@ -52,7 +53,11 @@ from rayforge.machine.models.laser import LaserHead
 from rayforge.machine.models.machine import Machine, Origin
 from rayforge.machine.models.machine_panel import PanelOrientation
 from rayforge.machine.models.rotary_module import RotaryMode, RotaryModule
-from rayforge.pipeline.encoder.rust_helpers import dialect_to_spec
+from rayforge.pipeline.artifact.encoded import (
+    EncodedOutput,
+    MachineCodeOpMap,
+)
+from rayforge.pipeline.encode_inputs import dialect_to_spec
 from rayforge.pipeline.intent_builder import (
     IntentBuilder,
     UnavailableDriverError,
@@ -859,6 +864,14 @@ class _NonGcodeDriver(NoDeviceDriver):
     """A dummy non-G-code driver for encoder routing tests."""
 
     uses_gcode = False
+
+    @classmethod
+    def create_encoder(cls, machine):
+        class _Encoder:
+            def encode(self, ops, machine, doc):
+                return EncodedOutput(text="", op_map=MachineCodeOpMap())
+
+        return _Encoder()
 
 
 driver_module.register_driver(_NativeGcodeDriver)

@@ -1,4 +1,4 @@
-from rayforge.pipeline.encoder.base import MachineCodeOpMap
+from rayforge.pipeline.artifact.encoded import MachineCodeOpMap
 
 
 def test_op_for_line_valid_index():
