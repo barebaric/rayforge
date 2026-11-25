@@ -51,11 +51,13 @@ que no disparan con potencias muy bajas.
 
 ### Epilog
 
-Los láseres Epilog con puerto Ethernet (Zing 16, Zing 24/6030) usan el controlador **Epilog**. Los
-trabajos se codifican como trabajos de impresión de Epilog y se suben a la cola de impresión de la
-máquina; inícielos desde la lista de trabajos del láser. El controlador solicita la dirección IP, el
-puerto de impresión (515 por defecto), el nombre de la cola de impresión (`Laser`), la resolución de
-trama (100–1000 DPI) y la frecuencia vectorial (10–5000 Hz).
+Los láseres Epilog con puerto Ethernet (Zing 16, Zing 24/6030, Helix 18 y Helix 24) usan el
+controlador **Epilog Zing** o **Epilog Helix**. Los trabajos se codifican como trabajos de impresión
+de Epilog y se suben a la cola de impresión de la máquina; inícielos desde la lista de trabajos del
+láser. El controlador solicita la dirección IP, el puerto de impresión (515 por defecto), el nombre
+de la cola de impresión (vacío por defecto; indíquelo solo si su servidor de impresión lo requiere),
+la resolución de trama (Zing: 100–1000 DPI; Helix: 75–1200 DPI) y la frecuencia vectorial (10–5000
+Hz).
 
 El protocolo de impresión no ofrece control remoto, por lo que Rayforge no puede llevar a origen,
 desplazar, consultar el estado ni mover el cabezal en estas máquinas, y el enfoque y el aire

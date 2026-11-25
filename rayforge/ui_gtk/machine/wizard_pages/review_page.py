@@ -16,6 +16,7 @@ from ....machine.device.profile import DeviceProfile
 from ....machine.driver import get_driver_cls
 from ....machine.models.machine import Origin
 from ....machine.models.machine_panel import PanelOrientation
+from ....machine.models.origin import ORIGIN_LABELS
 from ....shared.units.system import UnitSystem
 from ...shared.markdown import MarkdownView
 from . import WizardPage, _makePreferencesGroup
@@ -49,13 +50,6 @@ def _format_park_position(position) -> str:
         return _("No")
     return _("Yes, at ({x}, {y})").format(x=position[0], y=position[1])
 
-
-_ORIGIN_LABELS = {
-    Origin.BOTTOM_LEFT: _("Bottom Left"),
-    Origin.TOP_LEFT: _("Top Left"),
-    Origin.TOP_RIGHT: _("Top Right"),
-    Origin.BOTTOM_RIGHT: _("Bottom Right"),
-}
 
 _UNIT_SYSTEM_LABELS = {
     UnitSystem.METRIC: _("Metric (mm)"),
@@ -182,7 +176,7 @@ class ReviewPage(WizardPage):
                 driver_label = d.label
 
         origin = mc.origin if mc.origin is not None else Origin.BOTTOM_LEFT
-        origin_label = _ORIGIN_LABELS[origin]
+        origin_label = ORIGIN_LABELS[origin]
         orientation = mc.panel_orientation or PanelOrientation.NATIVE
         orientation_label = orientation.label
         unit_system = mc.unit_system or UnitSystem.METRIC

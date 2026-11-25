@@ -12,35 +12,54 @@ import pytest
 from rayforge.config import BUILTIN_DEVICES_DIR
 from rayforge.machine.device.profile import DeviceProfile
 from rayforge.machine.driver.dummy import NoDeviceDriver
-from rayforge.machine.driver.epilog import EpilogZingDriver
+from rayforge.machine.driver.epilog import (
+    EpilogHelixDriver,
+    EpilogZingDriver,
+)
 from rayforge.machine.models.laser import LaserHead
 
 PROFILES = {
-    "epilog-zing-16": (406.0, 305.0),
-    "epilog-zing-24": (609.6, 304.8),
+    "epilog-zing-16": ("EpilogZingDriver", (406.0, 305.0), "500"),
+    "epilog-zing-24": ("EpilogZingDriver", (609.6, 304.8), "500"),
+    "epilog-helix-18": ("EpilogHelixDriver", (457.2, 304.8), "400"),
+    "epilog-helix-24": ("EpilogHelixDriver", (609.6, 304.8), "400"),
+}
+
+DRIVER_CLASSES = {
+    "EpilogZingDriver": EpilogZingDriver,
+    "EpilogHelixDriver": EpilogHelixDriver,
 }
 
 
-@pytest.mark.parametrize("name,extents", PROFILES.items())
-def test_builtin_profile_loads(name, extents):
+@pytest.mark.parametrize("name,expected", PROFILES.items())
+def test_builtin_profile_loads(name, expected):
+    driver, extents, resolution = expected
     profile = DeviceProfile.from_path(BUILTIN_DEVICES_DIR / name)
-    assert profile.machine_config.driver == "EpilogZingDriver"
+    assert profile.machine_config.driver == driver
     assert profile.machine_config.axis_extents == extents
+    args = profile.machine_config.driver_args or {}
+    assert args["resolution"] == resolution
+    assert args["queue"] == ""
     assert profile.dialect_config == {}
     assert profile.machine_config.has_z is False
 
 
-@pytest.mark.parametrize("name", PROFILES)
-def test_builtin_profile_creates_machine(lite_context, task_mgr, name):
+@pytest.mark.parametrize("name,expected", PROFILES.items())
+def test_builtin_profile_creates_machine(
+    lite_context, task_mgr, name, expected
+):
+    driver_name, _extents, resolution = expected
     profile = DeviceProfile.from_path(BUILTIN_DEVICES_DIR / name)
     machine = profile.create_machine(lite_context)
     machine.auto_connect = False
     task_mgr.wait_until_settled(5000)
     driver = machine.controller.driver
-    assert isinstance(driver, EpilogZingDriver)
+    assert isinstance(driver, DRIVER_CLASSES[driver_name])
     assert machine.dialect is None
     assert any(isinstance(h, LaserHead) for h in machine.heads)
     assert machine.driver_args["port"] == 515
+    assert machine.driver_args["queue"] == ""
+    assert machine.driver_args["resolution"] == resolution
 
 
 class TestFramingCapability:
@@ -49,6 +68,10 @@ class TestFramingCapability:
 
     def test_epilog_can_frame(self):
         driver = EpilogZingDriver.__new__(EpilogZingDriver)
+        assert driver.can_frame() is True
+
+    def test_epilog_helix_can_frame(self):
+        driver = EpilogHelixDriver.__new__(EpilogHelixDriver)
         assert driver.can_frame() is True
 
     def test_controller_delegates_to_driver(self):
@@ -110,6 +133,7 @@ class TestOriginConstraint:
         from rayforge.machine.models.machine import Origin
 
         assert EpilogZingDriver.supported_origins == (Origin.TOP_LEFT,)
+        assert EpilogHelixDriver.supported_origins == (Origin.TOP_LEFT,)
 
     def test_set_origin_resolves_to_supported(self, lite_context, task_mgr):
         from rayforge.machine.models.machine import Origin

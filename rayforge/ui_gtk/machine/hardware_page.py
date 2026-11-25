@@ -2,20 +2,13 @@ from gettext import gettext as _
 
 from gi.repository import Adw, Gtk
 
-from ...machine.models.machine import Machine, Origin
+from ...machine.models.machine import Machine
 from ...machine.models.machine_panel import PanelOrientation
+from ...machine.models.origin import ORIGIN_LABELS
 from ..shared.pref_rows.length_spin_row import LengthSpinRow
 from ..shared.preferences_page import TrackedPreferencesPage
 
 _PANEL_ORIENTATIONS = tuple(PanelOrientation)
-
-#: Labels for the coordinate origins, in display order.
-ORIGIN_LABELS = {
-    Origin.BOTTOM_LEFT: _("Bottom Left"),
-    Origin.TOP_LEFT: _("Top Left"),
-    Origin.TOP_RIGHT: _("Top Right"),
-    Origin.BOTTOM_RIGHT: _("Bottom Right"),
-}
 
 
 class HardwarePage(TrackedPreferencesPage):

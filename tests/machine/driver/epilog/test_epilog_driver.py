@@ -9,18 +9,24 @@ The session is mocked with an ``AsyncMock`` for ``upload``/``cancel``;
 the encoder itself is covered by raydriver's tests.
 """
 
+import json
 from unittest.mock import AsyncMock, Mock
 
 import pytest
 import pytest_asyncio
+from raygeo.ops import Ops
 
 from rayforge.core.doc import Doc
+from rayforge.core.varset import ChoiceVar, TextAreaVar
 from rayforge.machine.driver.driver import (
     Axis,
     DriverPrecheckError,
     DriverSetupError,
 )
-from rayforge.machine.driver.epilog import EpilogZingDriver
+from rayforge.machine.driver.epilog import (
+    EpilogHelixDriver,
+    EpilogZingDriver,
+)
 from rayforge.machine.driver.epilog.epilog_driver import DEFAULT_PORT
 from rayforge.machine.models.laser import LaserHead
 from rayforge.machine.models.machine import Machine, Origin
@@ -80,6 +86,33 @@ def driver(lite_context, machine, setup_args, session) -> EpilogZingDriver:
     return driver
 
 
+@pytest.fixture
+def helix_setup_args(setup_args) -> dict:
+    return {**setup_args, "resolution": "400"}
+
+
+@pytest_asyncio.fixture
+async def helix_machine(lite_context, helix_setup_args) -> Machine:
+    m = Machine(lite_context)
+    m.name = "Epilog Helix"
+    m.add_head(LaserHead())
+    m.set_axis_extents(609.6, 304.8)
+    m.driver_name = EpilogHelixDriver.__name__
+    m.driver_args = dict(helix_setup_args)
+    m.set_origin(Origin.TOP_LEFT)
+    return m
+
+
+@pytest.fixture
+def helix_driver(
+    lite_context, helix_machine, helix_setup_args, session
+) -> EpilogHelixDriver:
+    driver = EpilogHelixDriver(lite_context, helix_machine)
+    driver.setup(**helix_setup_args)
+    driver._session = session
+    return driver
+
+
 def _encoded(payload: bytes | None) -> EncodedOutput:
     return EncodedOutput(
         text="listing",
@@ -111,6 +144,70 @@ class TestCapabilities:
     async def test_read_parser_state_is_machine(self, driver):
         assert await driver.read_parser_state() == "MACHINE"
         assert await driver.read_wcs_offsets() == {"MACHINE": (0.0, 0.0, 0.0)}
+
+
+class TestModels:
+    def test_labels_are_model_specific(self):
+        assert "Zing" in EpilogZingDriver.label
+        assert "Helix" in EpilogHelixDriver.label
+
+    def test_zing_resolution_choices(self):
+        var = EpilogZingDriver.get_setup_vars().get("resolution")
+        assert isinstance(var, ChoiceVar)
+        assert "500" in var.choices
+        assert "75" not in var.choices
+
+    def test_helix_resolution_choices(self):
+        var = EpilogHelixDriver.get_setup_vars().get("resolution")
+        assert isinstance(var, ChoiceVar)
+        assert "400" in var.choices
+        assert "500" not in var.choices
+
+    def test_precheck_rejects_cross_model_resolution(self):
+        with pytest.raises(DriverPrecheckError):
+            EpilogHelixDriver.precheck(
+                host="10.0.0.1", port=515, resolution="500", frequency=1000
+            )
+        with pytest.raises(DriverPrecheckError):
+            EpilogZingDriver.precheck(
+                host="10.0.0.1", port=515, resolution="75", frequency=1000
+            )
+
+    def test_encoder_spec_carries_the_model(self, machine, helix_machine, doc):
+        zing = EpilogZingDriver.create_encoder_spec(machine, doc, Ops())
+        helix = EpilogHelixDriver.create_encoder_spec(
+            helix_machine, doc, Ops()
+        )
+        assert json.loads(zing.context_json)["model"] == "zing"
+        assert json.loads(helix.context_json)["model"] == "helix"
+
+
+class TestQueue:
+    def test_default_is_empty(self):
+        var = EpilogZingDriver.get_setup_vars().get("queue")
+        assert var is not None
+        assert var.default == ""
+
+    def test_is_a_single_line_field(self):
+        var = EpilogZingDriver.get_setup_vars().get("queue")
+        assert var is not None
+        assert not isinstance(var, TextAreaVar)
+
+    def test_empty_queue_is_preserved(self, lite_context, machine):
+        driver = EpilogZingDriver(lite_context, machine)
+        config = driver.build_config(
+            {"host": "10.0.0.1", "queue": "", "port": 515}
+        )
+        assert config["queue"] == ""
+        config = driver.build_config({"host": "10.0.0.1", "port": 515})
+        assert config["queue"] == ""
+
+    def test_named_queue_is_preserved(self, lite_context, machine):
+        driver = EpilogZingDriver(lite_context, machine)
+        config = driver.build_config(
+            {"host": "10.0.0.1", "queue": "Engraver", "port": 515}
+        )
+        assert config["queue"] == "Engraver"
 
 
 class TestPrecheck:
@@ -152,13 +249,6 @@ class TestSetup:
     def test_no_settings_pages(self, driver):
         assert driver.get_setting_vars() == []
 
-    def test_queue_defaults_to_laser(self):
-        keys = EpilogZingDriver.get_setup_vars().keys()
-        assert "queue" in keys
-        var = EpilogZingDriver.get_setup_vars().get("queue")
-        assert var is not None
-        assert var.default == "Laser"
-
 
 class TestRun:
     @pytest.mark.asyncio
@@ -193,6 +283,26 @@ class TestRun:
             (0.0, 0.0, None),
         ]
         await driver.frame(corners, 3000.0, doc)
+
+        session.upload.assert_awaited_once()
+        payload, title = session.upload.await_args.args
+        assert title == doc.name
+        assert payload.startswith(b"\x1b%-12345X@PJL JOB")
+        assert b"PD" in payload
+        assert b"YP000;" in payload
+
+    @pytest.mark.asyncio
+    async def test_helix_frame_uploads_beam_off_outline(
+        self, helix_driver, session, doc
+    ):
+        corners = [
+            (0.0, 0.0, None),
+            (10.0, 0.0, None),
+            (10.0, 10.0, None),
+            (0.0, 10.0, None),
+            (0.0, 0.0, None),
+        ]
+        await helix_driver.frame(corners, 3000.0, doc)
 
         session.upload.assert_awaited_once()
         payload, title = session.upload.await_args.args

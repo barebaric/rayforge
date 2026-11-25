@@ -10,14 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Epilog lasers: built-in support for Epilog machines with an
-  Ethernet print queue (Zing 16, Zing 24/6030), replacing the
-  third-party add-on. Jobs are encoded as Epilog print jobs with
-  vector output, native 1-bit raster for dithered and thresholded
-  engravings, and per-dot power raster for grayscale engraving, then
-  uploaded over the BSD LPD protocol; framing uploads a beam-off
-  outline job. The encoder and transport run in raydriver, and
-  built-in device profiles ship for both Zing sizes. Requires
-  raydriver 1.22.2
+  Ethernet print queue (Zing 16, Zing 24/6030, Helix 18 and Helix 24),
+  replacing the third-party add-on. Jobs are encoded as Epilog print
+  jobs with vector output, native 1-bit raster for dithered and
+  thresholded engravings, and per-dot power raster for grayscale
+  engraving, then uploaded over the BSD LPD protocol; framing uploads
+  a beam-off outline job. The encoder and transport run in raydriver,
+  and built-in profiles ship for both families; the print queue is
+  empty by default and each family validates its own raster
+  resolutions. Requires raydriver 1.22.3
 
 - G-code import: `.gcode`, `.ngc`, `.nc`, `.tap` and `.gc` files are
   imported as geometry only. Supported motion covers G0/G1/G2/G3,

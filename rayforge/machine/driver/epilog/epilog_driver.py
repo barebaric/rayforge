@@ -9,7 +9,9 @@ moved remotely.
 
 The encoder itself lives in raydriver (``raydriver.encode.EpilogSpec``)
 and its inputs are built by this package's :mod:`.encoder`; the
-pipeline only asks the driver for the spec.
+pipeline only asks the driver for the spec. The Zing and Helix
+families share the print language and differ only in the raster
+resolutions they accept.
 """
 
 from collections.abc import Awaitable, Callable
@@ -25,7 +27,7 @@ from ....core.varset import (
     IntVar,
     PortVar,
     SpeedVar,
-    TextAreaVar,
+    Var,
     VarSet,
 )
 from ....core.varset.hostnamevar import hostname_validator
@@ -41,12 +43,16 @@ from ..driver import (
 from ..native import NativeDriver
 from .encoder import (
     DEFAULT_FREQUENCY,
-    DEFAULT_RESOLUTION,
     DEFAULT_SPEED_REFERENCE,
+    HELIX_DEFAULT_RESOLUTION,
+    HELIX_RESOLUTIONS,
     MAX_FREQUENCY,
     MIN_FREQUENCY,
-    RESOLUTIONS,
+    ZING_RESOLUTIONS,
     build_epilog_spec,
+)
+from .encoder import (
+    DEFAULT_RESOLUTION as ZING_DEFAULT_RESOLUTION,
 )
 
 if TYPE_CHECKING:
@@ -59,8 +65,8 @@ if TYPE_CHECKING:
 #: LPD port of an Epilog printer.
 DEFAULT_PORT = 515
 
-#: Print queue name Epilog's setup instructions use.
-DEFAULT_QUEUE = "Laser"
+#: The receive-job operand is empty unless a print server needs a name.
+DEFAULT_QUEUE = ""
 
 
 def _panel_only() -> NotImplementedError:
@@ -69,10 +75,10 @@ def _panel_only() -> NotImplementedError:
     )
 
 
-class EpilogZingDriver(NativeDriver):
+class EpilogLaserDriver(NativeDriver):
     """
-    Driver for Epilog laser cutters (Zing 16, Zing 24/6030, …) over
-    the machine's LPD print queue.
+    Shared implementation for Epilog laser cutters over the machine's
+    LPD print queue.
 
     The entire transport stack runs in Rust via ``raydriver``. This
     shell only supplies the setup vars and uploads the encoder's byte
@@ -96,6 +102,13 @@ class EpilogZingDriver(NativeDriver):
     # another corner. The machine's origin is constrained to match.
     supported_origins = (Origin.TOP_LEFT,)
 
+    #: Encoder model family (``zing`` or ``helix``).
+    model = "zing"
+    #: Raster resolutions this model accepts, in DPI.
+    resolutions = ZING_RESOLUTIONS
+    default_resolution = ZING_DEFAULT_RESOLUTION
+    default_queue = DEFAULT_QUEUE
+
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         super().__init__(context, machine)
         self._machine_wcs = "MACHINE"
@@ -116,7 +129,7 @@ class EpilogZingDriver(NativeDriver):
     def create_encoder_spec(
         cls, machine: "Machine", doc: "Doc", ops: "Ops"
     ) -> Any:
-        return build_epilog_spec(machine, doc)
+        return build_epilog_spec(machine, doc, model=cls.model)
 
     # -- setup ---------------------------------------------------------
 
@@ -127,8 +140,8 @@ class EpilogZingDriver(NativeDriver):
             port = kwargs.get("port", DEFAULT_PORT)
             if type(port) is not int or not 1 <= port <= 65535:
                 raise ValueError(_("Port must be between 1 and 65535"))
-            resolution = str(kwargs.get("resolution", DEFAULT_RESOLUTION))
-            if resolution not in RESOLUTIONS:
+            resolution = str(kwargs.get("resolution", cls.default_resolution))
+            if resolution not in cls.resolutions:
                 raise ValueError(
                     _("Unsupported resolution: {resolution}").format(
                         resolution=resolution
@@ -172,20 +185,22 @@ class EpilogZingDriver(NativeDriver):
                     ),
                     default=DEFAULT_SPEED_REFERENCE,
                 ),
-                TextAreaVar(
+                Var(
                     key="queue",
                     label=_("Print Queue"),
                     description=_(
-                        "The print queue name the laser expects. "
-                        "Epilog's setup names it 'Laser'"
+                        "The print queue name. Leave empty unless your "
+                        "print server requires one; Epilog lasers usually "
+                        "accept an empty queue"
                     ),
-                    default=DEFAULT_QUEUE,
+                    var_type=str,
+                    default=cls.default_queue,
                 ),
                 ChoiceVar(
                     key="resolution",
                     label=_("Resolution (DPI)"),
-                    choices=list(RESOLUTIONS),
-                    default=DEFAULT_RESOLUTION,
+                    choices=list(cls.resolutions),
+                    default=cls.default_resolution,
                     allow_none=False,
                 ),
                 IntVar(
@@ -203,10 +218,13 @@ class EpilogZingDriver(NativeDriver):
         host = kwargs.get("host")
         if not isinstance(host, str) or not host.strip():
             raise DriverSetupError(_("Host must be configured."))
+        queue = kwargs.get("queue")
+        if queue is None:
+            queue = self.default_queue
         return {
             "host": host.strip(),
             "port": int(kwargs.get("port", DEFAULT_PORT)),
-            "queue": str(kwargs.get("queue") or DEFAULT_QUEUE),
+            "queue": str(queue),
         }
 
     def get_setting_vars(self) -> list[VarSet]:
@@ -310,3 +328,23 @@ class EpilogZingDriver(NativeDriver):
         except Exception as exc:
             self._logger.error(f"Epilog upload failed: {exc}")
             raise
+
+
+class EpilogZingDriver(EpilogLaserDriver):
+    """Driver for the Epilog Zing 16 and Zing 24/6030."""
+
+    label = _("Epilog Zing")
+    subtitle = _("Upload print jobs to an Epilog Zing over Ethernet")
+    model = "zing"
+    resolutions = ZING_RESOLUTIONS
+    default_resolution = ZING_DEFAULT_RESOLUTION
+
+
+class EpilogHelixDriver(EpilogLaserDriver):
+    """Driver for the Epilog Helix family."""
+
+    label = _("Epilog Helix")
+    subtitle = _("Upload print jobs to an Epilog Helix over Ethernet")
+    model = "helix"
+    resolutions = HELIX_RESOLUTIONS
+    default_resolution = HELIX_DEFAULT_RESOLUTION

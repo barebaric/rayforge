@@ -16,9 +16,13 @@ if TYPE_CHECKING:
     from ....core.doc import Doc
     from ...models.machine import Machine
 
-#: Supported raster and vector resolutions in dots per inch.
-RESOLUTIONS = ("100", "200", "250", "400", "500", "1000")
+#: Raster resolutions supported by the Zing family.
+ZING_RESOLUTIONS = ("100", "200", "250", "400", "500", "1000")
+#: Raster resolutions supported by the Helix family.
+HELIX_RESOLUTIONS = ("75", "150", "200", "300", "400", "600", "1200")
+
 DEFAULT_RESOLUTION = "500"
+HELIX_DEFAULT_RESOLUTION = "400"
 
 #: Cutting speed the machine reaches at 100 %, in mm/min.
 #:
@@ -37,10 +41,17 @@ MAX_FREQUENCY = 5000
 SUPPORTED_ORIGIN = "top_left"
 
 
-def build_epilog_context(machine: "Machine", doc: "Doc") -> dict:
-    """Build the job context dict for ``raydriver.encode.EpilogSpec``."""
+def build_epilog_context(
+    machine: "Machine", doc: "Doc", model: str = "zing"
+) -> dict:
+    """Build the job context dict for ``raydriver.encode.EpilogSpec``.
+
+    *model* selects the machine family whose resolution set applies
+    (``zing`` or ``helix``); both share the print-job format.
+    """
     driver_args = machine.driver_args
     return {
+        "model": model,
         "title": (doc.name if doc else "") or "Rayforge",
         "resolution": int(driver_args.get("resolution") or DEFAULT_RESOLUTION),
         "frequency": int(driver_args.get("frequency") or DEFAULT_FREQUENCY),
@@ -61,6 +72,10 @@ def build_epilog_context(machine: "Machine", doc: "Doc") -> dict:
     }
 
 
-def build_epilog_spec(machine: "Machine", doc: "Doc") -> EpilogSpec:
+def build_epilog_spec(
+    machine: "Machine", doc: "Doc", model: str = "zing"
+) -> EpilogSpec:
     """Build the encoder spec for a job on *machine*."""
-    return EpilogSpec(json.dumps(build_epilog_context(machine, doc)))
+    return EpilogSpec(
+        json.dumps(build_epilog_context(machine, doc, model=model))
+    )

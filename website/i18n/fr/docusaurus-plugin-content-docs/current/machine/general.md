@@ -51,11 +51,13 @@ ne s'allument pas à très faible puissance.
 
 ### Epilog
 
-Les lasers Epilog dotés d'un port Ethernet (Zing 16, Zing 24/6030) utilisent le pilote **Epilog**.
-Les travaux sont encodés comme des travaux d'impression Epilog et envoyés dans la file d'impression
-de la machine ; démarrez-les depuis la liste des travaux du laser. Le pilote demande l'adresse IP,
-le port d'impression (515 par défaut), le nom de la file d'impression (`Laser`), la résolution de
-trame (100–1000 DPI) et la fréquence vectorielle (10–5000 Hz).
+Les lasers Epilog dotés d'un port Ethernet (Zing 16, Zing 24/6030, Helix 18 et Helix 24) utilisent
+le pilote **Epilog Zing** ou **Epilog Helix**. Les travaux sont encodés comme des travaux
+d'impression Epilog et envoyés dans la file d'impression de la machine ; démarrez-les depuis la
+liste des travaux du laser. Le pilote demande l'adresse IP, le port d'impression (515 par défaut),
+le nom de la file d'impression (vide par défaut ; ne le renseignez que si votre serveur d'impression
+l'exige), la résolution de trame (Zing : 100–1000 DPI ; Helix : 75–1200 DPI) et la fréquence
+vectorielle (10–5000 Hz).
 
 Le protocole d'impression n'offre aucun contrôle à distance : Rayforge ne peut donc ni référencer ni
 déplacer ni interroger l'état de ces machines, et la mise au point comme l'assistance d'air se

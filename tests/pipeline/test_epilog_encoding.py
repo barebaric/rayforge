@@ -6,6 +6,7 @@ panel plus the exact device byte stream the driver uploads.
 """
 
 import asyncio
+import json
 from pathlib import Path
 
 import pytest
@@ -18,7 +19,10 @@ from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image import SVG_RENDERER
-from rayforge.machine.driver.epilog import EpilogZingDriver
+from rayforge.machine.driver.epilog import (
+    EpilogHelixDriver,
+    EpilogZingDriver,
+)
 from rayforge.machine.driver.epilog.encoder import (
     build_epilog_context,
     build_epilog_spec,
@@ -135,6 +139,7 @@ class TestEncoderRouting:
         machine.set_axis_extents(609.6, 304.8)
         machine.set_origin(Origin.TOP_LEFT)
         context = build_epilog_context(machine, Doc())
+        assert context["model"] == "zing"
         assert context["resolution"] == 400
         assert context["bed_mm"] == [609.6, 304.8]
         assert context["origin_top_left"] is True
@@ -153,6 +158,25 @@ class TestEncoderRouting:
         builder = IntentBuilder(machine=machine, generation_id=1)
         assert isinstance(builder._build_encoder(Doc()), EpilogSpec)
         assert isinstance(build_epilog_spec(machine, Doc()), EpilogSpec)
+
+    @pytest.mark.asyncio
+    async def test_helix_spec_uses_the_helix_model(self, machine, task_mgr):
+        machine.auto_connect = False
+        machine.add_head(LaserHead())
+        machine.set_driver(
+            EpilogHelixDriver,
+            {"host": "10.0.0.1", "port": 515, "resolution": "400"},
+        )
+        await asyncio.to_thread(task_mgr.wait_until_settled, 5000)
+        await asyncio.sleep(0.3)
+        await asyncio.to_thread(task_mgr.wait_until_settled, 5000)
+
+        builder = IntentBuilder(machine=machine, generation_id=1)
+        spec = builder._build_encoder(Doc())
+        assert isinstance(spec, EpilogSpec)
+        context = json.loads(spec.context_json)
+        assert context["model"] == "helix"
+        assert context["resolution"] == 400
 
     @pytest.mark.asyncio
     async def test_encode_token_changes_with_driver_args(

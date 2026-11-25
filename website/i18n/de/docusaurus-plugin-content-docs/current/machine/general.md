@@ -50,11 +50,12 @@ Linien aus, und der Image Bias gleicht CO2-Röhren aus, die bei sehr geringer Le
 
 ### Epilog
 
-Epilog-Laser mit Ethernet-Anschluss (Zing 16, Zing 24/6030) verwenden den Treiber **Epilog**.
-Aufträge werden als Epilog-Druckaufträge kodiert und in die Druckwarteschlange der Maschine
-übertragen; gestartet werden sie in der Auftragsliste des Lasers. Der Treiber fragt die IP-Adresse,
-den Druckport (standardmäßig 515), den Namen der Druckwarteschlange (`Laser`), die Rasterauflösung
-(100–1000 DPI) und die Vektorfrequenz (10–5000 Hz) ab.
+Epilog-Laser mit Ethernet-Anschluss (Zing 16, Zing 24/6030, Helix 18 und Helix 24) verwenden den
+Treiber **Epilog Zing** oder **Epilog Helix**. Aufträge werden als Epilog-Druckaufträge kodiert und
+in die Druckwarteschlange der Maschine übertragen; gestartet werden sie in der Auftragsliste des
+Lasers. Der Treiber fragt die IP-Adresse, den Druckport (standardmäßig 515), den Namen der
+Druckwarteschlange (standardmäßig leer; nur setzen, wenn Ihr Druckserver einen Namen verlangt), die
+Rasterauflösung (Zing: 100–1000 DPI; Helix: 75–1200 DPI) und die Vektorfrequenz (10–5000 Hz) ab.
 
 Das Druckprotokoll bietet keine Fernsteuerung, daher kann Rayforge diese Maschinen nicht
 referenzieren, verfahren, ihren Status abfragen oder den Kopf bewegen; Fokus und Luftunterstützung

@@ -16,6 +16,8 @@ device:
 
     Upload a job with Send and start it from the laser's job list.
     Frame uploads a beam-off outline job you can start the same way.
+    The print queue is empty by default; set a name only if your print
+    server requires one.
 machine:
   driver: EpilogZingDriver
   axis_extents:
@@ -31,7 +33,7 @@ machine:
   driver_args:
     host: ''
     port: 515
-    queue: Laser
+    queue: ''
     speed_reference: 6000
     resolution: '500'
     frequency: 1000
