@@ -1,23 +1,26 @@
 from typing import Any, cast
-from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+import pytest_asyncio
+from raydriver.octoprint.emulator import OctoPrintEmulator
 
 from rayforge.machine.driver.octoprint import OctoPrintDriver
 from rayforge.machine.driver.octoprint.octoprint_util import (
     build_octoprint_profile,
 )
 
-_PROBE_PATCH = "rayforge.machine.driver.octoprint.octoprint_driver.raydriver"
+API_KEY = "test-api-key"
 
 
-def _fake_native_probe(mocker, *, result=None, error=None):
-    """Patch the native OctoPrint class used by ``probe``."""
-    session = MagicMock()
-    session.probe_info = AsyncMock(return_value=result, side_effect=error)
-    native = MagicMock()
-    native.OctoPrintDriver.return_value = session
-    mocker.patch(_PROBE_PATCH, MagicMock(octoprint=native))
+@pytest_asyncio.fixture
+async def open_device():
+    """An OctoPrint server with access control disabled."""
+    emulator = OctoPrintEmulator(require_auth=False)
+    await emulator.start()
+    try:
+        yield emulator
+    finally:
+        await emulator.stop()
 
 
 class TestBuildOctoPrintProfile:
@@ -113,43 +116,41 @@ class TestBuildOctoPrintProfile:
 
 class TestDriverProbe:
     @pytest.mark.asyncio
-    async def test_probe_without_api_key(self, context_initializer, mocker):
-        version = {"server": "1.9.0", "version": "1.9.0"}
-        printer = {
-            "state": {"text": "Operational", "flags": {}},
-            "printer": {"name": "Workshop Printer"},
-        }
-        _fake_native_probe(mocker, result=[version, printer])
-
+    async def test_probe_without_api_key(
+        self, context_initializer, open_device
+    ):
         profile, warnings = await OctoPrintDriver.probe(
             context_initializer,
-            host="octoprint.local",
-            port=80,
+            host="127.0.0.1",
+            port=open_device.http_port,
             path="/",
         )
 
-        assert profile.meta.name == "Workshop Printer"
+        assert profile.meta.name == "TestPrinter"
         assert profile.machine_config.driver == "OctoPrintDriver"
         assert profile.machine_config.driver_args == {
-            "host": "octoprint.local",
-            "port": 80,
+            "host": "127.0.0.1",
+            "port": open_device.http_port,
             "path": "/",
         }
         dc = profile.machine_config.driver_config
         assert dc is not None
-        assert dc["server_version"] == "1.9.0"
+        assert dc["server_version"] == "1.9.3"
         assert warnings == []
 
     @pytest.mark.asyncio
-    async def test_probe_connection_failure(self, context_initializer, mocker):
+    async def test_probe_connection_failure(self, context_initializer):
         """When the server is unreachable, the probe returns a
         minimal profile with a warning instead of raising."""
-        _fake_native_probe(mocker, error=ConnectionError("unreachable"))
+        emulator = OctoPrintEmulator(require_auth=False)
+        await emulator.start()
+        port = emulator.http_port
+        await emulator.stop()
 
         profile, warnings = await OctoPrintDriver.probe(
             context_initializer,
-            host="unreachable.local",
-            port=80,
+            host="127.0.0.1",
+            port=port,
         )
 
         assert profile.meta.name == "OctoPrint"
@@ -157,26 +158,26 @@ class TestDriverProbe:
         assert len(warnings) == 1
 
     @pytest.mark.asyncio
-    async def test_probe_with_path_prefix(self, context_initializer, mocker):
-        version = {"version": "1.8.0"}
-        printer = {
-            "state": {"text": "Operational", "flags": {}},
-            "printer": {},
-        }
-        _fake_native_probe(mocker, result=[version, printer])
-
-        profile, _ = await OctoPrintDriver.probe(
-            context_initializer,
-            host="host",
-            port=80,
-            path="/octoprint",
+    async def test_probe_with_path_prefix(self, context_initializer):
+        emulator = OctoPrintEmulator(
+            require_auth=False, path_prefix="/octoprint"
         )
+        await emulator.start()
+        try:
+            profile, warnings = await OctoPrintDriver.probe(
+                context_initializer,
+                host="127.0.0.1",
+                port=emulator.http_port,
+                path="/octoprint/",
+            )
+        finally:
+            await emulator.stop()
 
-        assert profile.machine_config.driver_args == {
-            "host": "host",
-            "port": 80,
-            "path": "/octoprint",
-        }
+        assert profile.meta.name == "TestPrinter"
+        driver_args = profile.machine_config.driver_args
+        assert driver_args is not None
+        assert driver_args["path"] == "/octoprint/"
         assert profile.machine_config.driver_config == {
-            "server_version": "1.8.0"
+            "server_version": "1.9.3"
         }
+        assert warnings == []
