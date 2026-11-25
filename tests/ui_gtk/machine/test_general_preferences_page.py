@@ -2,6 +2,10 @@
 
 import pytest
 
+from rayforge.machine.driver.grbl import (
+    GrblNetworkDriver,
+    GrblSerialDriver,
+)
 from rayforge.machine.models.machine import Machine
 from rayforge.ui_gtk.machine.general_preferences_page import (
     GeneralPreferencesPage,
@@ -64,3 +68,37 @@ def test_an_error_without_commands_shows_only_the_banner(
 
     assert page._command_rows == []
     assert "No USB serial ports found." in page.error_banner.get_title()
+
+
+def test_driver_switch_drops_network_port_for_serial(ui_context_initializer):
+    """``port`` is a network port number for network drivers but a
+    device path for serial drivers, so an int must not be carried over
+    and crash the serial driver during setup."""
+    machine, page = _make_page(ui_context_initializer)
+    machine.driver_args = {
+        "port": 515,
+        "baudrate": 115200,
+        "host": "10.0.0.1",
+    }
+
+    args = page._compatible_driver_args(GrblSerialDriver)
+
+    assert args == {"baudrate": 115200}
+
+
+def test_driver_switch_keeps_serial_args(ui_context_initializer):
+    machine, page = _make_page(ui_context_initializer)
+    machine.driver_args = {"port": "/dev/ttyUSB0", "baudrate": 115200}
+
+    args = page._compatible_driver_args(GrblSerialDriver)
+
+    assert args == {"port": "/dev/ttyUSB0", "baudrate": 115200}
+
+
+def test_driver_switch_drops_serial_path_for_network(ui_context_initializer):
+    machine, page = _make_page(ui_context_initializer)
+    machine.driver_args = {"port": "/dev/ttyUSB0", "baudrate": 115200}
+
+    args = page._compatible_driver_args(GrblNetworkDriver)
+
+    assert args == {}

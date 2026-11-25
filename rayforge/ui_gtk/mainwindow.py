@@ -20,6 +20,7 @@ from ..core.registration import call_registration_hooks
 from ..core.undo import Command, HistoryManager
 from ..doceditor.editor import DocEditor
 from ..machine.cmd import MachineCmd
+from ..machine.driver import find_driver_cls
 from ..machine.driver.driver import DeviceState, DeviceStatus
 from ..machine.driver.dummy import NoDeviceDriver
 from ..machine.models.machine import Machine
@@ -2106,7 +2107,24 @@ class MainWindow(Adw.ApplicationWindow):
                 )
             self.toolbar.export_button.set_tooltip_text(export_tooltip)
 
-            if active_driver and active_driver.state.error:
+            missing_driver = bool(
+                active_machine.driver_name
+                and find_driver_cls(active_machine.driver_name) is None
+            )
+            if missing_driver:
+                self.toolbar.set_machine_warning(
+                    _("Driver not available"),
+                    error_description=_(
+                        "The driver '{driver}' configured for machine "
+                        "'{machine}' is not available. Open the machine "
+                        "settings to select an available driver."
+                    ).format(
+                        driver=active_machine.driver_name,
+                        machine=active_machine.name,
+                    ),
+                )
+                self.toolbar.machine_warning_box.set_visible(True)
+            elif active_driver and active_driver.state.error:
                 self.toolbar.set_machine_warning(
                     active_driver.state.error.title,
                     active_driver.state.error.code,

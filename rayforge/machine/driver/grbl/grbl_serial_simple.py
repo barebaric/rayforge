@@ -13,7 +13,7 @@ module only supplies the Rayforge-side setup and GRBL device settings.
 
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 import serial
 from raydriver.grbl.parser import error_code_to_device_error
@@ -102,9 +102,9 @@ class GrblSerialSimpleDriver(SessionDriverBase):
         return await probe_grbl_device(cls, context, **kwargs)
 
     def _setup_implementation(self, **kwargs: Any) -> None:
-        port = cast(str, kwargs.get("port", ""))
+        port = kwargs.get("port")
         baudrate = kwargs.get("baudrate", 115200)
-        if not port:
+        if not isinstance(port, str) or not port:
             raise DriverSetupError(_("Port must be configured."))
         if not baudrate:
             raise DriverSetupError(_("Baudrate must be configured."))

@@ -53,6 +53,16 @@ def get_driver_cls(classname: str, default=NoDeviceDriver):
     return driver_by_classname.get(classname, default)
 
 
+def find_driver_cls(classname: str) -> type[Driver] | None:
+    """Return the registered driver class for *classname*, or ``None``.
+
+    Unlike :func:`get_driver_cls` this does not substitute the dummy
+    driver, so callers can tell a configured-but-missing driver from a
+    deliberately driverless machine.
+    """
+    return driver_by_classname.get(classname)
+
+
 def register_driver(driver: type[Driver]):
     driver_by_classname[driver.__name__] = driver
     drivers.append(driver)

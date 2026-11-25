@@ -55,6 +55,7 @@ from rayforge.machine.models.rotary_module import RotaryMode, RotaryModule
 from rayforge.pipeline.encoder.rust_helpers import dialect_to_spec
 from rayforge.pipeline.intent_builder import (
     IntentBuilder,
+    UnavailableDriverError,
     UnsupportedRotaryPanelOrientationError,
     job_encode_key,
     job_key,
@@ -887,6 +888,28 @@ def test_encode_routes_non_gcode_driver_to_driver_encoder(isolated_machine):
     ek = job_encode_key()
     spec = next(n.stage for n in nodes if n.key == ek)
     assert isinstance(spec.encoder.spec, PythonEncoder)
+
+
+def test_encode_rejects_unavailable_driver(isolated_machine):
+    """A machine that names a driver this build does not provide must
+    fail instead of silently encoding G-code with the dummy driver."""
+    isolated_machine.driver_name = "RemovedAddonDriver"
+    doc = _make_doc(_TestStep(name="s1"), WorkPiece(name="wp"))
+
+    with pytest.raises(UnavailableDriverError) as excinfo:
+        IntentBuilder(machine=isolated_machine).build(doc)
+
+    assert "RemovedAddonDriver" in str(excinfo.value)
+
+
+def test_encode_accepts_dummy_driver(isolated_machine):
+    """The dummy driver is a legitimate configuration (no machine)."""
+    isolated_machine.driver_name = NoDeviceDriver.__name__
+    doc = _make_doc(_TestStep(name="s1"), WorkPiece(name="wp"))
+
+    nodes = IntentBuilder(machine=isolated_machine).build(doc)
+
+    assert any(n.key == job_encode_key() for n in nodes)
 
 
 def test_job_encode_token_changes_on_machine_swap(

@@ -26,8 +26,8 @@ from .artifact import (
 from .artifact.store import ArtifactStore
 from .encoder.base import EncodedOutput, MachineCodeOpMap
 from .intent_builder import (
-    UnsupportedRotaryPanelOrientationError,
-    validate_panel_configuration,
+    PipelineConfigurationError,
+    validate_machine_configuration,
 )
 from .intent_controller import IntentController
 
@@ -544,8 +544,8 @@ class Pipeline:
             return
 
         try:
-            validate_panel_configuration(self._machine, self._doc)
-        except UnsupportedRotaryPanelOrientationError as exc:
+            validate_machine_configuration(self._machine, self._doc)
+        except PipelineConfigurationError as exc:
             self.invalidate_job_output()
             when_done(None, exc)
             return

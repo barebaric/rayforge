@@ -393,6 +393,26 @@ def test_machine_menu_selection_switches_active_machine(app_and_window):
 
 
 @pytest.mark.ui
+def test_machine_with_unavailable_driver_shows_warning_banner(app_and_window):
+    """A machine naming a driver this build does not provide is
+    reported in the machine warning banner of the toolbar."""
+    _app, win = app_and_window
+    context = get_context()
+    machine = _add_machine(context.machine_mgr, context, "Missing driver")
+    machine.driver_name = "RemovedAddonDriver"
+    context.config.set_machine(machine)
+    process_events_for_duration(0.3)
+
+    win._update_actions_and_ui()
+
+    assert win.toolbar.machine_warning_box.get_visible()
+    assert win.toolbar.warning_label.get_label() == "Driver not available"
+    tooltip = win.toolbar.machine_warning_box.get_tooltip_text()
+    assert "RemovedAddonDriver" in tooltip
+    assert "Missing driver" in tooltip
+
+
+@pytest.mark.ui
 def test_machine_manage_action_opens_machines_page(app_and_window, mocker):
     """The Manage Machines entry opens Settings on the Machines page."""
     _app, win = app_and_window

@@ -284,10 +284,18 @@ class MainToolbar(Gtk.Box):
             button.set_child(self.focus_on_icon)
 
     def set_machine_warning(
-        self, error_title: str, error_code: int, error_description: str
+        self,
+        error_title: str,
+        error_code: int | None = None,
+        error_description: str = "",
     ):
         """
         Update the machine warning label with title, code and description.
+
+        *error_code* is omitted for warnings that have no numeric code.
         """
-        self.warning_label.set_label(f"{error_title} ({error_code})")
+        if error_code is None:
+            self.warning_label.set_label(error_title)
+        else:
+            self.warning_label.set_label(f"{error_title} ({error_code})")
         self.machine_warning_box.set_tooltip_text(error_description)
