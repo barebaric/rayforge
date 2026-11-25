@@ -15,7 +15,11 @@ from ....core.varset import (
 )
 from ....core.varset.hostnamevar import is_valid_hostname_or_ip
 from ....core.varset.var import Var
-from ..driver import DriverPrecheckError, DriverSetupError
+from ..driver import (
+    MOVE_TO_SPEED_MM_MIN,
+    DriverPrecheckError,
+    DriverSetupError,
+)
 from ..native import NativeDriver
 from .octoprint_util import build_octoprint_profile
 
@@ -176,6 +180,27 @@ class OctoPrintDriver(NativeDriver):
 
     def get_setting_vars(self) -> list["VarSet"]:
         return []
+
+    async def clear_alarm(self) -> None:
+        """OctoPrint resets a firmware alarm with M999."""
+        await self._require_session().clear_alarm()
+
+    async def move_to(
+        self,
+        pos_x: float,
+        pos_y: float,
+        pos_z: float | None = None,
+        speed: float | None = None,
+    ) -> None:
+        """Moves to an absolute position via the printhead jog API."""
+        if speed is None:
+            speed = MOVE_TO_SPEED_MM_MIN
+        await self._require_session().move_to(
+            self._to_machine_speed(speed),
+            self._to_machine_length(float(pos_x)),
+            self._to_machine_length(float(pos_y)),
+            self._to_machine_length(pos_z) if pos_z is not None else None,
+        )
 
     def build_config(self, kwargs: dict[str, Any]) -> dict[str, Any]:
         host = cast(str, kwargs.get("host", ""))
