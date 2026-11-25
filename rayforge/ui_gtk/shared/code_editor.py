@@ -11,8 +11,8 @@ from gettext import gettext as _
 
 from gi.repository import Adw, GLib, Gtk
 
+from ...machine.models.dialect_context import GcodeContext
 from ...machine.models.macro import Macro
-from ...pipeline.encoder.context import GcodeContext
 from ..icons import get_icon
 from .gtk import apply_css
 

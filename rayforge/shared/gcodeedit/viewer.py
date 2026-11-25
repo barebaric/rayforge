@@ -11,7 +11,7 @@ from ...ui_gtk.shared.gtk import apply_css
 from .editor import GcodeEditor
 
 if TYPE_CHECKING:
-    from ...pipeline.encoder import MachineCodeOpMap
+    from ...pipeline.artifact.encoded import MachineCodeOpMap
 
 css = """
 .gcode-viewer {

@@ -45,9 +45,11 @@ from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
+    cast,
 )
 
 import numpy as np
+from raydriver.encode import GcodeSpec
 from raygeo.cnc.execution.specs import (
     AggregateGroup,
     AggregateInput,
@@ -64,7 +66,6 @@ from raygeo.ops import Ops
 from raygeo.ops.convert import (
     EncodeOutput,
     Encoder,
-    GcodeSpec,
     PythonEncoder,
 )
 from raygeo.ops.material.spec import (
@@ -81,11 +82,10 @@ from ..machine.driver.driver import Driver
 from ..machine.driver.dummy import NoDeviceDriver
 from ..machine.kinematic_math import KinematicMath
 from ..machine.models.coordspace import MachineSpace
-from ..machine.models.dialect import GRBL_DIALECT
 from ..machine.models.laser import LaserHead
 from ..machine.models.rotary_module import RotaryMode, RotaryType
-from .encoder.base import EncodedOutput
-from .encoder.rust_helpers import build_encode_context, dialect_to_spec
+from .artifact.encoded import EncodedOutput
+from .encode_inputs import build_gcode_spec
 from .transformer import OpsTransformer
 from .transformer.registry import transformer_registry
 
@@ -95,7 +95,6 @@ if TYPE_CHECKING:
     from ..core.step import Step
     from ..core.stock import StockItem
     from ..core.workpiece import WorkPiece
-    from ..machine.models.dialect import GcodeDialect
     from ..machine.models.machine import Machine
 
 logger = logging.getLogger(__name__)
@@ -495,10 +494,10 @@ class IntentBuilder:
         the machine code (G-code / vertex / texture).
 
         The encoder runs through raygeo's ``EncoderCompute`` stage.
-        For Grbl the native Rust ``GcodeSpec`` is used directly; for
-        any other machine the driver-specific encoder is wrapped in a
-        :class:`PythonEncoder` so it runs under the GIL on a rayon
-        worker thread — off the GTK main thread.
+        G-code machines use the native Rust ``GcodeSpec`` for their
+        dialect; a driver that does not speak G-code has its own
+        encoder wrapped in a :class:`PythonEncoder` so it runs under
+        the GIL on a rayon worker thread — off the GTK main thread.
         """
         if self._machine is None:
             return
@@ -1303,10 +1302,9 @@ class IntentBuilder:
 
         The encoder receives machine-space ops from the upstream
         ``job:machinexform`` node (the machine transform stage).
-        For Grbl machines the native Rust ``GcodeSpec`` is used
-        directly; for any other machine a
-        :class:`PythonEncoder` wraps the driver-specific encoder
-        callable.
+        G-code machines use the native Rust ``GcodeSpec`` for their
+        dialect; a non-G-code driver keeps its own encoder, wrapped in
+        a :class:`PythonEncoder`.
         """
         encoder = self._build_encoder(doc)
         return EncodeSpec(
@@ -1316,11 +1314,11 @@ class IntentBuilder:
     def _build_encoder(self, doc: Doc) -> Any:
         """Resolve the encoder for the configured machine.
 
-        Routes G-code drivers on the Grbl dialect to the native Rust
-        ``GcodeSpec`` and every other machine to a
-        :class:`PythonEncoder` wrapping the driver-specific encoder
-        callable.  The pre-processing transforms are handled by the
-        upstream machine-transform stage.
+        G-code drivers get the native ``GcodeSpec`` for their dialect,
+        which raygeo's pipeline runs on a rayon thread without crossing
+        the GIL. Drivers that do not speak G-code (e.g. Ruida) get a
+        :class:`PythonEncoder` wrapping their own encoder until they are
+        ported into raydriver.
 
         The route is decided by the driver's G-code capability, never
         by the dialect alone: a driver that does not speak G-code
@@ -1336,17 +1334,15 @@ class IntentBuilder:
 
         driver_cls = resolve_driver_cls(machine)
         if driver_cls.uses_gcode:
-            dialect = machine.dialect
-            if dialect is not None and _is_grbl(dialect):
-                return self._grbl_encoder_spec(doc)
+            return self._gcode_encoder_spec(doc)
 
         return PythonEncoder(
             self._make_python_encoder_callable(machine, doc),
             "driver.encode",
         )
 
-    def _grbl_encoder_spec(self, doc: Doc) -> GcodeSpec:
-        """Build a native ``GcodeSpec`` for a Grbl machine.
+    def _gcode_encoder_spec(self, doc: Doc) -> GcodeSpec:
+        """Build a native ``GcodeSpec`` for the machine's dialect.
 
         Receives machine-space ops from the upstream
         ``job:machinexform`` node and encodes them directly on a
@@ -1354,19 +1350,13 @@ class IntentBuilder:
         """
         machine = self._machine
         assert machine is not None
-        dialect = machine.dialect
-        assert dialect is not None
         # Build a minimal Ops with estimated extents so path variables
         # like ``job.extents[0..3]`` used in dialect templates are
         # populated with reasonable values.  The exact extents are
         # computed later from the real ops at encode time (the
         # machine-transform stage preserves bounding-box metadata).
         approx_ops = _approximate_job_ops(doc)
-        context = build_encode_context(approx_ops, machine, doc)
-        return GcodeSpec(
-            dialect=dialect_to_spec(dialect, machine),
-            context_json=json.dumps(context),
-        )
+        return build_gcode_spec(machine, doc, approx_ops)
 
     def _build_machine_transform_stage(self, doc: Doc) -> MachineTransformSpec:
         """Build the :class:`MachineTransformSpec` for the machine-
@@ -1533,7 +1523,7 @@ class IntentBuilder:
         callable only applies the final driver encoding step.
         """
         driver_cls = resolve_driver_cls(machine)
-        driver_encoder = driver_cls.create_encoder(machine)
+        driver_encoder = cast(Any, driver_cls).create_encoder(machine)
 
         def encode(ops: Any) -> EncodeOutput:
             encoded = driver_encoder.encode(ops, machine, doc)
@@ -1669,11 +1659,6 @@ _IDENTITY_4X4: list[list[float]] = [
     [0.0, 0.0, 1.0, 0.0],
     [0.0, 0.0, 0.0, 1.0],
 ]
-
-
-def _is_grbl(dialect: GcodeDialect) -> bool:
-    """Return True if *dialect* is the Grbl G-code dialect."""
-    return dialect.uid == GRBL_DIALECT.uid
 
 
 def _driver_uses_gcode(machine: Machine) -> bool:

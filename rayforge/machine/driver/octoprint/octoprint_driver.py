@@ -23,8 +23,7 @@ from ....core.varset import (
 )
 from ....core.varset.hostnamevar import is_valid_hostname_or_ip
 from ....core.varset.var import Var
-from ....pipeline.encoder.base import EncodedOutput, OpsEncoder
-from ....pipeline.encoder.gcode import GcodeEncoder
+from ....pipeline.artifact.encoded import EncodedOutput
 from ...transport import TransportStatus
 from ..driver import (
     DeviceConnectionError,
@@ -249,11 +248,6 @@ class OctoPrintDriver(Driver):
                 ),
             ]
         )
-
-    @classmethod
-    def create_encoder(cls, machine: "Machine") -> "OpsEncoder":
-        assert machine.dialect is not None
-        return GcodeEncoder(machine.dialect)
 
     def _configure_connection(
         self, host: str, port: int, path: str, api_key: str | None

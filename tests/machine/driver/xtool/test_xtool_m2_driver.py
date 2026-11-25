@@ -21,7 +21,7 @@ from rayforge.machine.driver import get_driver_cls
 from rayforge.machine.driver.driver import DriverMaturity
 from rayforge.machine.driver.xtool import XtoolM2Driver
 from rayforge.machine.models.laser import Laser
-from rayforge.pipeline.encoder.base import EncodedOutput, MachineCodeOpMap
+from rayforge.pipeline.artifact.encoded import EncodedOutput, MachineCodeOpMap
 
 
 class TestRegistry:

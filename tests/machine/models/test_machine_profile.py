@@ -9,6 +9,7 @@ from rayforge.core.doc import Doc
 from rayforge.machine.device.profile import DeviceProfile
 from rayforge.machine.driver import get_driver_cls
 from rayforge.machine.models.machine import Machine
+from rayforge.pipeline.encode_inputs import encode_gcode
 from rayforge.shared import tasker
 
 if TYPE_CHECKING:
@@ -16,10 +17,8 @@ if TYPE_CHECKING:
 
 
 def _encode(ops, machine, doc):
-    """Encode ops via the driver encoder (bypasses deleted encode_ops)."""
-    driver_cls = get_driver_cls(machine.driver_name)
-    encoder = driver_cls.create_encoder(machine)
-    return encoder.encode(ops, machine, doc)
+    """Encode ops with the machine's G-code dialect."""
+    return encode_gcode(ops, machine, doc)
 
 
 @pytest_asyncio.fixture

@@ -1,9 +1,7 @@
-from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any
 
 import numpy as np
-from raygeo.ops import Ops
 
 
 class MachineCodeOpMap:
@@ -125,7 +123,7 @@ class MachineCodeOpMap:
 @dataclass
 class EncodedOutput:
     """
-    Base class for encoder output.
+    Output of a job encoding step.
 
     Attributes:
         text: Human-readable machine code representation for UI display.
@@ -136,17 +134,3 @@ class EncodedOutput:
     text: str
     op_map: MachineCodeOpMap
     driver_data: dict[str, Any] = field(default_factory=dict)
-
-
-class OpsEncoder(ABC):
-    """
-    Transforms an Ops object into something else.
-    Examples:
-
-    - Ops to image (a cairo surface)
-    - Ops to a G-code string
-    """
-
-    @abstractmethod
-    def encode(self, ops: Ops, *args, **kwargs) -> Any:
-        pass

@@ -1,25 +1,32 @@
 """
-Helper functions to convert Rayforge domain models (Machine, Doc, Dialect)
-into plain dicts that the Rust G-code encoder (`raygeo.ops.encode_gcode`)
-accepts via serde.
+Helpers that turn Rayforge domain models into encoder inputs.
+
+The encoders themselves live in ``raydriver.encode``. This module is
+the one place that converts ``Machine``, ``Doc`` and the dialect into
+the plain, JSON-serialisable data those encoders accept, plus the
+convenience entry points used where Rayforge needs a one-off encode
+(framing, tests).
 
 No domain model objects cross the Python/Rust boundary — only primitive
 types in JSON-serialisable dicts.
 """
 
+import json
 import logging
 from typing import TYPE_CHECKING
 
+from raydriver.encode import GcodeDialectSpec, GcodeSpec
 from raygeo.ops import Ops
-from raygeo.ops.convert import GcodeDialectSpec
+from raygeo.ops.convert import Encoder
 
-from ...machine.models.laser import LaserHead
-from ...machine.models.macro import MacroTrigger
+from ..machine.models.laser import LaserHead
+from ..machine.models.macro import MacroTrigger
+from .artifact.encoded import EncodedOutput, MachineCodeOpMap
 
 if TYPE_CHECKING:
-    from ...core.doc import Doc
-    from ...machine.models.dialect import GcodeDialect
-    from ...machine.models.machine import Machine
+    from ..core.doc import Doc
+    from ..machine.models.dialect import GcodeDialect
+    from ..machine.models.machine import Machine
 
 logger = logging.getLogger(__name__)
 
@@ -217,7 +224,7 @@ def _build_layer_wcs(doc: "Doc", machine: "Machine") -> dict[str, str]:
 
 
 def build_encode_context(ops: Ops, machine: "Machine", doc: "Doc") -> dict:
-    """Build the EncodeContext dict for raygeo.ops.encode_gcode."""
+    """Build the EncodeContext dict for the G-code encoder."""
     path_vars: dict[str, str] = {}
     path_vars.update(_build_machine_path_vars(machine))
     path_vars.update(_build_job_path_vars(ops, doc))
@@ -237,3 +244,36 @@ def build_encode_context(ops: Ops, machine: "Machine", doc: "Doc") -> dict:
         "has_z_axis": machine.has_z_axis,
         "power_cap": machine.get_job_power_cap(),
     }
+
+
+def build_gcode_spec(machine: "Machine", doc: "Doc", ops: Ops) -> GcodeSpec:
+    """Build a ``GcodeSpec`` for the machine's configured dialect.
+
+    The context is built from *ops*: for pipeline use the caller
+    passes the approximate job ops so path variables such as
+    ``job.extents`` are populated; for one-off encodes (framing) the
+    ops being encoded are passed directly.
+    """
+    dialect = machine.dialect
+    assert dialect is not None
+    return GcodeSpec(
+        dialect=dialect_to_spec(dialect, machine),
+        context_json=json.dumps(build_encode_context(ops, machine, doc)),
+    )
+
+
+def encode_ops(ops: Ops, spec: GcodeSpec) -> EncodedOutput:
+    """Run an encoder spec on *ops* and wrap the result."""
+    result = ops.encode(Encoder(spec))
+    return EncodedOutput(
+        text=result.text or "",
+        op_map=MachineCodeOpMap(
+            op_to_machine_code=result.op_to_machine_code,
+            machine_code_to_op=result.machine_code_to_op,
+        ),
+    )
+
+
+def encode_gcode(ops: Ops, machine: "Machine", doc: "Doc") -> EncodedOutput:
+    """Encode *ops* with the G-code dialect configured on *machine*."""
+    return encode_ops(ops, build_gcode_spec(machine, doc, ops))

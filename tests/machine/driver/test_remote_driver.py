@@ -25,6 +25,7 @@ from rayforge.machine.driver.grbl import GrblSerialDriver  # noqa: E402
 from rayforge.machine.driver.remote_driver import (  # noqa: E402
     RaydriverRemoteDriver,
 )
+from rayforge.pipeline.encode_inputs import encode_gcode  # noqa: E402
 
 RemoteSession = raydriver_client.RemoteSession
 
@@ -228,7 +229,7 @@ async def test_remote_run_progress_and_finish(
         ops.move_to(0, 0, 0)
         ops.line_to(10, 0, 0)
         doc = Doc()
-        encoded = drv.get_encoder().encode(ops, drv._machine, doc)
+        encoded = encode_gcode(ops, drv._machine, doc)
         progress: list[int] = []
 
         await asyncio.wait_for(

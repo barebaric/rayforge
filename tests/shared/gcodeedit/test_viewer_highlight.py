@@ -8,7 +8,7 @@ gi.require_version("Adw", "1")
 
 import pytest
 
-from rayforge.pipeline.encoder.base import MachineCodeOpMap
+from rayforge.pipeline.artifact.encoded import MachineCodeOpMap
 from rayforge.shared.gcodeedit.viewer import GcodeViewer
 
 

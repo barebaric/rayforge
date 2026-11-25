@@ -23,7 +23,7 @@ from rayforge.machine.driver.driver import (
 from rayforge.machine.driver.grbl import GrblSerialDriver
 from rayforge.machine.driver.session_state import from_session_state
 from rayforge.machine.models.machine import Machine
-from rayforge.pipeline.encoder.gcode import GcodeEncoder
+from rayforge.pipeline.encode_inputs import encode_gcode
 
 FAST_CONFIG = {
     "handshake_timeout": 2.0,
@@ -219,12 +219,6 @@ class TestRegistry:
         assert 250000 in baudrate.choices
         baudrate.value = 250000
         baudrate.validate()
-
-    def test_create_encoder(self, context_initializer, machine):
-        drv = GrblSerialDriver(context_initializer, machine)
-        encoder = drv.get_encoder()
-        assert isinstance(encoder, GcodeEncoder)
-        assert encoder.dialect.uid == machine.dialect.uid
 
     def test_convert_state(self):
         from raydriver.core.types import DeviceState as RDState
@@ -458,12 +452,11 @@ class TestStreaming:
         self, connected_driver
     ):
         drv, _mock, _emulator, recorder = connected_driver
-        encoder = drv.get_encoder()
         ops = Ops()
         ops.set_power(1.0)
         ops.move_to(0, 0, 0)
         ops.line_to(10, 0, 0)
-        encoded = encoder.encode(ops, drv._machine, Doc())
+        encoded = encode_gcode(ops, drv._machine, Doc())
         done: list[int] = []
 
         def progress(op_index: int):

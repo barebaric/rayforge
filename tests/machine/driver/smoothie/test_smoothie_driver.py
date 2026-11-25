@@ -16,7 +16,7 @@ from rayforge.machine.driver.driver import (
     DriverSetupError,
 )
 from rayforge.machine.driver.smoothie import SmoothieDriver
-from rayforge.pipeline.encoder.gcode import GcodeEncoder
+from rayforge.pipeline.encode_inputs import encode_gcode
 
 FAST_CONFIG = {
     "handshake_timeout": 2.0,
@@ -116,11 +116,6 @@ async def connected_driver(driver: SmoothieDriver, emulator):
 
 
 class TestSmoothieDriver:
-    def test_get_encoder(self, driver):
-        encoder = driver.get_encoder()
-        assert isinstance(encoder, GcodeEncoder)
-        assert encoder.dialect.uid == "smoothieware"
-
     @pytest.mark.asyncio
     async def test_connection_lifecycle(self, driver, emulator, mock):
         """Test the connect and cleanup flow."""
@@ -182,7 +177,7 @@ class TestSmoothieDriver:
         )
         callback_calls = []
 
-        encoded = driver.get_encoder().encode(ops, driver._machine, doc)
+        encoded = encode_gcode(ops, driver._machine, doc)
         await driver.run(
             encoded,
             doc,
