@@ -1,18 +1,10 @@
-import asyncio
-import inspect
 import json
 import logging
-from collections.abc import Awaitable, Callable
 from gettext import gettext as _
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, cast
 
-import aiohttp
+import raydriver.octoprint
 from raydriver.core.discovery.spec import DiscoverySpec, MdnsRecognizer
-from raygeo.ops.axis import Axis
 
 from ....context import RayforgeContext
 from ....core.varset import (
@@ -23,60 +15,14 @@ from ....core.varset import (
 )
 from ....core.varset.hostnamevar import is_valid_hostname_or_ip
 from ....core.varset.var import Var
-from ....pipeline.artifact.encoded import EncodedOutput
-from ...transport import TransportStatus
-from ..driver import (
-    DeviceConnectionError,
-    DeviceError,
-    DeviceStatus,
-    Driver,
-    DriverPrecheckError,
-    DriverSetupError,
-    Pos,
-)
+from ..driver import DriverPrecheckError, DriverSetupError
+from ..native import NativeDriver
 from .octoprint_util import build_octoprint_profile
 
 if TYPE_CHECKING:
-    from raygeo.ops import Ops
-
-    from ....core.doc import Doc
     from ...device.profile import DeviceProfile
-    from ...models.laser import Laser
-    from ...models.machine import Machine
 
 logger = logging.getLogger(__name__)
-
-_STATE_MAP: dict[str, DeviceStatus] = {
-    "Operational": DeviceStatus.IDLE,
-    "Printing": DeviceStatus.RUN,
-    "Pausing": DeviceStatus.HOLD,
-    "Paused": DeviceStatus.HOLD,
-    "Cancelling": DeviceStatus.RUN,
-    "Starting": DeviceStatus.RUN,
-    "Error": DeviceStatus.ALARM,
-    "Offline": DeviceStatus.UNKNOWN,
-    "Offline after error": DeviceStatus.ALARM,
-    "Opening serial connection": DeviceStatus.UNKNOWN,
-    "Connecting": DeviceStatus.UNKNOWN,
-    "Closed": DeviceStatus.UNKNOWN,
-}
-
-_POLL_INTERVAL = 2.0
-_RECONNECT_INTERVAL = 5.0
-_WS_PING_INTERVAL = 30.0
-
-
-class OctoPrintHTTPError(DeviceConnectionError):
-    """Raised when OctoPrint answers with an HTTP error status.
-
-    The server was reached and answered, so this is not a connection
-    failure even though it derives from ``DeviceConnectionError`` for
-    the callers that treat any failed request alike.
-    """
-
-    def __init__(self, status: int, message: str):
-        self.status = status
-        super().__init__(message)
 
 
 def _normalize_path_prefix(path: str) -> str:
@@ -97,12 +43,29 @@ def _normalize_path_prefix(path: str) -> str:
     return prefix
 
 
-class OctoPrintDriver(Driver):
+def _extract_api_key(data: str | None) -> str | None:
+    if not data:
+        return None
+    try:
+        tokens = json.loads(data)
+        if isinstance(tokens, dict):
+            return tokens.get("api_key") or tokens.get("access_token")
+        return str(tokens)
+    except (json.JSONDecodeError, TypeError):
+        return data.strip() if data else None
+
+
+class OctoPrintDriver(NativeDriver):
     """
     Submits G-code jobs to an OctoPrint server via its REST API and
     monitors live printer state through SockJS WebSocket push updates
     with a polling REST fallback.
+
+    The protocol stack runs in Rust via the ``raydriver`` package;
+    this binding supplies the connection-setup form and probing.
     """
+
+    NATIVE = raydriver.octoprint.OctoPrintDriver
 
     label = _("OctoPrint")
     subtitle = _("Submit G-code to an OctoPrint server")
@@ -122,34 +85,6 @@ class OctoPrintDriver(Driver):
         )
     )
 
-    def __init__(self, context: RayforgeContext, machine: "Machine"):
-        super().__init__(context, machine)
-        self.host: str | None = None
-        self.port: int = 80
-        self._api_key: str | None = None
-        self._base_url: str | None = None
-        self.keep_running: bool = False
-        self._connection_task: asyncio.Task | None = None
-        self._job_active: bool = False
-        self._job_done_event = asyncio.Event()
-        self._session_key: str | None = None
-        self._user_name: str | None = None
-        self._auth_retried: bool = False
-
-    @property
-    def machine_space_wcs(self) -> str:
-        return "G53"
-
-    @property
-    def machine_space_wcs_display_name(self) -> str:
-        return _("Machine Coordinates (G53)")
-
-    @property
-    def resource_uri(self) -> str | None:
-        if self.host:
-            return f"tcp://{self.host}:{self.port}"
-        return None
-
     @classmethod
     def precheck(cls, **kwargs: Any) -> None:
         host = cast(str, kwargs.get("host", ""))
@@ -168,36 +103,26 @@ class OctoPrintDriver(Driver):
         Works without an API key when the server has access control
         disabled (the common case for freshly discovered devices).
         """
-        from ...models.machine import Machine
-
-        machine = Machine(context)
-        driver = cls(context, machine)
         host = cast(str, kwargs.get("host", ""))
         port = cast(int, kwargs.get("port", 80))
         path = cast(str, kwargs.get("path", "/"))
-        api_key = kwargs.get("api_key", "")
+        raw_key = kwargs.get("api_key", "")
+        api_key = _extract_api_key(str(raw_key) if raw_key else "")
 
-        driver._configure_connection(
-            host,
-            port,
-            path,
-            driver._extract_api_key(str(api_key) if api_key else ""),
+        session = raydriver.octoprint.OctoPrintDriver(
+            config={
+                "host": host,
+                "port": int(port),
+                "path": _normalize_path_prefix(path),
+                "api_key": api_key or "",
+            }
         )
-
         version_info = None
         printer_info = None
         try:
-            version_info = await driver._api_request("GET", "/api/version")
-            printer_info = await driver._api_request(
-                "GET", "/api/printer?exclude=temperature,sd"
-            )
-        except DeviceConnectionError:
+            version_info, printer_info = await session.probe_info()
+        except (ConnectionError, TimeoutError, OSError):
             pass
-        finally:
-            await driver.cleanup()
-            context.dialect_mgr.dialects_changed.disconnect(
-                machine._on_dialects_changed
-            )
 
         profile, warnings = build_octoprint_profile(version_info, printer_info)
         profile.machine_config.driver = cls.__name__
@@ -249,40 +174,36 @@ class OctoPrintDriver(Driver):
             ]
         )
 
-    def _configure_connection(
-        self, host: str, port: int, path: str, api_key: str | None
+    def get_setting_vars(self) -> list["VarSet"]:
+        return []
+
+    async def clear_alarm(self) -> None:
+        """OctoPrint resets a firmware alarm with M999."""
+        await self._require_session().clear_alarm()
+
+    async def move_to(
+        self,
+        pos_x: float,
+        pos_y: float,
+        pos_z: float | None = None,
+        speed: float | None = None,
     ) -> None:
-        """
-        Stores the connection parameters shared by setup and probe.
-        The probe tolerates a missing API key (servers with access
-        control disabled); setup rejects one up front.
-        """
-        self.host = host
-        self.port = port
-        self._api_key = api_key
-        self._path_prefix = _normalize_path_prefix(path)
-        self._base_url = f"http://{host}:{port}{self._path_prefix}"
+        """Moves to an absolute position via the printhead jog API."""
+        await self._require_session().move_to_absolute(
+            self._to_machine_length(float(pos_x)),
+            self._to_machine_length(float(pos_y)),
+            self._to_machine_length(pos_z) if pos_z is not None else None,
+            self._to_machine_speed(speed) if speed is not None else None,
+        )
 
-    @staticmethod
-    def _extract_api_key(data: str | None) -> str | None:
-        if not data:
-            return None
-        try:
-            tokens = json.loads(data)
-            if isinstance(tokens, dict):
-                return tokens.get("api_key") or tokens.get("access_token")
-            return str(tokens)
-        except (json.JSONDecodeError, TypeError):
-            return data.strip() if data else None
-
-    def _setup_implementation(self, **kwargs: Any) -> None:
+    def build_config(self, kwargs: dict[str, Any]) -> dict[str, Any]:
         host = cast(str, kwargs.get("host", ""))
         port = cast(int, kwargs.get("port", 80))
         if not host:
             raise DriverSetupError(_("Hostname must be configured."))
 
         raw_key = kwargs.get("api_key", "")
-        api_key = self._extract_api_key(str(raw_key) if raw_key else "")
+        api_key = _extract_api_key(str(raw_key) if raw_key else "")
         if not api_key:
             raise DriverSetupError(
                 _(
@@ -292,745 +213,9 @@ class OctoPrintDriver(Driver):
                 )
             )
 
-        self._configure_connection(
-            host,
-            port,
-            cast(str, kwargs.get("path", "/")),
-            api_key,
-        )
-
-    async def cleanup(self):
-        self.keep_running = False
-        self._job_active = False
-        self._job_done_event.set()
-        if self._connection_task:
-            self._connection_task.cancel()
-            try:
-                await self._connection_task
-            except asyncio.CancelledError:
-                pass
-            self._connection_task = None
-        await super().cleanup()
-
-    async def _api_request(self, method: str, path: str, **kwargs: Any) -> Any:
-        url = f"{self._base_url}{path}"
-        headers = kwargs.pop("headers", {})
-        headers["X-Api-Key"] = self._api_key
-
-        log_data = f"{method} {url}"
-        logger.debug(
-            log_data,
-            extra={
-                "log_category": "RAW_IO",
-                "direction": "TX",
-                "data": log_data,
-            },
-        )
-
-        try:
-            async with (
-                aiohttp.ClientSession() as session,
-                session.request(
-                    method, url, headers=headers, **kwargs
-                ) as response,
-            ):
-                if response.status == 403:
-                    await self._handle_auth_error()
-                    raise DeviceConnectionError(
-                        _(
-                            "Authentication failed. "
-                            "API key may be invalid or expired."
-                        )
-                    )
-                response.raise_for_status()
-
-                if response.status == 204:
-                    return None
-
-                ct = response.content_type or ""
-                if "json" in ct:
-                    data = await response.json()
-                else:
-                    data = await response.text()
-
-            logger.debug(
-                f"Response ({response.status}): {str(data)[:200]}"
-                if isinstance(data, str)
-                else f"Response ({response.status}): <json>",
-                extra={
-                    "log_category": "RAW_IO",
-                    "direction": "RX",
-                    "data": str(data)[:500].encode("utf-8", errors="replace"),
-                },
-            )
-            return data
-        except aiohttp.ClientResponseError as e:
-            msg = _(
-                "OctoPrint rejected {method} {path} with HTTP {status}."
-            ).format(method=method, path=path, status=e.status)
-            raise OctoPrintHTTPError(e.status, msg) from e
-        except aiohttp.ClientError as e:
-            msg = _(
-                "Could not connect to OctoPrint at "
-                "'{host}:{port}'. Check the address and "
-                "network connection."
-            ).format(host=self.host, port=self.port)
-            raise DeviceConnectionError(msg) from e
-
-    async def _handle_auth_error(self) -> None:
-        if not self._auth_retried:
-            self._auth_retried = True
-            try:
-                login = await self._api_request(
-                    "POST",
-                    "/api/login",
-                    json={"passive": True},
-                )
-                if login and login.get("name"):
-                    self._session_key = login.get("session")
-                    self._user_name = login.get("name")
-                    return
-            except Exception:
-                logger.debug("Passive login attempt failed", exc_info=True)
-
-        self.state.error = DeviceError(
-            code=403,
-            title=_("Authentication Failed"),
-            description=_(
-                "The API key is invalid or has expired. "
-                "Please re-authenticate in device settings."
-            ),
-        )
-        self.state.status = DeviceStatus.UNKNOWN
-        self.state_changed.send(self, state=self.state)
-
-    async def _verify_connection(self) -> None:
-        login = await self._api_request(
-            "POST", "/api/login", json={"passive": True}
-        )
-        if login is None:
-            raise DeviceConnectionError(_("OctoPrint returned no login data."))
-        self._session_key = login.get("session")
-        self._user_name = login.get("name")
-        self._auth_retried = False
-
-    async def _connect_implementation(self) -> None:
-        if not self.host:
-            self._update_connection_status(
-                TransportStatus.DISCONNECTED,
-                "No host configured",
-            )
-            return
-        self.keep_running = True
-        self._connection_task = asyncio.create_task(self._connection_loop())
-
-    async def _connection_loop(self) -> None:
-        while self.keep_running:
-            self._update_connection_status(TransportStatus.CONNECTING)
-            try:
-                await self._verify_connection()
-                try:
-                    await self._run_websocket()
-                except DeviceConnectionError as ws_err:
-                    logger.info(
-                        f"WebSocket unavailable, using polling: {ws_err}"
-                    )
-                    await self._run_polling()
-            except asyncio.CancelledError:
-                return
-            except DeviceConnectionError as e:
-                self._update_connection_status(TransportStatus.ERROR, str(e))
-            except Exception as e:  # noqa: BLE001 - connection loop boundary
-                self._update_connection_status(TransportStatus.ERROR, str(e))
-
-            if self.keep_running:
-                self._update_connection_status(TransportStatus.SLEEPING)
-                try:
-                    await asyncio.sleep(_RECONNECT_INTERVAL)
-                except asyncio.CancelledError:
-                    return
-
-    async def _run_websocket(self) -> None:
-        ws_url = (
-            f"ws://{self.host}:{self.port}{self._path_prefix}/sockjs/websocket"
-        )
-        self._update_connection_status(TransportStatus.CONNECTING)
-
-        async with aiohttp.ClientSession() as session:
-            try:
-                async with session.ws_connect(
-                    ws_url,
-                    heartbeat=_WS_PING_INTERVAL,
-                ) as ws:
-                    await self._authenticate_socket(ws)
-                    self._update_connection_status(TransportStatus.CONNECTED)
-
-                    async for msg in ws:
-                        if msg.type == aiohttp.WSMsgType.TEXT:
-                            if msg.data.startswith("c["):
-                                raise DeviceConnectionError(
-                                    _("Server closed WebSocket connection.")
-                                )
-                            self._process_sockjs_frame(msg.data)
-                        elif msg.type in (
-                            aiohttp.WSMsgType.CLOSED,
-                            aiohttp.WSMsgType.ERROR,
-                        ):
-                            break
-                        if not self.keep_running:
-                            break
-            except aiohttp.ClientError as e:
-                raise DeviceConnectionError(str(e)) from e
-
-    async def _authenticate_socket(
-        self, ws: aiohttp.ClientWebSocketResponse
-    ) -> None:
-        """Authenticates the push socket.
-
-        ``/sockjs/websocket`` is SockJS's raw WebSocket transport. It
-        sends no ``o`` open frame and uses no framing, so the ``auth``
-        message must be sent right after connecting. Without it
-        OctoPrint withholds status updates because the anonymous
-        socket lacks the ``STATUS`` permission, which leaves the
-        driver stuck at ``UNKNOWN``.
-        """
-        if not (self._session_key and self._user_name):
-            return
-        auth = f"{self._user_name}:{self._session_key}"
-        await ws.send_str(json.dumps({"auth": auth}))
-
-    def _process_sockjs_frame(self, data: str) -> None:
-        if data == "o" or data == "h":
-            return
-        if data.startswith("c["):
-            logger.info("SockJS close frame received")
-            return
-        if data.startswith("a["):
-            try:
-                messages = json.loads(data[1:])
-            except json.JSONDecodeError:
-                return
-            for raw_msg in messages:
-                payload = self._decode_push_message(raw_msg)
-                if payload is not None:
-                    self._process_push_message(payload)
-            return
-
-        payload = self._decode_push_message(data)
-        if payload is not None:
-            self._process_push_message(payload)
-
-    @staticmethod
-    def _decode_push_message(raw_msg: Any) -> dict[str, Any] | None:
-        """Decodes a push payload.
-
-        The raw SockJS WebSocket transport delivers message objects
-        as JSON text (``{"current": ...}``), while the SockJS
-        protocol wraps them in a batch (``a[{"current": ...}]``)
-        whose elements may be objects or pre-encoded JSON strings.
-        Accept all of these forms.
-        """
-        if isinstance(raw_msg, dict):
-            return raw_msg
-        if not isinstance(raw_msg, str):
-            return None
-        try:
-            payload = json.loads(raw_msg)
-        except json.JSONDecodeError:
-            return None
-        if isinstance(payload, dict):
-            return payload
-        return None
-
-    def _process_push_message(self, payload: dict[str, Any]) -> None:
-        for key in ("current", "history"):
-            data = payload.get(key)
-            if isinstance(data, dict):
-                self._handle_current_update(data)
-                return
-        event = payload.get("event")
-        if isinstance(event, dict):
-            self._handle_event(event)
-
-    def _handle_current_update(self, data: dict[str, Any]) -> None:
-        state = data.get("state")
-        if state:
-            self._update_state_from_octoprint(state)
-
-        progress = data.get("progress")
-        if progress and self._job_active:
-            completion = progress.get("completion")
-            if completion is not None:
-                self._update_job_progress(completion)
-
-    def _handle_event(self, event: dict[str, Any]) -> None:
-        event_type = event.get("type", "")
-        if event_type == "PrintDone":
-            self._on_job_completed(success=True)
-        elif event_type == "PrintFailed":
-            self._on_job_completed(success=False)
-        elif event_type == "PrintCancelled":
-            self._on_job_completed(success=True)
-        elif event_type == "Connected":
-            logger.info(
-                "OctoPrint printer connected",
-                extra=self._log_extra("MACHINE_EVENT"),
-            )
-        elif event_type == "Disconnected":
-            self.state.status = DeviceStatus.UNKNOWN
-            self.state_changed.send(self, state=self.state)
-
-    def _on_job_completed(self, success: bool) -> None:
-        if not self._job_active:
-            return
-        if success:
-            self.state.status = DeviceStatus.IDLE
-            self.state.error = None
-        else:
-            self.state.status = DeviceStatus.ALARM
-            self.state.error = DeviceError(
-                code=1,
-                title=_("Print Failed"),
-                description=_(
-                    "OctoPrint reported that the print job "
-                    "failed. Check OctoPrint for details."
-                ),
-            )
-        self.state_changed.send(self, state=self.state)
-        self._job_active = False
-        self._job_done_event.set()
-
-    async def _run_polling(self) -> None:
-        self._update_connection_status(TransportStatus.CONNECTED)
-        while self.keep_running:
-            try:
-                data = await self._api_request(
-                    "GET",
-                    "/api/printer?exclude=temperature,sd",
-                )
-                if data:
-                    state = data.get("state")
-                    if state:
-                        self._update_state_from_octoprint(state)
-
-                if self._job_active:
-                    job = await self._api_request("GET", "/api/job")
-                    if job:
-                        progress = job.get("progress")
-                        if progress:
-                            completion = progress.get("completion")
-                            if completion is not None:
-                                self._update_job_progress(completion)
-
-                        job_state = job.get("state", "")
-                        if job_state not in (
-                            "Printing",
-                            "Pausing",
-                            "Paused",
-                            "Cancelling",
-                            "Starting",
-                        ):
-                            self._on_job_completed(
-                                success="Error" not in job_state
-                            )
-
-            except OctoPrintHTTPError as e:
-                logger.warning(f"Polling error: {e}")
-            except DeviceConnectionError:
-                raise
-            except (aiohttp.ClientError, ValueError) as e:
-                logger.warning(f"Polling error: {e}")
-
-            await asyncio.sleep(_POLL_INTERVAL)
-
-    def _update_state_from_octoprint(self, state_data: dict[str, Any]) -> None:
-        flags = state_data.get("flags", {})
-        text = state_data.get("text", "Unknown")
-
-        if flags.get("error"):
-            new_status = DeviceStatus.ALARM
-        elif flags.get("closedOrError") and not flags.get("operational"):
-            new_status = DeviceStatus.UNKNOWN
-        elif flags.get("printing"):
-            new_status = DeviceStatus.RUN
-        elif flags.get("paused") or flags.get("pausing"):
-            new_status = DeviceStatus.HOLD
-        elif flags.get("cancelling"):
-            new_status = DeviceStatus.RUN
-        elif flags.get("operational"):
-            new_status = DeviceStatus.IDLE
-        else:
-            new_status = _STATE_MAP.get(text, DeviceStatus.UNKNOWN)
-
-        if new_status != self.state.status:
-            old = self.state.status.name
-            self.state.status = new_status
-            logger.info(
-                f"State: {old} -> {new_status.name}",
-                extra=self._log_extra("STATE_CHANGE"),
-            )
-            self.state_changed.send(self, state=self.state)
-
-    def _update_job_progress(self, completion: float) -> None:
-        logger.debug(
-            f"Job progress: {completion:.1f}%",
-            extra=self._log_extra("DRIVER_EVENT"),
-        )
-
-    async def run(
-        self,
-        encoded: "EncodedOutput",
-        doc: "Doc",
-        ops: "Ops",
-        on_command_done: Callable[[int], None | Awaitable[None]] | None = None,
-    ) -> None:
-        if not self.host:
-            raise DeviceConnectionError(
-                _("Driver not configured with a host.")
-            )
-
-        gcode = encoded.text
-
-        try:
-            if on_command_done is not None:
-                op_map = encoded.op_map
-                num_ops = op_map.op_count if op_map else 0
-                for i in range(num_ops):
-                    result = on_command_done(i)
-                    if inspect.isawaitable(result):
-                        await result
-
-            await self._upload_and_print(gcode, "rayforge.gcode")
-
-            self._job_active = True
-            self._job_done_event.clear()
-
-            self._update_command_status(TransportStatus.IDLE)
-
-            while self._job_active and self.keep_running:
-                await asyncio.sleep(1.0)
-
-        except asyncio.CancelledError:
-            pass
-        except Exception as e:
-            self._update_connection_status(TransportStatus.ERROR, str(e))
-            raise
-        finally:
-            self._job_active = False
-            self.job_finished.send(self)
-
-    async def _upload_and_print(self, gcode: str, filename: str) -> None:
-        form = aiohttp.FormData()
-        form.add_field(
-            "file",
-            gcode.encode("utf-8"),
-            filename=filename,
-            content_type="application/octet-stream",
-        )
-        form.add_field("select", "true")
-        form.add_field("print", "true")
-
-        url = f"{self._base_url}/api/files/local"
-        assert self._api_key is not None
-        headers: dict[str, str] = {"X-Api-Key": self._api_key}
-
-        log_data = f"POST {url} with file '{filename}' size {len(gcode)}"
-        logger.debug(
-            log_data,
-            extra={
-                "log_category": "RAW_IO",
-                "direction": "TX",
-                "data": log_data,
-            },
-        )
-
-        try:
-            async with (
-                aiohttp.ClientSession() as session,
-                session.post(url, data=form, headers=headers) as response,
-            ):
-                if response.status == 403:
-                    await self._handle_auth_error()
-                    raise DeviceConnectionError(
-                        _("Authentication failed during upload.")
-                    )
-                if response.status == 409:
-                    raise DeviceConnectionError(
-                        _(
-                            "Printer is busy or not operational. "
-                            "Cannot start a new job."
-                        )
-                    )
-                response.raise_for_status()
-                data = await response.json()
-
-            logger.debug(
-                f"Upload response: {data}",
-                extra={
-                    "log_category": "RAW_IO",
-                    "direction": "RX",
-                    "data": str(data)[:500].encode("utf-8"),
-                },
-            )
-
-            if not data.get("effectivePrint", False):
-                raise DeviceConnectionError(
-                    _(
-                        "OctoPrint accepted the file but could not "
-                        "start printing. The printer may not be "
-                        "operational or is already busy."
-                    )
-                )
-
-        except aiohttp.ClientError as e:
-            msg = _(
-                "Could not upload file to OctoPrint at '{host}:{port}'."
-            ).format(host=self.host, port=self.port)
-            raise DeviceConnectionError(msg) from e
-
-    async def run_raw(self, machine_code: str) -> None:
-        lines = [
-            line.strip() for line in machine_code.splitlines() if line.strip()
-        ]
-        if not lines:
-            return
-
-        for line in lines:
-            logger.info(line, extra=self._log_extra("USER_COMMAND"))
-
-        if len(lines) == 1:
-            await self._api_request(
-                "POST",
-                "/api/printer/command",
-                json={"command": lines[0]},
-            )
-        else:
-            await self._api_request(
-                "POST",
-                "/api/printer/command",
-                json={"commands": lines},
-            )
-        self.job_finished.send(self)
-
-    async def set_hold(self, hold: bool = True) -> None:
-        if hold:
-            await self._api_request(
-                "POST",
-                "/api/job",
-                json={
-                    "command": "pause",
-                    "action": "pause",
-                },
-            )
-        else:
-            await self._api_request(
-                "POST",
-                "/api/job",
-                json={
-                    "command": "pause",
-                    "action": "resume",
-                },
-            )
-
-    async def cancel(self, emergency: bool = False) -> None:
-        try:
-            await self._api_request(
-                "POST",
-                "/api/job",
-                json={"command": "cancel"},
-            )
-        except OctoPrintHTTPError as e:
-            if e.status != 409:
-                raise
-            logger.info(
-                "OctoPrint has no active job to cancel",
-                extra=self._log_extra("MACHINE_EVENT"),
-            )
-        self._job_active = False
-        self._job_done_event.set()
-        self.job_finished.send(self)
-
-    def can_home(self, axis: Axis | None = None) -> bool:
-        return True
-
-    async def home(self, axes: Axis | None = None) -> None:
-        if axes is None:
-            axis_list = ["x", "y", "z"]
-        else:
-            axis_list = [a.label.lower() for a in axes]
-
-        await self._api_request(
-            "POST",
-            "/api/printer/printhead",
-            json={"command": "home", "axes": axis_list},
-        )
-
-    async def move_to(
-        self,
-        pos_x: float,
-        pos_y: float,
-        pos_z: float | None = None,
-        speed: float | None = None,
-    ) -> None:
-        params: dict[str, Any] = {
-            "command": "jog",
-            "x": self._to_machine_length(pos_x),
-            "y": self._to_machine_length(pos_y),
-            "absolute": True,
+        return {
+            "host": host,
+            "port": int(port),
+            "path": _normalize_path_prefix(cast(str, kwargs.get("path", "/"))),
+            "api_key": api_key,
         }
-        if pos_z is not None:
-            params["z"] = self._to_machine_length(pos_z)
-        if speed is not None:
-            params["speed"] = self._to_machine_speed(speed)
-        await self._api_request(
-            "POST",
-            "/api/printer/printhead",
-            json=params,
-        )
-
-    def can_jog(self, axis: Axis | None = None) -> bool:
-        return True
-
-    async def jog(self, speed: int, **deltas: float) -> None:
-        params: dict[str, Any] = {
-            "command": "jog",
-            "speed": self._to_machine_speed(speed),
-        }
-        params.update(
-            {k: self._to_machine_length(v) for k, v in deltas.items()}
-        )
-        await self._api_request(
-            "POST",
-            "/api/printer/printhead",
-            json=params,
-        )
-
-    async def select_tool(self, tool_number: int) -> None:
-        await self._api_request(
-            "POST",
-            "/api/printer/command",
-            json={"command": f"T{tool_number}"},
-        )
-
-    async def read_settings(self) -> None:
-        self.settings_read.send(self, settings=[])
-
-    async def write_setting(self, key: str, value: Any) -> None:
-        raise NotImplementedError(
-            _(
-                "OctoPrint does not support writing "
-                "device firmware settings through its API."
-            )
-        )
-
-    def get_setting_vars(self) -> list["VarSet"]:
-        return []
-
-    async def clear_alarm(self) -> None:
-        await self._api_request(
-            "POST",
-            "/api/printer/command",
-            json={"command": "M999"},
-        )
-        self.state.error = None
-        self.state.status = DeviceStatus.IDLE
-        self.state_changed.send(self, state=self.state)
-
-    async def set_power(self, head: "Laser", percent: float) -> None:
-        if percent <= 0:
-            cmd = "M5"
-        else:
-            power_abs = percent * head.max_power
-            cmd = f"M3 S{power_abs:.0f}"
-        await self._api_request(
-            "POST",
-            "/api/printer/command",
-            json={"command": cmd},
-        )
-
-    async def set_focus_power(self, head: "Laser", percent: float) -> None:
-        await self.set_power(head, percent)
-
-    async def set_wcs_offset(
-        self, wcs_slot: str, x: float, y: float, z: float | None
-    ) -> None:
-        p_map = {
-            "G54": 1,
-            "G55": 2,
-            "G56": 3,
-            "G57": 4,
-            "G58": 5,
-            "G59": 6,
-        }
-        p_num = p_map.get(wcs_slot)
-        if p_num is None:
-            raise ValueError(f"Invalid WCS slot: {wcs_slot}")
-        cmd = (
-            f"G10 L2 P{p_num} "
-            f"X{self._to_machine_length(x):.3f} "
-            f"Y{self._to_machine_length(y):.3f}"
-        )
-        if z is not None:
-            cmd += f" Z{self._to_machine_length(z):.3f}"
-        await self._api_request(
-            "POST",
-            "/api/printer/command",
-            json={"command": cmd},
-        )
-
-    async def read_wcs_offsets(self) -> dict[str, Pos]:
-        return {}
-
-    async def run_probe_cycle(
-        self,
-        axis: Axis,
-        target: float,
-        feed_rate: int,
-    ) -> Pos | None:
-        assert axis.name, "Probing requires a named axis."
-        axis_letter = axis.name.upper()
-        cmd = (
-            f"G38.2 {axis_letter}"
-            f"{self._to_machine_length(target):.3f} "
-            f"F{self._to_machine_speed(feed_rate)}"
-        )
-        self.probe_status_changed.send(
-            self, message=f"Probing {axis_letter}..."
-        )
-        await self._api_request(
-            "POST",
-            "/api/printer/command",
-            json={"command": cmd},
-        )
-        self.probe_status_changed.send(
-            self,
-            message=_(
-                "Probe command sent. OctoPrint does not "
-                "report probe results via its API."
-            ),
-        )
-        return None
-
-    def _update_command_status(
-        self,
-        status: TransportStatus,
-        message: str | None = None,
-    ) -> None:
-        log_data = f"Command status: {status.name}"
-        if message:
-            log_data += f" - {message}"
-        logger.info(log_data, extra=self._log_extra("MACHINE_EVENT"))
-        self.command_status_changed.send(self, status=status, message=message)
-
-    def _update_connection_status(
-        self,
-        status: TransportStatus,
-        message: str | None = None,
-    ) -> None:
-        log_data = f"Connection status: {status.name}"
-        if message:
-            log_data += f" - {message}"
-        logger.info(log_data, extra=self._log_extra("MACHINE_EVENT"))
-        self.connection_status_changed.send(
-            self, status=status, message=message
-        )
