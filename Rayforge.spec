@@ -2,7 +2,7 @@
 import os
 from PyInstaller.utils.hooks import collect_submodules
 
-hiddenimports = ['gi._gi_cairo', 'cairosvg']
+hiddenimports = ['gi._gi_cairo']
 hiddenimports += collect_submodules('rayforge.ui_gtk.canvas2d')
 hiddenimports += collect_submodules('rayforge.ui_gtk.canvas2d.elements')
 hiddenimports += collect_submodules('rayforge.ui_gtk.shared')
@@ -57,10 +57,11 @@ _document_types = [
         'CFBundleTypeRole': 'Viewer',
         'LSHandlerRank': 'Alternate',
         'CFBundleTypeExtensions': [
-            'dxf', 'svg', 'svgz', 'pdf', 'ai', 'eps', 'epsf', 'ps',
+            'dxf', 'cdr', 'svg', 'svgz', 'pdf', 'ai', 'eps', 'epsf', 'ps',
         ],
         'CFBundleTypeMIMETypes': [
-            'image/vnd.dxf', 'image/svg+xml', 'application/pdf',
+            'image/vnd.dxf', 'application/vnd.corel-draw',
+            'image/svg+xml', 'application/pdf',
         ],
     },
     {

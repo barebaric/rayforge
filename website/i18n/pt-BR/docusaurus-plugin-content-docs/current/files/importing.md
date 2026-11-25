@@ -11,6 +11,7 @@ explica como importar arquivos e otimizá-los para obter os melhores resultados.
 | --------------- | ----------------- | --------------------------------------------------- | ---------------------------------------- |
 | **SVG**         | `.svg`, `.svgz`   | Vetores diretos ou vetorização                      | Gráficos vetoriais, logos, designs       |
 | **DXF**         | `.dxf`            | Vetores diretos                                     | Desenhos CAD, projetos técnicos          |
+| **CorelDRAW**   | `.cdr`            | Vetores diretos                                     | Desenhos do CorelDRAW                    |
 | **PDF**         | `.pdf`            | Vetores diretos ou vetorização                      | Documentos com conteúdo vetorial         |
 | **LightBurn**   | `.lbrn`, `.lbrn2` | Vetores diretos                                     | Projetos LightBurn                       |
 | **Ruida**       | `.rd`             | Vetores diretos                                     | Arquivos de trabalho controlador Ruida   |
@@ -315,6 +316,24 @@ específica por forma).
 
 Em desenhos planos a opção não é mostrada; não há nada a aplanar.
 
+### Reparar contornos abertos
+
+Exportadores CAD costumam gravar um contorno como muitas linhas e arcos separados cujas extremidades
+apenas se aproximam. Um arquivo assim é importado como um monte de fragmentos abertos, que não podem
+ser deslocados, divididos em peças nem cortados como trajeto fechado — o sintoma típico é que
+**Objeto → Dividir** parece não fazer nada.
+
+Exportadores propensos a isso oferecem a opção **Reparar contornos abertos** no diálogo de
+importação. Ela vem desligada e aparece em “Reparo de contornos”. Quando ativada, o Rayforge une
+segmentos cujas extremidades ficam dentro da tolerância **Folga de junção**, fecha qualquer contorno
+cujas próprias extremidades se encontrem em seguida e descarta contornos duplicados. Nenhum ponto
+existente é movido: cada junção é preenchida com um segmento reto, então a forma cresce no máximo a
+tolerância em cada ponto de junção.
+
+Mantenha **Folga de junção** no mínimo para que o Rayforge escolha uma tolerância adequada ao
+tamanho do desenho. Aumente-a se ainda restarem contornos abertos após a importação — o diálogo
+informa quantos sobraram. Um valor alto demais pode unir contornos sem relação.
+
 ### Dicas para importação DXF
 
 **Antes de exportar do CAD:**
@@ -341,6 +360,35 @@ Em desenhos planos a opção não é mostrada; não há nada a aplanar.
 - Verificar a escala (unidades DXF podem precisar de ajuste)
 - Confirmar se todos os caminhos foram importados corretamente
 - Excluir elementos de construção indesejados
+
+---
+
+## Importação do CorelDRAW
+
+Os arquivos do CorelDRAW (`.cdr`) são lidos nativamente, sem precisar do CorelDRAW instalado. O
+Rayforge lê os desenhos do CorelDRAW 7 ao X7, tanto arquivos simples quanto os pacotes ZIP de
+versões posteriores.
+
+**Recursos suportados:**
+
+- ✓ Curvas, caminhos, arcos, elipses e retângulos arredondados
+- ✓ Texto importado como contornos
+- ✓ Camadas nomeadas, selecionáveis na janela de importação
+- ✓ Transformações de objetos, grupos e camadas
+- ✓ Camadas e objetos ocultos são omitidos
+
+**Limitações:**
+
+- ✗ Apenas a primeira página do desenho é importada; as demais são informadas
+- ✗ Bitmaps e tipos de objeto não suportados são informados como avisos e omitidos
+- ✗ Preenchimentos, contornos e fontes incorporadas são ignorados; o texto é desenhado com a fonte
+  instalada mais próxima, então os glifos podem diferir do CorelDRAW
+- ✗ Arquivos CMX são reconhecidos, mas não podem ser lidos
+
+**Quando usar:**
+
+- Abrir designs que só existem como arquivo do CorelDRAW
+- Migrar um fluxo de trabalho do CorelDRAW para o Rayforge
 
 ---
 

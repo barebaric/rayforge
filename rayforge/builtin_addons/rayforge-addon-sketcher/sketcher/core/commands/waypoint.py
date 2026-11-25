@@ -45,7 +45,7 @@ class SetWaypointTypeCommand(SketchChangeCommand):
         super().__init__(sketch, label)
         self.waypoint_id = waypoint_id
         self.new_type = new_type
-        self._old_waypoint_type: str | None = None
+        self._old_waypoint_type: WaypointType | None = None
         self._old_bezier_states: (
             dict[int, tuple[GeoPoint | None, GeoPoint | None]] | None
         ) = None
@@ -247,7 +247,7 @@ class SetWaypointTypeCommand(SketchChangeCommand):
                 if b.end_idx in point_ids and b.cp2 is None:
                     b.cp2 = cp_in
 
-        waypoint.waypoint_type = self.new_type  # type: ignore[assignment]
+        waypoint.waypoint_type = self.new_type
         waypoint.enforce_constraint(registry, self.sketch)
 
     def _do_undo(self) -> None:

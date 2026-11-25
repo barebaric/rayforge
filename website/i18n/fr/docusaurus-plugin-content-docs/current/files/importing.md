@@ -12,6 +12,7 @@ meilleurs résultats.
 | --------------- | ----------------- | --------------------------------------------------------- | -------------------------------------------- |
 | **SVG**         | `.svg`, `.svgz`   | Vecteurs directs ou vectorisation                         | Graphiques vectoriels, logos, dessins        |
 | **DXF**         | `.dxf`            | Vecteurs directs                                          | Dessins CAO, plans techniques                |
+| **CorelDRAW**   | `.cdr`            | Vecteurs directs                                          | Dessins CorelDRAW                            |
 | **PDF**         | `.pdf`            | Vecteurs directs ou vectorisation                         | Documents avec contenu vectoriel             |
 | **LightBurn**   | `.lbrn`, `.lbrn2` | Vecteurs directs                                          | Projets LightBurn                            |
 | **Ruida**       | `.rd`             | Vecteurs directs                                          | Fichiers de tâches contrôleur Ruida          |
@@ -324,6 +325,25 @@ parcours de l'outil se déplacera en Z, ce qui n'est sûr que si tu sais que ton
 
 Pour les dessins plats, l'option n'est pas affichée ; il n'y a rien à aplatir.
 
+### Réparer les contours ouverts
+
+Les exportateurs CAO écrivent souvent un contour sous forme de nombreuses lignes et arcs séparés
+dont les extrémités ne se touchent qu'à peine. Un tel fichier s'importe comme un tas de fragments
+ouverts, impossibles à décaler, à diviser en pièces ou à découper comme tracé fermé — le symptôme
+typique étant que **Objet → Diviser** semble ne rien faire.
+
+Les exportateurs sujets à ce problème proposent l'option **Réparer les contours ouverts** dans la
+boîte de dialogue d'importation. Elle est désactivée par défaut et apparaît sous « Réparation de
+contours ». Une fois activée, Rayforge joint les segments dont les extrémités se situent dans la
+tolérance **Écart de jonction**, ferme les contours dont les extrémités se rejoignent ensuite et
+supprime les contours en double. Aucun point existant n'est déplacé : chaque jonction est comblée
+par un segment droit, la forme ne s'agrandit donc qu'au plus de la tolérance à chaque point de
+jonction.
+
+Laissez **Écart de jonction** au minimum pour que Rayforge choisisse une tolérance adaptée à la
+taille du dessin. Augmentez-la s'il reste des contours ouverts après l'importation : la boîte de
+dialogue indique combien. Si elle est trop élevée, des contours sans rapport risquent d'être joints.
+
 ### Conseils pour l'importation DXF
 
 **Avant d'exporter depuis la CAO :**
@@ -350,6 +370,36 @@ Pour les dessins plats, l'option n'est pas affichée ; il n'y a rien à aplatir.
 - Vérifier l'échelle (les unités DXF peuvent nécessiter un ajustement)
 - Confirmer que tous les tracés ont été importés correctement
 - Supprimer les éléments de construction indésirables
+
+---
+
+## Importation CorelDRAW
+
+Les fichiers CorelDRAW (`.cdr`) sont lus nativement, sans que CorelDRAW soit installé. Rayforge lit
+les dessins de CorelDRAW 7 à X7, aussi bien les fichiers simples que les paquets ZIP des versions
+ultérieures.
+
+**Fonctionnalités prises en charge :**
+
+- ✓ Courbes, tracés, arcs, ellipses et rectangles arrondis
+- ✓ Texte importé sous forme de contours
+- ✓ Calques nommés, sélectionnables dans la boîte de dialogue d'importation
+- ✓ Transformations des objets, des groupes et des calques
+- ✓ Les calques et objets masqués sont ignorés
+
+**Limites :**
+
+- ✗ Seule la première page du dessin est importée ; les suivantes sont signalées
+- ✗ Les images matricielles et les types d'objets non pris en charge sont signalés comme
+  avertissements et ignorés
+- ✗ Les remplissages, contours et polices incorporées sont ignorés ; le texte est dessiné avec la
+  police installée la plus proche, les glyphes peuvent donc différer de CorelDRAW
+- ✗ Les fichiers CMX sont reconnus mais ne peuvent pas être lus
+
+**Quand l'utiliser :**
+
+- Ouvrir des conceptions qui n'existent que sous forme de fichier CorelDRAW
+- Transférer un flux de travail CorelDRAW vers Rayforge
 
 ---
 

@@ -57,6 +57,7 @@
     <mediatype>image/svg+xml</mediatype>
     <mediatype>image/svg+xml-compressed</mediatype>
     <mediatype>image/vnd.dxf</mediatype>
+    <mediatype>application/vnd.corel-draw</mediatype>
     <mediatype>application/pdf</mediatype>
     <mediatype>application/illustrator</mediatype>
     <mediatype>application/vnd.adobe.illustrator</mediatype>

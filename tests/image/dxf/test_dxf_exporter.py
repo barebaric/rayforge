@@ -1,7 +1,5 @@
-import io
 from pathlib import Path
 
-import ezdxf
 import pytest
 from raygeo.geo import Geometry
 
@@ -12,6 +10,34 @@ from rayforge.image.dxf.exporter import (
     MultiGeometryDxfExporter,
 )
 from rayforge.image.dxf.importer import DxfImporter
+
+
+def _entity_types(dxf_bytes: bytes) -> list[str]:
+    """The entity type names in a DXF document's ENTITIES section.
+
+    Reads the group codes directly: a code 0 marks the start of an entity
+    or section, and its value is the type. This keeps the exporter tests
+    free of a third-party DXF library.
+    """
+    lines = dxf_bytes.decode("utf-8").splitlines()
+    pairs = [
+        (lines[i].strip(), lines[i + 1].strip())
+        for i in range(0, len(lines) - 1, 2)
+    ]
+    types = []
+    in_entities = False
+    for index, (code, value) in enumerate(pairs):
+        if code != "0":
+            continue
+        if value == "SECTION":
+            in_entities = pairs[index + 1][1] == "ENTITIES"
+            continue
+        if value in ("ENDSEC", "EOF"):
+            in_entities = False
+            continue
+        if in_entities:
+            types.append(value)
+    return types
 
 
 @pytest.fixture
@@ -73,32 +99,19 @@ class TestGeometryDxfExporterExport:
         exporter = GeometryDxfExporter(rectangle_geometry)
         dxf_bytes = exporter.export()
 
-        buffer = io.StringIO(dxf_bytes.decode("utf-8"))
-        dxf_doc = ezdxf.read(buffer)  # type: ignore
-        msp = dxf_doc.modelspace()
-        entities = list(msp)
-        assert len(entities) >= 1
-        assert any(e.dxftype() == "LWPOLYLINE" for e in entities)
+        assert "LWPOLYLINE" in _entity_types(dxf_bytes)
 
     def test_export_arc_geometry(self, arc_geometry: Geometry):
         exporter = GeometryDxfExporter(arc_geometry)
         dxf_bytes = exporter.export()
 
-        buffer = io.StringIO(dxf_bytes.decode("utf-8"))
-        dxf_doc = ezdxf.read(buffer)  # type: ignore
-        msp = dxf_doc.modelspace()
-        entities = list(msp)
-        assert any(e.dxftype() == "ARC" for e in entities)
+        assert "ARC" in _entity_types(dxf_bytes)
 
     def test_export_bezier_geometry(self, bezier_geometry: Geometry):
         exporter = GeometryDxfExporter(bezier_geometry)
         dxf_bytes = exporter.export()
 
-        buffer = io.StringIO(dxf_bytes.decode("utf-8"))
-        dxf_doc = ezdxf.read(buffer)  # type: ignore
-        msp = dxf_doc.modelspace()
-        entities = list(msp)
-        assert any(e.dxftype() == "SPLINE" for e in entities)
+        assert "SPLINE" in _entity_types(dxf_bytes)
 
     def test_export_empty_geometry_raises(self):
         geo = Geometry()
@@ -110,10 +123,7 @@ class TestGeometryDxfExporterExport:
         exporter = GeometryDxfExporter(rectangle_geometry)
         dxf_bytes = exporter.export()
 
-        buffer = io.StringIO(dxf_bytes.decode("utf-8"))
-        dxf_doc = ezdxf.read(buffer)  # type: ignore
-        assert dxf_doc is not None
-        assert dxf_doc.modelspace() is not None
+        assert _entity_types(dxf_bytes)
 
     def test_export_multi_subpath(self):
         """Test that multiple subpaths create separate polylines."""
@@ -128,12 +138,7 @@ class TestGeometryDxfExporterExport:
         exporter = GeometryDxfExporter(geo)
         dxf_bytes = exporter.export()
 
-        buffer = io.StringIO(dxf_bytes.decode("utf-8"))
-        dxf_doc = ezdxf.read(buffer)  # type: ignore
-        msp = dxf_doc.modelspace()
-        entities = list(msp)
-
-        polylines = [e for e in entities if e.dxftype() == "LWPOLYLINE"]
+        polylines = [t for t in _entity_types(dxf_bytes) if t == "LWPOLYLINE"]
         assert len(polylines) == 3, (
             f"Expected 3 polylines, got {len(polylines)}"
         )
@@ -149,12 +154,7 @@ class TestGeometryDxfExporterExport:
         exporter = GeometryDxfExporter(geo)
         dxf_bytes = exporter.export()
 
-        buffer = io.StringIO(dxf_bytes.decode("utf-8"))
-        dxf_doc = ezdxf.read(buffer)  # type: ignore
-        msp = dxf_doc.modelspace()
-        entities = list(msp)
-
-        polylines = [e for e in entities if e.dxftype() == "LWPOLYLINE"]
+        polylines = [t for t in _entity_types(dxf_bytes) if t == "LWPOLYLINE"]
         assert len(polylines) == 2, (
             f"Expected 2 polylines, got {len(polylines)}"
         )
@@ -378,12 +378,7 @@ class TestMultiGeometryDxfExporter:
         exporter = MultiGeometryDxfExporter([geo1, geo2])
         dxf_bytes = exporter.export()
 
-        buffer = io.StringIO(dxf_bytes.decode("utf-8"))
-        dxf_doc = ezdxf.read(buffer)  # type: ignore
-        msp = dxf_doc.modelspace()
-        entities = list(msp)
-
-        polylines = [e for e in entities if e.dxftype() == "LWPOLYLINE"]
+        polylines = [t for t in _entity_types(dxf_bytes) if t == "LWPOLYLINE"]
         assert len(polylines) == 2
 
     def test_export_combines_into_one_modelspace(self):
@@ -399,12 +394,7 @@ class TestMultiGeometryDxfExporter:
         exporter = MultiGeometryDxfExporter([geo1, geo2])
         dxf_bytes = exporter.export()
 
-        buffer = io.StringIO(dxf_bytes.decode("utf-8"))
-        dxf_doc = ezdxf.read(buffer)  # type: ignore
-        msp = dxf_doc.modelspace()
-        entities = list(msp)
-
-        assert len(entities) >= 2
+        assert len(_entity_types(dxf_bytes)) >= 2
 
     def test_export_empty_list_raises(self):
         """Test that exporting empty geometry list raises."""

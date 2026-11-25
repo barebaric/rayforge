@@ -23,6 +23,7 @@
 ; Variables
 Var PreviousInstallDir
 Var MovedInstallDir
+Var LaunchAfterInstall
 
 ;--------------------------------
 ; General
@@ -51,12 +52,18 @@ UninstPage instfiles
 ; The bundled executable name contains the version, so processes are
 ; matched on the product name instead of a fixed file name. The
 ; installer process itself shares that name prefix, so it is excluded
-; from the match.
+; from the match. A silent install is started by the running app when
+; it installs an update, so closing that app is expected; it is started
+; again once the new version is in place.
 
 !macro CheckAppNotRunningBody LABEL
 ${LABEL}:
   ExecWait `"$SYSDIR\cmd.exe" /C tasklist /FI "IMAGENAME eq ${PRODUCT_NAME}*" /FO CSV /NH | "$SYSDIR\find.exe" /I "${PRODUCT_NAME}" | "$SYSDIR\find.exe" /V /I "installer.exe" > nul` $0
   ${If} $0 = 0
+    ${If} ${Silent}
+      StrCpy $LaunchAfterInstall "1"
+      Return
+    ${EndIf}
     MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION "${PRODUCT_NAME} is still running.$\n$\nPlease close it and click Retry, or click Cancel to stop." /SD IDCANCEL IDRETRY ${LABEL}
     Abort
   ${EndIf}
@@ -72,7 +79,7 @@ FunctionEnd
 
 ;--------------------------------
 ; File type registration
-; .png, .bmp, .jpeg, .jpg, .svg, .svgz and .dxf are shared with other
+; .png, .bmp, .jpeg, .jpg, .svg, .svgz, .dxf and .cdr are shared with other
 ; applications, so Rayforge never claims their default association:
 ; it only registers its ProgIDs and lists them under the extension's
 ; OpenWithProgids subkey, which adds Rayforge to the "Open with" menu.
@@ -176,6 +183,7 @@ Section "MainSection" SEC01
   !insertmacro RegisterSharedFileType "svg" "Rayforge.SvgFile" "SVG Image"
   !insertmacro RegisterSharedFileType "svgz" "Rayforge.SvgzFile" "Compressed SVG Image"
   !insertmacro RegisterSharedFileType "dxf" "Rayforge.DxfFile" "DXF Drawing"
+  !insertmacro RegisterSharedFileType "cdr" "Rayforge.CdrFile" "CorelDRAW Drawing"
   !insertmacro RegisterSharedFileType "pdf" "Rayforge.PdfFile" "PDF Document"
   !insertmacro RegisterSharedFileType "ai" "Rayforge.AiFile" "Adobe Illustrator File"
   !insertmacro RegisterSharedFileType "eps" "Rayforge.EpsFile" "EPS Image"
@@ -202,6 +210,12 @@ Section "MainSection" SEC01
   ; previous version is no longer needed.
   ${If} $MovedInstallDir != ""
     RMDir /r "$MovedInstallDir"
+  ${EndIf}
+
+  ; Start the new version again when an update was installed over a
+  ; running instance.
+  ${If} $LaunchAfterInstall == "1"
+    Exec '"$INSTDIR\${EXECUTABLE_NAME}"'
   ${EndIf}
 SectionEnd
 
@@ -239,6 +253,7 @@ Section "Uninstall"
   !insertmacro UnregisterSharedFileType "svg" "Rayforge.SvgFile"
   !insertmacro UnregisterSharedFileType "svgz" "Rayforge.SvgzFile"
   !insertmacro UnregisterSharedFileType "dxf" "Rayforge.DxfFile"
+  !insertmacro UnregisterSharedFileType "cdr" "Rayforge.CdrFile"
   !insertmacro UnregisterSharedFileType "pdf" "Rayforge.PdfFile"
   !insertmacro UnregisterSharedFileType "ai" "Rayforge.AiFile"
   !insertmacro UnregisterSharedFileType "eps" "Rayforge.EpsFile"

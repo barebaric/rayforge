@@ -3,9 +3,9 @@ import warnings
 from typing import TYPE_CHECKING, Optional
 from xml.etree import ElementTree as ET
 
+from raygeo.formats.svg import filter_svg_by_color
+from raygeo.formats.svg.color import ColorAttr
 from raygeo.geo.types import Rect
-from raygeo.svg import filter_svg_by_color
-from raygeo.svg.color import ColorAttr
 
 from ...core.vectorization_spec import LayerSource, PassthroughSpec, TraceSpec
 from ..base_renderer import Renderer, RenderSpecification

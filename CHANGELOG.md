@@ -188,6 +188,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the operating system. Linux gets MIME definitions and a `.desktop`
   entry, the macOS app bundle declares its document types, and the
   Windows installer lists the formats in the "Open with" menu
+- Sketch tool: the right-click fan menu grows its drawing area with
+  the longest entry label again, so labels are no longer clipped at
+  the edge of the menu
+- Machines: a machine whose driver is not available in this build
+  (for example a project saved with an add-on that is no longer
+  installed, or a machine profile that needs a driver this build does
+  not ship) now shows the missing driver in the machine warning banner
+  and fails job generation. It no longer falls back to the dummy
+  driver, which silently encoded G-code with the machine's leftover
+  dialect
+- Machines: switching drivers keeps only the setup values whose type
+  matches the new driver. A network port number left over from another
+  driver no longer breaks a serial driver's setup, and a serial device
+  path is no longer carried into a network port setting
 
 - Import: SVG geometry that lives outside named layers is now
   offered as an "Ungrouped" layer in the import dialog and enabled

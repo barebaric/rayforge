@@ -2,7 +2,7 @@
 name = "rayforge"
 version = "0.1.0"
 channels = ["conda-forge", "bioconda", "msys2", "coastline"]
-platforms = ["linux-64", "osx-arm64"]
+platforms = ["linux-64", "osx-arm64", "osx-64"]
 
 [environments]
 default = { features = ["app", "test"], solve-group = "default" }
@@ -25,9 +25,7 @@ openslide = "==4.0.1"
 poppler = "==26.11.0"
 python = "==3.15.2"
 librsvg = "==2.62.4"
-svgelements = "==1.9.6"
 pluggy = "==1.7.0"
-scipy = "==1.18.1"
 numpy = "==2.5.5"
 pycairo = "==1.29.2"
 PyOpenGL = "==3.1.10"
@@ -39,18 +37,15 @@ patchelf = "==0.19.3"
 
 [feature.app.pypi-dependencies]
 raydriver = "==1.20.0"
-raygeo = "==1.97.0"
+raygeo = "==1.101.1"
 rayforge = { editable = true, path = "." }
 ruida-pa = "==0.24.0"
 aiohttp = "==3.14.5"
 asyncudp = "==0.11.0"
 blinker = "==1.9.0"
 build = "==1.6.1"
-cairosvg = "==2.9.1"
-ezdxf = "==1.4.5"
 GitPython = "==3.2.1"
 platformdirs = "==4.14.8"
-pypdf = "==7.1.1"
 pymupdf = "==1.28.2"
 pyserial = "==3.5"
 pyvips = "==3.2.0"
@@ -58,8 +53,6 @@ PyYAML = "==6.0.4"
 semver = "==3.1.2"
 trimesh = "==5.2.2"
 vtracer = "==0.6.15"
-websockets = "==17.4"
-zeroconf = "==0.154.0"
 
 [feature.app.target.linux-64.dependencies]
 xorg-xproto = "==7.0.31"
@@ -86,6 +79,7 @@ pytest = "==9.2.0"
 appstream = "==1.1.1|==1.2.3"
 
 [feature.test.pypi-dependencies]
+cairosvg = "==2.9.1"
 pytest-asyncio = "==1.5.0"
 pytest-mock = "==3.17.0"
 pytest-cov = "==7.1.0"
@@ -192,7 +186,6 @@ depends-on = ["compile-translations"]
 
 [dependencies]
 libadwaita = "==1.10.0"
-threadpoolctl = "==3.8.0"
 
 # Keep the conda solve from backtracking pygobject below the
 # pygobject>=3.55.0 floor required by the pygobject-stubs pypi

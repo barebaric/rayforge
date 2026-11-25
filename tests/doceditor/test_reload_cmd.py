@@ -2,9 +2,9 @@ import math
 from pathlib import Path
 from unittest.mock import MagicMock
 
-import ezdxf
 import pytest
 import pyvips
+from raygeo.formats.dxf.writer import write
 from raygeo.geo import Geometry, Matrix
 
 from rayforge.core.doc import Doc
@@ -521,12 +521,16 @@ class TestReloadBitmap:
 
 
 def _write_dxf(path: Path, extra_circle: bool) -> Path:
-    drawing = ezdxf.new()  # type: ignore
-    msp = drawing.modelspace()
-    msp.add_lwpolyline([(10, 10), (30, 10), (30, 20), (10, 20)], close=True)
+    geometry = Geometry()
+    geometry.move_to(10, 10)
+    geometry.line_to(30, 10)
+    geometry.line_to(30, 20)
+    geometry.line_to(10, 20)
+    geometry.close_path()
     if extra_circle:
-        msp.add_circle((80, 90), radius=5)
-    drawing.saveas(path)
+        geometry.move_to(85, 90)
+        geometry.arc_to(85, 90, -5, 0, False, 0)
+    path.write_bytes(write(geometry).encode("utf-8"))
     return path
 
 

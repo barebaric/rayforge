@@ -3,14 +3,14 @@ from __future__ import annotations
 import logging
 from typing import ClassVar
 
-from raygeo.geo import Geometry
-from raygeo.svg import (
+from raygeo.formats.svg import (
     svg_string_to_geometries,
     svg_string_to_geometries_by_color,
     svg_string_to_geometry_by_color,
     svg_string_to_geometry_by_layer,
 )
-from raygeo.svg.color import ColorAttr
+from raygeo.formats.svg.color import ColorAttr
+from raygeo.geo import Geometry
 
 from ...core.vectorization_spec import (
     LayerSource,

@@ -36,6 +36,12 @@ logger = logging.getLogger(__name__)
 # A fixed, reasonable resolution for generating preview bitmaps.
 PREVIEW_RENDER_SIZE_PX = 1024
 
+# Bounds of the outline-repair tolerance. The minimum doubles as the
+# sentinel for "choose one that suits the drawing's size": a user who
+# never touches the row gets the adaptive behaviour.
+REPAIR_TOLERANCE_MIN_MM = 0.0
+REPAIR_TOLERANCE_MAX_MM = 5.0
+
 
 class ImportDialog(PatchedDialogWindow):
     """
@@ -237,6 +243,45 @@ class ImportDialog(PatchedDialogWindow):
         )
         self.z_flatten_group.add(self.flatten_z_switch)
 
+        # Outline repair. Offered only by importers that advertise
+        # GEOMETRY_REPAIR, which today means formats whose exporters
+        # routinely split one outline into many loose segments.
+        self.repair_group = Adw.PreferencesGroup(title=_("Outline Repair"))
+        self.repair_group.set_visible(False)
+        preferences_page.add(self.repair_group)
+
+        self.repair_switch = Adw.SwitchRow(
+            title=_("Repair Open Outlines"),
+            subtitle=_(
+                "Join loose segments into closed contours so parts can "
+                "be offset and split"
+            ),
+            active=False,
+        )
+        self.repair_switch.connect("notify::active", self._on_repair_toggled)
+        self.repair_group.add(self.repair_switch)
+
+        self.repair_tolerance_row = SpinRow(
+            _("Join Gap"),
+            _(
+                "Largest gap between two segment ends that is bridged, "
+                "in millimetres. Set to the minimum to scale it to the "
+                "drawing."
+            ),
+            lower=REPAIR_TOLERANCE_MIN_MM,
+            upper=REPAIR_TOLERANCE_MAX_MM,
+            step_increment=0.01,
+            digits=3,
+            numeric=True,
+            value=REPAIR_TOLERANCE_MIN_MM,
+            debounce_ms=300,
+        )
+        self.repair_tolerance_row.value_changed.connect(
+            self._on_repair_tolerance_changed
+        )
+        self.repair_tolerance_row.set_sensitive(False)
+        self.repair_group.add(self.repair_tolerance_row)
+
         # Show this group if the importer supports both vector and trace,
         # or if DPI is relevant (detected later from manifest)
         can_trace = ImporterFeature.BITMAP_TRACING in self.features
@@ -343,6 +388,7 @@ class ImportDialog(PatchedDialogWindow):
         self.trace_group.set_sensitive(not is_direct_import)
         self.layers_group.set_sensitive(is_direct_import)
         self.flatten_z_switch.set_sensitive(is_direct_import)
+        self.repair_group.set_sensitive(is_direct_import)
         self._update_z_flatten_banner(is_direct_import)
         self.warning_banner.set_revealed(False)
         self._schedule_preview_update()
@@ -350,6 +396,20 @@ class ImportDialog(PatchedDialogWindow):
     def _on_flatten_z_toggled(self, switch, _pspec):
         self._update_z_flatten_banner()
         self._schedule_preview_update()
+
+    def _on_repair_toggled(self, switch, _pspec):
+        self.repair_tolerance_row.set_sensitive(switch.get_active())
+        self._schedule_preview_update()
+
+    def _on_repair_tolerance_changed(self, _row):
+        self._schedule_preview_update()
+
+    def _repair_tolerance_mm(self) -> float | None:
+        """The tolerance the user picked, or None for automatic."""
+        value = self.repair_tolerance_row.get_value()
+        if value <= REPAIR_TOLERANCE_MIN_MM:
+            return None
+        return value
 
     def _update_z_flatten_banner(self, is_direct_import: bool | None = None):
         """Shows the Z warning while flattening is disabled for a file
@@ -422,6 +482,10 @@ class ImportDialog(PatchedDialogWindow):
                 and ImporterFeature.Z_FLATTENING in self.features
             ):
                 self.z_flatten_group.set_visible(True)
+            # Outline repair is independent of the file's contents: the
+            # user decides whether their export is fragmented.
+            if ImporterFeature.GEOMETRY_REPAIR in self.features:
+                self.repair_group.set_visible(True)
             # Default to color grouping when the user has not picked a
             # layer source yet and the file has distinct colors but no
             # useful layer structure (no layers, or a single generic
@@ -590,6 +654,8 @@ class ImportDialog(PatchedDialogWindow):
                 layer_import_mode=self._get_layer_import_mode(),
                 layer_source=self._get_layer_source(),
                 flatten_z=self.flatten_z_switch.get_active(),
+                repair_outlines=self.repair_switch.get_active(),
+                repair_tolerance_mm=self._repair_tolerance_mm(),
                 ppi=ppi,
             )
         else:
@@ -630,6 +696,12 @@ class ImportDialog(PatchedDialogWindow):
                 idx = mode_map.get(spec.layer_import_mode, 0)
                 self.layer_import_mode_row.set_selected(idx)
                 self.flatten_z_switch.set_active(spec.flatten_z)
+                self.repair_switch.set_active(spec.repair_outlines)
+                if spec.repair_tolerance_mm is not None:
+                    self.repair_tolerance_row.set_value(
+                        spec.repair_tolerance_mm
+                    )
+                self.repair_tolerance_row.set_sensitive(spec.repair_outlines)
             elif isinstance(spec, TraceSpec):
                 if can_vector:
                     self.use_vectors_switch.set_active(False)

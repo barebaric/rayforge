@@ -72,8 +72,8 @@ Steps can be reordered by drag-and-drop.
 
 ## Vector File Import
 
-When importing vector files (SVG, DXF, PDF), the import dialog offers three ways to handle layers
-from the source file:
+When importing vector files (SVG, DXF, CorelDRAW, PDF), the import dialog offers three ways to
+handle layers from the source file:
 
 - **Map to existing layers** — imports each source layer into the corresponding document layer by
   position

@@ -3,10 +3,9 @@ from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
-from raygeo.sketch.constraints import DragConstraint
+from raygeo.sketch.constraints import DragConstraint, check_grad
 from raygeo.sketch.params import ParameterContext
 from raygeo.sketch.registry import EntityRegistry
-from scipy.optimize import check_grad
 
 
 @pytest.fixture

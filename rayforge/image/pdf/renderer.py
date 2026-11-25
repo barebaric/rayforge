@@ -1,12 +1,9 @@
-import io
 import logging
 import warnings
 from typing import TYPE_CHECKING, Optional
 
-from pypdf import PdfReader
-from pypdf.errors import PdfReadError
-
 from ..base_renderer import RasterRenderer, RenderSpecification
+from .metadata import PdfInfoError, read_pdf_info
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -112,14 +109,12 @@ class PdfRenderer(RasterRenderer):
 
     def _get_page_points(self, data: bytes) -> tuple[float, float] | None:
         try:
-            reader = PdfReader(io.BytesIO(data))
-            mb = reader.pages[0].mediabox
-            w, h = float(mb.width), float(mb.height)
-            if w > 0 and h > 0:
-                return w, h
-        except (PdfReadError, IndexError, AttributeError, ValueError) as e:
+            info = read_pdf_info(data)
+            if info.width_pt > 0 and info.height_pt > 0:
+                return info.width_pt, info.height_pt
+        except PdfInfoError as e:
             logger.warning(
-                "Failed to read PDF page dimensions via pypdf: %s", e
+                "Failed to read PDF page dimensions via PyMuPDF: %s", e
             )
 
         try:

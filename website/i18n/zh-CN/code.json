@@ -1081,5 +1081,11 @@
   },
   "install.appimageExtractRun": {
     "message": "或者，让 AppImage 先自解压，从而在没有 FUSE 的情况下运行："
+  },
+  "install.windowsSmartScreen": {
+    "message": "安装程序未进行代码签名，因此 Windows 可能会显示“Windows 已保护你的电脑”。请点击“更多信息”，然后点击“仍要运行”。Rayforge 是开源的，每次下载都由 GitHub 根据已发布的源代码自动构建。"
+  },
+  "install.windowsUpdates": {
+    "message": "Rayforge 运行时会在后台下载新版本。版本准备就绪后，在通知中点击“更新”并确认，Rayforge 便会自动安装并重新启动。"
   }
 }

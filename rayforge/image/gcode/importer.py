@@ -3,7 +3,7 @@ from gettext import gettext as _
 from pathlib import Path
 from typing import ClassVar
 
-from raygeo.gcode import GcodeParseResult, parse_gcode
+from raygeo.formats.gcode import GcodeParseResult, parse_gcode
 from raygeo.geo import Geometry
 
 from ...core.source_asset import SourceAsset

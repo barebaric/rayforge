@@ -4,10 +4,9 @@ import cairo
 import numpy as np
 import pytest
 from gi.repository import Pango, PangoCairo
-from raygeo.sketch.constraints import DistanceConstraint
+from raygeo.sketch.constraints import DistanceConstraint, check_grad
 from raygeo.sketch.params import ParameterContext
 from raygeo.sketch.registry import EntityRegistry
-from scipy.optimize import check_grad
 from sketcher.core import Sketch
 from sketcher.selection import SketchSelection
 
@@ -96,7 +95,7 @@ def test_distance_constraint_with_expression(setup_env):
 
 def test_distance_constraint_gradient(setup_env):
     """
-    Uses scipy.optimize.check_grad to numerically verify the analytical
+    Uses check_grad to numerically verify the analytical
     gradient of DistanceConstraint.
     """
     reg, params = setup_env

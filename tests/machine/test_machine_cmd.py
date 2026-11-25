@@ -301,7 +301,7 @@ class TestMachineCmdJobMonitoring:
 
     @pytest.mark.asyncio
     async def test_second_job_rejected_with_actionable_error(
-        self, machine_cmd, machine, job_artifact
+        self, machine_cmd, doc_editor, machine, job_artifact
     ):
         """
         Starting a second job while one runs must raise a dedicated
@@ -319,9 +319,13 @@ class TestMachineCmdJobMonitoring:
         assert "Stop" in str(excinfo.value)
         assert machine_cmd._current_monitor is running_monitor
 
+        # Settle the editor so a rebuild armed during the test cannot
+        # linger into the strict no-lingering-tasks teardown check.
+        await doc_editor.wait_until_settled()
+
     @pytest.mark.asyncio
     async def test_send_job_notifies_user_of_running_job(
-        self, machine_cmd, machine, mocker
+        self, machine_cmd, doc_editor, machine, mocker
     ):
         """
         The rejection must surface as a user notification carrying the
@@ -344,6 +348,10 @@ class TestMachineCmdJobMonitoring:
         message = notification_spy.call_args.kwargs["message"]
         assert "already running" in message
         assert "Sending failed" not in message
+
+        # Settle the editor so a rebuild armed during the test cannot
+        # linger into the strict no-lingering-tasks teardown check.
+        await doc_editor.wait_until_settled()
 
 
 class TestMachineCmdJobEventHooks:

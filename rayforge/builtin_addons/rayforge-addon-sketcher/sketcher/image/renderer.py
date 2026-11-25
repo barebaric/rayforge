@@ -6,8 +6,8 @@ from typing import (
     Optional,
 )
 
+from raygeo.formats.svg import geometry_to_svg_path
 from raygeo.geo import Geometry
-from raygeo.svg import geometry_to_svg_path
 
 from rayforge.core.color import ColorRGBA
 from rayforge.image.base_renderer import Renderer, RenderSpecification

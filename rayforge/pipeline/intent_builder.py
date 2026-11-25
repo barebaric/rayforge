@@ -41,6 +41,7 @@ import json
 import logging
 import math
 from collections.abc import Callable, Mapping, Sequence
+from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -75,7 +76,8 @@ from raygeo.ops.material.spec import (
 from raygeo.pipeline.request import NodeRequest
 from raygeo.pipeline.stage import StageSpec
 
-from ..machine.driver import get_driver_cls
+from ..machine.driver import find_driver_cls, get_driver_cls
+from ..machine.driver.driver import Driver
 from ..machine.driver.dummy import NoDeviceDriver
 from ..machine.kinematic_math import KinematicMath
 from ..machine.models.coordspace import MachineSpace
@@ -111,7 +113,12 @@ JOB_MACHINEXFORM_KEY = "job:machinexform"
 STOCK_KEY_FMT = "stock:{stock_uid}"
 
 
-class UnsupportedRotaryPanelOrientationError(ValueError):
+class PipelineConfigurationError(ValueError):
+    """Job generation is impossible because of the machine or document
+    configuration."""
+
+
+class UnsupportedRotaryPanelOrientationError(PipelineConfigurationError):
     """Raised when rotary output is requested from a rotated panel.
 
     Raygeo's rotary stage maps the unrolled cylinder's Y coordinate
@@ -119,6 +126,40 @@ class UnsupportedRotaryPanelOrientationError(ValueError):
     therefore cannot be composed with rotary mapping without changing
     which coordinate is treated as the circumference.
     """
+
+
+class UnavailableDriverError(PipelineConfigurationError):
+    """Raised when the machine's configured driver is not installed.
+
+    Machines refer to their driver by class name. When that driver is
+    unavailable, for example in a project saved with an add-on that is
+    no longer installed or in a build without a built-in driver, job
+    generation must fail: substituting the dummy driver would silently
+    encode G-code for a machine that cannot consume it.
+    """
+
+
+def resolve_driver_cls(machine: Machine) -> type[Driver]:
+    """Return the class of the machine's configured driver.
+
+    Raises :class:`UnavailableDriverError` when the machine names a
+    driver that is not registered, instead of silently substituting
+    :class:`NoDeviceDriver`, which would make the machine a G-code
+    machine with the wrong dialect.
+    """
+    driver_name = machine.driver_name
+    if not driver_name:
+        return NoDeviceDriver
+    driver_cls = find_driver_cls(driver_name)
+    if driver_cls is None:
+        raise UnavailableDriverError(
+            _(
+                "The driver '{driver}' configured for machine '{machine}' "
+                "is not available. Select an available driver for this "
+                "machine."
+            ).format(driver=driver_name, machine=machine.name)
+        )
+    return driver_cls
 
 
 def validate_panel_configuration(machine: Machine, doc: Doc) -> None:
@@ -131,6 +172,12 @@ def validate_panel_configuration(machine: Machine, doc: Doc) -> None:
         "Rotary layers require the Native panel orientation. "
         "Set Machine → Hardware → Panel Orientation to Native."
     )
+
+
+def validate_machine_configuration(machine: Machine, doc: Doc) -> None:
+    """Reject machine configurations that cannot produce a job."""
+    resolve_driver_cls(machine)
+    validate_panel_configuration(machine, doc)
 
 
 def workpiece_key(wp_uid: str, step_uid: str) -> str:
@@ -220,7 +267,7 @@ class IntentBuilder:
         Walk *doc* and produce one NodeRequest per workpiece-step pair,
         one per step, and one final job aggregate.
         """
-        validate_panel_configuration(self._machine, doc)
+        validate_machine_configuration(self._machine, doc)
         self._doc = doc
         nodes: list[NodeRequest] = []
         # Map each step's key to the list of upstream compute inputs
@@ -1281,11 +1328,16 @@ class IntentBuilder:
         by the dialect alone: a driver that does not speak G-code
         (e.g. Ruida) must always use its own encoder, even when the
         machine still carries a leftover Grbl dialect (issue #420).
+
+        A driver that is named in the machine configuration but not
+        installed fails here instead of silently encoding G-code with
+        the dummy driver.
         """
         machine = self._machine
         assert machine is not None
 
-        if _driver_uses_gcode(machine):
+        driver_cls = resolve_driver_cls(machine)
+        if driver_cls.uses_gcode:
             dialect = machine.dialect
             if dialect is not None and _is_grbl(dialect):
                 return self._grbl_encoder_spec(doc)
@@ -1484,14 +1536,7 @@ class IntentBuilder:
         handled by the upstream machine-transform stage, so this
         callable only applies the final driver encoding step.
         """
-        if machine.driver_name:
-            try:
-                driver_cls = get_driver_cls(machine.driver_name)
-            except (ValueError, ImportError):
-                driver_cls = NoDeviceDriver
-        else:
-            driver_cls = NoDeviceDriver
-
+        driver_cls = resolve_driver_cls(machine)
         driver_encoder = driver_cls.create_encoder(machine)
 
         def encode(ops: Any) -> EncodeOutput:

@@ -1,7 +1,7 @@
 ---
 description:
-  "Import SVG, DXF, PDF, LightBurn, Ruida, and raster image files into Rayforge. Supported formats
-  and import options for laser cutting and engraving projects."
+  "Import SVG, DXF, CorelDRAW, PDF, LightBurn, Ruida, and raster image files into Rayforge.
+  Supported formats and import options for laser cutting and engraving projects."
 ---
 
 # Importing Files
@@ -17,6 +17,7 @@ import files and optimize them for best results.
 | --------------- | ----------------- | ------------------------------------------- | ------------------------------- |
 | **SVG**         | `.svg`, `.svgz`   | Direct vectors or trace                     | Vector graphics, logos, designs |
 | **DXF**         | `.dxf`            | Direct vectors                              | CAD drawings, technical designs |
+| **CorelDRAW**   | `.cdr`            | Direct vectors                              | CorelDRAW drawings              |
 | **PDF**         | `.pdf`            | Direct vectors or trace                     | Documents with vector content   |
 | **LightBurn**   | `.lbrn`, `.lbrn2` | Direct vectors                              | LightBurn project files         |
 | **Ruida**       | `.rd`             | Direct vectors                              | Ruida controller job files      |
@@ -314,6 +315,22 @@ needs it (for example to re-create a specific focus height per shape).
 
 For flat drawings the option is not shown; there is nothing to flatten.
 
+### Repairing Open Outlines
+
+CAD exporters often write one outline as many separate lines and arcs whose ends only almost meet.
+Such a file imports as a pile of open fragments, which cannot be offset, split into parts, or cut as
+a closed path — the classic symptom is that **Object → Split** appears to do nothing.
+
+Exporters that are prone to this offer a **Repair Open Outlines** option in the import dialog. It is
+off by default and appears under "Outline Repair". When enabled, Rayforge joins segments whose ends
+lie within the **Join Gap** tolerance, closes any contour whose own ends then meet, and drops
+outlines that appear twice. Existing points are never moved: each join is bridged with a straight
+segment, so a shape grows by at most the tolerance at each joining point.
+
+Leave **Join Gap** at its minimum to have Rayforge pick a tolerance that suits the drawing's size.
+Raise it if outlines are still open after import — the import dialog reports how many remained. Set
+it too high and unrelated outlines may be joined into one.
+
 ### DXF Import Tips
 
 **Before exporting from CAD:**
@@ -340,6 +357,35 @@ For flat drawings the option is not shown; there is nothing to flatten.
 - Check scale (DXF units may need adjustment)
 - Verify all paths imported correctly
 - Delete any unwanted construction elements
+
+---
+
+## CorelDRAW Import
+
+CorelDRAW (`.cdr`) files are read natively, so CorelDRAW does not need to be installed. Rayforge
+reads the drawing files of CorelDRAW 7 through X7, both as plain files and as the ZIP-based packages
+of later versions.
+
+**Supported Features:**
+
+- ✓ Curves, paths, arcs, ellipses and rounded rectangles
+- ✓ Text imported as outlines
+- ✓ Named layers, selectable in the import dialog
+- ✓ Object, group and layer transformations
+- ✓ Hidden layers and objects left out
+
+**Limitations:**
+
+- ✗ Only the first drawing page is imported; later pages are reported
+- ✗ Bitmaps and unsupported object types are reported as warnings and left out
+- ✗ Fills, outlines and embedded fonts are ignored; text is drawn with the closest installed font,
+  so glyphs may differ from CorelDRAW's own rendering
+- ✗ CMX files are recognized but cannot be read
+
+**When to Use:**
+
+- Opening designs that only exist as a CorelDRAW file
+- Moving an existing CorelDRAW workflow to Rayforge
 
 ---
 

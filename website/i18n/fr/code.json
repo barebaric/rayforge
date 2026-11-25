@@ -1081,5 +1081,11 @@
   },
   "install.appimageExtractRun": {
     "message": "Vous pouvez aussi lancer l'AppImage sans FUSE en le laissant d'abord s'extraire :"
+  },
+  "install.windowsSmartScreen": {
+    "message": "Windows peut afficher « Windows a protégé votre PC » car l’installateur n’a pas de signature numérique. Cliquez sur Informations complémentaires, puis sur Exécuter quand même. Rayforge est libre et open source, et chaque téléchargement est compilé automatiquement par GitHub à partir du code source publié."
+  },
+  "install.windowsUpdates": {
+    "message": "Rayforge télécharge les nouvelles versions en arrière-plan pendant son exécution. Quand une version est prête, cliquez sur Mettre à jour dans la notification, confirmez, et Rayforge l’installe puis redémarre tout seul."
   }
 }

@@ -11,6 +11,7 @@ Rasterformate. Diese Seite erklärt, wie du Dateien importierst und für beste E
 | --------------- | ----------------- | ---------------------------------------------------- | ------------------------------------ |
 | **SVG**         | `.svg`, `.svgz`   | Direkte Vektoren oder Tracing                        | Vektorgrafiken, Logos, Designs       |
 | **DXF**         | `.dxf`            | Direkte Vektoren                                     | CAD-Zeichnungen, technische Designs  |
+| **CorelDRAW**   | `.cdr`            | Direkte Vektoren                                     | CorelDRAW-Zeichnungen                |
 | **PDF**         | `.pdf`            | Direkte Vektoren oder Tracing                        | Dokumente mit Vektorinhalt           |
 | **LightBurn**   | `.lbrn`, `.lbrn2` | Direkte Vektoren                                     | LightBurn-Projekte                   |
 | **Ruida**       | `.rd`             | Direkte Vektoren                                     | Ruida-Controller-Auftragsdateien     |
@@ -321,6 +322,25 @@ bestimmte Fokushöhe pro Form nachzubilden).
 
 Bei flachen Zeichnungen wird die Option nicht angezeigt; es gibt nichts abzuflachen.
 
+### Offene Konturen reparieren
+
+CAD-Exporteure schreiben eine Kontur häufig als viele einzelne Linien und Bögen, deren Enden nur
+fast aneinanderstoßen. Eine solche Datei wird als Ansammlung offener Fragmente importiert, die sich
+nicht versetzen, nicht in Teile zerlegen und nicht als geschlossene Bahn schneiden lassen –
+typisches Symptom: **Objekt → Teilen** scheint nichts zu tun.
+
+Bei Exporteuren, die dazu neigen, bietet der Import-Dialog die Option **Offene Konturen reparieren**
+an. Sie ist standardmäßig ausgeschaltet und erscheint unter „Kontur-Reparatur“. Wenn sie aktiviert
+ist, verbindet Rayforge Segmente, deren Enden innerhalb der Toleranz **Verbindungslücke** liegen,
+schließt Konturen, deren eigene Enden danach zusammenfallen, und entfernt Konturen, die doppelt
+vorkommen. Bestehende Punkte werden nie verschoben: Jede Verbindung wird mit einer geraden Strecke
+überbrückt, sodass eine Form an jeder Verbindungsstelle höchstens um die Toleranz wächst.
+
+Lassen Sie **Verbindungslücke** auf dem Mindestwert, damit Rayforge eine zur Zeichnungsgröße
+passende Toleranz wählt. Erhöhen Sie den Wert, wenn nach dem Import noch Konturen offen sind – der
+Import-Dialog meldet, wie viele übrig blieben. Bei zu hohen Werten können fremde Konturen fälschlich
+verbunden werden.
+
 ### DXF-Import-Tipps
 
 **Vor dem Export aus CAD:**
@@ -347,6 +367,35 @@ Bei flachen Zeichnungen wird die Option nicht angezeigt; es gibt nichts abzuflac
 - Maßstab prüfen (DXF-Einheiten benötigen möglicherweise Anpassung)
 - Verifizieren, dass alle Pfade korrekt importiert wurden
 - Unerwünschte Konstruktionselemente löschen
+
+---
+
+## CorelDRAW-Import
+
+CorelDRAW-Dateien (`.cdr`) werden nativ gelesen; CorelDRAW muss dafür nicht installiert sein.
+Rayforge liest die Zeichnungen von CorelDRAW 7 bis X7, sowohl als reine Dateien als auch als
+ZIP-basierte Pakete späterer Versionen.
+
+**Unterstützte Funktionen:**
+
+- ✓ Kurven, Pfade, Bögen, Ellipsen und abgerundete Rechtecke
+- ✓ Text als Konturen importiert
+- ✓ Benannte Ebenen, im Importdialog auswählbar
+- ✓ Objekt-, Gruppen- und Ebenentransformationen
+- ✓ Ausgeblendete Ebenen und Objekte werden ausgelassen
+
+**Einschränkungen:**
+
+- ✗ Nur die erste Zeichnungsseite wird importiert; weitere Seiten werden gemeldet
+- ✗ Bitmaps und nicht unterstützte Objekttypen werden als Warnungen gemeldet und ausgelassen
+- ✗ Füllungen, Konturen und eingebettete Schriften werden ignoriert; Text wird mit der am besten
+  passenden installierten Schrift gezeichnet, sodass Glyphen von CorelDRAW abweichen können
+- ✗ CMX-Dateien werden erkannt, können aber nicht gelesen werden
+
+**Wann verwenden:**
+
+- Entwürfe öffnen, die nur als CorelDRAW-Datei vorliegen
+- Einen bestehenden CorelDRAW-Workflow nach Rayforge überführen
 
 ---
 

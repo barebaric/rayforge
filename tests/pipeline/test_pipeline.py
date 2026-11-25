@@ -15,6 +15,7 @@ from rayforge.image import SVG_RENDERER
 from rayforge.machine.models.machine_panel import PanelOrientation
 from rayforge.pipeline.artifact import WorkPieceArtifactHandle
 from rayforge.pipeline.intent_builder import (
+    UnavailableDriverError,
     UnsupportedRotaryPanelOrientationError,
 )
 from rayforge.pipeline.pipeline import Pipeline
@@ -166,6 +167,32 @@ class TestPipeline:
         handle, error = results[0]
         assert handle is None
         assert isinstance(error, UnsupportedRotaryPanelOrientationError)
+
+    def test_generate_job_reports_unavailable_driver(
+        self, doc, mock_task_mgr, context_initializer
+    ):
+        """A machine whose driver is not installed must fail job
+        generation with a clear message instead of silently encoding
+        G-code with the dummy driver."""
+        machine = context_initializer.machine
+        machine.driver_name = "RemovedAddonDriver"
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            machine,
+        )
+        results = []
+
+        pipeline.generate_job_artifact(
+            when_done=lambda handle, error: results.append((handle, error))
+        )
+
+        assert len(results) == 1
+        handle, error = results[0]
+        assert handle is None
+        assert isinstance(error, UnavailableDriverError)
+        assert "RemovedAddonDriver" in str(error)
 
     @pytest.mark.asyncio
     async def test_generate_job_artifact_no_doc(

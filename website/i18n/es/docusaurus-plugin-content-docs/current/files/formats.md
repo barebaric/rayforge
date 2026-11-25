@@ -11,6 +11,7 @@ Rayforge, incluyendo capacidades, limitaciones y recomendaciones.
 | --------------------- | -------- | ----------------- | --------------- | ------------------------------------ |
 | **SVG**               | Vector   | ✓ Directo / Traza | ✓ Exportar obj. | Formato de diseño principal          |
 | **DXF**               | Vector   | ✓ Directo         | ✓ Exportar obj. | Intercambio CAD                      |
+| **CorelDRAW**         | Vector   | ✓ Directo         | ✓ Exportar obj. | Dibujos de CorelDRAW                 |
 | **PDF**               | Mixto    | ✓ Directo / Traza | –               | Documentos con contenido vec.        |
 | **Illustrator**       | Vector   | ✓ Directo / Traza | –               | Logotipos de Illustrator             |
 | **EPS**               | Vector   | ✓ Directo / Traza | –               | Logotipos, arte para impresión       |
@@ -129,6 +130,37 @@ Al exportar una pieza de trabajo a DXF, Rayforge exporta:
 - Arcos como entidades ARC
 - Curvas Bézier como entidades SPLINE
 - Unidades en milímetros (INSUNITS = 4)
+
+---
+
+### CorelDRAW (.cdr)
+
+**Extensión:** `.cdr` **Tipo MIME:** `application/vnd.corel-draw` **Importación:** Análisis vectorial directo
+**Exportación:** Exportación de objetos (solo geometría)
+
+Los dibujos de CorelDRAW se leen de forma nativa — no se necesita CorelDRAW. Rayforge lee el formato
+de registros de CorelDRAW 7 a X7, tanto archivos planos como los paquetes ZIP de versiones
+posteriores, incluidas sus listas de chunks comprimidas.
+
+**Funciones admitidas:**
+
+- ✓ Curvas, trazados, arcos, elipses y rectángulos redondeados
+- ✓ Texto convertido a contornos
+- ✓ Capas con nombre, seleccionables al importar
+- ✓ Transformaciones de objetos, grupos y capas
+
+**Limitaciones:**
+
+- ✗ Solo se importa la primera página del dibujo
+- ✗ Los mapas de bits y los tipos de objeto desconocidos se notifican y se omiten
+- ✗ Los rellenos, contornos y fuentes incrustadas se ignoran; el texto usa la fuente instalada más
+  parecida, por lo que los glifos pueden diferir de CorelDRAW
+- ✗ Los archivos CMX se reconocen pero no se pueden leer
+
+**Notas de exportación:**
+
+Al exportar una pieza a CorelDRAW, Rayforge escribe un dibujo de versión 12 con la geometría como
+curvas en una capa, un contorno negro fino y la página ajustada a la geometría.
 
 ---
 

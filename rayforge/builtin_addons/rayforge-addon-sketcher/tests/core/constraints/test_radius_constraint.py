@@ -5,10 +5,9 @@ from unittest.mock import MagicMock
 import cairo
 import numpy as np
 import pytest
-from raygeo.sketch.constraints import RadiusConstraint
+from raygeo.sketch.constraints import RadiusConstraint, check_grad
 from raygeo.sketch.params import ParameterContext
 from raygeo.sketch.registry import EntityRegistry
-from scipy.optimize import check_grad
 from sketcher.core import Sketch
 from sketcher.selection import SketchSelection
 

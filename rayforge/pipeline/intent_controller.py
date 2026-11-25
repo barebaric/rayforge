@@ -48,7 +48,8 @@ from raygeo.pipeline.request import NodeRequest
 
 from .intent_builder import (
     IntentBuilder,
-    UnsupportedRotaryPanelOrientationError,
+    PipelineConfigurationError,
+    UnavailableDriverError,
     parse_stock_key,
     parse_workpiece_key,
 )
@@ -403,16 +404,16 @@ class IntentController:
             )
             try:
                 nodes = builder.build(self._doc)
-            except UnsupportedRotaryPanelOrientationError as exc:
-                logger.warning("Unsupported panel configuration: %s", exc)
-                self._refresh_key_to_item_map([])
-                empty_intent = create_intent_from_nodes([])
-                if self._intent is None:
-                    self._intent = empty_intent
-                else:
-                    self._intent.update(
-                        empty_intent, pipeline=self._raygeo_pipeline
-                    )
+            except UnavailableDriverError as exc:
+                # The main window's machine warning banner names the
+                # missing driver; a notification on every rebuild would
+                # only flood the user with duplicates.
+                logger.warning("Driver unavailable: %s", exc)
+                self._install_empty_intent()
+                return
+            except PipelineConfigurationError as exc:
+                logger.warning("Invalid machine configuration: %s", exc)
+                self._install_empty_intent()
                 self._task_manager.schedule_on_main_thread(
                     self._emit_configuration_error, str(exc)
                 )
@@ -464,6 +465,16 @@ class IntentController:
         self._rebuild_task = self._task_manager.run_thread(
             _worker, when_done=_on_done, key="intent-rebuild"
         )
+
+    def _install_empty_intent(self) -> None:
+        """Replace the intent so an invalid configuration produces no
+        job, without discarding the pipeline object the UI holds."""
+        self._refresh_key_to_item_map([])
+        empty_intent = create_intent_from_nodes([])
+        if self._intent is None:
+            self._intent = empty_intent
+        else:
+            self._intent.update(empty_intent, pipeline=self._raygeo_pipeline)
 
     def _emit_job_generation_failed(self, message: str | None = None) -> None:
         """

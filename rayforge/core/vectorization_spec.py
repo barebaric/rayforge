@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
-from raygeo.svg.color import ColorAttr
+from raygeo.formats.svg.color import ColorAttr
 
 
 class LayerImportMode(Enum):
@@ -90,6 +90,8 @@ class PassthroughSpec(VectorizationSpec):
     color_attr: ColorAttr = ColorAttr.ANY
     trim_padding: float = 0.01
     flatten_z: bool = True
+    repair_outlines: bool = False
+    repair_tolerance_mm: float | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -100,6 +102,8 @@ class PassthroughSpec(VectorizationSpec):
             "color_attr": self.color_attr.value,
             "trim_padding": self.trim_padding,
             "flatten_z": self.flatten_z,
+            "repair_outlines": self.repair_outlines,
+            "repair_tolerance_mm": self.repair_tolerance_mm,
             "ppi": self.ppi,
         }
 
@@ -127,6 +131,8 @@ class PassthroughSpec(VectorizationSpec):
             color_attr=color_attr_from_value(data.get("color_attr")),
             trim_padding=data.get("trim_padding", 0.01),
             flatten_z=data.get("flatten_z", True),
+            repair_outlines=data.get("repair_outlines", False),
+            repair_tolerance_mm=data.get("repair_tolerance_mm"),
             ppi=data.get("ppi", 96.0),
         )
 
