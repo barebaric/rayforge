@@ -6,7 +6,7 @@ import time
 
 import pytest
 import pytest_asyncio
-from raydriver.xtool import XtoolSession
+import raydriver.xtool
 from raydriver.xtool.emulator import XtoolEmulator
 from raygeo.ops import Ops
 
@@ -114,7 +114,7 @@ def make_driver(context, machine, emulator) -> XtoolNetworkDriver:
         "http_port": emulator.http_port,
         "ws_port": emulator.ws_port,
     }
-    session = XtoolSession(
+    session = raydriver.xtool.XtoolNetworkDriver(
         config=config,
         dialect=drv._dialect_templates(),
         event_callback=drv._on_session_event,

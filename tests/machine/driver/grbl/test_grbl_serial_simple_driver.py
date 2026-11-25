@@ -8,9 +8,9 @@ from unittest.mock import PropertyMock
 
 import pytest
 import pytest_asyncio
+import raydriver.grbl.simple
 from raydriver.core.transport import MockTransport
 from raydriver.grbl.emulator import GrblEmulator
-from raydriver.grbl.simple import GrblSimpleSession
 from raygeo.ops import Ops
 from raygeo.ops.axis import Axis
 
@@ -138,7 +138,7 @@ def make_driver(
     drv = GrblSerialSimpleDriver(context, machine)
     drv.did_setup = True
     mock = MockTransport()
-    session = GrblSimpleSession.with_transport(
+    session = raydriver.grbl.simple.GrblSerialSimpleDriver.with_transport(
         mock,
         config=FAST_CONFIG,
         dialect=drv._dialect_templates(),
@@ -478,11 +478,13 @@ class TestCancelRegression:
                 new_callable=PropertyMock,
                 return_value=dialect,
             )
-            session = GrblSimpleSession.with_transport(
-                mock,
-                config=FAST_CONFIG,
-                dialect=drv._dialect_templates(),
-                event_callback=drv._on_session_event,
+            session = (
+                raydriver.grbl.simple.GrblSerialSimpleDriver.with_transport(
+                    mock,
+                    config=FAST_CONFIG,
+                    dialect=drv._dialect_templates(),
+                    event_callback=drv._on_session_event,
+                )
             )
             drv._session = session
         recorder = SignalRecorder(drv)

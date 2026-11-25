@@ -1,11 +1,12 @@
-"""Generic base for drivers backed by a raydriver session.
+"""Generic base for drivers backed by a raydriver driver.
 
-A raydriver session — local Rust object or remote daemon proxy —
+A raydriver driver — local Rust object or remote daemon proxy —
 exposes one protocol-agnostic method and event surface. This base
 translates that surface to the Rayforge ``Driver`` interface:
-dialects stay Rayforge data and are passed to the session as resolved
-command templates. Subclasses decide how the session is created and
-what protocol-specific capabilities (settings, probing) apply.
+dialects stay Rayforge data and are passed to the driver as resolved
+command templates. Subclasses bind the native class and supply the
+connection config, presentation and protocol-specific capabilities
+(settings, probing).
 """
 
 import asyncio
@@ -14,7 +15,7 @@ from collections.abc import Awaitable, Callable
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
-from raydriver.core import SessionEvent
+from raydriver.core import DriverEvent
 
 from ...context import RayforgeContext
 from ...core.varset import VarSet
@@ -26,12 +27,13 @@ from .driver import (
     DeviceConnectionError,
     DeviceError,
     Driver,
+    DriverSetupError,
     Pos,
 )
 from .session_state import from_session_state
 
 if TYPE_CHECKING:
-    from raydriver.core.types import DeviceState as SessionDeviceState
+    from raydriver.core.types import DeviceState as NativeDeviceState
     from raygeo.ops import Ops
 
     from ...core.doc import Doc
@@ -47,7 +49,7 @@ _HOMING_MIN_TIMEOUT_S = 30.0
 
 
 @runtime_checkable
-class SessionLike(Protocol):
+class NativeSession(Protocol):
     """The uniform session surface every raydriver session exposes.
 
     The local Rust sessions and the remote daemon proxy implement
@@ -56,7 +58,7 @@ class SessionLike(Protocol):
     of being absent.
     """
 
-    state: "SessionDeviceState"
+    state: "NativeDeviceState"
     resource_uri: str | None
 
     def update_dialect(self, dialect: dict[str, Any]) -> None: ...
@@ -122,20 +124,51 @@ class SessionLike(Protocol):
     ) -> Any: ...
 
 
-class SessionDriverBase(Driver):
-    """Driver machinery shared by every raydriver-session driver.
+class NativeDriver(Driver):
+    """Driver machinery shared by every native raydriver driver.
 
-    The session is held in ``self._session`` and created by the
-    subclass's ``_setup_implementation``. Everything here is
-    protocol-agnostic: it only uses the common session surface.
+    Subclasses set :attr:`NATIVE` to the raydriver class and may
+    override :meth:`build_config` / :meth:`_create_session` for
+    protocol-specific connection parameters.
     """
 
     reports_granular_progress = True
+
+    #: The raydriver class this Rayforge driver binds.
+    NATIVE: type[Any] | None = None
 
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         super().__init__(context, machine)
         self._session: Any = None
         self._machine_wcs = "G53"
+
+    def build_config(self, kwargs: dict[str, Any]) -> dict[str, Any]:
+        """Translate driver arguments into the native config dict."""
+        return dict(kwargs)
+
+    def _create_session(self, config: dict[str, Any]) -> NativeSession:
+        """Construct the native driver."""
+        if self.NATIVE is None:
+            raise DriverSetupError(
+                _("This driver has no native implementation.")
+            )
+        return self.NATIVE(
+            config=config,
+            dialect=self._dialect_templates(),
+            event_callback=self._on_session_event,
+        )
+
+    def _setup_implementation(self, **kwargs: Any) -> None:
+        self._session = self._create_session(self.build_config(kwargs))
+
+    async def read_settings(self) -> None:
+        await self._require_session().read_settings()
+        self.settings_read.send(self, settings=[])
+
+    async def write_setting(self, key: str, value: Any) -> None:
+        if isinstance(value, bool):
+            value = 1 if value else 0
+        await self._require_session().write_setting(key, str(value))
 
     @property
     def machine_space_wcs(self) -> str:
@@ -172,7 +205,7 @@ class SessionDriverBase(Driver):
         return max(seconds * _HOMING_SAFETY_FACTOR, _HOMING_MIN_TIMEOUT_S)
 
     @property
-    def session(self) -> SessionLike | None:
+    def session(self) -> NativeSession | None:
         """The underlying raydriver session, if set up."""
         return self._session
 
@@ -224,30 +257,30 @@ class SessionDriverBase(Driver):
 
     # -- events --------------------------------------------------------
 
-    def _on_session_event(self, event: SessionEvent) -> None:
+    def _on_session_event(self, event: DriverEvent) -> None:
         match event:
-            case SessionEvent.StateChanged():
+            case DriverEvent.StateChanged():
                 self._on_state_changed(event.state)
-            case SessionEvent.ConnectionStatusChanged():
+            case DriverEvent.ConnectionStatusChanged():
                 self._on_connection_status_changed(event.status, event.message)
-            case SessionEvent.CommandStatusChanged():
+            case DriverEvent.CommandStatusChanged():
                 self._on_command_status_changed(event.status, event.message)
-            case SessionEvent.JobFinished():
+            case DriverEvent.JobFinished():
                 self.job_finished.send(self)
-            case SessionEvent.ProbeStatusChanged():
+            case DriverEvent.ProbeStatusChanged():
                 self.probe_status_changed.send(self, message=event.message)
-            case SessionEvent.WcsUpdated():
+            case DriverEvent.WcsUpdated():
                 self.wcs_updated.send(self, offsets=event.offsets)
-            case SessionEvent.ConfigChanged():
+            case DriverEvent.ConfigChanged():
                 self._on_config_changed(event.key, event.value)
-            case SessionEvent.RawRx():
+            case DriverEvent.RawRx():
                 self._log_raw_line(event.line, received=True)
-            case SessionEvent.RawTx():
+            case DriverEvent.RawTx():
                 self._log_raw_line(event.line, received=False)
             case _:
                 self._logger.debug(f"Ignoring session event: {event!r}")
 
-    def _on_state_changed(self, session_state: "SessionDeviceState") -> None:
+    def _on_state_changed(self, session_state: "NativeDeviceState") -> None:
         state = from_session_state(session_state)
         old_status = self.state.status
         self.state = state

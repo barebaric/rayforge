@@ -191,14 +191,14 @@ class TestExecuteInteractiveCommand:
     session against a mute scripted device."""
 
     async def mute_driver(self, context_initializer, machine):
+        import raydriver.smoothie
         from raydriver.core.transport import MockTransport
-        from raydriver.smoothie import SmoothieSession
 
         machine.dialect_uid = "smoothieware"
         drv = SmoothieDriver(context_initializer, machine)
         drv.did_setup = True
         mock = MockTransport()
-        session = SmoothieSession.with_transport(
+        session = raydriver.smoothie.SmoothieDriver.with_transport(
             mock,
             config=FAST_CONFIG,
             dialect=drv._dialect_templates(),
@@ -261,13 +261,13 @@ class TestExecuteInteractiveCommand:
 
     @pytest.mark.asyncio
     async def test_not_connected_raises(self, context_initializer, machine):
+        import raydriver.smoothie
         from raydriver.core.transport import MockTransport
-        from raydriver.smoothie import SmoothieSession
 
         machine.dialect_uid = "smoothieware"
         drv = SmoothieDriver(context_initializer, machine)
         drv.did_setup = True
-        drv._session = SmoothieSession.with_transport(
+        drv._session = raydriver.smoothie.SmoothieDriver.with_transport(
             MockTransport(),
             config=FAST_CONFIG,
             dialect=drv._dialect_templates(),

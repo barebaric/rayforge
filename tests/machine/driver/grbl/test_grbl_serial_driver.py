@@ -7,8 +7,8 @@ from dataclasses import replace
 
 import pytest
 import pytest_asyncio
+import raydriver.grbl
 from raydriver.core.transport import MockTransport
-from raydriver.grbl import GrblSession
 from raydriver.grbl.emulator import GrblEmulator
 from raygeo.ops import Ops
 from raygeo.ops.axis import Axis
@@ -163,7 +163,7 @@ def make_driver(context, machine) -> tuple[GrblSerialDriver, MockTransport]:
     drv = GrblSerialDriver(context, machine)
     drv.did_setup = True
     mock = MockTransport()
-    session = GrblSession.with_transport(
+    session = raydriver.grbl.GrblSerialDriver.with_transport(
         mock,
         config=FAST_CONFIG,
         dialect=drv._dialect_templates(),

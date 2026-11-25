@@ -15,8 +15,8 @@ import pytest_asyncio
 raydriver_remote = pytest.importorskip("raydriver.remote.daemon")
 raydriver_client = pytest.importorskip("raydriver.remote.client")
 
+import raydriver.grbl  # noqa: E402
 from raydriver.core.transport import MockTransport  # noqa: E402
-from raydriver.grbl import GrblSession  # noqa: E402
 from raydriver.grbl.emulator import GrblEmulator  # noqa: E402
 from raygeo.ops import Ops  # noqa: E402
 
@@ -81,7 +81,7 @@ async def daemon_port():
     device_task = asyncio.ensure_future(emulator.run())
 
     def factory(protocol_name, config, dialect, event_callback):
-        return GrblSession.with_transport(
+        return raydriver.grbl.GrblSerialDriver.with_transport(
             mock,
             config={**FAST_CONFIG, **(config or {})},
             dialect=dialect,
@@ -92,7 +92,9 @@ async def daemon_port():
         raydriver_remote.DaemonConfig(
             port=0,
             keepalive_interval=0.5,
-            sessions=[{"protocol": "grbl", "config": {"port": DEVICE}}],
+            sessions=[
+                {"protocol": "GrblSerialDriver", "config": {"port": DEVICE}}
+            ],
         ),
         session_factory=factory,
     )
@@ -114,7 +116,7 @@ def _remote_kwargs(port):
         "remote_host": "127.0.0.1",
         "remote_port": port,
         "device": DEVICE,
-        "_raydriver_protocol": "grbl",
+        "_raydriver_protocol": "GrblSerialDriver",
     }
 
 
@@ -145,10 +147,10 @@ def test_tls_vars_hidden_for_loopback():
 
 def test_capabilities_come_from_metadata():
     assert RaydriverRemoteDriver.supports_probing_for(
-        {"_raydriver_protocol": "grbl"}
+        {"_raydriver_protocol": "GrblSerialDriver"}
     )
     assert not RaydriverRemoteDriver.supports_probing_for(
-        {"_raydriver_protocol": "smoothie"}
+        {"_raydriver_protocol": "XtoolM2Driver"}
     )
     assert not RaydriverRemoteDriver.supports_probing_for({})
 
@@ -163,7 +165,7 @@ def test_local_shells_have_no_remote_vars():
 def test_local_setup_routes_to_rust_session(context_initializer, machine):
     drv = GrblSerialDriver(context_initializer, machine)
     drv.setup(port=DEVICE, baudrate=115200)
-    assert isinstance(drv._session, GrblSession)
+    assert isinstance(drv._session, raydriver.grbl.GrblSerialDriver)
 
 
 def test_remote_setup_routes_to_proxy(
@@ -193,7 +195,7 @@ async def test_remote_connect_and_command(
         lines = await drv.execute_interactive_command("$I")
         assert any("VER:" in line for line in lines)
         # The protocol was resolved by the daemon, not named by us.
-        assert drv._session.protocol == "grbl"
+        assert drv._session.protocol == "GrblSerialDriver"
     finally:
         drv.connection_status_changed.disconnect(on_status)
         await drv.cleanup()

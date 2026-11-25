@@ -1,8 +1,7 @@
-"""Smoothieware over telnet, backed by a raydriver session.
+"""Smoothieware over telnet, backed by the native raydriver driver.
 
 The protocol stack runs in Rust via the ``raydriver`` package; this
-shell only supplies the Rayforge-side setup, probing and the
-capability overrides for operations Smoothieware does not support.
+binding only supplies the Rayforge-side setup and probing.
 """
 
 import asyncio
@@ -10,19 +9,13 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, cast
 
-from raydriver.smoothie import SmoothieSession
+import raydriver.smoothie
 
 from ....core.varset import HostnameVar, PortVar, VarSet
 from ....core.varset.hostnamevar import is_valid_hostname_or_ip
 from ...transport import TransportStatus
-from ..driver import (
-    Axis,
-    DeviceStatus,
-    DriverPrecheckError,
-    DriverSetupError,
-    Pos,
-)
-from ..session_driver import SessionDriverBase
+from ..driver import DriverPrecheckError, DriverSetupError
+from ..native import NativeDriver
 from .smoothie_util import SmoothieProbeResult, build_smoothie_profile
 
 if TYPE_CHECKING:
@@ -32,15 +25,13 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class SmoothieDriver(SessionDriverBase):
+class SmoothieDriver(NativeDriver):
     """
     Handles Smoothie-based devices via Telnet, with the entire
     protocol stack running in Rust via the ``raydriver`` package.
-
-    This shell only translates between the Rayforge ``Driver``
-    interface and the Rust session: dialects remain Rayforge data
-    and are passed to the session as resolved command templates.
     """
+
+    NATIVE = raydriver.smoothie.SmoothieDriver
 
     label = _("Smoothie")
     subtitle = _("Smoothieware via a Telnet connection")
@@ -121,75 +112,17 @@ class SmoothieDriver(SessionDriverBase):
         profile.machine_config.driver_args = kwargs
         return profile, warnings
 
-    def _setup_implementation(self, **kwargs: Any) -> None:
+    def build_config(self, kwargs: dict[str, Any]) -> dict[str, Any]:
         host = cast(str, kwargs.get("host", ""))
         port = kwargs.get("port", 23)
 
         if not host:
             raise DriverSetupError(_("Hostname must be configured."))
 
-        config = {
+        return {
             "host": host,
             "tcp_port": int(port),
         }
-        self._session = SmoothieSession(
-            config=config,
-            dialect=self._dialect_templates(),
-            event_callback=self._on_session_event,
-        )
-
-    def _on_connection_status_changed(
-        self, status_str: str, message: str | None
-    ) -> None:
-        super()._on_connection_status_changed(status_str, message)
-        if status_str in ("ERROR", "DISCONNECTED") and (
-            self.state.status != DeviceStatus.UNKNOWN
-        ):
-            self.state.status = DeviceStatus.UNKNOWN
-            self.state_changed.send(self, state=self.state)
-
-    async def execute_interactive_command(self, command: str) -> list[str]:
-        """Send a command and return its response lines.
-
-        Used during probing to query ``version`` and ``config-get``
-        values.  The terminating ``ok`` and any status-report lines
-        are filtered out, so callers receive the reply lines only.
-        """
-        lines = await super().execute_interactive_command(command)
-        return [
-            line
-            for line in lines
-            if line != "ok"
-            and not (line.startswith("<") and line.endswith(">"))
-        ]
 
     def get_setting_vars(self) -> list["VarSet"]:
         return [VarSet()]
-
-    async def read_settings(self) -> None:
-        raise NotImplementedError(
-            "Device settings not implemented for this driver"
-        )
-
-    async def write_setting(self, key: str, value: Any) -> None:
-        raise NotImplementedError(
-            "Device settings not implemented for this driver"
-        )
-
-    async def read_wcs_offsets(self) -> dict[str, Pos]:
-        """Reading all WCS offsets is not supported by Smoothie."""
-        raise NotImplementedError(
-            "Reading all WCS offsets is not reliably supported "
-            "by Smoothieware."
-        )
-
-    async def run_probe_cycle(
-        self, axis: Axis, target: float, feed_rate: int
-    ) -> Pos | None:
-        """
-        Probing is not implemented due to difficulty in reliably capturing
-        real-time probe position feedback over the standard Telnet protocol.
-        """
-        raise NotImplementedError(
-            "Probing is not implemented for the Smoothie driver via Telnet."
-        )

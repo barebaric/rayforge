@@ -2,13 +2,13 @@ import logging
 from gettext import gettext as _
 from typing import Any, cast
 
+import raydriver.grbl
 from raydriver.core.discovery.fingerprints import TcpFingerprint
 from raydriver.core.discovery.spec import (
     DiscoverySpec,
     MdnsRecognizer,
     TcpRecognizer,
 )
-from raydriver.grbl import GrblSession
 
 from ....core.varset import HostnameVar, PortVar, Var, VarSet
 from ....core.varset.hostnamevar import is_valid_hostname_or_ip
@@ -28,6 +28,8 @@ class GrblTelnetDriver(GrblSerialDriver):
     session; only the transport selection differs from the serial
     driver.
     """
+
+    NATIVE = raydriver.grbl.GrblTelnetDriver
 
     label = _("grblHAL (Telnet)")
     subtitle = _(
@@ -102,7 +104,7 @@ class GrblTelnetDriver(GrblSerialDriver):
             ]
         )
 
-    def _setup_implementation(self, **kwargs: Any) -> None:
+    def build_config(self, kwargs: dict[str, Any]) -> dict[str, Any]:
         host = cast(str, kwargs.get("host", ""))
         port = cast(int, kwargs.get("port", 23))
 
@@ -126,8 +128,4 @@ class GrblTelnetDriver(GrblSerialDriver):
         if cached_rx_buffer_size is not None:
             config["cached_rx_buffer_size"] = int(cached_rx_buffer_size)
 
-        self._session = GrblSession(
-            config=config,
-            dialect=self._dialect_templates(),
-            event_callback=self._on_session_event,
-        )
+        return config

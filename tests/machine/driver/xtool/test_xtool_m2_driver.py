@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from rayforge.core.doc import Doc
 
 import pytest
-from raydriver.core import SessionEvent
+from raydriver.core import DriverEvent
 from raydriver.core.types import DeviceState, DeviceStatus
 
 from rayforge.machine.driver import get_driver_cls
@@ -93,8 +93,8 @@ class _Recorder:
         self.events.append(("job_finished", {}))
 
 
-def make_session_event(state: DeviceState) -> SessionEvent:
-    return SessionEvent.StateChanged(state=state)
+def make_session_event(state: DeviceState) -> DriverEvent:
+    return DriverEvent.StateChanged(state=state)
 
 
 class TestEventTranslation:
@@ -114,7 +114,7 @@ class TestEventTranslation:
         drv = XtoolM2Driver(context_initializer, machine)
         recorder = _Recorder(drv)
         drv._on_session_event(
-            SessionEvent.ConnectionStatusChanged(
+            DriverEvent.ConnectionStatusChanged(
                 status="CONNECTED", message=None
             )
         )
@@ -127,7 +127,7 @@ class TestEventTranslation:
     ):
         drv = XtoolM2Driver(context_initializer, machine)
         recorder = _Recorder(drv)
-        drv._on_session_event(SessionEvent.JobFinished())
+        drv._on_session_event(DriverEvent.JobFinished())
         assert ("job_finished", {}) in recorder.events
 
 
@@ -206,6 +206,6 @@ class TestUnsupportedOperations:
         self, context_initializer, machine
     ):
         drv = XtoolM2Driver(context_initializer, machine)
-        drv._on_session_event(SessionEvent.StateChanged(state=DeviceState()))
+        drv._on_session_event(DriverEvent.StateChanged(state=DeviceState()))
         await drv.clear_alarm()
         assert drv.state.error is None
