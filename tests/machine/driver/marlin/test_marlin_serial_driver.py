@@ -4,8 +4,8 @@ from unittest.mock import MagicMock
 
 import pytest
 import pytest_asyncio
+import raydriver.marlin
 from raydriver.core.transport import MockTransport
-from raydriver.marlin import MarlinSession
 from raydriver.marlin.emulator import MarlinEmulator
 from raygeo.ops import Ops
 
@@ -179,7 +179,7 @@ class TestMarlinSerialDriverRealSerial:
         d, machine = async_driver
         machine.set_dialect_uid("marlin")
         d.did_setup = True
-        d._session = MarlinSession.with_transport(
+        d._session = raydriver.marlin.MarlinSerialDriver.with_transport(
             mock,
             config=FAST_CONFIG,
             dialect=d._dialect_templates(),

@@ -15,9 +15,9 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
+import raydriver.grbl.simple
 import serial
 from raydriver.grbl.parser import error_code_to_device_error
-from raydriver.grbl.simple import GrblSimpleSession
 
 from ....core.varset import (
     BaudrateVar,
@@ -35,9 +35,9 @@ from ..driver import (
     DriverPrecheckError,
     DriverSetupError,
 )
-from ..session_driver import SessionDriverBase
 from ..session_state import error_from_session_state
 from .grbl_probe import probe_grbl_device
+from .grbl_serial import GrblSerialDriver
 from .grbl_util import (
     apply_setting_to_varset,
     get_grbl_setting_varsets,
@@ -50,7 +50,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class GrblSerialSimpleDriver(SessionDriverBase):
+class GrblSerialSimpleDriver(GrblSerialDriver):
     """
     A minimal GRBL serial driver using ping-pong communication.
 
@@ -59,6 +59,9 @@ class GrblSerialSimpleDriver(SessionDriverBase):
     deadlock detection.  Ideal for users experiencing communication
     issues with the advanced driver.
     """
+
+    NATIVE = raydriver.grbl.simple.GrblSerialSimpleDriver
+    DISCOVERY = None
 
     label = _("GRBL (USB/Serial — compatibility mode)")
     subtitle = _(
@@ -101,7 +104,7 @@ class GrblSerialSimpleDriver(SessionDriverBase):
     ) -> tuple["DeviceProfile", list[str]]:
         return await probe_grbl_device(cls, context, **kwargs)
 
-    def _setup_implementation(self, **kwargs: Any) -> None:
+    def build_config(self, kwargs: dict[str, Any]) -> dict[str, Any]:
         port = kwargs.get("port")
         baudrate = kwargs.get("baudrate", 115200)
         if not isinstance(port, str) or not port:
@@ -126,15 +129,11 @@ class GrblSerialSimpleDriver(SessionDriverBase):
         except serial.SerialException as e:
             raise DriverSetupError(str(e)) from e
 
-        self._session = GrblSimpleSession(
-            config={
-                "port": port,
-                "baudrate": int(baudrate),
-                "homing_timeout": self._estimate_homing_timeout(),
-            },
-            dialect=self._dialect_templates(),
-            event_callback=self._on_session_event,
-        )
+        return {
+            "port": port,
+            "baudrate": int(baudrate),
+            "homing_timeout": self._estimate_homing_timeout(),
+        }
 
     def get_setting_vars(self) -> list["VarSet"]:
         return get_grbl_setting_varsets()

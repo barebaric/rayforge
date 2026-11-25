@@ -2,9 +2,9 @@ import logging
 from gettext import gettext as _
 from typing import Any, cast
 
+import raydriver.grbl
 from raydriver.core.discovery.fingerprints import HttpFingerprint
 from raydriver.core.discovery.spec import DiscoverySpec, MdnsRecognizer
-from raydriver.esp3d import Esp3dSession
 
 from ....core.varset import (
     ChoiceVar,
@@ -47,6 +47,8 @@ class GrblNetworkDriver(GrblSerialDriver):
     WebSocket; jobs are uploaded and executed instead of being
     streamed line by line.
     """
+
+    NATIVE = raydriver.grbl.GrblNetworkDriver
 
     label = _("FluidNC / ESP3D (Web API)")
     subtitle = _(
@@ -114,7 +116,7 @@ class GrblNetworkDriver(GrblSerialDriver):
             ]
         )
 
-    def _setup_implementation(self, **kwargs: Any) -> None:
+    def build_config(self, kwargs: dict[str, Any]) -> dict[str, Any]:
         host = cast(str, kwargs.get("host", ""))
         port = int(cast(int, kwargs.get("port", 80)))
         protocol = cast(str, kwargs.get("protocol", "ESP3D"))
@@ -124,14 +126,10 @@ class GrblNetworkDriver(GrblSerialDriver):
             port, int(kwargs.get("ws_port") or 0), protocol
         )
 
-        self._session = Esp3dSession(
-            config={
-                "host": host,
-                "http_port": int(port),
-                "ws_port": ws_port,
-                "protocol": protocol,
-                "homing_timeout": self._estimate_homing_timeout(),
-            },
-            dialect=self._dialect_templates(),
-            event_callback=self._on_session_event,
-        )
+        return {
+            "host": host,
+            "http_port": int(port),
+            "ws_port": ws_port,
+            "protocol": protocol,
+            "homing_timeout": self._estimate_homing_timeout(),
+        }

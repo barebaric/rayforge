@@ -4,16 +4,16 @@ The entire protocol stack (flow control, streaming, stall detection
 and deadlock recovery) runs in Rust via the ``raydriver`` package.
 This shell only supplies the Rayforge-side setup, GRBL device
 settings and probing; the session interface itself is shared with
-every other driver through :class:`SessionDriverBase`.
+every other driver through :class:`NativeDriver`.
 """
 
 import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
+import raydriver.grbl
 import serial
 from raydriver.core.discovery.spec import DiscoverySpec, SerialRecognizer
-from raydriver.grbl import GrblSession
 from raydriver.grbl.parser import (
     error_code_to_device_error,
     extract_device_name_from_output,
@@ -37,7 +37,7 @@ from ..driver import (
     DriverPrecheckError,
     DriverSetupError,
 )
-from ..session_driver import SessionDriverBase
+from ..native import NativeDriver
 from ..session_state import error_from_session_state
 from .grbl_probe import probe_grbl_device
 from .grbl_util import (
@@ -52,7 +52,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class GrblSerialDriver(SessionDriverBase):
+class GrblSerialDriver(NativeDriver):
     """
     The GRBL serial driver with the entire protocol stack (flow
     control, streaming, stall detection and deadlock recovery)
@@ -62,6 +62,8 @@ class GrblSerialDriver(SessionDriverBase):
     interface and the Rust session: dialects remain Rayforge data
     and are passed to the session as resolved command templates.
     """
+
+    NATIVE = raydriver.grbl.GrblSerialDriver
 
     label = _("GRBL (USB/Serial)")
     subtitle = _("GRBL-compatible USB/serial connection (recommended)")
@@ -144,7 +146,7 @@ class GrblSerialDriver(SessionDriverBase):
     ) -> tuple["DeviceProfile", list[str]]:
         return await probe_grbl_device(cls, context, **kwargs)
 
-    def _setup_implementation(self, **kwargs: Any) -> None:
+    def build_config(self, kwargs: dict[str, Any]) -> dict[str, Any]:
         port = kwargs.get("port")
         baudrate = kwargs.get("baudrate", 115200)
         if not isinstance(port, str) or not port:
@@ -187,11 +189,7 @@ class GrblSerialDriver(SessionDriverBase):
         if cached_rx_buffer_size is not None:
             config["cached_rx_buffer_size"] = int(cached_rx_buffer_size)
 
-        self._session = GrblSession(
-            config=config,
-            dialect=self._dialect_templates(),
-            event_callback=self._on_session_event,
-        )
+        return config
 
     def get_setting_vars(self) -> list["VarSet"]:
         return get_grbl_setting_varsets()

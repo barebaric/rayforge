@@ -6,15 +6,15 @@ the raydriver library, while the driver types are Rayforge's domain.
 These functions are the boundary between a session and its Driver.
 """
 
-from raydriver.core.types import DeviceError as SessionDeviceError
-from raydriver.core.types import DeviceState as SessionDeviceState
-from raydriver.core.types import DeviceStatus as SessionDeviceStatus
+from raydriver.core.types import DeviceError as NativeDeviceError
+from raydriver.core.types import DeviceState as NativeDeviceState
+from raydriver.core.types import DeviceStatus as NativeDeviceStatus
 
 from .driver import DeviceError, DeviceState, DeviceStatus
 
 
 def error_from_session_state(
-    session_error: SessionDeviceError,
+    session_error: NativeDeviceError,
 ) -> DeviceError:
     """Convert a session DeviceError into a Rayforge one."""
     return DeviceError(
@@ -25,7 +25,7 @@ def error_from_session_state(
 
 
 def from_session_state(
-    session_state: SessionDeviceState,
+    session_state: NativeDeviceState,
 ) -> DeviceState:
     """Convert a session DeviceState into a Rayforge one."""
     error = None
@@ -45,12 +45,12 @@ def from_session_state(
     )
 
 
-def to_session_state(state: DeviceState) -> SessionDeviceState:
+def to_session_state(state: DeviceState) -> NativeDeviceState:
     """Convert a Rayforge DeviceState into a session one."""
-    session_state = SessionDeviceState()
-    session_state.status = getattr(SessionDeviceStatus, state.status.name)
+    session_state = NativeDeviceState()
+    session_state.status = getattr(NativeDeviceStatus, state.status.name)
     if state.error is not None:
-        session_state.error = SessionDeviceError(
+        session_state.error = NativeDeviceError(
             state.error.code,
             state.error.title,
             state.error.description,

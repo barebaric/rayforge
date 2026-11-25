@@ -1,19 +1,14 @@
 import logging
 from collections.abc import Awaitable, Callable, Sequence
 from gettext import gettext as _
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, cast
 
-from raydriver.xtool.m2 import M2Session
+import raydriver.xtool.m2
 
 from ....core.varset import BoolVar, HostnameVar, PortVar, VarSet
 from ....core.varset.hostnamevar import is_valid_hostname_or_ip
 from ....pipeline.artifact.encoded import EncodedOutput
 from ....shared.units.system import UnitSystem
-from ...transport import TransportStatus
 from ..driver import (
     Axis,
     DeviceConnectionError,
@@ -23,7 +18,7 @@ from ..driver import (
     FrameCorner,
     Pos,
 )
-from ..session_driver import SessionDriverBase
+from ..native import NativeDriver
 
 if TYPE_CHECKING:
     from raygeo.ops import Ops
@@ -37,18 +32,20 @@ logger = logging.getLogger(__name__)
 DEFAULT_M2_PORT = 28900
 
 
-class XtoolM2Driver(SessionDriverBase):
+class XtoolM2Driver(NativeDriver):
     """
     Driver for the xTool M2 over its WS-V2 TLS service, with the
     entire protocol stack running in Rust via the ``raydriver``
     package.
 
-    The M2 session supports state monitoring, motion and control of
-    a job that is already staged on the machine — G-code job upload
-    is not implemented, so :meth:`run` and :meth:`run_raw` raise a
+    The M2 driver supports state monitoring, motion and control of a
+    job that is already staged on the machine — G-code job upload is
+    not implemented, so :meth:`run` and :meth:`run_raw` raise a
     descriptive error instead of pretending to stream a job.  Use
     :meth:`start_staged_job` to start a job staged by xTool Studio.
     """
+
+    NATIVE = raydriver.xtool.m2.XtoolM2Driver
 
     label = _("xTool M2 (Wi-Fi)")
     subtitle = _("xTool M2 monitor and control (no job streaming)")
@@ -59,20 +56,6 @@ class XtoolM2Driver(SessionDriverBase):
     supports_probing = False
     supports_unit_detection = True
     DISCOVERY = None
-
-    @property
-    def session(self) -> M2Session | None:
-        """The underlying raydriver session, if set up."""
-        return self._session
-
-    def _require_session(self) -> M2Session:
-        """Returns the session, raising a descriptive error when the
-        driver was never set up (e.g. no host configured)."""
-        if self._session is None:
-            raise DeviceConnectionError(
-                _("Driver is not set up. Check the network settings.")
-            )
-        return self._session
 
     @classmethod
     def precheck(cls, **kwargs: Any) -> None:
@@ -110,46 +93,28 @@ class XtoolM2Driver(SessionDriverBase):
             ]
         )
 
-    def _setup_implementation(self, **kwargs: Any) -> None:
+    def build_config(self, kwargs: dict[str, Any]) -> dict[str, Any]:
         host = cast(str, kwargs.get("host", ""))
         if not host:
             raise DriverSetupError(_("Hostname must be configured."))
         port = cast(int, kwargs.get("port", DEFAULT_M2_PORT))
 
-        config = {
+        return {
             "host": host,
             "port": int(port),
             "tls_allow_invalid_certs": bool(
                 kwargs.get("tls_allow_invalid_certs", False)
             ),
         }
-        self._session = M2Session(
+
+    def _create_session(self, config: dict[str, Any]) -> Any:
+        return raydriver.xtool.m2.XtoolM2Driver(
             config=config,
             event_callback=self._on_session_event,
         )
 
-    async def _connect_implementation(self):
-        """Launches the Rust connection loop and returns, allowing the
-        UI to remain responsive."""
-        if self._session is None:
-            logger.error(
-                "Cannot connect: session not initialized "
-                "(check network settings)."
-            )
-            self.connection_status_changed.send(
-                self,
-                status=TransportStatus.ERROR,
-                message=_("Host not configured"),
-            )
-            return
-        await self._session.connect()
-
     def refresh_dialect(self) -> None:
-        """The M2 session takes no dialect templates."""
-
-    async def read_parser_state(self) -> str | None:
-        """The M2 API exposes no G-code parser state."""
-        return None
+        """The M2 driver takes no dialect templates."""
 
     async def run(
         self,
@@ -174,6 +139,10 @@ class XtoolM2Driver(SessionDriverBase):
                 " start it from there."
             )
         )
+
+    async def read_parser_state(self) -> str | None:
+        """The M2 API exposes no G-code parser state."""
+        return None
 
     async def start_staged_job(self) -> None:
         """Starts a job already staged on the device, e.g. one sent
@@ -264,13 +233,13 @@ class XtoolM2Driver(SessionDriverBase):
         """The M2 reports positions in millimeters."""
         return UnitSystem.METRIC
 
-    async def read_settings(self) -> None:
-        logger.warning("The xTool M2 does not expose readable settings.")
-
     async def write_setting(self, key: str, value: Any) -> None:
         raise DeviceConnectionError(
             _("The xTool M2 does not support writing settings.")
         )
+
+    async def read_wcs_offsets(self) -> dict[str, Pos]:
+        return {}
 
     @property
     def supported_wcs(self) -> list[str]:
@@ -283,9 +252,6 @@ class XtoolM2Driver(SessionDriverBase):
         raise DeviceConnectionError(
             _("The xTool M2 does not support work coordinate offsets.")
         )
-
-    async def read_wcs_offsets(self) -> dict[str, Pos]:
-        return {}
 
     async def run_probe_cycle(
         self, axis: Axis, max_travel: float, feed_rate: int

@@ -16,8 +16,8 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
+from raydriver.driver import driver_info
 from raydriver.grbl.parser import error_code_to_device_error
-from raydriver.protocols import protocol_info
 from raydriver.remote.client import open_session
 
 from ...context import RayforgeContext
@@ -27,8 +27,8 @@ from ..transport import TransportStatus
 from .driver import DriverPrecheckError, DriverSetupError
 from .grbl.grbl_probe import probe_grbl_device
 from .grbl.grbl_util import apply_setting_to_varset, get_grbl_setting_varsets
+from .native import NativeDriver
 from .remote_setup import endpoint_config, endpoint_vars
-from .session_driver import SessionDriverBase
 from .session_state import error_from_session_state
 
 if TYPE_CHECKING:
@@ -50,12 +50,29 @@ def _capabilities(driver_args: dict[str, Any]) -> dict[str, Any]:
     if not name:
         return {}
     try:
-        return protocol_info(name).capabilities
+        return driver_info(name).capabilities
     except KeyError:
         return {}
 
 
-class RaydriverRemoteDriver(SessionDriverBase):
+def _family_for(name: str | None) -> str:
+    """Map a hosted driver class name to a Rayforge dialect family."""
+    if not name:
+        return "grbl"
+    try:
+        info = driver_info(name)
+    except KeyError:
+        return "grbl"
+    if not info.uses_gcode:
+        return ""
+    if name == "MarlinSerialDriver":
+        return "marlin"
+    if name == "SmoothieDriver":
+        return "smoothieware"
+    return "grbl"
+
+
+class RaydriverRemoteDriver(NativeDriver):
     """A machine hosted by a raydriver daemon, protocol-agnostic."""
 
     label = _("Remote machine (raydriver)")
@@ -150,10 +167,7 @@ class RaydriverRemoteDriver(SessionDriverBase):
             name = self._machine.driver_args.get(PROTOCOL_KEY)
         if not name:
             return "grbl"
-        try:
-            return protocol_info(name).dialect_family
-        except KeyError:
-            return "grbl"
+        return _family_for(name)
 
     def get_setting_vars(self) -> list["VarSet"]:
         if self._dialect_family() == "grbl":
@@ -215,10 +229,7 @@ class RaydriverRemoteDriver(SessionDriverBase):
         family = "grbl"
         name = kwargs.get(PROTOCOL_KEY)
         if name:
-            try:
-                family = protocol_info(name).dialect_family
-            except KeyError:
-                family = "grbl"
+            family = _family_for(name)
         if family == "grbl":
             return await probe_grbl_device(cls, context, **kwargs)
         return await cls._probe_generic(context, family, **kwargs)
