@@ -54,8 +54,8 @@ Lasers Epilog com porta Ethernet (Zing 16, Zing 24/6030, Helix 18 e Helix 24) us
 Zing** ou **Epilog Helix**. Os trabalhos são codificados como trabalhos de impressão Epilog e
 enviados à fila de impressão da máquina; inicie-os na lista de trabalhos do laser. O driver pede o
 endereço IP, a porta de impressão (515 por padrão), o nome da fila de impressão (vazio por padrão;
-defina apenas se o seu servidor de impressão exigir), a resolução de raster (Zing: 100–1000 DPI;
-Helix: 75–1200 DPI) e a frequência vetorial (10–5000 Hz).
+defina apenas se o seu servidor de impressão exigir), um prefixo opcional para o nome do trabalho, a
+resolução de raster (Zing: 100–1000 DPI; Helix: 75–1200 DPI) e a frequência vetorial (10–5000 Hz).
 
 O protocolo de impressão não oferece controle remoto, então o Rayforge não pode referenciar, mover,
 consultar o status nem movimentar o cabeçote nessas máquinas, e o foco e o ar assistido são

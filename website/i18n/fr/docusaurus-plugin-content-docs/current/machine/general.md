@@ -56,8 +56,8 @@ le pilote **Epilog Zing** ou **Epilog Helix**. Les travaux sont encodés comme d
 d'impression Epilog et envoyés dans la file d'impression de la machine ; démarrez-les depuis la
 liste des travaux du laser. Le pilote demande l'adresse IP, le port d'impression (515 par défaut),
 le nom de la file d'impression (vide par défaut ; ne le renseignez que si votre serveur d'impression
-l'exige), la résolution de trame (Zing : 100–1000 DPI ; Helix : 75–1200 DPI) et la fréquence
-vectorielle (10–5000 Hz).
+l'exige), un préfixe facultatif pour le nom du travail, la résolution de trame (Zing : 100–1000 DPI
+; Helix : 75–1200 DPI) et la fréquence vectorielle (10–5000 Hz).
 
 Le protocole d'impression n'offre aucun contrôle à distance : Rayforge ne peut donc ni référencer ni
 déplacer ni interroger l'état de ces machines, et la mise au point comme l'assistance d'air se
