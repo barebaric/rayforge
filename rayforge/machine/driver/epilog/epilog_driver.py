@@ -195,6 +195,7 @@ class EpilogLaserDriver(NativeDriver):
                     ),
                     var_type=str,
                     default=cls.default_queue,
+                    optional=True,
                 ),
                 ChoiceVar(
                     key="resolution",

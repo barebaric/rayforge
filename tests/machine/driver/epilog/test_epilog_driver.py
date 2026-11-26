@@ -193,6 +193,12 @@ class TestQueue:
         assert var is not None
         assert not isinstance(var, TextAreaVar)
 
+    def test_empty_queue_is_optional(self):
+        var = EpilogZingDriver.get_setup_vars().get("queue")
+        assert var is not None
+        assert var.optional is True
+        assert var.is_required({}) is False
+
     def test_empty_queue_is_preserved(self, lite_context, machine):
         driver = EpilogZingDriver(lite_context, machine)
         config = driver.build_config(
