@@ -6,8 +6,7 @@ in ``raydriver.encode.RuidaSpec``.
 """
 
 import json
-import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Protocol, TypedDict, runtime_checkable
 
 from raydriver.encode import RuidaSpec
 from raygeo.ops.convert import Encoder
@@ -22,9 +21,8 @@ if TYPE_CHECKING:
     from raygeo.ops import Ops
 
     from rayforge.core.doc import Doc
+    from rayforge.core.layer import Layer
     from rayforge.machine.models.machine import Machine
-
-logger = logging.getLogger(__name__)
 
 DEFAULT_POWER_FLOOR = 8.0
 DEFAULT_IMAGE_POWER_BIAS = 8.0
@@ -40,10 +38,35 @@ _DEFAULT_LAYER_SPEED_MMS = 100.0
 _DEFAULT_LAYER_POWER = 0.2
 _DEFAULT_LAYER_FREQUENCY_HZ = 20000
 
-_last_fallback_wcs: str | None = None
+
+class _LayerSettings(TypedDict):
+    """The flattened encoder context for one document layer."""
+
+    uid: str
+    name: str
+    color: str
+    speed_mm_s: float
+    frequency_khz: float
+    power_pct: float
+    min_power_pct: float | None
 
 
-def _layer_settings(layer: Any) -> dict[str, Any]:
+@runtime_checkable
+class _LaserStep(Protocol):
+    """A workflow step that carries laser process settings."""
+
+    power: float
+    frequency: int
+
+
+@runtime_checkable
+class _HasMinPower(Protocol):
+    """A workflow step that declares a minimum power."""
+
+    min_power: float | None
+
+
+def _layer_settings(layer: "Layer") -> _LayerSettings:
     """Flatten one document layer's workflow settings for the encoder."""
     speed_mms = _DEFAULT_LAYER_SPEED_MMS
     power_fraction = _DEFAULT_LAYER_POWER
@@ -52,7 +75,7 @@ def _layer_settings(layer: Any) -> dict[str, Any]:
     if layer.workflow is not None and layer.workflow.steps:
         step = layer.workflow.steps[0]
         speed_mms = float(step.cut_speed) / 60.0
-        if hasattr(step, "power"):
+        if isinstance(step, _LaserStep):
             power_fraction = float(step.power)
             frequency_hz = int(step.frequency)
         else:
@@ -62,7 +85,7 @@ def _layer_settings(layer: Any) -> dict[str, Any]:
             frequency_hz = int(
                 step.extra.get("frequency", _DEFAULT_LAYER_FREQUENCY_HZ)
             )
-        raw_min = getattr(step, "min_power", None)
+        raw_min = step.min_power if isinstance(step, _HasMinPower) else None
         if raw_min is None:
             raw_min = step.extra.get("min_power", None)
         if raw_min is None:
@@ -81,30 +104,20 @@ def _layer_settings(layer: Any) -> dict[str, Any]:
     }
 
 
-def build_ruida_spec(machine: "Machine", doc: "Doc") -> RuidaSpec:
+def build_ruida_spec(machine: "Machine | None", doc: "Doc") -> RuidaSpec:
     """Build the native Ruida encoder context from the machine and doc."""
-    global _last_fallback_wcs
     wcs = machine.active_wcs if machine is not None else None
-    ref_point = _WCS_TO_REF_POINT.get(wcs) if wcs is not None else None
+    ref_point = _WCS_TO_REF_POINT.get(wcs or "")
     if ref_point is None:
-        if wcs == "G54":
-            if wcs != _last_fallback_wcs:
-                logger.warning(
-                    "Active WCS %s is the framework default — using the "
-                    "MACHINE reference point",
-                    wcs,
-                )
-            _last_fallback_wcs = wcs
+        # G54 is the framework default; it has no Ruida reference-point
+        # name, so it maps to the machine origin.
+        if wcs == "G54" or machine is None:
             ref_point = "MACHINE"
-        elif machine is not None:
+        else:
             raise ValueError(
                 f"Unsupported WCS for Ruida reference point: {wcs!r} — "
                 f"valid names: {', '.join(_WCS_TO_REF_POINT)}"
             )
-        else:
-            ref_point = "MACHINE"
-    else:
-        _last_fallback_wcs = None
     driver_args = machine.driver_args if machine is not None else {}
     context = {
         "job_label": doc.name or "Rayforge Job",
@@ -148,15 +161,12 @@ def build_ruida_spec(machine: "Machine", doc: "Doc") -> RuidaSpec:
 class RuidaEncoder:
     """Encodes Ops into a Ruida job through the native encoder."""
 
-    def __init__(self, gluescript: Any = None) -> None:
-        self._injected_gluescript = gluescript
+    def __init__(self) -> None:
         self._reset_state()
 
     def _reset_state(self) -> None:
         self.op_map: MachineCodeOpMap | None = None
-        self.current_pos = (0.0, 0.0, 0.0)
         self.active_laser = 1
-        self._gluescript = self._injected_gluescript
 
     def encode(
         self, ops: "Ops", machine: "Machine", doc: "Doc"
@@ -176,7 +186,9 @@ class RuidaEncoder:
         )
 
     @staticmethod
-    def _section_layer_mode(section_type: Any, raster_mode: Any) -> str:
+    def _section_layer_mode(
+        section_type: SectionType, raster_mode: RasterMode | None
+    ) -> str:
         """Map a section's type and raster mode to a layer mode."""
         if section_type != SectionType.RASTER_FILL:
             return "VECTOR"

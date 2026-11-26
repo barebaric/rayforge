@@ -14,7 +14,6 @@ stage_gluescript when the job runs. Tests cover:
 """
 
 import ast
-import logging
 
 import pytest
 from raydriver.ruida import GlueScript
@@ -25,7 +24,6 @@ from raygeo.ops.types import RasterMode, SectionType
 
 from rayforge.core.doc import Doc
 from rayforge.core.step import Step
-from rayforge.machine.driver.ruida import ruida_encoder
 from rayforge.machine.driver.ruida.ruida_encoder import RuidaEncoder
 from rayforge.machine.models.laser import Laser
 from rayforge.pipeline.artifact.encoded import EncodedOutput, MachineCodeOpMap
@@ -2292,13 +2290,6 @@ class TestWcsToRefPoint:
     # The default doc has no name, so the encoder uses its default label.
     _JOB_LABEL = "Rayforge Job"
 
-    @pytest.fixture(autouse=True)
-    def _reset_fallback_wcs(self):
-        """Reset the module-level G54 fallback dedup state."""
-        ruida_encoder._last_fallback_wcs = None
-        yield
-        ruida_encoder._last_fallback_wcs = None
-
     @pytest.mark.parametrize(
         "wcs,expected",
         [
@@ -2350,22 +2341,3 @@ class TestWcsToRefPoint:
         mock_machine.active_wcs = "G55"
         with pytest.raises(Exception, match="G55"):
             encoder.encode(_plan_job(doc), mock_machine, doc)
-
-    def test_g54_warning_fires_only_when_changed(
-        self, encoder, mock_machine, doc, caplog
-    ):
-        """The G54 fallback warning dedups until a real WCS is used."""
-        caplog.set_level(logging.WARNING, logger=ruida_encoder.logger.name)
-        mock_machine.active_wcs = "G54"
-        encoder.encode(_plan_job(doc), mock_machine, doc)
-        encoder.encode(_plan_job(doc), mock_machine, doc)
-        mock_machine.active_wcs = "MACHINE"
-        encoder.encode(_plan_job(doc), mock_machine, doc)
-        mock_machine.active_wcs = "G54"
-        encoder.encode(_plan_job(doc), mock_machine, doc)
-        warnings = [
-            record
-            for record in caplog.records
-            if "framework default" in record.message
-        ]
-        assert len(warnings) == 2

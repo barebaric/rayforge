@@ -14,6 +14,7 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, cast
 
 import raydriver.ruida
+from raydriver.encode import RuidaSpec
 
 from rayforge.context import RayforgeContext
 from rayforge.core.varset import (
@@ -38,6 +39,7 @@ from rayforge.machine.driver.driver import (
 )
 from rayforge.machine.driver.native import NativeDriver
 from rayforge.machine.models.laser import LaserHead
+from rayforge.pipeline.artifact.encoded import MachineCodeOpMap
 
 if TYPE_CHECKING:
     from raygeo.ops import Ops
@@ -69,7 +71,7 @@ DEFAULT_POWER_FLOOR = 8.0
 DEFAULT_IMAGE_POWER_BIAS = 8.0
 
 
-def _resolve_protocol(config: dict[str, Any]) -> str:
+def _resolve_protocol(config: dict[str, object]) -> str:
     if not config.get("tcp_proto", False):
         return PROTOCOL_UDP
     mode = config.get("connection", CONNECTION_AUTO)
@@ -88,9 +90,9 @@ class RuidaUsbDeviceVar(SerialPortVar):
         description: str | None = None,
         default: str | None = None,
         value: str | None = None,
-        required_when: Callable[[dict[str, Any]], bool] | None = None,
+        required_when: Callable[[dict[str, object]], bool] | None = None,
         *,
-        visible_when: Callable[[dict[str, Any]], bool] | None = None,
+        visible_when: Callable[[dict[str, object]], bool] | None = None,
     ):
         super().__init__(
             key=key,
@@ -133,7 +135,7 @@ class RuidaDriver(NativeDriver):
         self._selected_wcs: str = self._initial_wcs(machine)
 
     def _initial_wcs(self, machine: "Machine") -> str:
-        wcs = getattr(machine, "active_wcs", None)
+        wcs = machine.active_wcs
         return wcs if wcs in self.supported_wcs else "MACHINE"
 
     # -- properties -----------------------------------------------------
@@ -154,8 +156,8 @@ class RuidaDriver(NativeDriver):
 
     @staticmethod
     def _apply_connection_mode(
-        config: dict[str, Any],
-    ) -> dict[str, Any]:
+        config: dict[str, object],
+    ) -> dict[str, object]:
         mode = config.get("connection", CONNECTION_AUTO)
         config = dict(config)
         if mode == CONNECTION_NETWORK:
@@ -309,7 +311,7 @@ class RuidaDriver(NativeDriver):
         )
 
     @staticmethod
-    def _parse_magic_number(raw_magic: Any) -> int:
+    def _parse_magic_number(raw_magic: object) -> int:
         if raw_magic is None:
             return 0x88
         magic_str = str(raw_magic).strip()
@@ -351,14 +353,16 @@ class RuidaDriver(NativeDriver):
         return config
 
     @classmethod
-    def create_encoder_spec(cls, machine: "Machine", doc: "Doc") -> Any:
+    def create_encoder_spec(cls, machine: "Machine", doc: "Doc") -> RuidaSpec:
         from rayforge.machine.driver.ruida.ruida_encoder import (
             build_ruida_spec,
         )
 
         return build_ruida_spec(machine, doc)
 
-    def _create_session(self, config: dict[str, Any]) -> Any:
+    def _create_session(
+        self, config: dict[str, Any]
+    ) -> raydriver.ruida.RuidaDriver:
         return raydriver.ruida.RuidaDriver(
             config=config,
             event_callback=self._on_session_event,
@@ -386,13 +390,13 @@ class RuidaDriver(NativeDriver):
     # -- protect --------------------------------------------------------
 
     async def get_protect(self) -> bool:
-        session = cast(Any, self.session)
+        session = cast(raydriver.ruida.RuidaDriver, self.session)
         if session is None:
             return False
         return bool(session.protect_enabled)
 
     async def set_protect(self, enabled: bool) -> None:
-        session = cast(Any, self.session)
+        session = cast(raydriver.ruida.RuidaDriver, self.session)
         if session is None:
             return
         session.set_protect(bool(enabled))
@@ -400,7 +404,7 @@ class RuidaDriver(NativeDriver):
     # -- jobs -----------------------------------------------------------
 
     @staticmethod
-    def _op_line_map(op_map: Any) -> dict[int, int]:
+    def _op_line_map(op_map: MachineCodeOpMap | None) -> dict[int, int]:
         result = {}
         if op_map is None:
             return result
@@ -595,9 +599,6 @@ class RuidaDriver(NativeDriver):
         return self._selected_wcs
 
     # -- settings -------------------------------------------------------
-
-    async def write_setting(self, key: str, value: Any) -> None:
-        pass
 
     def get_setting_vars(self) -> list[VarSet]:
         return [VarSet(title=_("No settings"))]

@@ -475,6 +475,18 @@ class Driver(ABC):
         return None
 
     @classmethod
+    def create_encoder_spec(
+        cls, machine: "Machine", doc: "Doc"
+    ) -> object | None:
+        """Return a native encoder spec for this driver, if it has one.
+
+        Drivers that encode in Rust return the spec object consumed by
+        raygeo's ``Encoder``. Drivers without a native encoder keep the
+        Python encoder path.
+        """
+        return None
+
+    @classmethod
     @abstractmethod
     def precheck(cls, **kwargs: Any) -> None:
         """

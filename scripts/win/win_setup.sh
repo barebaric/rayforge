@@ -273,8 +273,8 @@ EOF
         "pyserial$(req_version pyserial)" \
         "raygeo$(req_version raygeo)" \
         "raydriver$(req_version raydriver)" \
-        "ruida-pa$(req_version ruida-pa)" \
         "trimesh$(req_version trimesh)" \
+        "ruida-pa$(req_version ruida-pa)" \
         "pytest-xdist==3.8.0" \
         --break-system-packages
 

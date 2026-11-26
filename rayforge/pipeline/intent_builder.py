@@ -1335,9 +1335,9 @@ class IntentBuilder:
         driver_cls = resolve_driver_cls(machine)
         if driver_cls.uses_gcode:
             return self._gcode_encoder_spec(doc)
-        encoder_spec = getattr(driver_cls, "create_encoder_spec", None)
-        if callable(encoder_spec):
-            return encoder_spec(machine, doc)
+        encoder_spec = driver_cls.create_encoder_spec(machine, doc)
+        if encoder_spec is not None:
+            return encoder_spec
 
         return PythonEncoder(
             self._make_python_encoder_callable(machine, doc),

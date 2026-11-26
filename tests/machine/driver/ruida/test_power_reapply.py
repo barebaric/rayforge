@@ -9,12 +9,13 @@ that opens a new Ruida layer gets the last requested power re-applied
 after its declaration (issue #564).
 """
 
-from typing import Any
+from typing import cast
 from unittest.mock import MagicMock
 
 from raygeo.ops import Ops
 from raygeo.ops.types import RasterMode, SectionType
 
+from rayforge.context import RayforgeContext
 from rayforge.core.doc import Doc
 from rayforge.core.step import Step
 from rayforge.machine.driver.ruida.ruida_encoder import RuidaEncoder
@@ -38,7 +39,7 @@ def _encode(ops, doc) -> str:
 
 
 def _build_machine() -> Machine:
-    context: Any = MagicMock()
+    context = cast(RayforgeContext, MagicMock())
     machine = Machine(context)
     laser1 = Laser()
     laser1.uid = "laser-1"

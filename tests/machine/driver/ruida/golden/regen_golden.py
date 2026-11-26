@@ -12,13 +12,14 @@ changes the transcript; the golden tests then confirm the new bytes.
 
 import sys
 from pathlib import Path
-from typing import Any
+from typing import cast
 from unittest.mock import MagicMock
 
 from raygeo.ops import Ops
 from raygeo.ops.state import AirAssistMode
 from raygeo.ops.types import RasterMode, SectionType
 
+from rayforge.context import RayforgeContext
 from rayforge.core.doc import Doc
 from rayforge.core.step import Step
 from rayforge.machine.driver.ruida.ruida_encoder import RuidaEncoder
@@ -43,7 +44,7 @@ class CutStep(Step):
 
 def _build_machine():
     """Build the two-laser machine used by the representative job."""
-    context: Any = MagicMock()
+    context = cast(RayforgeContext, MagicMock())
     machine = Machine(context)
     laser1 = Laser()
     laser1.uid = "laser-1"

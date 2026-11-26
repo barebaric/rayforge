@@ -24,7 +24,7 @@ the fixture and restore the full byte-for-byte comparison.
 import importlib.util
 import re
 from pathlib import Path
-from typing import Any
+from types import ModuleType
 
 from raydriver.ruida import encode_script
 
@@ -48,7 +48,7 @@ def _load_regen_builder():
     spec = importlib.util.spec_from_file_location("regen_golden", module_path)
     if spec is None or spec.loader is None:
         raise RuntimeError(f"Could not load regen script: {module_path}")
-    module: Any = importlib.util.module_from_spec(spec)
+    module: ModuleType = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module.build_representative_job
 
