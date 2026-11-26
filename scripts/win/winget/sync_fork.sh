@@ -3,11 +3,15 @@
 # whose default branch matches upstream.
 #
 # "wingetcreate submit" syncs the fork via GitHub's merge-upstream API, but
-# that API fails (422) when the fork has diverged from winget-pkgs, which
-# moves too fast to keep up between releases
+# that API fails (422) when the fork has fallen too far behind winget-pkgs,
+# which moves too fast to keep up between releases
 # (https://github.com/microsoft/winget-create/issues/710). Resetting the
 # branch ref to the upstream HEAD works in all cases and is safe here because
 # wingetcreate never commits to the fork's default branch.
+#
+# GitHub refuses this ref update when the upstream commits touch
+# .github/workflows/ and the token lacks the workflow scope, so
+# check_token.sh must run first.
 set -e
 
 UPSTREAM="repos/microsoft/winget-pkgs"
@@ -15,6 +19,7 @@ LOGIN="$(gh api user --jq .login)"
 FORK="repos/$LOGIN/winget-pkgs"
 
 if ! gh api "$FORK" >/dev/null 2>&1; then
+    echo "Creating fork $LOGIN/winget-pkgs"
     gh api --method POST "$UPSTREAM/forks" >/dev/null
 fi
 
@@ -43,6 +48,15 @@ if [ "$UPSTREAM_SHA" = "$FORK_SHA" ]; then
     exit 0
 fi
 
-gh api --method PATCH "$FORK/git/refs/heads/$BRANCH" \
-    -f sha="$UPSTREAM_SHA" -F force=true >/dev/null
-echo "Reset $LOGIN/winget-pkgs/$BRANCH to upstream $UPSTREAM_SHA"
+echo "Resetting $LOGIN/winget-pkgs/$BRANCH to upstream $UPSTREAM_SHA"
+if ! gh api --method PATCH "$FORK/git/refs/heads/$BRANCH" \
+    -f sha="$UPSTREAM_SHA" -F force=true >/dev/null; then
+    cat >&2 <<EOF
+Failed to reset $LOGIN/winget-pkgs/$BRANCH to upstream $UPSTREAM_SHA.
+
+A 404 here usually means WINGET_PAT lacks the workflow scope needed to
+update files under .github/workflows/; see check_token.sh.
+EOF
+    exit 1
+fi
+echo "Fork $LOGIN/winget-pkgs/$BRANCH now matches upstream"
