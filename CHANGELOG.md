@@ -48,6 +48,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   icons on macOS, where gdk-pixbuf's SVG loader is not available in
   the app bundle. Icons that gdk-pixbuf cannot load are now rendered
   with GTK's SVG renderer instead of being dropped silently
+- DXF import: blocks keep their geometry in place. Arcs inside a
+  rotated block followed the block's local coordinates instead of the
+  insertion, and INSERTs nested inside a block definition were
+  dropped without a warning. Requires raygeo 1.102.1
 
 ## 1.15.0-beta1
 
