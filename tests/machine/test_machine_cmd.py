@@ -566,7 +566,13 @@ class TestMachineCmdPointerDryRun:
 
     @pytest.mark.asyncio
     async def test_dry_run_ignored_without_pointer_offset(
-        self, machine_cmd, machine, job_artifact, pipeline_mocks, mocker
+        self,
+        machine_cmd,
+        doc_editor,
+        machine,
+        job_artifact,
+        pipeline_mocks,
+        mocker,
     ):
         """Without an enabled pointer offset, a dry-run send behaves
         like a regular send."""
@@ -597,6 +603,10 @@ class TestMachineCmdPointerDryRun:
         assert machine.pointer_job_shift_enabled is False
         assert invalidate_spy.call_count == 0
         assert actions == [job_artifact]
+
+        # _start_job can emit machine.changed and arm a debounced
+        # rebuild. Settle the editor so no task lingers into teardown.
+        await doc_editor.wait_until_settled()
 
     @pytest.mark.asyncio
     async def test_regular_send_never_shifts(
