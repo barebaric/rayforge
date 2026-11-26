@@ -83,9 +83,11 @@ Los pull requests se mergean cuando:
 
 ## Código Asistido por IA
 
-Agradecemos el uso de herramientas de IA para ayudar a escribir código. Sin embargo, eres
-estrictamente responsable del código que envías. DEBES entenderlo completamente y debes poder
-explicar las decisiones arquitectónicas.
+Agradecemos el uso de herramientas de IA para ayudar a escribir código. No necesitas dominar todos
+los lenguajes que usa el proyecto; las herramientas de IA pueden ayudarte a leer y revisar código
+que no escribiste. Aun así, sigues siendo responsable de lo que envías: entiende qué hace el cambio
+y por qué encaja en la arquitectura del proyecto, y estate preparado para explicarlo junto con la
+forma en que lo probaste.
 
 El código generado por IA a menudo introduce errores sutiles, desajustes arquitectónicos y fallos de
 seguridad. Los pull requests que parezcan salida de IA sin revisar se cerrarán para respetar el
