@@ -35,6 +35,10 @@ automaticamente** e acionar o recálculo manualmente pelo botão na barra de fer
 O Rayforge pode **Verificar atualizações** automaticamente na inicialização. Quando habilitado, você
 será notificado quando uma nova versão estiver disponível.
 
+No Windows, **Baixar atualizações automaticamente** baixa novas versões em segundo plano, para que a
+notificação possa instalá-las com um clique: o Rayforge fecha, executa o instalador silenciosamente
+e reinicia na nova versão. Em outras plataformas, a notificação leva à página de download da versão.
+
 O Rayforge também pode **Verificar atualizações de addons** automaticamente na inicialização.
 Desativar essa opção não impede verificações manuais na página Addons.
 

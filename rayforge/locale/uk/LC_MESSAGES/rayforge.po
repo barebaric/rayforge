@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-22 20:36+0100\n"
+"POT-Creation-Date: 2026-11-25 22:25+0100\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: Ukrainian\n"
@@ -27,6 +27,14 @@ msgid "Update check failed."
 msgstr "Помилка перевірки оновлень."
 
 #: rayforge/updater.py
+msgid "Rayforge is up to date."
+msgstr "Rayforge оновлений."
+
+#: rayforge/updater.py
+msgid "New version available."
+msgstr "Доступна нова версія."
+
+#: rayforge/updater.py
 #, python-brace-format
 msgid "Rayforge {version} is available."
 msgstr "Rayforge {version} доступний."
@@ -36,12 +44,27 @@ msgid "Download"
 msgstr "Завантажити"
 
 #: rayforge/updater.py
-msgid "New version available."
-msgstr "Доступна нова версія."
+#, python-brace-format
+msgid "Downloading Rayforge {version}..."
+msgstr "Завантаження Rayforge {version}…"
 
 #: rayforge/updater.py
-msgid "Rayforge is up to date."
-msgstr "Rayforge оновлений."
+msgid "Update download failed."
+msgstr "Не вдалося завантажити оновлення."
+
+#: rayforge/updater.py
+msgid "Update ready to install."
+msgstr "Оновлення готове до встановлення."
+
+#: rayforge/updater.py
+#, python-brace-format
+msgid "Rayforge {version} is ready to install."
+msgstr "Rayforge {version} готовий до встановлення."
+
+#: rayforge/updater.py rayforge/ui_gtk/addon_manager/action_button.py
+#: rayforge/ui_gtk/doceditor/step_settings/recipe_control_widget.py
+msgid "Update"
+msgstr "Оновити"
 
 #: rayforge/core/layer.py
 #, python-brace-format
@@ -178,11 +201,6 @@ msgstr "Код (багаторядковий)"
 #: rayforge/core/varset/baudratevar.py
 msgid "Baud rate cannot be empty."
 msgstr "Швидкість передачі не може бути порожньою."
-
-#: rayforge/core/varset/baudratevar.py
-#, python-brace-format
-msgid "'{rate}' is not a standard baud rate."
-msgstr "'{rate}' не є стандартною швидкістю передачі."
 
 #: rayforge/core/varset/baudratevar.py
 msgid "Baud Rate"
@@ -911,6 +929,22 @@ msgstr ""
 "Неочікувана помилка під час налаштування. Можливо, потрібно змінити "
 "параметри пристрою."
 
+#: rayforge/machine/driver/native.py
+msgid "This driver has no native implementation."
+msgstr "Цей драйвер не має нативної реалізації."
+
+#: rayforge/machine/driver/native.py
+msgid "Machine Coordinates (G53)"
+msgstr "Машинні координати (G53)"
+
+#: rayforge/machine/driver/native.py
+msgid "Driver is not set up. Check the connection settings."
+msgstr "Драйвер не налаштовано. Перевірте налаштування з’єднання."
+
+#: rayforge/machine/driver/native.py
+msgid "Connection not configured"
+msgstr "З'єднання не налаштовано"
+
 #: rayforge/machine/driver/octoprint/octoprint_util.py
 msgid "Could not read the OctoPrint server version."
 msgstr "Не вдалося прочитати версію сервера OctoPrint."
@@ -922,11 +956,6 @@ msgstr "OctoPrint"
 #: rayforge/machine/driver/octoprint/octoprint_driver.py
 msgid "Submit G-code to an OctoPrint server"
 msgstr "Надіслати G-код на сервер OctoPrint"
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-#: rayforge/machine/driver/session_driver.py
-msgid "Machine Coordinates (G53)"
-msgstr "Машинні координати (G53)"
 
 #: rayforge/machine/driver/octoprint/octoprint_driver.py
 #: rayforge/machine/driver/xtool/xtool_network.py
@@ -1000,93 +1029,6 @@ msgstr ""
 "API-ключ має бути налаштований. Використовуйте кнопку 'Запитати доступ' або "
 "введіть API-ключ вручну."
 
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid "Authentication failed. API key may be invalid or expired."
-msgstr "Помилка автентифікації. API-ключ може бути недійсним або простроченим."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-#, python-brace-format
-msgid "OctoPrint rejected {method} {path} with HTTP {status}."
-msgstr "OctoPrint відхилив {method} {path} з HTTP {status}."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-#, python-brace-format
-msgid ""
-"Could not connect to OctoPrint at '{host}:{port}'. Check the address and "
-"network connection."
-msgstr ""
-"Не вдалося підключитися до OctoPrint на '{host}:{port}'. Перевірте адресу та "
-"мережеве з'єднання."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid "Authentication Failed"
-msgstr "Помилка автентифікації"
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid ""
-"The API key is invalid or has expired. Please re-authenticate in device "
-"settings."
-msgstr ""
-"API-ключ недійсний або прострочений. Будь ласка, повторіть автентифікацію в "
-"налаштуваннях пристрою."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid "OctoPrint returned no login data."
-msgstr "OctoPrint не повернув дані для входу."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid "Server closed WebSocket connection."
-msgstr "Сервер закрив з'єднання WebSocket."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid "Print Failed"
-msgstr "Друк не вдався"
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid ""
-"OctoPrint reported that the print job failed. Check OctoPrint for details."
-msgstr ""
-"OctoPrint повідомив про невдачу завдання друку. Перевірте OctoPrint для "
-"деталей."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid "Driver not configured with a host."
-msgstr "Драйвер не налаштований з хостом."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid "Authentication failed during upload."
-msgstr "Помилка автентифікації під час завантаження."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid "Printer is busy or not operational. Cannot start a new job."
-msgstr "Принтер зайнятий або не працює. Неможливо розпочати нове завдання."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid ""
-"OctoPrint accepted the file but could not start printing. The printer may "
-"not be operational or is already busy."
-msgstr ""
-"OctoPrint прийняв файл, але не зміг розпочати друк. Принтер може бути не "
-"робочим або вже зайнятий."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-#, python-brace-format
-msgid "Could not upload file to OctoPrint at '{host}:{port}'."
-msgstr "Не вдалося завантажити файл на OctoPrint за адресою '{host}:{port}'."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid ""
-"OctoPrint does not support writing device firmware settings through its API."
-msgstr ""
-"OctoPrint не підтримує запис налаштувань прошивки пристрою через свій API."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid ""
-"Probe command sent. OctoPrint does not report probe results via its API."
-msgstr ""
-"Команду зонда надіслано. OctoPrint не повідомляє результати зондування через "
-"свій API."
-
 #: rayforge/machine/driver/marlin/marlin_serial.py
 msgid "Marlin (Serial)"
 msgstr "Marlin (Serial)"
@@ -1136,11 +1078,6 @@ msgstr "Машини xTool з Wi-Fi (D1, D1 Pro, …)"
 
 #: rayforge/machine/driver/xtool/xtool_network.py
 #: rayforge/machine/driver/xtool/xtool_m2.py
-msgid "Driver is not set up. Check the network settings."
-msgstr "Драйвер не налаштовано. Перевірте налаштування мережі."
-
-#: rayforge/machine/driver/xtool/xtool_network.py
-#: rayforge/machine/driver/xtool/xtool_m2.py
 msgid "Hostname"
 msgstr "Ім'я хоста"
 
@@ -1178,11 +1115,6 @@ msgid ""
 msgstr ""
 "Жодна машина xTool не відповіла на {host}:{port}. Перевірте IP-адресу та чи "
 "підключена машина до мережі."
-
-#: rayforge/machine/driver/xtool/xtool_network.py
-#: rayforge/machine/driver/xtool/xtool_m2.py
-msgid "Host not configured"
-msgstr "Хост не налаштовано"
 
 #: rayforge/machine/driver/xtool/xtool_network.py
 #: rayforge/machine/driver/xtool/xtool_m2.py
@@ -1253,14 +1185,6 @@ msgstr "xTool M2 не підтримує запис налаштувань."
 #: rayforge/machine/driver/xtool/xtool_m2.py
 msgid "The xTool M2 does not support work coordinate offsets."
 msgstr "xTool M2 не підтримує зміщення робочих координат."
-
-#: rayforge/machine/driver/session_driver.py
-msgid "Driver is not set up. Check the connection settings."
-msgstr "Драйвер не налаштовано. Перевірте налаштування з’єднання."
-
-#: rayforge/machine/driver/session_driver.py
-msgid "Connection not configured"
-msgstr "З'єднання не налаштовано"
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 msgid "grblHAL (Telnet)"
@@ -1559,7 +1483,7 @@ msgstr "Межі машини"
 
 #: rayforge/machine/device/profile.py
 #: rayforge/ui_gtk/machine/gcode_settings_page.py
-#: rayforge/ui_gtk/machine/settings_dialog.py
+#: rayforge/ui_gtk/machine/settings_dialog.py rayforge/image/gcode/importer.py
 msgid "G-code"
 msgstr "G-код"
 
@@ -1908,6 +1832,90 @@ msgstr "висоти не відповідають розміру сітки"
 #: rayforge/machine/models/machine.py
 msgid "Default Machine"
 msgstr "Типовий верстат"
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The name of the currently active coordinate system (e.g. 'G54')."
+msgstr "Назва поточної активної системи координат (напр. 'G54')."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The name of the current machine profile."
+msgstr "Назва поточного профілю машини."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The width (X-axis) of the machine work area."
+msgstr "Ширина (вісь X) робочої зони машини."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The height (Y-axis) of the machine work area."
+msgstr "Висота (вісь Y) робочої зони машини."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The name of the current document file (if saved)."
+msgstr "Назва поточного файлу документа (якщо збережено)."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The job counter value the current job starts with."
+msgstr "Значення лічильника, з якого починається поточне завдання."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "Alias for the job counter value."
+msgstr "Псевдонім значення лічильника завдання."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The minimum X coordinate of the entire job."
+msgstr "Мінімальна координата X усього завдання."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The minimum Y coordinate of the entire job."
+msgstr "Мінімальна координата Y усього завдання."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The maximum X coordinate of the entire job."
+msgstr "Максимальна координата X усього завдання."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The maximum Y coordinate of the entire job."
+msgstr "Максимальна координата Y усього завдання."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The X offset of the currently active WCS."
+msgstr "Зміщення X поточної активної WCS."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The Y offset of the currently active WCS."
+msgstr "Зміщення Y поточної активної WCS."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The Z offset of the currently active WCS."
+msgstr "Зміщення Z поточної активної WCS."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The name of the current layer being processed."
+msgstr "Назва поточного шару, що обробляється."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The name of the current workpiece being processed."
+msgstr "Назва поточної заготовки, що обробляється."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The job counter value for the current workpiece."
+msgstr "Значення лічильника для поточної заготовки."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The X position of the workpiece."
+msgstr "Позиція X заготовки."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The Y position of the workpiece."
+msgstr "Позиція Y заготовки."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The width of the workpiece."
+msgstr "Ширина заготовки."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The height of the workpiece."
+msgstr "Висота заготовки."
 
 #: rayforge/machine/models/rotary_module.py
 #: rayforge/ui_gtk/machine/wizard_pages/rotary_page.py
@@ -3081,6 +3089,18 @@ msgid "Automatically check for new Rayforge versions on startup"
 msgstr "Автоматично перевіряти наявність нових версій Rayforge при запуску"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Download updates automatically"
+msgstr "Завантажувати оновлення автоматично"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid ""
+"Download new Rayforge versions in the background, so they can be installed "
+"with one click when ready"
+msgstr ""
+"Завантажуйте нові версії Rayforge у фоновому режимі, щоб їх можнабуло "
+"встановити одним кліком, коли вони будуть готові"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Check for addon updates"
 msgstr "Перевіряти оновлення додатків"
 
@@ -3475,7 +3495,8 @@ msgstr "Налаштувати параметри якості та зовніш
 msgid "Default"
 msgstr "Типово"
 
-#: rayforge/ui_gtk/camera/image_settings_widget.py rayforge/ui_gtk/varset/adapter/combo.py
+#: rayforge/ui_gtk/camera/image_settings_widget.py
+#: rayforge/ui_gtk/varset/adapter/combo.py
 msgid "Custom..."
 msgstr "Довільне..."
 
@@ -4194,6 +4215,7 @@ msgstr "Назад"
 
 #: rayforge/ui_gtk/camera/wizard/wizard.py
 #: rayforge/ui_gtk/machine/unified_wizard.py
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
 msgid "Next"
 msgstr "Далі"
 
@@ -5053,7 +5075,9 @@ msgstr ""
 "скасувати."
 
 #: rayforge/ui_gtk/machine/hook_list.py
-#: rayforge/ui_gtk/machine/maintenance_page.py rayforge/doceditor/file_cmd.py
+#: rayforge/ui_gtk/machine/maintenance_page.py
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+#: rayforge/doceditor/file_cmd.py
 msgid "Reset"
 msgstr "Скинути"
 
@@ -7328,6 +7352,7 @@ msgid "Default Value"
 msgstr "Значення за замовчуванням"
 
 #: rayforge/ui_gtk/varset/varset_editor.py
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
 msgid "Start Value"
 msgstr "Початкове значення"
 
@@ -7336,6 +7361,7 @@ msgid "Minimum Value"
 msgstr "Мінімальне значення"
 
 #: rayforge/ui_gtk/varset/varset_editor.py
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
 msgid "End Value"
 msgstr "Кінцеве значення"
 
@@ -7394,6 +7420,20 @@ msgstr "Демон не має налаштованих пристроїв."
 #: rayforge/ui_gtk/varset/adapter/combo.py
 msgid "Match by USB VID:PID…"
 msgstr "Збіг за USB VID:PID…"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "Baud rate (bits per second)"
+msgstr "Швидкість передачі (біт за секунду)"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "Custom Baud Rate"
+msgstr "Власна швидкість передачі"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+#, python-brace-format
+msgid "Enter a baud rate between {min_rate} and {max_rate} bits per second."
+msgstr ""
+"Введіть швидкість передачі від {min_rate} до {max_rate} біт за секунду."
 
 #: rayforge/ui_gtk/varset/adapter/combo.py
 msgid "First USB device with this VID:PID"
@@ -7601,11 +7641,6 @@ msgstr "Все одно встановити"
 #: rayforge/ui_gtk/addon_manager/addon_detail_dialog.py
 msgid "Open the repository in your browser"
 msgstr "Відкрити репозиторій у браузері"
-
-#: rayforge/ui_gtk/addon_manager/action_button.py
-#: rayforge/ui_gtk/doceditor/step_settings/recipe_control_widget.py
-msgid "Update"
-msgstr "Оновити"
 
 #: rayforge/ui_gtk/addon_manager/action_button.py
 msgid "Installed"
@@ -8394,12 +8429,20 @@ msgid "Flip"
 msgstr "Віддзеркалити"
 
 #: rayforge/ui_gtk/main_menu.py
+msgid "Number Copies"
+msgstr "Нумерувати копії"
+
+#: rayforge/ui_gtk/main_menu.py
 msgid "Array"
 msgstr "Масив"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Arrange"
 msgstr "Впорядкувати"
+
+#: rayforge/ui_gtk/main_menu.py
+msgid "Job Counter…"
+msgstr "Лічильник завдань…"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "_Tools"
@@ -8512,6 +8555,19 @@ msgid "Add or enable a processing step to enable export"
 msgstr "Додайте або увімкніть крок обробки, щоб увімкнути експорт"
 
 #: rayforge/ui_gtk/mainwindow.py
+msgid "Driver not available"
+msgstr "Драйвер недоступний"
+
+#: rayforge/ui_gtk/mainwindow.py
+#, python-brace-format
+msgid ""
+"The driver '{driver}' configured for machine '{machine}' is not available. "
+"Open the machine settings to select an available driver."
+msgstr ""
+"Драйвер '{driver}', налаштований для верстата '{machine}',недоступний. "
+"Відкрийте налаштування верстата, щоб вибрати доступнийдрайвер."
+
+#: rayforge/ui_gtk/mainwindow.py
 msgid "Add a laser head to enable"
 msgstr "Додайте лазерну головку, щоб увімкнути"
 
@@ -8541,6 +8597,33 @@ msgstr "Помилка експорту об’єкта: {msg}"
 #, python-brace-format
 msgid "Error exporting document: {msg}"
 msgstr "Помилка експорту документа: {msg}"
+
+#: rayforge/ui_gtk/mainwindow.py
+#, python-brace-format
+msgid "Update to Rayforge {version}?"
+msgstr "Оновити до Rayforge {version}?"
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid ""
+"Rayforge will close, install the update and start again.\n"
+"\n"
+"Windows may warn that the publisher is unknown because the installer is not "
+"code-signed. Choose “More info”, then “Run anyway” to continue. The "
+"downloaded package is the official one from the Rayforge release page."
+msgstr ""
+"Rayforge закриється, встановить оновлення та знову запуститься.\n"
+"\n"
+"Windows може попередити, що видавець невідомий, оскільки інсталяторне "
+"підписано. Виберіть «Додаткові відомості», а потім «Виконати всеодно», щоб "
+"продовжити. Завантажений пакет є офіційним із сторінкивипусків Rayforge."
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid "_Later"
+msgstr "_Пізніше"
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid "_Update"
+msgstr "_Оновити"
 
 #: rayforge/ui_gtk/mainwindow.py
 #, python-brace-format
@@ -8904,6 +8987,33 @@ msgid "Project all geometry onto the Z=0 plane (recommended for laser cutting)"
 msgstr ""
 "Проєктувати всю геометрію на площину Z=0 (рекомендовано для лазерного "
 "різання)"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Outline Repair"
+msgstr "Виправлення контурів"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Repair Open Outlines"
+msgstr "Виправити відкриті контури"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid ""
+"Join loose segments into closed contours so parts can be offset and split"
+msgstr ""
+"З'єднуйте окремі сегменти в замкнені контури, щоб деталі можна булозміщувати "
+"та розділяти"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Join Gap"
+msgstr "Проміжок з'єднання"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid ""
+"Largest gap between two segment ends that is bridged, in millimetres. Set to "
+"the minimum to scale it to the drawing."
+msgstr ""
+"Найбільший проміжок між кінцями двох сегментів, який з'єднується, "
+"уміліметрах. Установіть мінімум, щоб масштабувати його до креслення."
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
@@ -9287,6 +9397,11 @@ msgstr "SVG (масштабована векторна графіка)"
 #: rayforge/ui_gtk/doceditor/file_dialogs.py rayforge/image/dxf/exporter.py
 msgid "DXF (CAD Exchange Format)"
 msgstr "DXF (формат обміну CAD)"
+
+#: rayforge/ui_gtk/doceditor/file_dialogs.py
+#: rayforge/image/coreldraw/exporter.py
+msgid "CorelDRAW (CDR)"
+msgstr "CorelDRAW (CDR)"
 
 #: rayforge/ui_gtk/doceditor/file_dialogs.py
 #, python-brace-format
@@ -10006,6 +10121,96 @@ msgstr "{count} крок"
 msgid "{count} steps"
 msgstr "{count} кроків"
 
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+#, python-brace-format
+msgid "{first} … {last} ({count} copies)"
+msgstr "{first} … {last} ({count} копій)"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Job Counter"
+msgstr "Лічильник завдань"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Counter"
+msgstr "Лічильник"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+#, python-brace-format
+msgid ""
+"Use {counter} in a text box, e.g. No. {counter:04d} for four digits with "
+"leading zeros."
+msgstr ""
+"Використовуйте {counter} у текстовому полі, наприклад №{counter:04d} для "
+"чотирьох цифр із провідними нулями."
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Current Value"
+msgstr "Поточне значення"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "The number the next job starts with"
+msgstr "Число, з якого починається наступне завдання"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Reset returns here; the range wraps back to it"
+msgstr "Скидання повертає сюди; діапазон зациклюється на це значення"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Advance By"
+msgstr "Крок"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Increment per copy and per job"
+msgstr "Приріст на копію та на завдання"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Wrap at End Value"
+msgstr "Зациклювати на кінцевому значенні"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Continue at the start value after the end value"
+msgstr "Продовжувати з початкового значення після кінцевого"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Advance After Each Job"
+msgstr "Збільшувати після кожного завдання"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "When a job sent to the machine has finished"
+msgstr "Коли завдання, надіслане на верстат, завершено"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Advance After G-code Export"
+msgstr "Збільшувати після експорту G-коду"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "For jobs that run from a memory card"
+msgstr "Для завдань, що виконуються з картки пам'яті"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Next Job"
+msgstr "Наступне завдання"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Counter Values"
+msgstr "Значення лічильника"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Previous"
+msgstr "Попередній"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Go back by the numbers of one job"
+msgstr "Повернутися на числа одного завдання"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Skip ahead by the numbers of one job"
+msgstr "Перейти вперед на числа одного завдання"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Go back to the start value"
+msgstr "Повернутися до початкового значення"
+
 #: rayforge/ui_gtk/sim3d/playback_overlay.py
 msgid "Play simulation"
 msgstr "Відтворити симуляцію"
@@ -10494,77 +10699,14 @@ msgstr "Відсутнє: {}"
 msgid "This transformer is not available."
 msgstr "Цей трансформатор недоступний."
 
-#: rayforge/pipeline/encoder/context.py
-msgid "The name of the currently active coordinate system (e.g. 'G54')."
-msgstr "Назва поточної активної системи координат (напр. 'G54')."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The name of the current machine profile."
-msgstr "Назва поточного профілю машини."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The width (X-axis) of the machine work area."
-msgstr "Ширина (вісь X) робочої зони машини."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The height (Y-axis) of the machine work area."
-msgstr "Висота (вісь Y) робочої зони машини."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The name of the current document file (if saved)."
-msgstr "Назва поточного файлу документа (якщо збережено)."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The minimum X coordinate of the entire job."
-msgstr "Мінімальна координата X усього завдання."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The minimum Y coordinate of the entire job."
-msgstr "Мінімальна координата Y усього завдання."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The maximum X coordinate of the entire job."
-msgstr "Максимальна координата X усього завдання."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The maximum Y coordinate of the entire job."
-msgstr "Максимальна координата Y усього завдання."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The X offset of the currently active WCS."
-msgstr "Зміщення X поточної активної WCS."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The Y offset of the currently active WCS."
-msgstr "Зміщення Y поточної активної WCS."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The Z offset of the currently active WCS."
-msgstr "Зміщення Z поточної активної WCS."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The name of the current layer being processed."
-msgstr "Назва поточного шару, що обробляється."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The name of the current workpiece being processed."
-msgstr "Назва поточної заготовки, що обробляється."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The X position of the workpiece."
-msgstr "Позиція X заготовки."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The Y position of the workpiece."
-msgstr "Позиція Y заготовки."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The width of the workpiece."
-msgstr "Ширина заготовки."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The height of the workpiece."
-msgstr "Висота заготовки."
+#: rayforge/pipeline/intent_builder.py
+#, python-brace-format
+msgid ""
+"The driver '{driver}' configured for machine '{machine}' is not available. "
+"Select an available driver for this machine."
+msgstr ""
+"Драйвер '{driver}', налаштований для верстата '{machine}',недоступний. "
+"Виберіть доступний драйвер для цього верстата."
 
 #: rayforge/doceditor/transform_cmd.py
 msgid "Transform item(s)"
@@ -10937,6 +11079,30 @@ msgstr "Роз'єднати"
 msgid "{count} asset(s) require disabled addon '{addon}'"
 msgstr "{count} ресурс(и) потребують вимкнене розширення '{addon}'"
 
+#: rayforge/doceditor/job_counter_cmd.py
+msgid "Change counter value"
+msgstr "Змінити значення лічильника"
+
+#: rayforge/doceditor/job_counter_cmd.py
+msgid "Next counter value"
+msgstr "Наступне значення лічильника"
+
+#: rayforge/doceditor/job_counter_cmd.py
+msgid "Previous counter value"
+msgstr "Попереднє значення лічильника"
+
+#: rayforge/doceditor/job_counter_cmd.py
+msgid "Reset counter value"
+msgstr "Скинути значення лічильника"
+
+#: rayforge/doceditor/job_counter_cmd.py
+msgid "Advance counter value after job"
+msgstr "Збільшити значення лічильника після завдання"
+
+#: rayforge/doceditor/job_counter_cmd.py
+msgid "Number copies"
+msgstr "Нумерувати копії"
+
 #: rayforge/doceditor/group_cmd.py
 msgid "Grouping items..."
 msgstr "Групування елементів..."
@@ -11078,6 +11244,36 @@ msgstr "Не вдалося розпакувати дані gzip цього фа
 msgid "Could not read the {format} image: {error}"
 msgstr "Не вдалося прочитати зображення {format}: {error}"
 
+#: rayforge/image/coreldraw/importer.py
+msgid "CorelDRAW file is corrupt or invalid: {}"
+msgstr "Файл CorelDRAW пошкоджено або він недійсний: {}"
+
+#: rayforge/image/coreldraw/importer.py
+msgid "Unexpected error while reading CorelDRAW: {}"
+msgstr "Неочікувана помилка під час читання CorelDRAW: {}"
+
+#: rayforge/image/coreldraw/importer.py
+msgid "CorelDRAW import: {}"
+msgstr "Імпорт CorelDRAW: {}"
+
+#: rayforge/image/coreldraw/importer.py
+msgid "The document has {} pages; only the first page is imported."
+msgstr "Документ має {} сторінок; імпортується лише перша сторінка."
+
+#: rayforge/image/coreldraw/importer.py
+msgid "{} contains no vector geometry."
+msgstr "{} не містить векторної геометрії."
+
+#: rayforge/image/gcode/importer.py
+#, python-brace-format
+msgid "Some G-code instructions are not supported and were skipped: {names}"
+msgstr "Деякі інструкції G-коду не підтримуються і були пропущені: {names}"
+
+#: rayforge/image/gcode/importer.py
+#, python-brace-format
+msgid "{filename} contains no G-code cut moves."
+msgstr "{filename} не містить рухів різання G-коду."
+
 #: rayforge/image/pdf/pdf_trace.py rayforge/image/pdf/pdf_vector.py
 msgid "PDF file contains no pages."
 msgstr "PDF-файл не містить сторінок."
@@ -11155,16 +11351,34 @@ msgid "Failed to parse Ruida commands: {}"
 msgstr "Не вдалося розібрати команди Ruida: {}"
 
 #: rayforge/image/dxf/importer.py
-msgid "DXF file structure is invalid: {}"
-msgstr "Структура файлу DXF недійсна: {}"
-
-#: rayforge/image/dxf/importer.py
-msgid "Unexpected error while scanning DXF: {}"
-msgstr "Неочікувана помилка під час сканування DXF: {}"
-
-#: rayforge/image/dxf/importer.py
 msgid "DXF file is corrupt or invalid: {}"
 msgstr "Файл DXF пошкоджено або він недійсний: {}"
+
+#: rayforge/image/dxf/importer.py
+msgid "Unexpected error while reading DXF: {}"
+msgstr "Неочікувана помилка під час читання DXF: {}"
+
+#: rayforge/image/dxf/importer.py
+msgid "DXF import: {}"
+msgstr "Імпорт DXF: {}"
+
+#: rayforge/image/dxf/importer.py
+#, python-brace-format
+msgid ""
+"Repaired {joins} gap(s), closed {closed} outline(s) and removed {duplicates} "
+"duplicate(s)."
+msgstr ""
+"Виправлено {joins} проміжок(ів), закрито {closed} контур(ів) івидалено "
+"{duplicates} дублікат(ів)."
+
+#: rayforge/image/dxf/importer.py
+#, python-brace-format
+msgid ""
+"{count} outline(s) are still open after repair; raising the tolerance may "
+"close them."
+msgstr ""
+"Після виправлення {count} контур(ів) усе ще відкриті; збільшеннядопуску може "
+"їх закрити."
 
 #: rayforge/image/procedural/importer.py
 msgid "Failed to calculate parameters: {}"
@@ -11253,19 +11467,3 @@ msgstr ""
 "його лише за допомогою Ghostscript, але його не знайдено. Встановіть "
 "Ghostscript або збережіть файл в Illustrator ще раз з увімкненим параметром "
 "«Створити PDF-сумісний файл»."
-
-#: rayforge/ui_gtk/varset/adapter/combo.py
-msgid "Custom Baud Rate"
-msgstr "Власна швидкість передачі"
-
-#: rayforge/ui_gtk/varset/adapter/combo.py
-msgid "Baud rate (bits per second)"
-msgstr "Швидкість передачі (біт за секунду)"
-
-#: rayforge/ui_gtk/varset/adapter/combo.py
-#, python-brace-format
-msgid ""
-"Enter a baud rate between {min_rate} and {max_rate} bits per second."
-msgstr ""
-"Введіть швидкість передачі від {min_rate} до {max_rate} біт за "
-"секунду."

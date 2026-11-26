@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-22 20:36+0100\n"
+"POT-Creation-Date: 2026-11-25 22:25+0100\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -26,6 +26,14 @@ msgid "Update check failed."
 msgstr "更新检查失败。"
 
 #: rayforge/updater.py
+msgid "Rayforge is up to date."
+msgstr "Rayforge 已是最新版本。"
+
+#: rayforge/updater.py
+msgid "New version available."
+msgstr "有新版本可用。"
+
+#: rayforge/updater.py
 #, python-brace-format
 msgid "Rayforge {version} is available."
 msgstr "Rayforge {version} 可用。"
@@ -35,12 +43,27 @@ msgid "Download"
 msgstr "下载"
 
 #: rayforge/updater.py
-msgid "New version available."
-msgstr "有新版本可用。"
+#, python-brace-format
+msgid "Downloading Rayforge {version}..."
+msgstr "正在下载 Rayforge {version}…"
 
 #: rayforge/updater.py
-msgid "Rayforge is up to date."
-msgstr "Rayforge 已是最新版本。"
+msgid "Update download failed."
+msgstr "更新下载失败。"
+
+#: rayforge/updater.py
+msgid "Update ready to install."
+msgstr "更新已准备好安装。"
+
+#: rayforge/updater.py
+#, python-brace-format
+msgid "Rayforge {version} is ready to install."
+msgstr "Rayforge {version} 已准备好安装。"
+
+#: rayforge/updater.py rayforge/ui_gtk/addon_manager/action_button.py
+#: rayforge/ui_gtk/doceditor/step_settings/recipe_control_widget.py
+msgid "Update"
+msgstr "更新"
 
 #: rayforge/core/layer.py
 #, python-brace-format
@@ -177,11 +200,6 @@ msgstr "代码（多行）"
 #: rayforge/core/varset/baudratevar.py
 msgid "Baud rate cannot be empty."
 msgstr "波特率不能为空。"
-
-#: rayforge/core/varset/baudratevar.py
-#, python-brace-format
-msgid "'{rate}' is not a standard baud rate."
-msgstr "'{rate}' 不是标准波特率。"
 
 #: rayforge/core/varset/baudratevar.py
 msgid "Baud Rate"
@@ -880,6 +898,22 @@ msgstr "设置期间出错。您可能需要编辑设备设置。"
 msgid "Unexpected error during setup. You may need to edit device settings."
 msgstr "设置时发生意外错误。您可能需要编辑设备设置。"
 
+#: rayforge/machine/driver/native.py
+msgid "This driver has no native implementation."
+msgstr "此驱动没有原生实现。"
+
+#: rayforge/machine/driver/native.py
+msgid "Machine Coordinates (G53)"
+msgstr "机器坐标（G53）"
+
+#: rayforge/machine/driver/native.py
+msgid "Driver is not set up. Check the connection settings."
+msgstr "驱动未设置。请检查连接设置。"
+
+#: rayforge/machine/driver/native.py
+msgid "Connection not configured"
+msgstr "连接未配置"
+
 #: rayforge/machine/driver/octoprint/octoprint_util.py
 msgid "Could not read the OctoPrint server version."
 msgstr "无法读取OctoPrint服务器版本。"
@@ -891,11 +925,6 @@ msgstr "OctoPrint"
 #: rayforge/machine/driver/octoprint/octoprint_driver.py
 msgid "Submit G-code to an OctoPrint server"
 msgstr "将G代码提交到OctoPrint服务器"
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-#: rayforge/machine/driver/session_driver.py
-msgid "Machine Coordinates (G53)"
-msgstr "机器坐标（G53）"
 
 #: rayforge/machine/driver/octoprint/octoprint_driver.py
 #: rayforge/machine/driver/xtool/xtool_network.py
@@ -964,82 +993,6 @@ msgid ""
 "key manually."
 msgstr "必须配置API密钥。使用\"请求访问\"按钮或手动输入API密钥。"
 
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid "Authentication failed. API key may be invalid or expired."
-msgstr "身份验证失败。API密钥可能无效或已过期。"
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-#, python-brace-format
-msgid "OctoPrint rejected {method} {path} with HTTP {status}."
-msgstr "OctoPrint 以 HTTP {status} 拒绝了 {method} {path}。"
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-#, python-brace-format
-msgid ""
-"Could not connect to OctoPrint at '{host}:{port}'. Check the address and "
-"network connection."
-msgstr "无法连接到 '{host}:{port}' 上的OctoPrint。请检查地址和网络连接。"
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid "Authentication Failed"
-msgstr "身份验证失败"
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid ""
-"The API key is invalid or has expired. Please re-authenticate in device "
-"settings."
-msgstr "API密钥无效或已过期。请在设备设置中重新认证。"
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid "OctoPrint returned no login data."
-msgstr "OctoPrint未返回登录数据。"
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid "Server closed WebSocket connection."
-msgstr "服务器关闭了WebSocket连接。"
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid "Print Failed"
-msgstr "打印失败"
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid ""
-"OctoPrint reported that the print job failed. Check OctoPrint for details."
-msgstr "OctoPrint报告打印作业失败。请查看OctoPrint了解详情。"
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid "Driver not configured with a host."
-msgstr "驱动未配置主机。"
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid "Authentication failed during upload."
-msgstr "上传时身份验证失败。"
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid "Printer is busy or not operational. Cannot start a new job."
-msgstr "打印机忙碌或不可操作。无法启动新作业。"
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid ""
-"OctoPrint accepted the file but could not start printing. The printer may "
-"not be operational or is already busy."
-msgstr "OctoPrint已接受文件但无法开始打印。打印机可能不可操作或已忙碌。"
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-#, python-brace-format
-msgid "Could not upload file to OctoPrint at '{host}:{port}'."
-msgstr "无法将文件上传到 '{host}:{port}' 的OctoPrint。"
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid ""
-"OctoPrint does not support writing device firmware settings through its API."
-msgstr "OctoPrint不支持通过其API写入设备固件设置。"
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid ""
-"Probe command sent. OctoPrint does not report probe results via its API."
-msgstr "探测命令已发送。OctoPrint不通过其API报告探测结果。"
-
 #: rayforge/machine/driver/marlin/marlin_serial.py
 msgid "Marlin (Serial)"
 msgstr "Marlin (串行)"
@@ -1089,11 +1042,6 @@ msgstr "支持 Wi-Fi 的 xTool 机器（D1、D1 Pro 等）"
 
 #: rayforge/machine/driver/xtool/xtool_network.py
 #: rayforge/machine/driver/xtool/xtool_m2.py
-msgid "Driver is not set up. Check the network settings."
-msgstr "驱动程序未设置。请检查网络设置。"
-
-#: rayforge/machine/driver/xtool/xtool_network.py
-#: rayforge/machine/driver/xtool/xtool_m2.py
 msgid "Hostname"
 msgstr "主机名"
 
@@ -1130,11 +1078,6 @@ msgid ""
 "sure the machine is connected to the network."
 msgstr ""
 "{host}:{port} 上没有 xTool 机器响应。请检查 IP 地址，并确认机器已连接到网络。"
-
-#: rayforge/machine/driver/xtool/xtool_network.py
-#: rayforge/machine/driver/xtool/xtool_m2.py
-msgid "Host not configured"
-msgstr "未配置主机"
 
 #: rayforge/machine/driver/xtool/xtool_network.py
 #: rayforge/machine/driver/xtool/xtool_m2.py
@@ -1203,14 +1146,6 @@ msgstr "xTool M2 不支持写入设置。"
 #: rayforge/machine/driver/xtool/xtool_m2.py
 msgid "The xTool M2 does not support work coordinate offsets."
 msgstr "xTool M2 不支持工件坐标偏移。"
-
-#: rayforge/machine/driver/session_driver.py
-msgid "Driver is not set up. Check the connection settings."
-msgstr "驱动未设置。请检查连接设置。"
-
-#: rayforge/machine/driver/session_driver.py
-msgid "Connection not configured"
-msgstr "连接未配置"
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 msgid "grblHAL (Telnet)"
@@ -1494,7 +1429,7 @@ msgstr "机器范围"
 
 #: rayforge/machine/device/profile.py
 #: rayforge/ui_gtk/machine/gcode_settings_page.py
-#: rayforge/ui_gtk/machine/settings_dialog.py
+#: rayforge/ui_gtk/machine/settings_dialog.py rayforge/image/gcode/importer.py
 msgid "G-code"
 msgstr "G代码"
 
@@ -1843,6 +1778,90 @@ msgstr "高度与网格尺寸不匹配"
 #: rayforge/machine/models/machine.py
 msgid "Default Machine"
 msgstr "默认机器"
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The name of the currently active coordinate system (e.g. 'G54')."
+msgstr "当前活动坐标系的名称（例如 'G54'）。"
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The name of the current machine profile."
+msgstr "当前机器配置文件的名称。"
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The width (X-axis) of the machine work area."
+msgstr "机器工作区域的宽度（X轴）。"
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The height (Y-axis) of the machine work area."
+msgstr "机器工作区域的高度（Y轴）。"
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The name of the current document file (if saved)."
+msgstr "当前文档文件的名称（如果已保存）。"
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The job counter value the current job starts with."
+msgstr "当前作业起始时的计数器值。"
+
+#: rayforge/machine/models/dialect_context.py
+msgid "Alias for the job counter value."
+msgstr "作业计数器值的别名。"
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The minimum X coordinate of the entire job."
+msgstr "整个作业的最小X坐标。"
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The minimum Y coordinate of the entire job."
+msgstr "整个作业的最小Y坐标。"
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The maximum X coordinate of the entire job."
+msgstr "整个作业的最大X坐标。"
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The maximum Y coordinate of the entire job."
+msgstr "整个作业的最大Y坐标。"
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The X offset of the currently active WCS."
+msgstr "当前活动WCS的X偏移。"
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The Y offset of the currently active WCS."
+msgstr "当前活动WCS的Y偏移。"
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The Z offset of the currently active WCS."
+msgstr "当前活动WCS的Z偏移。"
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The name of the current layer being processed."
+msgstr "当前正在处理的图层名称。"
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The name of the current workpiece being processed."
+msgstr "当前正在处理的工件名称。"
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The job counter value for the current workpiece."
+msgstr "当前工件的计数器值。"
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The X position of the workpiece."
+msgstr "工件的X位置。"
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The Y position of the workpiece."
+msgstr "工件的Y位置。"
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The width of the workpiece."
+msgstr "工件的宽度。"
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The height of the workpiece."
+msgstr "工件的高度。"
 
 #: rayforge/machine/models/rotary_module.py
 #: rayforge/ui_gtk/machine/wizard_pages/rotary_page.py
@@ -2978,6 +2997,16 @@ msgid "Automatically check for new Rayforge versions on startup"
 msgstr "启动时自动检查新版本的 Rayforge"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Download updates automatically"
+msgstr "自动下载更新"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid ""
+"Download new Rayforge versions in the background, so they can be installed "
+"with one click when ready"
+msgstr "在后台下载新的 Rayforge 版本，以便准备就绪后一键安装"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Check for addon updates"
 msgstr "检查插件更新"
 
@@ -3355,7 +3384,8 @@ msgstr "调整图像质量和外观参数。"
 msgid "Default"
 msgstr "默认"
 
-#: rayforge/ui_gtk/camera/image_settings_widget.py rayforge/ui_gtk/varset/adapter/combo.py
+#: rayforge/ui_gtk/camera/image_settings_widget.py
+#: rayforge/ui_gtk/varset/adapter/combo.py
 msgid "Custom..."
 msgstr "自定义..."
 
@@ -4058,6 +4088,7 @@ msgstr "返回"
 
 #: rayforge/ui_gtk/camera/wizard/wizard.py
 #: rayforge/ui_gtk/machine/unified_wizard.py
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
 msgid "Next"
 msgstr "下一步"
 
@@ -4882,7 +4913,9 @@ msgstr ""
 "这将移除此钩子的自定义G代码。机器将恢复使用其内置的默认宏。此操作无法撤销。"
 
 #: rayforge/ui_gtk/machine/hook_list.py
-#: rayforge/ui_gtk/machine/maintenance_page.py rayforge/doceditor/file_cmd.py
+#: rayforge/ui_gtk/machine/maintenance_page.py
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+#: rayforge/doceditor/file_cmd.py
 msgid "Reset"
 msgstr "重置"
 
@@ -7055,6 +7088,7 @@ msgid "Default Value"
 msgstr "默认值"
 
 #: rayforge/ui_gtk/varset/varset_editor.py
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
 msgid "Start Value"
 msgstr "起始值"
 
@@ -7063,6 +7097,7 @@ msgid "Minimum Value"
 msgstr "最小值"
 
 #: rayforge/ui_gtk/varset/varset_editor.py
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
 msgid "End Value"
 msgstr "结束值"
 
@@ -7117,6 +7152,19 @@ msgstr "守护进程未配置任何设备。"
 #: rayforge/ui_gtk/varset/adapter/combo.py
 msgid "Match by USB VID:PID…"
 msgstr "按 USB VID:PID 匹配…"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "Baud rate (bits per second)"
+msgstr "波特率（比特/秒）"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "Custom Baud Rate"
+msgstr "自定义波特率"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+#, python-brace-format
+msgid "Enter a baud rate between {min_rate} and {max_rate} bits per second."
+msgstr "请输入 {min_rate} 到 {max_rate} 比特/秒之间的波特率。"
 
 #: rayforge/ui_gtk/varset/adapter/combo.py
 msgid "First USB device with this VID:PID"
@@ -7320,11 +7368,6 @@ msgstr "仍然安装"
 #: rayforge/ui_gtk/addon_manager/addon_detail_dialog.py
 msgid "Open the repository in your browser"
 msgstr "在浏览器中打开仓库"
-
-#: rayforge/ui_gtk/addon_manager/action_button.py
-#: rayforge/ui_gtk/doceditor/step_settings/recipe_control_widget.py
-msgid "Update"
-msgstr "更新"
 
 #: rayforge/ui_gtk/addon_manager/action_button.py
 msgid "Installed"
@@ -8094,12 +8137,20 @@ msgid "Flip"
 msgstr "翻转"
 
 #: rayforge/ui_gtk/main_menu.py
+msgid "Number Copies"
+msgstr "为副本编号"
+
+#: rayforge/ui_gtk/main_menu.py
 msgid "Array"
 msgstr "阵列"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Arrange"
 msgstr "排列"
+
+#: rayforge/ui_gtk/main_menu.py
+msgid "Job Counter…"
+msgstr "作业计数器…"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "_Tools"
@@ -8209,6 +8260,18 @@ msgid "Add or enable a processing step to enable export"
 msgstr "添加或启用处理步骤以启用导出"
 
 #: rayforge/ui_gtk/mainwindow.py
+msgid "Driver not available"
+msgstr "驱动不可用"
+
+#: rayforge/ui_gtk/mainwindow.py
+#, python-brace-format
+msgid ""
+"The driver '{driver}' configured for machine '{machine}' is not available. "
+"Open the machine settings to select an available driver."
+msgstr ""
+"为机器'{machine}'配置的驱动'{driver}'不可用。请打开机器设置以选择可用的驱动。"
+
+#: rayforge/ui_gtk/mainwindow.py
 msgid "Add a laser head to enable"
 msgstr "添加激光头以启用"
 
@@ -8237,6 +8300,32 @@ msgstr "导出对象错误：{msg}"
 #, python-brace-format
 msgid "Error exporting document: {msg}"
 msgstr "导出文档错误：{msg}"
+
+#: rayforge/ui_gtk/mainwindow.py
+#, python-brace-format
+msgid "Update to Rayforge {version}?"
+msgstr "更新到 Rayforge {version}？"
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid ""
+"Rayforge will close, install the update and start again.\n"
+"\n"
+"Windows may warn that the publisher is unknown because the installer is not "
+"code-signed. Choose “More info”, then “Run anyway” to continue. The "
+"downloaded package is the official one from the Rayforge release page."
+msgstr ""
+"Rayforge 将关闭、安装更新并重新启动。\n"
+"\n"
+"Windows 可能会提示发布者未知，因为安装程序未进行代码签名。请选择“更多信息”，"
+"然后选择“仍要运行”以继续。下载的安装包来自Rayforge 发布页面的官方包。"
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid "_Later"
+msgstr "_稍后"
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid "_Update"
+msgstr "_更新"
 
 #: rayforge/ui_gtk/mainwindow.py
 #, python-brace-format
@@ -8592,6 +8681,29 @@ msgstr "平整 Z 坐标"
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Project all geometry onto the Z=0 plane (recommended for laser cutting)"
 msgstr "将所有几何图形投影到 Z=0 平面（激光切割推荐）"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Outline Repair"
+msgstr "轮廓修复"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Repair Open Outlines"
+msgstr "修复开放轮廓"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid ""
+"Join loose segments into closed contours so parts can be offset and split"
+msgstr "将零散线段连接为封闭轮廓，以便对零件进行偏移和分割"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Join Gap"
+msgstr "连接间隙"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid ""
+"Largest gap between two segment ends that is bridged, in millimetres. Set to "
+"the minimum to scale it to the drawing."
+msgstr "两端点之间可桥接的最大间隙，单位为毫米。设为最小值可按图纸比例缩放。"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
@@ -8961,6 +9073,11 @@ msgstr "SVG（可缩放矢量图形）"
 #: rayforge/ui_gtk/doceditor/file_dialogs.py rayforge/image/dxf/exporter.py
 msgid "DXF (CAD Exchange Format)"
 msgstr "DXF（CAD交换格式）"
+
+#: rayforge/ui_gtk/doceditor/file_dialogs.py
+#: rayforge/image/coreldraw/exporter.py
+msgid "CorelDRAW (CDR)"
+msgstr "CorelDRAW (CDR)"
 
 #: rayforge/ui_gtk/doceditor/file_dialogs.py
 #, python-brace-format
@@ -9663,6 +9780,95 @@ msgstr "{count} 个步骤"
 msgid "{count} steps"
 msgstr "{count} 个步骤"
 
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+#, python-brace-format
+msgid "{first} … {last} ({count} copies)"
+msgstr "{first} … {last}（{count} 个副本）"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Job Counter"
+msgstr "作业计数器"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Counter"
+msgstr "计数器"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+#, python-brace-format
+msgid ""
+"Use {counter} in a text box, e.g. No. {counter:04d} for four digits with "
+"leading zeros."
+msgstr ""
+"在文本框中可使用 {counter}，例如 No. {counter:04d} 表示带前导零的四位数字。"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Current Value"
+msgstr "当前值"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "The number the next job starts with"
+msgstr "下一个作业的起始编号"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Reset returns here; the range wraps back to it"
+msgstr "重置会回到此值；范围将循环回到此处"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Advance By"
+msgstr "增量"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Increment per copy and per job"
+msgstr "每个副本和每个作业的增量"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Wrap at End Value"
+msgstr "到达结束值时循环"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Continue at the start value after the end value"
+msgstr "结束值之后从起始值继续"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Advance After Each Job"
+msgstr "每个作业后递增"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "When a job sent to the machine has finished"
+msgstr "发送到机器的作业完成时"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Advance After G-code Export"
+msgstr "导出G代码后递增"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "For jobs that run from a memory card"
+msgstr "适用于从存储卡运行的作业"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Next Job"
+msgstr "下一个作业"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Counter Values"
+msgstr "计数器值"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Previous"
+msgstr "上一个"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Go back by the numbers of one job"
+msgstr "回退一个作业的编号"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Skip ahead by the numbers of one job"
+msgstr "前进一个作业的编号"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Go back to the start value"
+msgstr "回到起始值"
+
 #: rayforge/ui_gtk/sim3d/playback_overlay.py
 msgid "Play simulation"
 msgstr "播放模拟"
@@ -10128,77 +10334,13 @@ msgstr "缺失：{}"
 msgid "This transformer is not available."
 msgstr "此转换器不可用。"
 
-#: rayforge/pipeline/encoder/context.py
-msgid "The name of the currently active coordinate system (e.g. 'G54')."
-msgstr "当前活动坐标系的名称（例如 'G54'）。"
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The name of the current machine profile."
-msgstr "当前机器配置文件的名称。"
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The width (X-axis) of the machine work area."
-msgstr "机器工作区域的宽度（X轴）。"
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The height (Y-axis) of the machine work area."
-msgstr "机器工作区域的高度（Y轴）。"
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The name of the current document file (if saved)."
-msgstr "当前文档文件的名称（如果已保存）。"
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The minimum X coordinate of the entire job."
-msgstr "整个作业的最小X坐标。"
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The minimum Y coordinate of the entire job."
-msgstr "整个作业的最小Y坐标。"
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The maximum X coordinate of the entire job."
-msgstr "整个作业的最大X坐标。"
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The maximum Y coordinate of the entire job."
-msgstr "整个作业的最大Y坐标。"
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The X offset of the currently active WCS."
-msgstr "当前活动WCS的X偏移。"
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The Y offset of the currently active WCS."
-msgstr "当前活动WCS的Y偏移。"
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The Z offset of the currently active WCS."
-msgstr "当前活动WCS的Z偏移。"
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The name of the current layer being processed."
-msgstr "当前正在处理的图层名称。"
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The name of the current workpiece being processed."
-msgstr "当前正在处理的工件名称。"
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The X position of the workpiece."
-msgstr "工件的X位置。"
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The Y position of the workpiece."
-msgstr "工件的Y位置。"
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The width of the workpiece."
-msgstr "工件的宽度。"
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The height of the workpiece."
-msgstr "工件的高度。"
+#: rayforge/pipeline/intent_builder.py
+#, python-brace-format
+msgid ""
+"The driver '{driver}' configured for machine '{machine}' is not available. "
+"Select an available driver for this machine."
+msgstr ""
+"为机器'{machine}'配置的驱动'{driver}'不可用。请为此机器选择一个可用的驱动。"
 
 #: rayforge/doceditor/transform_cmd.py
 msgid "Transform item(s)"
@@ -10551,6 +10693,30 @@ msgstr "拆分"
 msgid "{count} asset(s) require disabled addon '{addon}'"
 msgstr "{count} 个资源需要已禁用的插件 '{addon}'"
 
+#: rayforge/doceditor/job_counter_cmd.py
+msgid "Change counter value"
+msgstr "更改计数器值"
+
+#: rayforge/doceditor/job_counter_cmd.py
+msgid "Next counter value"
+msgstr "下一个计数器值"
+
+#: rayforge/doceditor/job_counter_cmd.py
+msgid "Previous counter value"
+msgstr "上一个计数器值"
+
+#: rayforge/doceditor/job_counter_cmd.py
+msgid "Reset counter value"
+msgstr "重置计数器值"
+
+#: rayforge/doceditor/job_counter_cmd.py
+msgid "Advance counter value after job"
+msgstr "作业后递增计数器值"
+
+#: rayforge/doceditor/job_counter_cmd.py
+msgid "Number copies"
+msgstr "为副本编号"
+
 #: rayforge/doceditor/group_cmd.py
 msgid "Grouping items..."
 msgstr "正在分组项目..."
@@ -10692,6 +10858,36 @@ msgstr "无法解压缩此 SVGZ 文件的 gzip 数据。"
 msgid "Could not read the {format} image: {error}"
 msgstr "无法读取 {format} 图像：{error}"
 
+#: rayforge/image/coreldraw/importer.py
+msgid "CorelDRAW file is corrupt or invalid: {}"
+msgstr "CorelDRAW文件已损坏或无效：{}"
+
+#: rayforge/image/coreldraw/importer.py
+msgid "Unexpected error while reading CorelDRAW: {}"
+msgstr "读取CorelDRAW时发生意外错误：{}"
+
+#: rayforge/image/coreldraw/importer.py
+msgid "CorelDRAW import: {}"
+msgstr "CorelDRAW导入：{}"
+
+#: rayforge/image/coreldraw/importer.py
+msgid "The document has {} pages; only the first page is imported."
+msgstr "文档有 {} 页；仅导入第一页。"
+
+#: rayforge/image/coreldraw/importer.py
+msgid "{} contains no vector geometry."
+msgstr "{} 不包含矢量几何图形。"
+
+#: rayforge/image/gcode/importer.py
+#, python-brace-format
+msgid "Some G-code instructions are not supported and were skipped: {names}"
+msgstr "部分G代码指令不受支持，已跳过：{names}"
+
+#: rayforge/image/gcode/importer.py
+#, python-brace-format
+msgid "{filename} contains no G-code cut moves."
+msgstr "{filename} 不包含G代码切割移动。"
+
 #: rayforge/image/pdf/pdf_trace.py rayforge/image/pdf/pdf_vector.py
 msgid "PDF file contains no pages."
 msgstr "PDF文件不包含页面。"
@@ -10769,16 +10965,31 @@ msgid "Failed to parse Ruida commands: {}"
 msgstr "解析Ruida命令失败：{}"
 
 #: rayforge/image/dxf/importer.py
-msgid "DXF file structure is invalid: {}"
-msgstr "DXF文件结构无效：{}"
-
-#: rayforge/image/dxf/importer.py
-msgid "Unexpected error while scanning DXF: {}"
-msgstr "扫描DXF时发生意外错误：{}"
-
-#: rayforge/image/dxf/importer.py
 msgid "DXF file is corrupt or invalid: {}"
 msgstr "DXF文件已损坏或无效：{}"
+
+#: rayforge/image/dxf/importer.py
+msgid "Unexpected error while reading DXF: {}"
+msgstr "读取DXF时发生意外错误：{}"
+
+#: rayforge/image/dxf/importer.py
+msgid "DXF import: {}"
+msgstr "DXF导入：{}"
+
+#: rayforge/image/dxf/importer.py
+#, python-brace-format
+msgid ""
+"Repaired {joins} gap(s), closed {closed} outline(s) and removed {duplicates} "
+"duplicate(s)."
+msgstr ""
+"已修复 {joins} 个间隙，闭合 {closed} 个轮廓，并移除 {duplicates} 个重复项。"
+
+#: rayforge/image/dxf/importer.py
+#, python-brace-format
+msgid ""
+"{count} outline(s) are still open after repair; raising the tolerance may "
+"close them."
+msgstr "修复后仍有 {count} 个轮廓未闭合；提高容差可能会将其闭合。"
 
 #: rayforge/image/procedural/importer.py
 msgid "Failed to calculate parameters: {}"
@@ -10866,18 +11077,3 @@ msgstr ""
 "此 Illustrator 文件保存时未启用 PDF 兼容。Rayforge 只能借助 Ghostscript 读取"
 "它，但未找到 Ghostscript。请安装 Ghostscript，或在 Illustrator 中启用“创建 "
 "PDF 兼容文件”后重新保存该文件。"
-
-#: rayforge/ui_gtk/varset/adapter/combo.py
-msgid "Custom Baud Rate"
-msgstr "自定义波特率"
-
-#: rayforge/ui_gtk/varset/adapter/combo.py
-msgid "Baud rate (bits per second)"
-msgstr "波特率（比特/秒）"
-
-#: rayforge/ui_gtk/varset/adapter/combo.py
-#, python-brace-format
-msgid ""
-"Enter a baud rate between {min_rate} and {max_rate} bits per second."
-msgstr ""
-"请输入 {min_rate} 到 {max_rate} 比特/秒之间的波特率。"

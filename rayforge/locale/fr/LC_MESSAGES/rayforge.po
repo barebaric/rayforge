@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-22 20:36+0100\n"
+"POT-Creation-Date: 2026-11-25 22:25+0100\n"
 "PO-Revision-Date: 2025-10-15 07:10+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: French\n"
@@ -27,6 +27,14 @@ msgid "Update check failed."
 msgstr "La vérification des mises à jour a échoué."
 
 #: rayforge/updater.py
+msgid "Rayforge is up to date."
+msgstr "Rayforge est à jour."
+
+#: rayforge/updater.py
+msgid "New version available."
+msgstr "Nouvelle version disponible."
+
+#: rayforge/updater.py
 #, python-brace-format
 msgid "Rayforge {version} is available."
 msgstr "Rayforge {version} est disponible."
@@ -36,12 +44,27 @@ msgid "Download"
 msgstr "Télécharger"
 
 #: rayforge/updater.py
-msgid "New version available."
-msgstr "Nouvelle version disponible."
+#, python-brace-format
+msgid "Downloading Rayforge {version}..."
+msgstr "Téléchargement de Rayforge {version}…"
 
 #: rayforge/updater.py
-msgid "Rayforge is up to date."
-msgstr "Rayforge est à jour."
+msgid "Update download failed."
+msgstr "Échec du téléchargement de la mise à jour."
+
+#: rayforge/updater.py
+msgid "Update ready to install."
+msgstr "Mise à jour prête à être installée."
+
+#: rayforge/updater.py
+#, python-brace-format
+msgid "Rayforge {version} is ready to install."
+msgstr "Rayforge {version} est prêt à être installé."
+
+#: rayforge/updater.py rayforge/ui_gtk/addon_manager/action_button.py
+#: rayforge/ui_gtk/doceditor/step_settings/recipe_control_widget.py
+msgid "Update"
+msgstr "Mettre à jour"
 
 #: rayforge/core/layer.py
 #, python-brace-format
@@ -180,11 +203,6 @@ msgstr "Code (multi-ligne)"
 #: rayforge/core/varset/baudratevar.py
 msgid "Baud rate cannot be empty."
 msgstr "Le débit en bauds ne peut pas être vide."
-
-#: rayforge/core/varset/baudratevar.py
-#, python-brace-format
-msgid "'{rate}' is not a standard baud rate."
-msgstr "'{rate}' n'est pas un débit en bauds standard."
 
 #: rayforge/core/varset/baudratevar.py
 msgid "Baud Rate"
@@ -921,6 +939,22 @@ msgstr ""
 "Erreur inattendue lors de la configuration. Vous devrez peut-être modifier "
 "les paramètres de l'appareil."
 
+#: rayforge/machine/driver/native.py
+msgid "This driver has no native implementation."
+msgstr "Ce pilote n'a pas d'implémentation native."
+
+#: rayforge/machine/driver/native.py
+msgid "Machine Coordinates (G53)"
+msgstr "Coordonnées machine (G53)"
+
+#: rayforge/machine/driver/native.py
+msgid "Driver is not set up. Check the connection settings."
+msgstr "Le pilote n’est pas configuré. Vérifiez les paramètres de connexion."
+
+#: rayforge/machine/driver/native.py
+msgid "Connection not configured"
+msgstr "Connexion non configurée"
+
 #: rayforge/machine/driver/octoprint/octoprint_util.py
 msgid "Could not read the OctoPrint server version."
 msgstr "Impossible de lire la version du serveur OctoPrint."
@@ -932,11 +966,6 @@ msgstr "OctoPrint"
 #: rayforge/machine/driver/octoprint/octoprint_driver.py
 msgid "Submit G-code to an OctoPrint server"
 msgstr "Soumettre du G-code à un serveur OctoPrint"
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-#: rayforge/machine/driver/session_driver.py
-msgid "Machine Coordinates (G53)"
-msgstr "Coordonnées machine (G53)"
 
 #: rayforge/machine/driver/octoprint/octoprint_driver.py
 #: rayforge/machine/driver/xtool/xtool_network.py
@@ -1010,97 +1039,6 @@ msgstr ""
 "La clé API doit être configurée. Utilisez le bouton « Demander l'accès » ou "
 "entrez une clé API manuellement."
 
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid "Authentication failed. API key may be invalid or expired."
-msgstr "Échec de l'authentification. La clé API peut être invalide ou expirée."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-#, python-brace-format
-msgid "OctoPrint rejected {method} {path} with HTTP {status}."
-msgstr "OctoPrint a rejeté {method} {path} avec HTTP {status}."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-#, python-brace-format
-msgid ""
-"Could not connect to OctoPrint at '{host}:{port}'. Check the address and "
-"network connection."
-msgstr ""
-"Impossible de se connecter à OctoPrint à « {host}:{port} ». Vérifiez "
-"l'adresse et la connexion réseau."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid "Authentication Failed"
-msgstr "Échec de l'authentification"
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid ""
-"The API key is invalid or has expired. Please re-authenticate in device "
-"settings."
-msgstr ""
-"La clé API est invalide ou a expiré. Veuillez vous réauthentifier dans les "
-"paramètres du périphérique."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid "OctoPrint returned no login data."
-msgstr "OctoPrint n'a renvoyé aucune donnée de connexion."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid "Server closed WebSocket connection."
-msgstr "Le serveur a fermé la connexion WebSocket."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid "Print Failed"
-msgstr "Impression échouée"
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid ""
-"OctoPrint reported that the print job failed. Check OctoPrint for details."
-msgstr ""
-"OctoPrint a signalé l'échec du travail d'impression. Consultez OctoPrint "
-"pour plus de détails."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid "Driver not configured with a host."
-msgstr "Pilote non configuré avec un hôte."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid "Authentication failed during upload."
-msgstr "Échec de l'authentification lors du téléchargement."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid "Printer is busy or not operational. Cannot start a new job."
-msgstr ""
-"L'imprimante est occupée ou non opérationnelle. Impossible de démarrer un "
-"nouveau travail."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid ""
-"OctoPrint accepted the file but could not start printing. The printer may "
-"not be operational or is already busy."
-msgstr ""
-"OctoPrint a accepté le fichier mais n'a pas pu démarrer l'impression. "
-"L'imprimante peut ne pas être opérationnelle ou être déjà occupée."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-#, python-brace-format
-msgid "Could not upload file to OctoPrint at '{host}:{port}'."
-msgstr ""
-"Impossible de télécharger le fichier vers OctoPrint à « {host}:{port} »."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid ""
-"OctoPrint does not support writing device firmware settings through its API."
-msgstr ""
-"OctoPrint ne prend pas en charge l'écriture des paramètres de firmware du "
-"périphérique via son API."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid ""
-"Probe command sent. OctoPrint does not report probe results via its API."
-msgstr ""
-"Commande de palpage envoyée. OctoPrint ne signale pas les résultats de "
-"palpage via son API."
-
 #: rayforge/machine/driver/marlin/marlin_serial.py
 msgid "Marlin (Serial)"
 msgstr "Marlin (Série)"
@@ -1150,11 +1088,6 @@ msgstr "Machines xTool avec Wi-Fi (D1, D1 Pro, …)"
 
 #: rayforge/machine/driver/xtool/xtool_network.py
 #: rayforge/machine/driver/xtool/xtool_m2.py
-msgid "Driver is not set up. Check the network settings."
-msgstr "Le pilote n'est pas configuré. Vérifiez les paramètres réseau."
-
-#: rayforge/machine/driver/xtool/xtool_network.py
-#: rayforge/machine/driver/xtool/xtool_m2.py
 msgid "Hostname"
 msgstr "Nom d’hôte"
 
@@ -1192,11 +1125,6 @@ msgid ""
 msgstr ""
 "Aucune machine xTool n'a répondu à {host}:{port}. Vérifiez l'adresse IP et "
 "assurez-vous que la machine est connectée au réseau."
-
-#: rayforge/machine/driver/xtool/xtool_network.py
-#: rayforge/machine/driver/xtool/xtool_m2.py
-msgid "Host not configured"
-msgstr "Hôte non configuré"
 
 #: rayforge/machine/driver/xtool/xtool_network.py
 #: rayforge/machine/driver/xtool/xtool_m2.py
@@ -1273,14 +1201,6 @@ msgstr "La xTool M2 ne prend pas en charge l'écriture des réglages."
 msgid "The xTool M2 does not support work coordinate offsets."
 msgstr ""
 "La xTool M2 ne prend pas en charge les décalages de coordonnées de travail."
-
-#: rayforge/machine/driver/session_driver.py
-msgid "Driver is not set up. Check the connection settings."
-msgstr "Le pilote n’est pas configuré. Vérifiez les paramètres de connexion."
-
-#: rayforge/machine/driver/session_driver.py
-msgid "Connection not configured"
-msgstr "Connexion non configurée"
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 msgid "grblHAL (Telnet)"
@@ -1583,7 +1503,7 @@ msgstr "Limites de la machine"
 
 #: rayforge/machine/device/profile.py
 #: rayforge/ui_gtk/machine/gcode_settings_page.py
-#: rayforge/ui_gtk/machine/settings_dialog.py
+#: rayforge/ui_gtk/machine/settings_dialog.py rayforge/image/gcode/importer.py
 msgid "G-code"
 msgstr "G-code"
 
@@ -1932,6 +1852,90 @@ msgstr "les hauteurs ne correspondent pas à la taille de la grille"
 #: rayforge/machine/models/machine.py
 msgid "Default Machine"
 msgstr "Machine par défaut"
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The name of the currently active coordinate system (e.g. 'G54')."
+msgstr "Le nom du système de coordonnées actuellement actif (p. ex. 'G54')."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The name of the current machine profile."
+msgstr "Le nom du profil de machine actuel."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The width (X-axis) of the machine work area."
+msgstr "La largeur (axe X) de la zone de travail de la machine."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The height (Y-axis) of the machine work area."
+msgstr "La hauteur (axe Y) de la zone de travail de la machine."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The name of the current document file (if saved)."
+msgstr "Le nom du fichier de document actuel (si enregistré)."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The job counter value the current job starts with."
+msgstr "La valeur du compteur avec laquelle démarre la tâche en cours."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "Alias for the job counter value."
+msgstr "Alias de la valeur du compteur de la tâche."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The minimum X coordinate of the entire job."
+msgstr "La coordonnée X minimale de tout le travail."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The minimum Y coordinate of the entire job."
+msgstr "La coordonnée Y minimale de tout le travail."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The maximum X coordinate of the entire job."
+msgstr "La coordonnée X maximale de tout le travail."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The maximum Y coordinate of the entire job."
+msgstr "La coordonnée Y maximale de tout le travail."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The X offset of the currently active WCS."
+msgstr "Le décalage X du système de coordonnées de travail actif."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The Y offset of the currently active WCS."
+msgstr "Le décalage Y du système de coordonnées de travail actif."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The Z offset of the currently active WCS."
+msgstr "Le décalage Z du système de coordonnées de travail actif."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The name of the current layer being processed."
+msgstr "Le nom de la couche actuelle en cours de traitement."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The name of the current workpiece being processed."
+msgstr "Le nom de la pièce de travail actuelle en cours de traitement."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The job counter value for the current workpiece."
+msgstr "La valeur du compteur pour la pièce en cours."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The X position of the workpiece."
+msgstr "La position X de la pièce de travail."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The Y position of the workpiece."
+msgstr "La position Y de la pièce de travail."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The width of the workpiece."
+msgstr "La largeur de la pièce de travail."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The height of the workpiece."
+msgstr "La hauteur de la pièce de travail."
 
 #: rayforge/machine/models/rotary_module.py
 #: rayforge/ui_gtk/machine/wizard_pages/rotary_page.py
@@ -3124,6 +3128,18 @@ msgstr ""
 "Vérifier automatiquement les nouvelles versions de Rayforge au démarrage"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Download updates automatically"
+msgstr "Télécharger les mises à jour automatiquement"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid ""
+"Download new Rayforge versions in the background, so they can be installed "
+"with one click when ready"
+msgstr ""
+"Télécharge les nouvelles versions de Rayforge en arrière-plan afinde pouvoir "
+"les installer en un clic lorsqu'elles sont prêtes"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Check for addon updates"
 msgstr "Rechercher des mises à jour d’extensions"
 
@@ -3517,7 +3533,8 @@ msgstr "Ajuster les paramètres de qualité et d'apparence de l'image."
 msgid "Default"
 msgstr "Par défaut"
 
-#: rayforge/ui_gtk/camera/image_settings_widget.py rayforge/ui_gtk/varset/adapter/combo.py
+#: rayforge/ui_gtk/camera/image_settings_widget.py
+#: rayforge/ui_gtk/varset/adapter/combo.py
 msgid "Custom..."
 msgstr "Personnalisé..."
 
@@ -4240,6 +4257,7 @@ msgstr "Retour"
 
 #: rayforge/ui_gtk/camera/wizard/wizard.py
 #: rayforge/ui_gtk/machine/unified_wizard.py
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
 msgid "Next"
 msgstr "Suivant"
 
@@ -5109,7 +5127,9 @@ msgstr ""
 "irréversible."
 
 #: rayforge/ui_gtk/machine/hook_list.py
-#: rayforge/ui_gtk/machine/maintenance_page.py rayforge/doceditor/file_cmd.py
+#: rayforge/ui_gtk/machine/maintenance_page.py
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+#: rayforge/doceditor/file_cmd.py
 msgid "Reset"
 msgstr "Réinitialiser"
 
@@ -7420,6 +7440,7 @@ msgid "Default Value"
 msgstr "Valeur par défaut"
 
 #: rayforge/ui_gtk/varset/varset_editor.py
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
 msgid "Start Value"
 msgstr "Valeur de départ"
 
@@ -7428,6 +7449,7 @@ msgid "Minimum Value"
 msgstr "Valeur minimale"
 
 #: rayforge/ui_gtk/varset/varset_editor.py
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
 msgid "End Value"
 msgstr "Valeur de fin"
 
@@ -7486,6 +7508,21 @@ msgstr "Le démon n'a aucun appareil configuré."
 #: rayforge/ui_gtk/varset/adapter/combo.py
 msgid "Match by USB VID:PID…"
 msgstr "Correspondre par VID:PID USB…"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "Baud rate (bits per second)"
+msgstr "Débit en bauds (bits par seconde)"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "Custom Baud Rate"
+msgstr "Débit en bauds personnalisé"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+#, python-brace-format
+msgid "Enter a baud rate between {min_rate} and {max_rate} bits per second."
+msgstr ""
+"Saisissez un débit en bauds compris entre {min_rate} et {max_rate} bits par "
+"seconde."
 
 #: rayforge/ui_gtk/varset/adapter/combo.py
 msgid "First USB device with this VID:PID"
@@ -7696,11 +7733,6 @@ msgstr "Installer quand même"
 #: rayforge/ui_gtk/addon_manager/addon_detail_dialog.py
 msgid "Open the repository in your browser"
 msgstr "Ouvrir le dépôt dans le navigateur"
-
-#: rayforge/ui_gtk/addon_manager/action_button.py
-#: rayforge/ui_gtk/doceditor/step_settings/recipe_control_widget.py
-msgid "Update"
-msgstr "Mettre à jour"
 
 #: rayforge/ui_gtk/addon_manager/action_button.py
 msgid "Installed"
@@ -8504,12 +8536,20 @@ msgid "Flip"
 msgstr "Retourner"
 
 #: rayforge/ui_gtk/main_menu.py
+msgid "Number Copies"
+msgstr "Numéroter les copies"
+
+#: rayforge/ui_gtk/main_menu.py
 msgid "Array"
 msgstr "Tableau"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Arrange"
 msgstr "Agencer"
+
+#: rayforge/ui_gtk/main_menu.py
+msgid "Job Counter…"
+msgstr "Compteur de tâches…"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "_Tools"
@@ -8622,6 +8662,20 @@ msgstr ""
 "Ajouter ou activer une étape de traitement pour permettre l'exportation"
 
 #: rayforge/ui_gtk/mainwindow.py
+msgid "Driver not available"
+msgstr "Pilote non disponible"
+
+#: rayforge/ui_gtk/mainwindow.py
+#, python-brace-format
+msgid ""
+"The driver '{driver}' configured for machine '{machine}' is not available. "
+"Open the machine settings to select an available driver."
+msgstr ""
+"Le pilote « {driver} » configuré pour la machine « {machine} » n'estpas "
+"disponible. Ouvrez les paramètres de la machine poursélectionner un pilote "
+"disponible."
+
+#: rayforge/ui_gtk/mainwindow.py
 msgid "Add a laser head to enable"
 msgstr "Ajoutez une tête laser pour activer"
 
@@ -8652,6 +8706,34 @@ msgstr "Erreur lors de l’exportation de l’objet : {msg}"
 #, python-brace-format
 msgid "Error exporting document: {msg}"
 msgstr "Erreur lors de l’exportation du document : {msg}"
+
+#: rayforge/ui_gtk/mainwindow.py
+#, python-brace-format
+msgid "Update to Rayforge {version}?"
+msgstr "Mettre à jour vers Rayforge {version} ?"
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid ""
+"Rayforge will close, install the update and start again.\n"
+"\n"
+"Windows may warn that the publisher is unknown because the installer is not "
+"code-signed. Choose “More info”, then “Run anyway” to continue. The "
+"downloaded package is the official one from the Rayforge release page."
+msgstr ""
+"Rayforge va se fermer, installer la mise à jour et redémarrer.\n"
+"\n"
+"Windows peut avertir que l'éditeur est inconnu, car l'installateurn'est pas "
+"signé. Choisissez « Plus d'informations », puis « Exécuterquand même » pour "
+"continuer. Le paquet téléchargé est celui officielde la page des versions de "
+"Rayforge."
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid "_Later"
+msgstr "_Plus tard"
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid "_Update"
+msgstr "_Mettre à jour"
 
 #: rayforge/ui_gtk/mainwindow.py
 #, python-brace-format
@@ -9023,6 +9105,33 @@ msgid "Project all geometry onto the Z=0 plane (recommended for laser cutting)"
 msgstr ""
 "Projeter toute la géométrie sur le plan Z=0 (recommandé pour la découpe "
 "laser)"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Outline Repair"
+msgstr "Réparation des contours"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Repair Open Outlines"
+msgstr "Réparer les contours ouverts"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid ""
+"Join loose segments into closed contours so parts can be offset and split"
+msgstr ""
+"Joindre les segments isolés en contours fermés pour que les piècespuissent "
+"être décalées et divisées"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Join Gap"
+msgstr "Écart de jonction"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid ""
+"Largest gap between two segment ends that is bridged, in millimetres. Set to "
+"the minimum to scale it to the drawing."
+msgstr ""
+"Écart maximal entre deux extrémités de segment qui est comblé, "
+"enmillimètres. Réglez-le au minimum pour l'adapter au dessin."
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
@@ -9412,6 +9521,11 @@ msgstr "SVG (Graphiques vectoriels évolutifs)"
 #: rayforge/ui_gtk/doceditor/file_dialogs.py rayforge/image/dxf/exporter.py
 msgid "DXF (CAD Exchange Format)"
 msgstr "DXF (Format d'échange CAO)"
+
+#: rayforge/ui_gtk/doceditor/file_dialogs.py
+#: rayforge/image/coreldraw/exporter.py
+msgid "CorelDRAW (CDR)"
+msgstr "CorelDRAW (CDR)"
 
 #: rayforge/ui_gtk/doceditor/file_dialogs.py
 #, python-brace-format
@@ -10137,6 +10251,96 @@ msgstr "{count} étape"
 msgid "{count} steps"
 msgstr "{count} étapes"
 
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+#, python-brace-format
+msgid "{first} … {last} ({count} copies)"
+msgstr "{first} … {last} ({count} copies)"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Job Counter"
+msgstr "Compteur de tâches"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Counter"
+msgstr "Compteur"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+#, python-brace-format
+msgid ""
+"Use {counter} in a text box, e.g. No. {counter:04d} for four digits with "
+"leading zeros."
+msgstr ""
+"Utilisez {counter} dans une zone de texte, par ex. N° {counter:04d}pour "
+"quatre chiffres avec des zéros de tête."
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Current Value"
+msgstr "Valeur actuelle"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "The number the next job starts with"
+msgstr "Le nombre avec lequel démarre la tâche suivante"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Reset returns here; the range wraps back to it"
+msgstr "La réinitialisation revient ici ; la plage repart de cette valeur"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Advance By"
+msgstr "Pas d'avancement"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Increment per copy and per job"
+msgstr "Incrément par copie et par tâche"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Wrap at End Value"
+msgstr "Boucler à la valeur de fin"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Continue at the start value after the end value"
+msgstr "Reprendre à la valeur de départ après la valeur de fin"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Advance After Each Job"
+msgstr "Avancer après chaque tâche"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "When a job sent to the machine has finished"
+msgstr "Lorsqu'une tâche envoyée à la machine est terminée"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Advance After G-code Export"
+msgstr "Avancer après l'export G-code"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "For jobs that run from a memory card"
+msgstr "Pour les tâches exécutées depuis une carte mémoire"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Next Job"
+msgstr "Tâche suivante"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Counter Values"
+msgstr "Valeurs du compteur"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Previous"
+msgstr "Précédent"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Go back by the numbers of one job"
+msgstr "Reculer des numéros d'une tâche"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Skip ahead by the numbers of one job"
+msgstr "Avancer des numéros d'une tâche"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Go back to the start value"
+msgstr "Revenir à la valeur de départ"
+
 #: rayforge/ui_gtk/sim3d/playback_overlay.py
 msgid "Play simulation"
 msgstr "Lecture de la simulation"
@@ -10630,77 +10834,14 @@ msgstr "Manquant : {}"
 msgid "This transformer is not available."
 msgstr "Ce transformateur n'est pas disponible."
 
-#: rayforge/pipeline/encoder/context.py
-msgid "The name of the currently active coordinate system (e.g. 'G54')."
-msgstr "Le nom du système de coordonnées actuellement actif (p. ex. 'G54')."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The name of the current machine profile."
-msgstr "Le nom du profil de machine actuel."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The width (X-axis) of the machine work area."
-msgstr "La largeur (axe X) de la zone de travail de la machine."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The height (Y-axis) of the machine work area."
-msgstr "La hauteur (axe Y) de la zone de travail de la machine."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The name of the current document file (if saved)."
-msgstr "Le nom du fichier de document actuel (si enregistré)."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The minimum X coordinate of the entire job."
-msgstr "La coordonnée X minimale de tout le travail."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The minimum Y coordinate of the entire job."
-msgstr "La coordonnée Y minimale de tout le travail."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The maximum X coordinate of the entire job."
-msgstr "La coordonnée X maximale de tout le travail."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The maximum Y coordinate of the entire job."
-msgstr "La coordonnée Y maximale de tout le travail."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The X offset of the currently active WCS."
-msgstr "Le décalage X du système de coordonnées de travail actif."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The Y offset of the currently active WCS."
-msgstr "Le décalage Y du système de coordonnées de travail actif."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The Z offset of the currently active WCS."
-msgstr "Le décalage Z du système de coordonnées de travail actif."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The name of the current layer being processed."
-msgstr "Le nom de la couche actuelle en cours de traitement."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The name of the current workpiece being processed."
-msgstr "Le nom de la pièce de travail actuelle en cours de traitement."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The X position of the workpiece."
-msgstr "La position X de la pièce de travail."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The Y position of the workpiece."
-msgstr "La position Y de la pièce de travail."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The width of the workpiece."
-msgstr "La largeur de la pièce de travail."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The height of the workpiece."
-msgstr "La hauteur de la pièce de travail."
+#: rayforge/pipeline/intent_builder.py
+#, python-brace-format
+msgid ""
+"The driver '{driver}' configured for machine '{machine}' is not available. "
+"Select an available driver for this machine."
+msgstr ""
+"Le pilote « {driver} » configuré pour la machine « {machine} » n'estpas "
+"disponible. Sélectionnez un pilote disponible pour cettemachine."
 
 #: rayforge/doceditor/transform_cmd.py
 msgid "Transform item(s)"
@@ -11068,6 +11209,30 @@ msgstr "Dissocier"
 msgid "{count} asset(s) require disabled addon '{addon}'"
 msgstr "{count} ressource(s) nécessite(nt) l'extension désactivée '{addon}'"
 
+#: rayforge/doceditor/job_counter_cmd.py
+msgid "Change counter value"
+msgstr "Modifier la valeur du compteur"
+
+#: rayforge/doceditor/job_counter_cmd.py
+msgid "Next counter value"
+msgstr "Valeur suivante du compteur"
+
+#: rayforge/doceditor/job_counter_cmd.py
+msgid "Previous counter value"
+msgstr "Valeur précédente du compteur"
+
+#: rayforge/doceditor/job_counter_cmd.py
+msgid "Reset counter value"
+msgstr "Réinitialiser la valeur du compteur"
+
+#: rayforge/doceditor/job_counter_cmd.py
+msgid "Advance counter value after job"
+msgstr "Avancer la valeur du compteur après la tâche"
+
+#: rayforge/doceditor/job_counter_cmd.py
+msgid "Number copies"
+msgstr "Numéroter les copies"
+
 #: rayforge/doceditor/group_cmd.py
 msgid "Grouping items..."
 msgstr "Groupement des éléments..."
@@ -11211,6 +11376,38 @@ msgstr "Les données gzip de ce fichier SVGZ n'ont pas pu être décompressées.
 msgid "Could not read the {format} image: {error}"
 msgstr "Impossible de lire l'image {format} : {error}"
 
+#: rayforge/image/coreldraw/importer.py
+msgid "CorelDRAW file is corrupt or invalid: {}"
+msgstr "Le fichier CorelDRAW est corrompu ou non valide : {}"
+
+#: rayforge/image/coreldraw/importer.py
+msgid "Unexpected error while reading CorelDRAW: {}"
+msgstr "Erreur inattendue lors de la lecture de CorelDRAW : {}"
+
+#: rayforge/image/coreldraw/importer.py
+msgid "CorelDRAW import: {}"
+msgstr "Import CorelDRAW : {}"
+
+#: rayforge/image/coreldraw/importer.py
+msgid "The document has {} pages; only the first page is imported."
+msgstr "Le document comporte {} pages ; seule la première page est importée."
+
+#: rayforge/image/coreldraw/importer.py
+msgid "{} contains no vector geometry."
+msgstr "{} ne contient aucune géométrie vectorielle."
+
+#: rayforge/image/gcode/importer.py
+#, python-brace-format
+msgid "Some G-code instructions are not supported and were skipped: {names}"
+msgstr ""
+"Certaines instructions G-code ne sont pas prises en charge et ontété "
+"ignorées : {names}"
+
+#: rayforge/image/gcode/importer.py
+#, python-brace-format
+msgid "{filename} contains no G-code cut moves."
+msgstr "{filename} ne contient aucun mouvement de découpe G-code."
+
 #: rayforge/image/pdf/pdf_trace.py rayforge/image/pdf/pdf_vector.py
 msgid "PDF file contains no pages."
 msgstr "Le fichier PDF ne contient aucune page."
@@ -11288,16 +11485,34 @@ msgid "Failed to parse Ruida commands: {}"
 msgstr "Échec de l'analyse des commandes Ruida : {}"
 
 #: rayforge/image/dxf/importer.py
-msgid "DXF file structure is invalid: {}"
-msgstr "La structure du fichier DXF est non valide : {}"
-
-#: rayforge/image/dxf/importer.py
-msgid "Unexpected error while scanning DXF: {}"
-msgstr "Erreur inattendue lors de l'analyse du DXF : {}"
-
-#: rayforge/image/dxf/importer.py
 msgid "DXF file is corrupt or invalid: {}"
 msgstr "Le fichier DXF est corrompu ou non valide : {}"
+
+#: rayforge/image/dxf/importer.py
+msgid "Unexpected error while reading DXF: {}"
+msgstr "Erreur inattendue lors de la lecture du DXF : {}"
+
+#: rayforge/image/dxf/importer.py
+msgid "DXF import: {}"
+msgstr "Import DXF : {}"
+
+#: rayforge/image/dxf/importer.py
+#, python-brace-format
+msgid ""
+"Repaired {joins} gap(s), closed {closed} outline(s) and removed {duplicates} "
+"duplicate(s)."
+msgstr ""
+"{joins} écart(s) réparé(s), {closed} contour(s) fermé(s) et{duplicates} "
+"doublon(s) supprimé(s)."
+
+#: rayforge/image/dxf/importer.py
+#, python-brace-format
+msgid ""
+"{count} outline(s) are still open after repair; raising the tolerance may "
+"close them."
+msgstr ""
+"{count} contour(s) sont encore ouverts après la réparation ;augmenter la "
+"tolérance peut les fermer."
 
 #: rayforge/image/procedural/importer.py
 msgid "Failed to calculate parameters: {}"
@@ -11386,19 +11601,3 @@ msgstr ""
 "peut le lire qu'avec Ghostscript, qui est introuvable. Installez Ghostscript "
 "ou enregistrez à nouveau le fichier dans Illustrator avec l'option « Créer "
 "un fichier compatible PDF » activée."
-
-#: rayforge/ui_gtk/varset/adapter/combo.py
-msgid "Custom Baud Rate"
-msgstr "Débit en bauds personnalisé"
-
-#: rayforge/ui_gtk/varset/adapter/combo.py
-msgid "Baud rate (bits per second)"
-msgstr "Débit en bauds (bits par seconde)"
-
-#: rayforge/ui_gtk/varset/adapter/combo.py
-#, python-brace-format
-msgid ""
-"Enter a baud rate between {min_rate} and {max_rate} bits per second."
-msgstr ""
-"Saisissez un débit en bauds compris entre {min_rate} et "
-"{max_rate} bits par seconde."
