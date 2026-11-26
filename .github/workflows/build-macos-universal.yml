@@ -357,6 +357,10 @@ jobs:
     outputs:
       is_prerelease: ${{ steps.release_info.outputs.is_prerelease }}
     steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
       - name: Determine release type
         id: release_info
         shell: bash
@@ -367,6 +371,12 @@ jobs:
           else
             echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Extract release notes from changelog
+        shell: bash
+        run: |
+          python3 scripts/extract_changelog.py \
+            "${{ needs.version.outputs.version }}" > release-notes.md
 
       - name: Download Intel app artifact
         uses: actions/download-artifact@v8
@@ -400,5 +410,6 @@ jobs:
           prerelease: ${{ steps.release_info.outputs.is_prerelease }}
           name: Release ${{ needs.version.outputs.version }}
           tag_name: ${{ github.ref_name }}
+          body_path: release-notes.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
