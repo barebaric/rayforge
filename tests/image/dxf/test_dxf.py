@@ -83,6 +83,19 @@ def block_layer0_dxf_importer():
     return _importer("block_layer0.dxf")
 
 
+@pytest.fixture
+def block_arc_dxf_importer():
+    """A DXF whose block contains arcs and is inserted with a rotation
+    (mirrors issue #834)."""
+    return _importer("block_arc_rotation.dxf")
+
+
+@pytest.fixture
+def nested_block_dxf_importer():
+    """A DXF whose block inserts another block (mirrors raygeo #197)."""
+    return _importer("nested_block.dxf")
+
+
 def _setup_workpiece_with_context(
     importer: DxfImporter,
 ) -> WorkPiece | None:
@@ -668,3 +681,39 @@ class TestDXFBlockLayers:
         vec_result = block_layer0_dxf_importer.vectorize(parse_result, spec)
         assert not vec_result.geometries_by_layer["LAYER_A"].is_empty()
         assert "0" not in vec_result.geometries_by_layer
+
+
+class TestDXFBlockTransforms:
+    def test_arcs_follow_the_block_insertion(
+        self, block_arc_dxf_importer: DxfImporter
+    ):
+        parse_result = block_arc_dxf_importer.parse()
+        assert parse_result is not None
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.NEW_LAYERS)
+        vec_result = block_arc_dxf_importer.vectorize(parse_result, spec)
+
+        outside = vec_result.geometries_by_layer["Outside"]
+        assert not outside.is_empty()
+        assert _has_curves(outside.data)
+        min_x, min_y, max_x, max_y = outside.rect()
+        assert (min_x, min_y, max_x, max_y) == pytest.approx(
+            (3.386, 3.501, 101.830, 104.927), abs=0.01
+        )
+
+    def test_nested_block_insert_is_expanded(
+        self, nested_block_dxf_importer: DxfImporter
+    ):
+        manifest = nested_block_dxf_importer.scan()
+        assert [layer.id for layer in manifest.layers] == ["LAYER_A"]
+
+        parse_result = nested_block_dxf_importer.parse()
+        assert parse_result is not None
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.NEW_LAYERS)
+        vec_result = nested_block_dxf_importer.vectorize(parse_result, spec)
+
+        geometry = vec_result.geometries_by_layer["LAYER_A"]
+        assert not geometry.is_empty()
+        min_x, min_y, max_x, max_y = geometry.rect()
+        assert (min_x, min_y, max_x, max_y) == pytest.approx(
+            (100.0, 5.0, 110.0, 15.0)
+        )
