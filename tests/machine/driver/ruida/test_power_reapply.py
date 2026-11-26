@@ -17,10 +17,9 @@ from raygeo.ops.types import RasterMode, SectionType
 
 from rayforge.core.doc import Doc
 from rayforge.core.step import Step
-from rayforge.machine.driver.ruida.ruida_encoder import build_ruida_spec
+from rayforge.machine.driver.ruida.ruida_encoder import RuidaEncoder
 from rayforge.machine.models.laser import Laser
 from rayforge.machine.models.machine import Machine
-from rayforge.pipeline.encode_inputs import encode_ops
 
 
 class CutStep(Step):
@@ -35,7 +34,7 @@ class CutStep(Step):
 
 def _encode(ops, doc) -> str:
     machine = _build_machine()
-    return encode_ops(ops, build_ruida_spec(machine, doc)).text
+    return RuidaEncoder().encode(ops, machine, doc).text
 
 
 def _build_machine() -> Machine:

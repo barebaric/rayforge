@@ -21,10 +21,9 @@ from raygeo.ops.types import RasterMode, SectionType
 
 from rayforge.core.doc import Doc
 from rayforge.core.step import Step
-from rayforge.machine.driver.ruida.ruida_encoder import build_ruida_spec
+from rayforge.machine.driver.ruida.ruida_encoder import RuidaEncoder
 from rayforge.machine.models.laser import Laser
 from rayforge.machine.models.machine import Machine
-from rayforge.pipeline.encode_inputs import encode_ops
 
 REPO_ROOT = Path(__file__).resolve().parents[5]
 sys.path.insert(0, str(REPO_ROOT))
@@ -164,4 +163,4 @@ if __name__ == "__main__":
 def encode_representative_job():
     """Encode the representative job with the native Ruida encoder."""
     doc, ops, machine = build_representative_job()
-    return encode_ops(ops, build_ruida_spec(machine, doc))
+    return RuidaEncoder().encode(ops, machine, doc)

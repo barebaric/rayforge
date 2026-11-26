@@ -28,8 +28,7 @@ from typing import Any
 
 from raydriver.ruida import encode_script
 
-from rayforge.machine.driver.ruida.ruida_encoder import build_ruida_spec
-from rayforge.pipeline.encode_inputs import encode_ops
+from rayforge.machine.driver.ruida.ruida_encoder import RuidaEncoder
 
 GOLDEN_DIR = Path(__file__).parent / "golden"
 GOLDEN_FILE = GOLDEN_DIR / "transcript.cglu"
@@ -60,7 +59,7 @@ build_representative_job = _load_regen_builder()
 def _encode_representative_output():
     """Encode the representative job with the native encoder."""
     doc, ops, machine = build_representative_job()
-    return encode_ops(ops, build_ruida_spec(machine, doc))
+    return RuidaEncoder().encode(ops, machine, doc)
 
 
 def _encode_representative_job():
