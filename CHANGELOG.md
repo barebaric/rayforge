@@ -42,6 +42,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   content is a template, so `{counter}` gives each copy its own
   value. Requires raygeo 1.95.0
 
+- Ruida (Raydriver): an experimental alternative driver based on the
+  native raydriver stack. It supports USB, UDP and TCP and is selected
+  explicitly; the existing Ruida RPA driver and its device profiles
+  remain the default. The new driver is marked untested.
+
 ### Fixed
 
 - Icons: the sketcher pie menu and the canvas tool cursors keep their

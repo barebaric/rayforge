@@ -1316,14 +1316,14 @@ class IntentBuilder:
 
         G-code drivers get the native ``GcodeSpec`` for their dialect,
         which raygeo's pipeline runs on a rayon thread without crossing
-        the GIL. Drivers that do not speak G-code (e.g. Ruida) get a
-        :class:`PythonEncoder` wrapping their own encoder until they are
-        ported into raydriver.
+        the GIL. A driver with a native encoder provides it through its
+        ``create_encoder_spec`` hook. Any other non-G-code driver gets a
+        :class:`PythonEncoder` wrapping its own encoder.
 
         The route is decided by the driver's G-code capability, never
-        by the dialect alone: a driver that does not speak G-code
-        (e.g. Ruida) must always use its own encoder, even when the
-        machine still carries a leftover Grbl dialect (issue #420).
+        by the dialect alone: a driver that does not speak G-code must
+        always use its own encoder, even when the machine still carries
+        a leftover Grbl dialect (issue #420).
 
         A driver that is named in the machine configuration but not
         installed fails here instead of silently encoding G-code with
@@ -1335,6 +1335,9 @@ class IntentBuilder:
         driver_cls = resolve_driver_cls(machine)
         if driver_cls.uses_gcode:
             return self._gcode_encoder_spec(doc)
+        encoder_spec = driver_cls.create_encoder_spec(machine, doc)
+        if encoder_spec is not None:
+            return encoder_spec
 
         return PythonEncoder(
             self._make_python_encoder_callable(machine, doc),

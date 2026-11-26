@@ -543,9 +543,10 @@ $22=1       ; 归零启用
 
 ## Ruida 控制器
 
-Rayforge 通过 **Ruida RPA** 驱动程序连接基于 Ruida 的控制器（例如 RDC6442、RDC6445、Ruida
+Rayforge 通过 **Ruida** 驱动程序连接基于 Ruida 的控制器（例如 RDC6442、RDC6445、Ruida
 R5），该驱动程序通过 USB 或 UDP 使用控制器原生协议通信，或经由 Ruida Protocol Analyzer 通过 TUI
-RPC 连接。Generic Ruida RPA 和 Monport MP-570 60W CO2 设备配置文件为新机器提供起点。
+RPC 连接。Generic Ruida RPA 和 Monport MP-570 60W CO2 设备配置文件为新机器提供起点。实验性 **Ruida
+(Raydriver)** 驱动程序也可用；它尚未经过测试。
 
 **功能：**
 

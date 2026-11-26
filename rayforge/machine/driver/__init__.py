@@ -26,6 +26,7 @@ from .grbl import (
 from .marlin import MarlinSerialDriver
 from .octoprint import OctoPrintDriver
 from .remote_driver import RaydriverRemoteDriver
+from .ruida import RuidaDriver
 from .ruidarpa import RuidaRPAAdapter
 from .smoothie import SmoothieDriver
 from .xtool import XtoolM2Driver, XtoolNetworkDriver
@@ -84,6 +85,7 @@ __all__ = [
     "OctoPrintDriver",
     "PWMParams",
     "RaydriverRemoteDriver",
+    "RuidaDriver",
     "RuidaRPAAdapter",
     "SmoothieDriver",
     "XtoolM2Driver",

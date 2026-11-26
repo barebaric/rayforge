@@ -519,9 +519,10 @@ $22=1       ; Homing enabled
 
 ## Ruida नियंत्रक
 
-Rayforge Ruida-आधारित नियंत्रकों (जैसे RDC6442, RDC6445, Ruida R5) से **Ruida RPA** ड्राइवर के माध्यम से जुड़ता
-है, जो USB या UDP पर, या Ruida Protocol Analyzer के माध्यम से TUI RPC से नियंत्रक का मूल प्रोटोकॉल बोलता है.
-Generic Ruida RPA और Monport MP-570 60W CO2 डिवाइस प्रोफ़ाइल नई मशीनों के लिए शुरुआती बिंदु देते हैं.
+Rayforge Ruida-आधारित नियंत्रकों (जैसे RDC6442, RDC6445, Ruida R5) से **Ruida** ड्राइवर के माध्यम से जुड़ता है,
+जो USB या UDP पर, या Ruida Protocol Analyzer के माध्यम से TUI RPC से नियंत्रक का मूल प्रोटोकॉल बोलता है.
+Generic Ruida RPA और Monport MP-570 60W CO2 डिवाइस प्रोफ़ाइल नई मशीनों के लिए शुरुआती बिंदु देते हैं. प्रयोगात्मक
+**Ruida (Raydriver)** ड्राइवर इसके साथ उपलब्ध है; इसका परीक्षण नहीं किया गया है.
 
 **सुविधाएँ:**
 

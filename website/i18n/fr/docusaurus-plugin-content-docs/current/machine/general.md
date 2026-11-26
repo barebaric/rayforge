@@ -39,7 +39,7 @@ Les appareils GRBL peuvent se connecter en USB/série ou par réseau :
 Les machines xTool en Wi-Fi utilisent leurs propres pilotes expérimentaux ; voir
 [xTool en Wi-Fi](xtool) pour la D1/D1 Pro et la M2.
 
-Les contrôleurs basés sur Ruida sont pris en charge par le pilote **Ruida RPA**, qui se connecte
+Les contrôleurs basés sur Ruida sont pris en charge par le pilote **Ruida**, qui se connecte
 directement en USB ou UDP, ou via TUI RPC par l'intermédiaire du Ruida Protocol Analyzer. Son champ
 USB propose un menu déroulant des appareils connectés avec correspondance VID:PID, et il honore le
 réglage Power Mode de chaque étape — Dynamic active la mise à l'échelle de puissance du contrôleur,
@@ -47,7 +47,8 @@ Constant la désactive. Le comportement de la puissance se règle avec les optio
 Scaling**, **VECTOR power floor** et **IMAGE power bias** : la mise à l'échelle de puissance relève
 le minimum émis lorsque la vitesse de coupe de la couche diminue, le plancher de puissance vector
 compense la sur-combustion aux extrémités des lignes, et le biais d'image compense les tubes CO2 qui
-ne s'allument pas à très faible puissance.
+ne s'allument pas à très faible puissance. Le pilote expérimental **Ruida (Raydriver)** est
+disponible à côté ; il n'a pas été testé.
 
 ### Liaison du Port Série
 

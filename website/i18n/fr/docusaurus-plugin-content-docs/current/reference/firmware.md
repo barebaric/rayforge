@@ -556,9 +556,10 @@ $22=1       ; Mise à l'origine activée
 ## Contrôleurs Ruida
 
 Rayforge se connecte aux contrôleurs basés sur Ruida (p.ex. RDC6442, RDC6445, Ruida R5) via le
-pilote **Ruida RPA**, qui parle le protocole natif du contrôleur en USB ou UDP, ou via TUI RPC par
+pilote **Ruida**, qui parle le protocole natif du contrôleur en USB ou UDP, ou via TUI RPC par
 l'intermédiaire du Ruida Protocol Analyzer. Les profils d'appareil Generic Ruida RPA et Monport
-MP-570 60W CO2 fournissent des points de départ pour les nouvelles machines.
+MP-570 60W CO2 fournissent des points de départ pour les nouvelles machines. Le pilote expérimental
+**Ruida (Raydriver)** est disponible à côté ; il n'a pas été testé.
 
 **Fonctionnalités :**
 
