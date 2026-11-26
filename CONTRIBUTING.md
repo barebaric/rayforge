@@ -13,10 +13,12 @@ Thank you for your interest in contributing!
 
 ## AI-Assisted Code
 
-We welcome the use of AI tools to help write code. However, you are strictly
-responsible for the code you submit. You MUST fully understand it and must be
-able to explain the architectural choices.
+We welcome the use of AI tools to help write code. You do not need to be fluent
+in every language the project uses; AI tools can help you read and review code
+you did not write. You remain responsible for what you submit, though:
+understand what the change does and why it fits the project's architecture, and
+be prepared to explain it and how you tested it.
 
 AI-generated code often introduces subtle bugs, architectural mismatches, and
-security flaws. PRs that appear to be raw, unreviewed AI output will be closed
-to respect maintainer time.
+security flaws. Review it before submitting. PRs that appear to be raw,
+unreviewed AI output will be closed to respect maintainer time.
