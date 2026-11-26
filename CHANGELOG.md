@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   empty by default, each family validates its own raster resolutions,
   an optional job-name prefix is shown in the machine's job list, and
   hardware autofocus can be enabled in the driver options. Requires
-  raydriver 1.22.4
+  raydriver 1.23.0
 
 - G-code import: `.gcode`, `.ngc`, `.nc`, `.tap` and `.gc` files are
   imported as geometry only. Supported motion covers G0/G1/G2/G3,

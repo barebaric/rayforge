@@ -40,6 +40,7 @@ SVG_DATA = b"""
 """
 
 JOB_HEADER = b"\x1b%-12345X@PJL JOB NAME="
+JOB_ENTER_PCL = b"\x1bE@PJL ENTER LANGUAGE=PCL\r\n"
 JOB_FOOTER = b"\x1bE\x1b%-12345X@PJL EOJ \r\n"
 
 
@@ -118,6 +119,11 @@ class TestEpilogEncoding:
             assert payload is not None
             assert payload.startswith(JOB_HEADER)
             assert payload.rstrip(b"\x00").endswith(JOB_FOOTER)
+            # Vector-first jobs carry the empty PCL startup block and
+            # enter HP-GL/2 with the requested frequency.
+            assert JOB_ENTER_PCL + b"\x1b&y0A" in payload
+            assert b"\x1b*t500R" in payload
+            assert b"\x1b%1BIN;WF0;XR1000;YP000;" in payload
             # The readable listing is escaped text, not raw bytes.
             assert "\x1b" not in artifact.machine_code
             assert "@PJL ENTER LANGUAGE=PCL" in artifact.machine_code
