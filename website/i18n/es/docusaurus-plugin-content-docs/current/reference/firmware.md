@@ -557,14 +557,15 @@ $22=1       ; Homing habilitado
 ## Controladores Ruida
 
 Rayforge se conecta a controladores basados en Ruida (p.ej. RDC6442, RDC6445, Ruida R5) mediante el
-controlador **Ruida**, que habla el protocolo nativo del controlador por USB, UDP o TCP. Los
-perfiles de dispositivo Generic Ruida y Monport MP-570 60W CO2 proporcionan puntos de partida para
-máquinas nuevas.
+controlador **Ruida**, que habla el protocolo nativo del controlador por USB o UDP, o vía TUI RPC a
+través del Ruida Protocol Analyzer. Los perfiles de dispositivo Generic Ruida RPA y Monport MP-570
+60W CO2 proporcionan puntos de partida para máquinas nuevas. El controlador experimental **Ruida
+(Raydriver)** está disponible junto a él; no ha sido probado.
 
 **Funciones:**
 
-- Conectividad USB, UDP y TCP; cuando USB y red están configurados, Rayforge alterna automáticamente
-  entre ellos a medida que se conectan y desconectan los cables
+- Conectividad USB y UDP; cuando ambos están configurados, Rayforge alterna automáticamente entre
+  ellos a medida que se conectan y desconectan los cables
 - Envío de trabajos con reporte de posición, jogging, homing y Mover a Posición
 - El encuadre traza el contorno del trabajo con movimientos absolutos sin haz, por lo que funciona
   sin disparar el láser

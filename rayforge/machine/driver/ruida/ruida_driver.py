@@ -114,12 +114,12 @@ class RuidaDriver(NativeDriver):
 
     NATIVE = raydriver.ruida.RuidaDriver
 
-    label = _("Ruida")
+    label = _("Ruida (Raydriver)")
     subtitle = _("Connect via Ruida Protocol")
     supports_settings = False
     reports_granular_progress = False
     uses_gcode = False
-    maturity = DriverMaturity.KNOWN_BUGGY
+    maturity = DriverMaturity.UNTESTED
     supports_probing = False
     native_overscan = True
     supports_multi_depth_raster = False

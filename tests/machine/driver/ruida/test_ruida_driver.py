@@ -16,6 +16,7 @@ from raydriver.ruida.emulator import RuidaEmulator
 from raygeo.ops.axis import Axis
 
 from rayforge.machine.driver.driver import (
+    DriverMaturity,
     DriverPrecheckError,
     ZHomingMode,
 )
@@ -90,6 +91,10 @@ class TestMetadata:
     def test_native_class(self):
         assert RuidaDriver.NATIVE is NativeRuidaDriver
         assert RuidaDriver.uses_gcode is False
+
+    def test_is_labeled_experimental(self):
+        assert RuidaDriver.label == "Ruida (Raydriver)"
+        assert RuidaDriver.maturity == DriverMaturity.UNTESTED
 
     def test_setup_vars(self):
         keys = set(RuidaDriver.get_setup_vars().keys())

@@ -848,7 +848,7 @@ async def test_focus_modes_without_z_axis(doc_editor, machine, mocker):
 
 @pytest.mark.asyncio
 async def test_focus_modes_without_gcode_driver(doc_editor, machine, mocker):
-    mocker.patch.object(machine, "driver_name", "RuidaDriver")
+    mocker.patch.object(machine, "driver_name", "RuidaRPAAdapter")
     assert _modes(doc_editor) == [FocusMode.RAMP]
     generator = CalibrationCmd.generator("focus_test")
     assert generator.defaults(doc_editor.context)["mode"] == "ramp"

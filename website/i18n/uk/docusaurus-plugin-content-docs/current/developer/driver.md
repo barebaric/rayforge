@@ -173,7 +173,8 @@ class YourDriver(Driver):
 
 - `grbl/` - Машини на базі GRBL (serial, serial simple, serial на Rust, telnet, мережа)
 - `marlin/` - Машини на базі прошивки Marlin (serial)
-- `ruida/` - Контролери Ruida через USB, UDP або TCP за допомогою нативного стеку raydriver
+- `ruidarpa/` - Контролери Ruida через Ruida Protocol Analyzer (USB, UDP або TUI RPC)
+- `ruida/` - експериментальний драйвер Ruida на нативному стеку raydriver (USB, UDP або TCP)
 - `octoprint/` - Машини, керовані через сервер OctoPrint
 - `smoothie/` - Машини на базі Smoothieboard
 - `dummy.py` - Тестовий драйвер для розробки

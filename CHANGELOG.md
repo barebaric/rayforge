@@ -42,15 +42,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   content is a template, so `{counter}` gives each copy its own
   value. Requires raygeo 1.95.0
 
-### Changed
-
-- Ruida: the driver now runs on the native raydriver stack (wire codec,
-  USB/UDP/TCP session, GlueScript compiler and Ops encoder). The
-  `ruida-pa` dependency and its TUI RPC host mode are removed; direct
-  USB, UDP and TCP connections are unchanged. The driver is now called
-  `RuidaDriver`, and machines saved with `RuidaRPAAdapter` keep
-  resolving. Raydriver's `analyzer tui` is a protocol monitor, not an
-  RPC host.
+- Ruida (Raydriver): an experimental alternative driver based on the
+  native raydriver stack. It supports USB, UDP and TCP and is selected
+  explicitly; the existing Ruida RPA driver and its device profiles
+  remain the default. The new driver is marked untested.
 
 ### Fixed
 

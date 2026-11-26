@@ -1,13 +1,16 @@
-# Ruida Driver
+# Ruida (Raydriver) Driver
 
-The Ruida driver connects Rayforge to Ruida-based laser controllers over
-USB, UDP or TCP. The protocol stack, job compiler and Ops encoder run in
-Rust via `raydriver.ruida`; no external Ruida library is required.
+The **Ruida (Raydriver)** driver is an experimental alternative to the
+default Ruida RPA driver. It connects Rayforge to Ruida-based laser
+controllers over USB, UDP or TCP. The protocol stack, job compiler and
+Ops encoder run in Rust via `raydriver.ruida`; no external Ruida library
+is required. The existing Ruida RPA driver, its device profiles and its
+TUI RPC mode remain available and are the default.
 
 ## Machine Settings Configuration
 
-Select the **Generic Ruida** device in the machine settings, or add a
-Ruida machine manually and choose the **Ruida** driver.
+Add a Ruida machine manually and choose the **Ruida (Raydriver)**
+driver. The driver is marked as untested.
 
 Configuring both the **Hostname** and the **USB device** enables
 automatic swap between connections when cables are connected and
@@ -37,9 +40,10 @@ by the representative job in `regen_golden.py`.
 
 ## Limitations
 
-- The old ruida-pa TUI RPC host mode is gone. Raydriver's
-  `raydriver analyzer tui` is a live protocol monitor, not an RPC host;
-  use a direct connection, or the raydriver daemon for remote setups.
+- This driver has no TUI RPC mode; use the default Ruida RPA driver for
+  that. Raydriver's `raydriver analyzer tui` is a live protocol monitor,
+  not an RPC host; use a direct connection, or the raydriver daemon for
+  remote setups.
 - This version includes rudimentary acceleration and deceleration power
   compensation. It is a machine setting, so it applies per job.
 - **WARNING**: The depthmap engrave mode has not been tested. Because it

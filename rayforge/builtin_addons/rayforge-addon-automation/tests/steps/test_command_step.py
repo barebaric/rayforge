@@ -107,7 +107,7 @@ def test_check_warns_on_empty_text(machine):
 
 
 def test_check_warns_on_non_gcode_driver(machine):
-    machine.driver_name = "RuidaDriver"
+    machine.driver_name = "RuidaRPAAdapter"
     step = _make_step("M101")
     warnings = step.check(machine)
     assert any("does not support" in w for w in warnings)

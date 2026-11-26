@@ -356,7 +356,7 @@ def test_route_connection_non_probing_driver_skips_probe(
     ui_context_initializer,
 ):
     wizard = _make_wizard(ui_context_initializer)
-    wizard.profile = _profile(driver="RuidaDriver")
+    wizard.profile = _profile(driver="RuidaRPAAdapter")
     with patch(
         "rayforge.ui_gtk.machine.unified_wizard.is_ai_configured",
         return_value=True,
@@ -462,7 +462,7 @@ def test_known_profile_skips_to_review(ui_context_initializer):
     pages)."""
     wizard = _make_wizard(ui_context_initializer)
     wizard._on_profile_source_selected(
-        None, kind="profile", profile=_profile(driver="RuidaDriver")
+        None, kind="profile", profile=_profile(driver="RuidaRPAAdapter")
     )
     assert wizard._next_step_after("connect") == "review"
 
@@ -596,14 +596,14 @@ def test_controller_page_enter_preselects_matching_driver(
     ui_context_initializer,
 ):
     wizard = _make_wizard(ui_context_initializer)
-    wizard.profile = _profile(driver="RuidaDriver")
+    wizard.profile = _profile(driver="RuidaRPAAdapter")
     wizard._navigate_to("controller")
     page = wizard._get_page("controller")
     assert page is not None
     assert page.ready is True
     profile = _profile()
     assert page.apply_to_profile(profile)
-    assert profile.machine_config.driver == "RuidaDriver"
+    assert profile.machine_config.driver == "RuidaRPAAdapter"
 
 
 @pytest.mark.ui
@@ -627,7 +627,7 @@ def test_connection_page_next_requires_details(ui_context_initializer):
 @pytest.mark.ui
 def test_connection_page_ruida_needs_only_hostname(ui_context_initializer):
     wizard = _make_wizard(ui_context_initializer)
-    wizard.profile = _profile(driver="RuidaDriver")
+    wizard.profile = _profile(driver="RuidaRPAAdapter")
     wizard._navigate_to("connect")
     page = wizard._get_page("connect")
     assert isinstance(page, ConnectionPage)
@@ -644,7 +644,7 @@ def test_connection_page_ruida_needs_only_hostname(ui_context_initializer):
 @pytest.mark.ui
 def test_connection_page_ruida_network_mode(ui_context_initializer):
     wizard = _make_wizard(ui_context_initializer)
-    wizard.profile = _profile(driver="RuidaDriver")
+    wizard.profile = _profile(driver="RuidaRPAAdapter")
     wizard._navigate_to("connect")
     page = wizard._get_page("connect")
     assert isinstance(page, ConnectionPage)
@@ -663,7 +663,7 @@ def test_connection_page_ruida_network_mode(ui_context_initializer):
 @pytest.mark.ui
 def test_connection_page_ruida_usb_mode(ui_context_initializer):
     wizard = _make_wizard(ui_context_initializer)
-    wizard.profile = _profile(driver="RuidaDriver")
+    wizard.profile = _profile(driver="RuidaRPAAdapter")
     wizard._navigate_to("connect")
     page = wizard._get_page("connect")
     assert isinstance(page, ConnectionPage)
@@ -682,7 +682,7 @@ def test_connection_page_ruida_usb_mode(ui_context_initializer):
 @pytest.mark.ui
 def test_connection_page_prefills_zero_driver_arg(ui_context_initializer):
     wizard = _make_wizard(ui_context_initializer)
-    wizard.profile = _profile(driver="RuidaDriver")
+    wizard.profile = _profile(driver="RuidaRPAAdapter")
     wizard.profile.machine_config.driver_args = {"image_power_bias": 0.0}
     wizard._navigate_to("connect")
     page = wizard._get_page("connect")
@@ -699,7 +699,7 @@ def test_connection_args_complete_ruida_hostname_only(
     ui_context_initializer,
 ):
     wizard = _make_wizard(ui_context_initializer)
-    profile = _profile(driver="RuidaDriver")
+    profile = _profile(driver="RuidaRPAAdapter")
     profile.machine_config.driver_args = {"udp_host": "192.168.1.25"}
     wizard.profile = profile
     assert wizard._connection_args_complete() is True
@@ -710,7 +710,7 @@ def test_connection_args_complete_ruida_usb_mode(
     ui_context_initializer,
 ):
     wizard = _make_wizard(ui_context_initializer)
-    profile = _profile(driver="RuidaDriver")
+    profile = _profile(driver="RuidaRPAAdapter")
     profile.machine_config.driver_args = {
         "connection": "usb",
         "usb_device": "/dev/ttyUSB0",
@@ -724,7 +724,7 @@ def test_connection_args_complete_ruida_auto_needs_hostname(
     ui_context_initializer,
 ):
     wizard = _make_wizard(ui_context_initializer)
-    profile = _profile(driver="RuidaDriver")
+    profile = _profile(driver="RuidaRPAAdapter")
     profile.machine_config.driver_args = {"usb_device": "/dev/ttyUSB0"}
     wizard.profile = profile
     assert wizard._connection_args_complete() is False

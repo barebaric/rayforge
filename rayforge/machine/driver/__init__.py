@@ -27,6 +27,7 @@ from .marlin import MarlinSerialDriver
 from .octoprint import OctoPrintDriver
 from .remote_driver import RaydriverRemoteDriver
 from .ruida import RuidaDriver
+from .ruidarpa import RuidaRPAAdapter
 from .smoothie import SmoothieDriver
 from .xtool import XtoolM2Driver, XtoolNetworkDriver
 
@@ -47,10 +48,6 @@ driver_by_classname = {o.__name__: o for o in drivers}
 # while the Rust-backed serial driver carried its experimental name
 # keep resolving.
 driver_by_classname["GrblSerialNextDriver"] = GrblSerialDriver
-
-# Transitional alias, remove with the next release: machines saved
-# before the ruida-pa removal carry the old adapter name.
-driver_by_classname["RuidaRPAAdapter"] = RuidaDriver
 
 
 def get_driver_cls(classname: str, default=NoDeviceDriver):
@@ -89,6 +86,7 @@ __all__ = [
     "PWMParams",
     "RaydriverRemoteDriver",
     "RuidaDriver",
+    "RuidaRPAAdapter",
     "SmoothieDriver",
     "XtoolM2Driver",
     "XtoolNetworkDriver",

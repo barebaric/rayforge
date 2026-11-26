@@ -211,7 +211,8 @@ A melhor forma de aprender é olhar os drivers existentes em `rayforge/machine/d
 
 - `grbl/` - Máquinas baseadas em GRBL (serial, serial simple, serial Rust, telnet, rede)
 - `marlin/` - Máquinas baseadas em firmware Marlin (serial)
-- `ruida/` - Controladores Ruida via USB, UDP ou TCP com a pilha nativa do raydriver
+- `ruidarpa/` - Controladores Ruida via Ruida Protocol Analyzer (USB, UDP ou TUI RPC)
+- `ruida/` - driver Ruida experimental via pilha nativa do raydriver (USB, UDP ou TCP)
 - `octoprint/` - Máquinas controladas por meio de um servidor OctoPrint
 - `smoothie/` - Máquinas baseadas em Smoothieboard
 - `dummy.py` - Um driver de teste para desenvolvimento

@@ -39,14 +39,16 @@ Los dispositivos GRBL pueden conectarse por USB/serie o por red:
 Las máquinas xTool por Wi-Fi usan sus propios controladores experimentales; consulta
 [xTool por Wi-Fi](xtool) para D1/D1 Pro y M2.
 
-Los controladores basados en Ruida son compatibles con el controlador **Ruida**, que se conecta por
-USB, UDP o TCP. Su campo USB ofrece un desplegable de dispositivos conectados con coincidencia
-VID:PID, y respeta el Modo de Potencia de cada paso — Dinámico activa el escalado de potencia del
-controlador y Constante lo desactiva. El comportamiento de potencia se ajusta con las opciones
-**Power Scaling**, **VECTOR power floor** e **IMAGE power bias**: el escalado eleva la potencia
-mínima emitida a medida que disminuye la velocidad de corte de la capa, el suelo de potencia vector
+Los controladores basados en Ruida son compatibles con el controlador **Ruida**, que se conecta
+directamente por USB o UDP, o vía TUI RPC a través del Ruida Protocol Analyzer. Su campo USB ofrece
+un desplegable de dispositivos conectados con coincidencia VID:PID, y honra el ajuste de Modo de
+Potencia de cada paso: Dinámico activa el escalado de potencia del controlador y Constante lo
+desactiva. El comportamiento de la potencia se ajusta con las opciones del controlador **Power
+Scaling**, **VECTOR power floor** e **IMAGE power bias**: el escalado de potencia eleva la potencia
+mínima emitida a medida que la velocidad de corte de la capa disminuye, el suelo de potencia vector
 compensa el sobre-quemado en los extremos de las líneas, y el sesgo de imagen compensa los tubos CO2
-que no disparan a potencias muy bajas.
+que no disparan con potencias muy bajas. El controlador experimental **Ruida (Raydriver)** está
+disponible junto a él; no ha sido probado.
 
 ### Vinculación del Puerto Serie
 
