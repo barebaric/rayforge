@@ -89,7 +89,7 @@ class EpilogLaserDriver(NativeDriver):
 
     label = _("Epilog")
     subtitle = _("Upload print jobs to an Epilog laser over Ethernet")
-    maturity = DriverMaturity.UNTESTED
+    maturity = DriverMaturity.EXPERIMENTAL
     supports_settings = False
     reports_granular_progress = False
     uses_gcode = False
