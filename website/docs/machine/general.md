@@ -53,8 +53,8 @@ Epilog lasers with an Ethernet port (Zing 16, Zing 24/6030, Helix 18 and Helix 2
 Zing** or **Epilog Helix** driver. Jobs are encoded as Epilog print jobs and uploaded to the
 machine's print queue; start them from the laser's own job list. The driver offers the machine's IP
 address, the print port (515 by default), the print queue name (empty by default; set one only if
-your print server requires it), the raster resolution (Zing: 100–1000 DPI; Helix: 75–1200 DPI) and
-the vector frequency (10–5000 Hz).
+your print server requires it), an optional job-name prefix, the raster resolution (Zing: 100–1000
+DPI; Helix: 75–1200 DPI) and the vector frequency (10–5000 Hz).
 
 The print protocol offers no remote control, so Rayforge cannot home, jog, query the status or move
 the head on these machines, and focus and air assist are set at the laser. The job language always

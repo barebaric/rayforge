@@ -112,6 +112,7 @@ class EpilogLaserDriver(NativeDriver):
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         super().__init__(context, machine)
         self._machine_wcs = "MACHINE"
+        self._job_prefix = ""
 
     @property
     def machine_space_wcs_display_name(self) -> str:
@@ -197,6 +198,17 @@ class EpilogLaserDriver(NativeDriver):
                     default=cls.default_queue,
                     optional=True,
                 ),
+                Var(
+                    key="job_prefix",
+                    label=_("Job Prefix"),
+                    description=_(
+                        "Optional prefix prepended to the job name shown "
+                        "on the laser"
+                    ),
+                    var_type=str,
+                    default="",
+                    optional=True,
+                ),
                 ChoiceVar(
                     key="resolution",
                     label=_("Resolution (DPI)"),
@@ -222,6 +234,7 @@ class EpilogLaserDriver(NativeDriver):
         queue = kwargs.get("queue")
         if queue is None:
             queue = self.default_queue
+        self._job_prefix = str(kwargs.get("job_prefix") or "")
         return {
             "host": host.strip(),
             "port": int(kwargs.get("port", DEFAULT_PORT)),
@@ -317,7 +330,7 @@ class EpilogLaserDriver(NativeDriver):
         payload = encoded.driver_data.get("payload")
         if not payload:
             raise DriverSetupError(_("The job has no machine code to upload."))
-        title = (doc.name if doc else "") or "Rayforge"
+        title = f"{self._job_prefix}{(doc.name if doc else '') or 'Rayforge'}"
         try:
             await self._require_session().upload(payload, title)
         except ConnectionError as exc:

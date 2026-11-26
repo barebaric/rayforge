@@ -17,8 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   engraving, then uploaded over the BSD LPD protocol; framing uploads
   a beam-off outline job. The encoder and transport run in raydriver,
   and built-in profiles ship for both families; the print queue is
-  empty by default and each family validates its own raster
-  resolutions. Requires raydriver 1.22.3
+  empty by default, each family validates its own raster resolutions,
+  and an optional job-name prefix is shown in the machine's job list.
+  Requires raydriver 1.22.3
 
 - G-code import: `.gcode`, `.ngc`, `.nc`, `.tap` and `.gc` files are
   imported as geometry only. Supported motion covers G0/G1/G2/G3,

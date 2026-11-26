@@ -50,9 +50,10 @@ def build_epilog_context(
     (``zing`` or ``helix``); both share the print-job format.
     """
     driver_args = machine.driver_args
+    prefix = str(driver_args.get("job_prefix") or "")
     return {
         "model": model,
-        "title": (doc.name if doc else "") or "Rayforge",
+        "title": f"{prefix}{(doc.name if doc else '') or 'Rayforge'}",
         "resolution": int(driver_args.get("resolution") or DEFAULT_RESOLUTION),
         "frequency": int(driver_args.get("frequency") or DEFAULT_FREQUENCY),
         "bed_mm": [

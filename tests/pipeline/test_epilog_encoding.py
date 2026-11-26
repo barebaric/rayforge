@@ -159,6 +159,13 @@ class TestEncoderRouting:
         assert build_epilog_context(machine, doc)["rotary"] is True
 
     @pytest.mark.asyncio
+    async def test_job_prefix_is_prepended_to_title(self, machine, task_mgr):
+        await self._epilog_machine(machine, task_mgr)
+        machine.driver_args["job_prefix"] = "lab-"
+        doc = Doc()
+        assert build_epilog_context(machine, doc)["title"] == "lab-Rayforge"
+
+    @pytest.mark.asyncio
     async def test_intent_builder_selects_epilog_spec(self, machine, task_mgr):
         await self._epilog_machine(machine, task_mgr)
         builder = IntentBuilder(machine=machine, generation_id=1)

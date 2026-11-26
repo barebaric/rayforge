@@ -188,6 +188,15 @@ class TestQueue:
         assert var is not None
         assert var.default == ""
 
+    def test_job_prefix_setting(self):
+        keys = list(EpilogZingDriver.get_setup_vars().keys())
+        assert "job_prefix" in keys
+        var = EpilogZingDriver.get_setup_vars().get("job_prefix")
+        assert var is not None
+        assert var.default == ""
+        assert var.optional is True
+        assert keys.index("job_prefix") == keys.index("queue") + 1
+
     def test_is_a_single_line_field(self):
         var = EpilogZingDriver.get_setup_vars().get("queue")
         assert var is not None
@@ -260,19 +269,30 @@ class TestRun:
     @pytest.mark.asyncio
     async def test_uploads_payload(self, driver, session, doc):
         payload = b"\x1b%-12345X@PJL JOB" + bytes(16)
-        await driver.run(_encoded(payload), doc, None)
+        await driver.run(_encoded(payload), doc, Ops())
         session.upload.assert_awaited_once_with(payload, doc.name)
+
+    @pytest.mark.asyncio
+    async def test_uploads_payload_with_job_prefix(
+        self, lite_context, machine, setup_args, session, doc
+    ):
+        driver = EpilogZingDriver(lite_context, machine)
+        driver.setup(**{**setup_args, "job_prefix": "lab-"})
+        driver._session = session
+        payload = b"\x1b%-12345X@PJL JOB" + bytes(16)
+        await driver.run(_encoded(payload), doc, Ops())
+        session.upload.assert_awaited_once_with(payload, f"lab-{doc.name}")
 
     @pytest.mark.asyncio
     async def test_missing_payload_fails(self, driver, doc):
         with pytest.raises(DriverSetupError):
-            await driver.run(_encoded(None), doc, None)
+            await driver.run(_encoded(None), doc, Ops())
 
     @pytest.mark.asyncio
     async def test_upload_error_propagates(self, driver, session, doc):
         session.upload.side_effect = ConnectionError("refused")
         with pytest.raises(ConnectionError):
-            await driver.run(_encoded(b"payload"), doc, None)
+            await driver.run(_encoded(b"payload"), doc, Ops())
 
     @pytest.mark.asyncio
     async def test_cancel_delegates(self, driver, session):
