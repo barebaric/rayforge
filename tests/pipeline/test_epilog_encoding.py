@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 
 import pytest
+import pytest_asyncio
 from raydriver.encode import EpilogSpec
 from raygeo.geo import Geometry
 
@@ -63,8 +64,8 @@ def _setup_doc(doc: Doc) -> None:
     doc.active_layer.add_workpiece(workpiece)
 
 
-@pytest.fixture
-def epilog_machine(context_initializer):
+@pytest_asyncio.fixture
+async def epilog_machine(context_initializer, task_mgr):
     from rayforge.machine.models.laser import LaserHead
     from rayforge.machine.models.machine import Machine, Origin
 
@@ -79,6 +80,11 @@ def epilog_machine(context_initializer):
         EpilogZingDriver,
         {"host": "10.0.0.1", "port": 515, "resolution": "500"},
     )
+    # Let the debounced driver rebuild finish before the pipeline starts;
+    # a rebuild scheduled midway through generation cancels the encode.
+    await asyncio.to_thread(task_mgr.wait_until_settled, 5000)
+    await asyncio.sleep(0.3)
+    await asyncio.to_thread(task_mgr.wait_until_settled, 5000)
     return machine
 
 
