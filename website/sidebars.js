@@ -179,6 +179,7 @@ module.exports = {
       items: [
         'developer/getting-started/index',
         'developer/getting-started/setup',
+        'developer/getting-started/windows-msix',
         'developer/getting-started/submitting-changes',
       ],
     },

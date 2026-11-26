@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
+  xmlns:desktop2="http://schemas.microsoft.com/appx/manifest/desktop/windows10/2"
+  IgnorableNamespaces="uap uap3 rescap desktop desktop2">
+  <Identity
+    Name="$identity_name"
+    Publisher="$publisher"
+    Version="$version"
+    ProcessorArchitecture="x64" />
+  <Properties>
+    <DisplayName>Rayforge</DisplayName>
+    <PublisherDisplayName>$publisher_display_name</PublisherDisplayName>
+    <Description>Laser cutting and engraving</Description>
+    <Logo>Assets\StoreLogo.png</Logo>
+  </Properties>
+  <Resources>
+    <Resource Language="en-us" />
+  </Resources>
+  <Dependencies>
+    <TargetDeviceFamily
+      Name="Windows.Desktop"
+      MinVersion="10.0.19041.0"
+      MaxVersionTested="10.0.26100.0" />
+  </Dependencies>
+  <Capabilities>
+    <rescap:Capability Name="runFullTrust" />
+    <DeviceCapability Name="webcam" />
+  </Capabilities>
+  <Applications>
+    <Application
+      Id="Rayforge"
+      Executable="$executable"
+      EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements
+        DisplayName="Rayforge"
+        Description="Laser cutting and engraving"
+        BackgroundColor="transparent"
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png">
+        <uap:DefaultTile ShortName="Rayforge" />
+      </uap:VisualElements>
+      <Extensions>
+        <uap3:Extension Category="windows.fileTypeAssociation">
+          <uap3:FileTypeAssociation
+            Name="rayforgeproject"
+            MultiSelectModel="Player">
+            <uap:DisplayName>Rayforge Project</uap:DisplayName>
+            <uap:Logo>Assets\FileIcon.png</uap:Logo>
+            <uap:SupportedFileTypes>
+              <uap:FileType>.ryp</uap:FileType>
+              <uap:FileType>.rfs</uap:FileType>
+            </uap:SupportedFileTypes>
+          </uap3:FileTypeAssociation>
+        </uap3:Extension>
+        <uap3:Extension Category="windows.fileTypeAssociation">
+          <uap3:FileTypeAssociation
+            Name="rayforgeruida"
+            MultiSelectModel="Player">
+            <uap:DisplayName>Ruida Laser Cutter File</uap:DisplayName>
+            <uap:Logo>Assets\FileIcon.png</uap:Logo>
+            <uap:SupportedFileTypes>
+              <uap:FileType>.rd</uap:FileType>
+            </uap:SupportedFileTypes>
+          </uap3:FileTypeAssociation>
+        </uap3:Extension>
+        <uap3:Extension Category="windows.fileTypeAssociation">
+          <uap3:FileTypeAssociation
+            Name="rayforgegcode"
+            MultiSelectModel="Player">
+            <uap:DisplayName>G-code File</uap:DisplayName>
+            <uap:Logo>Assets\FileIcon.png</uap:Logo>
+            <uap:SupportedFileTypes>
+              <uap:FileType>.gcode</uap:FileType>
+              <uap:FileType>.ngc</uap:FileType>
+              <uap:FileType>.nc</uap:FileType>
+              <uap:FileType>.tap</uap:FileType>
+              <uap:FileType>.gc</uap:FileType>
+              <uap:FileType>.gco</uap:FileType>
+            </uap:SupportedFileTypes>
+          </uap3:FileTypeAssociation>
+        </uap3:Extension>
+        <uap3:Extension Category="windows.fileTypeAssociation">
+          <uap3:FileTypeAssociation
+            Name="rayforgelightburn"
+            MultiSelectModel="Player">
+            <uap:DisplayName>LightBurn Project File</uap:DisplayName>
+            <uap:Logo>Assets\FileIcon.png</uap:Logo>
+            <uap:SupportedFileTypes>
+              <uap:FileType>.lbrn</uap:FileType>
+              <uap:FileType>.lbrn2</uap:FileType>
+            </uap:SupportedFileTypes>
+          </uap3:FileTypeAssociation>
+        </uap3:Extension>
+        <uap3:Extension Category="windows.fileTypeAssociation">
+          <uap3:FileTypeAssociation
+            Name="rayforgehpgl"
+            MultiSelectModel="Player">
+            <uap:DisplayName>HPGL Plot File</uap:DisplayName>
+            <uap:Logo>Assets\FileIcon.png</uap:Logo>
+            <uap:SupportedFileTypes>
+              <uap:FileType>.plt</uap:FileType>
+              <uap:FileType>.hpgl</uap:FileType>
+              <uap:FileType>.hpg</uap:FileType>
+              <uap:FileType>.hgl</uap:FileType>
+            </uap:SupportedFileTypes>
+          </uap3:FileTypeAssociation>
+        </uap3:Extension>
+        <uap3:Extension Category="windows.fileTypeAssociation">
+          <uap3:FileTypeAssociation
+            Name="rayforgevector"
+            MultiSelectModel="Player">
+            <uap:DisplayName>Vector Drawing</uap:DisplayName>
+            <uap:Logo>Assets\FileIcon.png</uap:Logo>
+            <uap:SupportedFileTypes>
+              <uap:FileType>.dxf</uap:FileType>
+              <uap:FileType>.cdr</uap:FileType>
+              <uap:FileType>.svg</uap:FileType>
+              <uap:FileType>.svgz</uap:FileType>
+              <uap:FileType>.pdf</uap:FileType>
+              <uap:FileType>.ai</uap:FileType>
+              <uap:FileType>.eps</uap:FileType>
+              <uap:FileType>.epsf</uap:FileType>
+              <uap:FileType>.ps</uap:FileType>
+            </uap:SupportedFileTypes>
+          </uap3:FileTypeAssociation>
+        </uap3:Extension>
+        <uap3:Extension Category="windows.fileTypeAssociation">
+          <uap3:FileTypeAssociation
+            Name="rayforgeraster"
+            MultiSelectModel="Player">
+            <uap:DisplayName>Raster Image</uap:DisplayName>
+            <uap:Logo>Assets\FileIcon.png</uap:Logo>
+            <uap:SupportedFileTypes>
+              <uap:FileType>.png</uap:FileType>
+              <uap:FileType>.bmp</uap:FileType>
+              <uap:FileType>.jpg</uap:FileType>
+              <uap:FileType>.jpeg</uap:FileType>
+              <uap:FileType>.gif</uap:FileType>
+              <uap:FileType>.tif</uap:FileType>
+              <uap:FileType>.tiff</uap:FileType>
+              <uap:FileType>.webp</uap:FileType>
+            </uap:SupportedFileTypes>
+          </uap3:FileTypeAssociation>
+        </uap3:Extension>
+        <uap3:Extension
+          Category="windows.appExecutionAlias"
+          Executable="$executable"
+          EntryPoint="Windows.FullTrustApplication">
+          <uap3:AppExecutionAlias>
+            <desktop:ExecutionAlias Alias="rayforge.exe" />
+          </uap3:AppExecutionAlias>
+        </uap3:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+  <Extensions>
+    <desktop2:Extension Category="windows.firewallRules">
+      <desktop2:FirewallRules Executable="$executable">
+        <desktop2:Rule
+          Direction="in"
+          IPProtocol="UDP"
+          LocalPortMin="5353"
+          LocalPortMax="5353"
+          Profile="private" />
+        <desktop2:Rule
+          Direction="in"
+          IPProtocol="UDP"
+          LocalPortMin="50200"
+          LocalPortMax="50200"
+          Profile="private" />
+      </desktop2:FirewallRules>
+    </desktop2:Extension>
+  </Extensions>
+</Package>

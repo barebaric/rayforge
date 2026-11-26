@@ -1,4 +1,5 @@
 import logging
+import os
 import sys
 from collections.abc import Callable
 from gettext import gettext as _
@@ -9,6 +10,7 @@ from gi.repository import Adw, Gio, GLib, Gtk
 
 from .. import __version__, const
 from ..context import get_context
+from ..shared.util.platform import is_msix
 from ..usage import get_usage_tracker
 from .doceditor import file_dialogs
 from .shared.gtk import report_dialog_error
@@ -18,6 +20,18 @@ if TYPE_CHECKING:
     from .mainwindow import MainWindow
 
 logger = logging.getLogger(__name__)
+
+
+def _get_app_exec() -> str:
+    """Returns the command used to reopen a recent project."""
+    local_appdata = os.environ.get("LOCALAPPDATA")
+    if is_msix() and local_appdata:
+        alias = (
+            Path(local_appdata) / "Microsoft" / "WindowsApps" / "rayforge.exe"
+        )
+        if alias.exists():
+            return f'"{alias}" %f'
+    return f'"{sys.executable}" %f'
 
 
 class ProjectCmd:
@@ -256,7 +270,7 @@ class ProjectCmd:
         recent_data.display_name = file_path.name
         recent_data.mime_type = const.MIME_TYPE_PROJECT
         recent_data.app_name = app_id
-        recent_data.app_exec = f'"{sys.executable}" %f'
+        recent_data.app_exec = _get_app_exec()
 
         self._win.recent_manager.add_full(uri, recent_data)
 

@@ -58,6 +58,11 @@ class TestCheckOnStartup:
         checker.check_on_startup()
         assert _add_coroutine(checker).call_count == 0
 
+    def test_msix_does_not_schedule(self, checker, monkeypatch):
+        monkeypatch.setattr("rayforge.updater.is_msix", lambda: True)
+        checker.check_on_startup()
+        assert _add_coroutine(checker).call_count == 0
+
     def test_enabled_schedules_check(self, checker):
         checker.check_on_startup()
         assert _add_coroutine(checker).call_count == 1
