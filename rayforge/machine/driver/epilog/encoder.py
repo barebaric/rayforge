@@ -56,6 +56,7 @@ def build_epilog_context(
         "title": f"{prefix}{(doc.name if doc else '') or 'Rayforge'}",
         "resolution": int(driver_args.get("resolution") or DEFAULT_RESOLUTION),
         "frequency": int(driver_args.get("frequency") or DEFAULT_FREQUENCY),
+        "autofocus": bool(driver_args.get("autofocus", False)),
         "bed_mm": [
             float(machine.axis_extents[0]),
             float(machine.axis_extents[1]),

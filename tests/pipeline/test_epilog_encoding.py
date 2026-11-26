@@ -166,6 +166,12 @@ class TestEncoderRouting:
         assert build_epilog_context(machine, doc)["title"] == "lab-Rayforge"
 
     @pytest.mark.asyncio
+    async def test_autofocus_is_passed_to_the_encoder(self, machine, task_mgr):
+        await self._epilog_machine(machine, task_mgr)
+        machine.driver_args["autofocus"] = True
+        assert build_epilog_context(machine, Doc())["autofocus"] is True
+
+    @pytest.mark.asyncio
     async def test_intent_builder_selects_epilog_spec(self, machine, task_mgr):
         await self._epilog_machine(machine, task_mgr)
         builder = IntentBuilder(machine=machine, generation_id=1)

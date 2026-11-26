@@ -18,8 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   a beam-off outline job. The encoder and transport run in raydriver,
   and built-in profiles ship for both families; the print queue is
   empty by default, each family validates its own raster resolutions,
-  and an optional job-name prefix is shown in the machine's job list.
-  Requires raydriver 1.22.3
+  an optional job-name prefix is shown in the machine's job list, and
+  hardware autofocus can be enabled in the driver options. Requires
+  raydriver 1.22.4
 
 - G-code import: `.gcode`, `.ngc`, `.nc`, `.tap` and `.gc` files are
   imported as geometry only. Supported motion covers G0/G1/G2/G3,

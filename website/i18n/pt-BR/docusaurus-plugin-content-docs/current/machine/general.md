@@ -54,18 +54,20 @@ Lasers Epilog com porta Ethernet (Zing 16, Zing 24/6030, Helix 18 e Helix 24) us
 Zing** ou **Epilog Helix**. Os trabalhos são codificados como trabalhos de impressão Epilog e
 enviados à fila de impressão da máquina; inicie-os na lista de trabalhos do laser. O driver pede o
 endereço IP, a porta de impressão (515 por padrão), o nome da fila de impressão (vazio por padrão;
-defina apenas se o seu servidor de impressão exigir), um prefixo opcional para o nome do trabalho, a
-resolução de raster (Zing: 100–1000 DPI; Helix: 75–1200 DPI) e a frequência vetorial (10–5000 Hz).
+defina apenas se o seu servidor de impressão exigir), um prefixo opcional para o nome do trabalho,
+uma opção de foco automático, a resolução de raster (Zing: 100–1000 DPI; Helix: 75–1200 DPI) e a
+frequência vetorial (10–5000 Hz).
 
 O protocolo de impressão não oferece controle remoto, então o Rayforge não pode referenciar, mover,
 consultar o status nem movimentar o cabeçote nessas máquinas, e o foco e o ar assistido são
-ajustados no laser. A linguagem de trabalho sempre endereça uma página com origem superior esquerda,
-então a origem das coordenadas é fixa em **Superior esquerda**. **Enviar** envia o trabalho e
-**Enquadrar** envia um trabalho de contorno com o feixe desligado que você inicia da mesma forma. A
-velocidade é convertida para a escala percentual da máquina: o Rayforge usa 6000 mm/min como
-referência de 100%, então 600 mm/min são 10%. Gravações com pontilhado e limiar são enviadas como
-linhas de raster de 1 bit nativas; gravações com modulação de potência (escala de cinza) usam o modo
-de potência por ponto da máquina. Trabalhos rotativos não são suportados.
+ajustados no laser. O foco automático do hardware pode ser ativado nas opções do driver. A linguagem
+de trabalho sempre endereça uma página com origem superior esquerda, então a origem das coordenadas
+é fixa em **Superior esquerda**. **Enviar** envia o trabalho e **Enquadrar** envia um trabalho de
+contorno com o feixe desligado que você inicia da mesma forma. A velocidade é convertida para a
+escala percentual da máquina: o Rayforge usa 6000 mm/min como referência de 100%, então 600 mm/min
+são 10%. Gravações com pontilhado e limiar são enviadas como linhas de raster de 1 bit nativas;
+gravações com modulação de potência (escala de cinza) usam o modo de potência por ponto da máquina.
+Trabalhos rotativos não são suportados.
 
 ### Vínculo da Porta Serial
 

@@ -197,6 +197,15 @@ class TestQueue:
         assert var.optional is True
         assert keys.index("job_prefix") == keys.index("queue") + 1
 
+    def test_autofocus_setting(self):
+        keys = list(EpilogZingDriver.get_setup_vars().keys())
+        assert "autofocus" in keys
+        var = EpilogZingDriver.get_setup_vars().get("autofocus")
+        assert var is not None
+        assert var.default is False
+        assert var.var_type is bool
+        assert keys.index("autofocus") == keys.index("job_prefix") + 1
+
     def test_is_a_single_line_field(self):
         var = EpilogZingDriver.get_setup_vars().get("queue")
         assert var is not None

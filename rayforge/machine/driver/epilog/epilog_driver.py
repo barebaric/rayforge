@@ -22,6 +22,7 @@ import raydriver.epilog
 
 from ....context import RayforgeContext
 from ....core.varset import (
+    BoolVar,
     ChoiceVar,
     HostnameVar,
     IntVar,
@@ -208,6 +209,14 @@ class EpilogLaserDriver(NativeDriver):
                     var_type=str,
                     default="",
                     optional=True,
+                ),
+                BoolVar(
+                    key="autofocus",
+                    label=_("Autofocus"),
+                    description=_(
+                        "Enable hardware autofocus at the start of each job"
+                    ),
+                    default=False,
                 ),
                 ChoiceVar(
                     key="resolution",

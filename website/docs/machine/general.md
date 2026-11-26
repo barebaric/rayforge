@@ -53,16 +53,17 @@ Epilog lasers with an Ethernet port (Zing 16, Zing 24/6030, Helix 18 and Helix 2
 Zing** or **Epilog Helix** driver. Jobs are encoded as Epilog print jobs and uploaded to the
 machine's print queue; start them from the laser's own job list. The driver offers the machine's IP
 address, the print port (515 by default), the print queue name (empty by default; set one only if
-your print server requires it), an optional job-name prefix, the raster resolution (Zing: 100–1000
-DPI; Helix: 75–1200 DPI) and the vector frequency (10–5000 Hz).
+your print server requires it), an optional job-name prefix, an autofocus toggle, the raster
+resolution (Zing: 100–1000 DPI; Helix: 75–1200 DPI) and the vector frequency (10–5000 Hz).
 
 The print protocol offers no remote control, so Rayforge cannot home, jog, query the status or move
-the head on these machines, and focus and air assist are set at the laser. The job language always
-addresses a top-left page, so the coordinate origin is fixed to **Top Left**. **Send** uploads the
-job and **Frame** uploads a beam-off outline job you start the same way. Speed is converted to the
-machine's percentage scale: Rayforge uses 6000 mm/min as the 100% reference, so 600 mm/min is 10%.
-Dither and threshold engravings are sent as native 1-bit raster rows; power-modulated (grayscale)
-engravings use the machine's per-dot power mode. Rotary jobs are not supported.
+the head on these machines, and focus and air assist are set at the laser. Hardware autofocus can be
+enabled in the driver options. The job language always addresses a top-left page, so the coordinate
+origin is fixed to **Top Left**. **Send** uploads the job and **Frame** uploads a beam-off outline
+job you start the same way. Speed is converted to the machine's percentage scale: Rayforge uses 6000
+mm/min as the 100% reference, so 600 mm/min is 10%. Dither and threshold engravings are sent as
+native 1-bit raster rows; power-modulated (grayscale) engravings use the machine's per-dot power
+mode. Rotary jobs are not supported.
 
 ### Serial Port Binding
 

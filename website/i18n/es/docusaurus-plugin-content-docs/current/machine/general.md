@@ -56,19 +56,19 @@ controlador **Epilog Zing** o **Epilog Helix**. Los trabajos se codifican como t
 de Epilog y se suben a la cola de impresión de la máquina; inícielos desde la lista de trabajos del
 láser. El controlador solicita la dirección IP, el puerto de impresión (515 por defecto), el nombre
 de la cola de impresión (vacío por defecto; indíquelo solo si su servidor de impresión lo requiere),
-un prefijo opcional para el nombre del trabajo, la resolución de trama (Zing: 100–1000 DPI; Helix:
-75–1200 DPI) y la frecuencia vectorial (10–5000 Hz).
+un prefijo opcional para el nombre del trabajo, una opción de enfoque automático, la resolución de
+trama (Zing: 100–1000 DPI; Helix: 75–1200 DPI) y la frecuencia vectorial (10–5000 Hz).
 
 El protocolo de impresión no ofrece control remoto, por lo que Rayforge no puede llevar a origen,
 desplazar, consultar el estado ni mover el cabezal en estas máquinas, y el enfoque y el aire
-asistido se ajustan en el láser. El lenguaje de trabajo siempre direcciona una página con origen
-superior izquierdo, por lo que el origen de coordenadas es fijo en **Superior izquierda**.
-**Enviar** sube el trabajo y **Enmarcar** sube un trabajo de contorno con el haz apagado que se
-inicia de la misma forma. La velocidad se convierte a la escala porcentual de la máquina: Rayforge
-usa 6000 mm/min como referencia del 100 %, de modo que 600 mm/min son el 10 %. Los grabados con
-tramado y umbral se envían como filas de trama de 1 bit nativas; los grabados con modulación de
-potencia (escala de grises) usan el modo de potencia por punto de la máquina. Los trabajos rotativos
-no son compatibles.
+asistido se ajustan en el láser. El enfoque automático del hardware se puede activar en las opciones
+del controlador. El lenguaje de trabajo siempre direcciona una página con origen superior izquierdo,
+por lo que el origen de coordenadas es fijo en **Superior izquierda**. **Enviar** sube el trabajo y
+**Enmarcar** sube un trabajo de contorno con el haz apagado que se inicia de la misma forma. La
+velocidad se convierte a la escala porcentual de la máquina: Rayforge usa 6000 mm/min como
+referencia del 100 %, de modo que 600 mm/min son el 10 %. Los grabados con tramado y umbral se
+envían como filas de trama de 1 bit nativas; los grabados con modulación de potencia (escala de
+grises) usan el modo de potencia por punto de la máquina. Los trabajos rotativos no son compatibles.
 
 ### Vinculación del Puerto Serie
 
