@@ -84,6 +84,10 @@ diálogo ofrece tres formas de manejarlas:
 4. **Vista previa** del resultado antes de importar
 5. **Pulsar Importar** para añadir al lienzo y al árbol del documento
 
+Rayforge también registra sus formatos de importación en el sistema operativo, así que al hacer
+doble clic en un archivo compatible o elegir **Abrir con → Rayforge** se abre directamente el
+diálogo de importación.
+
 ### Método 3: Línea de comandos
 
 ```bash

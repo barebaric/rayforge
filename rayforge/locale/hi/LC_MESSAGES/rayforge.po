@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-22 20:36+0100\n"
+"POT-Creation-Date: 2026-11-25 22:25+0100\n"
 "PO-Revision-Date: 2026-09-27 22:58\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -26,6 +26,14 @@ msgid "Update check failed."
 msgstr "अपडेट जाँच विफल रही."
 
 #: rayforge/updater.py
+msgid "Rayforge is up to date."
+msgstr "Rayforge अद्यतित है."
+
+#: rayforge/updater.py
+msgid "New version available."
+msgstr "नया संस्करण उपलब्ध है."
+
+#: rayforge/updater.py
 #, python-brace-format
 msgid "Rayforge {version} is available."
 msgstr "Rayforge {version} उपलब्ध है."
@@ -35,12 +43,27 @@ msgid "Download"
 msgstr "डाउनलोड"
 
 #: rayforge/updater.py
-msgid "New version available."
-msgstr "नया संस्करण उपलब्ध है."
+#, python-brace-format
+msgid "Downloading Rayforge {version}..."
+msgstr "Rayforge {version} डाउनलोड हो रहा है…"
 
 #: rayforge/updater.py
-msgid "Rayforge is up to date."
-msgstr "Rayforge अद्यतित है."
+msgid "Update download failed."
+msgstr "अपडेट डाउनलोड विफल रहा."
+
+#: rayforge/updater.py
+msgid "Update ready to install."
+msgstr "अपडेट इंस्टॉल करने के लिए तैयार है."
+
+#: rayforge/updater.py
+#, python-brace-format
+msgid "Rayforge {version} is ready to install."
+msgstr "Rayforge {version} इंस्टॉल करने के लिए तैयार है."
+
+#: rayforge/updater.py rayforge/ui_gtk/addon_manager/action_button.py
+#: rayforge/ui_gtk/doceditor/step_settings/recipe_control_widget.py
+msgid "Update"
+msgstr "अपडेट करें"
 
 #: rayforge/core/layer.py
 #, python-brace-format
@@ -177,11 +200,6 @@ msgstr "कोड (बहु-पंक्ति)"
 #: rayforge/core/varset/baudratevar.py
 msgid "Baud rate cannot be empty."
 msgstr "बॉड दर रिक्त नहीं हो सकती."
-
-#: rayforge/core/varset/baudratevar.py
-#, python-brace-format
-msgid "'{rate}' is not a standard baud rate."
-msgstr "'{rate}' एक मानक बॉड दर नहीं है."
 
 #: rayforge/core/varset/baudratevar.py
 msgid "Baud Rate"
@@ -896,6 +914,22 @@ msgstr ""
 "सेटअप के दौरान अप्रत्याशित त्रुटि. आपको डिवाइस सेटिंग्स संपादित करने की आवश्यकता हो सकती "
 "है."
 
+#: rayforge/machine/driver/native.py
+msgid "This driver has no native implementation."
+msgstr "इस ड्राइवर का कोई नेटिव कार्यान्वयन नहीं है."
+
+#: rayforge/machine/driver/native.py
+msgid "Machine Coordinates (G53)"
+msgstr "मशीन निर्देशांक (G53)"
+
+#: rayforge/machine/driver/native.py
+msgid "Driver is not set up. Check the connection settings."
+msgstr "ड्राइवर सेट अप नहीं है। कनेक्शन सेटिंग्स जाँचें।"
+
+#: rayforge/machine/driver/native.py
+msgid "Connection not configured"
+msgstr "कनेक्शन कॉन्फ़िगर नहीं है"
+
 #: rayforge/machine/driver/octoprint/octoprint_util.py
 msgid "Could not read the OctoPrint server version."
 msgstr "OctoPrint सर्वर संस्करण नहीं पढ़ा जा सका."
@@ -907,11 +941,6 @@ msgstr "OctoPrint"
 #: rayforge/machine/driver/octoprint/octoprint_driver.py
 msgid "Submit G-code to an OctoPrint server"
 msgstr "OctoPrint सर्वर को G-code सबमिट करें"
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-#: rayforge/machine/driver/session_driver.py
-msgid "Machine Coordinates (G53)"
-msgstr "मशीन निर्देशांक (G53)"
 
 #: rayforge/machine/driver/octoprint/octoprint_driver.py
 #: rayforge/machine/driver/xtool/xtool_network.py
@@ -985,87 +1014,6 @@ msgstr ""
 "API कुंजी कॉन्फ़िगर की जानी चाहिए. 'Request Access' बटन का उपयोग करें या API कुंजी "
 "मैन्युअल रूप से दर्ज करें."
 
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid "Authentication failed. API key may be invalid or expired."
-msgstr "प्रमाणीकरण विफल रहा. API कुंजी अमान्य या समाप्त हो सकती है."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-#, python-brace-format
-msgid "OctoPrint rejected {method} {path} with HTTP {status}."
-msgstr "OctoPrint ने {method} {path} को HTTP {status} के साथ अस्वीकार किया."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-#, python-brace-format
-msgid ""
-"Could not connect to OctoPrint at '{host}:{port}'. Check the address and "
-"network connection."
-msgstr ""
-"'{host}:{port}' पर OctoPrint से कनेक्ट नहीं हो सका. पता और नेटवर्क कनेक्शन जाँचें."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid "Authentication Failed"
-msgstr "प्रमाणीकरण विफल"
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid ""
-"The API key is invalid or has expired. Please re-authenticate in device "
-"settings."
-msgstr "API कुंजी अमान्य या समाप्त हो गई है. कृपया डिवाइस सेटिंग्स में पुनः प्रमाणीकरण करें."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid "OctoPrint returned no login data."
-msgstr "OctoPrint ने कोई लॉगिन डेटा नहीं लौटाया."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid "Server closed WebSocket connection."
-msgstr "सर्वर ने WebSocket कनेक्शन बंद कर दिया."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid "Print Failed"
-msgstr "प्रिंट विफल रहा"
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid ""
-"OctoPrint reported that the print job failed. Check OctoPrint for details."
-msgstr "OctoPrint ने बताया कि प्रिंट जॉब विफल रहा. विवरण के लिए OctoPrint देखें."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid "Driver not configured with a host."
-msgstr "ड्राइवर होस्ट के साथ कॉन्फ़िगर नहीं है."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid "Authentication failed during upload."
-msgstr "अपलोड के दौरान प्रमाणीकरण विफल रहा."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid "Printer is busy or not operational. Cannot start a new job."
-msgstr "प्रिंटर व्यस्त या गैर-परिचालन है. नया जॉब शुरू नहीं कर सकते."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid ""
-"OctoPrint accepted the file but could not start printing. The printer may "
-"not be operational or is already busy."
-msgstr ""
-"OctoPrint ने फ़ाइल स्वीकार की लेकिन प्रिंटिंग शुरू नहीं कर सका. प्रिंटर परिचालन नहीं हो "
-"सकता या पहले से व्यस्त है."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-#, python-brace-format
-msgid "Could not upload file to OctoPrint at '{host}:{port}'."
-msgstr "'{host}:{port}' पर OctoPrint में फ़ाइल अपलोड नहीं हो सकी."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid ""
-"OctoPrint does not support writing device firmware settings through its API."
-msgstr ""
-"OctoPrint अपने API के माध्यम से डिवाइस फ़र्मवेयर सेटिंग्स लिखने का समर्थन नहीं करता."
-
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-msgid ""
-"Probe command sent. OctoPrint does not report probe results via its API."
-msgstr ""
-"प्रोब कमांड भेजी गई. OctoPrint अपने API के माध्यम से प्रोब परिणाम रिपोर्ट नहीं करता."
-
 #: rayforge/machine/driver/marlin/marlin_serial.py
 msgid "Marlin (Serial)"
 msgstr "Marlin (सीरियल)"
@@ -1115,11 +1063,6 @@ msgstr "वाई-फ़ाई वाली xTool मशीनें (D1, D1 Pro
 
 #: rayforge/machine/driver/xtool/xtool_network.py
 #: rayforge/machine/driver/xtool/xtool_m2.py
-msgid "Driver is not set up. Check the network settings."
-msgstr "ड्राइवर सेट नहीं है. नेटवर्क सेटिंग्स जाँचें."
-
-#: rayforge/machine/driver/xtool/xtool_network.py
-#: rayforge/machine/driver/xtool/xtool_m2.py
 msgid "Hostname"
 msgstr "होस्टनाम"
 
@@ -1157,11 +1100,6 @@ msgid ""
 msgstr ""
 "{host}:{port} पर कोई xTool मशीन ने उत्तर नहीं दिया. IP पता जाँचें और सुनिश्चित करें कि "
 "मशीन नेटवर्क से जुड़ी है."
-
-#: rayforge/machine/driver/xtool/xtool_network.py
-#: rayforge/machine/driver/xtool/xtool_m2.py
-msgid "Host not configured"
-msgstr "होस्ट कॉन्फ़िगर नहीं है"
 
 #: rayforge/machine/driver/xtool/xtool_network.py
 #: rayforge/machine/driver/xtool/xtool_m2.py
@@ -1232,14 +1170,6 @@ msgstr "xTool M2 सेटिंग्स लिखने का समर्थ
 #: rayforge/machine/driver/xtool/xtool_m2.py
 msgid "The xTool M2 does not support work coordinate offsets."
 msgstr "xTool M2 वर्क कोऑर्डिनेट ऑफ़सेट का समर्थन नहीं करता."
-
-#: rayforge/machine/driver/session_driver.py
-msgid "Driver is not set up. Check the connection settings."
-msgstr "ड्राइवर सेट अप नहीं है। कनेक्शन सेटिंग्स जाँचें।"
-
-#: rayforge/machine/driver/session_driver.py
-msgid "Connection not configured"
-msgstr "कनेक्शन कॉन्फ़िगर नहीं है"
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 msgid "grblHAL (Telnet)"
@@ -1534,7 +1464,7 @@ msgstr "मशीन विस्तार"
 
 #: rayforge/machine/device/profile.py
 #: rayforge/ui_gtk/machine/gcode_settings_page.py
-#: rayforge/ui_gtk/machine/settings_dialog.py
+#: rayforge/ui_gtk/machine/settings_dialog.py rayforge/image/gcode/importer.py
 msgid "G-code"
 msgstr "G-code"
 
@@ -1883,6 +1813,90 @@ msgstr "ऊँचाइयाँ ग्रिड आकार से मेल �
 #: rayforge/machine/models/machine.py
 msgid "Default Machine"
 msgstr "डिफ़ॉल्ट मशीन"
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The name of the currently active coordinate system (e.g. 'G54')."
+msgstr "वर्तमान में सक्रिय निर्देशांक प्रणाली का नाम (जैसे 'G54')."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The name of the current machine profile."
+msgstr "वर्तमान मशीन प्रोफ़ाइल का नाम."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The width (X-axis) of the machine work area."
+msgstr "मशीन कार्य क्षेत्र की चौड़ाई (X-अक्ष)."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The height (Y-axis) of the machine work area."
+msgstr "मशीन कार्य क्षेत्र की ऊँचाई (Y-अक्ष)."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The name of the current document file (if saved)."
+msgstr "वर्तमान दस्तावेज़ फ़ाइल का नाम (यदि सहेजा गया हो)."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The job counter value the current job starts with."
+msgstr "वह काउंटर मान जिससे वर्तमान जॉब शुरू होती है."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "Alias for the job counter value."
+msgstr "जॉब काउंटर मान का एलियस."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The minimum X coordinate of the entire job."
+msgstr "पूरे जॉब का न्यूनतम X निर्देशांक."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The minimum Y coordinate of the entire job."
+msgstr "पूरे जॉब का न्यूनतम Y निर्देशांक."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The maximum X coordinate of the entire job."
+msgstr "पूरे जॉब का अधिकतम X निर्देशांक."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The maximum Y coordinate of the entire job."
+msgstr "पूरे जॉब का अधिकतम Y निर्देशांक."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The X offset of the currently active WCS."
+msgstr "वर्तमान में सक्रिय WCS का X ऑफ़सेट."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The Y offset of the currently active WCS."
+msgstr "वर्तमान में सक्रिय WCS का Y ऑफ़सेट."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The Z offset of the currently active WCS."
+msgstr "वर्तमान में सक्रिय WCS का Z ऑफ़सेट."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The name of the current layer being processed."
+msgstr "प्रोसेस हो रही वर्तमान लेयर का नाम."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The name of the current workpiece being processed."
+msgstr "प्रोसेस हो रहे वर्तमान वर्कपीस का नाम."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The job counter value for the current workpiece."
+msgstr "वर्तमान वर्कपीस के लिए काउंटर मान."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The X position of the workpiece."
+msgstr "वर्कपीस की X स्थिति."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The Y position of the workpiece."
+msgstr "वर्कपीस की Y स्थिति."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The width of the workpiece."
+msgstr "वर्कपीस की चौड़ाई."
+
+#: rayforge/machine/models/dialect_context.py
+msgid "The height of the workpiece."
+msgstr "वर्कपीस की ऊँचाई."
 
 #: rayforge/machine/models/rotary_module.py
 #: rayforge/ui_gtk/machine/wizard_pages/rotary_page.py
@@ -3036,6 +3050,18 @@ msgid "Automatically check for new Rayforge versions on startup"
 msgstr "स्टार्टअप पर स्वतः नए Rayforge संस्करणों की जाँच करें"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Download updates automatically"
+msgstr "अपडेट स्वचालित रूप से डाउनलोड करें"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid ""
+"Download new Rayforge versions in the background, so they can be installed "
+"with one click when ready"
+msgstr ""
+"नई Rayforge संस्करणों को पृष्ठभूमि में डाउनलोड करें, ताकि तैयार होनेपर उन्हें एक क्लिक में "
+"इंस्टॉल किया जा सके"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Check for addon updates"
 msgstr "ऐड-ऑन अपडेट जाँचें"
 
@@ -3421,7 +3447,8 @@ msgstr "छवि गुणवत्ता और रूप पैरामी�
 msgid "Default"
 msgstr "डिफ़ॉल्ट"
 
-#: rayforge/ui_gtk/camera/image_settings_widget.py rayforge/ui_gtk/varset/adapter/combo.py
+#: rayforge/ui_gtk/camera/image_settings_widget.py
+#: rayforge/ui_gtk/varset/adapter/combo.py
 msgid "Custom..."
 msgstr "कस्टम..."
 
@@ -4132,6 +4159,7 @@ msgstr "पीछे"
 
 #: rayforge/ui_gtk/camera/wizard/wizard.py
 #: rayforge/ui_gtk/machine/unified_wizard.py
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
 msgid "Next"
 msgstr "आगे"
 
@@ -4967,7 +4995,9 @@ msgstr ""
 "उपयोग करना फिर से शुरू करेगी. यह क्रिया पूर्ववत नहीं की जा सकती."
 
 #: rayforge/ui_gtk/machine/hook_list.py
-#: rayforge/ui_gtk/machine/maintenance_page.py rayforge/doceditor/file_cmd.py
+#: rayforge/ui_gtk/machine/maintenance_page.py
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+#: rayforge/doceditor/file_cmd.py
 msgid "Reset"
 msgstr "रीसेट करें"
 
@@ -7185,6 +7215,7 @@ msgid "Default Value"
 msgstr "डिफ़ॉल्ट मान"
 
 #: rayforge/ui_gtk/varset/varset_editor.py
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
 msgid "Start Value"
 msgstr "प्रारंभ मान"
 
@@ -7193,6 +7224,7 @@ msgid "Minimum Value"
 msgstr "न्यूनतम मान"
 
 #: rayforge/ui_gtk/varset/varset_editor.py
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
 msgid "End Value"
 msgstr "अंतिम मान"
 
@@ -7251,6 +7283,19 @@ msgstr "डेमन पर कोई डिवाइस कॉन्फ़ि�
 #: rayforge/ui_gtk/varset/adapter/combo.py
 msgid "Match by USB VID:PID…"
 msgstr "USB VID:PID से मिलाएँ…"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "Baud rate (bits per second)"
+msgstr "बॉड दर (बिट प्रति सेकंड)"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "Custom Baud Rate"
+msgstr "कस्टम बॉड दर"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+#, python-brace-format
+msgid "Enter a baud rate between {min_rate} and {max_rate} bits per second."
+msgstr "{min_rate} और {max_rate} बिट प्रति सेकंड के बीच बॉड दर दर्ज करें."
 
 #: rayforge/ui_gtk/varset/adapter/combo.py
 msgid "First USB device with this VID:PID"
@@ -7456,11 +7501,6 @@ msgstr "फिर भी इंस्टॉल करें"
 #: rayforge/ui_gtk/addon_manager/addon_detail_dialog.py
 msgid "Open the repository in your browser"
 msgstr "रिपॉज़िटरी ब्राउज़र में खोलें"
-
-#: rayforge/ui_gtk/addon_manager/action_button.py
-#: rayforge/ui_gtk/doceditor/step_settings/recipe_control_widget.py
-msgid "Update"
-msgstr "अपडेट करें"
 
 #: rayforge/ui_gtk/addon_manager/action_button.py
 msgid "Installed"
@@ -8236,12 +8276,20 @@ msgid "Flip"
 msgstr "पलटें"
 
 #: rayforge/ui_gtk/main_menu.py
+msgid "Number Copies"
+msgstr "प्रतियों को क्रमांकित करें"
+
+#: rayforge/ui_gtk/main_menu.py
 msgid "Array"
 msgstr "ऐरे"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "Arrange"
 msgstr "व्यवस्थित करें"
+
+#: rayforge/ui_gtk/main_menu.py
+msgid "Job Counter…"
+msgstr "जॉब काउंटर…"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "_Tools"
@@ -8351,6 +8399,19 @@ msgid "Add or enable a processing step to enable export"
 msgstr "निर्यात सक्षम करने के लिए एक प्रोसेसिंग चरण जोड़ें या सक्षम करें"
 
 #: rayforge/ui_gtk/mainwindow.py
+msgid "Driver not available"
+msgstr "ड्राइवर उपलब्ध नहीं"
+
+#: rayforge/ui_gtk/mainwindow.py
+#, python-brace-format
+msgid ""
+"The driver '{driver}' configured for machine '{machine}' is not available. "
+"Open the machine settings to select an available driver."
+msgstr ""
+"मशीन '{machine}' के लिए कॉन्फ़िगर किया गया ड्राइवर '{driver}' उपलब्धनहीं है. उपलब्ध "
+"ड्राइवर चुनने के लिए मशीन सेटिंग्स खोलें."
+
+#: rayforge/ui_gtk/mainwindow.py
 msgid "Add a laser head to enable"
 msgstr "सक्षम करने के लिए एक लेज़र हेड जोड़ें"
 
@@ -8379,6 +8440,33 @@ msgstr "ऑब्जेक्ट निर्यात करने में �
 #, python-brace-format
 msgid "Error exporting document: {msg}"
 msgstr "दस्तावेज़ निर्यात करने में त्रुटि: {msg}"
+
+#: rayforge/ui_gtk/mainwindow.py
+#, python-brace-format
+msgid "Update to Rayforge {version}?"
+msgstr "Rayforge {version} पर अपडेट करें?"
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid ""
+"Rayforge will close, install the update and start again.\n"
+"\n"
+"Windows may warn that the publisher is unknown because the installer is not "
+"code-signed. Choose “More info”, then “Run anyway” to continue. The "
+"downloaded package is the official one from the Rayforge release page."
+msgstr ""
+"Rayforge बंद हो जाएगा, अपडेट इंस्टॉल करेगा और फिर से शुरू होगा.\n"
+"\n"
+"Windows चेतावनी दे सकता है कि प्रकाशक अज्ञात है क्योंकि इंस्टॉलरसाइन नहीं किया गया है. "
+"जारी रखने के लिए “अधिक जानकारी” चुनें, फिर“फिर भी चलाएँ”. डाउनलोड किया गया पैकेज "
+"Rayforge रिलीज़ पृष्ठ सेआधिकारिक पैकेज है."
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid "_Later"
+msgstr "_बाद में"
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid "_Update"
+msgstr "_अपडेट करें"
 
 #: rayforge/ui_gtk/mainwindow.py
 #, python-brace-format
@@ -8736,6 +8824,31 @@ msgstr "Z कोऑर्डिनेट फ़्लैट करें"
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Project all geometry onto the Z=0 plane (recommended for laser cutting)"
 msgstr "सभी ज्यामिति को Z=0 समतल पर प्रोजेक्ट करें (लेज़र कटिंग के लिए अनुशंसित)"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Outline Repair"
+msgstr "आउटलाइन मरम्मत"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Repair Open Outlines"
+msgstr "खुली आउटलाइन की मरम्मत करें"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid ""
+"Join loose segments into closed contours so parts can be offset and split"
+msgstr "ढीले खंडों को बंद कंटूर में जोड़ें ताकि भागों को ऑफ़सेट और विभाजितकिया जा सके"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Join Gap"
+msgstr "जोड़ अंतराल"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid ""
+"Largest gap between two segment ends that is bridged, in millimetres. Set to "
+"the minimum to scale it to the drawing."
+msgstr ""
+"दो खंड सिरों के बीच सबसे बड़ा अंतराल जो पाटा जाता है, मिलीमीटर में.ड्रॉइंग के अनुसार स्केल "
+"करने के लिए इसे न्यूनतम पर सेट करें."
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
@@ -9116,6 +9229,11 @@ msgstr "SVG (Scalable Vector Graphics)"
 #: rayforge/ui_gtk/doceditor/file_dialogs.py rayforge/image/dxf/exporter.py
 msgid "DXF (CAD Exchange Format)"
 msgstr "DXF (CAD Exchange Format)"
+
+#: rayforge/ui_gtk/doceditor/file_dialogs.py
+#: rayforge/image/coreldraw/exporter.py
+msgid "CorelDRAW (CDR)"
+msgstr "CorelDRAW (CDR)"
 
 #: rayforge/ui_gtk/doceditor/file_dialogs.py
 #, python-brace-format
@@ -9830,6 +9948,96 @@ msgstr "{count} स्टेप"
 msgid "{count} steps"
 msgstr "{count} स्टेप"
 
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+#, python-brace-format
+msgid "{first} … {last} ({count} copies)"
+msgstr "{first} … {last} ({count} प्रतियाँ)"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Job Counter"
+msgstr "जॉब काउंटर"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Counter"
+msgstr "काउंटर"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+#, python-brace-format
+msgid ""
+"Use {counter} in a text box, e.g. No. {counter:04d} for four digits with "
+"leading zeros."
+msgstr ""
+"टेक्स्ट बॉक्स में {counter} का उपयोग करें, जैसे अग्रणी शून्य के साथचार अंकों के लिए सं. "
+"{counter:04d}."
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Current Value"
+msgstr "वर्तमान मान"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "The number the next job starts with"
+msgstr "वह संख्या जिससे अगली जॉब शुरू होती है"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Reset returns here; the range wraps back to it"
+msgstr "रीसेट यहाँ लौटता है; सीमा यहाँ वापस लौटती है"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Advance By"
+msgstr "वृद्धि"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Increment per copy and per job"
+msgstr "प्रति प्रतिलिपि और प्रति जॉब वृद्धि"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Wrap at End Value"
+msgstr "अंतिम मान पर लूप करें"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Continue at the start value after the end value"
+msgstr "अंतिम मान के बाद प्रारंभ मान से जारी रखें"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Advance After Each Job"
+msgstr "प्रत्येक जॉब के बाद बढ़ाएँ"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "When a job sent to the machine has finished"
+msgstr "जब मशीन को भेजी गई जॉब पूरी हो जाती है"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Advance After G-code Export"
+msgstr "G-code निर्यात के बाद बढ़ाएँ"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "For jobs that run from a memory card"
+msgstr "उन जॉब के लिए जो मेमोरी कार्ड से चलती हैं"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Next Job"
+msgstr "अगली जॉब"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Counter Values"
+msgstr "काउंटर मान"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Previous"
+msgstr "पिछला"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Go back by the numbers of one job"
+msgstr "एक जॉब की संख्याओं से पीछे जाएँ"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Skip ahead by the numbers of one job"
+msgstr "एक जॉब की संख्याओं से आगे बढ़ें"
+
+#: rayforge/ui_gtk/doceditor/job_counter_dialog.py
+msgid "Go back to the start value"
+msgstr "प्रारंभ मान पर वापस जाएँ"
+
 #: rayforge/ui_gtk/sim3d/playback_overlay.py
 msgid "Play simulation"
 msgstr "सिमुलेशन चलाएँ"
@@ -10306,77 +10514,14 @@ msgstr "अनुपस्थित: {}"
 msgid "This transformer is not available."
 msgstr "यह ट्रांसफ़ॉर्मर उपलब्ध नहीं है."
 
-#: rayforge/pipeline/encoder/context.py
-msgid "The name of the currently active coordinate system (e.g. 'G54')."
-msgstr "वर्तमान में सक्रिय निर्देशांक प्रणाली का नाम (जैसे 'G54')."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The name of the current machine profile."
-msgstr "वर्तमान मशीन प्रोफ़ाइल का नाम."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The width (X-axis) of the machine work area."
-msgstr "मशीन कार्य क्षेत्र की चौड़ाई (X-अक्ष)."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The height (Y-axis) of the machine work area."
-msgstr "मशीन कार्य क्षेत्र की ऊँचाई (Y-अक्ष)."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The name of the current document file (if saved)."
-msgstr "वर्तमान दस्तावेज़ फ़ाइल का नाम (यदि सहेजा गया हो)."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The minimum X coordinate of the entire job."
-msgstr "पूरे जॉब का न्यूनतम X निर्देशांक."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The minimum Y coordinate of the entire job."
-msgstr "पूरे जॉब का न्यूनतम Y निर्देशांक."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The maximum X coordinate of the entire job."
-msgstr "पूरे जॉब का अधिकतम X निर्देशांक."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The maximum Y coordinate of the entire job."
-msgstr "पूरे जॉब का अधिकतम Y निर्देशांक."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The X offset of the currently active WCS."
-msgstr "वर्तमान में सक्रिय WCS का X ऑफ़सेट."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The Y offset of the currently active WCS."
-msgstr "वर्तमान में सक्रिय WCS का Y ऑफ़सेट."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The Z offset of the currently active WCS."
-msgstr "वर्तमान में सक्रिय WCS का Z ऑफ़सेट."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The name of the current layer being processed."
-msgstr "प्रोसेस हो रही वर्तमान लेयर का नाम."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The name of the current workpiece being processed."
-msgstr "प्रोसेस हो रहे वर्तमान वर्कपीस का नाम."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The X position of the workpiece."
-msgstr "वर्कपीस की X स्थिति."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The Y position of the workpiece."
-msgstr "वर्कपीस की Y स्थिति."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The width of the workpiece."
-msgstr "वर्कपीस की चौड़ाई."
-
-#: rayforge/pipeline/encoder/context.py
-msgid "The height of the workpiece."
-msgstr "वर्कपीस की ऊँचाई."
+#: rayforge/pipeline/intent_builder.py
+#, python-brace-format
+msgid ""
+"The driver '{driver}' configured for machine '{machine}' is not available. "
+"Select an available driver for this machine."
+msgstr ""
+"मशीन '{machine}' के लिए कॉन्फ़िगर किया गया ड्राइवर '{driver}' उपलब्धनहीं है. इस "
+"मशीन के लिए उपलब्ध ड्राइवर चुनें."
 
 #: rayforge/doceditor/transform_cmd.py
 msgid "Transform item(s)"
@@ -10738,6 +10883,30 @@ msgstr "अलग करें"
 msgid "{count} asset(s) require disabled addon '{addon}'"
 msgstr "{count} एसेट को अक्षम ऐड-ऑन '{addon}' की आवश्यकता है"
 
+#: rayforge/doceditor/job_counter_cmd.py
+msgid "Change counter value"
+msgstr "काउंटर मान बदलें"
+
+#: rayforge/doceditor/job_counter_cmd.py
+msgid "Next counter value"
+msgstr "अगला काउंटर मान"
+
+#: rayforge/doceditor/job_counter_cmd.py
+msgid "Previous counter value"
+msgstr "पिछला काउंटर मान"
+
+#: rayforge/doceditor/job_counter_cmd.py
+msgid "Reset counter value"
+msgstr "काउंटर मान रीसेट करें"
+
+#: rayforge/doceditor/job_counter_cmd.py
+msgid "Advance counter value after job"
+msgstr "जॉब के बाद काउंटर मान बढ़ाएँ"
+
+#: rayforge/doceditor/job_counter_cmd.py
+msgid "Number copies"
+msgstr "प्रतियों को क्रमांकित करें"
+
 #: rayforge/doceditor/group_cmd.py
 msgid "Grouping items..."
 msgstr "आइटम समूहित हो रहे हैं..."
@@ -10879,6 +11048,36 @@ msgstr "इस SVGZ फ़ाइल का gzip डेटा डीकंप्�
 msgid "Could not read the {format} image: {error}"
 msgstr "{format} छवि पढ़ी नहीं जा सकी: {error}"
 
+#: rayforge/image/coreldraw/importer.py
+msgid "CorelDRAW file is corrupt or invalid: {}"
+msgstr "CorelDRAW फ़ाइल दूषित या अमान्य है: {}"
+
+#: rayforge/image/coreldraw/importer.py
+msgid "Unexpected error while reading CorelDRAW: {}"
+msgstr "CorelDRAW पढ़ते समय अप्रत्याशित त्रुटि: {}"
+
+#: rayforge/image/coreldraw/importer.py
+msgid "CorelDRAW import: {}"
+msgstr "CorelDRAW आयात: {}"
+
+#: rayforge/image/coreldraw/importer.py
+msgid "The document has {} pages; only the first page is imported."
+msgstr "दस्तावेज़ में {} पृष्ठ हैं; केवल पहला पृष्ठ आयात किया जाता है."
+
+#: rayforge/image/coreldraw/importer.py
+msgid "{} contains no vector geometry."
+msgstr "{} में कोई वेक्टर ज्यामिति नहीं है."
+
+#: rayforge/image/gcode/importer.py
+#, python-brace-format
+msgid "Some G-code instructions are not supported and were skipped: {names}"
+msgstr "कुछ G-code निर्देश समर्थित नहीं हैं और छोड़ दिए गए: {names}"
+
+#: rayforge/image/gcode/importer.py
+#, python-brace-format
+msgid "{filename} contains no G-code cut moves."
+msgstr "{filename} में कोई G-code कट मूवमेंट नहीं है."
+
 #: rayforge/image/pdf/pdf_trace.py rayforge/image/pdf/pdf_vector.py
 msgid "PDF file contains no pages."
 msgstr "PDF फ़ाइल में कोई पृष्ठ नहीं है."
@@ -10956,16 +11155,32 @@ msgid "Failed to parse Ruida commands: {}"
 msgstr "Ruida कमांड पार्स करने में विफलता: {}"
 
 #: rayforge/image/dxf/importer.py
-msgid "DXF file structure is invalid: {}"
-msgstr "DXF फ़ाइल संरचना अमान्य है: {}"
-
-#: rayforge/image/dxf/importer.py
-msgid "Unexpected error while scanning DXF: {}"
-msgstr "DXF स्कैन करते समय अप्रत्याशित त्रुटि: {}"
-
-#: rayforge/image/dxf/importer.py
 msgid "DXF file is corrupt or invalid: {}"
 msgstr "DXF फ़ाइल दूषित या अमान्य है: {}"
+
+#: rayforge/image/dxf/importer.py
+msgid "Unexpected error while reading DXF: {}"
+msgstr "DXF पढ़ते समय अप्रत्याशित त्रुटि: {}"
+
+#: rayforge/image/dxf/importer.py
+msgid "DXF import: {}"
+msgstr "DXF आयात: {}"
+
+#: rayforge/image/dxf/importer.py
+#, python-brace-format
+msgid ""
+"Repaired {joins} gap(s), closed {closed} outline(s) and removed {duplicates} "
+"duplicate(s)."
+msgstr ""
+"{joins} अंतराल की मरम्मत की गई, {closed} आउटलाइन बंद की गई और{duplicates} "
+"डुप्लिकेट हटाए गए."
+
+#: rayforge/image/dxf/importer.py
+#, python-brace-format
+msgid ""
+"{count} outline(s) are still open after repair; raising the tolerance may "
+"close them."
+msgstr "मरम्मत के बाद {count} आउटलाइन अभी भी खुली हैं; टॉलरेंस बढ़ाने से वेबंद हो सकती हैं."
 
 #: rayforge/image/procedural/importer.py
 msgid "Failed to calculate parameters: {}"
@@ -11053,18 +11268,3 @@ msgstr ""
 "यह Illustrator फ़ाइल PDF संगतता के बिना सहेजी गई थी. Rayforge इसे केवल Ghostscript "
 "से पढ़ सकता है, जो नहीं मिला. Ghostscript इंस्टॉल करें, या Illustrator में \"Create "
 "PDF Compatible File\" चालू करके फ़ाइल फिर से सहेजें."
-
-#: rayforge/ui_gtk/varset/adapter/combo.py
-msgid "Custom Baud Rate"
-msgstr "कस्टम बॉड दर"
-
-#: rayforge/ui_gtk/varset/adapter/combo.py
-msgid "Baud rate (bits per second)"
-msgstr "बॉड दर (बिट प्रति सेकंड)"
-
-#: rayforge/ui_gtk/varset/adapter/combo.py
-#, python-brace-format
-msgid ""
-"Enter a baud rate between {min_rate} and {max_rate} bits per second."
-msgstr ""
-"{min_rate} और {max_rate} बिट प्रति सेकंड के बीच बॉड दर दर्ज करें."

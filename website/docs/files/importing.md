@@ -89,6 +89,9 @@ dialog offers three ways to handle them:
 4. **Preview** the result before importing
 5. **Click Import** to add to canvas and document tree
 
+Rayforge also registers its import formats with the operating system, so double-clicking a supported
+file or choosing **Open With → Rayforge** opens it in the import dialog.
+
 ### Method 3: Command Line
 
 ```bash

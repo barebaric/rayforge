@@ -41,6 +41,11 @@ recalculation manually via the toolbar button instead.
 Rayforge can **Check for updates** automatically on startup. When enabled, you will be notified when
 a new version is available.
 
+On Windows, **Download updates automatically** downloads new versions in the background, so the
+notification can install them with one click: Rayforge closes, runs the installer silently and
+restarts on the new version. On other platforms the notification links to the release download page
+instead.
+
 Rayforge can also **Check for addon updates** automatically on startup. Disabling this does not
 prevent manual checks from the Addons page.
 

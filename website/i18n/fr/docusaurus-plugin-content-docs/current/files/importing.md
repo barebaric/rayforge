@@ -86,6 +86,10 @@ des calques nommés), la boîte de dialogue offre trois façons de les gérer :
 4. **Prévisualiser** le résultat avant l'importation
 5. **Cliquer sur Importer** pour ajouter au canevas et à l'arborescence du document
 
+Rayforge enregistre aussi ses formats d'importation auprès du système d'exploitation : un
+double-clic sur un fichier pris en charge, ou **Ouvrir avec → Rayforge**, ouvre donc directement la
+boîte de dialogue d'importation.
+
 ### Méthode 3 : Ligne de commande
 
 ```bash

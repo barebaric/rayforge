@@ -35,6 +35,11 @@ operaciones** y activar el recálculo manualmente vía el botón de la barra de 
 Rayforge puede **Buscar actualizaciones** automáticamente al inicio. Cuando está habilitado, se te
 notificará cuando haya una nueva versión disponible.
 
+En Windows, **Descargar actualizaciones automáticamente** descarga nuevas versiones en segundo
+plano, para que la notificación pueda instalarlas con un clic: Rayforge se cierra, ejecuta el
+instalador en silencio y se reinicia con la nueva versión. En otras plataformas, la notificación
+enlaza a la página de descarga de la versión.
+
 Rayforge también puede **Buscar actualizaciones de complementos** automáticamente al inicio.
 Desactivar esta opción no impide las comprobaciones manuales desde la página Complementos.
 
