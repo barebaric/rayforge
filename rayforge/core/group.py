@@ -9,7 +9,7 @@ import cairo
 from raygeo.geo import Matrix
 from raygeo.geo.types import Rect
 
-from .item import DocItem
+from .item import DocItem, VisibleMixin
 from .workpiece import WorkPiece
 
 if TYPE_CHECKING:
@@ -26,7 +26,7 @@ class GroupingResult:
     child_matrices: dict[str, Matrix]
 
 
-class Group(DocItem):
+class Group(VisibleMixin):
     """
     A DocItem that acts as a container for other DocItems (WorkPieces or
     other Groups), allowing them to be treated as a single unit for
@@ -131,6 +131,7 @@ class Group(DocItem):
             "type": "group",  # Discriminator for deserialization
             "name": self.name,
             "matrix": self.matrix.to_list(),
+            "visible": self.visible,
             "children": [child.to_dict() for child in self.children],
         }
         result.update(self.extra)
@@ -139,12 +140,20 @@ class Group(DocItem):
     @classmethod
     def from_dict(cls, data: dict) -> Group:
         """Deserializes a dictionary into a Group instance."""
-        known_keys = {"uid", "type", "name", "matrix", "children"}
+        known_keys = {
+            "uid",
+            "type",
+            "name",
+            "matrix",
+            "visible",
+            "children",
+        }
         extra = {k: v for k, v in data.items() if k not in known_keys}
 
         new_group = cls(name=data.get("name", "Group"))
         new_group.uid = data["uid"]
         new_group.matrix = Matrix.from_list(data["matrix"])
+        new_group.visible = data.get("visible", True)
         new_group.extra = extra
 
         for child_data in data.get("children", []):

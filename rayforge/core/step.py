@@ -26,7 +26,7 @@ from ..pipeline.transformer.registry import transformer_registry
 from ..shared.units.formatter import format_value
 from .capability import MachineCapability
 from .image_edit import ImageEditStep
-from .item import DocItem
+from .item import VisibleMixin
 from .step_registry import step_registry
 from .varset import SpeedVar, VarSet
 
@@ -63,7 +63,7 @@ def legacy_producer_params(data: dict[str, Any]) -> dict[str, Any]:
     return {}
 
 
-class Step(DocItem, ABC):
+class Step(VisibleMixin, ABC):
     """
     An OpsProducer configuration that operates on WorkPieces.
 
@@ -93,7 +93,6 @@ class Step(DocItem, ABC):
     ):
         super().__init__(name=name or typelabel)
         self.typelabel = typelabel
-        self.visible = True
         self.selected_head_uid: str | None = None
         self.workpiece_uids: list[str] = []
         self.applied_recipe_uid: str | None = None
@@ -110,9 +109,9 @@ class Step(DocItem, ABC):
 
         self.pixels_per_mm = 50, 50
 
-        # Signals for notifying of model changes
+        # Signals for notifying of model changes. visibility_changed
+        # is provided by the @visible decorator.
         self.per_step_transformer_changed = Signal()
-        self.visibility_changed = Signal()
 
         # Default machine-dependent values.
         self.cut_speed: int = 500
@@ -854,12 +853,6 @@ class Step(DocItem, ABC):
         content change, so ``updated`` stays untouched.
         """
         self.name = name
-
-    def set_visible(self, visible: bool):
-        if self.visible != visible:
-            self.visible = visible
-            self.visibility_changed.send(self)
-            self.updated.send(self)
 
     def set_cut_speed(self, speed: int):
         if self.cut_speed != speed:

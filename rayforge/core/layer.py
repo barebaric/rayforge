@@ -21,7 +21,7 @@ from raygeo.geo import Matrix
 from ..context import get_context
 from .color import COLOR_PALETTE
 from .group import Group
-from .item import DocItem
+from .item import DocItem, VisibleMixin
 from .step import Step
 from .workflow import Workflow
 from .workpiece import WorkPiece
@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T", bound="DocItem")
 
 
-class Layer(DocItem):
+class Layer(VisibleMixin):
     """
     Represents a group of workpieces processed by a single workflow.
 
@@ -53,7 +53,6 @@ class Layer(DocItem):
             name: The user-facing name of the layer.
         """
         super().__init__(name=name)
-        self.visible: bool = True
         self.rotary_enabled: bool = False
         self.rotary_diameter: float = 25.0
         self.rotary_module_uid: str | None = None
@@ -263,17 +262,6 @@ class Layer(DocItem):
         wf = self.workflow
         if wf:
             wf.name = _("{name} Workflow").format(name=name)
-
-    def set_visible(self, visible: bool):
-        """Sets the visibility of the layer.
-
-        Args:
-            visible: The new visibility state.
-        """
-        if self.visible == visible:
-            return
-        self.visible = visible
-        self.updated.send(self)
 
     def set_rotary_enabled(self, enabled: bool):
         """Enable or disable rotary attachment mode."""

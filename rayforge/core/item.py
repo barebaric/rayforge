@@ -925,3 +925,27 @@ class DocItem(ABC):
                 return p
             p = p.parent
         return None
+
+
+class VisibleMixin(DocItem):
+    """
+    A DocItem that can be hidden from the job output.
+
+    Subclasses must call ``super().__init__()`` from their ``__init__``
+    so the mixin can initialize its state; ``set_visible()`` sends
+    ``visibility_changed`` followed by ``updated``. Serialization is
+    not touched: classes read and write the ``visible`` key in their
+    own ``to_dict`` / ``from_dict``.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.visible = True
+        self.visibility_changed = Signal()
+
+    def set_visible(self, visible: bool) -> None:
+        if self.visible == visible:
+            return
+        self.visible = visible
+        self.visibility_changed.send(self)
+        self.updated.send(self)
