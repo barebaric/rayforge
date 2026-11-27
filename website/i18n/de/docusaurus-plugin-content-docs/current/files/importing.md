@@ -344,6 +344,18 @@ passende Toleranz wählt. Erhöhen Sie den Wert, wenn nach dem Import noch Kontu
 Import-Dialog meldet, wie viele übrig blieben. Bei zu hohen Werten können fremde Konturen fälschlich
 verbunden werden.
 
+### Blöcke
+
+CAD-Dateien fassen wiederkehrende oder logisch zusammengehörige Teile oft in Blöcken zusammen und
+platzieren sie mit INSERT-Objekten. Rayforge importiert jedes INSERT als Gruppe, sodass ein mehrfach
+verwendetes Teil als eine Einheit verschoben, skaliert oder gelöscht werden kann. Inhalte, die nicht
+zu einem Block gehören, bleiben separate Werkstücke.
+
+Werden Ebenen getrennt importiert, liefert ein Block, dessen Inhalt sich über mehrere Ebenen
+erstreckt, eine Gruppe pro Ebene: Gruppen können keine Ebenen überspannen, da jede Ebene ihren
+eigenen Workflow hat. Importiere mit der Option Abflachen, um einen solchen Block als eine einzige
+Gruppe zu behalten.
+
 ### DXF-Import-Tipps
 
 **Vor dem Export aus CAD:**

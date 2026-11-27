@@ -5,6 +5,17 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- DXF import: each block insertion imports as a group, so repeated or
+  logically related parts stay together and can be moved, scaled or
+  deleted as a unit. Content outside blocks stays a separate workpiece.
+  A block whose content spans several layers contributes one group per
+  layer, because groups cannot span layers; import with Flatten to keep
+  such a block in one group
+
 ## 1.15.0-beta2
 
 ### Added

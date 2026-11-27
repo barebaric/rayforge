@@ -6,7 +6,11 @@ from gettext import gettext as _
 from pathlib import Path
 from typing import ClassVar
 
-from raygeo.formats.dxf.reader import ReadOutput, read
+from raygeo.formats.dxf.reader import (
+    ReadOutput,
+    ReadStructure,
+    read_with_inserts,
+)
 from raygeo.geo import Geometry
 from raygeo.geo.types import Rect
 
@@ -23,6 +27,7 @@ from ..base_importer import (
 )
 from ..engine import NormalizationEngine
 from ..structures import (
+    GroupGeometry,
     ImportManifest,
     LayerGeometry,
     LayerInfo,
@@ -68,6 +73,7 @@ class DxfImporter(Importer):
 
     def __init__(self, data: bytes, source_file: Path | None = None):
         super().__init__(data, source_file)
+        self._read_structure: ReadStructure | None = None
         self._read_output: ReadOutput | None = None
         self._geometries_by_layer: dict[str | None, Geometry] = {}
 
@@ -77,7 +83,7 @@ class DxfImporter(Importer):
             return self._read_output
         data_str = self.raw_data.decode("utf-8", errors="replace")
         try:
-            self._read_output = read(data_str)
+            structure = read_with_inserts(data_str)
         except ValueError as e:
             logger.warning(f"DXF read failed: {e}")
             self.add_error(_("DXF file is corrupt or invalid: {}").format(e))
@@ -88,6 +94,8 @@ class DxfImporter(Importer):
                 _("Unexpected error while reading DXF: {}").format(e)
             )
             return None
+        self._read_structure = structure
+        self._read_output = structure.output
         output = self._read_output
         assert output is not None
         for issue in output.issues:
@@ -246,10 +254,70 @@ class DxfImporter(Importer):
                     parse_result, union_bounds
                 )
 
+        groups, standalone = self._structured_geometry(parse_result, spec)
+
         return VectorizationResult(
             geometries_by_layer=final_geometries,
             source_parse_result=final_parse_result,
+            groups=groups,
+            standalone_by_layer=standalone,
         )
+
+    def _structured_geometry(
+        self,
+        parse_result: ParsingResult,
+        spec: VectorizationSpec,
+    ) -> tuple[list[GroupGeometry], dict[str | None, Geometry] | None]:
+        """Splits block insertions from the content outside blocks.
+
+        Each INSERT becomes one group per layer it contributes to, so
+        that no geometry is duplicated: the layer-level geometry is only
+        used for previews, while assembly takes the group and standalone
+        pieces. Returns empty groups and None when the importer has no
+        structure to report.
+        """
+        if self._read_structure is None or not isinstance(
+            spec, PassthroughSpec
+        ):
+            return [], None
+
+        groups: list[GroupGeometry] = []
+        for index, insert in enumerate(self._read_structure.inserts):
+            group_id = f"dxf-insert-{index}"
+            for layer_name, geometry in insert.layers:
+                processed = self._process_piece(geometry, parse_result, spec)
+                if processed is None:
+                    continue
+                groups.append(
+                    GroupGeometry(
+                        group_id=group_id,
+                        name=insert.block_name,
+                        layer_id=layer_name,
+                        geometry=processed,
+                    )
+                )
+
+        standalone: dict[str | None, Geometry] = {}
+        for layer_name, geometry in self._read_structure.standalone_layers:
+            processed = self._process_piece(geometry, parse_result, spec)
+            if processed is not None:
+                standalone[layer_name] = processed
+
+        return groups, standalone
+
+    def _process_piece(
+        self,
+        geometry: Geometry,
+        parse_result: ParsingResult,
+        spec: PassthroughSpec,
+    ) -> Geometry | None:
+        """Applies the import options to one block or standalone piece."""
+        joined = self._join_geometry(geometry, parse_result.document_bounds)
+        if spec.flatten_z:
+            joined = self._flatten_z(joined)
+        if spec.repair_outlines:
+            joined = self._repair(joined, spec.repair_tolerance_mm)
+        return None if joined.is_empty() else joined
 
     def _calculate_geometry_union(
         self, geometries: Iterable[Geometry]
@@ -400,14 +468,22 @@ class DxfImporter(Importer):
         enables in the import dialog. Separate sub-paths are never
         bridged here: that would draw lines the file does not contain.
         """
+        for layer_id, geo in geometries_by_layer.items():
+            if geo and not geo.is_empty():
+                geometries_by_layer[layer_id] = DxfImporter._join_geometry(
+                    geo, doc_bounds
+                )
+
+    @staticmethod
+    def _join_geometry(geo: Geometry, doc_bounds: Rect) -> Geometry:
+        """Chains and closes one piece's sub-paths, as ``_close_gaps``
+        does for a whole layer."""
         w, h = doc_bounds[2], doc_bounds[3]
         diag = math.hypot(w, h)
         tolerance = max(0.01, diag / 20000.0)
-        for layer_id, geo in geometries_by_layer.items():
-            if geo and not geo.is_empty():
-                joined, _ = geo.join_open_contours(tolerance)
-                closed, _ = joined.close_open_contours(tolerance)
-                geometries_by_layer[layer_id] = closed
+        joined, _ = geo.join_open_contours(tolerance)
+        closed, _ = joined.close_open_contours(tolerance)
+        return closed
 
     @staticmethod
     def _flatten_z(geo: Geometry) -> Geometry:

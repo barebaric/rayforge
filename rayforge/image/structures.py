@@ -195,6 +195,30 @@ class ParsingResult:
 
 
 @dataclass
+class GroupGeometry:
+    """
+    Geometry that belongs to one logical group, such as a DXF block
+    insertion.
+
+    A group is assembled from all its pieces. When layers are kept
+    separate, each piece becomes a WorkPiece on its own layer; otherwise
+    the pieces are merged into a single WorkPiece.
+
+    Attributes:
+        group_id: Identifier shared by all pieces of one group occurrence.
+        name: Human-readable name for the resulting group.
+        layer_id: Layer the piece belongs to, or None for flattened
+                  content.
+        geometry: The piece's geometry in Native Coordinates.
+    """
+
+    group_id: str
+    name: str
+    layer_id: str | None
+    geometry: Geometry
+
+
+@dataclass
 class VectorizationResult:
     """
     The result of Phase 3 (Vectorize) of the import pipeline.
@@ -225,6 +249,15 @@ class VectorizationResult:
                         the importer during vectorization. Layer IDs match
                         keys in geometries_by_layer. The assembler applies
                         these when creating Layer objects.
+        groups: Pieces that assemble into groups instead of being merged
+                into their layer. Empty when the importer does not report
+                a structure. A piece is still part of geometries_by_layer
+                for previews; assembly uses it instead of the layer
+                geometry to avoid duplicating it.
+        standalone_by_layer: Geometry that does not belong to any group,
+                             per layer. None when the importer does not
+                             report a structure, in which case assembly
+                             uses geometries_by_layer as before.
 
     Error Handling:
     ---------------
@@ -240,6 +273,8 @@ class VectorizationResult:
     layer_settings: dict[str | None, dict[str, Any]] = field(
         default_factory=dict
     )
+    groups: list[GroupGeometry] = field(default_factory=list)
+    standalone_by_layer: dict[str | None, Geometry] | None = None
 
 
 @dataclass
@@ -283,6 +318,11 @@ class LayoutItem:
                              Square (0-1, Y-Up).
         crop_window: Subset of original file (x, y, w, h) in Native Coords.
                      Used for cropping images or limiting vector scope.
+        group_id: Identifier of the group this item belongs to, or None
+                  when the item stands alone.
+        group_name: Human-readable name of that group.
+        geometry: Explicit geometry for this item, or None to take the
+                  geometry registered for ``layer_id``.
     """
 
     layer_id: str | None
@@ -292,6 +332,9 @@ class LayoutItem:
     crop_window: Rect
     settings: dict[str, Any] | None = None
     color: str | None = None
+    group_id: str | None = None
+    group_name: str | None = None
+    geometry: Geometry | None = None
 
 
 @dataclass

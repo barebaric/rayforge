@@ -9,6 +9,7 @@ from gi.repository import Adw, Gdk, GdkPixbuf, GLib, Gtk
 from raygeo.geo import Matrix
 
 from ...context import get_context
+from ...core.group import Group
 from ...core.item import DocItem
 from ...core.layer import Layer
 from ...core.source_asset import SourceAsset
@@ -937,8 +938,12 @@ class ImportDialog(PatchedDialogWindow):
                 geometry_to_cairo(world_geo, ctx)
                 ctx.stroke()
                 ctx.restore()
-            elif isinstance(item, Layer):
-                layer_color = self._hex_to_rgb(item.color)
+            elif isinstance(item, (Layer, Group)):
+                layer_color = (
+                    self._hex_to_rgb(item.color)
+                    if isinstance(item, Layer)
+                    else color
+                )
                 for child in item.children:
                     draw_item(child, layer_color or color)
 

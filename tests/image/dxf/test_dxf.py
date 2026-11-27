@@ -5,6 +5,7 @@ from unittest.mock import Mock
 import pytest
 from raygeo.geo import Arc, Bezier, Geometry, Matrix
 
+from rayforge.core.group import Group
 from rayforge.core.layer import Layer
 from rayforge.core.vectorization_spec import LayerImportMode, PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
@@ -717,3 +718,156 @@ class TestDXFBlockTransforms:
         assert (min_x, min_y, max_x, max_y) == pytest.approx(
             (100.0, 5.0, 110.0, 15.0)
         )
+
+
+def _world_rect(wp: WorkPiece) -> tuple[float, float, float, float]:
+    """The workpiece's geometry bounds in world millimetres."""
+    assert wp.boundaries is not None
+    geometry = wp.boundaries.copy()
+    geometry.transform(wp.get_world_transform())
+    return geometry.rect()
+
+
+def _groups_of(layer: Layer) -> list[Group]:
+    return [c for c in layer.children if isinstance(c, Group)]
+
+
+def _workpieces_of(item) -> list[WorkPiece]:
+    return [
+        c for c in getattr(item, "children", []) if isinstance(c, WorkPiece)
+    ]
+
+
+class TestDXFBlockGroups:
+    """Each INSERT imports as a group instead of being merged into its
+    layers, so repeated blocks stay together as one unit."""
+
+    def test_new_layers_keep_blocks_as_groups(
+        self, block_layer_dxf_importer: DxfImporter
+    ):
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.NEW_LAYERS)
+        result = block_layer_dxf_importer.get_doc_items(spec)
+        assert result and result.payload
+        items = result.payload.items
+
+        assert [item.name for item in items] == ["LAYER_A", "LAYER_B"]
+        layer_a, layer_b = items
+        assert isinstance(layer_a, Layer)
+        assert isinstance(layer_b, Layer)
+
+        groups_a = _groups_of(layer_a)
+        assert len(groups_a) == 1
+        assert groups_a[0].name == "TestBlock"
+        assert _world_rect(_workpieces_of(groups_a[0])[0]) == pytest.approx(
+            (50.0, 50.0, 60.0, 60.0)
+        )
+
+        groups_b = _groups_of(layer_b)
+        assert len(groups_b) == 1
+        assert groups_b[0].name == "TestBlock"
+        assert _world_rect(_workpieces_of(groups_b[0])[0]) == pytest.approx(
+            (65.0, 50.0, 75.0, 60.0)
+        )
+
+    def test_standalone_content_stays_outside_the_group(
+        self, block_layer_dxf_importer: DxfImporter
+    ):
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.NEW_LAYERS)
+        result = block_layer_dxf_importer.get_doc_items(spec)
+        assert result and result.payload
+        layer_a = result.payload.items[0]
+        assert isinstance(layer_a, Layer)
+
+        standalone = [
+            c
+            for c in layer_a.children
+            if isinstance(c, WorkPiece) and c.name == "LAYER_A"
+        ]
+        assert len(standalone) == 1
+        assert _world_rect(standalone[0]) == pytest.approx(
+            (0.0, 0.0, 5.0, 5.0)
+        )
+
+    def test_flatten_mode_keeps_blocks_as_groups(
+        self, block_layer_dxf_importer: DxfImporter
+    ):
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN)
+        result = block_layer_dxf_importer.get_doc_items(spec)
+        assert result and result.payload
+        items = result.payload.items
+
+        groups = [item for item in items if isinstance(item, Group)]
+        assert len(groups) == 1
+        assert groups[0].name == "TestBlock"
+        assert _world_rect(_workpieces_of(groups[0])[0]) == pytest.approx(
+            (50.0, 50.0, 75.0, 60.0)
+        )
+
+        standalone = [item for item in items if isinstance(item, WorkPiece)]
+        assert len(standalone) == 1
+        assert _world_rect(standalone[0]) == pytest.approx(
+            (0.0, 0.0, 5.0, 5.0)
+        )
+
+    def test_layer_zero_block_lands_in_the_insert_layer(
+        self, block_layer0_dxf_importer: DxfImporter
+    ):
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.NEW_LAYERS)
+        result = block_layer0_dxf_importer.get_doc_items(spec)
+        assert result and result.payload
+        items = result.payload.items
+
+        assert [item.name for item in items] == ["LAYER_A"]
+        layer = items[0]
+        assert isinstance(layer, Layer)
+        groups = _groups_of(layer)
+        assert len(groups) == 1
+        assert groups[0].name == "TestBlock"
+
+    def test_nested_block_is_one_group(
+        self, nested_block_dxf_importer: DxfImporter
+    ):
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.NEW_LAYERS)
+        result = nested_block_dxf_importer.get_doc_items(spec)
+        assert result and result.payload
+        layer = result.payload.items[0]
+        assert isinstance(layer, Layer)
+
+        groups = _groups_of(layer)
+        assert [group.name for group in groups] == ["OUTER"]
+        assert _world_rect(_workpieces_of(groups[0])[0]) == pytest.approx(
+            (100.0, 5.0, 110.0, 15.0)
+        )
+
+    def test_block_with_curves_stays_analytic(
+        self, block_arc_dxf_importer: DxfImporter
+    ):
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.NEW_LAYERS)
+        result = block_arc_dxf_importer.get_doc_items(spec)
+        assert result and result.payload
+
+        outside = next(
+            item for item in result.payload.items if item.name == "Outside"
+        )
+        assert isinstance(outside, Layer)
+        group = _groups_of(outside)[0]
+        wp = _workpieces_of(group)[0]
+        assert wp.boundaries is not None
+        assert _has_curves(wp.boundaries.data)
+
+    def test_layer_selection_keeps_only_selected_group_pieces(
+        self, block_layer_dxf_importer: DxfImporter
+    ):
+        spec = PassthroughSpec(
+            active_layer_ids=["LAYER_B"],
+            layer_import_mode=LayerImportMode.NEW_LAYERS,
+        )
+        result = block_layer_dxf_importer.get_doc_items(spec)
+        assert result and result.payload
+        items = result.payload.items
+
+        assert [item.name for item in items] == ["LAYER_B"]
+        layer = items[0]
+        assert isinstance(layer, Layer)
+        assert len(_groups_of(layer)) == 1
+        assert _workpieces_of(layer) == []

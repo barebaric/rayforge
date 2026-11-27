@@ -26,6 +26,7 @@ from raygeo.ops.state import CoolantMode
 
 from ..context import get_context
 from ..core.doc import Doc
+from ..core.group import Group
 from ..core.item import DocItem
 from ..core.layer import Layer
 from ..core.source_asset import SourceAsset
@@ -863,38 +864,7 @@ class FileCmd:
 
         all_rects = []
         for item in items:
-            # FIX: Use the item's matrix directly. This is robust for
-            # items not yet in the document tree, as their matrix IS their
-            # world transform at this point.
-            item_transform = item.matrix
-            item_bbox_local = item.get_local_bbox()
-
-            if item_bbox_local:
-                # Transform the four corners of the local bounding box
-                corners = [
-                    (item_bbox_local[0], item_bbox_local[1]),
-                    (
-                        item_bbox_local[0] + item_bbox_local[2],
-                        item_bbox_local[1],
-                    ),
-                    (
-                        item_bbox_local[0] + item_bbox_local[2],
-                        item_bbox_local[1] + item_bbox_local[3],
-                    ),
-                    (
-                        item_bbox_local[0],
-                        item_bbox_local[1] + item_bbox_local[3],
-                    ),
-                ]
-                world_corners = [
-                    item_transform.transform_point(p) for p in corners
-                ]
-
-                min_x = min(p[0] for p in world_corners)
-                min_y = min(p[1] for p in world_corners)
-                max_x = max(p[0] for p in world_corners)
-                max_y = max(p[1] for p in world_corners)
-                all_rects.append((min_x, min_y, max_x - min_x, max_y - min_y))
+            FileCmd._collect_item_rects(item, Matrix.identity(), all_rects)
 
         if not all_rects:
             return None
@@ -911,6 +881,56 @@ class FileCmd:
             max_y = max(max_y, y + h)
 
         return min_x, min_y, max_x - min_x, max_y - min_y
+
+    @staticmethod
+    def _collect_item_rects(
+        item: DocItem,
+        parent_transform: Matrix,
+        rects: list[Rect],
+    ) -> None:
+        """Appends the world rects of an item's visible content.
+
+        Groups and layers carry no geometry of their own, so their
+        children are measured instead, each with the parent transforms
+        applied.
+        """
+        # FIX: Use the item's matrix directly. This is robust for
+        # items not yet in the document tree, as their matrix IS their
+        # world transform at this point.
+        item_transform = parent_transform @ item.matrix
+        if isinstance(item, (Group, Layer)):
+            for child in item.children:
+                if isinstance(child, (Group, Layer, WorkPiece)):
+                    FileCmd._collect_item_rects(child, item_transform, rects)
+            return
+
+        item_bbox_local = item.get_local_bbox()
+        if not item_bbox_local:
+            return
+
+        # Transform the four corners of the local bounding box
+        corners = [
+            (item_bbox_local[0], item_bbox_local[1]),
+            (
+                item_bbox_local[0] + item_bbox_local[2],
+                item_bbox_local[1],
+            ),
+            (
+                item_bbox_local[0] + item_bbox_local[2],
+                item_bbox_local[1] + item_bbox_local[3],
+            ),
+            (
+                item_bbox_local[0],
+                item_bbox_local[1] + item_bbox_local[3],
+            ),
+        ]
+        world_corners = [item_transform.transform_point(p) for p in corners]
+
+        min_x = min(p[0] for p in world_corners)
+        min_y = min(p[1] for p in world_corners)
+        max_x = max(p[0] for p in world_corners)
+        max_y = max(p[1] for p in world_corners)
+        rects.append((min_x, min_y, max_x - min_x, max_y - min_y))
 
     def _scale_to_fit_if_oversized(self, items: list[DocItem]) -> float:
         """

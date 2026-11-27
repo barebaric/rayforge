@@ -116,6 +116,7 @@ DXF is an AutoCAD drawing format, widely used for CAD interchange.
 - ✓ Circles (CIRCLE)
 - ✓ Splines (SPLINE) - converted to polylines
 - ✓ Ellipses (ELLIPSE)
+- ✓ Blocks and INSERTs (each insertion imports as a group)
 - ✓ Layers
 
 **Unsupported/Limited Features:**

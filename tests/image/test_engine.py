@@ -5,6 +5,7 @@ from raygeo.geo.types import Rect
 from rayforge.core.vectorization_spec import LayerImportMode, PassthroughSpec
 from rayforge.image.engine import NormalizationEngine
 from rayforge.image.structures import (
+    GroupGeometry,
     LayerGeometry,
     ParsingResult,
     VectorizationResult,
@@ -226,3 +227,103 @@ def test_empty_content_fallback(engine):
     item = plan[0]
     # Should match page bounds
     assert item.crop_window == (0, 0, 100, 100)
+
+
+def _line_geometry(x1, y1, x2, y2) -> Geometry:
+    geometry = Geometry()
+    geometry.move_to(x1, y1)
+    geometry.line_to(x2, y2)
+    return geometry
+
+
+def test_group_layout_uses_each_group_bounds(engine):
+    """A group is sized to its own content, not to its layer's bounds."""
+    vec_result = create_vec_result(
+        document_bounds=(0, 0, 100, 100),
+        layers=[
+            ("A", (0, 0, 20, 20)),
+            ("B", (50, 50, 20, 20)),
+        ],
+        is_y_down=False,
+    )
+    loose = _line_geometry(0, 0, 5, 5)
+    piece_a = _line_geometry(10, 10, 20, 20)
+    piece_b = _line_geometry(60, 60, 70, 70)
+    vec_result.groups = [
+        GroupGeometry("block-0", "Block", "A", piece_a),
+        GroupGeometry("block-0", "Block", "B", piece_b),
+    ]
+    vec_result.standalone_by_layer = {"A": loose}
+
+    plan = engine.calculate_layout(
+        vec_result,
+        PassthroughSpec(layer_import_mode=LayerImportMode.NEW_LAYERS),
+    )
+
+    assert [item.group_id for item in plan] == [None, "block-0", "block-0"]
+    assert plan[0].crop_window == pytest.approx((0, 0, 5, 5))
+    assert plan[1].crop_window == pytest.approx((10, 10, 10, 10))
+    assert plan[1].group_name == "Block"
+    assert plan[1].geometry is piece_a
+    assert plan[2].crop_window == pytest.approx((60, 60, 10, 10))
+    assert plan[2].layer_id == "B"
+
+
+def test_group_layout_merges_group_pieces_when_flattened(engine):
+    vec_result = create_vec_result(
+        document_bounds=(0, 0, 100, 100),
+        layers=[
+            ("A", (0, 0, 20, 20)),
+            ("B", (50, 50, 20, 20)),
+        ],
+        is_y_down=False,
+    )
+    vec_result.groups = [
+        GroupGeometry("block-0", "Block", "A", _line_geometry(10, 10, 20, 20)),
+        GroupGeometry("block-0", "Block", "B", _line_geometry(60, 60, 70, 70)),
+    ]
+    vec_result.standalone_by_layer = {
+        "A": _line_geometry(0, 0, 5, 5),
+    }
+
+    plan = engine.calculate_layout(
+        vec_result,
+        PassthroughSpec(layer_import_mode=LayerImportMode.FLATTEN),
+    )
+
+    assert len(plan) == 2
+    assert plan[0].group_id == "block-0"
+    assert plan[0].layer_id is None
+    assert plan[0].crop_window == pytest.approx((10, 10, 60, 60))
+    assert plan[1].group_id is None
+    assert plan[1].crop_window == pytest.approx((0, 0, 5, 5))
+
+
+def test_group_layout_respects_layer_selection(engine):
+    vec_result = create_vec_result(
+        document_bounds=(0, 0, 100, 100),
+        layers=[
+            ("A", (0, 0, 20, 20)),
+            ("B", (50, 50, 20, 20)),
+        ],
+        is_y_down=False,
+    )
+    vec_result.groups = [
+        GroupGeometry("block-0", "Block", "A", _line_geometry(10, 10, 20, 20)),
+        GroupGeometry("block-0", "Block", "B", _line_geometry(60, 60, 70, 70)),
+    ]
+    vec_result.standalone_by_layer = {
+        "A": _line_geometry(0, 0, 5, 5),
+        "B": _line_geometry(50, 50, 55, 55),
+    }
+
+    plan = engine.calculate_layout(
+        vec_result,
+        PassthroughSpec(
+            active_layer_ids=["B"],
+            layer_import_mode=LayerImportMode.NEW_LAYERS,
+        ),
+    )
+
+    assert all(item.layer_id == "B" for item in plan)
+    assert [item.group_id for item in plan] == [None, "block-0"]

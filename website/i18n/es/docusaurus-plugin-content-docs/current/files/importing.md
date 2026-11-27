@@ -340,6 +340,17 @@ Deje **Separación de unión** en el mínimo para que Rayforge elija una toleran
 del dibujo. Auméntela si tras la importación quedan contornos abiertos: el diálogo indica cuántos
 quedaron. Si es demasiado alta, contornos no relacionados podrían unirse.
 
+### Bloques
+
+Los archivos CAD suelen agrupar piezas repetidas o relacionadas en bloques y las colocan con
+entidades INSERT. Rayforge importa cada INSERT como un grupo, de modo que una pieza usada varias
+veces llega como un grupo que puedes mover, escalar o eliminar como una unidad. El contenido que no
+forma parte de un bloque sigue siendo una pieza de trabajo independiente.
+
+Cuando las capas se importan por separado, un bloque cuyo contenido abarca varias capas aporta un
+grupo a cada capa: los grupos no pueden abarcar capas, porque cada capa tiene su propio flujo de
+trabajo. Importa con la opción Aplanar para mantener ese bloque como un único grupo.
+
 ### Consejos para importación DXF
 
 **Antes de exportar desde CAD:**

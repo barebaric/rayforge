@@ -348,6 +348,18 @@ Laissez **Écart de jonction** au minimum pour que Rayforge choisisse une tolér
 taille du dessin. Augmentez-la s'il reste des contours ouverts après l'importation : la boîte de
 dialogue indique combien. Si elle est trop élevée, des contours sans rapport risquent d'être joints.
 
+### Blocs
+
+Les fichiers CAO regroupent souvent les pièces répétées ou liées dans des blocs et les placent avec
+des entités INSERT. Rayforge importe chaque INSERT comme un groupe, de sorte qu'une pièce utilisée
+plusieurs fois arrive sous forme de groupe que tu peux déplacer, redimensionner ou supprimer en tant
+qu'unité. Le contenu qui ne fait pas partie d'un bloc reste une pièce de travail distincte.
+
+Lorsque les calques sont importés séparément, un bloc dont le contenu s'étend sur plusieurs calques
+apporte un groupe à chaque calque : les groupes ne peuvent pas s'étendre sur plusieurs calques, car
+chaque calque a son propre workflow. Importe avec l'option Aplatir pour conserver un tel bloc comme
+un seul groupe.
+
 ### Conseils pour l'importation DXF
 
 **Avant d'exporter depuis la CAO :**
