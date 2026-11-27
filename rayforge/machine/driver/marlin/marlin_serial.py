@@ -1,6 +1,6 @@
-"""Marlin firmware over serial, backed by the native raydriver driver.
+"""Marlin firmware over serial, backed by the native raygeo driver.
 
-The protocol stack runs in Rust via the ``raydriver`` package; this
+The protocol stack runs in Rust via the ``raygeo`` package; this
 binding only supplies the Rayforge-side setup, probing and the
 presentation data.
 """
@@ -9,10 +9,10 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
-import raydriver.marlin
+import raygeo.driver.marlin
 import serial
-from raydriver.core.discovery.spec import DiscoverySpec, SerialRecognizer
-from raydriver.marlin.parser import (
+from raygeo.driver.core.discovery.spec import DiscoverySpec, SerialRecognizer
+from raygeo.driver.marlin.parser import (
     extract_marlin_banner_from_output,
     is_marlin_output,
 )
@@ -41,10 +41,10 @@ logger = logging.getLogger(__name__)
 class MarlinSerialDriver(NativeDriver):
     """
     Marlin firmware over serial, with the entire protocol stack
-    running in Rust via the ``raydriver`` package.
+    running in Rust via the ``raygeo`` package.
     """
 
-    NATIVE = raydriver.marlin.MarlinSerialDriver
+    NATIVE = raygeo.driver.marlin.MarlinSerialDriver
 
     label = _("Marlin (Serial)")
     subtitle = _("Marlin firmware via serial connection")

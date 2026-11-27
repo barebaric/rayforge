@@ -15,7 +15,7 @@ import logging
 from datetime import datetime, timezone
 from pathlib import Path
 
-from raydriver.core.discovery import DeviceIdentity
+from raygeo.driver.core.discovery import DeviceIdentity
 
 from .matching import ProfileMatch
 

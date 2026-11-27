@@ -3,7 +3,7 @@ from collections.abc import Awaitable, Callable, Sequence
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, cast
 
-import raydriver.xtool.m2
+import raygeo.driver.xtool_m2
 
 from ....core.varset import BoolVar, HostnameVar, PortVar, VarSet
 from ....core.varset.hostnamevar import is_valid_hostname_or_ip
@@ -35,7 +35,7 @@ DEFAULT_M2_PORT = 28900
 class XtoolM2Driver(NativeDriver):
     """
     Driver for the xTool M2 over its WS-V2 TLS service, with the
-    entire protocol stack running in Rust via the ``raydriver``
+    entire protocol stack running in Rust via the ``raygeo``
     package.
 
     The M2 driver supports state monitoring, motion and control of a
@@ -45,7 +45,7 @@ class XtoolM2Driver(NativeDriver):
     :meth:`start_staged_job` to start a job staged by xTool Studio.
     """
 
-    NATIVE = raydriver.xtool.m2.XtoolM2Driver
+    NATIVE = raygeo.driver.xtool_m2.XtoolM2Driver
 
     label = _("xTool M2 (Wi-Fi)")
     subtitle = _("xTool M2 monitor and control (no job streaming)")
@@ -108,7 +108,7 @@ class XtoolM2Driver(NativeDriver):
         }
 
     def _create_session(self, config: dict[str, Any]) -> Any:
-        return raydriver.xtool.m2.XtoolM2Driver(
+        return raygeo.driver.xtool_m2.XtoolM2Driver(
             config=config,
             event_callback=self._on_session_event,
         )

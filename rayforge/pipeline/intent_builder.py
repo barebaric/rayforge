@@ -49,7 +49,6 @@ from typing import (
 )
 
 import numpy as np
-from raydriver.encode import GcodeSpec
 from raygeo.cnc.execution.specs import (
     AggregateGroup,
     AggregateInput,
@@ -66,6 +65,7 @@ from raygeo.ops import Ops
 from raygeo.ops.convert import (
     EncodeOutput,
     Encoder,
+    GcodeSpec,
     PythonEncoder,
 )
 from raygeo.ops.material.spec import (
@@ -1318,7 +1318,7 @@ class IntentBuilder:
         which raygeo's pipeline runs on a rayon thread without crossing
         the GIL. Drivers that do not speak G-code (e.g. Ruida) get a
         :class:`PythonEncoder` wrapping their own encoder until they are
-        ported into raydriver.
+        ported into raygeo.driver.
 
         The route is decided by the driver's G-code capability, never
         by the dialect alone: a driver that does not speak G-code

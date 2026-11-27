@@ -6,8 +6,8 @@ import time
 from gettext import gettext as _
 
 import serial
-from raydriver.core.discovery import ports as _ports
-from raydriver.core.discovery.ports import SerialPortInfo
+from raygeo.driver.core.discovery import ports as _ports
+from raygeo.driver.core.discovery.ports import SerialPortInfo
 
 from ...core.varset.baudratevar import STANDARD_BAUD_RATES
 from ...core.varset.serialportvar import format_vidpid, parse_vidpid

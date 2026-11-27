@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from gi.repository import Adw, GLib, Gtk
-from raydriver.core.discovery import DeviceIdentity
+from raygeo.driver.core.discovery import DeviceIdentity
 
 from rayforge.camera.models.source_type import CameraSourceType
 from rayforge.camera.remote import RemoteCamera
@@ -1125,7 +1125,7 @@ def test_ai_lookup_page_progress_bar_tracks_lookup(ui_context_initializer):
 
 
 def _discovered_device(**overrides):
-    from raydriver.core.discovery import DiscoveredDevice
+    from raygeo.driver.core.discovery import DiscoveredDevice
 
     defaults = {
         "driver_name": "GrblSerialDriver",

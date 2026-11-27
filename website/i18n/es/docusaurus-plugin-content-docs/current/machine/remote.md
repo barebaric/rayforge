@@ -23,8 +23,8 @@ sincroniza exactamente.
 
 ## Configurar el host del dispositivo
 
-1. Instale raydriver en el host del dispositivo: `pip install raydriver`. El descubrimiento en red
-   está incluido.
+1. Instale raygeo en el host del dispositivo: `pip install raygeo`. El descubrimiento en red está
+   incluido.
 2. Ejecute `raydriver daemon add /dev/ttyUSB0` (use el puerto serie de su máquina; `raydriver scan`
    los lista). Esto crea la configuración con un **token** generado y registra el dispositivo. Añada
    `--protocol`/`--baudrate` para firmware no predeterminado.
@@ -36,7 +36,7 @@ sincroniza exactamente.
    una dirección que no sea loopback no arranca sin token y TLS.
 
 Consulte la
-[guía del demonio de raydriver](https://github.com/barebaric/raydriver/blob/main/docs/daemon.md)
+[guía del demonio de raydriver](https://github.com/barebaric/raygeo/blob/main/docs/raydriver-cli.md)
 para la referencia completa.
 
 ### Obtener el token

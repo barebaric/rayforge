@@ -21,7 +21,7 @@ Rayforge працює на вашому ноутбуці чи настільно
 
 ## Налаштування хоста пристрою
 
-1. Встановіть raydriver на хості пристрою: `pip install raydriver`. Виявлення в мережі включено.
+1. Встановіть raygeo на хості пристрою: `pip install raygeo`. Виявлення в мережі включено.
 2. Виконайте `raydriver daemon add /dev/ttyUSB0` (використовуйте послідовний порт вашої машини;
    `raydriver scan` перелічує їх). Це створює конфігурацію зі згенерованим **токеном** і реєструє
    пристрій. Додайте `--protocol`/`--baudrate` для нестандартної прошивки.
@@ -32,7 +32,7 @@ Rayforge працює на вашому ноутбуці чи настільно
    не-loopback адресі не запускається без токена й TLS.
 
 Повний довідник дивіться в
-[посібнику демона raydriver](https://github.com/barebaric/raydriver/blob/main/docs/daemon.md).
+[посібнику демона raydriver](https://github.com/barebaric/raygeo/blob/main/docs/raydriver-cli.md).
 
 ### Отримати токен
 

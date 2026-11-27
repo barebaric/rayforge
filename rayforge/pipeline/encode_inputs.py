@@ -1,7 +1,7 @@
 """
 Helpers that turn Rayforge domain models into encoder inputs.
 
-The encoders themselves live in ``raydriver.encode``. This module is
+The encoders themselves live in ``raygeo.ops.convert``. This module is
 the one place that converts ``Machine``, ``Doc`` and the dialect into
 the plain, JSON-serialisable data those encoders accept, plus the
 convenience entry points used where Rayforge needs a one-off encode
@@ -15,9 +15,8 @@ import json
 import logging
 from typing import TYPE_CHECKING
 
-from raydriver.encode import GcodeDialectSpec, GcodeSpec
 from raygeo.ops import Ops
-from raygeo.ops.convert import Encoder
+from raygeo.ops.convert import Encoder, GcodeDialectSpec, GcodeSpec
 
 from ..machine.models.laser import LaserHead
 from ..machine.models.macro import MacroTrigger

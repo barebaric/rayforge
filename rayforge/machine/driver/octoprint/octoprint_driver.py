@@ -3,8 +3,8 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, cast
 
-import raydriver.octoprint
-from raydriver.core.discovery.spec import DiscoverySpec, MdnsRecognizer
+import raygeo.driver.octoprint
+from raygeo.driver.core.discovery.spec import DiscoverySpec, MdnsRecognizer
 
 from ....context import RayforgeContext
 from ....core.varset import (
@@ -61,11 +61,11 @@ class OctoPrintDriver(NativeDriver):
     monitors live printer state through SockJS WebSocket push updates
     with a polling REST fallback.
 
-    The protocol stack runs in Rust via the ``raydriver`` package;
+    The protocol stack runs in Rust via the ``raygeo`` package;
     this binding supplies the connection-setup form and probing.
     """
 
-    NATIVE = raydriver.octoprint.OctoPrintDriver
+    NATIVE = raygeo.driver.octoprint.OctoPrintDriver
 
     label = _("OctoPrint")
     subtitle = _("Submit G-code to an OctoPrint server")
@@ -109,7 +109,7 @@ class OctoPrintDriver(NativeDriver):
         raw_key = kwargs.get("api_key", "")
         api_key = _extract_api_key(str(raw_key) if raw_key else "")
 
-        session = raydriver.octoprint.OctoPrintDriver(
+        session = raygeo.driver.octoprint.OctoPrintDriver(
             config={
                 "host": host,
                 "port": int(port),

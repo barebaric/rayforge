@@ -20,7 +20,7 @@ even if Rayforge disconnects; reconnecting resyncs progress exactly.
 
 ## Set up the device host
 
-1. Install raydriver on the device host: `pip install raydriver`. Network discovery is included.
+1. Install raygeo on the device host: `pip install raygeo`. Network discovery is included.
 2. Run `raydriver daemon add /dev/ttyUSB0` (use your machine's serial port; `raydriver scan` lists
    them). This creates the config with a generated **token** and registers the device. Add
    `--protocol`/`--baudrate` for non-default firmware.
@@ -30,8 +30,8 @@ even if Rayforge disconnects; reconnecting resyncs progress exactly.
    `raydriver daemon --setup` and set `tls_cert` and `tls_key` in the config. A daemon on a
    non-loopback address refuses to start without both a token and TLS.
 
-See the [raydriver daemon guide](https://github.com/barebaric/raydriver/blob/main/docs/daemon.md)
-for the full reference.
+See the [raydriver CLI guide](https://github.com/barebaric/raygeo/blob/main/docs/raydriver-cli.md)
+for the full daemon reference.
 
 ### Get the token
 

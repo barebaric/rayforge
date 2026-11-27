@@ -23,7 +23,7 @@ reconnexion resynchronise la progression exactement.
 
 ## Configurer l'hôte de l'appareil
 
-1. Installez raydriver sur l'hôte de l'appareil : `pip install raydriver`. La découverte réseau est
+1. Installez raygeo sur l'hôte de l'appareil : `pip install raygeo`. La découverte réseau est
    incluse.
 2. Exécutez `raydriver daemon add /dev/ttyUSB0` (utilisez le port série de votre machine ;
    `raydriver scan` les liste). Cela crée la configuration avec un **jeton** généré et enregistre
@@ -36,8 +36,8 @@ reconnexion resynchronise la progression exactement.
    sur une adresse autre que loopback refuse de démarrer sans jeton et TLS.
 
 Consultez le
-[guide du démon raydriver](https://github.com/barebaric/raydriver/blob/main/docs/daemon.md) pour la
-référence complète.
+[guide du démon raydriver](https://github.com/barebaric/raygeo/blob/main/docs/raydriver-cli.md) pour
+la référence complète.
 
 ### Obtenir le jeton
 

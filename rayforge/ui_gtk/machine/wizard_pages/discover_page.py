@@ -33,12 +33,12 @@ from typing import TYPE_CHECKING, Any
 
 from blinker import Signal
 from gi.repository import Adw, GLib, Gtk
-from raydriver.core.discovery import (
+from raygeo.driver.core.discovery import (
     DiscoveredDevice,
     device_key,
 )
-from raydriver.core.discovery.engine import find_all_devices
-from raydriver.core.discovery.session import DiscoverySession
+from raygeo.driver.core.discovery.engine import find_all_devices
+from raygeo.driver.core.discovery.session import DiscoverySession
 
 from ....context import get_context
 from ....machine.device.profile import DeviceProfile

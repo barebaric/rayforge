@@ -1,7 +1,7 @@
-"""GRBL serial driver backed by a raydriver session.
+"""GRBL serial driver backed by a raygeo session.
 
 The entire protocol stack (flow control, streaming, stall detection
-and deadlock recovery) runs in Rust via the ``raydriver`` package.
+and deadlock recovery) runs in Rust via the ``raygeo`` package.
 This shell only supplies the Rayforge-side setup, GRBL device
 settings and probing; the session interface itself is shared with
 every other driver through :class:`NativeDriver`.
@@ -11,10 +11,10 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
-import raydriver.grbl
+import raygeo.driver.grbl
 import serial
-from raydriver.core.discovery.spec import DiscoverySpec, SerialRecognizer
-from raydriver.grbl.parser import (
+from raygeo.driver.core.discovery.spec import DiscoverySpec, SerialRecognizer
+from raygeo.driver.grbl.parser import (
     error_code_to_device_error,
     extract_device_name_from_output,
     is_grbl_output,
@@ -56,14 +56,14 @@ class GrblSerialDriver(NativeDriver):
     """
     The GRBL serial driver with the entire protocol stack (flow
     control, streaming, stall detection and deadlock recovery)
-    running in Rust via the ``raydriver`` package.
+    running in Rust via the ``raygeo`` package.
 
     This shell only translates between the Rayforge ``Driver``
     interface and the Rust session: dialects remain Rayforge data
     and are passed to the session as resolved command templates.
     """
 
-    NATIVE = raydriver.grbl.GrblSerialDriver
+    NATIVE = raygeo.driver.grbl.GrblSerialDriver
 
     label = _("GRBL (USB/Serial)")
     subtitle = _("GRBL-compatible USB/serial connection (recommended)")

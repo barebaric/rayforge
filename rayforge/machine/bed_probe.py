@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 #: The GRBL serial driver gives up on any command after about 10 s
-#: (raydriver's ``command_timeout``) and then reports a probe as not
+#: (raygeo's ``command_timeout``) and then reports a probe as not
 #: triggered, while the controller keeps probing. A probe move is split
 #: so that each part finishes well inside that time.
 PROBE_COMMAND_BUDGET_S = 7.0

@@ -12,6 +12,19 @@ hiddenimports += [
     "raygeo.ops.axis",
     "raygeo.ops.state",
     "raygeo.ops.types",
+    "raygeo.driver",
+    "raygeo.driver.core",
+    "raygeo.driver.grbl",
+    "raygeo.driver.marlin",
+    "raygeo.driver.smoothie",
+    "raygeo.driver.octoprint",
+    "raygeo.driver.epilog",
+    "raygeo.driver.ruida",
+    "raygeo.driver.esp3d",
+    "raygeo.driver.xtool_d1",
+    "raygeo.driver.xtool_m2",
+    "raygeo.driver.simulator",
+    "raygeo.driver.remote",
 ]
 
 datas = collect_data_files("raygeo", include_py_files=True)

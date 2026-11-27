@@ -20,7 +20,7 @@ description:
 
 ## डिवाइस होस्ट सेट अप करें
 
-1. डिवाइस होस्ट पर raydriver इंस्टॉल करें: `pip install raydriver`। नेटवर्क खोज शामिल है।
+1. डिवाइस होस्ट पर raygeo इंस्टॉल करें: `pip install raygeo`। नेटवर्क खोज शामिल है।
 2. `raydriver daemon add /dev/ttyUSB0` चलाएँ (अपनी मशीन का सीरियल पोर्ट उपयोग करें; `raydriver scan` उन्हें
    सूचीबद्ध करता है)। यह एक जनरेट किए गए **टोकन** के साथ कॉन्फ़िग बनाता है और डिवाइस पंजीकृत करता है। ग़ैर-डिफ़ॉल्ट
    फ़र्मवेयर के लिए `--protocol`/`--baudrate` जोड़ें।
@@ -30,8 +30,8 @@ description:
    बनाएँ और कॉन्फ़िग में `tls_cert` तथा `tls_key` सेट करें। ग़ैर-loopback पते पर डेमन टोकन और TLS के बिना शुरू नहीं
    होता।
 
-पूर्ण संदर्भ के लिए [raydriver डेमन गाइड](https://github.com/barebaric/raydriver/blob/main/docs/daemon.md)
-देखें।
+पूर्ण संदर्भ के लिए
+[raydriver डेमन गाइड](https://github.com/barebaric/raygeo/blob/main/docs/raydriver-cli.md) देखें।
 
 ### टोकन प्राप्त करें
 

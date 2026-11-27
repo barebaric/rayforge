@@ -3,7 +3,7 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, cast
 
-import raydriver.simulator
+import raygeo.driver.simulator
 from raygeo.ops.axis import Axis
 
 from ...context import RayforgeContext
@@ -21,11 +21,11 @@ class NoDeviceDriver(NativeDriver):
     """
     A simulated machine used when the user has no device.
 
-    The simulation itself runs in the native raydriver simulator; this
+    The simulation itself runs in the native raygeo simulator; this
     binding supplies the machine state and the presentation data.
     """
 
-    NATIVE = raydriver.simulator.NoDeviceDriver
+    NATIVE = raygeo.driver.simulator.NoDeviceDriver
 
     label = _("No driver")
     subtitle = _("No connection")
@@ -75,7 +75,7 @@ class NoDeviceDriver(NativeDriver):
         }
 
     def _create_session(self, config: dict[str, Any]) -> Any:
-        return raydriver.simulator.NoDeviceDriver(
+        return raygeo.driver.simulator.NoDeviceDriver(
             config=config,
             event_callback=self._on_session_event,
         )

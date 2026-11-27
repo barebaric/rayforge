@@ -11,7 +11,6 @@ from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
-from raydriver.encode import GcodeSpec
 from raygeo.cnc.execution.intent import create_intent_from_nodes
 from raygeo.cnc.execution.specs import (
     AggregateGroup,
@@ -28,7 +27,7 @@ from raygeo.geo import Geometry, Matrix
 from raygeo.ops.assembly import Assembler
 from raygeo.ops.assembly.contour import ContourSpec
 from raygeo.ops.axis import Axis
-from raygeo.ops.convert import Encoder, PythonEncoder
+from raygeo.ops.convert import Encoder, GcodeSpec, PythonEncoder
 from raygeo.ops.material.spec import CylinderStock, MaterialFoldSpec
 from raygeo.ops.part import Part
 from raygeo.ops.transform.bidir_scan_offset import BidirScanOffsetSpec

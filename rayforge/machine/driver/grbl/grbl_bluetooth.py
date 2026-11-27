@@ -2,8 +2,8 @@ import logging
 from gettext import gettext as _
 from typing import Any, cast
 
-import raydriver.grbl
-from raydriver.core.bluetooth import is_supported, normalize_address
+import raygeo.driver.grbl
+from raygeo.driver.core.bluetooth import is_supported, normalize_address
 
 from ....core.varset import (
     BluetoothAddressVar,
@@ -27,12 +27,12 @@ class GrblBluetoothDriver(GrblSerialDriver):
     SPP/RFCOMM.
 
     The device must be paired in the operating system first.  The
-    entire GRBL protocol stack runs in Rust via the ``raydriver``
+    entire GRBL protocol stack runs in Rust via the ``raygeo``
     session; only the transport selection differs from the serial
     driver.
     """
 
-    NATIVE = raydriver.grbl.GrblBluetoothDriver
+    NATIVE = raygeo.driver.grbl.GrblBluetoothDriver
 
     label = _("GRBL (Bluetooth)")
     subtitle = _("GRBL-compatible controller over Bluetooth SPP")

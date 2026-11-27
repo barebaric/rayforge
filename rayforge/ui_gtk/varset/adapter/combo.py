@@ -2,7 +2,7 @@ from gettext import gettext as _
 from typing import Any, cast
 
 from gi.repository import Adw, Gtk
-from raydriver.core.discovery.ports import (
+from raygeo.driver.core.discovery.ports import (
     SerialPortInfo,
     is_usb_serial_port,
     natural_key,

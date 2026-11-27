@@ -10,10 +10,10 @@ from typing import (
 )
 
 from blinker import Signal
-from raydriver.grbl.probe import GrblDeviceInfo
-from raydriver.marlin.probe import MarlinDeviceInfo
-from raydriver.octoprint.probe import OctoPrintDeviceInfo
-from raydriver.smoothie.probe import SmoothieDeviceInfo
+from raygeo.driver.grbl.probe import GrblDeviceInfo
+from raygeo.driver.marlin.probe import MarlinDeviceInfo
+from raygeo.driver.octoprint.probe import OctoPrintDeviceInfo
+from raygeo.driver.smoothie.probe import SmoothieDeviceInfo
 
 from ....shared.units.system import UnitSystem
 from ...transport import TransportStatus
@@ -125,7 +125,7 @@ def build_marlin_profile(
     Build a ``DeviceProfile`` from a Marlin device census.
 
     This is a pure data-transformation function with no I/O; the
-    census itself comes from ``raydriver.marlin.probe``.
+    census itself comes from ``raygeo.driver.marlin.probe``.
     """
     from ...device.profile import (
         DeviceMeta,

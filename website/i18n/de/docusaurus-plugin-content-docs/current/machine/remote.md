@@ -23,8 +23,8 @@ Wiederverbinden wird der Fortschritt exakt synchronisiert.
 
 ## Geräte-Host einrichten
 
-1. Installieren Sie raydriver auf dem Geräte-Host: `pip install raydriver`. Die Netzwerk-Erkennung
-   ist enthalten.
+1. Installieren Sie raygeo auf dem Geräte-Host: `pip install raygeo`. Die Netzwerk-Erkennung ist
+   enthalten.
 2. Führen Sie `raydriver daemon add /dev/ttyUSB0` aus (verwenden Sie den seriellen Port Ihrer
    Maschine; `raydriver scan` listet sie auf). Dies legt die Konfiguration mit einem generierten
    **Token** an und registriert das Gerät. Für nicht standardmäßige Firmware
@@ -37,7 +37,7 @@ Wiederverbinden wird der Fortschritt exakt synchronisiert.
    Daemon auf einer Nicht-Loopback-Adresse startet nicht ohne Token und TLS.
 
 Die vollständige Referenz finden Sie im
-[raydriver-Daemon-Handbuch](https://github.com/barebaric/raydriver/blob/main/docs/daemon.md).
+[raydriver-Daemon-Handbuch](https://github.com/barebaric/raygeo/blob/main/docs/raydriver-cli.md).
 
 ### Token abrufen
 

@@ -12,7 +12,7 @@ from typing import (
 )
 
 from blinker import Signal
-from raydriver.core.discovery.spec import DiscoverySpec
+from raygeo.driver.core.discovery.spec import DiscoverySpec
 from raygeo.ops import Ops
 from raygeo.ops.axis import Axis
 from raygeo.ops.state import PowerMode
