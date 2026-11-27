@@ -2,7 +2,7 @@
 
 A remote machine is attached to a raydriver daemon on another
 computer. The protocol it speaks is the daemon's knowledge: this
-driver connects to a *device* (``raydriver.remote.client.open_session``)
+driver connects to a *device* (``raygeo.driver.remote.client.open_session``)
 and learns the protocol and its capabilities from the daemon as
 info. It never names a protocol or selects a protocol-specific
 driver — that is the layer boundary this design preserves.
@@ -16,9 +16,9 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
-from raydriver.driver import driver_info
-from raydriver.grbl.parser import error_code_to_device_error
-from raydriver.remote.client import open_session
+from raygeo.driver import driver_info
+from raygeo.driver.grbl.parser import error_code_to_device_error
+from raygeo.driver.remote.client import open_session
 
 from ...context import RayforgeContext
 from ...core.varset import RemoteDeviceVar, Var, VarSet
@@ -32,7 +32,7 @@ from .remote_setup import endpoint_config, endpoint_vars
 from .session_state import error_from_session_state
 
 if TYPE_CHECKING:
-    from raydriver.remote.client import RemoteSession
+    from raygeo.driver.remote.client import RemoteSession
 
     from ..device.profile import DeviceProfile
     from ..models.machine import Machine
@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 #: Hidden setup-var key carrying the daemon-resolved protocol. It is
-#: info from raydriver, used only to look up capabilities/dialect —
+#: info from the raygeo driver, used only to look up capabilities/dialect —
 #: never to select a driver.
 PROTOCOL_KEY = "_raydriver_protocol"
 

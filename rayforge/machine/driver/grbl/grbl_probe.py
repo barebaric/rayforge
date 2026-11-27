@@ -10,10 +10,10 @@ from typing import (
 )
 
 from blinker import Signal
-from raydriver.grbl.probe import GrblDeviceInfo, GrblFlavor
-from raydriver.marlin.probe import MarlinDeviceInfo
-from raydriver.octoprint.probe import OctoPrintDeviceInfo
-from raydriver.smoothie.probe import SmoothieDeviceInfo
+from raygeo.driver.grbl.probe import GrblDeviceInfo, GrblFlavor
+from raygeo.driver.marlin.probe import MarlinDeviceInfo
+from raygeo.driver.octoprint.probe import OctoPrintDeviceInfo
+from raygeo.driver.smoothie.probe import SmoothieDeviceInfo
 
 from ....shared.units.system import UnitSystem
 from ...models.dialect.grbl import GRBL_DIALECT
@@ -127,7 +127,7 @@ def build_grbl_profile(
     Build a ``DeviceProfile`` from a Grbl device census.
 
     This is a pure data-transformation function with no I/O; the
-    census itself comes from ``raydriver.grbl.probe``. Maps the
+    census itself comes from ``raygeo.driver.grbl.probe``. Maps the
     protocol-neutral values onto Rayforge's profile model and adds
     user-facing warnings.
     """

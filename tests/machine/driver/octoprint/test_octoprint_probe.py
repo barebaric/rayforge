@@ -2,7 +2,7 @@ from typing import Any, cast
 
 import pytest
 import pytest_asyncio
-from raydriver.octoprint.emulator import OctoPrintEmulator
+from raygeo.driver.octoprint.emulator import OctoPrintEmulator
 
 from rayforge.machine.driver.octoprint import OctoPrintDriver
 from rayforge.machine.driver.octoprint.octoprint_util import (

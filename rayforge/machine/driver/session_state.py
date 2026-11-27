@@ -1,14 +1,14 @@
 """Conversions between Rayforge driver state types and the session
-state types reported by raydriver sessions.
+state types reported by raygeo sessions.
 
 Both model the same machine state: the session types are owned by
-the raydriver library, while the driver types are Rayforge's domain.
+the raygeo driver library, while the driver types are Rayforge's domain.
 These functions are the boundary between a session and its Driver.
 """
 
-from raydriver.core.types import DeviceError as NativeDeviceError
-from raydriver.core.types import DeviceState as NativeDeviceState
-from raydriver.core.types import DeviceStatus as NativeDeviceStatus
+from raygeo.driver.core.types import DeviceError as NativeDeviceError
+from raygeo.driver.core.types import DeviceState as NativeDeviceState
+from raygeo.driver.core.types import DeviceStatus as NativeDeviceStatus
 
 from .driver import DeviceError, DeviceState, DeviceStatus
 

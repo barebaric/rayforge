@@ -12,12 +12,12 @@ import time
 import pytest
 import pytest_asyncio
 
-raydriver_remote = pytest.importorskip("raydriver.remote.daemon")
-raydriver_client = pytest.importorskip("raydriver.remote.client")
+raygeo_remote = pytest.importorskip("raygeo.driver.remote.daemon")
+raygeo_client = pytest.importorskip("raygeo.driver.remote.client")
 
-import raydriver.grbl  # noqa: E402
-from raydriver.core.transport import MockTransport  # noqa: E402
-from raydriver.grbl.emulator import GrblEmulator  # noqa: E402
+import raygeo.driver.grbl  # noqa: E402
+from raygeo.driver.core.transport import MockTransport  # noqa: E402
+from raygeo.driver.grbl.emulator import GrblEmulator  # noqa: E402
 from raygeo.ops import Ops  # noqa: E402
 
 from rayforge.core.doc import Doc  # noqa: E402
@@ -27,7 +27,7 @@ from rayforge.machine.driver.remote_driver import (  # noqa: E402
 )
 from rayforge.pipeline.encode_inputs import encode_gcode  # noqa: E402
 
-RemoteSession = raydriver_client.RemoteSession
+RemoteSession = raygeo_client.RemoteSession
 
 FAST_CONFIG = {
     "handshake_timeout": 2.0,
@@ -81,15 +81,15 @@ async def daemon_port():
     device_task = asyncio.ensure_future(emulator.run())
 
     def factory(protocol_name, config, dialect, event_callback):
-        return raydriver.grbl.GrblSerialDriver.with_transport(
+        return raygeo.driver.grbl.GrblSerialDriver.with_transport(
             mock,
             config={**FAST_CONFIG, **(config or {})},
             dialect=dialect,
             event_callback=event_callback,
         )
 
-    daemon = raydriver_remote.Daemon(
-        raydriver_remote.DaemonConfig(
+    daemon = raygeo_remote.Daemon(
+        raygeo_remote.DaemonConfig(
             port=0,
             keepalive_interval=0.5,
             sessions=[
@@ -165,7 +165,7 @@ def test_local_shells_have_no_remote_vars():
 def test_local_setup_routes_to_rust_session(context_initializer, machine):
     drv = GrblSerialDriver(context_initializer, machine)
     drv.setup(port=DEVICE, baudrate=115200)
-    assert isinstance(drv._session, raydriver.grbl.GrblSerialDriver)
+    assert isinstance(drv._session, raygeo.driver.grbl.GrblSerialDriver)
 
 
 def test_remote_setup_routes_to_proxy(

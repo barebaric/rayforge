@@ -4,7 +4,7 @@ import queue
 
 import pytest
 import serial
-from raydriver.core.discovery.ports import (
+from raygeo.driver.core.discovery.ports import (
     SerialPortInfo,
     is_usb_serial_port,
     sort_ports,

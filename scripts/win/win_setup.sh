@@ -272,7 +272,6 @@ EOF
     retry $PYTHON_BIN_PATH -m pip install \
         "pyserial$(req_version pyserial)" \
         "raygeo$(req_version raygeo)" \
-        "raydriver$(req_version raydriver)" \
         "trimesh$(req_version trimesh)" \
         "ruida-pa$(req_version ruida-pa)" \
         "pytest-xdist==3.8.0" \

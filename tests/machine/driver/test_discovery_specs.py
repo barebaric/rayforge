@@ -1,6 +1,6 @@
 """Discovery declarations of the built-in drivers.
 
-The channels themselves are tested in raydriver; these tests pin the
+The channels themselves are tested in raygeo; these tests pin the
 built-in drivers' DiscoverySpec declarations and end-to-end recognition
 of real firmware banners.
 """
@@ -16,15 +16,15 @@ except ImportError:  # Windows has no termios/tty
     tty = None
 
 import pytest
-from raydriver.core.discovery import mdns_channel
-from raydriver.core.discovery.engine import find_all_devices
-from raydriver.core.discovery.fingerprints import (
+from raygeo.driver.core.discovery import mdns_channel
+from raygeo.driver.core.discovery.engine import find_all_devices
+from raygeo.driver.core.discovery.fingerprints import (
     HttpFingerprint,
     TcpFingerprint,
 )
-from raydriver.core.discovery.mdns_channel import find_network_devices
-from raydriver.core.discovery.mdns_scan import MDNSService
-from raydriver.core.discovery.spec import DiscoverySpec, MdnsRecognizer
+from raygeo.driver.core.discovery.mdns_channel import find_network_devices
+from raygeo.driver.core.discovery.mdns_scan import MDNSService
+from raygeo.driver.core.discovery.spec import DiscoverySpec, MdnsRecognizer
 
 from rayforge.machine.driver import (
     GrblNetworkDriver,

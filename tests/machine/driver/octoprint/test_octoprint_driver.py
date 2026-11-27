@@ -3,7 +3,7 @@ import json
 
 import pytest
 import pytest_asyncio
-from raydriver.octoprint.emulator import OctoPrintEmulator
+from raygeo.driver.octoprint.emulator import OctoPrintEmulator
 from raygeo.ops.axis import Axis
 
 from rayforge.core.varset import AppKeyVar, HostnameVar, PortVar

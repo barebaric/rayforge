@@ -19,7 +19,7 @@ description:
 
 ## 设置设备主机
 
-1. 在设备主机上安装 raydriver：`pip install raydriver`。已包含网络发现。
+1. 在设备主机上安装 raygeo：`pip install raygeo`。已包含网络发现。
 2. 运行 `raydriver daemon add /dev/ttyUSB0`（使用您机器的串口；`raydriver scan` 会列出它们）。
    这会创建带生成**令牌**的配置并注册设备。对于非默认固件，添加 `--protocol`/`--baudrate`。
 3. 运行 `raydriver daemon install` 安装并启动后台服务（Linux 上为 systemd，macOS 上为 launchd，
@@ -28,7 +28,7 @@ description:
    设置 `tls_cert` 和 `tls_key`。非回环地址上的守护进程在没有令牌和 TLS 时拒绝启动。
 
 完整参考请参阅
-[raydriver 守护进程指南](https://github.com/barebaric/raydriver/blob/main/docs/daemon.md)。
+[raydriver 守护进程指南](https://github.com/barebaric/raygeo/blob/main/docs/raydriver-cli.md)。
 
 ### 获取令牌
 

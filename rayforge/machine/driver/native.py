@@ -1,6 +1,6 @@
-"""Generic base for drivers backed by a raydriver driver.
+"""Generic base for drivers backed by a raygeo driver.
 
-A raydriver driver — local Rust object or remote daemon proxy —
+A raygeo driver — local Rust object or remote daemon proxy —
 exposes one protocol-agnostic method and event surface. This base
 translates that surface to the Rayforge ``Driver`` interface:
 dialects stay Rayforge data and are passed to the driver as resolved
@@ -15,7 +15,7 @@ from collections.abc import Awaitable, Callable
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
-from raydriver.core import DriverEvent
+from raygeo.driver.core import DriverEvent
 
 from ...context import RayforgeContext
 from ...core.varset import VarSet
@@ -33,7 +33,7 @@ from .driver import (
 from .session_state import from_session_state
 
 if TYPE_CHECKING:
-    from raydriver.core.types import DeviceState as NativeDeviceState
+    from raygeo.driver.core.types import DeviceState as NativeDeviceState
     from raygeo.ops import Ops
 
     from ...core.doc import Doc
@@ -50,7 +50,7 @@ _HOMING_MIN_TIMEOUT_S = 30.0
 
 @runtime_checkable
 class NativeSession(Protocol):
-    """The uniform session surface every raydriver session exposes.
+    """The uniform session surface every raygeo session exposes.
 
     The local Rust sessions and the remote daemon proxy implement
     the same methods with the same signatures; operations a
@@ -125,16 +125,16 @@ class NativeSession(Protocol):
 
 
 class NativeDriver(Driver):
-    """Driver machinery shared by every native raydriver driver.
+    """Driver machinery shared by every native raygeo driver.
 
-    Subclasses set :attr:`NATIVE` to the raydriver class and may
+    Subclasses set :attr:`NATIVE` to the raygeo class and may
     override :meth:`build_config` / :meth:`_create_session` for
     protocol-specific connection parameters.
     """
 
     reports_granular_progress = True
 
-    #: The raydriver class this Rayforge driver binds.
+    #: The raygeo class this Rayforge driver binds.
     NATIVE: type[Any] | None = None
 
     def __init__(self, context: RayforgeContext, machine: "Machine"):
@@ -206,7 +206,7 @@ class NativeDriver(Driver):
 
     @property
     def session(self) -> NativeSession | None:
-        """The underlying raydriver session, if set up."""
+        """The underlying raygeo session, if set up."""
         return self._session
 
     def _require_session(self) -> Any:

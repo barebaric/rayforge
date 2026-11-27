@@ -4,7 +4,7 @@ The M2's WS-V2 protocol runs over TLS, which the hermetic test
 environment cannot emulate without certificates, so these tests
 cover the shell wiring (registry, setup, config, event translation)
 without a live connection.  The live protocol behavior is covered
-by raydriver's own M2 session tests."""
+by raygeo's own M2 session tests."""
 
 from typing import TYPE_CHECKING, cast
 
@@ -14,8 +14,8 @@ if TYPE_CHECKING:
     from rayforge.core.doc import Doc
 
 import pytest
-from raydriver.core import DriverEvent
-from raydriver.core.types import DeviceState, DeviceStatus
+from raygeo.driver.core import DriverEvent
+from raygeo.driver.core.types import DeviceState, DeviceStatus
 
 from rayforge.machine.driver import get_driver_cls
 from rayforge.machine.driver.driver import DriverMaturity

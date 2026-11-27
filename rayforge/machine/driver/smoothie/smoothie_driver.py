@@ -1,6 +1,6 @@
-"""Smoothieware over telnet, backed by the native raydriver driver.
+"""Smoothieware over telnet, backed by the native raygeo driver.
 
-The protocol stack runs in Rust via the ``raydriver`` package; this
+The protocol stack runs in Rust via the ``raygeo`` package; this
 binding only supplies the Rayforge-side setup and probing.
 """
 
@@ -9,7 +9,7 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, cast
 
-import raydriver.smoothie
+import raygeo.driver.smoothie
 
 from ....core.varset import HostnameVar, PortVar, VarSet
 from ....core.varset.hostnamevar import is_valid_hostname_or_ip
@@ -28,10 +28,10 @@ logger = logging.getLogger(__name__)
 class SmoothieDriver(NativeDriver):
     """
     Handles Smoothie-based devices via Telnet, with the entire
-    protocol stack running in Rust via the ``raydriver`` package.
+    protocol stack running in Rust via the ``raygeo`` package.
     """
 
-    NATIVE = raydriver.smoothie.SmoothieDriver
+    NATIVE = raygeo.driver.smoothie.SmoothieDriver
 
     label = _("Smoothie")
     subtitle = _("Smoothieware via a Telnet connection")

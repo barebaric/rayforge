@@ -1,13 +1,13 @@
 """Tests for the Rust-backed XtoolNetworkDriver, driven against the
-xTool WiFi firmware emulator (raydriver.xtool.emulator)."""
+xTool WiFi firmware emulator (raygeo.driver.xtool_d1.emulator)."""
 
 import asyncio
 import time
 
 import pytest
 import pytest_asyncio
-import raydriver.xtool
-from raydriver.xtool.emulator import XtoolEmulator
+import raygeo.driver.xtool_d1
+from raygeo.driver.xtool_d1.emulator import XtoolEmulator
 from raygeo.ops import Ops
 
 from rayforge.machine.driver import get_driver_cls
@@ -114,7 +114,7 @@ def make_driver(context, machine, emulator) -> XtoolNetworkDriver:
         "http_port": emulator.http_port,
         "ws_port": emulator.ws_port,
     }
-    session = raydriver.xtool.XtoolNetworkDriver(
+    session = raygeo.driver.xtool_d1.XtoolNetworkDriver(
         config=config,
         dialect=drv._dialect_templates(),
         event_callback=drv._on_session_event,

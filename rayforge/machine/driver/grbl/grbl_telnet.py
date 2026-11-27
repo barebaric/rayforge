@@ -2,9 +2,9 @@ import logging
 from gettext import gettext as _
 from typing import Any, cast
 
-import raydriver.grbl
-from raydriver.core.discovery.fingerprints import TcpFingerprint
-from raydriver.core.discovery.spec import (
+import raygeo.driver.grbl
+from raygeo.driver.core.discovery.fingerprints import TcpFingerprint
+from raygeo.driver.core.discovery.spec import (
     DiscoverySpec,
     MdnsRecognizer,
     TcpRecognizer,
@@ -24,12 +24,12 @@ class GrblTelnetDriver(GrblSerialDriver):
 
     Intended for networked grblHAL controllers with the "raw" telnet
     service enabled, and for ESP3D firmware's telnet bridge. The
-    entire GRBL protocol stack runs in Rust via the ``raydriver``
+    entire GRBL protocol stack runs in Rust via the ``raygeo``
     session; only the transport selection differs from the serial
     driver.
     """
 
-    NATIVE = raydriver.grbl.GrblTelnetDriver
+    NATIVE = raygeo.driver.grbl.GrblTelnetDriver
 
     label = _("grblHAL (Telnet)")
     subtitle = _(
@@ -40,7 +40,7 @@ class GrblTelnetDriver(GrblSerialDriver):
     # must not claim devices found on one. grblHAL builds with LWIP
     # mDNS announce _telnet._tcp, so that fast path is fingerprinted
     # with $I -> [VER: before a board is claimed. Boards whose firmware
-    # announces nothing stay discoverable through raydriver's subnet
+    # announces nothing stay discoverable through raygeo's subnet
     # scan, which probes the raw telnet port with the same
     # confirmation.
     DISCOVERY = DiscoverySpec(

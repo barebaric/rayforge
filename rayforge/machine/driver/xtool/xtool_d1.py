@@ -2,8 +2,8 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, cast
 
-import raydriver.xtool
-from raydriver.xtool import query_machine_type
+import raygeo.driver.xtool_d1
+from raygeo.driver.xtool_d1 import query_machine_type
 
 from ....context import RayforgeContext
 from ....core.varset import HostnameVar, PortVar, VarSet
@@ -35,7 +35,7 @@ class XtoolNetworkDriver(NativeDriver):
     """
     Driver for xTool D-series machines (D1, D1 Pro, …) over their
     proprietary WiFi API, with the entire protocol stack running in
-    Rust via the ``raydriver`` package.
+    Rust via the ``raygeo`` package.
 
     xTool machines are GRBL-derived, but their WiFi module is neither
     ESP3D nor GRBL-over-TCP: commands are acknowledged through the
@@ -43,7 +43,7 @@ class XtoolNetworkDriver(NativeDriver):
     events, and the machine reports no position feedback at all.
     """
 
-    NATIVE = raydriver.xtool.XtoolNetworkDriver
+    NATIVE = raygeo.driver.xtool_d1.XtoolNetworkDriver
 
     label = _("xTool (Wi-Fi)")
     subtitle = _("xTool machines with Wi-Fi (D1, D1 Pro, …)")

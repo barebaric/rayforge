@@ -23,7 +23,7 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
 from gi.repository import Adw, Gtk
-from raydriver.core.bluetooth import BluetoothDeviceInfo
+from raygeo.driver.core.bluetooth import BluetoothDeviceInfo
 
 from rayforge.core.varset import BluetoothAddressVar
 from rayforge.ui_gtk.varset.adapter import create_row_for_var

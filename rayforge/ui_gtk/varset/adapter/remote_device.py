@@ -3,7 +3,7 @@
 The choices are queried live from the daemon identified by the
 sibling endpoint vars. The daemon resolves each device's protocol;
 the adapter records it under a related key so the driver can derive
-capabilities from raydriver's metadata without naming a protocol.
+capabilities from the raygeo driver's metadata without naming a protocol.
 """
 
 import logging
@@ -11,7 +11,7 @@ from gettext import gettext as _
 from typing import Any
 
 from gi.repository import Adw, Gtk
-from raydriver.remote.client import list_devices
+from raygeo.driver.remote.client import list_devices
 
 from ....core.varset import RemoteDeviceVar, Var
 from ....shared.tasker import task_mgr
