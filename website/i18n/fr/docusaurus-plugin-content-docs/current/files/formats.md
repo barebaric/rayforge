@@ -112,6 +112,7 @@ Le DXF est un format de dessin AutoCAD, largement utilisé pour l'échange de do
 - ✓ Cercles (CIRCLE)
 - ✓ Splines (SPLINE) - converties en polylignes
 - ✓ Ellipses (ELLIPSE)
+- ✓ Blocs et INSERT (chaque insertion est importée comme un groupe)
 - ✓ Calques
 
 **Fonctionnalités non prises en charge/limitées :**
@@ -136,8 +137,8 @@ Lors de l'exportation d'une pièce vers DXF, Rayforge exporte :
 
 ### CorelDRAW (.cdr)
 
-**Extension :** `.cdr` **Type MIME :** `application/vnd.corel-draw` **Importation :** Analyse vectorielle
-directe **Exportation :** Export d'objets (géométrie uniquement)
+**Extension :** `.cdr` **Type MIME :** `application/vnd.corel-draw` **Importation :** Analyse
+vectorielle directe **Exportation :** Export d'objets (géométrie uniquement)
 
 Les dessins CorelDRAW sont lus nativement — CorelDRAW n'est pas nécessaire. Rayforge lit le format
 d'enregistrements de CorelDRAW 7 à X7, aussi bien les fichiers simples que les paquets ZIP des

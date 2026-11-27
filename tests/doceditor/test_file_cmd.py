@@ -351,6 +351,22 @@ class TestCalculateItemsBbox:
 
         assert result is None
 
+    def test_calculate_bbox_includes_group_children(self, file_cmd):
+        """A group has no geometry of its own; its children define the
+        bounding box."""
+        wp1 = WorkPiece(name="Item 1")
+        wp1.set_size(10.0, 10.0)
+        wp1.pos = (0.0, 0.0)
+        wp2 = WorkPiece(name="Item 2")
+        wp2.set_size(5.0, 5.0)
+        wp2.pos = (20.0, 5.0)
+        group = Group(name="Block")
+        group.set_children([wp1, wp2])
+
+        result = file_cmd._calculate_items_bbox([group])
+
+        assert result == pytest.approx((0.0, 0.0, 25.0, 10.0))
+
 
 class TestPositionNewlyImportedItems:
     """Tests for _position_newly_imported_items method."""

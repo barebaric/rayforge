@@ -337,6 +337,18 @@ Mantenha **Folga de junção** no mínimo para que o Rayforge escolha uma toler�
 tamanho do desenho. Aumente-a se ainda restarem contornos abertos após a importação — o diálogo
 informa quantos sobraram. Um valor alto demais pode unir contornos sem relação.
 
+### Blocos
+
+Arquivos CAD costumam agrupar peças repetidas ou relacionadas em blocos e posicioná-las com
+entidades INSERT. O Rayforge importa cada INSERT como um grupo, então uma peça usada várias vezes
+chega como um grupo que você pode mover, redimensionar ou excluir como uma unidade. O conteúdo que
+não faz parte de um bloco continua sendo uma peça de trabalho separada.
+
+Quando as camadas são importadas separadamente, um bloco cujo conteúdo abrange várias camadas
+contribui com um grupo para cada camada: grupos não podem abranger camadas, porque cada camada tem
+seu próprio fluxo de trabalho. Importe com a opção Achatar para manter esse bloco como um único
+grupo.
+
 ### Dicas para importação DXF
 
 **Antes de exportar do CAD:**

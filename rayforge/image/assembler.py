@@ -1,10 +1,12 @@
 import logging
+from gettext import gettext as _
 from typing import Any
 
-from raygeo.geo import Geometry
+from raygeo.geo import Geometry, Matrix
 from raygeo.geo.types import Rect
 
 from ..core.color import pick_unused_color
+from ..core.group import Group
 from ..core.item import DocItem
 from ..core.layer import Layer
 from ..core.source_asset import SourceAsset
@@ -114,6 +116,8 @@ class ItemAssembler:
         # requested by spec) or return a list of WorkPieces.
         items: list[DocItem] = []
         used_colors = {item.color for item in layout_plan if item.color}
+        layers_by_id: dict[str, Layer] = {}
+        groups_by_key: dict[tuple[str | None, str], Group] = {}
 
         logger.debug(f"ItemAssembler: document_bounds={document_bounds}")
 
@@ -121,27 +125,18 @@ class ItemAssembler:
             # 1. Create the Segment
             # This links the WorkPiece to the specific subset of the source
             # file
-            geo: Geometry | None = None
-            if item.layer_id is not None:
-                # Split strategy: get geometry for the specific layer
-                geo = geometries.get(item.layer_id)
-            else:
-                # Merge strategy: combine all available geometries
-                if geometries:
-                    merged_geo = Geometry()
-                    for g in geometries.values():
-                        if g and not g.is_empty():
-                            merged_geo.extend(g)
-                    if not merged_geo.is_empty():
-                        geo = merged_geo
+            geo = item.geometry
+            if geo is None:
+                geo = self._lookup_geometry(item, geometries)
 
             # The `item.crop_window` is in absolute native coordinates.
             # For rendering trimmed vector files (like SVG), the renderer
             # needs an absolute viewBox to render the correct portion of the
             # source file. We pass this through directly.
             # NOTE: For raster sources, this field contains pixel coordinates.
-            # For vector sources (SVG), it contains native user-units. The
-            # respective WorkPiece/Renderer logic must handle this distinction.
+            # For vector sources (SVG), it contains native user-units.
+            # The respective WorkPiece/Renderer logic must handle this
+            # distinction.
             logger.debug(
                 f"ItemAssembler: item.crop_window={item.crop_window}, "
                 f"layer_id={item.layer_id}"
@@ -163,12 +158,12 @@ class ItemAssembler:
             segment.cropped_height_mm = h_mm
 
             # 2. Create the WorkPiece
-            # Prioritize human-readable name from layout item, fallback to ID,
-            # then to the overall source name.
+            # Prioritize the group name, then the human-readable layer name,
+            # then the layer ID, then the overall source name.
             name = (
-                item.layer_name
-                if item.layer_name
-                else (item.layer_id if item.layer_id else source_name)
+                item.group_name
+                or item.layer_name
+                or (item.layer_id if item.layer_id else source_name)
             )
             wp = WorkPiece(name=name, source_segment=segment)
 
@@ -180,26 +175,145 @@ class ItemAssembler:
             # 4. Wrap in Layer if splitting is active and meaningful
             # Hack: Sketches (layer_id="__default__") should never be wrapped
             # in a layer
-            if (
+            split = bool(
                 item.layer_id
                 and item.layer_id != "__default__"
                 and isinstance(spec, PassthroughSpec)
                 and spec.layer_import_mode != LayerImportMode.FLATTEN
-            ):
-                layer = Layer(name=name)
-                layer.set_color(item.color or pick_unused_color(used_colors))
-                used_colors.add(layer.color)
-                layer.add_child(wp)
-                # If the importer provided settings, pre-populate a step
-                # on the layer's workflow so that add_default_steps_for_layers
-                # will skip it (workflow.has_steps() -> True).
-                if item.settings:
-                    self._apply_settings(layer, item.settings)
-                items.append(layer)
+            )
+            owner: Layer | None = None
+            if split:
+                assert item.layer_id is not None
+                owner = layers_by_id.get(item.layer_id)
+                if owner is None:
+                    layer_name = (
+                        item.layer_name or item.layer_id or source_name
+                    )
+                    owner = Layer(name=layer_name)
+                    owner.set_color(
+                        item.color or pick_unused_color(used_colors)
+                    )
+                    used_colors.add(owner.color)
+                    # If the importer provided settings, pre-populate a step
+                    # on the layer's workflow so that
+                    # add_default_steps_for_layers will skip it
+                    # (workflow.has_steps() -> True).
+                    if item.settings:
+                        self._apply_settings(owner, item.settings)
+                    layers_by_id[item.layer_id] = owner
+                    items.append(owner)
+
+            # 5. Attach the WorkPiece, grouping it when the importer asked
+            # for that. Groups live on one layer, so pieces of a group that
+            # spans layers become separate groups in their own layers.
+            if item.group_id:
+                key = (item.layer_id if split else None, item.group_id)
+                group = groups_by_key.get(key)
+                if group is None:
+                    group = Group(name=item.group_name or _("Group"))
+                    groups_by_key[key] = group
+                    if owner is not None:
+                        owner.add_child(group)
+                    else:
+                        items.append(group)
+                group.add_child(wp)
+            elif owner is not None:
+                owner.add_child(wp)
             else:
                 items.append(wp)
 
+        # Groups are positioned on the document's unit square like every
+        # other DocItem, so their children become relative to that square.
+        for group in groups_by_key.values():
+            self._fit_group_to_children(group)
+
         return items
+
+    @staticmethod
+    def _fit_group_to_children(group: Group) -> None:
+        """Maps a group's unit square onto the bounds of its children.
+
+        WorkPieces are created with world matrices so they can be placed
+        on a layer directly. A group wraps some of them, so its own
+        matrix has to take over their common position and size, and the
+        children's matrices become relative to the group.
+        """
+        rects: list[tuple[float, float, float, float]] = []
+        for child in group.children:
+            ItemAssembler._collect_rects(child, Matrix.identity(), rects)
+        if not rects:
+            return
+
+        min_x = min(rect[0] for rect in rects)
+        min_y = min(rect[1] for rect in rects)
+        max_x = max(rect[0] + rect[2] for rect in rects)
+        max_y = max(rect[1] + rect[3] for rect in rects)
+        # A block may be a single line, so its bounds can be degenerate.
+        # Keep the mapping invertible rather than leaving the group with
+        # an identity matrix and world-space children.
+        width = max(max_x - min_x, 1e-9)
+        height = max(max_y - min_y, 1e-9)
+
+        group_matrix = Matrix.translation(min_x, min_y) @ Matrix.scale(
+            width, height
+        )
+        try:
+            inverse = group_matrix.invert()
+        except ValueError:
+            return
+
+        children = [(child, child.matrix.copy()) for child in group.children]
+        group.matrix = group_matrix
+        for child, old_matrix in children:
+            child.matrix = inverse @ old_matrix
+
+    @staticmethod
+    def _collect_rects(
+        item: DocItem,
+        parent_transform: Matrix,
+        rects: list[tuple[float, float, float, float]],
+    ) -> None:
+        """Collects the bounding rects of an item's WorkPieces."""
+        transform = parent_transform @ item.matrix
+        if isinstance(item, Group):
+            for child in item.children:
+                ItemAssembler._collect_rects(child, transform, rects)
+            return
+        if not isinstance(item, WorkPiece):
+            return
+        local = item.get_local_bbox()
+        if not local:
+            return
+        corners = [
+            (local[0], local[1]),
+            (local[0] + local[2], local[1]),
+            (local[0] + local[2], local[1] + local[3]),
+            (local[0], local[1] + local[3]),
+        ]
+        world = [transform.transform_point(point) for point in corners]
+        min_x = min(p[0] for p in world)
+        min_y = min(p[1] for p in world)
+        max_x = max(p[0] for p in world)
+        max_y = max(p[1] for p in world)
+        rects.append((min_x, min_y, max_x - min_x, max_y - min_y))
+
+    @staticmethod
+    def _lookup_geometry(
+        item: LayoutItem,
+        geometries: dict[str | None, Geometry],
+    ) -> Geometry | None:
+        """The geometry a layout item refers to when it carries none."""
+        if item.layer_id is not None:
+            # Split strategy: get geometry for the specific layer
+            return geometries.get(item.layer_id)
+        # Merge strategy: combine all available geometries
+        if not geometries:
+            return None
+        merged_geo = Geometry()
+        for geo in geometries.values():
+            if geo and not geo.is_empty():
+                merged_geo.extend(geo)
+        return merged_geo if not merged_geo.is_empty() else None
 
     @staticmethod
     def _apply_settings(layer: Layer, settings: dict[str, Any]) -> None:

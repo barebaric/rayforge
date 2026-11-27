@@ -1,7 +1,8 @@
 import logging
+from collections.abc import Callable
 from typing import Any
 
-from raygeo.geo import Matrix
+from raygeo.geo import Geometry, Matrix
 from raygeo.geo.types import Rect
 
 from ..core.vectorization_spec import (
@@ -11,6 +12,7 @@ from ..core.vectorization_spec import (
     VectorizationSpec,
 )
 from .structures import (
+    GroupGeometry,
     LayerGeometry,
     LayoutItem,
     ParsingResult,
@@ -72,6 +74,9 @@ class NormalizationEngine:
         layer_name: str | None = None,
         settings: dict[str, Any] | None = None,
         color: str | None = None,
+        group_id: str | None = None,
+        group_name: str | None = None,
+        geometry: Geometry | None = None,
     ) -> LayoutItem:
         """
         Generates the transformation matrices for a specific bounding box.
@@ -86,6 +91,9 @@ class NormalizationEngine:
             parse_result: ParsingResult containing coordinate system metadata.
             layer_id: Optional layer identifier for this item.
             layer_name: Optional human-readable layer name.
+            group_id: Optional identifier of the group this item joins.
+            group_name: Optional human-readable group name.
+            geometry: Optional explicit geometry for this item.
 
         Returns:
             LayoutItem containing:
@@ -168,6 +176,9 @@ class NormalizationEngine:
             crop_window=bounds,
             settings=settings,
             color=color,
+            group_id=group_id,
+            group_name=group_name,
+            geometry=geometry,
         )
 
     def calculate_layout(
@@ -253,6 +264,13 @@ class NormalizationEngine:
             if spec.active_layer_ids:
                 active_layers = set(spec.active_layer_ids)
 
+        # Importers that report groups (such as DXF blocks) lay out each
+        # group from its own geometry instead of using whole-layer bounds.
+        if vec_result.groups or vec_result.standalone_by_layer is not None:
+            return self._calculate_structured_layout(
+                vec_result, split_layers, active_layers
+            )
+
         # Filter relevant layers
         target_layers: list[LayerGeometry] = result.layers
         if active_layers:
@@ -308,6 +326,201 @@ class NormalizationEngine:
                     union_rect, result, layer_id=None, layer_name=None
                 )
             ]
+
+    def _calculate_structured_layout(
+        self,
+        vec_result: VectorizationResult,
+        split_layers: bool,
+        active_layers: set[str] | None,
+    ) -> list[LayoutItem]:
+        """Lays out grouped and standalone geometry.
+
+        Each group is sized to its own content, so a block keeps its
+        bounds instead of being stretched to its layer's. When layers are
+        kept apart, a group that contributes to several layers produces
+        one item per layer; otherwise its pieces merge into one item.
+        """
+        result = vec_result.source_parse_result
+        names: dict[str | None, str] = {
+            layer.layer_id: layer.name for layer in result.layers
+        }
+        colors: dict[str | None, str | None] = {
+            layer.layer_id: layer.color for layer in result.layers
+        }
+        standalone = vec_result.standalone_by_layer or {}
+
+        def is_active(layer_id: str | None) -> bool:
+            return active_layers is None or layer_id in active_layers
+
+        if not split_layers:
+            return self._flattened_group_layout(
+                vec_result, standalone, is_active
+            )
+
+        pieces_by_layer: dict[str | None, list[GroupGeometry]] = {}
+        for piece in vec_result.groups:
+            if piece.geometry.is_empty() or not is_active(piece.layer_id):
+                continue
+            pieces_by_layer.setdefault(piece.layer_id, []).append(piece)
+
+        plan: list[LayoutItem] = []
+        ordered = [layer.layer_id for layer in result.layers]
+        for layer_id in ordered:
+            if not is_active(layer_id):
+                continue
+            plan.extend(
+                self._layer_structured_items(
+                    result,
+                    layer_id,
+                    names.get(layer_id),
+                    colors.get(layer_id),
+                    vec_result.layer_settings.get(layer_id),
+                    standalone.get(layer_id),
+                    pieces_by_layer.pop(layer_id, []),
+                )
+            )
+        for layer_id, pieces in pieces_by_layer.items():
+            plan.extend(
+                self._layer_structured_items(
+                    result,
+                    layer_id,
+                    names.get(layer_id),
+                    colors.get(layer_id),
+                    vec_result.layer_settings.get(layer_id),
+                    standalone.get(layer_id),
+                    pieces,
+                )
+            )
+        for layer_id, geometry in standalone.items():
+            if layer_id in ordered:
+                continue
+            plan.extend(
+                self._layer_structured_items(
+                    result,
+                    layer_id,
+                    names.get(layer_id),
+                    colors.get(layer_id),
+                    vec_result.layer_settings.get(layer_id),
+                    geometry,
+                    [],
+                )
+            )
+        return plan
+
+    def _layer_structured_items(
+        self,
+        parse_result: ParsingResult,
+        layer_id: str | None,
+        layer_name: str | None,
+        color: str | None,
+        settings: dict[str, Any] | None,
+        loose: Geometry | None,
+        pieces: list[GroupGeometry],
+    ) -> list[LayoutItem]:
+        """One layer's standalone item followed by its group items."""
+        items = []
+        if loose is not None and not loose.is_empty():
+            items.append(
+                self._structured_item(
+                    parse_result,
+                    loose,
+                    layer_id,
+                    layer_name,
+                    color,
+                    settings,
+                )
+            )
+        for piece in pieces:
+            items.append(
+                self._structured_item(
+                    parse_result,
+                    piece.geometry,
+                    layer_id,
+                    layer_name,
+                    color,
+                    settings,
+                    group_id=piece.group_id,
+                    group_name=piece.name,
+                )
+            )
+        return items
+
+    def _flattened_group_layout(
+        self,
+        vec_result: VectorizationResult,
+        standalone: dict[str | None, Geometry],
+        is_active: Callable[[str | None], bool],
+    ) -> list[LayoutItem]:
+        """Merges each group and the loose content into one item each."""
+        result = vec_result.source_parse_result
+        merged: dict[str, Geometry] = {}
+        order: list[str] = []
+        names: dict[str, str] = {}
+        for piece in vec_result.groups:
+            if not is_active(piece.layer_id):
+                continue
+            if piece.geometry.is_empty():
+                continue
+            if piece.group_id not in merged:
+                merged[piece.group_id] = Geometry()
+                order.append(piece.group_id)
+                names[piece.group_id] = piece.name
+            merged[piece.group_id].extend(piece.geometry)
+
+        plan = []
+        for group_id in order:
+            geometry = merged[group_id]
+            if geometry.is_empty():
+                continue
+            plan.append(
+                self._structured_item(
+                    result,
+                    geometry,
+                    None,
+                    None,
+                    None,
+                    None,
+                    group_id=group_id,
+                    group_name=names[group_id],
+                )
+            )
+
+        loose = Geometry()
+        for layer_id, geometry in standalone.items():
+            if not is_active(layer_id) or geometry.is_empty():
+                continue
+            loose.extend(geometry)
+        if not loose.is_empty():
+            plan.append(
+                self._structured_item(result, loose, None, None, None, None)
+            )
+        return plan
+
+    def _structured_item(
+        self,
+        parse_result: ParsingResult,
+        geometry: Geometry,
+        layer_id: str | None,
+        layer_name: str | None,
+        color: str | None,
+        settings: dict[str, Any] | None,
+        group_id: str | None = None,
+        group_name: str | None = None,
+    ) -> LayoutItem:
+        """A layout item sized to the bounds of one piece of geometry."""
+        min_x, min_y, max_x, max_y = geometry.rect()
+        bounds = (min_x, min_y, max_x - min_x, max_y - min_y)
+        return self.calculate_layout_item(
+            bounds,
+            parse_result,
+            layer_id=layer_id,
+            layer_name=layer_name,
+            settings=settings,
+            color=color,
+            group_id=group_id,
+            group_name=group_name,
+            geometry=geometry,
+        )
 
     def _calculate_union_rect(self, rects: list[Rect]) -> Rect:
         if not rects:

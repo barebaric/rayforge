@@ -334,6 +334,17 @@ Leave **Join Gap** at its minimum to have Rayforge pick a tolerance that suits t
 Raise it if outlines are still open after import — the import dialog reports how many remained. Set
 it too high and unrelated outlines may be joined into one.
 
+### Blocks
+
+CAD files often wrap repeated or logically related parts in blocks and place them with INSERT
+entities. Rayforge imports each INSERT as a group, so a part that is used several times arrives as a
+group you can move, scale or delete as a unit. Content that is not part of a block stays a separate
+workpiece.
+
+When layers are imported separately, a block whose content spans several layers contributes one
+group to each layer: groups cannot span layers, because every layer has its own workflow. Import
+with the Flatten option to keep such a block as a single group.
+
 ### DXF Import Tips
 
 **Before exporting from CAD:**

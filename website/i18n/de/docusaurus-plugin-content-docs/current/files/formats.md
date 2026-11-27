@@ -110,6 +110,7 @@ DXF ist ein AutoCAD-Zeichnungsformat, weit verbreitet für CAD-Datenaustausch.
 - ✓ Kreise (CIRCLE)
 - ✓ Splines (SPLINE) - konvertiert zu Polylinien
 - ✓ Ellipsen (ELLIPSE)
+- ✓ Blöcke und INSERTs (jede Einfügung wird als Gruppe importiert)
 - ✓ Ebenen
 
 **Nicht unterstützte/Eingeschränkte Funktionen:**
