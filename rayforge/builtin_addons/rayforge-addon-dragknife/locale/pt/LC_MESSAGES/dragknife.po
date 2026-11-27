@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-11 00:59+0200\n"
+"POT-Creation-Date: 2026-11-22 21:42+0100\n"
 "PO-Revision-Date: 2026-09-11 00:59+0200\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -16,6 +16,10 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: dragknife/widgets/pages.py dragknife/steps/knife_cut_step.py
+msgid "Step Settings"
+msgstr "Configurações da etapa"
 
 #: dragknife/widgets/pages.py
 msgid "Drag Knife"
@@ -120,10 +124,6 @@ msgstr ""
 #: dragknife/steps/knife_cut_step.py dragknife/knife_head_var.py
 msgid "Knife"
 msgstr "Faca"
-
-#: dragknife/steps/knife_cut_step.py
-msgid "Step Settings"
-msgstr "Configurações da etapa"
 
 #: dragknife/steps/drag_knife_cut_step.py
 msgid "Drag Knife Cut"

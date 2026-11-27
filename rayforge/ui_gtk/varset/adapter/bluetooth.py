@@ -2,7 +2,7 @@ from gettext import gettext as _
 from typing import Any, cast
 
 from gi.repository import Adw, Gtk
-from raydriver.core.bluetooth import (
+from raygeo.driver.core.bluetooth import (
     BluetoothDeviceInfo,
     list_paired_devices,
     normalize_address,

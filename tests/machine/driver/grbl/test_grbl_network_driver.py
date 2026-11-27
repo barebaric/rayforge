@@ -2,7 +2,7 @@ import asyncio
 
 import pytest
 import pytest_asyncio
-from raydriver.esp3d.emulator import Esp3dEmulator
+from raygeo.driver.esp3d.emulator import Esp3dEmulator
 
 from rayforge.machine.driver.grbl.grbl_network import (
     GrblNetworkDriver,

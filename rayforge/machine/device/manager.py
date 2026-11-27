@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
 import yaml
-from raydriver.core.discovery import DeviceIdentity
+from raygeo.driver.core.discovery import DeviceIdentity
 
 from ...core.model import ModelLibrary
 from . import discovery_journal

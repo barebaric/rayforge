@@ -84,9 +84,11 @@ Pull-Requests werden gemergt, wenn sie:
 
 ## KI-unterstützter Code
 
-Wir begrüßen die Nutzung von KI-Werkzeugen beim Schreiben von Code. Trotzdem bist du streng für den
-von dir eingereichten Code verantwortlich. Du MUSST ihn vollständig verstehen und musst in der Lage
-sein, die Architekturentscheidungen zu erklären.
+Wir begrüßen die Nutzung von KI-Werkzeugen beim Schreiben von Code. Du musst nicht jede Sprache
+beherrschen, die im Projekt verwendet wird; KI-Werkzeuge können dir helfen, Code zu lesen und zu
+prüfen, den du nicht selbst geschrieben hast. Du bleibst jedoch für das verantwortlich, was du
+einreichst: Verstehe, was die Änderung bewirkt und warum sie zur Architektur des Projekts passt, und
+sei bereit, sie und deine Tests zu erklären.
 
 KI-generierter Code führt oft subtile Bugs, architektonische Diskrepanzen und Sicherheitslücken ein.
 Pull-Requests, die wie rohe, unüberprüfte KI-Ausgaben wirken, werden geschlossen, um die Zeit der

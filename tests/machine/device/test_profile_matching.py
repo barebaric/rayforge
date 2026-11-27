@@ -2,8 +2,8 @@ from pathlib import Path
 
 import pytest
 import yaml
-from raydriver.core.discovery import DeviceIdentity
-from raydriver.core.discovery.serial_channel import (
+from raygeo.driver.core.discovery import DeviceIdentity
+from raygeo.driver.core.discovery.serial_channel import (
     GENERIC_TOKENS,
     build_identity,
     normalize_tokens,

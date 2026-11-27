@@ -4,18 +4,18 @@ A remote machine is always remote: there is no local/remote toggle
 and no per-driver remote wiring. The endpoint vars here describe
 the daemon to connect to; the device itself is chosen with a device
 picker fed by the daemon. The protocol is the daemon's knowledge,
-resolved by raydriver and surfaced as info — never selected here.
+resolved by raygeo and surfaced as info — never selected here.
 """
 
 from gettext import gettext as _
 from typing import Any
 
-from raydriver.analyzer.listener import is_loopback
+from raygeo.driver.analyzer.listener import is_loopback
 
 from ...core.varset import Var
 from ...core.varset.hostnamevar import hostname_validator
 
-#: Endpoint keys consumed by raydriver.remote.client.
+#: Endpoint keys consumed by raygeo.driver.remote.client.
 ENDPOINT_KEYS = (
     "remote_host",
     "remote_port",
@@ -93,7 +93,7 @@ def endpoint_vars() -> list[Var[Any]]:
 
 
 def endpoint_config(kwargs: dict[str, Any]) -> dict[str, Any]:
-    """The endpoint dict consumed by raydriver.remote.client."""
+    """The endpoint dict consumed by raygeo.driver.remote.client."""
     config: dict[str, Any] = {
         "remote_host": kwargs.get("remote_host", ""),
         "remote_port": int(kwargs.get("remote_port", 8765) or 8765),

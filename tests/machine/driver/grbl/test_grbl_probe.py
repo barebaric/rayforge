@@ -1,7 +1,7 @@
 from unittest.mock import AsyncMock
 
 import pytest
-from raydriver.grbl.probe import describe
+from raygeo.driver.grbl.probe import describe
 
 from rayforge.machine.driver.grbl.grbl_probe import (
     build_grbl_profile,

@@ -84,6 +84,9 @@ Ebenen), bietet der Dialog drei Möglichkeiten, diese zu verarbeiten:
 4. **Vorschau** des Ergebnisses vor dem Import
 5. **Auf Import klicken** um zur Canvas und zum Dokumentenbaum hinzuzufügen
 
+Rayforge registriert seine Importformate auch beim Betriebssystem. Ein Doppelklick auf eine
+unterstützte Datei oder „Mit Rayforge öffnen“ übergibt sie daher direkt an den Importdialog.
+
 ### Methode 3: Kommandozeile
 
 ```bash

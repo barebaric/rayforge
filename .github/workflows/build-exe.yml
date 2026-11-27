@@ -203,6 +203,10 @@ jobs:
     outputs:
       is_prerelease: ${{ steps.release_info.outputs.is_prerelease }}
     steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
       - name: Determine release type
         id: release_info
         shell: bash
@@ -213,6 +217,12 @@ jobs:
           else
             echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Extract release notes from changelog
+        shell: bash
+        run: |
+          python3 scripts/extract_changelog.py \
+            "${{ needs.version.outputs.version }}" > release-notes.md
 
       - name: Download Installer Artifact
         uses: actions/download-artifact@v8
@@ -229,7 +239,7 @@ jobs:
           prerelease: ${{ steps.release_info.outputs.is_prerelease }}
           name: Release ${{ needs.version.outputs.version }}
           tag_name: ${{ github.ref_name }}
-          generate_release_notes: true
+          body_path: release-notes.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -242,6 +252,17 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 1
+
+      # wingetcreate submits from a fork of microsoft/winget-pkgs, and
+      # GitHub refuses to update that fork when the update adds or changes
+      # files under .github/workflows/ unless the token has the workflow
+      # scope. wingetcreate reports that refusal as a generic sync failure,
+      # so check the scopes before doing any work.
+      - name: Check WINGET_PAT scopes
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.WINGET_PAT }}
+        run: bash scripts/win/winget/check_token.sh
 
       - name: Download Installer
         shell: bash
@@ -287,9 +308,9 @@ jobs:
             echo "title=New package: Rayforge.Rayforge version ${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
           fi
 
-      # "wingetcreate submit" gives up when the winget-pkgs fork of the
-      # WINGET_PAT account can not be synced via the merge-upstream API,
-      # which fails for forks that are too far behind upstream.
+      # wingetcreate gives up when the winget-pkgs fork of the WINGET_PAT
+      # account can not be synced through the merge-upstream API. Reset the
+      # fork's default branch instead; see sync_fork.sh for the details.
       - name: Sync winget-pkgs fork
         shell: bash
         env:

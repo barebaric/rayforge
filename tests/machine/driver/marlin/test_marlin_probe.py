@@ -1,7 +1,7 @@
 from unittest.mock import AsyncMock
 
 import pytest
-from raydriver.marlin.probe import describe
+from raygeo.driver.marlin.probe import describe
 
 from rayforge.machine.driver.marlin.marlin_probe import (
     build_marlin_profile,

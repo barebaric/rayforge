@@ -2,9 +2,9 @@ import logging
 from gettext import gettext as _
 from typing import Any, cast
 
-import raydriver.grbl
-from raydriver.core.discovery.fingerprints import HttpFingerprint
-from raydriver.core.discovery.spec import DiscoverySpec, MdnsRecognizer
+import raygeo.driver.grbl
+from raygeo.driver.core.discovery.fingerprints import HttpFingerprint
+from raygeo.driver.core.discovery.spec import DiscoverySpec, MdnsRecognizer
 
 from ....core.varset import (
     ChoiceVar,
@@ -42,13 +42,13 @@ class GrblNetworkDriver(GrblSerialDriver):
     A driver for GRBL-compatible controllers that use a modern file
     upload API and allow reading/writing device settings.
 
-    The ESP3D/FluidNC protocol stack runs in Rust via the raydriver
+    The ESP3D/FluidNC protocol stack runs in Rust via the raygeo
     library: commands are HTTP GETs and replies arrive over a
     WebSocket; jobs are uploaded and executed instead of being
     streamed line by line.
     """
 
-    NATIVE = raydriver.grbl.GrblNetworkDriver
+    NATIVE = raygeo.driver.grbl.GrblNetworkDriver
 
     label = _("FluidNC / ESP3D (Web API)")
     subtitle = _(

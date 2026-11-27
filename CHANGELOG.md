@@ -5,7 +5,7 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## UNRELEASED
+## 1.15.0-beta2
 
 ### Added
 
@@ -15,12 +15,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   jobs with vector output, native 1-bit raster for dithered and
   thresholded engravings, and per-dot power raster for grayscale
   engraving, then uploaded over the BSD LPD protocol; framing uploads
-  a beam-off outline job. The encoder and transport run in raydriver,
+  a beam-off outline job. The encoder and transport run in raygeo,
   and built-in profiles ship for both families; the print queue is
   empty by default, each family validates its own raster resolutions,
   an optional job-name prefix is shown in the machine's job list, and
-  hardware autofocus can be enabled in the driver options. Requires
-  raydriver 1.23.0
+  hardware autofocus can be enabled in the driver options
+
+- CorelDRAW: `.cdr` drawings import as selectable layers with their
+  text converted to outlines; hidden layers are skipped, content the
+  reader could not convert is reported, and only the first drawing
+  page is imported, with later pages reported. Workpieces and whole
+  documents export as version 12 CorelDRAW files, with the geometry
+  as curves on one layer and a hairline outline on a page fitted to
+  the drawing. The format is registered with the operating system on
+  Linux, macOS and Windows
+
+- Windows: updates install from inside the app. The release
+  installer is downloaded in the background, and the update
+  notification offers an Update button that closes Rayforge, runs
+  the installer silently and restarts the app on the new version.
+  The new "Download updates automatically" option in Settings →
+  General controls the background download. Other platforms keep
+  the check and now link straight to the release asset
+
+- Machine: serial drivers accept any baud rate between 300 and
+  4000000. The dropdown keeps its standard suggestions and adds a
+  Custom… entry that validates the typed rate, and 250000 is now one
+  of the standard rates for Marlin builds that use it
+
+- Import: DXF files gain an Outline Repair group in the import
+  dialog. Repair Open Outlines joins segments whose ends lie within
+  the Join Gap tolerance, closes the resulting contours and drops
+  outlines that appear twice, and reports how many gaps were joined
+  and how many outlines remain open
 
 - G-code import: `.gcode`, `.ngc`, `.nc`, `.tap` and `.gc` files are
   imported as geometry only. Supported motion covers G0/G1/G2/G3,
@@ -30,8 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   as travel, so LightBurn fill passes and overscan do not become cut
   lines. Feed, power and spindle settings are ignored, the result is a
   single layer, and unsupported instructions such as canned cycles,
-  cutter compensation or subroutines are reported. Requires raygeo
-  1.96.0
+  cutter compensation or subroutines are reported
 
 - Job counter for text templates and G-code. A project-level counter
   advances after each completed job and is available as `{counter}`
@@ -53,9 +79,86 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   properties group. The same assets appear in the asset browser, can
   be dragged onto the canvas or placed by double-clicking, and their
   content is a template, so `{counter}` gives each copy its own
-  value. Requires raygeo 1.95.0
+  value
+
+### Changed
+
+- Dependencies: raygeo 1.102.1 and raydriver 1.23.1 replace the
+  Python DXF reader/writer and the Python implementations of the
+  drivers with native code. Text templates in sketches are evaluated
+  by raygeo's Rust engine, and Marlin and Smoothie jobs are encoded
+  natively instead of under the Python interpreter, so preparing a
+  job no longer blocks the interface. SciPy, ezdxf, pypdf,
+  svgelements, websockets, zeroconf and threadpoolctl are no longer
+  bundled, which makes the installation lighter
 
 ### Fixed
+
+- Import: DXF files now import through raygeo's native reader. Loose
+  entities are joined into contours at parse time and hairline gaps
+  are closed afterwards, so CAD exports whose segments only nearly
+  meet come back as closed outlines and Split works on them.
+  Drawings without a HEADER section are read as metres, files with a
+  header but no $INSUNITS keep their native units, lines that share
+  endpoints no longer chain into a self-intersecting phantom loop
+  that leaves the operation without toolpaths, and cubic splines
+  with simple interior knots no longer gain a loop that is not in
+  the drawing
+
+- Import: DXF blocks keep their geometry in place. Arcs, circles and
+  ellipses inside a rotated block followed the block's local
+  coordinates instead of the insertion, and INSERTs nested inside a
+  block definition were dropped without a warning
+
+- Import: G-code files with a `.nc` or `.tap` extension now import
+  through the G-code importer. The system MIME database maps those
+  extensions to NetCDF and to a bitmap format, which previously won
+  over the extension and made Rayforge reject the file. The same
+  guard covers `.hgl` and G-code files with other extensions that no
+  MIME database knows
+
+- Desktop integration: every import format is now registered with
+  the operating system. Linux gets MIME definitions and a `.desktop`
+  entry, the macOS app bundle declares its document types, and the
+  Windows installer lists the formats in the "Open with" menu
+
+- Epilog: arcs are linearized from their own end point, so valid
+  Epilog jobs are no longer rejected with "Epilog path is outside
+  the machine bed"
+
+- Parts: multi-face part splitting no longer drops degenerate
+  contours
+
+- Machines: a machine whose driver is not available in this build
+  (for example a project saved with an add-on that is no longer
+  installed, or a machine profile that needs a driver this build does
+  not ship) now shows the missing driver in the machine warning banner
+  and fails job generation. It no longer falls back to the dummy
+  driver, which silently encoded G-code with the machine's leftover
+  dialect
+
+- Machines: switching drivers keeps only the setup values whose type
+  matches the new driver. A network port number left over from another
+  driver no longer breaks a serial driver's setup, and a serial device
+  path is no longer carried into a network port setting
+
+- Machines: a burst of driver setting changes no longer tears down
+  the connection the final rebuild just established, because a
+  superseded rebuild no longer runs after a newer one has taken over
+
+- OctoPrint: jogging uses the printer's motion API and alarm reset
+  sends the printer's own reset instead of a generic G-code command,
+  and a jog without an explicit speed leaves the speed to the
+  server's configured default
+
+- Errors that hand you terminal commands no longer present them as a
+  wall of text: the explanation stays where it was and every command
+  becomes a one-click copy row, in the setup wizard's probe page and
+  under the machine settings' error banner
+
+- Sketch tool: the right-click fan menu grows its drawing area with
+  the longest entry label again, so labels are no longer clipped at
+  the edge of the menu
 
 - Icons: the sketcher pie menu and the canvas tool cursors keep their
   icons on macOS, where gdk-pixbuf's SVG loader is not available in
@@ -187,31 +290,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and homing and stream timeouts derived from command estimates
 
 ### Fixed
-
-- Import: G-code files with a `.nc` or `.tap` extension now import
-  through the G-code importer. The system MIME database maps those
-  extensions to NetCDF and to a bitmap format, which previously won
-  over the extension and made Rayforge reject the file. The same
-  guard covers `.hgl` and G-code files with other extensions that no
-  MIME database knows
-- Desktop integration: every import format is now registered with
-  the operating system. Linux gets MIME definitions and a `.desktop`
-  entry, the macOS app bundle declares its document types, and the
-  Windows installer lists the formats in the "Open with" menu
-- Sketch tool: the right-click fan menu grows its drawing area with
-  the longest entry label again, so labels are no longer clipped at
-  the edge of the menu
-- Machines: a machine whose driver is not available in this build
-  (for example a project saved with an add-on that is no longer
-  installed, or a machine profile that needs a driver this build does
-  not ship) now shows the missing driver in the machine warning banner
-  and fails job generation. It no longer falls back to the dummy
-  driver, which silently encoded G-code with the machine's leftover
-  dialect
-- Machines: switching drivers keeps only the setup values whose type
-  matches the new driver. A network port number left over from another
-  driver no longer breaks a serial driver's setup, and a serial device
-  path is no longer carried into a network port setting
 
 - Import: SVG geometry that lives outside named layers is now
   offered as an "Ungrouped" layer in the import dialog and enabled
@@ -967,10 +1045,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   cells and labels misaligned with the workpiece image until the next
   rebuild; toolpath outputs are stamped with the size their ops were
   generated at instead of the workpiece's live size (#568)
-- Errors that hand you terminal commands no longer present them as a
-  wall of text: the explanation stays where it was and every command
-  becomes a one-click copy row, in the setup wizard's probe page and
-  under the machine settings' error banner (#544)
 
 ## 1.12.0
 

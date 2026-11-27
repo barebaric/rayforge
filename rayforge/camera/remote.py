@@ -11,7 +11,7 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-from raydriver.core.discovery.daemon import (
+from raygeo.driver.core.discovery.daemon import (
     list_cameras as daemon_list_cameras,
 )
 

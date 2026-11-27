@@ -8,9 +8,9 @@ from unittest.mock import PropertyMock
 
 import pytest
 import pytest_asyncio
-import raydriver.grbl.simple
-from raydriver.core.transport import MockTransport
-from raydriver.grbl.emulator import GrblEmulator
+import raygeo.driver.grbl.simple
+from raygeo.driver.core.transport import MockTransport
+from raygeo.driver.grbl.emulator import GrblEmulator
 from raygeo.ops import Ops
 from raygeo.ops.axis import Axis
 
@@ -35,11 +35,11 @@ FAST_CONFIG = {
 
 
 def _parser_module():
-    """The raydriver.grbl.parser module, resolved through the runtime
+    """The raygeo.driver.grbl.parser module, resolved through the runtime
     package so pyright sees the Rust stubs."""
-    import raydriver.grbl.parser
+    import raygeo.driver.grbl.parser
 
-    return raydriver.grbl.parser
+    return raygeo.driver.grbl.parser
 
 
 async def wait_until(predicate, timeout: float = 5.0, interval=0.01):
@@ -138,7 +138,7 @@ def make_driver(
     drv = GrblSerialSimpleDriver(context, machine)
     drv.did_setup = True
     mock = MockTransport()
-    session = raydriver.grbl.simple.GrblSerialSimpleDriver.with_transport(
+    session = raygeo.driver.grbl.simple.GrblSerialSimpleDriver.with_transport(
         mock,
         config=FAST_CONFIG,
         dialect=drv._dialect_templates(),
@@ -201,7 +201,7 @@ class TestRegistry:
         assert set(varset.keys()) == {"port", "baudrate"}
 
     def test_convert_state(self):
-        from raydriver.core.types import DeviceState as RDState
+        from raygeo.driver.core.types import DeviceState as RDState
 
         state = _parser_module().parse_state(
             "<Alarm:1|FS:500,0>", RDState(), False
@@ -478,13 +478,12 @@ class TestCancelRegression:
                 new_callable=PropertyMock,
                 return_value=dialect,
             )
-            session = (
-                raydriver.grbl.simple.GrblSerialSimpleDriver.with_transport(
-                    mock,
-                    config=FAST_CONFIG,
-                    dialect=drv._dialect_templates(),
-                    event_callback=drv._on_session_event,
-                )
+            native = raygeo.driver.grbl.simple.GrblSerialSimpleDriver
+            session = native.with_transport(
+                mock,
+                config=FAST_CONFIG,
+                dialect=drv._dialect_templates(),
+                event_callback=drv._on_session_event,
             )
             drv._session = session
         recorder = SignalRecorder(drv)

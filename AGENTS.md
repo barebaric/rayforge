@@ -44,7 +44,7 @@ before working on them:
 
 - docs/agents/translations.md: gettext workflow for UI strings and catalogs
 - docs/agents/website.md: website docs, blog, and their translations
-- docs/agents/raygeo.md: our Rust/PyO3 geometry library; fix root causes
-  there instead of building workarounds
-- docs/agents/raydriver.md: our Rust/PyO3 GRBL serial driver
+- docs/agents/raygeo.md: our Rust/PyO3 geometry and ops library; fix root
+  causes there instead of building workarounds
+- docs/agents/driver.md: our Rust/PyO3 device drivers, now part of raygeo
 - rayforge/machine/driver/ruidarpa/AGENTS.md: rules for the Ruida driver

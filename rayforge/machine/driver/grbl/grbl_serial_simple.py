@@ -7,7 +7,7 @@ There is no character-counting flow control, no deadlock detection, and
 no buffer management.  This makes it extremely robust at the cost of
 lower throughput compared to the advanced ``GrblSerialDriver``.
 
-The protocol itself runs in Rust via the ``raydriver`` package; this
+The protocol itself runs in Rust via the ``raygeo`` package; this
 module only supplies the Rayforge-side setup and GRBL device settings.
 """
 
@@ -15,9 +15,9 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
-import raydriver.grbl.simple
+import raygeo.driver.grbl.simple
 import serial
-from raydriver.grbl.parser import error_code_to_device_error
+from raygeo.driver.grbl.parser import error_code_to_device_error
 
 from ....core.varset import (
     BaudrateVar,
@@ -60,7 +60,7 @@ class GrblSerialSimpleDriver(GrblSerialDriver):
     issues with the advanced driver.
     """
 
-    NATIVE = raydriver.grbl.simple.GrblSerialSimpleDriver
+    NATIVE = raygeo.driver.grbl.simple.GrblSerialSimpleDriver
     DISCOVERY = None
 
     label = _("GRBL (USB/Serial — compatibility mode)")

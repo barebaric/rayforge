@@ -31,14 +31,6 @@ PACKAGES = (
         repo_url="https://github.com/barebaric/raygeo",
         output_dir=Path("website/docs/developer/raygeo-api"),
     ),
-    ApiDocsPackage(
-        name="raydriver",
-        repo_url="https://github.com/barebaric/raydriver",
-        output_dir=Path("website/docs/developer/raydriver-api"),
-        # The pinned release predates docs generation; use the default
-        # branch until a release contains docs/api/.
-        fallback_ref="main",
-    ),
 )
 
 

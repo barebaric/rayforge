@@ -93,6 +93,143 @@
   </screenshots>
 
   <releases>
+    <release version="1.15.0~beta2" date="2026-11-26">
+      <description>
+        <p>CorelDRAW import and export, in-app updates on Windows,
+        custom baud rates, DXF outline repair, G-code import, a job
+        counter, barcode assets, and a large raygeo/raydriver upgrade
+        with faster text templates and a lighter installation</p>
+        <p>New Features:</p>
+        <ul>
+          <li>CorelDRAW: .cdr drawings import as selectable layers
+          with text converted to outlines; hidden layers are skipped,
+          unconverted content is reported, and only the first page is
+          imported, with later pages reported. Workpieces and whole
+          documents export as version 12 CorelDRAW files, with the
+          geometry as curves on one layer on a page fitted to the
+          drawing. The format is registered with the operating system
+          on Linux, macOS and Windows</li>
+          <li>Windows: updates install from inside the app. The
+          release installer is downloaded in the background, and the
+          update notification offers an Update button that closes
+          Rayforge, runs the installer silently and restarts the app
+          on the new version. The new "Download updates
+          automatically" option controls the background download.
+          Other platforms link straight to the release asset</li>
+          <li>Machine: serial drivers accept any baud rate between
+          300 and 4000000. The dropdown keeps its standard
+          suggestions and adds a Custom… entry, and 250000 is now a
+          standard rate for Marlin builds that use it</li>
+          <li>Import: DXF files gain an Outline Repair group. Repair
+          Open Outlines joins segments whose ends lie within the Join
+          Gap tolerance, closes the resulting contours and drops
+          duplicate outlines, and reports how many gaps were joined
+          and how many outlines remain open</li>
+          <li>Import: G-code files (.gcode, .ngc, .nc, .tap, .gc)
+          import as geometry through G0/G1/G2/G3 with I/J or R arcs,
+          G20/G21 units and G90/G91 distance modes; rapids and feed
+          moves at zero spindle speed become travel, so LightBurn
+          fill passes and overscan do not turn into cut lines. Feed,
+          power and spindle settings are ignored, the result is one
+          layer, and unsupported instructions are reported</li>
+          <li>Job counter: one project-level number, available as
+          {counter} in sketch text boxes and G-code templates, with
+          formatting such as {counter:04d}. Copies get consecutive
+          numbers through canvas arrays and Arrange → Array → Number
+          Copies; Tools → Job Counter sets current, start and end
+          values, the step, wrapping, and whether a completed job or
+          a G-code export advances the counter. Hooks and macros
+          read {counter} and {workpiece.counter}, and every change
+          is undoable</li>
+          <li>Addons: barcode assets. QR codes, Code 128 and EAN-13
+          are first-class assets: Object → Add Barcode places a
+          workpiece whose content, symbology, module size, bar
+          height, quiet zone, text and inversion are edited in the
+          Barcode properties group. The assets appear in the asset
+          browser and their content is a template, so {counter}
+          gives each copy its own value</li>
+        </ul>
+        <p>Changes:</p>
+        <ul>
+          <li>Dependencies: raygeo 1.102.1 and raydriver 1.23.1
+          replace the Python DXF reader/writer and the Python driver
+          implementations with native code. Text templates are
+          evaluated by raygeo's Rust engine, and Marlin and Smoothie
+          jobs are encoded natively, so preparing a job no longer
+          blocks the interface. SciPy, ezdxf, pypdf, svgelements,
+          websockets, zeroconf and threadpoolctl are no longer
+          bundled</li>
+        </ul>
+        <p>Bug Fixes:</p>
+        <ul>
+          <li>Import: DXF files are read natively, joining loose
+          entities into contours at parse time and closing hairline
+          gaps, so CAD exports whose segments only nearly meet come
+          back as closed outlines and Split works on them. Drawings
+          without a HEADER section are read as metres, files with a
+          header but no $INSUNITS keep native units, lines sharing
+          endpoints no longer chain into a self-intersecting phantom
+          loop that leaves the operation without toolpaths, and
+          cubic splines with simple interior knots no longer gain a
+          loop that is not in the drawing</li>
+          <li>Import: DXF blocks keep their geometry in place. Arcs,
+          circles and ellipses inside a rotated block followed the
+          block's local coordinates instead of the insertion, and
+          INSERTs nested inside a block definition were dropped
+          without a warning</li>
+          <li>Import: G-code files with a .nc or .tap extension now
+          import through the G-code importer instead of being
+          rejected because the system MIME database maps those
+          extensions to NetCDF and to a bitmap format. The same
+          guard covers .hgl and files with extensions no MIME
+          database knows</li>
+          <li>Desktop integration: every import format is registered
+          with the operating system. Linux gets MIME definitions and
+          a .desktop entry, the macOS app bundle declares its
+          document types, and the Windows installer lists the
+          formats in the "Open with" menu</li>
+          <li>Epilog: arcs are linearized from their own end point,
+          so valid Epilog jobs are no longer rejected with "Epilog
+          path is outside the machine bed". Multi-face part
+          splitting no longer drops degenerate contours</li>
+          <li>Machines: a machine whose driver is not available in
+          this build now shows the missing driver in the machine
+          warning banner and fails job generation instead of falling
+          back to the dummy driver, which silently encoded G-code
+          with the machine's leftover dialect</li>
+          <li>Machines: switching drivers keeps only the setup
+          values whose type matches the new driver. A network port
+          number left over from another driver no longer breaks a
+          serial driver's setup, and a serial device path is no
+          longer carried into a network port setting</li>
+          <li>Machines: a burst of driver setting changes no longer
+          tears down the connection the final rebuild just
+          established, because a superseded rebuild no longer runs
+          after a newer one has taken over</li>
+          <li>OctoPrint: jogging uses the printer's motion API and
+          alarm reset sends the printer's own reset instead of a
+          generic G-code command, and a jog without an explicit
+          speed leaves the speed to the server's configured
+          default</li>
+          <li>Errors that hand you terminal commands no longer
+          present them as a wall of text: the explanation stays
+          where it was and every command becomes a one-click copy
+          row, in the setup wizard's probe page and under the
+          machine settings' error banner</li>
+          <li>Sketch tool: the right-click fan menu grows its
+          drawing area with the longest entry label again, so labels
+          are no longer clipped at the edge of the menu</li>
+          <li>Icons: the sketcher pie menu and the canvas tool
+          cursors keep their icons on macOS, where gdk-pixbuf's SVG
+          loader is not available in the app bundle. Icons that
+          gdk-pixbuf cannot load are now rendered with GTK's SVG
+          renderer instead of being dropped silently</li>
+        </ul>
+        <p>New documentation covers the job counter, barcode assets,
+        G-code and CorelDRAW import and export, DXF outline repair,
+        custom baud rates and the Windows in-app update</p>
+      </description>
+    </release>
     <release version="1.15.0~beta1" date="2026-11-22">
       <description>
         <p>Bed mesh probing with per-layer Z compensation, drag and

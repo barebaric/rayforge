@@ -1,4 +1,4 @@
-"""Epilog laser driver backed by the raydriver LPD driver.
+"""Epilog laser driver backed by raygeo's native LPD driver.
 
 Epilog laser cutters are print devices: Rayforge encodes the job as
 an Epilog print job (the reverse-engineered reference format is PCL5
@@ -7,7 +7,7 @@ print queue, and the operator starts it at the control panel. The
 machine exposes no status channel and cannot be homed, jogged or
 moved remotely.
 
-The encoder itself lives in raydriver (``raydriver.encode.EpilogSpec``)
+The encoder itself lives in raygeo (``raygeo.ops.convert.EpilogSpec``)
 and its inputs are built by this package's :mod:`.encoder`; the
 pipeline only asks the driver for the spec. The Zing and Helix
 families share the print language and differ only in the raster
@@ -18,7 +18,7 @@ from collections.abc import Awaitable, Callable
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
-import raydriver.epilog
+from raygeo.driver import epilog
 
 from ....context import RayforgeContext
 from ....core.varset import (
@@ -81,12 +81,12 @@ class EpilogLaserDriver(NativeDriver):
     Shared implementation for Epilog laser cutters over the machine's
     LPD print queue.
 
-    The entire transport stack runs in Rust via ``raydriver``. This
+    The entire transport stack runs in Rust via ``raygeo``. This
     shell only supplies the setup vars and uploads the encoder's byte
     stream.
     """
 
-    NATIVE = raydriver.epilog.EpilogDriver
+    NATIVE = epilog.EpilogDriver
 
     label = _("Epilog")
     subtitle = _("Upload print jobs to an Epilog laser over Ethernet")

@@ -84,6 +84,9 @@ diálogo oferece três formas de lidar com elas:
 4. **Visualizar** o resultado antes de importar
 5. **Clicar em Importar** para adicionar à tela e à árvore do documento
 
+O Rayforge também registra seus formatos de importação no sistema operacional, então um duplo clique
+em um arquivo compatível ou **Abrir com → Rayforge** abre diretamente o diálogo de importação.
+
 ### Método 3: Linha de comando
 
 ```bash

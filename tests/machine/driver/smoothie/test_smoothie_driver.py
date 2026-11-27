@@ -4,9 +4,9 @@ import asyncio
 
 import pytest
 import pytest_asyncio
-import raydriver.smoothie
-from raydriver.core.transport import MockTransport
-from raydriver.smoothie.emulator import SmoothieEmulator
+import raygeo.driver.smoothie
+from raygeo.driver.core.transport import MockTransport
+from raygeo.driver.smoothie.emulator import SmoothieEmulator
 from raygeo.ops import Ops
 from raygeo.ops.axis import Axis
 
@@ -94,7 +94,7 @@ async def driver(context_initializer, machine, mock):
     driver_instance = SmoothieDriver(context_initializer, machine)
     driver_instance.did_setup = True
     driver_instance._session = (
-        raydriver.smoothie.SmoothieDriver.with_transport(
+        raygeo.driver.smoothie.SmoothieDriver.with_transport(
             mock,
             config=FAST_CONFIG,
             dialect=driver_instance._dialect_templates(),
@@ -296,7 +296,7 @@ async def test_cancel_sends_ctrl_c_and_safety_off(
     machine.dialect_uid = "smoothieware"
     drv = SmoothieDriver(context_initializer, machine)
     drv.did_setup = True
-    drv._session = raydriver.smoothie.SmoothieDriver.with_transport(
+    drv._session = raygeo.driver.smoothie.SmoothieDriver.with_transport(
         mock,
         config=FAST_CONFIG,
         dialect=drv._dialect_templates(),
@@ -334,7 +334,7 @@ async def test_hold_sends_realtime_bytes(context_initializer, machine, mock):
     machine.dialect_uid = "smoothieware"
     drv = SmoothieDriver(context_initializer, machine)
     drv.did_setup = True
-    drv._session = raydriver.smoothie.SmoothieDriver.with_transport(
+    drv._session = raygeo.driver.smoothie.SmoothieDriver.with_transport(
         mock,
         config=FAST_CONFIG,
         dialect=drv._dialect_templates(),
@@ -370,7 +370,7 @@ async def test_interactive_command_filters_ok_and_status(
     machine.dialect_uid = "smoothieware"
     drv = SmoothieDriver(context_initializer, machine)
     drv.did_setup = True
-    drv._session = raydriver.smoothie.SmoothieDriver.with_transport(
+    drv._session = raygeo.driver.smoothie.SmoothieDriver.with_transport(
         mock,
         config=FAST_CONFIG,
         dialect=drv._dialect_templates(),

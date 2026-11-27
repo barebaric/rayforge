@@ -84,9 +84,11 @@ Les pull requests sont fusionnées lorsqu'elles :
 
 ## Code assisté par IA
 
-Nous accueillons l'utilisation d'outils d'IA pour aider à écrire du code. Cependant, vous êtes
-strictement responsable du code que vous soumettez. Vous DEVEZ le comprendre entièrement et être
-capable d'expliquer les choix architecturaux.
+Nous accueillons l'utilisation d'outils d'IA pour aider à écrire du code. Vous n'avez pas besoin de
+maîtriser tous les langages utilisés dans le projet; les outils d'IA peuvent vous aider à lire et à
+relire du code que vous n'avez pas écrit. Vous restez toutefois responsable de ce que vous
+soumettez: comprenez ce que fait la modification et pourquoi elle s'intègre à l'architecture du
+projet, et soyez prêt à l'expliquer ainsi que la façon dont vous l'avez testée.
 
 Le code généré par IA introduit souvent des bugs subtils, des inadéquations architecturales et des
 failles de sécurité. Les pull requests qui semblent être des sorties d'IA brutes et non relues

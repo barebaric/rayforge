@@ -1,6 +1,6 @@
 """Inputs for the Epilog print-job encoder.
 
-The encoder itself lives in raydriver (``raydriver.encode.EpilogSpec``).
+The encoder itself lives in raygeo (``raygeo.ops.convert.EpilogSpec``).
 This module converts the Rayforge domain models into the plain,
 JSON-serialisable job context the encoder accepts, so no domain model
 crosses the Python/Rust boundary. It belongs to the driver package:
@@ -10,7 +10,7 @@ the pipeline only asks the driver for an encoder spec.
 import json
 from typing import TYPE_CHECKING
 
-from raydriver.encode import EpilogSpec
+from raygeo.ops.convert import EpilogSpec
 
 if TYPE_CHECKING:
     from ....core.doc import Doc
@@ -44,7 +44,7 @@ SUPPORTED_ORIGIN = "top_left"
 def build_epilog_context(
     machine: "Machine", doc: "Doc", model: str = "zing"
 ) -> dict:
-    """Build the job context dict for ``raydriver.encode.EpilogSpec``.
+    """Build the job context dict for ``raygeo.ops.convert.EpilogSpec``.
 
     *model* selects the machine family whose resolution set applies
     (``zing`` or ``helix``); both share the print-job format.

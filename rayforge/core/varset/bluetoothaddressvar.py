@@ -2,7 +2,7 @@ from collections.abc import Callable
 from gettext import gettext as _
 from typing import Any
 
-from raydriver.core.bluetooth import normalize_address
+from raygeo.driver.core.bluetooth import normalize_address
 
 from .var import ValidationError, Var
 

@@ -1,6 +1,6 @@
 import json
 
-from raydriver.core.discovery import DeviceIdentity
+from raygeo.driver.core.discovery import DeviceIdentity
 
 from rayforge.machine.device import discovery_journal
 from rayforge.machine.device.matching import ProfileMatch

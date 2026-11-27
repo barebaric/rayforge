@@ -37,6 +37,11 @@ la barre d'outils.
 Rayforge peut **Vérifier les mises à jour** automatiquement au démarrage. Lorsqu'activé, tu seras
 informé lorsqu'une nouvelle version est disponible.
 
+Sous Windows, **Télécharger les mises à jour automatiquement** télécharge les nouvelles versions en
+arrière-plan, afin que la notification puisse les installer en un clic : Rayforge se ferme, exécute
+l'installateur en mode silencieux et redémarre sur la nouvelle version. Sur les autres plateformes,
+la notification renvoie à la page de téléchargement de la version.
+
 Rayforge peut aussi **Vérifier les mises à jour des extensions** automatiquement au démarrage.
 Désactiver cette option n'empêche pas les vérifications manuelles depuis la page Extensions.
 

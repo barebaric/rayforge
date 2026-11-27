@@ -32,7 +32,6 @@ website/node_modules/
 website/.docusaurus/
 website/build/
 website/docs/developer/raygeo-api/
-website/docs/developer/raydriver-api/
 
 .mac_env
 rayforge/private_addons

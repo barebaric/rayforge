@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-11 00:59+0200\n"
+"POT-Creation-Date: 2026-11-22 21:42+0100\n"
 "PO-Revision-Date: 2026-09-11 00:59+0200\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -15,6 +15,10 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+
+#: dragknife/widgets/pages.py dragknife/steps/knife_cut_step.py
+msgid "Step Settings"
+msgstr "स्टेप सेटिंग्स"
 
 #: dragknife/widgets/pages.py
 msgid "Drag Knife"
@@ -113,10 +117,6 @@ msgstr "इस ऑपरेशन के लिए नाइफ हेड, ब�
 #: dragknife/steps/knife_cut_step.py dragknife/knife_head_var.py
 msgid "Knife"
 msgstr "नाइफ़"
-
-#: dragknife/steps/knife_cut_step.py
-msgid "Step Settings"
-msgstr "स्टेप सेटिंग्स"
 
 #: dragknife/steps/drag_knife_cut_step.py
 msgid "Drag Knife Cut"

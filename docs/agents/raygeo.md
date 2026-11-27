@@ -1,10 +1,14 @@
-# Raygeo (Rust/PyO3 geometry library)
+# Raygeo (Rust/PyO3 geometry, ops and driver library)
 
 Even though Raygeo is installed as a regular pip dependency, we own it. If the
 root cause of an issue is in Raygeo, you should fix it there instead of
 building a workaround.
 
 Source repository: https://github.com/barebaric/raygeo
+
+Raygeo also contains the device drivers (`raygeo.driver.*`) and the
+machine-code encoders (`raygeo.ops.convert`); see `driver.md` for the
+driver rules.
 
 ## Testing with a local Raygeo checkout
 

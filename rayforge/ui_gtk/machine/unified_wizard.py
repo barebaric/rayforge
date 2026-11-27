@@ -903,7 +903,7 @@ class UnifiedWizard(PatchedDialogWindow):
 
 def _probed_profile(device: DiscoveredDevice) -> DeviceProfile | None:
     """The probe data a discovered device carries, if it is a full
-    profile (the census is typed loosely on the raydriver side)."""
+    profile (the census is typed loosely on the raygeo side)."""
     profile = device.probe_profile
     return profile if isinstance(profile, DeviceProfile) else None
 

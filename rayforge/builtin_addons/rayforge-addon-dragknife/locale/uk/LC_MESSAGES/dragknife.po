@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-11 00:59+0200\n"
+"POT-Creation-Date: 2026-11-22 21:42+0100\n"
 "PO-Revision-Date: 2026-09-11 00:59+0200\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -17,6 +17,10 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
 "n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+#: dragknife/widgets/pages.py dragknife/steps/knife_cut_step.py
+msgid "Step Settings"
+msgstr "Налаштування кроку"
 
 #: dragknife/widgets/pages.py
 msgid "Drag Knife"
@@ -118,10 +122,6 @@ msgstr "Головка ножа, геометрія леза та висота �
 #: dragknife/steps/knife_cut_step.py dragknife/knife_head_var.py
 msgid "Knife"
 msgstr "Ніж"
-
-#: dragknife/steps/knife_cut_step.py
-msgid "Step Settings"
-msgstr "Налаштування кроку"
 
 #: dragknife/steps/drag_knife_cut_step.py
 msgid "Drag Knife Cut"

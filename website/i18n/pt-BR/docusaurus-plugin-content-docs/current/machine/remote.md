@@ -21,7 +21,7 @@ exatamente.
 
 ## Configurar o host do dispositivo
 
-1. Instale o raydriver no host do dispositivo: `pip install raydriver`. A descoberta em rede está
+1. Instale o raygeo no host do dispositivo: `pip install raygeo`. A descoberta em rede está
    incluída.
 2. Execute `raydriver daemon add /dev/ttyUSB0` (use a porta serial da sua máquina; `raydriver scan`
    as lista). Isso cria a configuração com um **token** gerado e registra o dispositivo. Adicione
@@ -34,8 +34,8 @@ exatamente.
    endereço que não seja loopback não inicia sem token e TLS.
 
 Consulte o
-[guia do daemon do raydriver](https://github.com/barebaric/raydriver/blob/main/docs/daemon.md) para
-a referência completa.
+[guia do daemon do raydriver](https://github.com/barebaric/raygeo/blob/main/docs/raydriver-cli.md)
+para a referência completa.
 
 ### Obter o token
 

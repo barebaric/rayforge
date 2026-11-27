@@ -37,6 +37,11 @@ Symbolleisten-Schaltfläche auslösen.
 Rayforge kann beim Start **automatisch nach Updates suchen**. Wenn aktiviert, wirst du
 benachrichtigt, wenn eine neue Version verfügbar ist.
 
+Unter Windows lädt **Updates automatisch herunterladen** neue Versionen im Hintergrund herunter,
+sodass die Benachrichtigung sie mit einem Klick installieren kann: Rayforge schließt sich, führt das
+Installationsprogramm unbeaufsichtigt aus und startet mit der neuen Version neu. Auf anderen
+Plattformen verweist die Benachrichtigung stattdessen auf die Download-Seite der Version.
+
 Rayforge kann beim Start außerdem **automatisch nach Addon-Updates suchen**. Das Deaktivieren
 verhindert keine manuellen Prüfungen auf der Addons-Seite.
 

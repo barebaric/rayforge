@@ -11,8 +11,8 @@ from pathlib import Path
 
 import pytest
 import pytest_asyncio
-from raydriver.encode import EpilogSpec
 from raygeo.geo import Geometry
+from raygeo.ops.convert import EpilogSpec
 
 from rayforge.core.doc import Doc
 from rayforge.core.source_asset import SourceAsset
