@@ -67,6 +67,7 @@ from .settings.settings_dialog import SettingsWindow
 from .shared.gtk import get_monitor_geometry, report_dialog_error
 from .shared.pointer_alignment_dialog import PointerAlignmentDialog
 from .shared.progress_bar import ProgressBar
+from .shared.rename_dialog import RenameDialog
 from .shared.sanity_check_dialog import SanityCheckDialog
 from .shared.time_estimate_overlay import TimeEstimateOverlay
 from .shared.usage_consent_dialog import UsageConsentDialog
@@ -499,14 +500,6 @@ class MainWindow(Adw.ApplicationWindow):
 
         self.bottom_panel.gcode_viewer.line_activated.connect(
             self._on_gcode_line_activated
-        )
-
-        # Connect edit item requests from the layers tab
-        self.bottom_panel.edit_item_requested.connect(
-            self._on_edit_item_requested
-        )
-        self.bottom_panel.select_items_requested.connect(
-            self._on_select_items_requested
         )
 
         config = get_context().config
@@ -1916,8 +1909,6 @@ class MainWindow(Adw.ApplicationWindow):
         self._apply_right_panel_visibility()
         self.bottom_panel.update_position_menu_sensitivity()
         self._update_actions_and_ui()
-        selected_uids = {item.uid for item in selected_items}
-        self.bottom_panel.update_layer_selection(selected_uids)
 
     def on_config_changed(self, sender, **kwargs):
         config = get_context().config
@@ -2294,11 +2285,6 @@ class MainWindow(Adw.ApplicationWindow):
             isinstance(elem.data, Group) for elem in selected_elements
         )
         am.get_action("ungroup").set_enabled(can_ungroup)
-
-        # Update sensitivity for Layer actions
-        can_move_layers = has_selection and len(doc.layers) > 1
-        am.get_action("layer-move-up").set_enabled(can_move_layers)
-        am.get_action("layer-move-down").set_enabled(can_move_layers)
 
         # Update sensitivity for 3D view actions
         is_3d_view_active = self.view_stack.get_visible_child_name() == "3d"
@@ -2811,12 +2797,17 @@ class MainWindow(Adw.ApplicationWindow):
         item = selection[0]
         if not isinstance(item, DocItem):
             return
-        # Make sure the user can see the rename editor.
-        self.bottom_panel.set_visible(True)
-        area = self.bottom_panel.dock_layout.find_item_area("layers")
-        if area:
-            area.set_active_item("layers")
-        self.bottom_panel.layers_tab.start_item_rename(item)
+        root = self.get_root()
+        self._rename_dialog = RenameDialog(
+            root if isinstance(root, Gtk.Window) else None,
+            item,
+            self.doc_editor.edit.rename_item,
+        )
+        self._rename_dialog.connect("destroy", self._on_rename_dialog_destroy)
+        self._rename_dialog.present()
+
+    def _on_rename_dialog_destroy(self, *_):
+        self._rename_dialog = None
 
     def on_menu_remove(self, action, param):
         items = self.surface.get_selected_items()

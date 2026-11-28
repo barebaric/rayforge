@@ -78,8 +78,6 @@ SHORTCUTS = {
     "win.group": f"{PRIMARY_ACCEL}g",
     "win.ungroup": f"{PRIMARY_ACCEL}u",
     "win.split": "<Ctrl><Alt>w",
-    "win.layer-move-up": f"{PRIMARY_ACCEL}Page_Up",
-    "win.layer-move-down": f"{PRIMARY_ACCEL}Page_Down",
     "win.align-left": f"{PRIMARY_ACCEL}<Shift>Left",
     "win.align-right": f"{PRIMARY_ACCEL}<Shift>Right",
     "win.align-top": f"{PRIMARY_ACCEL}<Shift>Up",
@@ -426,10 +424,6 @@ class ActionManager:
         # Imported Source Actions
         self._add_action("reload-source", self.on_reload_source)
         self._add_action("relink-source", self.on_relink_source)
-
-        # Layer Management Actions
-        self._add_action("layer-move-up", self.on_layer_move_up)
-        self._add_action("layer-move-down", self.on_layer_move_down)
 
         # Grouping Actions
         self._add_action("group", self.on_group_action)
@@ -848,18 +842,6 @@ class ActionManager:
     def get_action(self, name: str) -> Gio.SimpleAction:
         """Retrieves a registered action by its name."""
         return self.actions[name]
-
-    def on_layer_move_up(self, action, param):
-        """Handler for the 'layer-move-up' action."""
-        self.editor.layer.move_selected_to_adjacent_layer(
-            self.win.surface, direction=-1
-        )
-
-    def on_layer_move_down(self, action, param):
-        """Handler for the 'layer-move-down' action."""
-        self.editor.layer.move_selected_to_adjacent_layer(
-            self.win.surface, direction=1
-        )
 
     def on_group_action(self, action, param):
         """Handler for the 'group' action."""

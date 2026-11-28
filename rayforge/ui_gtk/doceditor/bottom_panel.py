@@ -13,7 +13,6 @@ from ...machine.cmd import MachineCmd
 from ...machine.models.machine import Machine
 from ...shared.gcodeedit.viewer import GcodeViewer
 from ...shared.tasker import task_mgr
-from ..doceditor.layers_tab import LayersTab
 from ..icons import get_icon
 from ..machine.console import Console
 from ..machine.jog_widget import JogWidget
@@ -139,8 +138,6 @@ class BottomPanel(Gtk.Box):
         self.move_to_mode_changed = Signal()
         self.tab_changed = Signal()
         self.layout_changed = Signal()
-        self.edit_item_requested = Signal()
-        self.select_items_requested = Signal()
         self.machine = machine
         self.machine_cmd = machine_cmd
         self.doc = None
@@ -161,14 +158,6 @@ class BottomPanel(Gtk.Box):
         self.console.command_submitted.connect(self._on_command_submitted)
 
         ui_log_event_received.connect(self.console.on_log_received)
-
-        self.layers_tab = LayersTab(doc_editor)
-        self.layers_tab.edit_item_requested.connect(
-            self._on_layers_tab_edit_item
-        )
-        self.layers_tab.select_items_requested.connect(
-            self._on_layers_tab_select_items
-        )
 
         self.asset_browser = AssetBrowser(doc_editor)
 
@@ -238,14 +227,6 @@ class BottomPanel(Gtk.Box):
     def _register_items(self):
         self.dock_layout.register_item(
             DockItem(
-                name="layers",
-                icon_name="layers-symbolic",
-                widget=self.layers_tab,
-                label=_("Layers"),
-            )
-        )
-        self.dock_layout.register_item(
-            DockItem(
                 name="assets",
                 icon_name="image-x-generic-symbolic",
                 widget=self.asset_browser,
@@ -289,7 +270,6 @@ class BottomPanel(Gtk.Box):
 
     def _build_default_layout(self):
         tabs_area = self.dock_layout.add_area()
-        tabs_area.add_item(self.dock_layout.get_item("layers"))
         tabs_area.add_item(self.dock_layout.get_item("assets"))
         tabs_area.add_item(self.dock_layout.get_item("gcode"))
         tabs_area.add_item(self.dock_layout.get_item("console"))
@@ -332,21 +312,11 @@ class BottomPanel(Gtk.Box):
         self._disconnect_layer_signals()
         self.doc = doc
         self.asset_browser.set_doc(doc)
-        self.layers_tab.set_doc(doc)
         if doc:
             doc.active_layer_changed.connect(self._on_active_layer_changed)
             self._connect_layer_signals()
         if self.machine:
             self._update_wcs_ui()
-
-    def _on_layers_tab_edit_item(self, sender, **kwargs):
-        self.edit_item_requested.send(sender, **kwargs)
-
-    def _on_layers_tab_select_items(self, sender, **kwargs):
-        self.select_items_requested.send(sender, **kwargs)
-
-    def update_layer_selection(self, selected_uids: set):
-        self.layers_tab.update_row_selection(selected_uids)
 
     def _on_active_layer_changed(self, sender):
         self._disconnect_layer_signals()
