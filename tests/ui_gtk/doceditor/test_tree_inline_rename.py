@@ -102,6 +102,15 @@ def test_escape_cancels_the_rename():
     assert callbacks.renamed == []
 
 
+def _wait_for(predicate, timeout: float = 3.0) -> bool:
+    end = time.monotonic() + timeout
+    while time.monotonic() < end:
+        if predicate():
+            return True
+        _pump(0.05)
+    return predicate()
+
+
 @pytest.mark.ui
 def test_tabbing_out_commits_and_removes_the_entry():
     """Focus leaving the inline entry finishes the rename."""
@@ -109,6 +118,7 @@ def test_tabbing_out_commits_and_removes_the_entry():
         application_id=f"org.rayforge.test.rename.{uuid.uuid4().hex}"
     )
     app.register(None)
+    app.activate()
     window = Gtk.ApplicationWindow(application=app)
     row, callbacks = _make_row()
     button = Gtk.Button(label="Elsewhere")
@@ -121,19 +131,19 @@ def test_tabbing_out_commits_and_removes_the_entry():
     box.append(button)
     window.set_child(box)
     window.present()
-    app.activate()
-    _pump()
 
     try:
+        assert _wait_for(window.get_mapped)
+
         entry = _start_rename(row)
-        _pump()
-        assert not isinstance(window.get_focus(), Gtk.ListBoxRow)
+        assert _wait_for(
+            lambda: not isinstance(window.get_focus(), Gtk.ListBoxRow)
+        )
 
         entry.set_text("Renamed")
         button.grab_focus()
-        _pump()
+        assert _wait_for(lambda: _find_entry(row) is None)
 
-        assert _find_entry(row) is None
         assert row._name_label.get_visible()
         assert callbacks.renamed == ["Renamed"]
     finally:
