@@ -13,7 +13,8 @@ La página General contiene ajustes de toda la aplicación.
 
 Elige entre el tema **Sistema**, **Claro** u **Oscuro** para coincidir con tu entorno de escritorio
 o preferencia personal. También puedes configurar los **Colores de operación** para usar el color
-del láser o el color de la capa como distinción visual en el lienzo.
+del láser o el color del flujo de trabajo como distinción visual en el lienzo. El color del flujo de
+trabajo es el predeterminado.
 
 **Modo taller** sustituye la pestaña de controles del panel inferior por una superficie de control
 táctil: lecturas de posición grandes por eje con botones de cero, una tarjeta de offsets, steppers
