@@ -543,6 +543,29 @@ class TestCommitItemsToDocument:
         assert wp in doc.layers[0].children
         assert wp.uid in doc.layers[0].workflows[0].workpiece_uids
 
+    def test_commit_maps_to_existing_creates_extra_workflow(self, file_cmd):
+        """Source layers beyond the existing workflows get new ones."""
+        first, first_info = self._imported_workpiece("first", "one")
+        second, second_info = self._imported_workpiece("second", "two")
+        spec = PassthroughSpec(
+            layer_import_mode=LayerImportMode.MAP_TO_EXISTING
+        )
+
+        dest = file_cmd._commit_items_to_document(
+            [first, second],
+            None,
+            Path("layers.svg"),
+            vectorization_spec=spec,
+            source_layers=[first_info, second_info],
+        )
+
+        workflows = file_cmd._editor.doc.active_layer.workflows
+        assert len(workflows) == 2
+        assert dest == workflows
+        assert first.uid in workflows[0].workpiece_uids
+        assert second.uid in workflows[1].workpiece_uids
+        assert second.uid not in workflows[0].workpiece_uids
+
     def test_commit_preserves_manually_named_workflow(self, file_cmd):
         """Map to Existing keeps the name of a manually renamed
         workflow."""

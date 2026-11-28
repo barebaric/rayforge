@@ -511,7 +511,8 @@ class FileCmd:
         All workpieces go into the active layer. NEW_WORKFLOWS creates one
         workflow per source layer; MAP_TO_EXISTING assigns each source
         layer's workpieces to the layer's existing workflow at the same
-        index; FLATTEN assigns all of them to the first workflow.
+        index and creates workflows for the remaining source layers;
+        FLATTEN assigns all of them to the first workflow.
 
         Returns (pairs, dest_workflows): the flat list of
         (destination_owner, item_to_add) tuples and the workflows that
@@ -519,12 +520,10 @@ class FileCmd:
         """
         target_layer = self._editor.doc.active_layer
         grouped = self._group_by_source_layer(items)
+        layers_by_id = {info.layer_id: info for info in (source_layers or [])}
         if mode is LayerImportMode.MAP_TO_EXISTING:
-            return self._map_to_existing(target_layer, grouped)
+            return self._map_to_existing(target_layer, grouped, layers_by_id)
         if mode is LayerImportMode.NEW_WORKFLOWS:
-            layers_by_id = {
-                info.layer_id: info for info in (source_layers or [])
-            }
             return self._new_workflows(target_layer, grouped, layers_by_id)
         return self._flatten(target_layer, items)
 
@@ -554,18 +553,47 @@ class FileCmd:
         self,
         target_layer: Layer,
         grouped: dict[str | None, list[WorkPiece]],
+        layers_by_id: dict[str | None, SourceLayerInfo],
     ) -> tuple[list[tuple[DocItem, DocItem]], list[Workflow]]:
-        """Assigns imported parts to the layer's workflows by index."""
+        """Assigns imported parts to the layer's workflows by index.
+
+        Source layers without a matching existing workflow get a new
+        workflow, so every imported part has a destination.
+        """
         pairs: list[tuple[DocItem, DocItem]] = []
         dest_workflows: list[Workflow] = []
         existing = target_layer.workflows
-        for idx, workpieces in enumerate(grouped.values()):
+        for idx, (layer_id, workpieces) in enumerate(grouped.items()):
             if idx < len(existing):
                 workflow = existing[idx]
                 self._assign(workflow, workpieces)
-                dest_workflows.append(workflow)
+            else:
+                info = layers_by_id.get(layer_id)
+                workflow = self._create_workflow(
+                    target_layer, info, workpieces, idx
+                )
+                pairs.append((target_layer, workflow))
+            dest_workflows.append(workflow)
             pairs.extend((target_layer, wp) for wp in workpieces)
         return pairs, dest_workflows
+
+    def _create_workflow(
+        self,
+        target_layer: Layer,
+        info: SourceLayerInfo | None,
+        workpieces: list[WorkPiece],
+        index: int,
+    ) -> Workflow:
+        """Builds a new workflow for a source layer without a match."""
+        if info is not None:
+            workflow = self._editor.workflow.create_for_source_layer(
+                target_layer, info, workpieces
+            )
+            if workflow is not None:
+                return workflow
+        workflow = Workflow(_("Workflow {number}").format(number=index + 1))
+        workflow.set_workpiece_uids([wp.uid for wp in workpieces])
+        return workflow
 
     def _new_workflows(
         self,
