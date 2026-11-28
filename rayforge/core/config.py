@@ -104,7 +104,7 @@ class Config:
         # working at the machine. Off by default.
         self.shop_mode: bool = False
         self.auto_pipeline: bool = True
-        self.ops_color_mode: OpsColorMode = OpsColorMode.LASER
+        self.ops_color_mode: OpsColorMode = OpsColorMode.WORKFLOW
         self.check_for_app_updates: bool = True
         # Whether to download new Windows packages in the background when
         # an update is available.
@@ -505,12 +505,12 @@ class Config:
         )
 
         ops_color_mode_str = data.get(
-            "ops_color_mode", OpsColorMode.LASER.value
+            "ops_color_mode", OpsColorMode.WORKFLOW.value
         )
         try:
             config.ops_color_mode = OpsColorMode(ops_color_mode_str)
         except ValueError:
-            config.ops_color_mode = OpsColorMode.LASER
+            config.ops_color_mode = OpsColorMode.WORKFLOW
 
         # Load usage tracking consent date
         config.usage_consent_date = data.get("usage_consent_date", None)

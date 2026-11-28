@@ -136,7 +136,7 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         self.ops_color_mode_row.set_subtitle(
             _(
                 "Choose whether operation colors represent the laser "
-                "or the layer"
+                "or the workflow"
             )
         )
         try:
