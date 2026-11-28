@@ -167,7 +167,8 @@ Postscript-Einstellungen des Dialekts konfiguriert, nicht über Hooks. Siehe
 **Auslöser:** Ebenen-Start **Code:**
 
 ```gcode
-; Starte Ebene: {layer.name}
+; Starte Ebene: {layer_name}
+; Ebenen-Index: {layer_index}
 ```
 
 **Zweck:** Macht G-Code besser lesbar zum Debuggen.
@@ -179,7 +180,7 @@ Postscript-Einstellungen des Dialekts konfiguriert, nicht über Hooks. Siehe
 **Auslöser:** Workflow-Start **Code:**
 
 ```gcode
-; Ebene {layer.name}, Workflow: {workflow.name}
+; Ebene {layer_name}: Workflow-Start
 ```
 
 **Zweck:** Trennt die Workflows einer Ebene im G-Code.
@@ -248,10 +249,11 @@ Variablen verwenden die `{variable_name}`-Syntax und werden während der G-Code-
 
 **Ebenen-Level-Variablen:**
 
-| Variable          | Beschreibung                 | Beispielwert    |
-| ----------------- | ---------------------------- | --------------- |
-| `{layer.name}`    | Name der aktuellen Ebene     | "Schnitt-Ebene" |
-| `{workflow.name}` | Name des aktuellen Workflows | "Gravur"        |
+| Variable         | Beschreibung                             | Beispielwert    |
+| ---------------- | ---------------------------------------- | --------------- |
+| `{layer_name}`   | Name der aktuellen Ebene                 | "Schnitt-Ebene" |
+| `{layer_index}`  | Null-basierter Index der aktuellen Ebene | 0, 1, 2...      |
+| `{total_layers}` | Gesamtzahl der Ebenen im Job             | 3               |
 
 **Werkstück-Level-Variablen:**
 
@@ -276,7 +278,7 @@ Variablen verwenden die `{variable_name}`-Syntax und werden während der G-Code-
 
 ```gcode
 ; ========================================
-; Ebene: {layer.name}
+; Ebene {layer_index} von {total_layers}: {layer_name}
 ; Job: {job_name}
 ; Uhrzeit: {time}
 ; ========================================
@@ -286,7 +288,7 @@ Variablen verwenden die `{variable_name}`-Syntax und werden während der G-Code-
 
 ```gcode
 ; ========================================
-; Ebene: Schnitt-Ebene
+; Ebene 0 von 3: Schnitt-Ebene
 ; Job: test-projekt
 ; Uhrzeit: 14:30:25
 ; ========================================

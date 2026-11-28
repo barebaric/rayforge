@@ -166,7 +166,8 @@ paramètres de préambule et postscript du dialecte, pas via les hooks. Voir
 **Déclencheur :** Début de Calque **Code :**
 
 ```gcode
-; Démarrage du calque : {layer.name}
+; Démarrage du calque : {layer_name}
+; Index du calque : {layer_index}
 ```
 
 **Objectif :** Rend le G-code plus lisible pour le débogage.
@@ -178,7 +179,7 @@ paramètres de préambule et postscript du dialecte, pas via les hooks. Voir
 **Déclencheur :** Début de Workflow **Code :**
 
 ```gcode
-; Calque {layer.name}, workflow : {workflow.name}
+; Calque {layer_name} : début de workflow
 ```
 
 **Objectif :** Sépare les workflows d'un calque dans le G-code.
@@ -249,10 +250,11 @@ G-code.
 
 **Variables au niveau du calque :**
 
-| Variable          | Description            | Exemple de Valeur |
-| ----------------- | ---------------------- | ----------------- |
-| `{layer.name}`    | Nom du calque actuel   | "Calque de Coupe" |
-| `{workflow.name}` | Nom du workflow actuel | "Gravure"         |
+| Variable         | Description                             | Exemple de Valeur |
+| ---------------- | --------------------------------------- | ----------------- |
+| `{layer_name}`   | Nom du calque actuel                    | "Calque de Coupe" |
+| `{layer_index}`  | Index base 0 du calque actuel           | 0, 1, 2...        |
+| `{total_layers}` | Nombre total de calques dans le travail | 3                 |
 
 **Variables au niveau de la pièce :**
 
@@ -277,7 +279,7 @@ G-code.
 
 ```gcode
 ; ========================================
-; Calque : {layer.name}
+; Calque {layer_index} sur {total_layers} : {layer_name}
 ; Travail : {job_name}
 ; Heure : {time}
 ; ========================================
@@ -287,7 +289,7 @@ G-code.
 
 ```gcode
 ; ========================================
-; Calque : Calque de Coupe
+; Calque 0 sur 3 : Calque de Coupe
 ; Travail : test-project
 ; Heure : 14:30:25
 ; ========================================

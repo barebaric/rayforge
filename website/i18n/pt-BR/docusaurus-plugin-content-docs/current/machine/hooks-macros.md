@@ -167,7 +167,8 @@ configurações de preâmbulo e postscript do dialeto, não através de hooks. V
 **Gatilho:** Início da Camada **Código:**
 
 ```gcode
-; Iniciando camada: {layer.name}
+; Iniciando camada: {layer_name}
+; Índice da camada: {layer_index}
 ```
 
 **Propósito:** Torna o G-code mais legível para depuração.
@@ -179,7 +180,7 @@ configurações de preâmbulo e postscript do dialeto, não através de hooks. V
 **Gatilho:** Início do Fluxo de Trabalho **Código:**
 
 ```gcode
-; Camada {layer.name}, fluxo de trabalho: {workflow.name}
+; Camada {layer_name}: início do fluxo de trabalho
 ```
 
 **Propósito:** Separa os fluxos de trabalho de uma camada no G-code.
@@ -248,10 +249,11 @@ Variáveis usam a sintaxe `{variable_name}` e são substituídas durante a gera�
 
 **Variáveis de nível de camada:**
 
-| Variável          | Descrição                       | Valor de Exemplo  |
-| ----------------- | ------------------------------- | ----------------- |
-| `{layer.name}`    | Nome da camada atual            | "Camada de Corte" |
-| `{workflow.name}` | Nome do fluxo de trabalho atual | "Gravação"        |
+| Variável         | Descrição                              | Valor de Exemplo |
+| ---------------- | -------------------------------------- | ---------------- |
+| `{layer_name}`   | Nome da camada atual                   | "Cut Layer"      |
+| `{layer_index}`  | Índice baseado em zero da camada atual | 0, 1, 2...       |
+| `{total_layers}` | Número total de camadas no trabalho    | 3                |
 
 **Variáveis de nível de peça:**
 
@@ -276,7 +278,7 @@ Variáveis usam a sintaxe `{variable_name}` e são substituídas durante a gera�
 
 ```gcode
 ; ========================================
-; Camada: {layer.name}
+; Camada {layer_index} de {total_layers}: {layer_name}
 ; Trabalho: {job_name}
 ; Hora: {time}
 ; ========================================
@@ -286,7 +288,7 @@ Variáveis usam a sintaxe `{variable_name}` e são substituídas durante a gera�
 
 ```gcode
 ; ========================================
-; Camada: Camada de Corte
+; Camada 0 de 3: Cut Layer
 ; Trabalho: test-project
 ; Hora: 14:30:25
 ; ========================================

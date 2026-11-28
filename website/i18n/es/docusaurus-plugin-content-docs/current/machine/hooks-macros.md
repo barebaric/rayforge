@@ -166,7 +166,8 @@ los ajustes de preámbulo y postscript del dialecto, no mediante hooks. Ver
 **Disparador:** Inicio de Capa **Código:**
 
 ```gcode
-; Iniciando capa: {layer.name}
+; Iniciando capa: {layer_name}
+; Índice de capa: {layer_index}
 ```
 
 **Propósito:** Hace el código G más legible para depuración.
@@ -178,7 +179,7 @@ los ajustes de preámbulo y postscript del dialecto, no mediante hooks. Ver
 **Disparador:** Inicio de Flujo de Trabajo **Código:**
 
 ```gcode
-; Capa {layer.name}, flujo de trabajo: {workflow.name}
+; Capa {layer_name}: inicio de flujo de trabajo
 ```
 
 **Propósito:** Separa los flujos de trabajo de una capa en el código G.
@@ -248,10 +249,11 @@ Las variables usan la sintaxis `{variable_name}` y se reemplazan durante la gene
 
 **Variables a nivel de capa:**
 
-| Variable          | Descripción                        | Valor de Ejemplo |
-| ----------------- | ---------------------------------- | ---------------- |
-| `{layer.name}`    | Nombre de la capa actual           | "Capa de Corte"  |
-| `{workflow.name}` | Nombre del flujo de trabajo actual | "Grabado"        |
+| Variable         | Descripción                             | Valor de Ejemplo |
+| ---------------- | --------------------------------------- | ---------------- |
+| `{layer_name}`   | Nombre de la capa actual                | "Capa de Corte"  |
+| `{layer_index}`  | Índice basado en cero de la capa actual | 0, 1, 2...       |
+| `{total_layers}` | Número total de capas en el trabajo     | 3                |
 
 **Variables a nivel de pieza:**
 
@@ -276,7 +278,7 @@ Las variables usan la sintaxis `{variable_name}` y se reemplazan durante la gene
 
 ```gcode
 ; ========================================
-; Capa: {layer.name}
+; Capa {layer_index} de {total_layers}: {layer_name}
 ; Trabajo: {job_name}
 ; Hora: {time}
 ; ========================================
@@ -286,7 +288,7 @@ Las variables usan la sintaxis `{variable_name}` y se reemplazan durante la gene
 
 ```gcode
 ; ========================================
-; Capa: Capa de Corte
+; Capa 0 de 3: Capa de Corte
 ; Trabajo: test-project
 ; Hora: 14:30:25
 ; ========================================

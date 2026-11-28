@@ -167,7 +167,8 @@ postscript settings, not hooks. See [G-code Settings](gcode) for details.
 **Trigger:** Layer Start **Code:**
 
 ```gcode
-; Starting layer: {layer.name}
+; Starting layer: {layer_name}
+; Layer index: {layer_index}
 ```
 
 **Purpose:** Makes G-code more readable for debugging.
@@ -179,7 +180,7 @@ postscript settings, not hooks. See [G-code Settings](gcode) for details.
 **Trigger:** Workflow Start **Code:**
 
 ```gcode
-; Layer {layer.name}, workflow: {workflow.name}
+; Layer {layer_name}: workflow start
 ```
 
 **Purpose:** Separates the workflows of one layer in the G-code.
@@ -249,10 +250,11 @@ Variables use `{variable_name}` syntax and are replaced during G-code generation
 
 **Layer-level variables:**
 
-| Variable          | Description                  | Example Value |
-| ----------------- | ---------------------------- | ------------- |
-| `{layer.name}`    | Name of the current layer    | "Cut Layer"   |
-| `{workflow.name}` | Name of the current workflow | "Engrave"     |
+| Variable         | Description                       | Example Value |
+| ---------------- | --------------------------------- | ------------- |
+| `{layer_name}`   | Name of the current layer         | "Cut Layer"   |
+| `{layer_index}`  | Zero-based index of current layer | 0, 1, 2...    |
+| `{total_layers}` | Total number of layers in job     | 3             |
 
 **Workpiece-level variables:**
 
@@ -281,7 +283,7 @@ The job counter also accepts a Python format spec, for example `{counter:04d}` f
 
 ```gcode
 ; ========================================
-; Layer: {layer.name}
+; Layer {layer_index} of {total_layers}: {layer_name}
 ; Job: {job_name}
 ; Time: {time}
 ; ========================================
@@ -291,7 +293,7 @@ The job counter also accepts a Python format spec, for example `{counter:04d}` f
 
 ```gcode
 ; ========================================
-; Layer: Cut Layer
+; Layer 0 of 3: Cut Layer
 ; Job: test-project
 ; Time: 14:30:25
 ; ========================================
