@@ -44,6 +44,24 @@ def test_eye_toggle_disables_the_workflow(ui_context_initializer):
 
 
 @pytest.mark.ui
+def test_disabled_workflow_is_struck_through(ui_context_initializer):
+    tree, layer = _make_tree()
+    workflow = layer.workflows[0]
+
+    workflow.set_enabled(False)
+
+    row = tree.find_row(workflow.uid)
+    assert row is not None
+    assert row.has_css_class("rf-workflow-disabled")
+
+    workflow.set_enabled(True)
+
+    row = tree.find_row(workflow.uid)
+    assert row is not None
+    assert not row.has_css_class("rf-workflow-disabled")
+
+
+@pytest.mark.ui
 def test_workflow_drop_reorders_workflows(ui_context_initializer):
     tree, layer = _make_tree()
     first, second = layer.workflows

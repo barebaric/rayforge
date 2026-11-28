@@ -36,6 +36,9 @@ _CSS = """
     font-size: 93%;
     opacity: 0.6;
 }
+.rf-tree-list > row.rf-workflow-disabled .rf-name {
+    text-decoration: line-through;
+}
 .rf-tree-list > row.rf-feature .rf-row {
     padding-top: 3px;
     padding-bottom: 3px;
@@ -248,6 +251,8 @@ class NodeRow(Gtk.ListBoxRow):
             self.add_css_class("rf-feature")
         elif spec.kind == "layer-separator":
             self.add_css_class("rf-layer-separator")
+        elif spec.kind == "workflow" and not spec.on:
+            self.add_css_class("rf-workflow-disabled")
 
         if spec.kind != "feature":
             box.append(self._build_twisty())
