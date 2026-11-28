@@ -2,7 +2,7 @@
 
 from gettext import gettext as _
 
-from gi.repository import Gdk, Gtk, Pango
+from gi.repository import Gdk, GLib, Gtk, Pango
 
 from ...ui_gtk.icons import get_icon
 from ...ui_gtk.shared.gtk import apply_css
@@ -238,31 +238,37 @@ class NodeRow(Gtk.ListBoxRow):
         entry.set_text(self.spec.label)
         entry.set_hexpand(True)
         entry.set_valign(Gtk.Align.CENTER)
-        parent.insert_child_after(entry, self._name_label)
-        self._name_label.set_visible(False)
-        entry.grab_focus()
-        entry.select_region(0, -1)
 
         committed = False
+
+        def focus_entry(*_args):
+            entry.grab_focus()
+            entry.select_region(0, -1)
+
+        def finish(rename: bool) -> bool:
+            name = entry.get_text().strip()
+            entry.unparent()
+            self._name_label.set_visible(True)
+            if rename and name and name != self.spec.label:
+                self._callbacks.on_row_renamed(self.spec, name)
+            return GLib.SOURCE_REMOVE
 
         def commit(*_args):
             nonlocal committed
             if committed:
                 return
             committed = True
-            name = entry.get_text().strip()
-            entry.unparent()
-            self._name_label.set_visible(True)
-            if name and name != self.spec.label:
-                self._callbacks.on_row_renamed(self.spec, name)
+            # The focus change that triggered this still manipulates the
+            # entry; removing it right away corrupts GTK's focus
+            # bookkeeping, so tear down once that change is complete.
+            GLib.timeout_add(0, finish, True)
 
         def cancel(*_args):
             nonlocal committed
             if committed:
                 return
             committed = True
-            entry.unparent()
-            self._name_label.set_visible(True)
+            GLib.timeout_add(0, finish, False)
 
         entry.connect("activate", commit)
         focus = Gtk.EventControllerFocus()
@@ -278,6 +284,12 @@ class NodeRow(Gtk.ListBoxRow):
         keys = Gtk.EventControllerKey()
         keys.connect("key-pressed", on_key_pressed)
         entry.add_controller(keys)
+
+        # Inserting into a mapped parent maps the entry right away, so
+        # the handlers must be in place before that.
+        entry.connect("map", focus_entry)
+        parent.insert_child_after(entry, self._name_label)
+        self._name_label.set_visible(False)
 
     def _build_detail(self) -> Gtk.Widget:
         detail = Gtk.Label(label=self.spec.detail, xalign=1)
