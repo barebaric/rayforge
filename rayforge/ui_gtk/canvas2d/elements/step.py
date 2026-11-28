@@ -44,27 +44,49 @@ class StepElement(CanvasElement):
             height=0,  # No dimensions needed
             data=step,
             selectable=False,
-            visible=step.visible,  # Sync initial visibility
+            visible=self._effective_visible(step),  # Sync initial visibility
             **kwargs,
         )
         self.pipeline = pipeline
 
-        # Connect to the model signal that drives its behavior
+        # Connect to the model signals that drive its behavior
         step.visibility_changed.connect(self._on_visibility_changed)
+        workflow = step.workflow
+        if workflow is not None:
+            workflow.updated.connect(self._on_workflow_updated)
 
     def remove(self):
         """Disconnects signals before removing the element."""
         step = cast(Step, self.data)
         step.visibility_changed.disconnect(self._on_visibility_changed)
+        workflow = step.workflow
+        if workflow is not None:
+            workflow.updated.disconnect(self._on_workflow_updated)
         super().remove()
+
+    @staticmethod
+    def _effective_visible(step: Step) -> bool:
+        """A step is visible on the canvas when it and its workflow are on."""
+        workflow = step.workflow
+        return step.visible and (workflow is None or workflow.enabled)
 
     def _on_visibility_changed(self, step: Step):
         """
         Handles visibility changes from the model. It updates its own state
         and then broadcasts the change to its siblings.
         """
-        if self.visible != step.visible:
-            self.set_visible(step.visible)
+        self._sync_visibility()
+
+    def _on_workflow_updated(self, workflow):
+        """Re-evaluates visibility when the workflow is enabled or disabled."""
+        self._sync_visibility()
+
+    def _sync_visibility(self):
+        """Applies the effective step visibility and broadcasts it."""
+        step = cast(Step, self.data)
+        visible = self._effective_visible(step)
+        if self.visible != visible:
+            self.set_visible(visible)
             self._update_sibling_ops_visibility()
 
     def _update_sibling_ops_visibility(self):

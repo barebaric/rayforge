@@ -430,7 +430,12 @@ class NodeRow(Gtk.ListBoxRow):
         image = get_icon(icon)
         image.set_pixel_size(14)
         button.set_child(image)
-        button.set_tooltip_text(_("Hide") if self.spec.on else _("Show"))
+        if self.spec.kind == "workflow":
+            button.set_tooltip_text(
+                _("Disable workflow") if self.spec.on else _("Enable workflow")
+            )
+        else:
+            button.set_tooltip_text(_("Hide") if self.spec.on else _("Show"))
         button.connect(
             "clicked", lambda b: self._callbacks.on_eye_toggled(self.spec)
         )
