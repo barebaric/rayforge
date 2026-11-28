@@ -8,7 +8,7 @@ from raygeo.geo import Geometry, Matrix
 from raygeo.geo.types import Rect
 
 from .color import ColorRGBA, hex_to_rgba, normalize_color
-from .item import VisibleMixin
+from .item import DocItem, VisibleMixin
 
 if TYPE_CHECKING:
     from .asset import IAsset
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class StockItem(VisibleMixin):
+class StockItem(DocItem, VisibleMixin):
     """
     Represents an instance of a stock material in the document.
 

@@ -114,6 +114,8 @@ class DocItem(ABC):
 
         self._natural_size: tuple[float, float] = (0.0, 0.0)
 
+        super().__init__()
+
     # -- Revision counters ------------------------------------------------
 
     def _bump_geometry_revision(self) -> None:
@@ -927,16 +929,19 @@ class DocItem(ABC):
         return None
 
 
-class VisibleMixin(DocItem):
+class VisibleMixin:
     """
-    A DocItem that can be hidden from the job output.
+    A mixin for items that can be hidden from the job output.
 
-    Subclasses must call ``super().__init__()`` from their ``__init__``
-    so the mixin can initialize its state; ``set_visible()`` sends
+    Subclasses list ``DocItem`` before this mixin; ``DocItem.__init__``
+    cooperates so the mixin initializes its state. ``set_visible()`` sends
     ``visibility_changed`` followed by ``updated``. Serialization is
     not touched: classes read and write the ``visible`` key in their
     own ``to_dict`` / ``from_dict``.
     """
+
+    # Provided by DocItem; declared for type checkers.
+    updated: Signal
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

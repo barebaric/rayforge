@@ -26,7 +26,7 @@ class GroupingResult:
     child_matrices: dict[str, Matrix]
 
 
-class Group(VisibleMixin):
+class Group(DocItem, VisibleMixin):
     """
     A DocItem that acts as a container for other DocItems (WorkPieces or
     other Groups), allowing them to be treated as a single unit for

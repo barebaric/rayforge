@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T", bound="DocItem")
 
 
-class Layer(VisibleMixin):
+class Layer(DocItem, VisibleMixin):
     """
     Represents one machine configuration: the workpieces loaded for it,
     the stock they are cut from, and the ordered workflows that run.

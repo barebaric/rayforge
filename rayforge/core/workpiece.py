@@ -104,7 +104,7 @@ class AnchorMode(Enum):
         return labels[self]
 
 
-class WorkPiece(VisibleMixin):
+class WorkPiece(DocItem, VisibleMixin):
     """
     Represents a real-world workpiece. It is a lightweight data container,
     holding its transformation matrix and a link to its source and shape
