@@ -2,14 +2,16 @@
 """UI tests for the inline rename entry of the tree rows."""
 
 import time
+import uuid
 
 import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Gdk", "4.0")
+gi.require_version("Adw", "1")
 
 import pytest
-from gi.repository import Gdk, GLib, Gtk
+from gi.repository import Adw, Gdk, GLib, Gtk
 
 from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.tree.workpiece_node import WorkPieceNode
@@ -40,66 +42,35 @@ def _pump(seconds: float = 0.2):
         time.sleep(0.005)
 
 
-def _find_entry(widget):
-    if isinstance(widget, Gtk.Entry):
-        return widget
+def _walk(widget):
+    yield widget
     child = widget.get_first_child()
     while child:
-        found = _find_entry(child)
-        if found is not None:
-            return found
+        yield from _walk(child)
         child = child.get_next_sibling()
-    return None
 
 
-@pytest.fixture
-def rename_setup():
-    window = Gtk.Window()
+def _find_entry(widget):
+    return next((w for w in _walk(widget) if isinstance(w, Gtk.Entry)), None)
+
+
+def _make_row():
     workpiece = WorkPiece("Part")
     callbacks = _Callbacks()
     row = WorkPieceNode(workpiece, 0, set(), set(), callbacks)
-    button = Gtk.Button(label="Elsewhere")
-
-    listbox = Gtk.ListBox()
-    listbox.set_selection_mode(Gtk.SelectionMode.NONE)
-    listbox.append(row)
-    box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-    box.append(listbox)
-    box.append(button)
-    window.set_child(box)
-    window.present()
-    _pump()
-    yield row, button, callbacks
-    window.destroy()
+    return row, callbacks
 
 
 def _start_rename(row):
     row.start_rename()
-    _pump()
     entry = _find_entry(row)
     assert entry is not None
     return entry
 
 
 @pytest.mark.ui
-def test_tabbing_out_commits_and_removes_the_entry(rename_setup):
-    """Focus leaving the inline entry finishes the rename."""
-    row, button, callbacks = rename_setup
-    entry = _start_rename(row)
-    assert not isinstance(row.get_root().get_focus(), Gtk.ListBoxRow)
-
-    entry.set_text("Renamed")
-    button.grab_focus()
-    _pump()
-
-    assert _find_entry(row) is None
-    assert row._name_label.get_visible()
-    assert callbacks.renamed == ["Renamed"]
-
-
-@pytest.mark.ui
-def test_enter_commits_and_removes_the_entry(rename_setup):
-    row, _button, callbacks = rename_setup
+def test_enter_commits_and_removes_the_entry():
+    row, callbacks = _make_row()
     entry = _start_rename(row)
 
     entry.set_text("Renamed")
@@ -112,8 +83,8 @@ def test_enter_commits_and_removes_the_entry(rename_setup):
 
 
 @pytest.mark.ui
-def test_escape_cancels_the_rename(rename_setup):
-    row, _button, callbacks = rename_setup
+def test_escape_cancels_the_rename():
+    row, callbacks = _make_row()
     entry = _start_rename(row)
 
     entry.set_text("Renamed")
@@ -129,3 +100,42 @@ def test_escape_cancels_the_rename(rename_setup):
     assert _find_entry(row) is None
     assert row._name_label.get_visible()
     assert callbacks.renamed == []
+
+
+@pytest.mark.ui
+def test_tabbing_out_commits_and_removes_the_entry():
+    """Focus leaving the inline entry finishes the rename."""
+    app = Adw.Application(
+        application_id=f"org.rayforge.test.rename.{uuid.uuid4().hex}"
+    )
+    app.register(None)
+    window = Gtk.ApplicationWindow(application=app)
+    row, callbacks = _make_row()
+    button = Gtk.Button(label="Elsewhere")
+
+    listbox = Gtk.ListBox()
+    listbox.set_selection_mode(Gtk.SelectionMode.NONE)
+    listbox.append(row)
+    box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+    box.append(listbox)
+    box.append(button)
+    window.set_child(box)
+    window.present()
+    app.activate()
+    _pump()
+
+    try:
+        entry = _start_rename(row)
+        _pump()
+        assert not isinstance(window.get_focus(), Gtk.ListBoxRow)
+
+        entry.set_text("Renamed")
+        button.grab_focus()
+        _pump()
+
+        assert _find_entry(row) is None
+        assert row._name_label.get_visible()
+        assert callbacks.renamed == ["Renamed"]
+    finally:
+        window.destroy()
+        app.quit()

@@ -157,6 +157,19 @@ class LayerCmd:
         )
         self._editor.history_manager.execute(cmd)
 
+    def set_layer_visibility(self, layer: Layer, visible: bool):
+        """Sets the visibility of a layer with an undoable command."""
+        if visible == layer.visible:
+            return
+        cmd = ChangePropertyCommand(
+            target=layer,
+            property_name="visible",
+            new_value=visible,
+            setter_method_name="set_visible",
+            name=_("Toggle layer visibility"),
+        )
+        self._editor.history_manager.execute(cmd)
+
     def set_layer_stock_material(self, layer: Layer, material_uid: str | None):
         """Sets a layer's rotary stock material with an undoable
         command."""
