@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 
 from rayforge.context import get_context
+from rayforge.core.layer import Layer
 from rayforge.core.workpiece import WorkPiece
 from rayforge.machine.models.machine import Machine
 
@@ -31,6 +32,8 @@ gi.require_version("Adw", "1")
 gi.require_version("Gdk", "4.0")
 from gi.repository import Adw, GLib
 
+from rayforge.ui_gtk.canvas2d.elements.layer import LayerElement
+from rayforge.ui_gtk.canvas2d.elements.workpiece import WorkPieceElement
 from rayforge.ui_gtk.mainwindow import MainWindow
 
 logger = logging.getLogger(__name__)
@@ -143,6 +146,27 @@ def test_rename_focuses_inline_name_entry(app_and_window, assets_path):
     name_row = win.item_props_widget._name_row
     assert name_row.get_visible()
     assert name_row.get_text() == wp.name
+
+
+@pytest.mark.ui
+def test_canvas_shows_all_layers(app_and_window):
+    _app, win = app_and_window
+    doc = win.doc_editor.doc
+    first_layer = doc.active_layer
+    second_layer = Layer("Second")
+    doc.add_layer(second_layer)
+    wp = WorkPiece("Second part")
+    second_layer.add_child(wp)
+    process_events_for_duration(0.4)
+
+    layer_elements = list(win.surface.find_by_type(LayerElement))
+    assert {elem.data for elem in layer_elements} == {
+        first_layer,
+        second_layer,
+    }
+    assert any(
+        elem.data is wp for elem in win.surface.find_by_type(WorkPieceElement)
+    )
 
 
 @pytest.mark.ui
