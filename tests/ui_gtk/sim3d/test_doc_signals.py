@@ -80,7 +80,7 @@ def test_connect_subscribes_machine_signals(ui_context_initializer):
 
 
 @pytest.mark.ui
-def test_connect_active_setup_wcs(ui_context_initializer):
+def test_connect_active_layer_wcs(ui_context_initializer):
     machine = _machine()
     doc = _doc()
     layer = _layer()

@@ -3,15 +3,15 @@
 from gettext import gettext as _
 
 from blinker import Signal
-from gi.repository import Gtk
+from gi.repository import Adw, Gtk
 
 from ...core.doc import Doc
 
 
-class LayerRunDialog(Gtk.Dialog):
+class LayerRunDialog(Adw.MessageDialog):
     """Lists the document's layers with a checkbox each.
 
-    Multi-layer documents run one physical configuration at a time, so
+    Multi-layer documents contain several physical configurations, so
     Start Job asks which layers to include. The checked layers' uids
     are reported via :attr:`run_requested`; cancelling reports
     :attr:`cancelled`.
@@ -22,37 +22,33 @@ class LayerRunDialog(Gtk.Dialog):
         self.run_requested = Signal()
         self.cancelled = Signal()
 
-        self.set_title(_("Start Job"))
-        self.set_modal(True)
-        self.add_button(_("_Cancel"), Gtk.ResponseType.CANCEL)
-        run_button = self.add_button(_("_Run"), Gtk.ResponseType.OK)
-        run_button.add_css_class("suggested")
-
-        content = self.get_content_area()
-        content.set_spacing(6)
-        intro = Gtk.Label(
-            label=_(
+        self.set_heading(_("Start Job"))
+        self.set_body(
+            _(
                 "This document has multiple layers. Choose which ones "
-                "to run; you change the physical layer between jobs."
-            ),
-            wrap=True,
-            xalign=0,
-            max_width_chars=45,
+                "to run; you change the physical setup between jobs."
+            )
         )
-        content.append(intro)
 
+        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        content.set_margin_top(6)
         self._checks: list[tuple[str, Gtk.CheckButton]] = []
         for layer in doc.layers:
             check = Gtk.CheckButton(label=layer.name, active=True)
             content.append(check)
             self._checks.append((layer.uid, check))
+        self.set_extra_child(content)
 
+        self.add_response("cancel", _("_Cancel"))
+        self.add_response("run", _("_Run"))
+        self.set_default_response("run")
+        self.set_close_response("cancel")
+        self.set_response_appearance("run", Adw.ResponseAppearance.SUGGESTED)
         self.connect("response", self._on_response)
 
     def _on_response(self, dialog, response):
-        if response == Gtk.ResponseType.OK:
+        if response == "run":
             uids = [uid for uid, check in self._checks if check.get_active()]
             self.run_requested.send(self, layer_uids=uids)
         else:
             self.cancelled.send(self)
-        self.destroy()

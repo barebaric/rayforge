@@ -4,6 +4,7 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
+from ..core.color import pick_unused_color
 from ..core.layer import Layer
 from ..core.undo import (
     ChangePropertyCommand,
@@ -12,6 +13,8 @@ from ..core.undo import (
 from ..core.undo.list_cmd import ListItemCommand, ReorderListCommand
 from ..core.workflow import Workflow
 from ..core.workpiece import WorkPiece
+from ..image.assembler import ItemAssembler
+from ..image.structures import SourceLayerInfo
 
 if TYPE_CHECKING:
     from .editor import DocEditor
@@ -38,9 +41,6 @@ class WorkflowCmd:
         a matching step is created on the workflow so the reload keeps
         the configured operation.
         """
-        from ..image.assembler import ItemAssembler
-        from ..image.structures import SourceLayerInfo
-
         if not isinstance(source_layer, SourceLayerInfo):
             return None
         workflow = Workflow(name=source_layer.name)
@@ -173,6 +173,4 @@ class WorkflowCmd:
             for layer in self._editor.doc.layers
             for workflow in layer.workflows
         }
-        from ..core.color import pick_unused_color
-
         return pick_unused_color(used)

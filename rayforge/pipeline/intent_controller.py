@@ -134,9 +134,10 @@ class IntentController:
         self._doc: Doc | None = doc
         self._task_manager = task_manager
         self._machine = machine
-        # When set, rebuilds scope the intent to the workflows of
-        # these layers (multi-layer send flow).
-        self.layer_filter: frozenset[str] | None = None
+        # One-shot scope for the next rebuild (multi-layer send
+        # flow). Consumed by the rebuild that starts next, so the
+        # live preview returns to the whole document afterwards.
+        self._next_rebuild_layer_uids: frozenset[str] | None = None
         self._raygeo_pipeline: RaygeoPipeline = (
             raygeo_pipeline or RaygeoPipeline()
         )
@@ -306,14 +307,22 @@ class IntentController:
         self._machine = machine
         self.force_rebuild()
 
-    def force_rebuild(self) -> None:
+    def force_rebuild(self, layer_uids: frozenset[str] | None = None) -> None:
         """Cancel any pending debounce and rebuild immediately.
 
         If a rebuild is already running on the background thread, the
         in-flight run is signalled to cancel so the next generation
         starts as soon as possible. An explicit rebuild also clears any
         pending stale state, as the fresh result will replace it.
+
+        When *layer_uids* is given, only that rebuild scopes the
+        intent to those layers' workflows (used to run a subset of a
+        multi-layer document); the scope is consumed by the rebuild so
+        the next one covers the whole document again.
         """
+        self._next_rebuild_layer_uids = (
+            frozenset(layer_uids) if layer_uids is not None else None
+        )
         self._data_stale_flag = False
         if self._rebuild_timer is not None:
             self._rebuild_timer.cancel()
@@ -392,6 +401,8 @@ class IntentController:
         if self._rebuilding:
             return
         self._rebuild_timer = None
+        layer_uids = self._next_rebuild_layer_uids
+        self._next_rebuild_layer_uids = None
         self._generation_id += 1
         self._rebuilding = True
         self._active_progress = {}
@@ -407,7 +418,7 @@ class IntentController:
                 loop=getattr(self._task_manager, "loop", None),
             )
             try:
-                nodes = builder.build(self._doc, layer_uids=self.layer_filter)
+                nodes = builder.build(self._doc, layer_uids=layer_uids)
             except UnavailableDriverError as exc:
                 # The main window's machine warning banner names the
                 # missing driver; a notification on every rebuild would

@@ -29,7 +29,7 @@ class MoveItemsLayerCommand(Command):
 
     def __init__(
         self,
-        items: list[DocItem] | list[WorkPiece],
+        items: list[DocItem],
         new_layer: Layer,
         old_layer: Layer,
         name: str | None = None,
@@ -67,7 +67,7 @@ class AddLayerAndSetActiveCommand(Command):
         super().__init__(name=name)
         self._editor = editor
         self.new_layer = new_layer or self._create_default_layer()
-        self._old_active_setup: Layer | None = None
+        self._old_active_layer: Layer | None = None
 
     def _create_default_layer(self) -> Layer:
         """Creates a new layer with a default, unique name."""
@@ -92,7 +92,7 @@ class AddLayerAndSetActiveCommand(Command):
 
     def execute(self):
         """Adds the layer and makes it active."""
-        self._old_active_setup = self._editor.doc.active_layer
+        self._old_active_layer = self._editor.doc.active_layer
         new_list = self._editor.doc.layers + [self.new_layer]
         cmd = ReorderListCommand(
             target_obj=self._editor.doc,
@@ -115,8 +115,8 @@ class AddLayerAndSetActiveCommand(Command):
             setter_method_name="set_layers",
         )
         cmd.execute()
-        if self._old_active_setup in self._editor.doc.layers:
-            self._editor.doc.active_layer = self._old_active_setup
+        if self._old_active_layer in self._editor.doc.layers:
+            self._editor.doc.active_layer = self._old_active_layer
 
 
 class LayerCmd:

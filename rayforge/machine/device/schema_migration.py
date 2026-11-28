@@ -14,13 +14,25 @@ default or nominal default).
 
 from dataclasses import dataclass
 from gettext import gettext as _
+from typing import Any
 
 from ..models.laser import LaserHead
 from .profile_diff import HEADS_SECTION, SettingDiff, apply_head_value
 
 # Bump when new head/machine settings are added that existing machines
 # should be prompted to review. Version 0 = pre-schema-version machines.
-CURRENT_SCHEMA_VERSION = 1
+# Version 2: job spans are workflows, so a saved layer hook now fires
+# per workflow span; see :func:`migrate_hook_triggers`.
+CURRENT_SCHEMA_VERSION = 2
+
+#: The schema version at which hook trigger semantics changed.
+HOOK_TRIGGER_MIGRATION_VERSION = 2
+
+#: Hook trigger names saved before the span semantics changed.
+_LEGACY_HOOK_TRIGGERS = {
+    "LAYER_START": "WORKFLOW_START",
+    "LAYER_END": "WORKFLOW_END",
+}
 
 # Sentinel indicating "follow the laser-type default". Matches the
 # LaserHead default for wavelength_nm / max_power_watts.
@@ -122,8 +134,30 @@ def _suggested_value(head: LaserHead, key: str) -> float:
     return _SENTINEL
 
 
+def migrate_hook_triggers(
+    hookmacros: dict[str, Any], machine_version: int
+) -> dict[str, Any]:
+    """Renames hook triggers saved before the span semantics changed.
+
+    Job spans used to be layers and are now workflows, so the hook a
+    user configured to run at a span boundary is a workflow hook. The
+    rename runs on load for machines stored before
+    :data:`HOOK_TRIGGER_MIGRATION_VERSION`; it is idempotent, so a
+    machine that was already saved in the new form loads unchanged.
+    """
+    if machine_version >= HOOK_TRIGGER_MIGRATION_VERSION:
+        return hookmacros
+    migrated: dict[str, Any] = {}
+    for trigger_name, macro_data in hookmacros.items():
+        new_name = _LEGACY_HOOK_TRIGGERS.get(trigger_name, trigger_name)
+        migrated[new_name] = macro_data
+    return migrated
+
+
 __all__ = [
     "CURRENT_SCHEMA_VERSION",
+    "HOOK_TRIGGER_MIGRATION_VERSION",
     "apply_schema_migrations",
     "find_schema_migrations",
+    "migrate_hook_triggers",
 ]

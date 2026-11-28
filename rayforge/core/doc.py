@@ -19,6 +19,7 @@ from .item import DocItem
 from .job_counter import JobCounter
 from .layer import Layer
 from .source_asset import SourceAsset
+from .step import Step
 from .workflow import Workflow
 from .workpiece import WorkPiece, workpieces_in
 
@@ -434,6 +435,11 @@ class Doc(DocItem):
         """All enabled workflows of all layers, in run order."""
         return [workflow for workflow in self.workflows if workflow.enabled]
 
+    @property
+    def steps(self) -> list["Step"]:
+        """All steps of all layers' workflows, in run order."""
+        return [step for workflow in self.workflows for step in workflow.steps]
+
     def workflows_in(
         self, layer_uids: Iterable[str] | None = None
     ) -> list[Workflow]:
@@ -578,8 +584,8 @@ class Doc(DocItem):
 
         # Safely adjust active layer index before removal
         old_active_layer = self.active_layer
-        setups_before_remove = self.layers
-        setup_index_to_remove = setups_before_remove.index(layer)
+        layers_before_remove = self.layers
+        setup_index_to_remove = layers_before_remove.index(layer)
 
         # Remove the child. This will trigger signals.
         self.remove_child(layer)

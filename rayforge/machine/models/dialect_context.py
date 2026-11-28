@@ -99,6 +99,12 @@ class GcodeContext:
             ("wcs_offset[1]", _("The Y offset of the currently active WCS.")),
             ("wcs_offset[2]", _("The Z offset of the currently active WCS.")),
         ],
+        "layer": [
+            (
+                "layer.name",
+                _("The name of the current layer being processed."),
+            ),
+        ],
         "workflow": [
             (
                 "workflow.name",
@@ -128,6 +134,8 @@ class GcodeContext:
         static documentation dictionary.
         """
         docs = cls._DOCS["job"]
+        if level in ("layer", "workflow", "workpiece"):
+            docs = docs + cls._DOCS["layer"]
         if level in ("workflow", "workpiece"):
             docs = docs + cls._DOCS["workflow"]
         if level == "workpiece":

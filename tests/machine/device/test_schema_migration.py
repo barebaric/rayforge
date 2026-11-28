@@ -203,3 +203,53 @@ def test_profile_machine_not_skipped(lite_context):
     diffs = find_schema_migrations(machine)
     # The schema migration still fires for profile-linked machines:
     assert len(diffs) == 2
+
+
+class TestHookTriggerMigration:
+    """Hook trigger keys saved before workflow spans existed are
+    renamed to the workflow triggers."""
+
+    @staticmethod
+    def _machine_data(hookmacros: dict) -> dict:
+        return {
+            "machine": {
+                "name": "Legacy Hooks",
+                "dialect_uid": "grbl",
+                "hookmacros": hookmacros,
+            }
+        }
+
+    def test_layer_hooks_are_renamed_to_workflow_hooks(self, lite_context):
+        from rayforge.machine.models.macro import MacroTrigger
+
+        data = self._machine_data(
+            {
+                "LAYER_START": {"code": ["; start"]},
+                "LAYER_END": {"code": ["; end"]},
+            }
+        )
+        machine = Machine.from_dict(data, context=lite_context)
+
+        assert MacroTrigger.WORKFLOW_START in machine.hookmacros
+        assert MacroTrigger.WORKFLOW_END in machine.hookmacros
+        assert MacroTrigger.LAYER_START not in machine.hookmacros
+        assert machine.hookmacros[MacroTrigger.WORKFLOW_START].code == [
+            "; start"
+        ]
+
+    def test_workflow_hooks_load_unchanged(self, lite_context):
+        from rayforge.machine.models.macro import MacroTrigger
+
+        data = self._machine_data({"WORKFLOW_START": {"code": ["; start"]}})
+        data["machine"]["schema_version"] = CURRENT_SCHEMA_VERSION
+        machine = Machine.from_dict(data, context=lite_context)
+
+        assert MacroTrigger.WORKFLOW_START in machine.hookmacros
+
+    def test_migration_is_idempotent(self, lite_context):
+        from rayforge.machine.models.macro import MacroTrigger
+
+        data = self._machine_data({"LAYER_START": {"code": ["; start"]}})
+        first = Machine.from_dict(data, context=lite_context)
+        second = Machine.from_dict(first.to_dict(), context=lite_context)
+        assert MacroTrigger.WORKFLOW_START in second.hookmacros

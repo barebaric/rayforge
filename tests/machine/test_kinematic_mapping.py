@@ -440,18 +440,18 @@ class TestResolveLayerRotary:
         assert cfg == RotaryAxisConfig(Axis.Y, None, None)
 
 
-class TestBuildSetupAssembly:
+class TestBuildLayerAssembly:
     def _make_machine(self) -> Machine:
         return Machine(RayforgeContext())
 
-    def test_flat_setup_builds_flat_assembly(self):
+    def test_flat_layer_builds_flat_assembly(self):
         machine = self._make_machine()
         layer = Doc().active_layer
         assembly = build_layer_assembly(machine, layer)
         assert not assembly.has_rotary
         assert not machine._layer_configured
 
-    def test_rotary_setup_mounts_rotary_module(self):
+    def test_rotary_layer_mounts_rotary_module(self):
         machine = self._make_machine()
         rm = RotaryModule()
         rm.set_mode(RotaryMode.TRUE_4TH_AXIS)
@@ -467,7 +467,7 @@ class TestBuildSetupAssembly:
         assert assembly.has_rotary
         assert not machine._layer_configured
 
-    def test_none_setup_builds_flat_assembly(self):
+    def test_none_layer_builds_flat_assembly(self):
         machine = self._make_machine()
         assembly = build_layer_assembly(machine, None)
         assert not assembly.has_rotary

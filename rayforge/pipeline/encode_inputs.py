@@ -119,6 +119,7 @@ def _build_workflow_path_vars_for_doc(
         wcs_offset = machine.get_job_wcs_offset(machine.get_wcs_offset(wcs))
         for workflow in layer.workflows:
             result[workflow.uid] = {
+                "layer.name": layer.name,
                 "workflow.name": workflow.name,
                 "wcs_offset[0]": _repr_val(wcs_offset[0]),
                 "wcs_offset[1]": _repr_val(wcs_offset[1]),
@@ -133,19 +134,18 @@ def _build_workpiece_path_vars_for_doc(
     result: dict[str, dict[str, str]] = {}
     if not doc:
         return result
-    for layer in doc.layers:
-        for wp in layer.all_workpieces:
-            pos = wp.pos
-            size = wp.size
-            counter = doc.job_counter.counter.value_at(wp.variable_offset)
-            result[wp.uid] = {
-                "workpiece.name": wp.name,
-                "workpiece.counter": str(counter),
-                "workpiece.pos[0]": _repr_val(pos[0]),
-                "workpiece.pos[1]": _repr_val(pos[1]),
-                "workpiece.size[0]": _repr_val(size[0]),
-                "workpiece.size[1]": _repr_val(size[1]),
-            }
+    for wp in doc.all_workpieces:
+        pos = wp.pos
+        size = wp.size
+        counter = doc.job_counter.counter.value_at(wp.variable_offset)
+        result[wp.uid] = {
+            "workpiece.name": wp.name,
+            "workpiece.counter": str(counter),
+            "workpiece.pos[0]": _repr_val(pos[0]),
+            "workpiece.pos[1]": _repr_val(pos[1]),
+            "workpiece.size[0]": _repr_val(size[0]),
+            "workpiece.size[1]": _repr_val(size[1]),
+        }
     return result
 
 
@@ -162,21 +162,39 @@ def _build_macro_table(machine: "Machine") -> dict:
             return None
         return {"name": m.name, "code": m.code, "enabled": m.enabled}
 
-    # The native G-code encoder fires the layer hooks at the span
-    # markers (LayerStart/End), which now carry workflow uids; the
-    # workflow hook keys are consumed by encoders that process
-    # workflow spans separately.
-    trigger_map = {
-        MacroTrigger.LAYER_START: "layer_start",
-        MacroTrigger.LAYER_END: "layer_end",
-        MacroTrigger.WORKFLOW_START: "workflow_start",
-        MacroTrigger.WORKFLOW_END: "workflow_end",
-        MacroTrigger.WORKPIECE_START: "workpiece_start",
-        MacroTrigger.WORKPIECE_END: "workpiece_end",
+    # Job spans are workflow spans, so both the layer and the workflow
+    # hooks fire at the span markers (LayerStart/End). When a machine
+    # defines both, their code runs in that order.
+    def _merged(macros: list) -> dict | None:
+        active = [m for m in macros if m is not None and m.enabled]
+        if not active:
+            return None
+        if len(active) == 1:
+            return _macro_dict(active[0])
+        return {
+            "name": active[0].name,
+            "code": [line for m in active for line in (m.code or [])],
+            "enabled": True,
+        }
+
+    table: dict = {
+        "layer_start": _merged(
+            [
+                hooks.get(MacroTrigger.WORKFLOW_START),
+                hooks.get(MacroTrigger.LAYER_START),
+            ]
+        ),
+        "layer_end": _merged(
+            [
+                hooks.get(MacroTrigger.WORKFLOW_END),
+                hooks.get(MacroTrigger.LAYER_END),
+            ]
+        ),
+        "workpiece_start": _macro_dict(
+            hooks.get(MacroTrigger.WORKPIECE_START)
+        ),
+        "workpiece_end": _macro_dict(hooks.get(MacroTrigger.WORKPIECE_END)),
     }
-    table: dict = {}
-    for trigger, key in trigger_map.items():
-        table[key] = _macro_dict(hooks.get(trigger))
 
     # All macros by name for @include resolution
     all_macros: dict[str, dict] = {}

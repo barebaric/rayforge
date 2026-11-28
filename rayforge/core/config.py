@@ -12,6 +12,7 @@ from blinker import Signal
 
 from ..machine.models.machine import Machine
 from ..shared.util.atomic import atomic_write_yaml, load_yaml_with_backup
+from . import config_schema
 from .vectorization_spec import LayerSource
 
 logger = logging.getLogger(__name__)
@@ -22,10 +23,6 @@ class OpsColorMode(Enum):
 
     LASER = "laser"
     WORKFLOW = "workflow"
-
-
-#: Values written by older config files, mapped to their replacements.
-_LEGACY_OPS_COLOR_MODES = {"layer": OpsColorMode.WORKFLOW.value}
 
 
 class StartupBehavior(Enum):
@@ -393,6 +390,7 @@ class Config:
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "schema_version": config_schema.CURRENT_CONFIG_SCHEMA_VERSION,
             "machine": self.machine.id if self.machine else None,
             "theme": self.theme,
             "unit_preferences": self.unit_preferences,
@@ -439,6 +437,7 @@ class Config:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any], get_machine_by_id) -> "Config":
+        data = config_schema.migrate(data)
         config = cls()
         config.theme = data.get("theme", "system")
 
@@ -507,9 +506,6 @@ class Config:
 
         ops_color_mode_str = data.get(
             "ops_color_mode", OpsColorMode.LASER.value
-        )
-        ops_color_mode_str = _LEGACY_OPS_COLOR_MODES.get(
-            ops_color_mode_str, ops_color_mode_str
         )
         try:
             config.ops_color_mode = OpsColorMode(ops_color_mode_str)

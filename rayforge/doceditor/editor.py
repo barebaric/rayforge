@@ -521,16 +521,14 @@ class DocEditor:
         valid_head_uids = {head.uid for head in machine.heads}
         default_head_uid = machine.heads[0].uid
 
-        for layer in self.doc.layers:
-            for workflow in layer.workflows:
-                for step in workflow.steps:
-                    if step.selected_head_uid not in valid_head_uids:
-                        logger.info(
-                            f"Step '{step.name}' references non-existent "
-                            f"head '{step.selected_head_uid}', "
-                            f"resetting to default '{default_head_uid}'"
-                        )
-                        step.selected_head_uid = default_head_uid
+        for step in self.doc.steps:
+            if step.selected_head_uid not in valid_head_uids:
+                logger.info(
+                    f"Step '{step.name}' references non-existent "
+                    f"head '{step.selected_head_uid}', "
+                    f"resetting to default '{default_head_uid}'"
+                )
+                step.selected_head_uid = default_head_uid
 
     def _reconcile_rotary_modules(self):
         """

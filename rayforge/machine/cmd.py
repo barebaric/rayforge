@@ -446,9 +446,9 @@ class MachineCmd:
 
                 await final_job_action(artifact, machine, on_progress)
                 if layer_uids is not None:
-                    # The scoped artifact is fully consumed; drop the
-                    # filter so the live preview rebuilds unscoped.
-                    pipeline.set_layer_filter(None)
+                    # The scoped artifact is fully consumed; drop it so
+                    # the next rebuild serves the whole document.
+                    pipeline.invalidate_job_output()
 
         except JobAlreadyRunningError:
             # Already logged as a warning by the guard; not an error.

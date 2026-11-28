@@ -563,7 +563,10 @@ class Pipeline:
             when_done(self._last_job_handle, None)
             return
 
-        self.set_layer_filter(layer_uids)
+        if layer_uids is not None:
+            # The scoped artifact must come from a fresh rebuild, and
+            # must not be served later as the whole-document artifact.
+            self.invalidate_job_output()
 
         if not self._can_generate_job():
             when_done(
@@ -611,7 +614,11 @@ class Pipeline:
 
         self.job_generation_finished.connect(_on_finished, weak=False)
         self._intent_ctl.rebuild_finished.connect(_on_settled, weak=False)
-        self._intent_ctl.force_rebuild()
+        self._intent_ctl.force_rebuild(
+            layer_uids=frozenset(layer_uids)
+            if layer_uids is not None
+            else None
+        )
 
     async def generate_job_artifact_async(
         self,
@@ -628,17 +635,3 @@ class Pipeline:
 
         self.generate_job_artifact(when_done=_when_done, layer_uids=layer_uids)
         return await future
-
-    def set_layer_filter(self, layer_uids: list[str] | None) -> None:
-        """Scopes subsequent rebuilds to the given layers.
-
-        ``None`` clears the scope. Used by the multi-layer send flow:
-        a scoped run rebuilds with only the selected layers'
-        workflows, and the filter is cleared again afterwards so the
-        live preview covers the whole document.
-        """
-        self._intent_ctl.layer_filter = (
-            frozenset(layer_uids) if layer_uids is not None else None
-        )
-        if layer_uids is not None:
-            self.invalidate_job_output()

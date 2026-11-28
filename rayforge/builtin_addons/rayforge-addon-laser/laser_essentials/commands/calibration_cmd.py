@@ -279,7 +279,7 @@ class RebuildCalibrationCommand(Command):
     ):
         super().__init__(name)
         self._editor = editor
-        self._setup = layer
+        self._layer = layer
         self._record = record
         self._old, self._new = items
         self._changes = changes
@@ -316,12 +316,12 @@ class RebuildCalibrationCommand(Command):
             parent.remove_children(items)
         by_parent.clear()
         for wp in into:
-            by_parent[self._parents.get(wp.uid) or self._setup].append(wp)
+            by_parent[self._parents.get(wp.uid) or self._layer].append(wp)
         for parent, items in by_parent.items():
             parent.add_children(items)
 
     def _swap_steps(self, out: list[Step], into: list[Step]):
-        workflow = self._setup.workflows[0]
+        workflow = self._layer.workflows[0]
         current = workflow.children
         positions = [current.index(s) for s in out if s in current]
         index = min(positions) if positions else 0

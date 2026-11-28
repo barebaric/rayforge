@@ -2252,6 +2252,10 @@ class Machine:
         ma_data.pop("frozen_dialect", None)
 
         # Deserialize remaining hookmacros from the (potentially cleaned) data
+        # Imported here: schema_migration transitively imports this module.
+        from ..device.schema_migration import migrate_hook_triggers
+
+        hook_data = migrate_hook_triggers(hook_data, ma.schema_version)
         for trigger_name, macro_data in hook_data.items():
             try:
                 trigger = MacroTrigger[trigger_name]

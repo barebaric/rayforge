@@ -1932,7 +1932,7 @@ class TestMachine:
         assert new_machine.dialect_uid != "grbl"
         assert "JOB_START" not in new_machine.hookmacros
         assert "JOB_END" not in new_machine.hookmacros
-        assert MacroTrigger.LAYER_START in new_machine.hookmacros
+        assert MacroTrigger.WORKFLOW_START in new_machine.hookmacros
 
         # Assert New Dialect Content
         migrated_dialect = lite_context.dialect_mgr.get(
@@ -2010,7 +2010,7 @@ class TestMachine:
             == initial_dialect_count + 1
         )
         assert new_machine.dialect_uid != "smoothieware"
-        assert MacroTrigger.LAYER_START in new_machine.hookmacros
+        assert MacroTrigger.WORKFLOW_START in new_machine.hookmacros
 
     @pytest.mark.asyncio
     async def test_sync_wcs_on_connect(

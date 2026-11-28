@@ -101,6 +101,14 @@ class LayerElement(CanvasElement):
             f"LayerElement for '{self.data.name}': sync_with_model is"
             f" executing, called by {origin or sender}."
         )
+        self.set_visible(self.data.visible)
+
+        # Keep child selectability in sync with the layer's visibility:
+        # elements created while the layer was hidden must become
+        # selectable again once it is shown, and vice versa.
+        for child in self.children:
+            if isinstance(child, (WorkPieceElement, GroupElement)):
+                child.selectable = self.data.visible
         from ..surface import WorkSurface
 
         work_surface = cast(WorkSurface, self.canvas)
@@ -133,7 +141,7 @@ class LayerElement(CanvasElement):
                     workpiece=item_data,
                     view_manager=work_surface.editor.view_manager,
                     canvas=self.canvas,
-                    selectable=True,
+                    selectable=self.data.visible,
                 )
                 new_elem.set_base_image_visible(
                     work_surface.are_workpieces_visible()
@@ -142,7 +150,7 @@ class LayerElement(CanvasElement):
                 new_elem = GroupElement(
                     group=item_data,
                     canvas=self.canvas,
-                    selectable=True,
+                    selectable=self.data.visible,
                 )
             elif isinstance(item_data, StockItem):
                 new_elem = StockElement(

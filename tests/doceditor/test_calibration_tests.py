@@ -24,7 +24,7 @@ from rayforge.pipeline.artifact import JobArtifact
 
 DATA = Path(__file__).parent / "data" / "calibration_tests"
 
-# The laser addon is importable through the sys.path layer of the root
+# The laser addon is importable through the sys.path setup of the root
 # conftest; static analysis does not see that path.
 _calibration = importlib.import_module("laser_essentials.calibration")
 _command = importlib.import_module("laser_essentials.commands.calibration_cmd")

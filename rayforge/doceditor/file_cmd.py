@@ -92,12 +92,8 @@ def _unsupported_coolant_labels(
     if machine is None:
         return []
     unsupported: set[CoolantMode] = set()
-    for layer in doc.layers:
-        for workflow in layer.workflows:
-            for step in workflow.steps:
-                unsupported.update(
-                    step.get_unsupported_coolant_methods(machine)
-                )
+    for step in doc.steps:
+        unsupported.update(step.get_unsupported_coolant_methods(machine))
     ordered = sorted(unsupported, key=lambda m: m.value)
     return [_COOLANT_MODE_LABELS[m] for m in ordered]
 
@@ -524,13 +520,21 @@ class FileCmd:
         for imported source layers, and (workflow, new_name) rename
         pairs for still auto-named workflows in MAP_TO_EXISTING mode.
         """
-        doc = self._editor.doc
-        target_layer = doc.active_layer
-        pairs: list[tuple[DocItem, DocItem]] = []
-        new_workflows: list[Workflow] = []
-        renames: list[tuple[Workflow, str]] = []
-
+        target_layer = self._editor.doc.active_layer
         layers_by_id = {info.layer_id: info for info in (source_layers or [])}
+        grouped = self._group_by_source_layer(items)
+        resolver = {
+            LayerImportMode.MAP_TO_EXISTING: self._map_to_existing,
+            LayerImportMode.NEW_WORKFLOWS: self._new_workflows,
+            LayerImportMode.FLATTEN: self._flatten,
+        }[mode]
+        return resolver(target_layer, items, grouped, layers_by_id)
+
+    @staticmethod
+    def _group_by_source_layer(
+        items: list[DocItem],
+    ) -> dict[str | None, list[WorkPiece]]:
+        """Groups imported workpieces by their source layer id."""
         grouped: dict[str | None, list[WorkPiece]] = {}
         for item in items:
             if not isinstance(item, WorkPiece):
@@ -539,64 +543,105 @@ class FileCmd:
                 item.source_segment.layer_id if item.source_segment else None
             )
             grouped.setdefault(layer_id, []).append(item)
+        return grouped
 
-        def _assign(workflow: Workflow, workpieces: list[WorkPiece]) -> None:
-            uids = list(workflow.workpiece_uids)
-            uids.extend(wp.uid for wp in workpieces)
-            workflow.set_workpiece_uids(uids)
+    @staticmethod
+    def _assign(workflow: Workflow, workpieces: list[WorkPiece]) -> None:
+        """Extends a workflow's part selection with imported parts."""
+        uids = list(workflow.workpiece_uids)
+        uids.extend(wp.uid for wp in workpieces)
+        workflow.set_workpiece_uids(uids)
 
-        if mode == LayerImportMode.MAP_TO_EXISTING:
-            existing = target_layer.workflows
-            auto_name = _("{name} Workflow").format(name=target_layer.name)
-            for idx, (layer_id, workpieces) in enumerate(grouped.items()):
-                if idx < len(existing):
-                    dest_workflow = existing[idx]
-                    _assign(dest_workflow, workpieces)
-                    info = layers_by_id.get(layer_id)
-                    if (
-                        info is not None
-                        and dest_workflow.name == auto_name
-                        and info.name != dest_workflow.name
-                    ):
-                        renames.append((dest_workflow, info.name))
-                for wp in workpieces:
-                    pairs.append((target_layer, wp))
-        elif mode == LayerImportMode.NEW_WORKFLOWS:
-            default_workflow = (
-                target_layer.workflows[0] if target_layer.workflows else None
-            )
-            first_group = True
-            for layer_id, workpieces in grouped.items():
+    def _map_to_existing(
+        self,
+        target_layer: Layer,
+        items: list[DocItem],
+        grouped: dict[str | None, list[WorkPiece]],
+        layers_by_id: dict[str | None, SourceLayerInfo],
+    ) -> tuple[
+        list[tuple[DocItem, DocItem]],
+        list[Workflow],
+        list[tuple[Workflow, str]],
+    ]:
+        """Assigns imported parts to the layer's workflows by index."""
+        pairs: list[tuple[DocItem, DocItem]] = []
+        renames: list[tuple[Workflow, str]] = []
+        existing = target_layer.workflows
+        auto_name = _("{name} Workflow").format(name=target_layer.name)
+        for idx, (layer_id, workpieces) in enumerate(grouped.items()):
+            if idx < len(existing):
+                dest_workflow = existing[idx]
+                self._assign(dest_workflow, workpieces)
                 info = layers_by_id.get(layer_id)
-                if info is not None and default_workflow is not None:
-                    workflow = self._editor.workflow.create_for_source_layer(
-                        target_layer, info, workpieces
-                    )
-                    if workflow is not None:
-                        new_workflows.append(workflow)
-                        pairs.append((target_layer, workflow))
-                        for wp in workpieces:
-                            pairs.append((target_layer, wp))
-                        first_group = False
-                        continue
-                if first_group and default_workflow is not None:
-                    _assign(default_workflow, workpieces)
-                    first_group = False
-                for wp in workpieces:
-                    pairs.append((target_layer, wp))
-        else:
-            default_workflow = (
-                target_layer.workflows[0] if target_layer.workflows else None
-            )
-            if default_workflow is not None:
-                _assign(
-                    default_workflow,
-                    [item for item in items if isinstance(item, WorkPiece)],
-                )
-            for item in items:
-                pairs.append((target_layer, item))
+                if (
+                    info is not None
+                    and dest_workflow.name == auto_name
+                    and info.name != dest_workflow.name
+                ):
+                    renames.append((dest_workflow, info.name))
+            pairs.extend((target_layer, wp) for wp in workpieces)
+        return pairs, [], renames
 
-        return pairs, new_workflows, renames
+    def _new_workflows(
+        self,
+        target_layer: Layer,
+        items: list[DocItem],
+        grouped: dict[str | None, list[WorkPiece]],
+        layers_by_id: dict[str | None, SourceLayerInfo],
+    ) -> tuple[
+        list[tuple[DocItem, DocItem]],
+        list[Workflow],
+        list[tuple[Workflow, str]],
+    ]:
+        """Creates one workflow per imported source layer."""
+        pairs: list[tuple[DocItem, DocItem]] = []
+        new_workflows: list[Workflow] = []
+        default_workflow = (
+            target_layer.workflows[0] if target_layer.workflows else None
+        )
+        first_group = True
+        for layer_id, workpieces in grouped.items():
+            info = layers_by_id.get(layer_id)
+            if info is not None and default_workflow is not None:
+                workflow = self._editor.workflow.create_for_source_layer(
+                    target_layer, info, workpieces
+                )
+                if workflow is not None:
+                    new_workflows.append(workflow)
+                    pairs.append((target_layer, workflow))
+                    pairs.extend((target_layer, wp) for wp in workpieces)
+                    first_group = False
+                    continue
+            if first_group and default_workflow is not None:
+                self._assign(default_workflow, workpieces)
+                first_group = False
+            pairs.extend((target_layer, wp) for wp in workpieces)
+        return pairs, new_workflows, []
+
+    def _flatten(
+        self,
+        target_layer: Layer,
+        items: list[DocItem],
+        grouped: dict[str | None, list[WorkPiece]],
+        layers_by_id: dict[str | None, SourceLayerInfo],
+    ) -> tuple[
+        list[tuple[DocItem, DocItem]],
+        list[Workflow],
+        list[tuple[Workflow, str]],
+    ]:
+        """Assigns every imported part to the first workflow."""
+        pairs: list[tuple[DocItem, DocItem]] = [
+            (target_layer, item) for item in items
+        ]
+        default_workflow = (
+            target_layer.workflows[0] if target_layer.workflows else None
+        )
+        if default_workflow is not None:
+            self._assign(
+                default_workflow,
+                [item for item in items if isinstance(item, WorkPiece)],
+            )
+        return pairs, [], []
 
     @staticmethod
     def _layer_import_mode(
