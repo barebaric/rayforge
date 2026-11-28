@@ -304,14 +304,8 @@ def test_sidebar_layer_buttons_switch_and_add_layers(app_and_window):
     assert buttons[1].get_active()
     assert doc.active_layer is second
 
-    add_button = next(
-        child
-        for child in win.sidebar._layer_buttons
-        if isinstance(child, Gtk.Button)
-        and not isinstance(child, Gtk.ToggleButton)
-    )
     layer_count = len(doc.layers)
-    add_button.emit("clicked")
+    win.sidebar._add_layer_button.emit("clicked")
     process_events_for_duration(0.2)
     assert len(doc.layers) == layer_count + 1
 

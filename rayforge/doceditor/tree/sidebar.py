@@ -39,8 +39,8 @@ class Sidebar(Gtk.Box):
 
     _CSS = """
     .rf-layer-button {
-        min-width: 26px;
-        min-height: 26px;
+        min-width: 28px;
+        min-height: 28px;
         padding: 0;
         border-radius: 5px;
     }
@@ -69,6 +69,13 @@ class Sidebar(Gtk.Box):
         )
         self._layer_buttons.set_hexpand(True)
         header.append(self._layer_buttons)
+        self._add_layer_button = Gtk.Button(child=get_icon("add-symbolic"))
+        self._add_layer_button.add_css_class("flat")
+        self._add_layer_button.set_size_request(28, 28)
+        self._add_layer_button.set_valign(Gtk.Align.CENTER)
+        self._add_layer_button.set_tooltip_text(_("Add Layer"))
+        self._add_layer_button.connect("clicked", self._on_add_layer_clicked)
+        header.append(self._add_layer_button)
         self._layer_settings_button = Gtk.Button(
             child=get_icon("settings-symbolic")
         )
@@ -212,13 +219,20 @@ class Sidebar(Gtk.Box):
             dropdown.connect(
                 "notify::selected", self._on_layer_dropdown_selected
             )
+            context = Gtk.GestureClick()
+            context.set_button(3)
+            context.connect(
+                "pressed", self._on_layer_dropdown_context, dropdown
+            )
+            dropdown.add_controller(context)
             self._layer_buttons.append(dropdown)
             self._layer_dropdown = dropdown
         else:
             for index, layer in enumerate(layers):
                 button = Gtk.ToggleButton(label=str(index + 1))
                 button.add_css_class("rf-layer-button")
-                button.set_size_request(26, 26)
+                button.set_size_request(28, 28)
+                button.set_valign(Gtk.Align.CENTER)
                 button.set_tooltip_text(layer.name)
                 button.connect("toggled", self._on_layer_button_toggled, layer)
                 context = Gtk.GestureClick()
@@ -233,13 +247,6 @@ class Sidebar(Gtk.Box):
                 self._layer_buttons.append(button)
                 self._layer_buttons_by_layer.append((button, layer))
 
-        add_button = Gtk.Button(child=get_icon("add-symbolic"))
-        add_button.add_css_class("flat")
-        add_button.set_size_request(26, 26)
-        add_button.set_tooltip_text(_("Add Layer"))
-        add_button.connect("clicked", self._on_add_layer_clicked)
-        self._layer_buttons.append(add_button)
-
     def _on_layer_dropdown_selected(self, dropdown, _pspec):
         if self._syncing_layers or self._doc is None:
             return
@@ -248,6 +255,24 @@ class Sidebar(Gtk.Box):
         if 0 <= index < len(layers):
             self._close_layer_settings()
             self.editor.layer.set_active_layer(layers[index])
+
+    def _on_layer_dropdown_context(self, gesture, n_press, x, y, dropdown):
+        from .node import show_row_menu
+
+        if self._doc is None or not self._doc.layers:
+            return
+        layer = self._doc.active_layer
+        items: list[tuple[str, Callable[[], object]]] = [
+            (
+                _("Layer Settings\u2026"),
+                lambda: self._open_layer_settings(layer),
+            ),
+            (
+                _("Delete Layer"),
+                lambda: self.editor.layer.delete_layer(layer),
+            ),
+        ]
+        show_row_menu(dropdown, items, x=x, y=y)
 
     def _on_layer_button_toggled(self, button, layer):
         if self._syncing_layers:
@@ -272,13 +297,12 @@ class Sidebar(Gtk.Box):
                 lambda: self._open_layer_settings(layer),
             )
         ]
-        if self._doc is not None and len(self._doc.layers) > 1:
-            items.append(
-                (
-                    _("Delete Layer"),
-                    lambda: self.editor.layer.delete_layer(layer),
-                )
+        items.append(
+            (
+                _("Delete Layer"),
+                lambda: self.editor.layer.delete_layer(layer),
             )
+        )
         show_row_menu(button, items, x=x, y=y)
 
     def _on_add_layer_clicked(self, button):

@@ -164,3 +164,19 @@ def test_layer_cmd_set_layer_stock_material_no_change(layer_cmd, sample_layer):
     layer_cmd.set_layer_stock_material(sample_layer, None)
 
     assert len(hm.undo_stack) == 0
+
+
+def test_layer_cmd_delete_last_layer_creates_a_fresh_one(layer_cmd):
+    """Deleting the only layer replaces it with an empty layer."""
+    doc = layer_cmd._editor.doc
+    original = doc.active_layer
+    assert len(doc.layers) == 1
+
+    layer_cmd.delete_layer(original)
+
+    assert len(doc.layers) == 1
+    assert doc.layers[0] is not original
+    assert original not in doc.layers
+
+    layer_cmd._editor.history_manager.undo()
+    assert doc.layers[0] is original

@@ -36,23 +36,24 @@ _CSS = """
     font-size: 93%;
     opacity: 0.6;
 }
+.rf-tree-list > row.rf-feature .rf-row {
+    padding-top: 3px;
+    padding-bottom: 3px;
+    min-height: 0;
+}
+.rf-tree-list > row.rf-feature {
+    min-height: 0;
+}
 .rf-tree-list > row.rf-feature .rf-name,
 .rf-tree-list > row.rf-feature .rf-detail {
     font-size: 90%;
     opacity: 0.6;
 }
-.rf-tree-list > row.rf-layer-separator {
-    margin-top: 8px;
-    border-top: 1px solid alpha(currentColor, 0.15);
-}
-.rf-tree-list > row.rf-layer-separator .rf-row {
-    padding-top: 5px;
-}
-.rf-tree-list > row.rf-layer-separator .rf-name {
+.rf-layer-separator-label {
     font-size: 85%;
     font-weight: 600;
     letter-spacing: 0.04em;
-    opacity: 0.6;
+    opacity: 0.55;
 }
 .rf-tree-list > row.drop-above {
     box-shadow: inset 0 2px 0 @accent_bg_color;
@@ -77,7 +78,7 @@ _CSS = """
 .rf-pill {
     background-color: alpha(currentColor, 0.08);
     border-radius: 99px;
-    padding: 5px 12px;
+    padding: 8px 16px;
 }
 .rf-pill-title {
     font-weight: 700;
@@ -229,8 +230,15 @@ class NodeRow(Gtk.ListBoxRow):
 
         box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         box.add_css_class("rf-row")
-        box.set_margin_start(6 + spec.depth * 16)
-        box.set_margin_end(6)
+        margin_start = 6 + spec.depth * 16
+        margin_end = 6
+        if spec.kind == "feature":
+            # Align with the part's name and leave room where the eye
+            # icon sits on normal rows.
+            margin_start += 60
+            margin_end += 28
+        box.set_margin_start(margin_start)
+        box.set_margin_end(margin_end)
         self.set_child(box)
         if spec.selected:
             self.add_css_class("selected-row")
@@ -241,13 +249,15 @@ class NodeRow(Gtk.ListBoxRow):
         elif spec.kind == "layer-separator":
             self.add_css_class("rf-layer-separator")
 
-        box.append(self._build_twisty())
-        box.append(self._build_lead())
+        if spec.kind != "feature":
+            box.append(self._build_twisty())
+            box.append(self._build_lead())
         self._name_label = self._build_name()
         box.append(self._name_label)
         box.append(self._build_detail())
         box.append(self._build_duration())
-        box.append(self._build_eye())
+        if spec.kind != "feature":
+            box.append(self._build_eye())
 
         click = Gtk.GestureClick()
         click.set_button(1)

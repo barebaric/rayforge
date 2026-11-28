@@ -54,6 +54,8 @@ class WorkflowBar(Gtk.Box):
         self.add_css_class("rf-pill")
         self.set_halign(Gtk.Align.CENTER)
         self.set_valign(Gtk.Align.CENTER)
+        self.set_margin_top(10)
+        self.set_margin_bottom(4)
 
         title = Gtk.Label(label=_("Workflow"), xalign=0)
         title.add_css_class("rf-pill-title")
