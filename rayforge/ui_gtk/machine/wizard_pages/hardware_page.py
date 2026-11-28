@@ -17,6 +17,7 @@ from gi.repository import Adw, Gtk
 from ....machine.device.profile import DeviceProfile
 from ....machine.models.machine import Origin
 from ....machine.models.machine_panel import PanelOrientation
+from ....machine.models.origin import ORIGIN_LABELS
 from ...shared.pref_rows.acceleration_spin_row import AccelerationSpinRow
 from ...shared.pref_rows.length_spin_row import LengthSpinRow
 from ...shared.pref_rows.speed_spin_row import SpeedSpinRow
@@ -73,13 +74,8 @@ class HardwarePage(WizardPage):
         axes_group.add(self.y_row)
 
         origin_store = Gtk.StringList()
-        for label in (
-            _("Bottom Left"),
-            _("Top Left"),
-            _("Top Right"),
-            _("Bottom Right"),
-        ):
-            origin_store.append(label)
+        for origin in _ORIGIN_INDEX_TO_ENUM.values():
+            origin_store.append(ORIGIN_LABELS[origin])
         self.origin_row = Adw.ComboRow(
             title=_("Coordinate Origin (0,0)"),
             subtitle=_(

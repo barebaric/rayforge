@@ -13,7 +13,7 @@ types in JSON-serialisable dicts.
 
 import json
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from raygeo.ops import Ops
 from raygeo.ops.convert import Encoder, GcodeDialectSpec, GcodeSpec
@@ -261,15 +261,17 @@ def build_gcode_spec(machine: "Machine", doc: "Doc", ops: Ops) -> GcodeSpec:
     )
 
 
-def encode_ops(ops: Ops, spec: GcodeSpec) -> EncodedOutput:
-    """Run an encoder spec on *ops* and wrap the result."""
+def encode_ops(ops: Ops, spec: Any) -> EncodedOutput:
+    """Run a native encoder spec on *ops* and wrap the result."""
     result = ops.encode(Encoder(spec))
+    payload = result.payload
     return EncodedOutput(
         text=result.text or "",
         op_map=MachineCodeOpMap(
             op_to_machine_code=result.op_to_machine_code,
             machine_code_to_op=result.machine_code_to_op,
         ),
+        driver_data={"payload": bytes(payload)} if payload else {},
     )
 
 

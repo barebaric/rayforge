@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Epilog lasers: built-in support for Epilog machines with an
+  Ethernet print queue (Zing 16, Zing 24/6030, Helix 18 and Helix 24),
+  replacing the third-party add-on. Jobs are encoded as Epilog print
+  jobs with vector output, native 1-bit raster for dithered and
+  thresholded engravings, and per-dot power raster for grayscale
+  engraving, then uploaded over the BSD LPD protocol; framing uploads
+  a beam-off outline job. The encoder and transport run in raygeo,
+  and built-in profiles ship for both families; the print queue is
+  empty by default, each family validates its own raster resolutions,
+  an optional job-name prefix is shown in the machine's job list, and
+  hardware autofocus can be enabled in the driver options
+
 - CorelDRAW: `.cdr` drawings import as selectable layers with their
   text converted to outlines; hidden layers are skipped, content the
   reader could not convert is reported, and only the first drawing

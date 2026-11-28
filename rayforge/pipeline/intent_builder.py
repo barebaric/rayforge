@@ -65,7 +65,6 @@ from raygeo.ops import Ops
 from raygeo.ops.convert import (
     EncodeOutput,
     Encoder,
-    GcodeSpec,
     PythonEncoder,
 )
 from raygeo.ops.material.spec import (
@@ -85,7 +84,6 @@ from ..machine.models.coordspace import MachineSpace
 from ..machine.models.laser import LaserHead
 from ..machine.models.rotary_module import RotaryMode, RotaryType
 from .artifact.encoded import EncodedOutput
-from .encode_inputs import build_gcode_spec
 from .transformer import OpsTransformer
 from .transformer.registry import transformer_registry
 
@@ -494,10 +492,10 @@ class IntentBuilder:
         the machine code (G-code / vertex / texture).
 
         The encoder runs through raygeo's ``EncoderCompute`` stage.
-        G-code machines use the native Rust ``GcodeSpec`` for their
-        dialect; a driver that does not speak G-code has its own
-        encoder wrapped in a :class:`PythonEncoder` so it runs under
-        the GIL on a rayon worker thread — off the GTK main thread.
+        The driver supplies the native encoder spec; a driver that
+        only has a Python encoder is wrapped in a :class:`PythonEncoder`
+        so it runs under the GIL on a rayon worker thread — off the GTK
+        main thread.
         """
         if self._machine is None:
             return
@@ -1301,10 +1299,9 @@ class IntentBuilder:
         node.
 
         The encoder receives machine-space ops from the upstream
-        ``job:machinexform`` node (the machine transform stage).
-        G-code machines use the native Rust ``GcodeSpec`` for their
-        dialect; a non-G-code driver keeps its own encoder, wrapped in
-        a :class:`PythonEncoder`.
+        ``job:machinexform`` node (the machine transform stage). The
+        driver supplies the native encoder spec; a driver that only
+        has a Python encoder is wrapped in a :class:`PythonEncoder`.
         """
         encoder = self._build_encoder(doc)
         return EncodeSpec(
@@ -1314,49 +1311,35 @@ class IntentBuilder:
     def _build_encoder(self, doc: Doc) -> Any:
         """Resolve the encoder for the configured machine.
 
-        G-code drivers get the native ``GcodeSpec`` for their dialect,
-        which raygeo's pipeline runs on a rayon thread without crossing
-        the GIL. Drivers that do not speak G-code (e.g. Ruida) get a
-        :class:`PythonEncoder` wrapping their own encoder until they are
-        ported into raygeo.driver.
+        The driver class decides which encoder its protocol needs:
+        G-code drivers return the native ``GcodeSpec`` and print-job
+        drivers their own spec, all through
+        :meth:`Driver.create_encoder_spec`. The pipeline never names a
+        specific encoder, and native specs run on a rayon thread
+        without crossing the GIL.
 
-        The route is decided by the driver's G-code capability, never
-        by the dialect alone: a driver that does not speak G-code
-        (e.g. Ruida) must always use its own encoder, even when the
-        machine still carries a leftover Grbl dialect (issue #420).
-
-        A driver that is named in the machine configuration but not
-        installed fails here instead of silently encoding G-code with
-        the dummy driver.
+        Drivers that only provide a Python encoder (e.g. Ruida today)
+        fall back to a :class:`PythonEncoder` wrapping their own
+        encoder. A driver that is named in the machine configuration
+        but not installed fails here instead of silently encoding
+        G-code with the dummy driver.
         """
         machine = self._machine
         assert machine is not None
 
         driver_cls = resolve_driver_cls(machine)
-        if driver_cls.uses_gcode:
-            return self._gcode_encoder_spec(doc)
+        # Build a minimal Ops with estimated extents so G-code path
+        # variables like ``job.extents[0..3]`` are populated before the
+        # real ops are available from the pipeline.
+        approx_ops = _approximate_job_ops(doc)
+        spec = driver_cls.create_encoder_spec(machine, doc, approx_ops)
+        if spec is not None:
+            return spec
 
         return PythonEncoder(
             self._make_python_encoder_callable(machine, doc),
             "driver.encode",
         )
-
-    def _gcode_encoder_spec(self, doc: Doc) -> GcodeSpec:
-        """Build a native ``GcodeSpec`` for the machine's dialect.
-
-        Receives machine-space ops from the upstream
-        ``job:machinexform`` node and encodes them directly on a
-        rayon thread without crossing the GIL.
-        """
-        machine = self._machine
-        assert machine is not None
-        # Build a minimal Ops with estimated extents so path variables
-        # like ``job.extents[0..3]`` used in dialect templates are
-        # populated with reasonable values.  The exact extents are
-        # computed later from the real ops at encode time (the
-        # machine-transform stage preserves bounding-box metadata).
-        approx_ops = _approximate_job_ops(doc)
-        return build_gcode_spec(machine, doc, approx_ops)
 
     def _build_machine_transform_stage(self, doc: Doc) -> MachineTransformSpec:
         """Build the :class:`MachineTransformSpec` for the machine-
@@ -1692,6 +1675,9 @@ def _machine_token_payload(machine: Machine | None, doc: Doc) -> Any:
         return None
     return {
         "driver_name": machine.driver_name,
+        # Encoder-specific setup (e.g. raster resolution) lives in the
+        # driver args, so a change there must invalidate the encode.
+        "driver_args": _canonical(machine.driver_args),
         "active_wcs": machine.active_wcs,
         "gcode_precision": machine.gcode_precision,
         "supports_curves": machine.supports_curves,

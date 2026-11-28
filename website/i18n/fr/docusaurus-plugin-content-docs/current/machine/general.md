@@ -49,6 +49,27 @@ le minimum émis lorsque la vitesse de coupe de la couche diminue, le plancher d
 compense la sur-combustion aux extrémités des lignes, et le biais d'image compense les tubes CO2 qui
 ne s'allument pas à très faible puissance.
 
+### Epilog
+
+Les lasers Epilog dotés d'un port Ethernet (Zing 16, Zing 24/6030, Helix 18 et Helix 24) utilisent
+le pilote **Epilog Zing** ou **Epilog Helix**. Les travaux sont encodés comme des travaux
+d'impression Epilog et envoyés dans la file d'impression de la machine ; démarrez-les depuis la
+liste des travaux du laser. Le pilote demande l'adresse IP, le port d'impression (515 par défaut),
+le nom de la file d'impression (vide par défaut ; ne le renseignez que si votre serveur d'impression
+l'exige), un préfixe facultatif pour le nom du travail, une option d'autofocus, la résolution de
+trame (Zing : 100–1000 DPI ; Helix : 75–1200 DPI) et la fréquence vectorielle (10–5000 Hz).
+
+Le protocole d'impression n'offre aucun contrôle à distance : Rayforge ne peut donc ni référencer ni
+déplacer ni interroger l'état de ces machines, et la mise au point comme l'assistance d'air se
+règlent sur le laser. L'autofocus matériel peut être activé dans les options du pilote. Le langage
+du travail adresse toujours une page dont l'origine est en haut à gauche : l'origine des coordonnées
+est donc fixée à **Haut gauche**. **Envoyer** téléverse le travail et **Cadrer** téléverse un
+travail de contour faisceau éteint que vous démarrez de la même manière. La vitesse est convertie
+dans l'échelle en pourcentage de la machine : Rayforge utilise 6000 mm/min comme référence de 100 %,
+donc 600 mm/min correspondent à 10 %. Les gravures en tramage et en seuil sont envoyées en lignes de
+trame 1 bit natives ; les gravures en modulation de puissance (niveaux de gris) utilisent le mode de
+puissance par point de la machine. Les travaux rotatifs ne sont pas pris en charge.
+
 ### Liaison du Port Série
 
 Au lieu d'un chemin de périphérique (ex. `/dev/ttyUSB0` ou `COM3`), le champ du port série accepte

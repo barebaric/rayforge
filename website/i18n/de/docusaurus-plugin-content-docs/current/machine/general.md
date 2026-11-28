@@ -48,6 +48,28 @@ Leistungsverhalten wird über die Treiberoptionen **Power Scaling**, **VECTOR po
 Schrittgeschwindigkeit der Lage sinkt, der Vector Power Floor gleicht Nachbrennen an den Enden von
 Linien aus, und der Image Bias gleicht CO2-Röhren aus, die bei sehr geringer Leistung nicht zünden.
 
+### Epilog
+
+Epilog-Laser mit Ethernet-Anschluss (Zing 16, Zing 24/6030, Helix 18 und Helix 24) verwenden den
+Treiber **Epilog Zing** oder **Epilog Helix**. Aufträge werden als Epilog-Druckaufträge kodiert und
+in die Druckwarteschlange der Maschine übertragen; gestartet werden sie in der Auftragsliste des
+Lasers. Der Treiber fragt die IP-Adresse, den Druckport (standardmäßig 515), den Namen der
+Druckwarteschlange (standardmäßig leer; nur setzen, wenn Ihr Druckserver einen Namen verlangt), ein
+optionales Präfix für den Auftragsnamen, eine Autofokus-Option, die Rasterauflösung (Zing: 100–1000
+DPI; Helix: 75–1200 DPI) und die Vektorfrequenz (10–5000 Hz) ab.
+
+Das Druckprotokoll bietet keine Fernsteuerung, daher kann Rayforge diese Maschinen nicht
+referenzieren, verfahren, ihren Status abfragen oder den Kopf bewegen; Fokus und Luftunterstützung
+werden am Laser eingestellt. Der Hardware-Autofokus kann in den Treiberoptionen aktiviert werden.
+Die Auftragssprache adressiert stets eine Seite mit Ursprung oben links, daher ist der
+Koordinatenursprung fest auf **Oben links** gesetzt. **Senden** überträgt den Auftrag, **Rahmen**
+überträgt einen Rahmenauftrag mit ausgeschaltetem Strahl, den Sie genauso starten. Die
+Geschwindigkeit wird in die prozentuale Skala der Maschine umgerechnet: Rayforge verwendet 6000
+mm/min als 100-%-Referenz, 600 mm/min entsprechen also 10 %. Gravierungen per Dithering und
+Schwellenwert werden als native 1-Bit-Rasterzeilen gesendet; leistungsmodulierte
+(Graustufen-)Gravierungen nutzen den Punktleistungsmodus der Maschine. Rundaufträge werden nicht
+unterstützt.
+
 ### Serieller Port binden
 
 Statt eines Gerätepfads (z. B. `/dev/ttyUSB0` oder `COM3`) akzeptiert das Feld für den seriellen

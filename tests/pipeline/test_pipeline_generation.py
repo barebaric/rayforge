@@ -595,3 +595,79 @@ class TestPipelineGeneration:
             assert artifact.mapped_ops is not None
 
         await asyncio.to_thread(task_mgr.wait_until_settled, 5000)
+
+
+@pytest.mark.usefixtures("context_initializer")
+class TestEncodeFailureIsTerminal:
+    """A failing job encode must not leave the pipeline rebuilding.
+
+    A failed encode node keeps failing on every rebuild, so a caller
+    polling for a preview/job must not re-trigger it forever.
+    """
+
+    def _failing_builder(self, monkeypatch):
+        from raygeo.ops.convert import PythonEncoder
+
+        def _fail(ops):
+            raise ValueError("Epilog requires a top-left origin")
+
+        monkeypatch.setattr(
+            "rayforge.pipeline.intent_builder.IntentBuilder._build_encoder",
+            lambda self, doc: PythonEncoder(_fail, "failing.encode"),
+        )
+
+    @pytest.mark.asyncio
+    async def test_repeated_requests_do_not_rebuild(
+        self,
+        doc,
+        real_workpiece,
+        task_mgr,
+        context_initializer,
+        contour_step_class,
+        monkeypatch,
+    ):
+        layer = doc.active_layer
+        source = SourceAsset(
+            Path("x.svg"),
+            original_data=TestPipelineGeneration.svg_data,
+            renderer=SVG_RENDERER,
+        )
+        doc.add_asset(source)
+        real_workpiece.source_segment = SourceAssetSegment(
+            source_asset_uid=source.uid,
+            pristine_geometry=Geometry(),
+            vectorization_spec=PassthroughSpec(),
+        )
+        real_workpiece.set_size(50, 30)
+        real_workpiece.pos = 10, 20
+        layer.add_workpiece(real_workpiece)
+        assert layer.workflow is not None
+        layer.workflow.add_step(contour_step_class.create(context_initializer))
+
+        pipeline = Pipeline(
+            doc,
+            task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
+        self._failing_builder(monkeypatch)
+
+        with pytest.raises(RuntimeError, match="top-left"):
+            await asyncio.wait_for(
+                pipeline.generate_job_artifact_async(), timeout=10
+            )
+        generation = pipeline.data_generation_id
+
+        for _ in range(3):
+            with pytest.raises(RuntimeError, match="top-left"):
+                await asyncio.wait_for(
+                    pipeline.generate_job_artifact_async(), timeout=10
+                )
+        assert pipeline.data_generation_id == generation
+
+        pipeline.invalidate_job_output()
+        assert pipeline._job_encoding_failure() is None
+
+        await pipeline.wait_until_idle()
+        pipeline.shutdown()
+        await asyncio.to_thread(task_mgr.wait_until_settled, 5000)
