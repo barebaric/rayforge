@@ -1,6 +1,7 @@
 import logging
 import re
 from dataclasses import dataclass, field
+from itertools import combinations
 from typing import Any
 
 import numpy as np
@@ -398,3 +399,31 @@ def pick_unused_color(used_colors: set) -> str:
         if color.upper() not in normalized:
             return color
     return COLOR_PALETTE[0]
+
+
+def _rgb(color: str) -> tuple[int, int, int]:
+    value = color.lstrip("#")
+    return (
+        int(value[0:2], 16),
+        int(value[2:4], 16),
+        int(value[4:6], 16),
+    )
+
+
+def color_distance(first: str, second: str) -> int:
+    """Returns the squared RGB distance between two hex colors."""
+    a = _rgb(first)
+    b = _rgb(second)
+    return sum((x - y) ** 2 for x, y in zip(a, b))
+
+
+def pick_contrasting_colors(count: int) -> tuple[str, ...]:
+    """Picks the palette colors that are most distinct from each other."""
+    candidates = combinations(COLOR_PALETTE, count)
+    return max(
+        candidates,
+        key=lambda combo: min(
+            color_distance(first, second)
+            for first, second in combinations(combo, 2)
+        ),
+    )

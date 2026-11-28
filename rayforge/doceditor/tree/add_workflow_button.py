@@ -1,43 +1,15 @@
 """The "+ Workflow" pill for adding workflows."""
 
 from gettext import gettext as _
-from itertools import combinations
 
 from blinker import Signal
 from gi.repository import GLib, Gtk
 
-from ...core.color import COLOR_PALETTE
+from ...core.color import pick_contrasting_colors
 from ...ui_gtk.icons import get_icon
 from .node import swatch_button
 
 _QUICK_COLORS = 3
-
-
-def _rgb(color: str) -> tuple[int, int, int]:
-    value = color.lstrip("#")
-    return (
-        int(value[0:2], 16),
-        int(value[2:4], 16),
-        int(value[4:6], 16),
-    )
-
-
-def _distance(first: str, second: str) -> int:
-    a = _rgb(first)
-    b = _rgb(second)
-    return sum((x - y) ** 2 for x, y in zip(a, b))
-
-
-def _contrasting_colors(count: int) -> tuple[str, ...]:
-    """Picks the palette colors that are most distinct from each other."""
-    candidates = combinations(COLOR_PALETTE, count)
-    return max(
-        candidates,
-        key=lambda combo: min(
-            _distance(first, second)
-            for first, second in combinations(combo, 2)
-        ),
-    )
 
 
 class WorkflowBar(Gtk.Box):
@@ -61,7 +33,7 @@ class WorkflowBar(Gtk.Box):
         title.add_css_class("rf-pill-title")
         self.append(title)
 
-        for color in _contrasting_colors(_QUICK_COLORS):
+        for color in pick_contrasting_colors(_QUICK_COLORS):
             swatch = swatch_button(color, diameter=16)
             swatch.add_css_class("rf-pill-swatch")
             swatch.set_valign(Gtk.Align.CENTER)

@@ -5,7 +5,7 @@ import math
 import warnings
 from collections.abc import Generator, Iterable
 from copy import deepcopy
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from enum import Enum, auto
 from gettext import gettext as _
 from pathlib import Path
@@ -23,7 +23,7 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     import pyvips
 
-from raygeo.geo import Geometry, Matrix
+from raygeo.geo import Geometry, Matrix, Move
 from raygeo.geo.types import Point, Rect
 from raygeo.ops.part import Part
 
@@ -102,6 +102,23 @@ class AnchorMode(Enum):
             self.REFERENCE: _("Reference point"),
         }
         return labels[self]
+
+
+class WorkpieceFeatureKind(Enum):
+    """The kinds of features detected in a workpiece's geometry."""
+
+    OUTER_PATHS = "outer"
+    INNER_PATHS = "inner"
+    OPEN_PATHS = "open"
+    FILLS = "fills"
+
+
+@dataclass(frozen=True)
+class WorkpieceFeature:
+    """One detected feature group of a workpiece."""
+
+    kind: WorkpieceFeatureKind
+    count: int
 
 
 class WorkPiece(DocItem, VisibleMixin):
@@ -695,6 +712,48 @@ class WorkPiece(DocItem, VisibleMixin):
         """
         _ = self.boundaries  # trigger boundary computation
         return self._fills_cache
+
+    def detect_features(self) -> list[WorkpieceFeature]:
+        """
+        Returns the feature groups present in this workpiece.
+
+        The result is intentionally a typed list so more feature kinds
+        (for example CNC machining features) can be added later without
+        changing consumers.
+        """
+        features: list[WorkpieceFeature] = []
+        boundaries = self.boundaries
+        if boundaries is not None and not boundaries.is_empty():
+            inner, outer = boundaries.split_inner_and_outer_contours()
+            closed = len(inner) + len(outer)
+            contour_count = sum(
+                1 for command in boundaries.data if isinstance(command, Move)
+            )
+            open_paths = max(0, contour_count - closed)
+            if outer:
+                features.append(
+                    WorkpieceFeature(
+                        WorkpieceFeatureKind.OUTER_PATHS, len(outer)
+                    )
+                )
+            if inner:
+                features.append(
+                    WorkpieceFeature(
+                        WorkpieceFeatureKind.INNER_PATHS, len(inner)
+                    )
+                )
+            if open_paths:
+                features.append(
+                    WorkpieceFeature(
+                        WorkpieceFeatureKind.OPEN_PATHS, open_paths
+                    )
+                )
+        fills = self.fills
+        if fills:
+            features.append(
+                WorkpieceFeature(WorkpieceFeatureKind.FILLS, len(fills))
+            )
+        return features
 
     @property
     def world_space_boundaries(self) -> Geometry | None:

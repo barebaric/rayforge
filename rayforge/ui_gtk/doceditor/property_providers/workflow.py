@@ -8,6 +8,7 @@ from gi.repository import Adw, Gtk
 from ....core.item import DocItem
 from ....core.workflow import Workflow
 from ...shared.gtk import apply_css
+from ..workflow_view import WorkflowView
 from .base import PropertyProvider
 
 if TYPE_CHECKING:
@@ -22,7 +23,7 @@ _CSS = """
 
 
 class WorkflowPropertyProvider(PropertyProvider):
-    """Edits a workflow's name and the parts it runs for."""
+    """Edits a workflow's name, steps, and the parts it runs for."""
 
     priority = 10
 
@@ -34,8 +35,6 @@ class WorkflowPropertyProvider(PropertyProvider):
         self.name_row = Adw.EntryRow(title=_("Workflow Name"))
         self.name_row.set_show_apply_button(False)
         self.name_row.connect("apply", self._on_name_applied)
-
-        self.steps_row = Adw.ActionRow(title=_("Steps"))
 
         self.parts_label = Gtk.Label(
             label=_("Parts this workflow runs for"), xalign=0
@@ -58,10 +57,16 @@ class WorkflowPropertyProvider(PropertyProvider):
         self.parts_row = Gtk.ListBoxRow()
         self.parts_row.set_child(parts_box)
 
+        self.workflow_view_holder = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL
+        )
+        self._workflow_view: WorkflowView | None = None
+        self._workflow_view_workflow: Workflow | None = None
+
         return [
             self.name_row,
-            self.steps_row,
             self.parts_row,
+            self.workflow_view_holder,
         ]
 
     def update_widgets(self, editor: "DocEditor", items: list[DocItem]):
@@ -74,13 +79,21 @@ class WorkflowPropertyProvider(PropertyProvider):
         try:
             if self.name_row.get_text() != workflow.name:
                 self.name_row.set_text(workflow.name)
-            step_names = [step.name for step in workflow.steps]
-            self.steps_row.set_subtitle(
-                ", ".join(step_names) if step_names else _("No steps")
-            )
             self._rebuild_part_chips(workflow)
+            self._sync_workflow_view(editor, workflow)
         finally:
             self._in_update = False
+
+    def _sync_workflow_view(self, editor: "DocEditor", workflow: Workflow):
+        """Shows the standard workflow panel for the selected workflow."""
+        if self._workflow_view is None:
+            self._workflow_view = WorkflowView(editor, workflow)
+            self.workflow_view_holder.append(self._workflow_view)
+            self._workflow_view_workflow = workflow
+            return
+        if workflow is not self._workflow_view_workflow:
+            self._workflow_view.set_workflow(workflow)
+            self._workflow_view_workflow = workflow
 
     def _rebuild_part_chips(self, workflow: Workflow):
         child = self.parts_box.get_first_child()

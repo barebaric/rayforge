@@ -311,6 +311,23 @@ def test_sidebar_layer_buttons_switch_and_add_layers(app_and_window):
 
 
 @pytest.mark.ui
+def test_hidden_layer_button_is_crossed_out(app_and_window):
+    _app, win = app_and_window
+    doc = win.doc_editor.doc
+    second = Layer("Second")
+    doc.add_layer(second)
+    process_events_for_duration(0.3)
+
+    win.doc_editor.layer.set_layer_visibility(second, False)
+    process_events_for_duration(0.3)
+
+    button = win.sidebar._layer_buttons_by_layer[1][0]
+    label = button.get_child()
+    assert label.has_css_class("rf-layer-button-hidden")
+    assert "hidden" in button.get_tooltip_text()
+
+
+@pytest.mark.ui
 def test_workflow_selection_shows_workflow_properties(app_and_window):
     _app, win = app_and_window
     doc = win.doc_editor.doc

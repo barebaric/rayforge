@@ -20,6 +20,7 @@ from ...ui_gtk.doceditor.layer_settings_dialog import (
 )
 from ...ui_gtk.icons import get_icon
 from ...ui_gtk.shared.gtk import apply_css
+from .node import show_row_menu
 from .operations_tree import OperationsTree
 from .parts_tree import PartsTree
 
@@ -44,6 +45,10 @@ class Sidebar(Gtk.Box):
         padding: 0;
         border-radius: 5px;
     }
+    .rf-layer-button-hidden {
+        text-decoration: line-through;
+        opacity: 0.6;
+    }
     """
 
     def __init__(self, editor: DocEditor):
@@ -53,7 +58,7 @@ class Sidebar(Gtk.Box):
         self.item_selected = Signal()
 
         self._doc: Doc | None = None
-        self._layer_signature: tuple[tuple[str, str], ...] | None = None
+        self._layer_signature: tuple[tuple[str, str, bool], ...] | None = None
         self._syncing_layers = False
         self._layer_settings_dialog: LayerSettingsDialog | None = None
         self._layer_buttons_by_layer: list[tuple[Gtk.ToggleButton, Layer]] = []
@@ -147,6 +152,7 @@ class Sidebar(Gtk.Box):
         if doc is not None:
             doc.descendant_added.connect(self._on_layers_changed)
             doc.descendant_removed.connect(self._on_layers_changed)
+            doc.descendant_updated.connect(self._on_layers_changed)
             doc.descendant_renamed.connect(self._on_layers_changed)
             doc.active_layer_changed.connect(self._on_active_layer_changed)
         self._layer_signature = None
@@ -155,6 +161,7 @@ class Sidebar(Gtk.Box):
     def _disconnect(self, doc: Doc):
         doc.descendant_added.disconnect(self._on_layers_changed)
         doc.descendant_removed.disconnect(self._on_layers_changed)
+        doc.descendant_updated.disconnect(self._on_layers_changed)
         doc.descendant_renamed.disconnect(self._on_layers_changed)
         doc.active_layer_changed.disconnect(self._on_active_layer_changed)
 
@@ -182,7 +189,9 @@ class Sidebar(Gtk.Box):
     def _sync_layers(self):
         doc = self._doc
         layers = doc.layers if doc is not None else []
-        signature = tuple((layer.uid, layer.name) for layer in layers)
+        signature = tuple(
+            (layer.uid, layer.name, layer.visible) for layer in layers
+        )
         if signature != self._layer_signature:
             self._layer_signature = signature
             self._rebuild_layer_selector(layers)
@@ -201,6 +210,13 @@ class Sidebar(Gtk.Box):
             doc.active_layer if doc is not None and doc.layers else None
         )
 
+    @staticmethod
+    def _layer_display_name(layer: Layer) -> str:
+        """Returns the layer label, marking hidden layers."""
+        if layer.visible:
+            return layer.name
+        return _("{name} (hidden)").format(name=layer.name)
+
     def _rebuild_layer_selector(self, layers):
         child = self._layer_buttons.get_first_child()
         while child:
@@ -212,7 +228,9 @@ class Sidebar(Gtk.Box):
 
         if len(layers) > 4:
             dropdown = Gtk.DropDown(
-                model=Gtk.StringList.new([layer.name for layer in layers])
+                model=Gtk.StringList.new(
+                    [self._layer_display_name(layer) for layer in layers]
+                )
             )
             dropdown.set_hexpand(True)
             dropdown.set_tooltip_text(_("Active layer"))
@@ -229,11 +247,14 @@ class Sidebar(Gtk.Box):
             self._layer_dropdown = dropdown
         else:
             for index, layer in enumerate(layers):
-                button = Gtk.ToggleButton(label=str(index + 1))
+                label = Gtk.Label(label=str(index + 1))
+                if not layer.visible:
+                    label.add_css_class("rf-layer-button-hidden")
+                button = Gtk.ToggleButton(child=label)
                 button.add_css_class("rf-layer-button")
                 button.set_size_request(28, 28)
                 button.set_valign(Gtk.Align.CENTER)
-                button.set_tooltip_text(layer.name)
+                button.set_tooltip_text(self._layer_display_name(layer))
                 button.connect("toggled", self._on_layer_button_toggled, layer)
                 context = Gtk.GestureClick()
                 context.set_button(3)
@@ -257,8 +278,6 @@ class Sidebar(Gtk.Box):
             self.editor.layer.set_active_layer(layers[index])
 
     def _on_layer_dropdown_context(self, gesture, n_press, x, y, dropdown):
-        from .node import show_row_menu
-
         if self._doc is None or not self._doc.layers:
             return
         layer = self._doc.active_layer
@@ -289,8 +308,6 @@ class Sidebar(Gtk.Box):
         self.editor.layer.set_active_layer(layer)
 
     def _on_layer_button_context(self, gesture, n_press, x, y, button, layer):
-        from .node import show_row_menu
-
         items: list[tuple[str, Callable[[], object]]] = [
             (
                 _("Layer Settings\u2026"),

@@ -9,7 +9,7 @@ from ...core.group import Group
 from .node import NodeRow
 from .specs import NodeSpec
 
-_GROUP_ICON = "folder-symbolic"
+_GROUP_ICON = "layers-symbolic"
 
 
 class GroupNode(NodeRow):

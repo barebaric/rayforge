@@ -5,14 +5,19 @@ from gettext import gettext as _
 from gettext import ngettext
 
 from gi.repository import Gtk
-from raygeo.geo import Move
 
-from ...core.workpiece import WorkPiece
+from ...core.workpiece import WorkPiece, WorkpieceFeatureKind
 from .feature_node import FeatureNode
 from .node import NodeRow
 from .specs import NodeSpec
 
 _WORKPIECE_ICON = "model-symbolic"
+_FEATURE_LABELS = {
+    WorkpieceFeatureKind.OUTER_PATHS: _("Outer paths"),
+    WorkpieceFeatureKind.INNER_PATHS: _("Inner paths"),
+    WorkpieceFeatureKind.OPEN_PATHS: _("Open paths"),
+    WorkpieceFeatureKind.FILLS: _("Fills"),
+}
 
 
 class WorkPieceNode(NodeRow):
@@ -80,62 +85,24 @@ def _feature_rows(
     workpiece: WorkPiece, depth: int, callbacks
 ) -> list[Gtk.Widget]:
     rows: list[Gtk.Widget] = []
-    boundaries = workpiece.boundaries
-    if boundaries is not None and not boundaries.is_empty():
-        inner, outer = boundaries.split_inner_and_outer_contours()
-        closed = len(inner) + len(outer)
-        open_paths = max(0, _contour_count(boundaries) - closed)
-        if outer:
-            rows.append(
-                FeatureNode(
-                    workpiece.uid,
-                    "outer",
-                    _("Outer paths"),
-                    _("{n} paths").format(n=len(outer)),
-                    depth,
-                    callbacks,
-                )
+    for feature in workpiece.detect_features():
+        if feature.kind is WorkpieceFeatureKind.FILLS:
+            detail = ngettext("{n} fill", "{n} fills", feature.count).format(
+                n=feature.count
             )
-        if inner:
-            rows.append(
-                FeatureNode(
-                    workpiece.uid,
-                    "inner",
-                    _("Inner paths"),
-                    _("{n} paths").format(n=len(inner)),
-                    depth,
-                    callbacks,
-                )
-            )
-        if open_paths:
-            rows.append(
-                FeatureNode(
-                    workpiece.uid,
-                    "open",
-                    _("Open paths"),
-                    _("{n} paths").format(n=open_paths),
-                    depth,
-                    callbacks,
-                )
-            )
-    fills = workpiece.fills
-    if fills:
-        count = len(fills)
+        else:
+            detail = _("{n} paths").format(n=feature.count)
         rows.append(
             FeatureNode(
                 workpiece.uid,
-                "fills",
-                _("Fills"),
-                ngettext("{n} fill", "{n} fills", count).format(n=count),
+                feature.kind.value,
+                _FEATURE_LABELS[feature.kind],
+                detail,
                 depth,
                 callbacks,
             )
         )
     return rows
-
-
-def _contour_count(geometry) -> int:
-    return sum(1 for command in geometry.data if isinstance(command, Move))
 
 
 def _size_detail(workpiece: WorkPiece) -> str:

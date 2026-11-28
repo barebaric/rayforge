@@ -14,7 +14,11 @@ from rayforge.core.source_asset import SourceAsset
 from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.tab import Tab
 from rayforge.core.vectorization_spec import LayerImportMode, PassthroughSpec
-from rayforge.core.workpiece import AnchorMode, WorkPiece
+from rayforge.core.workpiece import (
+    AnchorMode,
+    WorkPiece,
+    WorkpieceFeatureKind,
+)
 from rayforge.image import import_file
 from rayforge.image.svg.renderer import SvgRenderer
 
@@ -267,6 +271,33 @@ class TestWorkPiece:
         wp._edited_boundaries = None
         # Should revert to cached original (y-up version)
         assert wp.boundaries is not edited_geo
+
+    def test_detect_features(self):
+        """Feature detection reports outer, inner and open paths."""
+        wp = WorkPiece("Part")
+        geometry = Geometry()
+        geometry.move_to(0, 0)
+        geometry.line_to(10, 0)
+        geometry.line_to(10, 10)
+        geometry.line_to(0, 10)
+        geometry.close_path()
+        inner = Geometry()
+        inner.move_to(2, 2)
+        inner.line_to(4, 2)
+        inner.line_to(4, 4)
+        inner.close_path()
+        geometry.extend(inner)
+        geometry.move_to(20, 0)
+        geometry.line_to(25, 0)
+        wp._edited_boundaries = geometry
+
+        features = {
+            feature.kind: feature.count for feature in wp.detect_features()
+        }
+
+        assert features[WorkpieceFeatureKind.OUTER_PATHS] == 1
+        assert features[WorkpieceFeatureKind.INNER_PATHS] == 1
+        assert features[WorkpieceFeatureKind.OPEN_PATHS] == 1
 
     def test_world_space_boundaries(self, workpiece_instance):
         """

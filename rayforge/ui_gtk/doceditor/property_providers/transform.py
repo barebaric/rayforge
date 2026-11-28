@@ -9,6 +9,7 @@ from ....core.group import Group
 from ....core.item import DocItem
 from ....core.stock import StockItem
 from ....core.undo import ChangePropertyCommand
+from ....core.workflow import Workflow
 from ....core.workpiece import AnchorMode, WorkPiece
 from ....doceditor.transform_cmd import TransformCmd
 from ....shared.units.formatter import format_value
@@ -31,7 +32,9 @@ class TransformPropertyProvider(PropertyProvider):
     priority = 10
 
     def can_handle(self, items: list[DocItem]) -> bool:
-        return bool(items)
+        return bool(items) and not any(
+            isinstance(item, Workflow) for item in items
+        )
 
     def create_widgets(self) -> list[Gtk.Widget]:
         """Creates the widgets for transform properties once."""

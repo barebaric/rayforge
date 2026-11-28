@@ -1,12 +1,18 @@
 """UI tests for the workflow property provider."""
 
+from typing import Any, cast
 from unittest.mock import MagicMock
 
 import pytest
 from gi.repository import Gtk
 
+from rayforge.core.doc import Doc
 from rayforge.core.layer import Layer
+from rayforge.core.step import Step
 from rayforge.core.workpiece import WorkPiece
+from rayforge.ui_gtk.doceditor.property_providers.transform import (
+    TransformPropertyProvider,
+)
 from rayforge.ui_gtk.doceditor.property_providers.workflow import (
     WorkflowPropertyProvider,
 )
@@ -38,14 +44,43 @@ def _chips(provider):
 
 
 @pytest.mark.ui
-def test_shows_name_steps_and_part_chips(ui_context_initializer):
+def test_shows_name_and_part_chips(ui_context_initializer):
     provider, workflow, _editor, _first, _second = _setup()
 
     assert provider.name_row.get_text() == workflow.name
-    assert provider.steps_row.get_subtitle() == "No steps"
     chips = _chips(provider)
     assert [chip.get_label() for chip in chips] == ["First", "Second"]
     assert all(chip.get_active() for chip in chips)
+    assert provider._workflow_view is not None
+    assert provider._workflow_view.workflow is workflow
+
+
+@pytest.mark.ui
+def test_shows_the_standard_workflow_step_list(ui_context_initializer):
+    layer = Layer("Layer")
+    workflow = layer.workflows[0]
+    step = Step(typelabel="Contour", name="Cut")
+    workflow.add_step(step)
+    doc = Doc()
+    doc.set_children([])
+    doc.add_layer(layer)
+    provider = WorkflowPropertyProvider()
+    provider.create_widgets()
+
+    provider.update_widgets(MagicMock(), [workflow])
+
+    assert provider._workflow_view is not None
+    rows = list(provider._workflow_view.draglist)
+    assert len(rows) == 1
+    assert cast(Any, rows[0]).stepbox.step is step
+
+
+@pytest.mark.ui
+def test_workflow_has_no_transform_properties(ui_context_initializer):
+    workflow = Layer("Layer").workflows[0]
+    provider = TransformPropertyProvider()
+
+    assert provider.can_handle([workflow]) is False
 
 
 @pytest.mark.ui

@@ -595,6 +595,48 @@ class FileCmd:
         workflow.set_workpiece_uids([wp.uid for wp in workpieces])
         return workflow
 
+    @staticmethod
+    def _scope_existing_workflows(
+        target_layer: Layer,
+    ) -> tuple[list[Workflow], Workflow | None]:
+        """Scopes all-parts workflows to existing parts or collects them.
+
+        Returns the workflows that can be reused for imported parts and
+        the layer's default workflow.
+        """
+        existing = target_layer.workflows
+        existing_uids = [wp.uid for wp in target_layer.all_workpieces]
+        reusable: list[Workflow] = []
+        for workflow in existing:
+            if workflow.workpiece_uids:
+                continue
+            if existing_uids:
+                workflow.set_workpiece_uids(existing_uids)
+            else:
+                reusable.append(workflow)
+        return reusable, existing[0] if existing else None
+
+    def _take_reusable_workflow(
+        self,
+        reusable: list[Workflow],
+        info: SourceLayerInfo | None,
+        workpieces: list[WorkPiece],
+    ) -> Workflow | None:
+        """Takes the next reusable workflow and assigns a source layer."""
+        if not reusable:
+            return None
+        workflow = reusable.pop(0)
+        if info is not None:
+            if info.color:
+                workflow.set_color(info.color)
+            if info.settings:
+                workflow.set_steps([])
+                ItemAssembler.apply_settings_to_workflow(
+                    workflow, info.name, info.settings
+                )
+        self._assign(workflow, workpieces)
+        return workflow
+
     def _new_workflows(
         self,
         target_layer: Layer,
@@ -612,49 +654,23 @@ class FileCmd:
         """
         pairs: list[tuple[DocItem, DocItem]] = []
         dest_workflows: list[Workflow] = []
-        existing = target_layer.workflows
-        existing_uids = [wp.uid for wp in target_layer.all_workpieces]
-        reusable: list[Workflow] = []
-        for workflow in existing:
-            if workflow.workpiece_uids:
-                continue
-            if existing_uids:
-                workflow.set_workpiece_uids(existing_uids)
-            else:
-                reusable.append(workflow)
-        default_workflow = existing[0] if existing else None
-        first_group = True
+        reusable, default_workflow = self._scope_existing_workflows(
+            target_layer
+        )
         for layer_id, workpieces in grouped.items():
             info = layers_by_id.get(layer_id)
-            if reusable:
-                workflow = reusable.pop(0)
-                if info is not None:
-                    if info.color:
-                        workflow.set_color(info.color)
-                    if info.settings:
-                        workflow.set_steps([])
-                        ItemAssembler.apply_settings_to_workflow(
-                            workflow, info.name, info.settings
-                        )
-                self._assign(workflow, workpieces)
-                dest_workflows.append(workflow)
-                pairs.extend((target_layer, wp) for wp in workpieces)
-                first_group = False
-                continue
-            if info is not None and default_workflow is not None:
+            workflow = self._take_reusable_workflow(reusable, info, workpieces)
+            if workflow is None and info is not None:
                 workflow = self._editor.workflow.create_for_source_layer(
                     target_layer, info, workpieces
                 )
                 if workflow is not None:
-                    dest_workflows.append(workflow)
                     pairs.append((target_layer, workflow))
-                    pairs.extend((target_layer, wp) for wp in workpieces)
-                    first_group = False
-                    continue
-            if first_group and default_workflow is not None:
-                self._assign(default_workflow, workpieces)
-                dest_workflows.append(default_workflow)
-                first_group = False
+            if workflow is None and default_workflow is not None:
+                workflow = default_workflow
+                self._assign(workflow, workpieces)
+            if workflow is not None and workflow not in dest_workflows:
+                dest_workflows.append(workflow)
             pairs.extend((target_layer, wp) for wp in workpieces)
         return pairs, dest_workflows
 
