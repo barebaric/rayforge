@@ -1,5 +1,6 @@
 """The base row widget shared by all tree node types."""
 
+from collections.abc import Callable
 from gettext import gettext as _
 
 from gi.repository import Gdk, GLib, Gtk, Pango
@@ -34,6 +35,22 @@ _CSS = """
 .rf-detail {
     font-size: 93%;
     opacity: 0.6;
+}
+.rf-tree-list > row.rf-feature .rf-name,
+.rf-tree-list > row.rf-feature .rf-detail {
+    font-size: 90%;
+    opacity: 0.6;
+}
+.rf-tree-list > row.rf-layer-separator .rf-name {
+    font-size: 90%;
+    font-weight: bold;
+    opacity: 0.55;
+}
+.rf-tree-list > row.drop-above {
+    box-shadow: inset 0 2px 0 @accent_bg_color;
+}
+.rf-tree-list > row.drop-below {
+    box-shadow: inset 0 -2px 0 @accent_bg_color;
 }
 .rf-duration {
     font-size: 93%;
@@ -127,6 +144,65 @@ def swatch_button(color: str, diameter: int = 22) -> Gtk.Button:
     return button
 
 
+def show_row_menu(
+    row: Gtk.Widget,
+    items: list[tuple[str, Callable[[], object]]],
+    x: float = 0,
+    y: float = 0,
+    colors: list[str] | None = None,
+    on_color=None,
+):
+    """Shows a context menu at the click point inside *row*.
+
+    ``items`` are (label, callback) pairs. ``colors`` adds a palette row
+    whose swatches call ``on_color(color)``.
+    """
+    popover = Gtk.Popover()
+    popover.set_parent(row)
+    popover.set_has_arrow(False)
+    point = Gdk.Rectangle()
+    point.x = int(x)
+    point.y = int(y)
+    point.width = 1
+    point.height = 1
+    popover.set_pointing_to(point)
+
+    box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+    box.set_margin_top(4)
+    box.set_margin_bottom(4)
+    box.set_margin_start(4)
+    box.set_margin_end(4)
+
+    for label, callback in items:
+        button = Gtk.Button(label=label, halign=Gtk.Align.FILL)
+        button.add_css_class("flat")
+        button.connect(
+            "clicked",
+            lambda _button, cb=callback: (popover.popdown(), cb()),
+        )
+        box.append(button)
+
+    if colors:
+        swatches = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
+        swatches.set_margin_top(4)
+        swatches.set_halign(Gtk.Align.CENTER)
+        for color in colors:
+            swatch = swatch_button(color, diameter=18)
+            swatch.connect(
+                "clicked",
+                lambda _button, c=color: (
+                    popover.popdown(),
+                    on_color(c) if on_color else None,
+                ),
+            )
+            swatches.append(swatch)
+        box.append(swatches)
+
+    popover.set_child(box)
+    popover.connect("closed", lambda p: p.unparent())
+    popover.popup()
+
+
 class NodeRow(Gtk.ListBoxRow):
     """Base class for all node rows.
 
@@ -152,6 +228,10 @@ class NodeRow(Gtk.ListBoxRow):
             self.add_css_class("selected-row")
         if not spec.on:
             self.add_css_class("off")
+        if spec.kind == "feature":
+            self.add_css_class("rf-feature")
+        elif spec.kind == "layer-separator":
+            self.add_css_class("rf-layer-separator")
 
         box.append(self._build_twisty())
         box.append(self._build_lead())
@@ -166,10 +246,20 @@ class NodeRow(Gtk.ListBoxRow):
         click.connect("released", self._on_clicked)
         self.add_controller(click)
 
+        context = Gtk.GestureClick()
+        context.set_button(3)
+        context.connect("pressed", self._on_context_pressed)
+        self.add_controller(context)
+
     def _on_clicked(self, gesture, n_press, x, y):
         if not self.spec.selectable:
             return
         self._callbacks.on_row_activated(self.spec)
+
+    def _on_context_pressed(self, gesture, n_press, x, y):
+        if not self.spec.selectable:
+            return
+        self._callbacks.on_row_context_menu(self.spec, self, x, y)
 
     def _build_twisty(self) -> Gtk.Widget:
         button = Gtk.Button()

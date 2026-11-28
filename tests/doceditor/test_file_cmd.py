@@ -593,7 +593,7 @@ class TestCommitItemsToDocument:
         doc = file_cmd._editor.doc
         assert doc.layers[0].workflows[0].name == "chaveiro"
         file_cmd._editor.history_manager.undo()
-        assert doc.layers[0].workflows[0].name == "Layer 1 Workflow"
+        assert doc.layers[0].workflows[0].name == "Workflow 1"
         assert wp not in doc.layers[0].children
 
     def test_commit_new_layers_creates_workflow(self, file_cmd):
@@ -611,7 +611,7 @@ class TestCommitItemsToDocument:
             source_layers=[info],
         )
 
-        assert doc.layers[0].workflows[0].name == "Layer 1 Workflow"
+        assert doc.layers[0].workflows[0].name == "Workflow 1"
         assert doc.layers[0].workflows[1].name == "chaveiro"
         assert wp in doc.layers[0].children
         assert wp.uid in doc.layers[0].workflows[1].workpiece_uids

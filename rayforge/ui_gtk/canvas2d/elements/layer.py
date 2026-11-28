@@ -2,7 +2,7 @@ import logging
 from typing import TYPE_CHECKING, cast
 
 from ....core.group import Group
-from ....core.item import DocItem
+from ....core.item import DocItem, VisibleMixin
 from ....core.stock import StockItem
 from ....core.workpiece import WorkPiece
 from ...canvas.element import CanvasElement
@@ -41,6 +41,7 @@ class LayerElement(CanvasElement):
         self.data.updated.connect(self.sync_with_model)
         self.data.descendant_added.connect(self.sync_with_model)
         self.data.descendant_removed.connect(self.sync_with_model)
+        self.data.descendant_updated.connect(self.sync_with_model)
         self.sync_with_model(self.data)
 
     def remove(self):
@@ -48,6 +49,7 @@ class LayerElement(CanvasElement):
         self.data.updated.disconnect(self.sync_with_model)
         self.data.descendant_added.disconnect(self.sync_with_model)
         self.data.descendant_removed.disconnect(self.sync_with_model)
+        self.data.descendant_updated.disconnect(self.sync_with_model)
         super().remove()
 
     def set_size(self, width: float, height: float):
@@ -103,12 +105,14 @@ class LayerElement(CanvasElement):
         )
         self.set_visible(self.data.visible)
 
-        # Keep child selectability in sync with the layer's visibility:
-        # elements created while the layer was hidden must become
-        # selectable again once it is shown, and vice versa.
-        for child in self.children:
-            if isinstance(child, (WorkPieceElement, GroupElement)):
-                child.selectable = self.data.visible
+        # Keep child visibility and selectability in sync with the
+        # layer and their own model visibility.
+        for element in self.get_all_children_recursive():
+            if element is self or not isinstance(element.data, VisibleMixin):
+                continue
+            visible = self.data.visible and element.data.visible
+            element.set_visible(visible)
+            element.selectable = visible
         from ..surface import WorkSurface
 
         work_surface = cast(WorkSurface, self.canvas)

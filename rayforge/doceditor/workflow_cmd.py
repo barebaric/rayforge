@@ -127,6 +127,25 @@ class WorkflowCmd:
         )
         self._editor.history_manager.execute(cmd)
 
+    def set_workflow_workpieces(
+        self, workflow: Workflow, workpiece_uids: list[str]
+    ):
+        """Sets the parts a workflow runs for, undoably.
+
+        An empty list means every part of the workflow's layer.
+        """
+        uids = list(workpiece_uids)
+        if uids == workflow.workpiece_uids:
+            return
+        cmd = ChangePropertyCommand(
+            target=workflow,
+            property_name="workpiece_uids",
+            new_value=uids,
+            setter_method_name="set_workpiece_uids",
+            name=_("Change workflow parts"),
+        )
+        self._editor.history_manager.execute(cmd)
+
     def set_workflow_post_processors(
         self, workflow: Workflow, post_processors_dicts: list[dict]
     ):

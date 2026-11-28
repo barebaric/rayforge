@@ -184,9 +184,6 @@ class TreeApp(Adw.Application):
         self.operations_tree.workflow_requested.connect(
             self._on_workflow_requested
         )
-        self.operations_tree.workflow_activated.connect(
-            self._on_workflow_activated
-        )
 
         win.present()
 
@@ -255,9 +252,6 @@ class TreeApp(Adw.Application):
         workflow = Workflow(f"Workflow {len(layer.workflows) + 1}")
         workflow.set_color(color)
         layer.add_child(workflow)
-
-    def _on_workflow_activated(self, sender, workflow):
-        self.info.set_label(f"Workflow picked: {workflow.name}")
 
 
 if __name__ == "__main__":

@@ -33,6 +33,9 @@ class _Callbacks:
     def on_row_renamed(self, spec, name):
         self.renamed.append(name)
 
+    def on_row_context_menu(self, spec, row, x, y):
+        pass
+
 
 def _pump(seconds: float = 0.2):
     context = GLib.MainContext.default()

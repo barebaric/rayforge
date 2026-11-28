@@ -1,32 +1,22 @@
-"""The row for one workpiece, with the steps that operate on it."""
+"""The row for one workpiece, with the features detected in it."""
 
 from collections.abc import Set as AbstractSet
+from gettext import gettext as _
+from gettext import ngettext
 
 from gi.repository import Gtk
+from raygeo.geo import Move
 
-from ...core.workflow import Workflow
 from ...core.workpiece import WorkPiece
+from .feature_node import FeatureNode
 from .node import NodeRow
 from .specs import NodeSpec
-from .step_node import steps_for
 
 _WORKPIECE_ICON = "model-symbolic"
 
 
-def _workflow_for(workpiece: WorkPiece) -> Workflow | None:
-    """The first workflow of the part's layer that runs for it."""
-    layer = workpiece.layer
-    if layer is None:
-        return None
-    workpieces = layer.all_workpieces
-    for workflow in layer.workflows:
-        if workpiece in workflow.selected_workpieces(workpieces):
-            return workflow
-    return None
-
-
 class WorkPieceNode(NodeRow):
-    """The row for one part, optionally followed by its steps."""
+    """The row for one part, optionally followed by its features."""
 
     def __init__(
         self,
@@ -47,8 +37,6 @@ class WorkPieceNode(NodeRow):
         expanded: AbstractSet[str] = frozenset(),
         selected: AbstractSet[str] = frozenset(),
     ) -> NodeSpec:
-        workflow = _workflow_for(workpiece)
-        steps = steps_for(workpiece, workflow)
         return NodeSpec(
             kind="workpiece",
             uid=workpiece.uid,
@@ -59,7 +47,7 @@ class WorkPieceNode(NodeRow):
             eye=True,
             on=workpiece.visible,
             selected=workpiece.uid in selected,
-            has_children=bool(steps),
+            has_children=_has_features(workpiece),
             expanded=workpiece.uid in expanded,
         )
 
@@ -72,17 +60,82 @@ class WorkPieceNode(NodeRow):
         selected: AbstractSet[str],
         callbacks,
     ) -> list[Gtk.Widget]:
-        from .step_node import StepNode
-
         rows: list[Gtk.Widget] = [
             cls(workpiece, depth, expanded, selected, callbacks)
         ]
         if workpiece.uid not in expanded:
             return rows
-        workflow = _workflow_for(workpiece)
-        for step in steps_for(workpiece, workflow):
-            rows.append(StepNode(step, depth + 1, callbacks))
+        rows.extend(_feature_rows(workpiece, depth, callbacks))
         return rows
+
+
+def _has_features(workpiece: WorkPiece) -> bool:
+    boundaries = workpiece.boundaries
+    if boundaries is not None and not boundaries.is_empty():
+        return True
+    return bool(workpiece.fills)
+
+
+def _feature_rows(
+    workpiece: WorkPiece, depth: int, callbacks
+) -> list[Gtk.Widget]:
+    rows: list[Gtk.Widget] = []
+    boundaries = workpiece.boundaries
+    if boundaries is not None and not boundaries.is_empty():
+        inner, outer = boundaries.split_inner_and_outer_contours()
+        closed = len(inner) + len(outer)
+        open_paths = max(0, _contour_count(boundaries) - closed)
+        if outer:
+            rows.append(
+                FeatureNode(
+                    workpiece.uid,
+                    "outer",
+                    _("Outer paths"),
+                    _("{n} paths").format(n=len(outer)),
+                    depth,
+                    callbacks,
+                )
+            )
+        if inner:
+            rows.append(
+                FeatureNode(
+                    workpiece.uid,
+                    "inner",
+                    _("Inner paths"),
+                    _("{n} paths").format(n=len(inner)),
+                    depth,
+                    callbacks,
+                )
+            )
+        if open_paths:
+            rows.append(
+                FeatureNode(
+                    workpiece.uid,
+                    "open",
+                    _("Open paths"),
+                    _("{n} paths").format(n=open_paths),
+                    depth,
+                    callbacks,
+                )
+            )
+    fills = workpiece.fills
+    if fills:
+        count = len(fills)
+        rows.append(
+            FeatureNode(
+                workpiece.uid,
+                "fills",
+                _("Fills"),
+                ngettext("{n} fill", "{n} fills", count).format(n=count),
+                depth,
+                callbacks,
+            )
+        )
+    return rows
+
+
+def _contour_count(geometry) -> int:
+    return sum(1 for command in geometry.data if isinstance(command, Move))
 
 
 def _size_detail(workpiece: WorkPiece) -> str:

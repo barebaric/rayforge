@@ -56,15 +56,21 @@ class TreeWidget(Gtk.ScrolledWindow):
         if tail is not None:
             self._tail_box.append(tail)
 
-    def find_row(self, uid: str):
-        """Returns the row with the given uid, or None."""
+    def rows(self):
+        """Yields the tree's node rows."""
         from .node import NodeRow
 
         child = self._list.get_first_child()
         while child:
-            if isinstance(child, NodeRow) and child.spec.uid == uid:
-                return child
+            if isinstance(child, NodeRow):
+                yield child
             child = child.get_next_sibling()
+
+    def find_row(self, uid: str):
+        """Returns the row with the given uid, or None."""
+        for row in self.rows():
+            if row.spec.uid == uid:
+                return row
         return None
 
     def start_rename(self, uid: str) -> bool:

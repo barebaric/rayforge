@@ -1940,8 +1940,16 @@ class MainWindow(Adw.ApplicationWindow):
         self.bottom_panel.update_position_menu_sensitivity()
         self._update_actions_and_ui()
 
-    def _on_sidebar_item_selected(self, sender, item: DocItem):
+    def _on_sidebar_item_selected(self, sender, item: DocItem | None):
         """Shows the sidebar selection on the canvas or in the properties."""
+        if item is None:
+            self._sidebar_item = None
+            self.item_props_widget.set_items([])
+            self.item_revealer.set_reveal_child(False)
+            self.sidebar.set_selected_items([])
+            self._apply_right_panel_visibility()
+            self._update_actions_and_ui()
+            return
         if isinstance(item, (Group, WorkPiece, StockItem)):
             self.surface.select_items([item])
             return

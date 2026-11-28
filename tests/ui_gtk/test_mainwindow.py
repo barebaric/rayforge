@@ -32,6 +32,10 @@ gi.require_version("Adw", "1")
 gi.require_version("Gdk", "4.0")
 from gi.repository import Adw, GLib, Gtk
 
+from rayforge.ui_gtk.canvas2d.elements.workpiece import WorkPieceElement
+from rayforge.ui_gtk.doceditor.property_providers.workflow import (
+    WorkflowPropertyProvider,
+)
 from rayforge.ui_gtk.mainwindow import MainWindow
 
 logger = logging.getLogger(__name__)
@@ -224,6 +228,27 @@ def test_toggle_sidebar_action_hides_and_restores_it(app_and_window):
 
 
 @pytest.mark.ui
+def test_part_visibility_hides_the_canvas_element(app_and_window):
+    _app, win = app_and_window
+    wp = WorkPiece("Hidden part")
+    win.doc_editor.doc.active_layer.add_child(wp)
+    process_events_for_duration(0.2)
+    element = next(
+        elem
+        for elem in win.surface.find_by_type(WorkPieceElement)
+        if elem.data is wp
+    )
+    row = win.sidebar.parts_tree.find_row(wp.uid)
+    assert element.visible and row is not None
+
+    win.sidebar.parts_tree.on_eye_toggled(row.spec)
+    process_events_for_duration(0.3)
+
+    assert wp.visible is False
+    assert element.visible is False
+
+
+@pytest.mark.ui
 def test_sidebar_opens_layer_settings(app_and_window):
     _app, win = app_and_window
     win.sidebar._layer_settings_button.emit("clicked")
@@ -236,6 +261,70 @@ def test_sidebar_opens_layer_settings(app_and_window):
     win.sidebar._close_layer_settings()
     process_events_for_duration(0.1)
     assert win.sidebar._layer_settings_dialog is None
+
+
+@pytest.mark.ui
+def test_sidebar_layer_buttons_switch_and_add_layers(app_and_window):
+    _app, win = app_and_window
+    doc = win.doc_editor.doc
+    second = Layer("Second")
+    doc.add_layer(second)
+    process_events_for_duration(0.3)
+
+    buttons = [
+        child
+        for child in win.sidebar._layer_buttons
+        if isinstance(child, Gtk.ToggleButton)
+    ]
+    assert len(buttons) == 2
+    buttons[1].set_active(True)
+    process_events_for_duration(0.2)
+    assert doc.active_layer is second
+
+    # The active layer button cannot be toggled off.
+    buttons[1].set_active(False)
+    process_events_for_duration(0.2)
+    assert buttons[1].get_active()
+    assert doc.active_layer is second
+
+    add_button = next(
+        child
+        for child in win.sidebar._layer_buttons
+        if isinstance(child, Gtk.Button)
+        and not isinstance(child, Gtk.ToggleButton)
+    )
+    layer_count = len(doc.layers)
+    add_button.emit("clicked")
+    process_events_for_duration(0.2)
+    assert len(doc.layers) == layer_count + 1
+
+
+@pytest.mark.ui
+def test_workflow_selection_shows_workflow_properties(app_and_window):
+    _app, win = app_and_window
+    doc = win.doc_editor.doc
+    layer = doc.active_layer
+    workflow = layer.workflows[0]
+    part = WorkPiece("Part")
+    layer.add_child(part)
+    process_events_for_duration(0.2)
+
+    win.sidebar.select_item(workflow)
+    process_events_for_duration(0.2)
+
+    provider = next(
+        p
+        for p in win.item_props_widget.providers
+        if isinstance(p, WorkflowPropertyProvider)
+    )
+    assert win.item_revealer.get_reveal_child()
+    assert provider.name_row.get_text() == workflow.name
+    assert not win.item_props_widget._name_row.get_visible()
+
+    provider.name_row.set_text("Renamed workflow")
+    provider.name_row.emit("apply")
+    process_events_for_duration(0.2)
+    assert workflow.name == "Renamed workflow"
 
 
 @pytest.mark.ui

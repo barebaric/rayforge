@@ -568,7 +568,7 @@ class FileCmd:
         pairs: list[tuple[DocItem, DocItem]] = []
         renames: list[tuple[Workflow, str]] = []
         existing = target_layer.workflows
-        auto_name = _("{name} Workflow").format(name=target_layer.name)
+        auto_name = _("Workflow 1")
         for idx, (layer_id, workpieces) in enumerate(grouped.items()):
             if idx < len(existing):
                 dest_workflow = existing[idx]

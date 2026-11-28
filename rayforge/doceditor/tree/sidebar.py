@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
@@ -18,6 +19,7 @@ from ...ui_gtk.doceditor.layer_settings_dialog import (
     LayerSettingsDialog,
 )
 from ...ui_gtk.icons import get_icon
+from ...ui_gtk.shared.gtk import apply_css
 from .operations_tree import OperationsTree
 from .parts_tree import PartsTree
 
@@ -35,8 +37,18 @@ class Sidebar(Gtk.Box):
     reported via :attr:`item_selected`.
     """
 
+    _CSS = """
+    .rf-layer-button {
+        min-width: 34px;
+        min-height: 34px;
+        padding: 0;
+        border-radius: 6px;
+    }
+    """
+
     def __init__(self, editor: DocEditor):
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
+        apply_css(self._CSS)
         self.editor = editor
         self.item_selected = Signal()
 
@@ -44,20 +56,17 @@ class Sidebar(Gtk.Box):
         self._layer_signature: tuple[tuple[str, str], ...] | None = None
         self._syncing_layers = False
         self._layer_settings_dialog: LayerSettingsDialog | None = None
+        self._layer_buttons_by_layer: list[tuple[Gtk.ToggleButton, Layer]] = []
 
         header = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         header.set_margin_start(8)
         header.set_margin_end(8)
         header.set_margin_top(8)
-        label = Gtk.Label(label=_("Layer"), xalign=0)
-        self._layer_dropdown = Gtk.DropDown()
-        self._layer_dropdown.set_hexpand(True)
-        self._layer_dropdown.set_tooltip_text(_("Active layer"))
-        self._layer_dropdown.connect(
-            "notify::selected", self._on_layer_selected
+        self._layer_buttons = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL, spacing=4
         )
-        header.append(label)
-        header.append(self._layer_dropdown)
+        self._layer_buttons.set_hexpand(True)
+        header.append(self._layer_buttons)
         self._layer_settings_button = Gtk.Button(
             child=get_icon("settings-symbolic")
         )
@@ -98,8 +107,20 @@ class Sidebar(Gtk.Box):
         self.operations_tree.workflow_requested.connect(
             self._on_workflow_requested
         )
-        self.operations_tree.workflow_activated.connect(
-            self._on_workflow_activated
+        self.operations_tree.enabled_toggled.connect(
+            self._on_workflow_enabled_toggled
+        )
+        self.operations_tree.workflow_color_requested.connect(
+            self._on_workflow_color_requested
+        )
+        self.operations_tree.workflow_delete_requested.connect(
+            self._on_workflow_delete_requested
+        )
+        self.operations_tree.workflow_parts_changed.connect(
+            self._on_workflow_parts_changed
+        )
+        self.operations_tree.workflow_reorder_requested.connect(
+            self._on_workflow_reorder_requested
         )
 
         self.set_size_request(220, -1)
@@ -151,54 +172,90 @@ class Sidebar(Gtk.Box):
 
     def _sync_layers(self):
         doc = self._doc
-        if doc is None:
-            self._layer_signature = None
-            self._syncing_layers = True
-            self._layer_dropdown.set_model(Gtk.StringList.new([]))
-            self._syncing_layers = False
-            self._layer_dropdown.set_sensitive(False)
-            self.parts_tree.set_layer(None)
-            return
-        layers = doc.layers
+        layers = doc.layers if doc is not None else []
         signature = tuple((layer.uid, layer.name) for layer in layers)
         if signature != self._layer_signature:
             self._layer_signature = signature
+            self._rebuild_layer_buttons(layers)
+        self._syncing_layers = True
+        for button, layer in self._layer_buttons_by_layer:
+            button.set_active(layer is doc.active_layer if doc else False)
+        self._syncing_layers = False
+        self.parts_tree.set_layer(
+            doc.active_layer if doc is not None and doc.layers else None
+        )
+
+    def _rebuild_layer_buttons(self, layers):
+        child = self._layer_buttons.get_first_child()
+        while child:
+            next_child = child.get_next_sibling()
+            self._layer_buttons.remove(child)
+            child = next_child
+        self._layer_buttons_by_layer = []
+        for index, layer in enumerate(layers):
+            button = Gtk.ToggleButton(label=str(index + 1))
+            button.add_css_class("rf-layer-button")
+            button.set_tooltip_text(layer.name)
+            button.connect("toggled", self._on_layer_button_toggled, layer)
+            self._layer_buttons.append(button)
+            self._layer_buttons_by_layer.append((button, layer))
+
+        add_button = Gtk.Button(child=get_icon("add-symbolic"))
+        add_button.add_css_class("flat")
+        add_button.set_tooltip_text(_("Add Layer"))
+        add_button.connect("clicked", self._on_add_layer_clicked)
+        self._layer_buttons.append(add_button)
+
+    def _on_layer_button_toggled(self, button, layer):
+        if self._syncing_layers:
+            return
+        if not button.get_active():
+            # The active layer button must stay pressed.
             self._syncing_layers = True
-            self._layer_dropdown.set_model(
-                Gtk.StringList.new([layer.name for layer in layers])
+            button.set_active(
+                self._doc is not None and layer is self._doc.active_layer
             )
             self._syncing_layers = False
-        self._layer_dropdown.set_sensitive(bool(layers))
-        if not layers:
-            self.parts_tree.set_layer(None)
             return
-        active = doc.active_layer
-        index = next(
-            (i for i, layer in enumerate(layers) if layer is active), 0
-        )
-        self._syncing_layers = True
-        self._layer_dropdown.set_selected(index)
-        self._syncing_layers = False
-        self.parts_tree.set_layer(active)
+        self._close_layer_settings()
+        self.editor.layer.set_active_layer(layer)
 
-    def _on_layer_selected(self, dropdown, _pspec):
-        if self._syncing_layers or self._doc is None:
+    def _on_layer_button_context(self, gesture, n_press, x, y, button, layer):
+        from .node import show_row_menu
+
+        items: list[tuple[str, Callable[[], object]]] = [
+            (
+                _("Layer Settings\u2026"),
+                lambda: self._open_layer_settings(layer),
+            )
+        ]
+        if self._doc is not None and len(self._doc.layers) > 1:
+            items.append(
+                (
+                    _("Delete Layer"),
+                    lambda: self.editor.layer.delete_layer(layer),
+                )
+            )
+        show_row_menu(button, items, x=x, y=y)
+
+    def _on_add_layer_clicked(self, button):
+        if self._doc is None:
             return
-        index = dropdown.get_selected()
-        layers = self._doc.layers
-        if 0 <= index < len(layers):
-            self._close_layer_settings()
-            self.editor.layer.set_active_layer(layers[index])
+        self._close_layer_settings()
+        self.editor.layer.add_layer_and_set_active()
 
     def _on_layer_settings_clicked(self, button):
         if self._doc is None or not self._doc.layers:
             return
+        self._open_layer_settings(self._doc.active_layer)
+
+    def _open_layer_settings(self, layer):
         if self._layer_settings_dialog is not None:
             self._layer_settings_dialog.present()
             return
         root = self.get_root()
         self._layer_settings_dialog = LayerSettingsDialog(
-            layer=self._doc.active_layer,
+            layer=layer,
             transient_for=root if isinstance(root, Gtk.Window) else None,
             editor=self.editor,
         )
@@ -286,8 +343,30 @@ class Sidebar(Gtk.Box):
         self.editor.workflow.add_workflow(layer, workflow)
         self.select_item(workflow)
 
-    def _on_workflow_activated(self, sender, workflow: Workflow):
-        self.select_item(workflow)
+    def _on_workflow_enabled_toggled(
+        self, sender, workflow: Workflow, enabled: bool
+    ):
+        self.editor.workflow.set_workflow_enabled(workflow, enabled)
+
+    def _on_workflow_color_requested(
+        self, sender, workflow: Workflow, color: str
+    ):
+        self.editor.workflow.set_workflow_color(workflow, color)
+
+    def _on_workflow_parts_changed(
+        self, sender, workflow: Workflow, workpiece_uids: list[str]
+    ):
+        self.editor.workflow.set_workflow_workpieces(workflow, workpiece_uids)
+
+    def _on_workflow_reorder_requested(
+        self, sender, layer: Layer, workflows: list[Workflow]
+    ):
+        self.editor.workflow.reorder_workflows(layer, workflows)
+
+    def _on_workflow_delete_requested(self, sender, workflow: Workflow):
+        self.editor.workflow.delete_workflow(workflow)
+        self.set_selected_items([])
+        self.item_selected.send(self, item=None)
 
     @staticmethod
     def _layer_of(item: DocItem) -> Layer | None:

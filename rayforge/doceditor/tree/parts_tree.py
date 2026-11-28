@@ -1,5 +1,7 @@
 """The Parts tab: the stock, the groups and the parts."""
 
+from gettext import gettext as _
+
 from blinker import Signal
 from gi.repository import Gtk
 
@@ -8,6 +10,7 @@ from ...core.group import Group
 from ...core.layer import Layer
 from ...core.workpiece import WorkPiece
 from .group_node import GroupNode
+from .node import show_row_menu
 from .stock_node import StockNode
 from .tree import TreeWidget
 from .workpiece_node import WorkPieceNode
@@ -133,6 +136,14 @@ class PartsTree(Gtk.Box):
 
     def on_row_renamed(self, spec, name: str):
         self.rename_requested.send(self, uid=spec.uid, name=name)
+
+    def on_row_context_menu(self, spec, row, x, y):
+        show_row_menu(
+            row,
+            [(_("Rename"), lambda: self.start_rename(spec.uid))],
+            x=x,
+            y=y,
+        )
 
     def find_row(self, uid: str):
         """Returns the row with the given uid, or None."""

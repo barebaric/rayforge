@@ -47,6 +47,8 @@ class WorkflowNode(NodeRow):
             detail=ngettext("{n} step", "{n} steps", step_count).format(
                 n=step_count
             ),
+            eye=True,
+            on=workflow.enabled,
             selected=workflow.uid in selected,
             has_children=bool(workpieces),
             expanded=workflow.uid in expanded,
