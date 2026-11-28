@@ -40,7 +40,7 @@ from raygeo.pipeline.stage import StageSpec
 import rayforge.machine.driver as driver_module
 from rayforge.core.doc import Doc
 from rayforge.core.image_edit import ImageEditStep
-from rayforge.core.layer import Layer
+from rayforge.core.setup import Setup
 from rayforge.core.step import Step
 from rayforge.core.stock import StockItem
 from rayforge.core.stock_asset import StockAsset
@@ -90,8 +90,8 @@ class _TestStep(Step):
 
 def _make_doc(step: _TestStep, *workpieces: WorkPiece) -> Doc:
     doc = Doc()
-    layer = doc.active_layer
-    wf = layer.workflow
+    layer = doc.active_setup
+    wf = layer.workflows[0]
     assert wf is not None
     wf.add_child(step)
     for wp in workpieces:
@@ -168,12 +168,12 @@ def test_rotary_layer_rejects_rotated_panel(isolated_machine):
     """Rotary uses its own cylindrical coordinate space, not the
     rotated flat-bed presentation."""
     doc = _make_doc(_TestStep(name="s1"), WorkPiece(name="wp"))
-    doc.active_layer.set_rotary_enabled(True)
+    doc.active_setup.set_rotary_enabled(True)
     isolated_machine.set_panel_orientation(PanelOrientation.ROTATED_RIGHT)
 
     with pytest.raises(
         UnsupportedRotaryPanelOrientationError,
-        match="Rotary layers require the Native panel orientation",
+        match="Rotary setups require the Native panel orientation",
     ):
         IntentBuilder(machine=isolated_machine).build(doc)
 
@@ -388,8 +388,8 @@ def test_hidden_steps_excluded(isolated_machine):
 def test_layers_without_workpieces_skipped_for_compute(isolated_machine):
     step = _TestStep(name="s1")
     doc = Doc()
-    layer = doc.active_layer
-    workflow = layer.workflow
+    layer = doc.active_setup
+    workflow = layer.workflows[0]
     assert workflow is not None
     workflow.add_child(step)
     # No workpieces added.
@@ -406,7 +406,7 @@ def test_second_layer_without_skips_affect_existing(isolated_machine):
     wp1 = WorkPiece(name="wp1")
     doc = _make_doc(step, wp1)
 
-    layer2 = Layer(name="empty")
+    layer2 = Setup(name="empty")
     doc.add_child(layer2)
     layer2.add_child(WorkPiece(name="wp2"))
 
@@ -983,7 +983,7 @@ def test_machine_token_tracks_active_wcs_offset(isolated_machine):
 def test_machine_token_tracks_effective_layer_wcs_offset(isolated_machine):
     step = _TestStep(name="s1")
     doc = _make_doc(step, WorkPiece(name="wp"))
-    doc.active_layer.set_wcs("G55")
+    doc.active_setup.set_wcs("G55")
     before = IntentBuilder(machine=isolated_machine).build(doc)
 
     isolated_machine.update_wcs_offset("G55", (10.0, 20.0, 0.0))
@@ -1182,7 +1182,7 @@ def test_machine_transform_rotary_extra_axes(
     wp.set_size(50.0, 30.0)
     doc = _make_doc(step, wp)
 
-    layer = doc.active_layer
+    layer = doc.active_setup
     layer.set_rotary_enabled(True)
     layer.set_rotary_diameter(25.0)
     layer.set_rotary_module_uid(rm.uid)
@@ -1341,7 +1341,7 @@ def test_machine_transform_rotary_replaces_y_for_axis_replacement(
     wp.set_size(50.0, 30.0)
     doc = _make_doc(step, wp)
 
-    layer = doc.active_layer
+    layer = doc.active_setup
     layer.set_rotary_enabled(True)
     layer.set_rotary_diameter(25.0)
     layer.set_rotary_module_uid(rm.uid)
@@ -1720,7 +1720,7 @@ def _make_doc_with_stock(
     doc.add_asset(asset)
     item = StockItem(stock_asset_uid=asset.uid, name="sheet")
     item.visible = stock_visible
-    doc.add_child(item)
+    doc.active_setup.add_child(item)
     return doc
 
 
@@ -2031,7 +2031,7 @@ def _make_doc_with_stock_and_wp(
     doc.add_asset(asset)
     item = StockItem(stock_asset_uid=asset.uid, name="sheet")
     item.visible = stock_visible
-    doc.add_child(item)
+    doc.active_setup.add_child(item)
     return doc, item
 
 
@@ -2062,7 +2062,7 @@ def test_builds_one_fold_node_per_visible_stock(isolated_machine):
     asset2.geometry = geo2
     doc.add_asset(asset2)
     item2 = StockItem(stock_asset_uid=asset2.uid, name="sheet2")
-    doc.add_child(item2)
+    doc.active_setup.add_child(item2)
 
     nodes = IntentBuilder(machine=isolated_machine).build(doc)
     keys = [n.key for n in nodes]
@@ -2163,7 +2163,7 @@ def test_fold_node_entries_cover_intersecting_workpieces(isolated_machine):
     wp_far.matrix = Matrix.translation(10000.0, 10000.0)
     wp_near = _wp_with_geometry("wp_near")
     doc, item = _make_doc_with_stock_and_wp(step, wp_near)
-    doc.active_layer.add_child(wp_far)
+    doc.active_setup.add_child(wp_far)
 
     nodes = IntentBuilder(machine=isolated_machine).build(doc)
     sk = stock_key(item.uid)
@@ -2228,7 +2228,7 @@ def test_existing_node_count_unchanged_with_stock(isolated_machine):
     wp1b = _wp_with_geometry("wp1")
     wp2b = _wp_with_geometry("wp2")
     doc_with_stock, _item = _make_doc_with_stock_and_wp(step2, wp1b)
-    doc_with_stock.active_layer.add_child(wp2b)
+    doc_with_stock.active_setup.add_child(wp2b)
 
     no_stock = IntentBuilder(machine=isolated_machine).build(doc_no_stock)
     with_stock = IntentBuilder(machine=isolated_machine).build(doc_with_stock)
@@ -2256,8 +2256,8 @@ def _make_doc_with_rotary_wp(step: _TestStep, wp: WorkPiece) -> Doc:
     """A Doc whose active layer is rotary-enabled with a workpiece in
     the unrolled domain."""
     doc = _make_doc(step, wp)
-    doc.active_layer.rotary_enabled = True
-    doc.active_layer.rotary_diameter = 50.0
+    doc.active_setup.rotary_enabled = True
+    doc.active_setup.rotary_diameter = 50.0
     return doc
 
 
@@ -2270,7 +2270,7 @@ def test_rotary_layer_emits_fold_node(isolated_machine):
     doc = _make_doc_with_rotary_wp(step, wp)
 
     nodes = IntentBuilder(machine=isolated_machine).build(doc)
-    sk = stock_key(doc.active_layer.uid)
+    sk = stock_key(doc.active_setup.uid)
     assert sk in [n.key for n in nodes]
 
 
@@ -2283,7 +2283,7 @@ def test_rotary_fold_node_uses_cylinder_stock(isolated_machine):
     doc = _make_doc_with_rotary_wp(step, wp)
 
     nodes = IntentBuilder(machine=isolated_machine).build(doc)
-    sk = stock_key(doc.active_layer.uid)
+    sk = stock_key(doc.active_setup.uid)
     spec = next(n for n in nodes if n.key == sk).stage
     assert isinstance(spec, MaterialFoldSpec)
     assert isinstance(spec.stock, CylinderStock)
@@ -2301,7 +2301,7 @@ def test_rotary_fold_node_skipped_without_module(isolated_machine):
     doc = _make_doc_with_rotary_wp(step, wp)
 
     nodes = IntentBuilder(machine=isolated_machine).build(doc)
-    sk = stock_key(doc.active_layer.uid)
+    sk = stock_key(doc.active_setup.uid)
     assert sk not in [n.key for n in nodes]
 
 
@@ -2316,7 +2316,7 @@ def test_rotary_fold_node_includes_far_workpieces(isolated_machine):
     doc = _make_doc_with_rotary_wp(step, wp)
 
     nodes = IntentBuilder(machine=isolated_machine).build(doc)
-    sk = stock_key(doc.active_layer.uid)
+    sk = stock_key(doc.active_setup.uid)
     spec = next(n for n in nodes if n.key == sk).stage
     assert {e.source_key for e in spec.entries} == {
         workpiece_key(wp.uid, step.uid)
@@ -2332,7 +2332,7 @@ def test_flat_stock_node_not_emitted_for_rotary_layer(isolated_machine):
 
     nodes = IntentBuilder(machine=isolated_machine).build(doc)
     stock_keys = [n.key for n in nodes if n.key.startswith("stock:")]
-    assert stock_keys == [stock_key(doc.active_layer.uid)]
+    assert stock_keys == [stock_key(doc.active_setup.uid)]
 
 
 def test_rotary_fold_executes_end_to_end(
@@ -2357,11 +2357,11 @@ def test_rotary_fold_executes_end_to_end(
     wp._edited_boundaries = geo
     wp.set_size(50.0, 30.0)
     doc = _make_doc(step, wp)
-    doc.active_layer.rotary_enabled = True
-    doc.active_layer.rotary_diameter = 50.0
+    doc.active_setup.rotary_enabled = True
+    doc.active_setup.rotary_diameter = 50.0
 
     nodes = IntentBuilder(machine=machine, generation_id=1).build(doc)
-    sk = stock_key(doc.active_layer.uid)
+    sk = stock_key(doc.active_setup.uid)
 
     completed = []
 

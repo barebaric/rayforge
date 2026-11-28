@@ -76,8 +76,8 @@ class PartsTree(Gtk.Box):
         rows: list[Gtk.Widget] = []
         for stock in self._doc.stock_items:
             rows.append(StockNode(stock, 0, self._selected, self))
-        for layer in self._doc.layers:
-            for item in layer.content_items:
+        for setup in self._doc.setups:
+            for item in setup.content_items:
                 if isinstance(item, Group):
                     rows.extend(
                         GroupNode.build_rows(

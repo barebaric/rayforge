@@ -58,9 +58,10 @@ from .status_messages import status_message_for_key
 if TYPE_CHECKING:
     from ..core.doc import Doc
     from ..core.item import DocItem
-    from ..core.layer import Layer
+    from ..core.setup import Setup
     from ..core.step import Step
     from ..core.stock import StockItem
+    from ..core.workflow import Workflow
     from ..core.workpiece import WorkPiece
     from ..machine.models.machine import Machine
 
@@ -133,6 +134,9 @@ class IntentController:
         self._doc: Doc | None = doc
         self._task_manager = task_manager
         self._machine = machine
+        # When set, rebuilds scope the intent to the workflows of
+        # these setups (multi-setup send flow).
+        self.setup_filter: frozenset[str] | None = None
         self._raygeo_pipeline: RaygeoPipeline = (
             raygeo_pipeline or RaygeoPipeline()
         )
@@ -403,7 +407,7 @@ class IntentController:
                 loop=getattr(self._task_manager, "loop", None),
             )
             try:
-                nodes = builder.build(self._doc)
+                nodes = builder.build(self._doc, setup_uids=self.setup_filter)
             except UnavailableDriverError as exc:
                 # The main window's machine warning banner names the
                 # missing driver; a notification on every rebuild would
@@ -690,7 +694,7 @@ class IntentController:
             if stock_uid is not None:
                 host: DocItem | None = self._find_stock_item(stock_uid)
                 if host is None:
-                    host = self._find_layer(stock_uid)
+                    host = self._find_setup(stock_uid)
                 if host is not None:
                     self.material_state_ready.send(
                         self,
@@ -719,24 +723,26 @@ class IntentController:
         # DocItem for a node key without re-walking the doc.
         workpieces: dict[str, WorkPiece] = {}
         steps: dict[str, Step] = {}
-        for layer in self._doc.layers:
-            for wp in layer.all_workpieces:
+        workflows_by_uid: dict[str, Workflow] = {}
+        for setup in self._doc.setups:
+            for wp in setup.all_workpieces:
                 workpieces[wp.uid] = wp
-            if layer.workflow:
-                for step in layer.workflow.steps:
+            for workflow in setup.workflows:
+                workflows_by_uid[workflow.uid] = workflow
+                for step in workflow.steps:
                     steps[step.uid] = step
         self._workpieces_by_uid = workpieces
         self._steps_by_uid = steps
 
         stock_items: dict[str, StockItem] = {}
-        layers_by_uid: dict[str, Layer] = {}
-        if self._doc is not None:
-            for item in self._doc.stock_items:
-                stock_items[item.uid] = item
-            for layer in self._doc.layers:
-                layers_by_uid[layer.uid] = layer
+        setups_by_uid: dict[str, Setup] = {}
+        for item in self._doc.stock_items:
+            stock_items[item.uid] = item
+        for setup in self._doc.setups:
+            setups_by_uid[setup.uid] = setup
         self._stock_items_by_uid = stock_items
-        self._layers_by_uid = layers_by_uid
+        self._setups_by_uid = setups_by_uid
+        self._workflows_by_uid = workflows_by_uid
 
         for n in nodes:
             key = n.key
@@ -760,13 +766,13 @@ class IntentController:
                 if step is not None:
                     self._key_to_item[key] = step
             # ``stock:{stock_uid}`` — a flat stock item or, when no
-            # stock item carries the uid, a rotary layer.
+            # stock item carries the uid, a rotary setup.
             elif key.startswith("stock:"):
                 stock_uid = parse_stock_key(key)
                 if stock_uid is not None:
                     item = stock_items.get(stock_uid)
                     if item is None:
-                        item = layers_by_uid.get(stock_uid)
+                        item = setups_by_uid.get(stock_uid)
                     if item is not None:
                         self._key_to_item[key] = item
             # ``job`` or ``job:encode``
@@ -782,8 +788,11 @@ class IntentController:
     def _find_stock_item(self, uid: str) -> StockItem | None:
         return self._stock_items_by_uid.get(uid)
 
-    def _find_layer(self, uid: str) -> Layer | None:
-        return self._layers_by_uid.get(uid)
+    def _find_setup(self, uid: str) -> Setup | None:
+        return self._setups_by_uid.get(uid)
+
+    def _find_workflow(self, uid: str) -> Workflow | None:
+        return self._workflows_by_uid.get(uid)
 
     def shutdown(self) -> None:
         """Cancel any pending rebuild timer and disconnect signals."""

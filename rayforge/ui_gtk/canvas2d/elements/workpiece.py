@@ -254,9 +254,10 @@ class WorkPieceElement(CanvasElement):
         # Clear the model cache as well, since the data is invalid
         self.data._view_cache.clear()
 
-        if self.data.layer and self.data.layer.workflow:
-            for step in self.data.layer.workflow.steps:
-                self.clear_ops_surface(step.uid)
+        if self.data.setup:
+            for workflow in self.data.setup.workflows:
+                for step in workflow.steps:
+                    self.clear_ops_surface(step.uid)
         super().trigger_update()
 
     def trigger_view_update(self, ppm: float = 0.0) -> bool:
@@ -418,7 +419,13 @@ class WorkPieceElement(CanvasElement):
 
         Called from ``draw()`` when ``_composited_dirty`` is True.
         """
-        if not self.data.layer or not self.data.layer.workflow:
+        setup = self.data.setup
+        steps = (
+            [s for w in setup.workflows for s in w.steps]
+            if setup is not None
+            else []
+        )
+        if not steps:
             self._dispose_composited()
             self._composited_dirty = False
             return
@@ -436,7 +443,7 @@ class WorkPieceElement(CanvasElement):
             return
 
         visible_steps = []
-        for step in self.data.layer.workflow.steps:
+        for step in steps:
             if not self._ops_visibility.get(step.uid, True):
                 continue
             if step.uid not in self._ops_surface_cache:
@@ -1266,7 +1273,7 @@ class WorkPieceElement(CanvasElement):
         Removes the cached ops surface for a step and schedules a
         composite rebuild.
 
-        Called by ``LayerElement.sync_with_model`` when a step is
+        Called by ``SetupElement.sync_with_model`` when a step is
         deleted from the workflow.  Must mark the composite dirty so
         the next draw() rebuilds it without the removed step.
         """
@@ -1408,7 +1415,7 @@ class WorkPieceElement(CanvasElement):
         if world_w < 1e-9 or world_h < 1e-9:
             return
 
-        if self.data.layer and self.data.layer.workflow:
+        if self.data.setup:
             registry.touch(self.data.uid)
 
             if self._composited_dirty:

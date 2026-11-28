@@ -26,8 +26,8 @@ def _zero_debounce(zero_debounce_delay):
 @pytest.fixture
 def doc():
     d = Doc()
-    assert d.active_layer.workflow is not None
-    d.active_layer.workflow.set_steps([])
+    assert d.active_setup.workflows[0] is not None
+    d.active_setup.workflows[0].set_steps([])
     return d
 
 
@@ -51,9 +51,9 @@ def material_test_setup(
 
     workpiece = WorkPiece(name="mtg")
     workpiece.set_size(80.0, 80.0)
-    doc.active_layer.add_workpiece(workpiece)
+    doc.active_setup.add_workpiece(workpiece)
     step.workpiece_uids = [workpiece.uid]
-    doc.active_layer.workflow.add_step(step)
+    doc.active_setup.workflows[0].add_step(step)
 
     pipeline = Pipeline(
         doc,

@@ -51,7 +51,7 @@ class MachinePostProcessorsGroup(Adw.PreferencesGroup):
         self._children.clear()
         self._group_dicts.clear()
 
-        for transformer_cls in transformer_registry.get_layer_applicable():
+        for transformer_cls in transformer_registry.get_workflow_applicable():
             name = transformer_cls.__name__
             widget_cls = transformer_widget_registry.get(transformer_cls)
             if widget_cls is None:

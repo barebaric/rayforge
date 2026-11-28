@@ -15,16 +15,14 @@ from ..core.stock import StockItem
 from ..core.undo import (
     ChangePropertyCommand,
     ListItemCommand,
-    ReorderListCommand,
 )
-from ..core.workflow import Workflow
 from ..core.workpiece import WorkPiece
 from .boundaries import edited_boundaries_command
 
 if TYPE_CHECKING:
     from ..core.asset import IAsset
     from ..core.geometry_provider import IGeometryProvider
-    from ..core.layer import Layer
+    from ..core.setup import Setup
     from ..core.source_asset import SourceAsset
     from .editor import DocEditor
 
@@ -113,7 +111,7 @@ class EditCmd:
         history = self._editor.history_manager
         newly_pasted_items = []
 
-        target_layer = self._editor.doc.active_layer
+        target_setup = self._editor.doc.active_setup
 
         with history.transaction(_("Paste item(s)")) as t:
             offset_x = self._paste_increment_mm[0] * self._paste_counter
@@ -141,7 +139,7 @@ class EditCmd:
                 )
 
                 command = ListItemCommand(
-                    owner_obj=target_layer,
+                    owner_obj=target_setup,
                     item=new_item,
                     undo_command="remove_child",
                     redo_command="add_child",
@@ -168,7 +166,7 @@ class EditCmd:
         history = self._editor.history_manager
         newly_duplicated_items = []
 
-        target_layer = self._editor.doc.active_layer
+        target_setup = self._editor.doc.active_setup
 
         top_level_items = self._get_top_level_items(items)
 
@@ -178,9 +176,9 @@ class EditCmd:
                 newly_duplicated_items.append(new_item)
 
                 if isinstance(new_item, StockItem):
-                    owner = self._editor.doc
+                    owner = self._editor.doc.active_setup
                 else:
-                    owner = target_layer
+                    owner = target_setup
 
                 command = ListItemCommand(
                     owner_obj=owner,
@@ -208,7 +206,7 @@ class EditCmd:
             return []
 
         history = self._editor.history_manager
-        target_layer = self._editor.doc.active_layer
+        target_setup = self._editor.doc.active_setup
 
         with history.transaction(_(name)) as t:
             # Add source assets. This is not currently undoable in this simple
@@ -224,7 +222,7 @@ class EditCmd:
 
             for item in items:
                 command = ListItemCommand(
-                    owner_obj=target_layer,
+                    owner_obj=target_setup,
                     item=item,
                     undo_command="remove_child",
                     redo_command="add_child",
@@ -278,33 +276,32 @@ class EditCmd:
 
     def clear_all_items(self):
         """
-        Removes all workpieces and groups from all layers in the document in a
-        single undoable transaction.
+        Removes all workpieces and groups from all setups in the
+        document in a single undoable transaction.
         """
         doc = self._editor.doc
         if not doc.has_workpiece():
             return
 
         with doc.history_manager.transaction(_("Remove all workpieces")) as t:
-            for layer in doc.layers:
-                # A layer is considered "not empty" if it has any children
-                # besides its mandatory workflow.
-                if any(
-                    not isinstance(child, Workflow) for child in layer.children
-                ):
-                    command = ReorderListCommand(
-                        target_obj=layer,
-                        list_property_name="children",
-                        new_list=[layer.workflow],
-                        setter_method_name="set_children",
-                        name=_("Clear Layer Items"),
+            for setup in doc.setups:
+                # A setup is considered "not empty" if it has any content
+                # besides its workflows and stock.
+                for item in setup.get_content_items():
+                    t.execute(
+                        ListItemCommand(
+                            owner_obj=setup,
+                            item=item,
+                            undo_command="add_child",
+                            redo_command="remove_child",
+                            name=_("Remove item"),
+                        )
                     )
-                    t.execute(command)
 
     def reset_paste_counter(self):
         """
         Resets the paste counter. This is typically called when the context
-        changes, such as selecting a new layer, to ensure the next paste
+        changes, such as selecting a new setup, to ensure the next paste
         operation does not continue an offset chain from a previous context.
         The next paste will be "in place".
         """
@@ -391,7 +388,7 @@ class EditCmd:
         self,
         provider_uid: str,
         position_mm: tuple[float, float],
-        target_layer: Optional["Layer"] = None,
+        target_setup: Optional["Setup"] = None,
     ) -> WorkPiece:
         """
         Creates a new WorkPiece instance from a geometry provider.
@@ -399,14 +396,14 @@ class EditCmd:
         Args:
             provider_uid: The UID of the geometry provider to instantiate
             position_mm: The (x, y) position in mm where to place the instance
-            target_layer: The layer to add the instance to. If None, uses
-                the active layer.
+            target_setup: The setup to add the instance to. If None, uses
+                the active setup.
 
         Returns:
             The newly created WorkPiece instance
         """
         history = self._editor.history_manager
-        target_layer = target_layer or self._editor.doc.active_layer
+        target_setup = target_setup or self._editor.doc.active_setup
 
         provider = cast(
             Optional["IGeometryProvider"],
@@ -431,7 +428,7 @@ class EditCmd:
             _("Add {} Instance").format(provider.name)
         ) as t:
             command = ListItemCommand(
-                owner_obj=target_layer,
+                owner_obj=target_setup,
                 item=new_workpiece,
                 undo_command="remove_child",
                 redo_command="add_child",

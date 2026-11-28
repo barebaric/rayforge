@@ -93,10 +93,9 @@ class AddTabsPopover(Gtk.Popover):
             _("Adjust Equidistant Tabs")
         ):
             for workpiece in self.workpieces:
-                if (
-                    not workpiece.layer
-                    or not workpiece.layer.workflow
-                    or not workpiece.layer.workflow.steps
+                setup = workpiece.setup
+                if not setup or not any(
+                    workflow.steps for workflow in setup.workflows
                 ):
                     continue
 

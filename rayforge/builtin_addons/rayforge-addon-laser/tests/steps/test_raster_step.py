@@ -803,8 +803,8 @@ class TestLegacyInvert:
     def test_loading_a_document_moves_invert_to_the_workpieces(self):
         doc = Doc()
         wp = WorkPiece("photo")
-        doc.active_layer.add_child(wp)
-        workflow = doc.active_layer.workflow
+        doc.active_setup.add_child(wp)
+        workflow = doc.active_setup.workflows[0]
         assert workflow is not None
         workflow.add_step(EngraveStep(name="Engrave"))
         data = doc.to_dict()

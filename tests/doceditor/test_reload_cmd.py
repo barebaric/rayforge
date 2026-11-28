@@ -8,7 +8,7 @@ from raygeo.formats.dxf.writer import write
 from raygeo.geo import Geometry, Matrix
 
 from rayforge.core.doc import Doc
-from rayforge.core.layer import Layer
+from rayforge.core.setup import Setup
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.tab import Tab
 from rayforge.core.vectorization_spec import (
@@ -408,15 +408,19 @@ class TestReloadLayers:
         by_id = _by_layer_id(editor.doc, asset)
         _transform(by_id["#ff0000"], Matrix.translation(7, 3))
         _transform(by_id["#0000ff"], Matrix.translation(7, 3))
-        layer_count = len(editor.doc.layers)
+        layer_count = len(editor.doc.setups)
 
         _write(path, PAGE_80, RED_RECT, BLUE_CIRCLE, GREEN_SQUARE)
         report = editor.reload.reload_source(asset)
 
         assert report.added == 1
         green = _by_layer_id(editor.doc, asset)["#00ff00"]
-        assert isinstance(green.parent, Layer)
-        assert len(editor.doc.layers) == layer_count + 1
+        assert isinstance(green.parent, Setup)
+        assert len(editor.doc.setups) == layer_count
+        assert any(
+            green.uid in workflow.workpiece_uids
+            for workflow in green.parent.workflows
+        )
         gx0, _gy0, _gx1, gy1 = _world_bbox(green)
         rx0, _ry0, _rx1, ry1 = _world_bbox(by_id["#ff0000"])
         assert gx0 == pytest.approx(rx0 - 8.0, abs=0.1)

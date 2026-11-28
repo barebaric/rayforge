@@ -50,10 +50,12 @@ class _AddStockCommand(Command):
 
     def do(self):
         self.doc.add_asset(self.asset, silent=True)
-        self.doc.add_child(self.item)
+        self.doc.active_setup.add_child(self.item)
 
     def undo(self):
-        self.doc.remove_child(self.item)
+        parent = self.item.parent
+        if parent is not None:
+            parent.remove_child(self.item)
         self.doc.remove_asset_by_uid(self.asset_uid)
 
 
@@ -113,10 +115,12 @@ class ConvertToStockCommand(Command):
             self.original_parent.remove_child(self.workpiece)
 
         self.doc.add_asset(self.asset, silent=True)
-        self.doc.add_child(self.stock_item)
+        self.doc.active_setup.add_child(self.stock_item)
 
     def undo(self):
-        self.doc.remove_child(self.stock_item)
+        parent = self.stock_item.parent
+        if parent is not None:
+            parent.remove_child(self.stock_item)
         self.doc.remove_asset_by_uid(self.asset_uid)
 
         if self.original_parent:

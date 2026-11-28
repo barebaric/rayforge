@@ -70,5 +70,5 @@ def place(
     wp = WorkPiece.from_geometry_provider(provider)
     wp._transient_geometry_provider = provider
     wp.variable_offset = offset
-    doc.active_layer.add_child(wp)
+    doc.active_setup.add_child(wp)
     return wp, provider

@@ -4,12 +4,25 @@ from collections.abc import Set as AbstractSet
 
 from gi.repository import Gtk
 
+from ...core.workflow import Workflow
 from ...core.workpiece import WorkPiece
 from .node import NodeRow
 from .specs import NodeSpec
 from .step_node import steps_for
 
 _WORKPIECE_ICON = "model-symbolic"
+
+
+def _workflow_for(workpiece: WorkPiece) -> Workflow | None:
+    """The first workflow of the part's setup that runs for it."""
+    setup = workpiece.setup
+    if setup is None:
+        return None
+    workpieces = setup.all_workpieces
+    for workflow in setup.workflows:
+        if workpiece in workflow.selected_workpieces(workpieces):
+            return workflow
+    return None
 
 
 class WorkPieceNode(NodeRow):
@@ -34,7 +47,7 @@ class WorkPieceNode(NodeRow):
         expanded: AbstractSet[str] = frozenset(),
         selected: AbstractSet[str] = frozenset(),
     ) -> NodeSpec:
-        workflow = workpiece.layer.workflow if workpiece.layer else None
+        workflow = _workflow_for(workpiece)
         steps = steps_for(workpiece, workflow)
         return NodeSpec(
             kind="workpiece",
@@ -66,7 +79,7 @@ class WorkPieceNode(NodeRow):
         ]
         if workpiece.uid not in expanded:
             return rows
-        workflow = workpiece.layer.workflow if workpiece.layer else None
+        workflow = _workflow_for(workpiece)
         for step in steps_for(workpiece, workflow):
             rows.append(StepNode(step, depth + 1, callbacks))
         return rows

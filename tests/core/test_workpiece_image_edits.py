@@ -61,7 +61,7 @@ def workpiece(tmp_path: Path) -> WorkPiece:
     wp = cast(WorkPiece, payload.items[0])
     doc = Doc()
     doc.add_asset(payload.source)
-    doc.active_layer.add_child(wp)
+    doc.active_setup.add_child(wp)
     return wp
 
 

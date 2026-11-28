@@ -7,11 +7,13 @@ from gi.repository import Gtk
 from ...core.step_registry import step_registry
 from ...core.undo.list_cmd import ListItemCommand, ReorderListCommand
 from ...core.workflow import Workflow
+from ..icons import get_icon
 from ..shared.draglist import DragListBox
 from ..shared.expander import ExpanderWithButton
 from ..shared.popover_menu import PopoverMenu
 from .step_box import StepBox
 from .step_settings.dialog import StepSettingsDialog
+from .workflow_post_processors import WorkflowPostProcessorGroup
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor
@@ -41,6 +43,14 @@ class WorkflowView(ExpanderWithButton):
         self.append_content(self.draglist)
 
         self.add_button.connect("clicked", self.on_button_add_clicked)
+
+        self.post_processor_button = Gtk.MenuButton(
+            child=get_icon("settings-symbolic")
+        )
+        self.post_processor_button.add_css_class("flat")
+        self.post_processor_button.set_tooltip_text(_("Post Processing"))
+        self.post_processor_button.set_popover(Gtk.Popover())
+        self.add_suffix(self.post_processor_button)
 
         self.set_workflow(workflow)
 
@@ -76,6 +86,22 @@ class WorkflowView(ExpanderWithButton):
             self.workflow.descendant_updated.connect(self.on_workflow_changed)
             # Trigger initial full population and metadata update
             self.on_workflow_changed(self.workflow)
+            self._update_post_processor_popover()
+
+    def _update_post_processor_popover(self):
+        """Points the header button's popover at the current workflow."""
+        popover = Gtk.Popover()
+        if self.workflow:
+            group = WorkflowPostProcessorGroup(self.workflow, self.editor)
+            scrolled = Gtk.ScrolledWindow()
+            scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+            scrolled.set_child(group)
+            scrolled.set_max_content_width(420)
+            scrolled.set_propagate_natural_width(True)
+            scrolled.set_max_content_height(500)
+            scrolled.set_propagate_natural_height(True)
+            popover.set_child(scrolled)
+        self.post_processor_button.set_popover(popover)
 
     def on_workflow_renamed(self, sender):
         """A workflow rename only changes the displayed title."""

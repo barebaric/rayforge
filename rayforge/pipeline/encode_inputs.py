@@ -108,21 +108,22 @@ def _build_job_path_vars(ops: Ops, doc: "Doc") -> dict[str, str]:
     }
 
 
-def _build_layer_path_vars_for_doc(
+def _build_workflow_path_vars_for_doc(
     doc: "Doc", machine: "Machine"
 ) -> dict[str, dict[str, str]]:
     result: dict[str, dict[str, str]] = {}
     if not doc:
         return result
-    for layer in doc.layers:
-        wcs = layer.get_effective_wcs(machine)
+    for setup in doc.setups:
+        wcs = setup.get_effective_wcs(machine)
         wcs_offset = machine.get_job_wcs_offset(machine.get_wcs_offset(wcs))
-        result[layer.uid] = {
-            "layer.name": layer.name,
-            "wcs_offset[0]": _repr_val(wcs_offset[0]),
-            "wcs_offset[1]": _repr_val(wcs_offset[1]),
-            "wcs_offset[2]": _repr_val(wcs_offset[2]),
-        }
+        for workflow in setup.workflows:
+            result[workflow.uid] = {
+                "workflow.name": workflow.name,
+                "wcs_offset[0]": _repr_val(wcs_offset[0]),
+                "wcs_offset[1]": _repr_val(wcs_offset[1]),
+                "wcs_offset[2]": _repr_val(wcs_offset[2]),
+            }
     return result
 
 
@@ -132,8 +133,8 @@ def _build_workpiece_path_vars_for_doc(
     result: dict[str, dict[str, str]] = {}
     if not doc:
         return result
-    for layer in doc.layers:
-        for wp in layer.all_workpieces:
+    for setup in doc.setups:
+        for wp in setup.all_workpieces:
             pos = wp.pos
             size = wp.size
             counter = doc.job_counter.counter.value_at(wp.variable_offset)
@@ -209,13 +210,18 @@ def _build_heads(machine: "Machine") -> list[dict]:
 # ── Layer WCS ─────────────────────────────────────────────────────
 
 
-def _build_layer_wcs(doc: "Doc", machine: "Machine") -> dict[str, str]:
-    """Per-layer WCS command, keyed by layer UID."""
+def _build_workflow_wcs(doc: "Doc", machine: "Machine") -> dict[str, str]:
+    """Per-workflow WCS command, keyed by workflow UID.
+
+    The encoder matches these against the span markers, whose uid is
+    the workflow's; the value is the workflow's setup WCS.
+    """
     result: dict[str, str] = {}
     if not doc:
         return result
-    for layer in doc.layers:
-        result[layer.uid] = layer.get_effective_wcs(machine)
+    for setup in doc.setups:
+        for workflow in setup.workflows:
+            result[workflow.uid] = setup.get_effective_wcs(machine)
     return result
 
 
@@ -235,10 +241,10 @@ def build_encode_context(ops: Ops, machine: "Machine", doc: "Doc") -> dict:
         "default_head_uid": machine.get_default_head().uid,
         "heads": _build_heads(machine),
         "active_wcs": machine.active_wcs,
-        "layer_wcs": _build_layer_wcs(doc, machine),
+        "layer_wcs": _build_workflow_wcs(doc, machine),
         "macros": _build_macro_table(machine),
         "path_vars": path_vars,
-        "layer_path_vars": _build_layer_path_vars_for_doc(doc, machine),
+        "layer_path_vars": _build_workflow_path_vars_for_doc(doc, machine),
         "workpiece_path_vars": _build_workpiece_path_vars_for_doc(doc),
         "has_z_axis": machine.has_z_axis,
         "power_cap": machine.get_job_power_cap(),

@@ -55,7 +55,7 @@ def doc_with_workpiece(
 
     doc = Doc()
     doc.add_asset(source)
-    doc.active_layer.add_child(wp)
+    doc.active_setup.add_child(wp)
     return doc, wp, source
 
 
@@ -495,7 +495,7 @@ class TestWorkPiece:
             vectorization_spec=PassthroughSpec(),
         )
         wp = WorkPiece("nosize.dat", source_segment=gen_config)
-        doc.active_layer.add_child(wp)
+        doc.active_setup.add_child(wp)
 
         # The size should fall back to the provided bounds
         assert wp.get_default_size(

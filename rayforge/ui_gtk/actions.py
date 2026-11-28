@@ -2,14 +2,14 @@ import logging
 from collections.abc import Callable
 from gettext import gettext as _
 from gettext import ngettext
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from gi.repository import Adw, Gio, GLib, Gtk
 
 from ..context import get_context
 from ..core.group import Group
 from ..core.item import DocItem
-from ..core.layer import Layer
+from ..core.setup import Setup
 from ..core.source_asset import SourceAsset
 from ..core.stock import StockItem
 from ..core.workpiece import WorkPiece
@@ -576,10 +576,10 @@ class ActionManager:
         if selected_wps:
             has_workpieces = True
         else:
-            current_layer = self.doc.active_layer
+            current_setup = self.doc.active_setup
             has_workpieces = (
-                current_layer
-                and len(current_layer.get_descendants(WorkPiece)) > 0
+                current_setup
+                and len(current_setup.get_descendants(WorkPiece)) > 0
             )
         layout_info = action_registry.get("layout-pixel-perfect")
         if layout_info and layout_info.action:
@@ -734,10 +734,9 @@ class ActionManager:
         valid_workpieces = [
             wp
             for wp in workpieces_to_process
-            if wp.boundaries
-            and wp.layer
-            and wp.layer.workflow
-            and wp.layer.workflow.has_steps()
+            if wp.setup
+            and wp.setup.workflows
+            and any(w.has_steps() for w in wp.setup.workflows)
         ]
 
         if not valid_workpieces:
@@ -760,9 +759,8 @@ class ActionManager:
         # 1. Execute the command to update the data model.
         for workpiece in workpieces_to_process:
             if not (
-                workpiece.layer
-                and workpiece.layer.workflow
-                and workpiece.layer.workflow.has_steps()
+                workpiece.setup
+                and any(w.has_steps() for w in workpiece.setup.workflows)
             ):
                 continue
 
@@ -854,14 +852,14 @@ class ActionManager:
             for elem in selected_elements
             if isinstance(elem.data, DocItem)
         ]
-        # All items must belong to the same layer to be grouped
-        parent_layer = cast(Layer, items_to_group[0].parent)
-        if not parent_layer or not all(
-            item.parent is parent_layer for item in items_to_group
+        # All items must share the same setup to be grouped
+        parent = items_to_group[0].parent
+        if not isinstance(parent, Setup) or not all(
+            item.parent is parent for item in items_to_group
         ):
             return
 
-        new_group = self.editor.group.group_items(parent_layer, items_to_group)
+        new_group = self.editor.group.group_items(parent, items_to_group)
         if new_group:
             self.win.surface.select_items([new_group])
 

@@ -35,8 +35,8 @@ def _zero_debounce(zero_debounce_delay):
 @pytest.fixture
 def doc():
     d = Doc()
-    assert d.active_layer.workflow is not None
-    d.active_layer.workflow.set_steps([])
+    assert d.active_setup.workflows[0] is not None
+    d.active_setup.workflows[0].set_steps([])
     return d
 
 
@@ -69,8 +69,8 @@ class TestPipelineInvalidation:
         workpiece.source_segment = gen_config
         workpiece.set_size(50, 30)
         workpiece.pos = 10, 20
-        doc.active_layer.add_workpiece(workpiece)
-        return doc.active_layer
+        doc.active_setup.add_workpiece(workpiece)
+        return doc.active_setup
 
     async def _wait_settled(self, pipeline, timeout=10.0):
         deadline = asyncio.get_running_loop().time() + timeout
@@ -91,7 +91,7 @@ class TestPipelineInvalidation:
         """Changing workpiece geometry should trigger a new rebuild."""
         self._setup_doc_with_workpiece(doc, real_workpiece)
         step = contour_step_class.create(context_initializer)
-        doc.active_layer.workflow.add_step(step)
+        doc.active_setup.workflows[0].add_step(step)
 
         pipeline = Pipeline(
             doc,
@@ -120,7 +120,7 @@ class TestPipelineInvalidation:
         """Changing workpiece position should trigger a rebuild."""
         self._setup_doc_with_workpiece(doc, real_workpiece)
         step = contour_step_class.create(context_initializer)
-        doc.active_layer.workflow.add_step(step)
+        doc.active_setup.workflows[0].add_step(step)
 
         pipeline = Pipeline(
             doc,
@@ -149,7 +149,7 @@ class TestPipelineInvalidation:
         """Changing workpiece rotation should trigger a rebuild."""
         self._setup_doc_with_workpiece(doc, real_workpiece)
         step = contour_step_class.create(context_initializer)
-        doc.active_layer.workflow.add_step(step)
+        doc.active_setup.workflows[0].add_step(step)
 
         pipeline = Pipeline(
             doc,
@@ -178,7 +178,7 @@ class TestPipelineInvalidation:
         """Changing step power should trigger a rebuild."""
         self._setup_doc_with_workpiece(doc, real_workpiece)
         step = contour_step_class.create(context_initializer)
-        doc.active_layer.workflow.add_step(step)
+        doc.active_setup.workflows[0].add_step(step)
 
         pipeline = Pipeline(
             doc,
@@ -210,7 +210,7 @@ class TestPipelineInvalidation:
     ):
         """Adding a workpiece to the doc should trigger a rebuild."""
         step = contour_step_class.create(context_initializer)
-        doc.active_layer.workflow.add_step(step)
+        doc.active_setup.workflows[0].add_step(step)
 
         pipeline = Pipeline(
             doc,
@@ -241,11 +241,11 @@ class TestPipelineInvalidation:
         self._setup_doc_with_workpiece(doc, real_workpiece)
 
         group = Group()
-        doc.active_layer.add_child(group)
+        doc.active_setup.add_child(group)
         group.add_child(real_workpiece)
 
         step = contour_step_class.create(context_initializer)
-        doc.active_layer.workflow.add_step(step)
+        doc.active_setup.workflows[0].add_step(step)
 
         pipeline = Pipeline(
             doc,
@@ -274,7 +274,7 @@ class TestPipelineInvalidation:
         """Transforming a layer should trigger a rebuild."""
         self._setup_doc_with_workpiece(doc, real_workpiece)
         step = contour_step_class.create(context_initializer)
-        doc.active_layer.workflow.add_step(step)
+        doc.active_setup.workflows[0].add_step(step)
 
         pipeline = Pipeline(
             doc,
@@ -285,7 +285,7 @@ class TestPipelineInvalidation:
         await self._wait_settled(pipeline)
         gen1 = pipeline.data_generation_id
 
-        layer = doc.active_layer
+        layer = doc.active_setup
         layer.matrix = layer.matrix @ Matrix.translation(10, 10)
         await self._wait_settled(pipeline)
 
@@ -310,7 +310,7 @@ class TestPipelineInvalidation:
         # CPU work can exceed the settle timeout on a heavily loaded
         # parallel test run, making the test flaky.
         step.pixels_per_mm = (5, 5)
-        doc.active_layer.workflow.add_step(step)
+        doc.active_setup.workflows[0].add_step(step)
 
         pipeline = Pipeline(
             doc,

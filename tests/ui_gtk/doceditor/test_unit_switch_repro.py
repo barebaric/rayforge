@@ -37,7 +37,7 @@ def test_unit_switch_keeps_model_intact(editor_with_provider):
 
     wp = WorkPiece(name="wp.svg")
     wp.matrix = Matrix.scale(100, 50)
-    editor.doc.active_layer.add_child(wp)
+    editor.doc.active_setup.add_child(wp)
 
     provider = TransformPropertyProvider()
     provider.create_widgets()

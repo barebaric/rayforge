@@ -6,7 +6,7 @@ import pytest
 from raygeo.geo import Matrix
 
 from rayforge.core.doc import Doc
-from rayforge.core.layer import Layer
+from rayforge.core.setup import Setup
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.step import Step
 from rayforge.core.step_registry import step_registry
@@ -23,13 +23,13 @@ def doc():
 
 
 def test_doc_initialization(doc):
-    """Verify a new Doc starts with three Layers."""
-    assert len(doc.children) == 3
-    assert isinstance(doc.children[0], Layer)
-    assert len(doc.layers) == 3
+    """Verify a new Doc starts with one Setup."""
+    assert len(doc.children) == 1
+    assert isinstance(doc.children[0], Setup)
+    assert len(doc.setups) == 1
 
-    # Check that the first layer is active
-    assert doc.active_layer.name == "Layer 1"
+    # Check that the first setup is active
+    assert doc.active_setup.name == "Setup 1"
     assert doc.history_manager is not None
     assert doc.source_assets == {}
     assert doc.stock_assets == {}
@@ -38,25 +38,25 @@ def test_doc_initialization(doc):
 
 
 def test_has_rotary_layer_reflects_layer_flags(doc):
-    """has_rotary_layer tracks whether any layer enables rotary."""
-    assert doc.has_rotary_layer is False
+    """has_rotary_setup tracks whether any layer enables rotary."""
+    assert doc.has_rotary_setup is False
 
-    doc.active_layer.set_rotary_enabled(True)
-    assert doc.has_rotary_layer is True
+    doc.active_setup.set_rotary_enabled(True)
+    assert doc.has_rotary_setup is True
 
-    doc.active_layer.set_rotary_enabled(False)
-    assert doc.has_rotary_layer is False
+    doc.active_setup.set_rotary_enabled(False)
+    assert doc.has_rotary_setup is False
 
 
-def test_is_default_layer_name():
-    """Auto-generated names match the doc's layer naming scheme."""
-    assert Doc.is_default_layer_name("Layer")
-    assert Doc.is_default_layer_name("Layer 1")
-    assert Doc.is_default_layer_name("Layer 42")
+def test_is_default_setup_name():
+    """Auto-generated names match the doc's setup naming scheme."""
+    assert Doc.is_default_setup_name("Setup")
+    assert Doc.is_default_setup_name("Setup 1")
+    assert Doc.is_default_setup_name("Setup 42")
 
-    assert not Doc.is_default_layer_name("My Layer")
-    assert not Doc.is_default_layer_name("Layer Alpha")
-    assert not Doc.is_default_layer_name("Layer-1")
+    assert not Doc.is_default_setup_name("My Setup")
+    assert not Doc.is_default_setup_name("Setup Alpha")
+    assert not Doc.is_default_setup_name("Setup-1")
 
 
 @pytest.mark.parametrize(
@@ -138,20 +138,21 @@ def test_doc_stock_items_management(doc):
     stock1 = StockItem(stock_asset_uid=asset1.uid, name="Stock 1")
     stock2 = StockItem(stock_asset_uid=asset1.uid, name="Stock 2")
 
-    doc.add_child(stock1)
+    setup = doc.active_setup
+    setup.add_child(stock1)
     assert len(doc.stock_items) == 1
     assert stock1 in doc.stock_items
-    assert stock1.parent is doc
+    assert stock1.parent is setup
 
-    doc.add_child(stock2)
+    setup.add_child(stock2)
     assert len(doc.stock_items) == 2
 
-    found_stock = doc.get_child_by_uid(stock1.uid)
+    found_stock = setup.get_child_by_uid(stock1.uid)
     assert found_stock is stock1
 
-    assert doc.get_child_by_uid("non-existent") is None
+    assert setup.get_child_by_uid("non-existent") is None
 
-    doc.remove_child(stock1)
+    setup.remove_child(stock1)
     assert len(doc.stock_items) == 1
     assert stock1 not in doc.stock_items
     assert stock1.parent is None
@@ -159,14 +160,14 @@ def test_doc_stock_items_management(doc):
 
 def test_add_layer_fires_descendant_added(doc):
     """Test adding a layer fires descendant_added with the layer as origin."""
-    initial_layer_count = len(doc.layers)
+    initial_layer_count = len(doc.setups)
     handler = MagicMock()
     doc.descendant_added.connect(handler)
 
-    new_layer = Layer("Layer 2")
-    doc.add_layer(new_layer)
+    new_layer = Setup("Layer 2")
+    doc.add_setup(new_layer)
 
-    assert len(doc.layers) == initial_layer_count + 1
+    assert len(doc.setups) == initial_layer_count + 1
     handler.assert_called_once_with(
         doc, origin=new_layer, parent_of_origin=doc
     )
@@ -176,12 +177,12 @@ def test_remove_layer_fires_descendant_removed(doc):
     """
     Test removing a layer fires descendant_removed with the layer as origin.
     """
-    layer_to_remove = Layer("Layer 2")
-    doc.add_layer(layer_to_remove)
+    layer_to_remove = Setup("Layer 2")
+    doc.add_setup(layer_to_remove)
 
     handler = MagicMock()
     doc.descendant_removed.connect(handler)
-    doc.remove_layer(layer_to_remove)
+    doc.remove_setup(layer_to_remove)
 
     handler.assert_called_once_with(
         doc, origin=layer_to_remove, parent_of_origin=doc
@@ -206,7 +207,7 @@ def test_missing_step_types_reports_original_type(doc):
         "children": [],
     }
 
-    workflow = doc.active_layer.workflow
+    workflow = doc.active_setup.workflows[0]
     workflow.add_step(Step.from_dict(step_dict))
 
     assert doc.missing_step_types == {"NonExistentStepClass"}
@@ -229,7 +230,7 @@ def test_missing_step_types_falls_back_to_typelabel(doc):
         "children": [],
     }
 
-    workflow = doc.active_layer.workflow
+    workflow = doc.active_setup.workflows[0]
     workflow.add_step(Step.from_dict(step_dict))
 
     assert doc.missing_step_types == {"SomeCustomStep"}
@@ -247,7 +248,7 @@ def test_missing_step_types_empty_for_registered_steps(doc):
 
     step_registry.register(RegisteredStep)
     try:
-        workflow = doc.active_layer.workflow
+        workflow = doc.active_setup.workflows[0]
         workflow.add_step(RegisteredStep(typelabel="Registered"))
 
         assert doc.missing_step_types == set()
@@ -261,9 +262,9 @@ def test_descendant_updated_bubbles_up_to_doc(doc):
     doc.descendant_updated.connect(handler)
 
     layer = (
-        doc.active_layer
+        doc.active_setup
     )  # Use the active layer, which is guaranteed to be a regular one
-    workflow = layer.workflow
+    workflow = layer.workflows[0]
     assert workflow is not None
     step = Step("Test Step")
     workflow.add_step(step)
@@ -283,8 +284,8 @@ def test_descendant_added_bubbles_up_to_doc(doc):
     handler = MagicMock()
     doc.descendant_added.connect(handler)
 
-    layer = doc.active_layer
-    workflow = layer.workflow
+    layer = doc.active_setup
+    workflow = layer.workflows[0]
     assert workflow is not None
     step = Step("Test Step")
 
@@ -299,8 +300,8 @@ def test_descendant_added_bubbles_up_to_doc(doc):
 
 def test_descendant_removed_bubbles_up_to_doc(doc):
     """A descendant_removed signal for a step should bubble up to the Doc."""
-    layer = doc.active_layer
-    workflow = layer.workflow
+    layer = doc.active_setup
+    workflow = layer.workflows[0]
     assert workflow is not None
     step = Step("Test Step")
     workflow.add_step(step)
@@ -406,32 +407,37 @@ def test_doc_from_dict_deserialization(doc):
     doc_dict = {
         "uid": "test-doc-uid",
         "type": "doc",
-        "active_layer_index": 0,
+        "active_setup_index": 0,
         "children": [
             {
-                "uid": "layer1-uid",
-                "type": "layer",
+                "uid": "setup1-uid",
+                "type": "setup",
             }
         ],
         "assets": [],
     }
 
-    with patch("rayforge.core.layer.Layer.from_dict") as mock_layer_from_dict:
-        mock_layer = MagicMock()
-        mock_layer.get_local_bbox.return_value = None
-        mock_layer_from_dict.return_value = mock_layer
+    real_from_dict = Setup.from_dict
 
+    def fake_from_dict(data):
+        seen.append(data)
+        return real_from_dict(
+            {"matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]], **data}
+        )
+
+    seen = []
+    with patch.object(Setup, "from_dict", side_effect=fake_from_dict):
         new_doc = Doc.from_dict(doc_dict)
 
-        assert isinstance(new_doc, Doc)
-        assert len(new_doc.children) == 1
-        assert new_doc.get_assets_by_type("sketch") == {}
-        mock_layer_from_dict.assert_called_once_with(
-            {
-                "uid": "layer1-uid",
-                "type": "layer",
-            }
-        )
+    assert isinstance(new_doc, Doc)
+    assert len(new_doc.children) == 1
+    assert new_doc.get_assets_by_type("sketch") == {}
+    assert seen == [
+        {
+            "uid": "setup1-uid",
+            "type": "setup",
+        }
+    ]
 
 
 def test_doc_from_dict_deserialization_modern_assets():
@@ -516,7 +522,7 @@ def test_doc_deserialization_with_sketches():
     doc_dict = {
         "uid": "test-doc-uid",
         "type": "doc",
-        "active_layer_index": 0,
+        "active_setup_index": 0,
         "children": [],
         "stock_items": [],
         "source_assets": {},
@@ -548,9 +554,9 @@ def test_doc_roundtrip_serialization():
     original.uid = "test-doc-uid"
 
     # Add a fourth layer
-    layer4 = Layer("Layer 4")
-    original.add_layer(layer4)
-    original.active_layer = layer4
+    setup4 = Setup("Setup 4")
+    original.add_setup(setup4)
+    original.active_setup = setup4
 
     # Add a stock asset
     stock = StockAsset(name="My Test Stock")
@@ -563,9 +569,9 @@ def test_doc_roundtrip_serialization():
 
     # Check that the restored object has the same properties
     assert restored.uid == original.uid
-    assert len(restored.layers) == len(original.layers)
+    assert len(restored.setups) == len(original.setups)
     assert restored.uid == "test-doc-uid"
-    assert len(restored.layers) == 4
+    assert len(restored.setups) == 2
 
     # Check that stock assets were restored
     assert len(restored.stock_assets) == 1
@@ -578,7 +584,7 @@ def test_doc_roundtrip_serialization():
 
 
 def test_doc_from_dict_with_default_active_layer_index():
-    """Tests that from_dict uses default active_layer_index when missing."""
+    """Tests that from_dict uses default active_setup_index when missing."""
     doc_dict = {
         "uid": "test-doc-uid",
         "type": "doc",
@@ -593,20 +599,26 @@ def test_doc_from_dict_with_default_active_layer_index():
         "stock_assets": {},
     }
 
-    with patch("rayforge.core.layer.Layer.from_dict") as mock_layer_from_dict:
-        mock_layer = MagicMock()
-        mock_layer.get_local_bbox.return_value = None
-        mock_layer_from_dict.return_value = mock_layer
+    real_from_dict = Setup.from_dict
 
+    def fake_from_dict(data):
+        seen.append(data)
+        return real_from_dict(
+            {"matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]], **data}
+        )
+
+    seen = []
+    with patch.object(Setup, "from_dict", side_effect=fake_from_dict):
         doc = Doc.from_dict(doc_dict)
 
-        assert doc._active_layer_index == 0  # Explicitly test the default
-        mock_layer_from_dict.assert_called_once_with(
-            {
-                "uid": "layer1-uid",
-                "type": "layer",
-            }
-        )
+    assert doc._active_setup_index == 0  # Explicitly test the default
+    assert seen == [
+        {
+            "uid": "layer1-uid",
+            "type": "setup",
+            "children": [],
+        }
+    ]
 
 
 def test_has_result_logic(doc):
@@ -623,10 +635,10 @@ def test_has_result_logic(doc):
         assert not doc.has_result()
 
         # 3. Add an invisible step. Still no result.
-        layer = doc.active_layer
+        layer = doc.active_setup
         step = Step(typelabel="test")
         step.visible = False
-        layer.workflow.add_step(step)
+        layer.workflows[0].add_step(step)
         assert not doc.has_result()
 
         # 4. Make the step visible. Now there is a result.
@@ -637,7 +649,7 @@ def test_has_result_logic(doc):
         # visible.
         step2 = Step(typelabel="test2")
         step2.visible = False
-        layer.workflow.add_step(step2)
+        layer.workflows[0].add_step(step2)
         assert doc.has_result()
 
         # 6. Make the first step invisible. No result, as the only other step
@@ -650,64 +662,64 @@ def test_has_result_logic(doc):
         assert doc.has_result()
 
 
-def test_remove_layer_adjusts_active_index(doc):
+def test_remove_setup_adjusts_active_index(doc):
     """
-    Tests that removing a layer correctly adjusts the active layer index.
+    Tests that removing a setup correctly adjusts the active setup index.
     """
-    layer1 = doc.layers[0]
-    layer1.name = "Layer 1"
-    layer2 = doc.layers[1]
-    layer2.name = "Layer 2"
-    layer3 = doc.layers[2]
-    layer3.name = "Layer 3"
-    doc.active_layer = layer2
-    assert doc.active_layer is layer2
-    assert doc._active_layer_index == 1
+    layer1 = doc.setups[0]
+    layer1.name = "Setup 1"
+    layer2 = Setup("Setup 2")
+    layer3 = Setup("Setup 3")
+    doc.add_setup(layer2)
+    doc.add_setup(layer3)
+    doc.active_setup = layer2
+    assert doc.active_setup is layer2
+    assert doc._active_setup_index == 1
 
     # Case 1: Remove a layer before the active one
-    doc.remove_layer(layer1)
-    assert doc.layers == [layer2, layer3]
-    assert doc._active_layer_index == 0  # Index shifts down
-    assert doc.active_layer is layer2  # Instance remains the same
+    doc.remove_setup(layer1)
+    assert doc.setups == [layer2, layer3]
+    assert doc._active_setup_index == 0  # Index shifts down
+    assert doc.active_setup is layer2  # Instance remains the same
 
     # Reset for Case 2
     doc_case2 = Doc()
-    l1 = doc_case2.layers[0]
+    l1 = doc_case2.setups[0]
     l1.name = "L1"
-    l2 = doc_case2.layers[1]
-    l2.name = "L2"
-    l3 = doc_case2.layers[2]
-    l3.name = "L3"
-    doc_case2.active_layer = l2
-    assert doc_case2._active_layer_index == 1
+    l2 = Setup("L2")
+    l3 = Setup("L3")
+    doc_case2.add_setup(l2)
+    doc_case2.add_setup(l3)
+    doc_case2.active_setup = l2
+    assert doc_case2._active_setup_index == 1
 
     # Case 2: Remove the active layer
     active_layer_changed_handler = MagicMock()
-    doc_case2.active_layer_changed.connect(active_layer_changed_handler)
-    doc_case2.remove_layer(l2)
-    assert doc_case2.layers == [l1, l3]
-    assert doc_case2._active_layer_index == 0  # Falls back to previous index
-    assert doc_case2.active_layer is l1
+    doc_case2.active_setup_changed.connect(active_layer_changed_handler)
+    doc_case2.remove_setup(l2)
+    assert doc_case2.setups == [l1, l3]
+    assert doc_case2._active_setup_index == 0  # Falls back to previous index
+    assert doc_case2.active_setup is l1
     active_layer_changed_handler.assert_called_once()
 
     # Reset for Case 3
     doc_case3 = Doc()
-    ly1 = doc_case3.layers[0]
+    ly1 = doc_case3.setups[0]
     ly1.name = "LY1"
-    ly2 = doc_case3.layers[1]
-    ly2.name = "LY2"
-    ly3 = doc_case3.layers[2]
-    ly3.name = "LY3"
-    doc_case3.active_layer = ly2
-    assert doc_case3._active_layer_index == 1
+    ly2 = Setup("LY2")
+    ly3 = Setup("LY3")
+    doc_case3.add_setup(ly2)
+    doc_case3.add_setup(ly3)
+    doc_case3.active_setup = ly2
+    assert doc_case3._active_setup_index == 1
 
     # Case 3: Remove a layer after the active one
     active_layer_changed_handler.reset_mock()
-    doc_case3.active_layer_changed.connect(active_layer_changed_handler)
-    doc_case3.remove_layer(ly3)
-    assert doc_case3.layers == [ly1, ly2]
-    assert doc_case3._active_layer_index == 1  # Index is unaffected
-    assert doc_case3.active_layer is ly2
+    doc_case3.active_setup_changed.connect(active_layer_changed_handler)
+    doc_case3.remove_setup(ly3)
+    assert doc_case3.setups == [ly1, ly2]
+    assert doc_case3._active_setup_index == 1  # Index is unaffected
+    assert doc_case3.active_setup is ly2
     active_layer_changed_handler.assert_not_called()
 
 
@@ -716,37 +728,38 @@ def test_remove_last_layer_is_noop(doc):
     Tests that an attempt to remove the last layer from a document does
     nothing.
     """
-    while len(doc.layers) > 1:
-        doc.remove_layer(doc.layers[-1])
-    assert len(doc.layers) == 1
-    last_layer = doc.layers[0]
-    doc.remove_layer(last_layer)
-    assert len(doc.layers) == 1
-    assert doc.layers[0] is last_layer
+    while len(doc.setups) > 1:
+        doc.remove_setup(doc.setups[-1])
+    assert len(doc.setups) == 1
+    last_layer = doc.setups[0]
+    doc.remove_setup(last_layer)
+    assert len(doc.setups) == 1
+    assert doc.setups[0] is last_layer
 
 
-def test_set_layers_preserves_stock_items(doc):
+def test_set_setups_replaces_setups(doc):
     """
-    Tests that set_layers replaces layers but preserves other children like
-    StockItems.
+    Tests that set_setups replaces the setups, including the stock they
+    own.
     """
     asset = StockAsset(name="My Asset")
     doc.add_asset(asset)
     stock_item = StockItem(stock_asset_uid=asset.uid, name="My Stock")
-    doc.add_child(stock_item)
+    doc.active_setup.add_child(stock_item)
 
-    assert set(doc.children) == set(doc.layers) | {stock_item}
+    assert set(doc.children) == set(doc.setups)
+    assert doc.stock_items == [stock_item]
 
-    new_layer1 = Layer("New Layer 1")
-    new_layer2 = Layer("New Layer 2")
+    new_setup1 = Setup("New Setup 1")
+    new_setup2 = Setup("New Setup 2")
 
     # Act
-    doc.set_layers([new_layer1, new_layer2])
+    doc.set_setups([new_setup1, new_setup2])
 
     # Assert
-    assert doc.layers == [new_layer1, new_layer2]  # Layers are replaced
-    assert doc.stock_items == [stock_item]  # Stock item is preserved
-    assert set(doc.children) == {new_layer1, new_layer2, stock_item}
+    assert doc.setups == [new_setup1, new_setup2]
+    assert doc.stock_items == []  # The old stock went with its setup
+    assert set(doc.children) == {new_setup1, new_setup2}
 
 
 def test_set_layers_raises_error_on_empty_list(doc):
@@ -754,35 +767,36 @@ def test_set_layers_raises_error_on_empty_list(doc):
     Tests that set_layers raises a ValueError if called with an empty list.
     """
     with pytest.raises(ValueError):
-        doc.set_layers([])
+        doc.set_setups([])
 
 
 def test_set_layers_active_layer_logic(doc):
     """Tests how set_layers preserves or resets the active layer."""
-    layer1 = doc.layers[0]
+    layer1 = doc.setups[0]
     layer1.name = "Layer 1"
-    layer2 = Layer("Layer 2")
-    layer3 = Layer("Layer 3")
-    doc.add_layer(layer2)
-    doc.add_layer(layer3)
+    layer2 = Setup("Layer 2")
+    layer3 = Setup("Layer 3")
+    doc.add_setup(layer2)
+    doc.add_setup(layer3)
 
     # Case 1: Active layer is preserved in the new list
-    doc.active_layer = layer2
-    doc.set_layers([layer3, layer1, layer2])
-    assert doc.active_layer is layer2
-    assert doc._active_layer_index == 2
+    doc.active_setup = layer2
+    doc.set_setups([layer3, layer1, layer2])
+    assert doc.active_setup is layer2
+    assert doc._active_setup_index == 2
 
     # Case 2: Active layer is removed from the new list
-    doc.active_layer = layer2
-    doc.set_layers([layer1, layer3])
-    assert doc.active_layer is layer1  # Defaults to index 0
-    assert doc._active_layer_index == 0
+    doc.active_setup = layer2
+    doc.set_setups([layer1, layer3])
+    assert doc.active_setup is layer1  # Defaults to index 0
+    assert doc._active_setup_index == 0
 
 
-def test_from_dict_clears_default_layer():
+def test_from_dict_clears_default_setup():
     """
-    Tests that Doc.from_dict removes the default layer created by __init__
-    before populating from the dictionary.
+    Tests that Doc.from_dict removes the default setup created by
+    __init__ before populating from the dictionary, and that v0 layer
+    dicts are migrated to setups.
     """
     doc_dict = {
         "uid": "test-doc-uid",
@@ -790,30 +804,16 @@ def test_from_dict_clears_default_layer():
             {
                 "uid": "layer1-uid",
                 "type": "layer",
-                "name": "Loaded Layer 1",
+                "name": "Loaded Setup 1",
                 "matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
                 "children": [],
-                "workflow": {
-                    "uid": "wf1",
-                    "type": "workflow",
-                    "name": "WF",
-                    "matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
-                    "children": [],
-                },
             },
             {
                 "uid": "layer2-uid",
                 "type": "layer",
-                "name": "Loaded Layer 2",
+                "name": "Loaded Setup 2",
                 "matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
                 "children": [],
-                "workflow": {
-                    "uid": "wf2",
-                    "type": "workflow",
-                    "name": "WF",
-                    "matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
-                    "children": [],
-                },
             },
         ],
     }
@@ -821,23 +821,24 @@ def test_from_dict_clears_default_layer():
     # Use real objects instead of mocks for a more robust test
     restored_doc = Doc.from_dict(doc_dict)
 
-    assert len(restored_doc.layers) == 2
-    layer_names = [layer.name for layer in restored_doc.layers]
-    assert "Layer 1" not in layer_names  # Default name from __init__
-    assert "Loaded Layer 1" in layer_names
-    assert "Loaded Layer 2" in layer_names
+    assert len(restored_doc.setups) == 2
+    setup_names = [setup.name for setup in restored_doc.setups]
+    assert "Setup 1" not in setup_names  # Default name from __init__
+    assert "Loaded Setup 1" in setup_names
+    assert "Loaded Setup 2" in setup_names
+    assert len(restored_doc.setups[0].children) == 1
 
 
 def test_from_dict_legacy_layer_stock_item_uid():
     """
-    Tests that legacy documents with layer-level stock_item_uid load correctly.
-    The stock_item_uid is preserved in layer.extra for forward compatibility,
-    but stocks are now document-level.
+    Tests that legacy documents with document-level stock items load
+    correctly: the stock moves into the first setup and the layer's
+    legacy fields survive in extra for forward compatibility.
     """
     legacy_doc_dict = {
         "uid": "legacy-doc-uid",
         "type": "doc",
-        "active_layer_index": 0,
+        "active_setup_index": 0,
         "assets": [
             {
                 "uid": "stock-asset-1",
@@ -877,36 +878,37 @@ def test_from_dict_legacy_layer_stock_item_uid():
 
     doc = Doc.from_dict(legacy_doc_dict)
 
-    # Verify document loaded correctly
-    assert len(doc.layers) == 1
+    # Verify document loaded correctly: the stock folded into the
+    # setup, and the setup replaced the layer.
+    assert len(doc.setups) == 1
     assert len(doc.stock_items) == 1
 
-    # Verify stock is at document level
+    # Verify stock is owned by the setup
     stock_item = doc.stock_items[0]
     assert stock_item.uid == "stock-item-1"
     assert stock_item.name == "Wood Stock"
 
-    # Verify layer loaded correctly
-    layer = doc.layers[0]
-    assert layer.name == "Layer with Stock"
+    # Verify setup loaded correctly
+    setup = doc.setups[0]
+    assert setup.name == "Layer with Stock"
 
     # Verify legacy stock_item_uid is preserved in extra for forward
     # compatibility
-    assert "stock_item_uid" in layer.extra
-    assert layer.extra["stock_item_uid"] == "stock-item-1"
+    assert "stock_item_uid" in setup.extra
+    assert setup.extra["stock_item_uid"] == "stock-item-1"
 
     # Verify round-trip serialization preserves the legacy field
     re_serialized = doc.to_dict()
-    layer_dict = next(
-        c for c in re_serialized["children"] if c["type"] == "layer"
+    setup_dict = next(
+        c for c in re_serialized["children"] if c["type"] == "setup"
     )
-    assert "stock_item_uid" in layer_dict
-    assert layer_dict["stock_item_uid"] == "stock-item-1"
+    assert "stock_item_uid" in setup_dict
+    assert setup_dict["stock_item_uid"] == "stock-item-1"
 
 
 def test_get_laser_uid_for_step_returns_laser_uid(doc):
-    layer = doc.active_layer
-    workflow = layer.workflow
+    layer = doc.active_setup
+    workflow = layer.workflows[0]
     step = Step(typelabel="test")
     step.selected_head_uid = "laser-42"
     workflow.add_step(step)
@@ -915,8 +917,8 @@ def test_get_laser_uid_for_step_returns_laser_uid(doc):
 
 
 def test_get_laser_uid_for_step_returns_none_when_no_laser(doc):
-    layer = doc.active_layer
-    workflow = layer.workflow
+    layer = doc.active_setup
+    workflow = layer.workflows[0]
     step = Step(typelabel="test")
     workflow.add_step(step)
 
@@ -928,46 +930,44 @@ def test_get_laser_uid_for_step_returns_none_for_unknown_uid(doc):
 
 
 def test_get_laser_uid_for_step_finds_step_in_second_layer(doc):
-    layer1 = doc.layers[0]
-    layer2 = Layer("Layer 2")
-    doc.add_layer(layer2)
+    layer1 = doc.setups[0]
+    layer2 = Setup("Layer 2")
+    doc.add_setup(layer2)
 
     step1 = Step(typelabel="step1")
     step1.selected_head_uid = "laser-a"
-    layer1.workflow.add_step(step1)
+    layer1.workflows[0].add_step(step1)
 
-    assert layer2.workflow is not None
     step2 = Step(typelabel="step2")
     step2.selected_head_uid = "laser-b"
-    layer2.workflow.add_step(step2)
+    layer2.workflows[0].add_step(step2)
 
     assert doc.get_laser_uid_for_step(step2.uid) == "laser-b"
 
 
-def test_get_layer_uid_for_step_returns_layer_uid(doc):
-    layer = doc.active_layer
-    workflow = layer.workflow
+def test_get_workflow_uid_for_step_returns_workflow_uid(doc):
+    layer = doc.active_setup
+    workflow = layer.workflows[0]
     step = Step(typelabel="test")
     workflow.add_step(step)
 
-    assert doc.get_layer_uid_for_step(step.uid) == layer.uid
+    assert doc.get_workflow_uid_for_step(step.uid) == workflow.uid
 
 
 def test_get_layer_uid_for_step_returns_none_for_unknown_uid(doc):
-    assert doc.get_layer_uid_for_step("non-existent-uid") is None
+    assert doc.get_workflow_uid_for_step("non-existent-uid") is None
 
 
-def test_get_layer_uid_for_step_distinguishes_layers(doc):
-    layer1 = doc.layers[0]
-    layer2 = Layer("Layer 2")
-    doc.add_layer(layer2)
+def test_get_workflow_uid_for_step_distinguishes_workflows(doc):
+    layer1 = doc.setups[0]
+    layer2 = Setup("Setup 2")
+    doc.add_setup(layer2)
 
     step1 = Step(typelabel="step1")
-    layer1.workflow.add_step(step1)
+    layer1.workflows[0].add_step(step1)
 
-    assert layer2.workflow is not None
     step2 = Step(typelabel="step2")
-    layer2.workflow.add_step(step2)
+    layer2.workflows[0].add_step(step2)
 
-    assert doc.get_layer_uid_for_step(step1.uid) == layer1.uid
-    assert doc.get_layer_uid_for_step(step2.uid) == layer2.uid
+    assert doc.get_workflow_uid_for_step(step1.uid) == layer1.workflows[0].uid
+    assert doc.get_workflow_uid_for_step(step2.uid) == layer2.workflows[0].uid

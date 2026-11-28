@@ -73,20 +73,24 @@ class TransformerRegistry:
         """
         return self._transformers.get(name)
 
-    def get_layer_applicable(self) -> list[type["OpsTransformer"]]:
+    def get_workflow_applicable(self) -> list[type["OpsTransformer"]]:
         """
-        Return registered transformers usable as layer post processors.
+        Return registered transformers usable as workflow post
+        processors.
 
         Transformers declare this via
-        :attr:`OpsTransformer.LAYER_APPLICABLE`; layer settings render
-        every one of them, unconditionally. Availability given machine
-        state is the transformer widget's own concern.
+        :attr:`OpsTransformer.WORKFLOW_APPLICABLE`; the workflow post
+        processing UI renders every one of them, unconditionally.
+        Availability given machine state is the transformer widget's
+        own concern.
 
         Returns:
             The matching transformer classes, in registration order.
         """
         return [
-            cls for cls in self._transformers.values() if cls.LAYER_APPLICABLE
+            cls
+            for cls in self._transformers.values()
+            if cls.WORKFLOW_APPLICABLE
         ]
 
     def progress_label(self, spec_name: str) -> str | None:

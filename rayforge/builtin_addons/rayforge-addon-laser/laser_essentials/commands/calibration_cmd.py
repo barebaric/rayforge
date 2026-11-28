@@ -18,11 +18,11 @@ from rayforge.context import get_context
 from rayforge.core.asset import IAsset
 from rayforge.core.color import pick_unused_color
 from rayforge.core.item import DocItem
-from rayforge.core.layer import Layer
+from rayforge.core.setup import Setup
 from rayforge.core.step import Step
 from rayforge.core.undo import Command, ListItemCommand
 from rayforge.core.workpiece import WorkPiece
-from rayforge.doceditor.layer_cmd import AddLayerAndSetActiveCommand
+from rayforge.doceditor.setup_cmd import AddSetupAndSetActiveCommand
 
 from ..calibration import GENERATORS, CalibrationGenerator
 from ..calibration.builder import BuiltTest, CalibrationBuilder, bounds_of
@@ -68,41 +68,44 @@ class CalibrationCmd:
         if dims:
             built.center_on(*dims)
 
-        layer = self._new_layer(generator.title)
+        setup = self._new_setup(generator.title)
         for wp in built.workpieces:
-            layer.add_child(wp)
-        assert layer.workflow is not None
-        layer.workflow.set_steps(built.steps)
+            setup.add_child(wp)
+        workflow = setup.workflows[0]
+        workflow.set_steps(built.steps)
+        workflow.set_color(
+            pick_unused_color(
+                {wf.color for s in self._doc.setups for wf in s.workflows}
+            )
+        )
         record = CalibrationRecord(
             generator_id=generator.id,
-            layer_uid=layer.uid,
+            layer_uid=setup.uid,
             state=_state(values, built),
-            name=layer.name,
+            name=setup.name,
         )
 
         label = _("Add {test}").format(test=generator.title)
         with self._editor.history_manager.transaction(label) as t:
             for asset in [*built.assets, record]:
                 t.execute(self._add_asset_cmd(asset))
-            t.execute(AddLayerAndSetActiveCommand(self._editor, layer, label))
-        logger.info("Created %s", layer.name)
+            t.execute(AddSetupAndSetActiveCommand(self._editor, setup, label))
+        logger.info("Created %s", setup.name)
         return record
 
-    def _new_layer(self, title: str) -> Layer:
-        """A layer named after the test, with an unused color."""
-        names = {layer.name for layer in self._doc.layers}
+    def _new_setup(self, title: str) -> Setup:
+        """A setup named after the test."""
+        names = {setup.name for setup in self._doc.setups}
         name = title
         number = 2
         while name in names:
             name = f"{title} {number}"
             number += 1
-        layer = Layer(name)
+        setup = Setup(name)
         material = get_context().material_mgr.get_default_material()
-        layer.set_stock_material_uid(material.uid)
-        layer.set_color(
-            pick_unused_color({layer.color for layer in self._doc.layers})
-        )
-        return layer
+        if material is not None:
+            setup.set_stock_material_uid(material.uid)
+        return setup
 
     @staticmethod
     def record_for_items(items: list[DocItem]) -> CalibrationRecord | None:
@@ -120,9 +123,9 @@ class CalibrationCmd:
         if params == self.params(record) and record.uid in self._doc.assets:
             return self.workpieces(record)
         generator = self.generator(record.generator_id)
-        layer = self._doc.find_descendant_by_uid(record.layer_uid)
-        if not isinstance(layer, Layer) or layer.workflow is None:
-            raise ValueError(_("The layer of this test no longer exists."))
+        setup = self._doc.find_descendant_by_uid(record.layer_uid)
+        if not isinstance(setup, Setup) or not setup.workflows:
+            raise ValueError(_("The setup of this test no longer exists."))
         built = self._build(generator, params)
         old_wps = self.workpieces(record)
         self._place(built, old_wps)
@@ -146,7 +149,7 @@ class CalibrationCmd:
                 t.execute(self._add_asset_cmd(record))
             t.execute(
                 RebuildCalibrationCommand(
-                    self._editor, layer, record, (old, new), changes, label
+                    self._editor, setup, record, (old, new), changes, label
                 )
             )
         return built.workpieces
@@ -268,7 +271,7 @@ class RebuildCalibrationCommand(Command):
     def __init__(
         self,
         editor: "DocEditor",
-        layer: Layer,
+        setup: Setup,
         record: CalibrationRecord,
         items: tuple[GeneratedItems, GeneratedItems],
         changes: list[StepChange],
@@ -276,7 +279,7 @@ class RebuildCalibrationCommand(Command):
     ):
         super().__init__(name)
         self._editor = editor
-        self._layer = layer
+        self._setup = setup
         self._record = record
         self._old, self._new = items
         self._changes = changes
@@ -313,13 +316,12 @@ class RebuildCalibrationCommand(Command):
             parent.remove_children(items)
         by_parent.clear()
         for wp in into:
-            by_parent[self._parents.get(wp.uid) or self._layer].append(wp)
+            by_parent[self._parents.get(wp.uid) or self._setup].append(wp)
         for parent, items in by_parent.items():
             parent.add_children(items)
 
     def _swap_steps(self, out: list[Step], into: list[Step]):
-        workflow = self._layer.workflow
-        assert workflow is not None
+        workflow = self._setup.workflows[0]
         current = workflow.children
         positions = [current.index(s) for s in out if s in current]
         index = min(positions) if positions else 0

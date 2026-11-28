@@ -7,8 +7,9 @@ from raygeo.ops.state import CoolantMode
 
 from rayforge.core.doc import Doc
 from rayforge.core.group import Group
-from rayforge.core.layer import Layer
+from rayforge.core.setup import Setup
 from rayforge.core.source_asset import SourceAsset
+from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.step import Step
 from rayforge.core.stock_asset import StockAsset
 from rayforge.core.vectorization_spec import (
@@ -37,6 +38,7 @@ from rayforge.image.gcode.importer import GcodeImporter
 from rayforge.image.lightburn.importer import LightBurnImporter
 from rayforge.image.registry import importer_registry
 from rayforge.image.ruida.importer import RuidaImporter
+from rayforge.image.structures import SourceLayerInfo
 from rayforge.image.svg.renderer import SVG_RENDERER
 from rayforge.machine.models.coordspace import (
     AxisDirection,
@@ -67,7 +69,7 @@ def file_cmd(mock_editor):
 def _doc_with_mill_step():
     """A doc whose active layer workflow holds one mill step."""
     doc = Doc()
-    workflow = doc.active_layer.workflow
+    workflow = doc.active_setup.workflows[0]
     step = Step(typelabel="Mill", name="Mill Step")
     assert workflow is not None
     workflow.add_child(step)
@@ -109,7 +111,7 @@ def test_unsupported_coolant_labels_reports_missing_method(
 def test_unsupported_coolant_labels_dedupes(context_initializer):
     doc, step = _doc_with_mill_step()
     step2 = Step(typelabel="Mill", name="Second Mill")
-    workflow = doc.active_layer.workflow
+    workflow = doc.active_setup.workflows[0]
     assert workflow is not None
     workflow.add_child(step2)
     machine = _spindle_machine(context_initializer, [])
@@ -129,7 +131,7 @@ def sample_workpiece():
 @pytest.fixture
 def sample_layer():
     """Provides a sample Layer instance."""
-    return Layer(name="Test Layer")
+    return Setup(name="Test Layer")
 
 
 @pytest.fixture
@@ -279,7 +281,7 @@ class TestExtractFirstWorkpiece:
 
     def test_extract_workpiece_from_layer(self, file_cmd, sample_workpiece):
         """Test extracting WorkPiece from a Layer's children."""
-        layer = Layer(name="Test Layer")
+        layer = Setup(name="Test Layer")
         layer.add_child(sample_workpiece)
 
         result = file_cmd._extract_first_workpiece([layer])
@@ -288,8 +290,8 @@ class TestExtractFirstWorkpiece:
 
     def test_extract_workpiece_from_nested_layer(self, file_cmd):
         """Test extracting WorkPiece from nested Layers."""
-        outer_layer = Layer(name="Outer Layer")
-        inner_layer = Layer(name="Inner Layer")
+        outer_layer = Setup(name="Outer Layer")
+        inner_layer = Setup(name="Inner Layer")
         wp = WorkPiece(name="Nested WorkPiece")
         inner_layer.add_child(wp)
         outer_layer.add_child(inner_layer)
@@ -497,120 +499,120 @@ class TestCommitItemsToDocument:
         )
 
         assert source.uid in file_cmd._editor.doc.assets
-        assert sample_workpiece in (file_cmd._editor.doc.active_layer.children)
-
-    def test_commit_layer_to_document(self, file_cmd, sample_layer):
-        """Test committing a Layer to the document."""
-        source = SourceAsset(
-            source_file=Path("test.svg"),
-            original_data=b"<svg></svg>",
-            renderer=SVG_RENDERER,
-        )
-        filename = Path("test.svg")
-
-        file_cmd._commit_items_to_document([sample_layer], source, filename)
-
-        assert source in file_cmd._editor.doc.get_all_assets()
-        assert sample_layer in file_cmd._editor.doc.children
+        assert sample_workpiece in (file_cmd._editor.doc.active_setup.children)
 
     @staticmethod
-    def _imported_layer(name: str) -> tuple[Layer, WorkPiece]:
+    def _imported_workpiece(
+        name: str, layer_id: str = "lid"
+    ) -> tuple[WorkPiece, "SourceLayerInfo"]:
         wp = WorkPiece(name=name)
-        layer = Layer(name=name)
-        layer.add_child(wp)
-        return layer, wp
+        segment = SourceAssetSegment(
+            source_asset_uid="asset-uid",
+            vectorization_spec=PassthroughSpec(),
+            layer_id=layer_id,
+        )
+        wp.source_segment = segment
+        return wp, SourceLayerInfo(layer_id=layer_id, name=name)
 
-    def test_commit_maps_to_default_layer_and_renames(self, file_cmd):
-        """Map to Existing renames a default-named layer to the imported
-        layer name."""
+    def test_commit_maps_to_existing_and_renames(self, file_cmd):
+        """Map to Existing renames the auto-named workflow to the imported
+        source layer name."""
         source = SourceAsset(
             source_file=Path("chaveiros.svg"),
             original_data=b"<svg></svg>",
             renderer=SVG_RENDERER,
         )
-        imported, wp = self._imported_layer("chaveiro")
+        wp, info = self._imported_workpiece("chaveiro")
         spec = PassthroughSpec(
             layer_import_mode=LayerImportMode.MAP_TO_EXISTING
         )
 
         file_cmd._commit_items_to_document(
-            [imported],
+            [wp],
             source,
             Path("chaveiros.svg"),
             vectorization_spec=spec,
+            source_layers=[info],
         )
 
         doc = file_cmd._editor.doc
-        assert doc.layers[0].name == "chaveiro"
-        assert doc.layers[0].workflow is not None
-        assert doc.layers[0].workflow.name == "chaveiro Workflow"
-        assert wp in doc.layers[0].children
+        assert doc.setups[0].name == "Setup 1"
+        assert doc.setups[0].workflows[0].name == "chaveiro"
+        assert wp in doc.setups[0].children
+        assert wp.uid in doc.setups[0].workflows[0].workpiece_uids
 
-    def test_commit_preserves_manually_named_layer(self, file_cmd):
-        """Map to Existing keeps the name of a manually renamed layer."""
+    def test_commit_preserves_manually_named_workflow(self, file_cmd):
+        """Map to Existing keeps the name of a manually renamed
+        workflow."""
         doc = file_cmd._editor.doc
-        doc.layers[0].set_name("My Custom Layer")
+        doc.setups[0].workflows[0].name = "My Workflow"
 
         source = SourceAsset(
             source_file=Path("chaveiros.svg"),
             original_data=b"<svg></svg>",
             renderer=SVG_RENDERER,
         )
-        imported, wp = self._imported_layer("chaveiro")
+        wp, info = self._imported_workpiece("chaveiro")
         spec = PassthroughSpec(
             layer_import_mode=LayerImportMode.MAP_TO_EXISTING
         )
 
         file_cmd._commit_items_to_document(
-            [imported],
+            [wp],
             source,
             Path("chaveiros.svg"),
             vectorization_spec=spec,
+            source_layers=[info],
         )
 
-        assert doc.layers[0].name == "My Custom Layer"
-        assert wp in doc.layers[0].children
+        assert doc.setups[0].workflows[0].name == "My Workflow"
+        assert wp in doc.setups[0].children
 
     def test_commit_rename_is_undoable(self, file_cmd):
-        """Undoing the import restores the previous layer name."""
+        """Undoing the import restores the previous workflow name."""
         source = SourceAsset(
             source_file=Path("chaveiros.svg"),
             original_data=b"<svg></svg>",
             renderer=SVG_RENDERER,
         )
-        imported, wp = self._imported_layer("chaveiro")
+        wp, info = self._imported_workpiece("chaveiro")
         spec = PassthroughSpec(
             layer_import_mode=LayerImportMode.MAP_TO_EXISTING
         )
 
         file_cmd._commit_items_to_document(
-            [imported],
+            [wp],
             source,
             Path("chaveiros.svg"),
             vectorization_spec=spec,
+            source_layers=[info],
         )
 
         doc = file_cmd._editor.doc
-        assert doc.layers[0].name == "chaveiro"
+        assert doc.setups[0].workflows[0].name == "chaveiro"
         file_cmd._editor.history_manager.undo()
-        assert doc.layers[0].name == "Layer 1"
-        assert wp not in doc.layers[0].children
+        assert doc.setups[0].workflows[0].name == "Setup 1 Workflow"
+        assert wp not in doc.setups[0].children
 
-    def test_commit_new_layers_keeps_existing_names(self, file_cmd):
-        """New Layers mode does not rename existing document layers."""
+    def test_commit_new_layers_creates_workflow(self, file_cmd):
+        """New Layers mode creates a workflow per imported source layer
+        without renaming existing ones."""
         doc = file_cmd._editor.doc
-        imported, _wp = self._imported_layer("chaveiro")
+        wp, info = self._imported_workpiece("chaveiro")
         spec = PassthroughSpec(layer_import_mode=LayerImportMode.NEW_LAYERS)
 
         file_cmd._commit_items_to_document(
-            [imported],
+            [wp],
             None,
             Path("chaveiros.svg"),
             vectorization_spec=spec,
+            source_layers=[info],
         )
 
-        assert doc.layers[0].name == "Layer 1"
-        assert imported in doc.children
+        assert doc.setups[0].workflows[0].name == "Setup 1 Workflow"
+        assert doc.setups[0].workflows[1].name == "chaveiro"
+        assert wp in doc.setups[0].children
+        assert wp.uid in doc.setups[0].workflows[1].workpiece_uids
 
 
 class TestFinalizeImportOnMainThread:
@@ -626,7 +628,7 @@ class TestFinalizeImportOnMainThread:
 
         assert sample_payload.source.uid in file_cmd._editor.doc.assets
         assert sample_payload.items[0] in (
-            file_cmd._editor.doc.active_layer.children
+            file_cmd._editor.doc.active_setup.children
         )
 
 
@@ -1133,7 +1135,7 @@ class TestProjectRoundTrip:
     def _compare_docs(self, doc1, doc2):
         """Compare two documents for equality."""
         assert doc1.uid == doc2.uid
-        assert doc1._active_layer_index == doc2._active_layer_index
+        assert doc1._active_setup_index == doc2._active_setup_index
         assert len(doc1.children) == len(doc2.children)
         assert len(doc1.assets) == len(doc2.assets)
         assert len(doc1.asset_order) == len(doc2.asset_order)
@@ -1142,7 +1144,6 @@ class TestProjectRoundTrip:
         """Compare two layers for equality."""
         assert layer1.uid == layer2.uid
         assert layer1.name == layer2.name
-        assert layer1.visible == layer2.visible
         assert layer1.extra.get("stock_item_uid") == layer2.extra.get(
             "stock_item_uid"
         )
@@ -1206,11 +1207,10 @@ class TestProjectRoundTrip:
         assert result is True
 
         # Verify layers loaded correctly
-        assert len(file_cmd._editor.doc.layers) == 3
-        assert file_cmd._editor.doc.layers[0].name == "Layer 1"
-        assert file_cmd._editor.doc.layers[1].name == "Layer 2"
-        assert file_cmd._editor.doc.layers[2].name == "Layer 3"
-        assert file_cmd._editor.doc.layers[2].visible is False
+        assert len(file_cmd._editor.doc.setups) == 3
+        assert file_cmd._editor.doc.setups[0].name == "Layer 1"
+        assert file_cmd._editor.doc.setups[1].name == "Layer 2"
+        assert file_cmd._editor.doc.setups[2].name == "Layer 3"
 
         # Export project
         result = file_cmd.save_project_to_path(export_file)
@@ -1222,8 +1222,7 @@ class TestProjectRoundTrip:
         assert result is True
 
         # Verify layers after round trip
-        assert len(file_cmd._editor.doc.layers) == 3
-        assert file_cmd._editor.doc.layers[2].visible is False
+        assert len(file_cmd._editor.doc.setups) == 3
 
     def test_round_trip_workpieces(self, file_cmd, tmp_path):
         """Test round trip for project with workpieces."""
@@ -1344,8 +1343,8 @@ class TestProjectRoundTrip:
         assert result is True
 
         # Verify comprehensive features loaded
-        assert len(file_cmd._editor.doc.layers) == 2
-        assert file_cmd._editor.doc._active_layer_index == 1
+        assert len(file_cmd._editor.doc.setups) == 2
+        assert file_cmd._editor.doc._active_setup_index == 1
         assert len(file_cmd._editor.doc.stock_items) == 2
         assert len(file_cmd._editor.doc.all_workpieces) == 2
 
@@ -1359,8 +1358,8 @@ class TestProjectRoundTrip:
         assert result is True
 
         # Verify comprehensive features after round trip
-        assert len(file_cmd._editor.doc.layers) == 2
-        assert file_cmd._editor.doc._active_layer_index == 1
+        assert len(file_cmd._editor.doc.setups) == 2
+        assert file_cmd._editor.doc._active_setup_index == 1
         assert len(file_cmd._editor.doc.stock_items) == 2
         assert len(file_cmd._editor.doc.all_workpieces) == 2
 

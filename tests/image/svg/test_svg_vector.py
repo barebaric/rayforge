@@ -3,7 +3,6 @@ from pathlib import Path
 import pytest
 from raygeo.formats.svg.color import ColorAttr
 
-from rayforge.core.layer import Layer
 from rayforge.core.vectorization_spec import (
     LayerImportMode,
     LayerSource,
@@ -129,19 +128,18 @@ def test_layer_separation_and_positioning():
     assert payload is not None
     assert len(payload.items) == 2
 
-    # Find layers by name to make test robust to order
-    l1 = next(item for item in payload.items if item.name == "g1")
-    l2 = next(item for item in payload.items if item.name == "g2")
+    # Find workpieces by name to make test robust to order
+    wp1 = next(item for item in payload.items if item.name == "g1")
+    wp2 = next(item for item in payload.items if item.name == "g2")
+    assert isinstance(wp1, WorkPiece)
+    assert isinstance(wp2, WorkPiece)
+    assert [info.name for info in payload.source_layers] == ["g1", "g2"]
 
-    assert isinstance(l1, Layer)
-    wp1 = next(c for c in l1.children if isinstance(c, WorkPiece))
     # Position (0,0), Y-inverted: 100 - (0+10) = 90
     wx1, wy1 = wp1.get_world_transform().transform_point((0, 0))
     assert wx1 == pytest.approx(0.0, abs=1e-4)
     assert wy1 == pytest.approx(90.0, abs=1e-4)
 
-    assert isinstance(l2, Layer)
-    wp2 = next(c for c in l2.children if isinstance(c, WorkPiece))
     # Position (90,90), Y-inverted: 100 - (90+10) = 0
     wx2, wy2 = wp2.get_world_transform().transform_point((0, 0))
     assert wx2 == pytest.approx(90.0, abs=1e-4)
@@ -238,11 +236,21 @@ def test_import_by_color_creates_colored_layers():
     assert payload is not None
     assert len(payload.items) == 2
 
-    by_name = {item.name: item for item in payload.items}
-    assert isinstance(by_name["Color #ff0000"], Layer)
-    assert by_name["Color #ff0000"].color == "#ff0000"
-    assert isinstance(by_name["Color #00ff00"], Layer)
-    assert by_name["Color #00ff00"].color == "#00ff00"
+    by_name = {
+        item.name: item
+        for item in payload.items
+        if isinstance(item, WorkPiece)
+    }
+    red_wp = by_name["Color #ff0000"]
+    green_wp = by_name["Color #00ff00"]
+    assert red_wp.source_segment is not None
+    assert red_wp.source_segment.layer_id == "#ff0000"
+    assert green_wp.source_segment is not None
+    assert green_wp.source_segment.layer_id == "#00ff00"
+    colors_by_id = {
+        info.layer_id: info.color for info in payload.source_layers
+    }
+    assert colors_by_id == {"#ff0000": "#ff0000", "#00ff00": "#00ff00"}
 
 
 def test_import_by_color_filters_deselected():
@@ -259,9 +267,10 @@ def test_import_by_color_filters_deselected():
     assert payload is not None
     assert len(payload.items) == 1
     item = payload.items[0]
-    assert isinstance(item, Layer)
+    assert isinstance(item, WorkPiece)
     assert item.name == "Color #ff0000"
-    assert item.color == "#ff0000"
+    assert item.source_segment is not None
+    assert item.source_segment.layer_id == "#ff0000"
 
 
 def test_import_by_color_stroke_attribute():
@@ -283,10 +292,15 @@ def test_import_by_color_stroke_attribute():
     assert import_result is not None
     payload = import_result.payload
     assert payload is not None
-    by_name = {item.name: item for item in payload.items}
+    by_name = {
+        item.name: item
+        for item in payload.items
+        if isinstance(item, WorkPiece)
+    }
     assert set(by_name) == {"Color #0000ff", "Color #00ff00"}
-    assert isinstance(by_name["Color #0000ff"], Layer)
-    assert by_name["Color #0000ff"].color == "#0000ff"
+    blue_wp = by_name["Color #0000ff"]
+    assert blue_wp.source_segment is not None
+    assert blue_wp.source_segment.layer_id == "#0000ff"
 
 
 def test_facade_imports_by_color():
@@ -300,12 +314,18 @@ def test_facade_imports_by_color():
     assert import_result is not None
     payload = import_result.payload
     assert payload is not None
-    by_name = {item.name: item for item in payload.items}
+    by_name = {
+        item.name: item
+        for item in payload.items
+        if isinstance(item, WorkPiece)
+    }
     assert set(by_name) == {"Color #ff0000", "Color #00ff00"}
-    assert isinstance(by_name["Color #ff0000"], Layer)
-    assert by_name["Color #ff0000"].color == "#ff0000"
-    assert isinstance(by_name["Color #00ff00"], Layer)
-    assert by_name["Color #00ff00"].color == "#00ff00"
+    red_wp = by_name["Color #ff0000"]
+    green_wp = by_name["Color #00ff00"]
+    assert red_wp.source_segment is not None
+    assert red_wp.source_segment.layer_id == "#ff0000"
+    assert green_wp.source_segment is not None
+    assert green_wp.source_segment.layer_id == "#00ff00"
 
 
 def test_facade_default_spec_merges():
@@ -340,12 +360,18 @@ def test_any_mode_splits_fill_and_stroke():
     assert import_result is not None
     payload = import_result.payload
     assert payload is not None
-    by_name = {item.name: item for item in payload.items}
+    by_name = {
+        item.name: item
+        for item in payload.items
+        if isinstance(item, WorkPiece)
+    }
     assert set(by_name) == {"Color #ff0000", "Color #0000ff"}
-    assert isinstance(by_name["Color #ff0000"], Layer)
-    assert by_name["Color #ff0000"].color == "#ff0000"
-    assert isinstance(by_name["Color #0000ff"], Layer)
-    assert by_name["Color #0000ff"].color == "#0000ff"
+    red_wp = by_name["Color #ff0000"]
+    blue_wp = by_name["Color #0000ff"]
+    assert red_wp.source_segment is not None
+    assert red_wp.source_segment.layer_id == "#ff0000"
+    assert blue_wp.source_segment is not None
+    assert blue_wp.source_segment.layer_id == "#0000ff"
 
 
 def test_any_mode_uses_stroke_color_by_default():
@@ -370,7 +396,11 @@ def test_any_mode_uses_stroke_color_by_default():
     assert import_result is not None
     payload = import_result.payload
     assert payload is not None
-    by_name = {item.name: item for item in payload.items}
+    by_name = {
+        item.name: item
+        for item in payload.items
+        if isinstance(item, WorkPiece)
+    }
     assert set(by_name) == {"Color #0000ff", "Color #00ff00"}
 
 
@@ -411,11 +441,14 @@ def test_orphan_geometry_imported_as_own_layer():
     assert import_result is not None
     payload = import_result.payload
     assert payload is not None
-    by_name = {item.name: item for item in payload.items}
+    by_name = {
+        item.name: item
+        for item in payload.items
+        if isinstance(item, WorkPiece)
+    }
     assert set(by_name) == {"g1", "Ungrouped"}
-    orphan_layer = by_name["Ungrouped"]
-    assert isinstance(orphan_layer, Layer)
-    wp = next(c for c in orphan_layer.children if isinstance(c, WorkPiece))
+    wp = by_name["Ungrouped"]
+    assert isinstance(wp, WorkPiece)
     assert wp.source_segment is not None
     assert wp.source_segment.layer_id == NO_LAYER_KEY
     geometry = wp.source_segment.pristine_geometry

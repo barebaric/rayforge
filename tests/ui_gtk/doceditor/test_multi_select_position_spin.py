@@ -101,8 +101,8 @@ def test_multi_select_x_spin_step_settles(app_and_window, ui_task_mgr):
     wp2 = WorkPiece("b")
     wp2.pos = (80.0, 55.0)
     wp2.set_size(15.0, 15.0)
-    editor.doc.active_layer.add_child(wp1)
-    editor.doc.active_layer.add_child(wp2)
+    editor.doc.active_setup.add_child(wp1)
+    editor.doc.active_setup.add_child(wp2)
     process_events_for_duration(0.3)
 
     win.surface.select_items([wp1, wp2])

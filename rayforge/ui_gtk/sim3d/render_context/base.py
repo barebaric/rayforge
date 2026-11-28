@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 class FrameInputs:
     """Raw per-frame inputs consumed by the section contexts.
 
-    ``cylinder_transform`` and ``had_rotary_layers`` are provided by the
+    ``cylinder_transform`` and ``had_rotary_setups`` are provided by the
     canvas from the scene state, so the contexts never reach into the
     SceneRenderer themselves.
     """
@@ -41,7 +41,7 @@ class FrameInputs:
     compiled_artifact: Optional["CompiledSceneArtifact"] = None
     doc: Optional["Doc"] = None
     cylinder_transform: np.ndarray | None = None
-    had_rotary_layers: bool = False
+    had_rotary_setups: bool = False
     stock_top_z: float = 0.0
     has_z_axis: bool = True
 

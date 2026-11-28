@@ -41,7 +41,7 @@ def array_dialog_env(ui_context_initializer, ui_task_mgr):
     editor = DocEditor(
         task_manager=ui_task_mgr, context=ui_context_initializer
     )
-    layer = editor.doc.active_layer
+    layer = editor.doc.active_setup
     wp1 = WorkPiece(name="wp1")
     wp1.set_size(10, 10)
     wp1.pos = (0, 0)
@@ -88,12 +88,12 @@ def test_apply_creates_copies_and_cleans_up(array_dialog_env):
     editor, surface, parent, items = array_dialog_env
     dialog = GridArrayDialog(parent, editor, surface, items)
 
-    before = len(editor.doc.active_layer.get_content_items())
+    before = len(editor.doc.active_setup.get_content_items())
     # Click Apply (as the user would).
     dialog._on_apply_clicked(None)
 
     # (2x2 - 1) instances * 2 source items = 6 new copies.
-    after = len(editor.doc.active_layer.get_content_items())
+    after = len(editor.doc.active_setup.get_content_items())
     assert after == before + 6
     # The preview overlay is removed after the dialog closes.
     assert not _has_preview(surface)

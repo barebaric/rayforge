@@ -6,7 +6,7 @@ from raygeo.geo.types import Point3D, Rect
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
-    from ...core.layer import Layer
+    from ...core.setup import Setup
     from ...core.workpiece import WorkPiece
     from ...machine.models.machine import Machine
 
@@ -26,14 +26,14 @@ class GcodeContext:
     doc: "Doc"
     job: JobInfo
     # Assigning default values makes these fields optional in the constructor
-    layer: Optional["Layer"] = None
+    setup: Optional["Setup"] = None
     workpiece: Optional["WorkPiece"] = None
 
     @property
     def wcs_offset(self) -> Point3D:
-        """The (x, y, z) offset for the current layer's effective WCS."""
-        if self.layer:
-            effective_wcs = self.layer.get_effective_wcs(self.machine)
+        """The (x, y, z) offset for the current setup's effective WCS."""
+        if self.setup:
+            effective_wcs = self.setup.get_effective_wcs(self.machine)
             return self.machine.get_job_wcs_offset(
                 self.machine.get_wcs_offset(effective_wcs)
             )
@@ -43,9 +43,9 @@ class GcodeContext:
 
     @property
     def wcs_name(self) -> str:
-        """The name of the current layer's effective WCS (e.g., 'G54')."""
-        if self.layer:
-            return self.layer.get_effective_wcs(self.machine)
+        """The name of the current setup's effective WCS (e.g., 'G54')."""
+        if self.setup:
+            return self.setup.get_effective_wcs(self.machine)
         return self.machine.active_wcs
 
     # --- Static Variable Documentation ---
@@ -99,10 +99,10 @@ class GcodeContext:
             ("wcs_offset[1]", _("The Y offset of the currently active WCS.")),
             ("wcs_offset[2]", _("The Z offset of the currently active WCS.")),
         ],
-        "layer": [
+        "workflow": [
             (
-                "layer.name",
-                _("The name of the current layer being processed."),
+                "workflow.name",
+                _("The name of the current workflow being processed."),
             ),
         ],
         "workpiece": [
@@ -128,8 +128,8 @@ class GcodeContext:
         static documentation dictionary.
         """
         docs = cls._DOCS["job"]
-        if level in ("layer", "workpiece"):
-            docs = docs + cls._DOCS["layer"]
+        if level in ("workflow", "workpiece"):
+            docs = docs + cls._DOCS["workflow"]
         if level == "workpiece":
             docs = docs + cls._DOCS["workpiece"]
         return sorted(docs, key=lambda item: item[0])

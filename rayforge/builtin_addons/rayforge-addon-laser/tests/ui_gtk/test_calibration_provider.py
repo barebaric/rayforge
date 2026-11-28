@@ -69,7 +69,7 @@ def _set(provider, key, value):
 
 def _step(editor, record):
     layer = editor.doc.find_descendant_by_uid(record.layer_uid)
-    (step,) = layer.workflow.steps
+    (step,) = layer.workflows[0].steps
     return step
 
 
@@ -78,7 +78,7 @@ def test_only_handles_workpieces_of_one_test(provider, editor, cmd):
     interval = cmd.create("interval_test")
     grid = cmd.create("material_test_grid")
     other = WorkPiece("Other")
-    editor.doc.active_layer.add_child(other)
+    editor.doc.active_setup.add_child(other)
 
     assert provider.can_handle(cmd.workpieces(interval))
     assert provider.can_handle(cmd.workpieces(grid))
@@ -296,7 +296,7 @@ def test_debounced_change(provider, editor, cmd):
 @pytest.mark.ui
 def test_without_a_test_selected(provider, editor, cmd):
     other = WorkPiece("Other")
-    editor.doc.active_layer.add_child(other)
+    editor.doc.active_setup.add_child(other)
     provider.update_widgets(editor, [other])
     assert provider.generator is None
     provider.apply_now()

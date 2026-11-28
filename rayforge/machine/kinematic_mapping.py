@@ -7,7 +7,7 @@ import numpy as np
 from raygeo.ops import Ops
 from raygeo.ops.axis import Axis
 
-from ..core.layer import Layer
+from ..core.setup import Setup
 from .kinematic_math import KinematicMath
 from .models.rotary_module import RotaryMode, RotaryType
 
@@ -18,14 +18,22 @@ if TYPE_CHECKING:
     from .models.rotary_module import RotaryModule
 
 
-def _resolve_rotary_layer_by_uid(layer_uid: str, doc):
-    """Return the Layer if it has rotary enabled."""
-    descendant = doc.find_descendant_by_uid(layer_uid)
-    if not isinstance(descendant, Layer):
+def _resolve_rotary_setup_by_uid(marker_uid: str, doc):
+    """Return the Setup if it has rotary enabled.
+
+    The span markers carry the workflow uid; the owning setup decides
+    whether rotary mapping applies.
+    """
+    descendant = doc.find_descendant_by_uid(marker_uid)
+    if isinstance(descendant, Setup):
+        setup = descendant
+    else:
+        setup = getattr(descendant, "setup", None)
+    if not isinstance(setup, Setup):
         return None
-    if not descendant.rotary_enabled:
+    if not setup.rotary_enabled:
         return None
-    return descendant
+    return setup
 
 
 def _is_valid_replacement_module(module):
@@ -44,11 +52,11 @@ def _is_valid_replacement_module(module):
 
 @dataclass(frozen=True)
 class RotaryAxisConfig:
-    """Resolved rotary configuration for a layer.
+    """Resolved rotary configuration for a setup.
 
     ``source_axis`` is the world-space axis whose movement is mapped
     onto ``rotary_axis``. ``module`` is the effective rotary module
-    resolved for the layer (``None`` when rotary is disabled or no
+    resolved for the setup (``None`` when rotary is disabled or no
     module applies).
     """
 
@@ -57,21 +65,21 @@ class RotaryAxisConfig:
     module: RotaryModule | None = None
 
 
-def resolve_layer_rotary(
-    layer: Layer | None, machine: Machine
+def resolve_setup_rotary(
+    setup: Setup | None, machine: Machine
 ) -> RotaryAxisConfig:
-    """Resolve the rotary axis configuration for *layer*.
+    """Resolve the rotary axis configuration for *setup*.
 
     Single source of truth shared by ``OpPlayer``, ``SnapshotBuilder``,
-    and the 3D canvas.  Rotary is only active for layers with
+    and the 3D canvas.  Rotary is only active for setups with
     ``rotary_enabled``; the effective module is resolved through
-    ``machine.get_rotary_module_for_layer`` (including default-module
+    ``machine.get_rotary_module_for_setup`` (including default-module
     fallback).  TRUE_4TH_AXIS modules map the source axis onto
     ``module.axis``; all other modes use ``Axis.Y`` as the rotary axis.
     """
-    if not isinstance(layer, Layer) or not layer.rotary_enabled:
+    if not isinstance(setup, Setup) or not setup.rotary_enabled:
         return RotaryAxisConfig(Axis.Y, None, None)
-    module = machine.get_rotary_module_for_layer(layer)
+    module = machine.get_rotary_module_for_setup(setup)
     if module is None:
         return RotaryAxisConfig(Axis.Y, None, None)
     if module.mode == RotaryMode.TRUE_4TH_AXIS:
@@ -81,20 +89,20 @@ def resolve_layer_rotary(
     return RotaryAxisConfig(Axis.Y, rotary_axis, module)
 
 
-def build_layer_assembly(
+def build_setup_assembly(
     machine: Machine,
-    layer: Layer | None = None,
+    setup: Setup | None = None,
 ) -> Assembly:
-    """Build a throwaway assembly for *layer*'s rotary config.
+    """Build a throwaway assembly for *setup*'s rotary config.
 
-    Reads only: it resolves the layer's rotary module via
-    ``machine.get_rotary_module_for_layer`` and builds a fresh assembly
-    without mutating the machine.  When *layer* is None or flat, a flat
+    Reads only: it resolves the setup's rotary module via
+    ``machine.get_rotary_module_for_setup`` and builds a fresh assembly
+    without mutating the machine.  When *setup* is None or flat, a flat
     assembly (no rotary) is returned.
     """
     modules = None
-    if layer is not None and layer.rotary_enabled:
-        module = machine.get_rotary_module_for_layer(layer)
+    if setup is not None and setup.rotary_enabled:
+        module = machine.get_rotary_module_for_setup(setup)
         if module is not None:
             modules = {module.uid: module}
     return machine.build_assembly_for_rotary(modules)
@@ -232,12 +240,13 @@ class KinematicMapping:
         apply_scaled_mu: bool = False,
         apply_gear_ratio: bool = True,
     ) -> None:
-        """Apply per-layer rotary axis mapping to a full job's ops.
+        """Apply per-setup rotary axis mapping to a full job's ops.
 
         Walks the command stream looking for ``LayerStartCommand``
-        markers.  For each layer that has rotary enabled, resolves the
-        layer's ``RotaryModule`` and applies a ``KinematicMapping``
-        (Y→degrees) to that layer's movement commands in-place.
+        markers (whose uid is the workflow's).  For each marker whose
+        setup has rotary enabled, resolves the setup's ``RotaryModule``
+        and applies a ``KinematicMapping`` (Y→degrees) to that span's
+        movement commands in-place.
 
         This is the single entry point for both the UI path (3D canvas /
         OpPlayer via ``job_compute.py``) and the G-code encoding path
@@ -246,12 +255,12 @@ class KinematicMapping:
         Args:
             ops: Assembled ops in world-space coordinates.  Modified
                 in-place.
-            doc: The document that owns the layers (used to look up
-                per-layer rotary configuration).
+            doc: The document that owns the setups (used to look up
+                per-setup rotary configuration).
             machine: The machine whose ``rotary_modules`` dict is used
                 to resolve module UIDs.
             apply_scaled_mu: When *True*, also convert degrees to
-                scaled machine units for ``AXIS_REPLACEMENT`` layers.
+                scaled machine units for ``AXIS_REPLACEMENT`` setups.
                 The G-code path passes ``False`` and defers this step
                 until *after* the world→machine coordinate transform
                 (see ``Machine._apply_replacement_downstream()``).
@@ -264,32 +273,32 @@ class KinematicMapping:
                 encoding.
         """
 
-        if not machine.rotary_modules or not doc.has_rotary_layer:
+        if not machine.rotary_modules or not doc.has_rotary_setup:
             return
 
-        def _on_layer(layer_uid: str, layer_ops: Ops) -> None:
-            layer = _resolve_rotary_layer_by_uid(layer_uid, doc)
-            if layer is None:
+        def _on_setup(marker_uid: str, span_ops: Ops) -> None:
+            setup = _resolve_rotary_setup_by_uid(marker_uid, doc)
+            if setup is None:
                 return
-            module = machine.get_rotary_module_for_layer(layer)
+            module = machine.get_rotary_module_for_setup(setup)
             if module is None or not _is_valid_replacement_module(module):
                 return
             mapping = KinematicMapping.from_rotary_module(
                 module,
-                layer.rotary_diameter,
+                setup.rotary_diameter,
                 apply_gear_ratio=apply_gear_ratio,
             )
             if mapping is None:
                 return
-            mapping.apply(layer_ops)
+            mapping.apply(span_ops)
             if apply_scaled_mu and module.mode == RotaryMode.AXIS_REPLACEMENT:
                 KinematicMapping.degrees_to_mm_pass(
-                    layer_ops,
+                    span_ops,
                     module.mm_per_rotation,
                     target_axis=module.axis,
                 )
 
-        ops.transform_layers(_on_layer)
+        ops.transform_layers(_on_setup)
 
     @staticmethod
     def degrees_to_mm_pass(

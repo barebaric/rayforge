@@ -37,13 +37,13 @@ class WorkpiecesPage(StepSettingsPage):
         self._refresh()
 
     def _connect_layer(self):
-        layer = self.step.layer
-        if layer is None:
+        setup = self.step.setup
+        if setup is None:
             return
-        self._layer = layer
-        layer.descendant_added.connect(self._on_layer_changed)
-        layer.descendant_removed.connect(self._on_layer_changed)
-        layer.descendant_updated.connect(self._on_layer_changed)
+        self._layer = setup
+        setup.descendant_added.connect(self._on_layer_changed)
+        setup.descendant_removed.connect(self._on_layer_changed)
+        setup.descendant_updated.connect(self._on_layer_changed)
 
     def _disconnect_layer(self):
         layer = self._layer
@@ -65,13 +65,13 @@ class WorkpiecesPage(StepSettingsPage):
 
     def _sync_widgets_to_model(self, *args):
         super()._sync_widgets_to_model()
-        if self.step.layer is not self._layer:
+        if self.step.setup is not self._layer:
             self._disconnect_layer()
             self._connect_layer()
         self._refresh()
 
     def _refresh(self):
-        """Rebuild the rows from the step's current filter and layer."""
+        """Rebuild the rows from the step's current filter and setup."""
         self._clear_rows()
         if self._layer is None:
             return

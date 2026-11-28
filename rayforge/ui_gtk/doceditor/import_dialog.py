@@ -10,7 +10,6 @@ from raygeo.geo import Matrix
 
 from ...context import get_context
 from ...core.item import DocItem
-from ...core.layer import Layer
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import (
     LayerImportMode,
@@ -937,10 +936,6 @@ class ImportDialog(PatchedDialogWindow):
                 geometry_to_cairo(world_geo, ctx)
                 ctx.stroke()
                 ctx.restore()
-            elif isinstance(item, Layer):
-                layer_color = self._hex_to_rgb(item.color)
-                for child in item.children:
-                    draw_item(child, layer_color or color)
 
         for item in payload.items:
             draw_item(item)

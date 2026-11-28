@@ -23,8 +23,8 @@ from ...core.optical import material_burn_response
 from ...core.workpiece import WorkPiece
 from ...machine.kinematic_mapping import (
     KinematicMapping,
-    build_layer_assembly,
-    resolve_layer_rotary,
+    build_setup_assembly,
+    resolve_setup_rotary,
 )
 from ...pipeline.artifact.handle import BaseArtifactHandle
 from ...pipeline.artifact.job import JobArtifact
@@ -268,7 +268,7 @@ class ScenePresenter:
 
     @property
     def playback_assembly(self) -> Optional["Assembly"]:
-        """The throwaway assembly for the current playback layer, or None."""
+        """The throwaway assembly for the current playback setup, or None."""
         return self._playback_assembly
 
     @property
@@ -504,9 +504,9 @@ class ScenePresenter:
             (item.uid, item.name) for item in self.doc.stock_items
         ]
         hosts.extend(
-            (layer.uid, layer.name)
-            for layer in self.doc.layers
-            if layer.rotary_enabled
+            (setup.uid, setup.name)
+            for setup in self.doc.setups
+            if setup.rotary_enabled
         )
         for uid, name in hosts:
             if uid not in handles:
@@ -613,18 +613,18 @@ class ScenePresenter:
         )
 
     def _on_playback_layer_changed(self, player, layer_uid=None, **_kwargs):
-        """Rebuild the throwaway playback assembly for the current layer.
+        """Rebuild the throwaway playback assembly for the current setup.
 
         Connected to ``OpPlayer.layer_changed`` and also called once on
-        player creation.  Resolves the effective layer (current or the
-        first layer while in the preamble) and updates the scene's
-        cylinder transform without mutating the live machine.
+        player creation.  Resolves the effective setup (current or the
+        first while in the preamble) and updates the scene's cylinder
+        transform without mutating the live machine.
         """
         machine = self._context.machine
         if machine is None or player is None:
             return
-        layer = player.get_effective_layer(self.doc)
-        assembly = build_layer_assembly(machine, layer)
+        setup = player.get_effective_setup(self.doc)
+        assembly = build_setup_assembly(machine, setup)
         self._playback_assembly = assembly
         if assembly.has_rotary:
             self._scene.set_cylinder_transform(
@@ -747,7 +747,7 @@ class ScenePresenter:
         Flat specs come from the document's stock items (world-space
         geometry rings, thickness, material parameters).  Rotary specs
         come from rotary layers with a selected stock material and
-        carry the layer's object diameter plus the renderable axial
+        carry the setup's object diameter plus the renderable axial
         length.  The heavy meshing runs on the background compile
         thread, so the spec dicts stay serializable.
         """
@@ -803,7 +803,7 @@ class ScenePresenter:
     def _build_rotary_stock_specs(
         self, viewport: "ViewportConfig", machine
     ) -> list[dict]:
-        """Collect rotary layers into stock specs.
+        """Collect rotary setups into stock specs.
 
         The axial length matches the work area width capped by the
         default rotary module's maximum workpiece length.
@@ -814,20 +814,20 @@ class ScenePresenter:
         if default_rm:
             max_length = min(max_length, default_rm.max_workpiece_length)
 
-        for layer in self.doc.layers:
-            if not layer.rotary_enabled:
+        for setup in self.doc.setups:
+            if not setup.rotary_enabled:
                 continue
-            if layer.rotary_diameter <= 0:
+            if setup.rotary_diameter <= 0:
                 continue
-            material = layer.stock_material
+            material = setup.stock_material
             if material is None:
                 material = self._context.material_mgr.get_default_material()
             appearance = material.appearance
             texture_path = material.get_texture_path()
             spec = {
-                "name": _("{layer} stock").format(layer=layer.name),
+                "name": _("{setup} stock").format(setup=setup.name),
                 "kind": "rotary",
-                "diameter": float(layer.rotary_diameter),
+                "diameter": float(setup.rotary_diameter),
                 "length": float(max_length),
                 "texture_path": (
                     str(texture_path) if texture_path is not None else None
@@ -838,7 +838,7 @@ class ScenePresenter:
                 "color": appearance.color,
             }
             self._add_material_optical(spec, material)
-            burn = self._material_states.get(layer.uid)
+            burn = self._material_states.get(setup.uid)
             if burn is not None:
                 spec["burn"] = dict(burn)
             specs.append(spec)
@@ -869,16 +869,16 @@ class ScenePresenter:
 
         viewport = self._get_viewport()
 
-        # Update cylinder renderers and camera based on layer rotary state
-        any_rotary = any(layer.rotary_enabled for layer in self.doc.layers)
+        # Update cylinder renderers and camera based on setup rotary state
+        any_rotary = any(setup.rotary_enabled for setup in self.doc.setups)
         self._mark_scene_dirty()
         if (
-            self._scene.had_rotary_layers
+            self._scene.had_rotary_setups
             and not any_rotary
             and self._get_camera_available()
         ):
             self._reset_view(ViewDirection.ISO)
-        self._scene.had_rotary_layers = any_rotary
+        self._scene.had_rotary_setups = any_rotary
 
         world_to_visual = np.identity(4, dtype=np.float32)
         world_to_cyl_local = np.identity(4, dtype=np.float32)
@@ -926,35 +926,36 @@ class ScenePresenter:
         )
 
         layer_configs: dict[str, LayerRenderConfig] = {}
-        for layer in self.doc.layers:
-            axis_position = 0.0
-            reverse = False
-            axis_position_3d = None
-            cylinder_dir = None
-            if layer.rotary_enabled and machine:
-                cfg = resolve_layer_rotary(layer, machine)
-                module = cfg.module
-                if module is not None:
-                    mapping = KinematicMapping.from_rotary_module(
-                        module,
-                        layer.rotary_diameter,
-                        apply_gear_ratio=False,
-                    )
-                    if mapping is not None:
-                        axis_position = mapping.axis_position
-                        axis_position_3d = tuple(
-                            mapping.axis_position_3d.tolist()
+        for setup in self.doc.setups:
+            for workflow in setup.workflows:
+                axis_position = 0.0
+                reverse = False
+                axis_position_3d = None
+                cylinder_dir = None
+                if setup.rotary_enabled and machine:
+                    cfg = resolve_setup_rotary(setup, machine)
+                    module = cfg.module
+                    if module is not None:
+                        mapping = KinematicMapping.from_rotary_module(
+                            module,
+                            setup.rotary_diameter,
+                            apply_gear_ratio=False,
                         )
-                        cylinder_dir = tuple(mapping.cylinder_dir.tolist())
-                        reverse = mapping.reverse
-            layer_configs[layer.uid] = LayerRenderConfig(
-                rotary_enabled=layer.rotary_enabled,
-                rotary_diameter=layer.rotary_diameter,
-                axis_position=axis_position,
-                reverse=reverse,
-                axis_position_3d=axis_position_3d,
-                cylinder_dir=cylinder_dir,
-            )
+                        if mapping is not None:
+                            axis_position = mapping.axis_position
+                            axis_position_3d = tuple(
+                                mapping.axis_position_3d.tolist()
+                            )
+                            cylinder_dir = tuple(mapping.cylinder_dir.tolist())
+                            reverse = mapping.reverse
+                layer_configs[workflow.uid] = LayerRenderConfig(
+                    rotary_enabled=setup.rotary_enabled,
+                    rotary_diameter=setup.rotary_diameter,
+                    axis_position=axis_position,
+                    reverse=reverse,
+                    axis_position_3d=axis_position_3d,
+                    cylinder_dir=cylinder_dir,
+                )
 
         render_config = RenderConfig3D(
             world_to_visual=world_to_visual,
@@ -1160,29 +1161,29 @@ class ScenePresenter:
         """Rotary wrap spec for a workpiece image, or ``None`` when flat.
 
         Returns the world matrix plus the resolved diameter and axis
-        direction (``reverse``) of the workpiece's own layer, mirroring
-        the per-layer rotary configuration used by the scene compiler.
+        direction (``reverse``) of the workpiece's own setup, mirroring
+        the per-setup rotary configuration used by the scene compiler.
         """
         if machine is None:
             return None
-        layer = wp.layer
-        if layer is None or not layer.rotary_enabled:
+        setup = wp.setup
+        if setup is None or not setup.rotary_enabled:
             return None
-        if layer.rotary_diameter is None or layer.rotary_diameter <= 0:
+        if setup.rotary_diameter is None or setup.rotary_diameter <= 0:
             return None
         reverse = False
-        cfg = resolve_layer_rotary(layer, machine)
+        cfg = resolve_setup_rotary(setup, machine)
         if cfg.module is not None:
             mapping = KinematicMapping.from_rotary_module(
                 cfg.module,
-                layer.rotary_diameter,
+                setup.rotary_diameter,
                 apply_gear_ratio=False,
             )
             if mapping is not None:
                 reverse = mapping.reverse
         return (
             np.asarray(world_matrix, dtype=np.float32),
-            float(layer.rotary_diameter),
+            float(setup.rotary_diameter),
             reverse,
         )
 

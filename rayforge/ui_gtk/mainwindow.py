@@ -69,6 +69,7 @@ from .shared.pointer_alignment_dialog import PointerAlignmentDialog
 from .shared.progress_bar import ProgressBar
 from .shared.rename_dialog import RenameDialog
 from .shared.sanity_check_dialog import SanityCheckDialog
+from .shared.setup_run_dialog import SetupRunDialog
 from .shared.time_estimate_overlay import TimeEstimateOverlay
 from .shared.usage_consent_dialog import UsageConsentDialog
 from .shared.visibility_overlay import VisibilityOverlay
@@ -351,7 +352,7 @@ class MainWindow(Adw.ApplicationWindow):
         doc.descendant_added.connect(self.on_doc_changed)
         doc.descendant_removed.connect(self.on_doc_changed)
         doc.descendant_updated.connect(self.on_doc_changed)
-        doc.active_layer_changed.connect(self._on_active_layer_changed)
+        doc.active_setup_changed.connect(self._on_active_setup_changed)
         doc.history_manager.changed.connect(self.on_history_changed)
 
         # Connect editor signals
@@ -439,7 +440,7 @@ class MainWindow(Adw.ApplicationWindow):
         self._right_pane.set_child(right_pane_box)
 
         # The workflow views are updated when the document or the
-        # active layer changes, according to the right panel mode.
+        # active setup changes, according to the right panel mode.
         self._workflow_views: list[WorkflowView] = []
         self._workflow_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self._workflow_box.set_margin_top(6)
@@ -1269,7 +1270,7 @@ class MainWindow(Adw.ApplicationWindow):
     def _initialize_document(self):
         """
         Adds required initial state to a new document, such as default
-        steps to workpiece layers.
+        steps to the setups' workflows.
         """
         self.doc_editor.step.initialize_default_steps()
 
@@ -1488,7 +1489,7 @@ class MainWindow(Adw.ApplicationWindow):
     ):
         self._update_actions_and_ui()
         # After undo/redo, the document state may have changed in ways
-        # that require a full UI sync (e.g., layer visibility).
+        # that require a full UI sync (e.g., workpiece visibility).
         self.on_doc_changed(self.doc_editor.doc)
         self._update_macros_menu()
 
@@ -1497,7 +1498,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.surface.update_from_doc()
         self._update_workflow_views()
 
-        # Sync the selectability of stock items based on active layer
+        # Sync the selectability of stock items based on visibility
         self._sync_element_selectability()
 
         # Update button sensitivity and other state
@@ -1505,11 +1506,11 @@ class MainWindow(Adw.ApplicationWindow):
 
         # The stock and ops-underlay toggles are mutually exclusive:
         # show the stock toggle only when the document has stock —
-        # flat stock items or rotary layers with a diameter.
+        # flat stock items or rotary setups with a diameter.
         doc = self.doc_editor.doc
         has_stock = bool(doc.stock_items) or any(
-            layer.rotary_enabled and layer.rotary_diameter > 0
-            for layer in doc.layers
+            setup.rotary_enabled and setup.rotary_diameter > 0
+            for setup in doc.setups
         )
         if self._surface_vis_overlay is not None:
             self._surface_vis_overlay.set_stock_present(has_stock)
@@ -1519,19 +1520,19 @@ class MainWindow(Adw.ApplicationWindow):
     def _sync_element_selectability(self):
         """
         Updates the 'selectable' property of StockElements on the canvas
-        based on which layer is currently active and their visibility.
+        based on their visibility.
         """
         # Find all StockElement instances currently on the canvas
         for element in self.surface.find_by_type(StockElement):
             # Stock items are only selectable when they are visible
             element.selectable = element.visible
 
-    def _on_active_layer_changed(self, sender):
+    def _on_active_setup_changed(self, sender):
         """
-        Handles activation of a new layer. Updates the workflow view and
+        Handles activation of a new setup. Updates the workflow view and
         resets the paste counter.
         """
-        logger.debug("Active layer changed, updating UI.")
+        logger.debug("Active setup changed, updating UI.")
         # Reset the paste counter to ensure the next paste is in-place.
         self.doc_editor.edit.reset_paste_counter()
 
@@ -1550,16 +1551,18 @@ class MainWindow(Adw.ApplicationWindow):
             return []
         if mode == RightPanelMode.NON_EMPTY_LAYERS:
             return [
-                layer.workflow
-                for layer in doc.layers
-                if not layer.is_empty and layer.workflow
+                workflow
+                for setup in doc.setups
+                if not setup.is_empty
+                for workflow in setup.workflows
             ]
         if mode == RightPanelMode.ALL_LAYERS:
-            return [layer.workflow for layer in doc.layers if layer.workflow]
-        active = doc.active_layer
-        if active and active.workflow:
-            return [active.workflow]
-        return []
+            return [
+                workflow
+                for setup in doc.setups
+                for workflow in setup.workflows
+            ]
+        return list(doc.active_setup.workflows)
 
     def _update_workflow_views(self):
         """
@@ -1642,8 +1645,8 @@ class MainWindow(Adw.ApplicationWindow):
             self._old_doc.descendant_added.disconnect(self.on_doc_changed)
             self._old_doc.descendant_removed.disconnect(self.on_doc_changed)
             self._old_doc.descendant_updated.disconnect(self.on_doc_changed)
-            self._old_doc.active_layer_changed.disconnect(
-                self._on_active_layer_changed
+            self._old_doc.active_setup_changed.disconnect(
+                self._on_active_setup_changed
             )
             self._old_doc.history_manager.changed.disconnect(
                 self.on_history_changed
@@ -1654,7 +1657,7 @@ class MainWindow(Adw.ApplicationWindow):
         new_doc.descendant_added.connect(self.on_doc_changed)
         new_doc.descendant_removed.connect(self.on_doc_changed)
         new_doc.descendant_updated.connect(self.on_doc_changed)
-        new_doc.active_layer_changed.connect(self._on_active_layer_changed)
+        new_doc.active_setup_changed.connect(self._on_active_setup_changed)
         new_doc.history_manager.changed.connect(self.on_history_changed)
 
         # Store reference to current doc for future disconnection
@@ -2629,7 +2632,10 @@ class MainWindow(Adw.ApplicationWindow):
         if not machine:
             return
 
-        def _proceed(pointer_dry_run: bool = False):
+        def _proceed(
+            pointer_dry_run: bool = False,
+            setup_uids: list[str] | None = None,
+        ):
             focus_action = self.action_manager.get_action("toggle-focus")
             focus_state = focus_action.get_state()
             if focus_state and focus_state.get_boolean():
@@ -2639,22 +2645,40 @@ class MainWindow(Adw.ApplicationWindow):
                 machine,
                 on_progress=self._on_job_progress_updated,
                 pointer_dry_run=pointer_dry_run,
+                setup_uids=setup_uids,
             )
             self._run_machine_job(job_coro)
 
-        def _confirm_pointer_alignment():
+        def _confirm_pointer_alignment(setup_uids=None):
             # Jobs burn with the unshifted beam, so ask every time
             # while the user is aiming with the pointer dot.
             if machine.pointer_alignment_enabled:
                 dialog = PointerAlignmentDialog(
                     parent=self,
-                    on_proceed=_proceed,
+                    on_proceed=lambda dry_run: _proceed(
+                        pointer_dry_run=dry_run,
+                        setup_uids=setup_uids,
+                    ),
                 )
                 dialog.present()
             else:
-                _proceed()
+                _proceed(setup_uids=setup_uids)
 
-        self._run_sanity_check_and_proceed(_confirm_pointer_alignment)
+        def _choose_setups():
+            doc = self.doc_editor.doc
+            if doc is None or len(doc.setups) <= 1:
+                _confirm_pointer_alignment()
+                return
+            dialog = SetupRunDialog(parent=self, doc=doc)
+            dialog.run_requested.connect(
+                lambda sender, setup_uids: _confirm_pointer_alignment(
+                    setup_uids=setup_uids
+                )
+            )
+            dialog.cancelled.connect(lambda sender: None)
+            dialog.present()
+
+        self._run_sanity_check_and_proceed(_choose_setups)
 
     def on_hold_state_change(
         self, action: Gio.SimpleAction, value: GLib.Variant

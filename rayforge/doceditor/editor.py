@@ -11,7 +11,7 @@ from blinker import Signal
 
 from ..core.asset import UnknownAsset
 from ..core.doc import Doc
-from ..core.layer import Layer
+from ..core.setup import Setup
 from ..core.vectorization_spec import VectorizationSpec
 from ..pipeline import intent_controller as intent_controller_module
 from ..pipeline.artifact import JobArtifact
@@ -25,16 +25,17 @@ from .edit_cmd import EditCmd
 from .file_cmd import FileCmd
 from .group_cmd import GroupCmd
 from .job_counter_cmd import JobCounterCmd
-from .layer_cmd import LayerCmd
 from .layout_cmd import LayoutCmd
 from .node_edit_cmd import NodeEditCmd
 from .path_cleanup_cmd import PathCleanupCmd
 from .reload_cmd import ReloadCmd
+from .setup_cmd import SetupCmd
 from .split_cmd import SplitCmd
 from .step_cmd import StepCmd
 from .stock_cmd import StockCmd
 from .tab_cmd import TabCmd
 from .transform_cmd import TransformCmd
+from .workflow_cmd import WorkflowCmd
 
 if TYPE_CHECKING:
     from ..context import RayforgeContext
@@ -78,15 +79,15 @@ class DocEditor:
         self.doc = doc or Doc()
 
         if doc is None and context.machine:
-            self.doc.active_layer.set_rotary_enabled(
+            self.doc.active_setup.set_rotary_enabled(
                 context.machine.rotary_enabled_default
             )
             default_rm = context.machine.get_default_rotary_module()
             if default_rm:
-                self.doc.active_layer.set_rotary_diameter(
+                self.doc.active_setup.set_rotary_diameter(
                     default_rm.default_diameter
                 )
-                self.doc.active_layer.set_rotary_module_uid(default_rm.uid)
+                self.doc.active_setup.set_rotary_module_uid(default_rm.uid)
         self.pipeline = Pipeline(
             self.doc,
             self.task_manager,
@@ -145,7 +146,7 @@ class DocEditor:
         doc.descendant_updated.connect(self._on_doc_changed)
         doc.descendant_added.connect(self._on_doc_changed)
         doc.descendant_removed.connect(self._on_doc_changed)
-        doc.active_layer_changed.connect(self._on_doc_changed)
+        doc.active_setup_changed.connect(self._on_doc_changed)
 
         # Instantiate and link command handlers, passing dependencies.
         self.asset = AssetCmd(self)
@@ -154,7 +155,8 @@ class DocEditor:
         self.file = FileCmd(self, self.task_manager)
         self.group = GroupCmd(self, self.task_manager)
         self.job_counter = JobCounterCmd(self)
-        self.layer = LayerCmd(self)
+        self.workflow = WorkflowCmd(self)
+        self.setup = SetupCmd(self)
         self.layout = LayoutCmd(self, self.task_manager)
         self.path_cleanup = PathCleanupCmd(self)
         self.node_edit = NodeEditCmd(self)
@@ -197,34 +199,34 @@ class DocEditor:
         if not machine:
             return
         default_rm = machine.get_default_rotary_module()
-        for layer in self.doc.layers:
-            if not layer.rotary_enabled:
+        for setup in self.doc.setups:
+            if not setup.rotary_enabled:
                 continue
             if (
-                layer.rotary_module_uid is not None
-                and machine.get_rotary_module_by_uid(layer.rotary_module_uid)
+                setup.rotary_module_uid is not None
+                and machine.get_rotary_module_by_uid(setup.rotary_module_uid)
             ):
                 continue
             if default_rm:
-                layer.set_rotary_module_uid(default_rm.uid)
-                layer.set_rotary_diameter(default_rm.default_diameter)
+                setup.set_rotary_module_uid(default_rm.uid)
+                setup.set_rotary_diameter(default_rm.default_diameter)
             else:
-                layer.set_rotary_module_uid(None)
+                setup.set_rotary_module_uid(None)
         self.configure_machine()
 
     def configure_machine(self):
         """
         Configures the machine for the resting document state.
 
-        Uses the first layer of the document as the baseline so that the
+        Uses the first setup of the document as the baseline so that the
         scene renders a sensible view before a job is compiled.  The
         OpPlayer overrides this per playback position when a job exists.
         """
         machine = self.context.machine
         if not machine:
             return
-        first_layer = self.doc.layers[0] if self.doc.layers else None
-        machine.configure_for_layer(first_layer)
+        first_setup = self.doc.setups[0] if self.doc.setups else None
+        machine.configure_for_setup(first_setup)
 
     def _on_doc_changed(self, sender, **kwargs):
         """Re-assert the baseline machine config on document changes."""
@@ -278,11 +280,11 @@ class DocEditor:
         return None
 
     @property
-    def default_workpiece_layer(self) -> Layer:
+    def default_workpiece_setup(self) -> Setup:
         """
-        Determines the most appropriate layer for adding new workpieces.
+        Determines the most appropriate setup for adding new workpieces.
         """
-        return self.doc.active_layer
+        return self.doc.active_setup
 
     async def wait_until_settled(self, timeout: float = 10.0) -> None:
         """
@@ -472,7 +474,7 @@ class DocEditor:
             old_doc.descendant_updated.disconnect(self._on_doc_changed)
             old_doc.descendant_added.disconnect(self._on_doc_changed)
             old_doc.descendant_removed.disconnect(self._on_doc_changed)
-            old_doc.active_layer_changed.disconnect(self._on_doc_changed)
+            old_doc.active_setup_changed.disconnect(self._on_doc_changed)
         self.doc = new_doc
         self._reconcile_step_heads()
         self._reconcile_rotary_modules()
@@ -488,7 +490,7 @@ class DocEditor:
         new_doc.descendant_updated.connect(self._on_doc_changed)
         new_doc.descendant_added.connect(self._on_doc_changed)
         new_doc.descendant_removed.connect(self._on_doc_changed)
-        new_doc.active_layer_changed.connect(self._on_doc_changed)
+        new_doc.active_setup_changed.connect(self._on_doc_changed)
         self.configure_machine()
 
         # Reconnect to new history manager
@@ -519,23 +521,22 @@ class DocEditor:
         valid_head_uids = {head.uid for head in machine.heads}
         default_head_uid = machine.heads[0].uid
 
-        for layer in self.doc.layers:
-            if not layer.workflow:
-                continue
-            for step in layer.workflow.steps:
-                if step.selected_head_uid not in valid_head_uids:
-                    logger.info(
-                        f"Step '{step.name}' references non-existent head "
-                        f"'{step.selected_head_uid}', "
-                        f"resetting to default '{default_head_uid}'"
-                    )
-                    step.selected_head_uid = default_head_uid
+        for setup in self.doc.setups:
+            for workflow in setup.workflows:
+                for step in workflow.steps:
+                    if step.selected_head_uid not in valid_head_uids:
+                        logger.info(
+                            f"Step '{step.name}' references non-existent "
+                            f"head '{step.selected_head_uid}', "
+                            f"resetting to default '{default_head_uid}'"
+                        )
+                        step.selected_head_uid = default_head_uid
 
     def _reconcile_rotary_modules(self):
         """
-        Reconcile layer rotary_module_uid with the current machine.
+        Reconcile setup rotary_module_uid with the current machine.
 
-        For each layer, checks if its rotary_module_uid references a
+        For each setup, checks if its rotary_module_uid references a
         module that exists on the machine. If not, updates it to the
         default module. This handles the case where a project file
         references a module that doesn't exist in the current machine.
@@ -545,23 +546,23 @@ class DocEditor:
             return
 
         default_rm = machine.get_default_rotary_module()
-        for layer in self.doc.layers:
-            if not layer.rotary_enabled:
+        for setup in self.doc.setups:
+            if not setup.rotary_enabled:
                 continue
             if (
-                layer.rotary_module_uid is not None
-                and machine.get_rotary_module_by_uid(layer.rotary_module_uid)
+                setup.rotary_module_uid is not None
+                and machine.get_rotary_module_by_uid(setup.rotary_module_uid)
             ):
                 continue
             if default_rm:
                 logger.info(
-                    "Layer '%s' has no valid rotary module, assigning default",
-                    layer.name,
+                    "Setup '%s' has no valid rotary module, assigning default",
+                    setup.name,
                 )
-                layer.set_rotary_module_uid(default_rm.uid)
-                layer.set_rotary_diameter(default_rm.default_diameter)
+                setup.set_rotary_module_uid(default_rm.uid)
+                setup.set_rotary_diameter(default_rm.default_diameter)
             else:
-                layer.set_rotary_module_uid(None)
+                setup.set_rotary_module_uid(None)
 
     @property
     def is_processing(self) -> bool:

@@ -361,7 +361,7 @@ class Canvas3D(Gtk.GLArea):
                 compiled_artifact=self._presenter.compiled_artifact,
                 doc=self.doc,
                 cylinder_transform=self._scene.cylinder_transform,
-                had_rotary_layers=self._scene.had_rotary_layers,
+                had_rotary_setups=self._scene.had_rotary_setups,
                 stock_top_z=self._presenter.stock_top_z,
                 has_z_axis=self._presenter.has_z_axis,
             )

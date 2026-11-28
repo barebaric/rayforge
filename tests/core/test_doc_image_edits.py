@@ -1,6 +1,6 @@
 from rayforge.core.doc import Doc
 from rayforge.core.image_edit import ImageEditStep
-from rayforge.core.layer import Layer
+from rayforge.core.setup import Setup
 from rayforge.core.step import Step
 from rayforge.core.workpiece import WorkPiece
 
@@ -20,9 +20,8 @@ class _LegacyStep(Step):
 def _doc_with(step: Step, *workpieces: WorkPiece) -> Doc:
     doc = Doc()
     for wp in workpieces:
-        doc.active_layer.add_child(wp)
-    workflow = doc.active_layer.workflow
-    assert workflow is not None
+        doc.active_setup.add_child(wp)
+    workflow = doc.active_setup.workflows[0]
     workflow.add_step(step)
     return doc
 
@@ -42,8 +41,8 @@ def test_legacy_edits_move_to_the_layers_workpieces():
 def test_other_layers_are_untouched():
     inside, outside = WorkPiece("in"), WorkPiece("out")
     doc = _doc_with(_LegacyStep([INVERT]), inside)
-    other = Layer("Other")
-    doc.add_layer(other)
+    other = Setup("Other")
+    doc.add_setup(other)
     other.add_child(outside)
     doc.adopt_legacy_image_edits()
     assert outside.image_edits == ()

@@ -5,7 +5,6 @@ from unittest.mock import Mock
 import pytest
 from raygeo.geo import Arc, Bezier, Geometry, Matrix
 
-from rayforge.core.layer import Layer
 from rayforge.core.vectorization_spec import LayerImportMode, PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image.base_importer import ImporterFeature
@@ -114,13 +113,8 @@ def _setup_workpiece_with_context(
         return None
 
     payload = import_result.payload
-    # Handle both bare WorkPiece and Layer-wrapped WorkPiece for flexibility
     item = payload.items[0]
-    wp: WorkPiece | None = None
-    if isinstance(item, WorkPiece):
-        wp = item
-    elif isinstance(item, Layer) and item.workpieces:
-        wp = item.workpieces[0]
+    wp: WorkPiece | None = item if isinstance(item, WorkPiece) else None
 
     if not wp:
         return None
@@ -415,7 +409,7 @@ class TestDXFImporter:
         assert len(payload.items) == 1
         item = payload.items[0]
         assert isinstance(item, WorkPiece)
-        wp: WorkPiece | Layer = item
+        wp = item
 
         boundaries = wp.boundaries
         assert boundaries is not None
@@ -489,7 +483,7 @@ class TestDXFImporter:
         assert len(payload.items) == 1
         item = payload.items[0]
         assert isinstance(item, WorkPiece)
-        wp: WorkPiece | Layer = item
+        wp = item
 
         boundaries = wp.boundaries
         assert boundaries is not None
@@ -539,12 +533,16 @@ class TestDXFImporter:
         assert len(payload.items) == 2
 
         # Verify only Layer1 and Layer3 are imported
-        layer_names = set()
-        for item in payload.items:
-            if isinstance(item, Layer):
-                layer_names.add(item.name)
-
-        assert layer_names == {"Layer1", "Layer3"}
+        layer_ids = {
+            item.source_segment.layer_id
+            for item in payload.items
+            if isinstance(item, WorkPiece) and item.source_segment is not None
+        }
+        assert layer_ids == {"Layer1", "Layer3"}
+        assert {info.layer_id for info in payload.source_layers} == {
+            "Layer1",
+            "Layer3",
+        }
 
 
 def _z_values(geo: Geometry) -> set[float]:

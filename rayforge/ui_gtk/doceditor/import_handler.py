@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 from gi.repository import Adw, Gio, GLib
 
-from ...core.layer import Layer
+from ...core.setup import Setup
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import TraceSpec, VectorizationSpec
 from ...doceditor.file_cmd import ImportAction
@@ -279,7 +279,7 @@ def start_reimport(
     editor: DocEditor,
     source_asset: SourceAsset,
     position_mm: tuple[float, float] | None = None,
-    target_layer: Layer | None = None,
+    target_setup: Setup | None = None,
 ):
     """
     Re-open the import dialog for an existing SourceAsset so the user
@@ -330,7 +330,7 @@ def start_reimport(
     def on_response(sender, *, response_id: str, spec: VectorizationSpec):
         if response_id == "import":
             editor.file.reimport_from_source_asset(
-                source_asset, spec, position_mm, target_layer
+                source_asset, spec, position_mm, target_setup
             )
 
     dialog.response.connect(on_response, weak=False)

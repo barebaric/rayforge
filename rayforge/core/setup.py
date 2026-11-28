@@ -1,6 +1,5 @@
 """
-Defines the Layer class, a central component for organizing and processing
-workpieces within a document.
+Defines the Setup class: one machine configuration within a document.
 """
 
 from __future__ import annotations
@@ -19,10 +18,10 @@ from blinker import Signal
 from raygeo.geo import Matrix
 
 from ..context import get_context
-from .color import COLOR_PALETTE
 from .group import Group
-from .item import DocItem, VisibleMixin
+from .item import DocItem
 from .step import Step
+from .stock import StockItem
 from .workflow import Workflow
 from .workpiece import WorkPiece
 
@@ -35,104 +34,87 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T", bound="DocItem")
 
 
-class Layer(VisibleMixin):
+class Setup(DocItem):
     """
-    Represents a group of workpieces processed by a single workflow.
+    Represents one machine configuration: the workpieces loaded for it,
+    the stock they are cut from, and the ordered workflows that run.
 
-    A Layer acts as a container for `WorkPiece` objects and owns a
-    `Workflow`. It is a `DocItem` and automatically manages its children
-    and bubbles up signals.
+    A Setup owns the job settings of its physical configuration (WCS,
+    rotary attachment). A document holds one or more Setups in run
+    order; the canvas and the sidebar follow the active setup. It is a
+    `DocItem` and automatically manages its children and bubbles up
+    signals.
     """
-
-    DEFAULT_COLOR = COLOR_PALETTE[0]
 
     def __init__(self, name: str):
-        """Initializes a Layer instance.
+        """Initializes a Setup instance.
 
         Args:
-            name: The user-facing name of the layer.
+            name: The user-facing name of the setup.
         """
         super().__init__(name=name)
         self.rotary_enabled: bool = False
         self.rotary_diameter: float = 25.0
         self.rotary_module_uid: str | None = None
         self.stock_material_uid: str | None = None
-        self.color: str = self.DEFAULT_COLOR
         self.wcs: str | None = None
-        # Layer-level post processors, applied to the layer's merged
-        # toolpath in machine space (see the machine-transform stage).
-        # Serialized transformer dicts, resolved via the transformer
-        # registry like step-level transformers.
-        self.post_processors_dicts: list[dict[str, Any]] = []
 
         # Signals for notifying other parts of the application of changes.
         # This one is special and is bubbled manually.
         self.per_step_transformer_changed = Signal()
-        self.post_processor_changed = Signal()
 
         # Forward compatibility: store unknown attributes
         self.extra: dict[str, Any] = {}
 
-        # A new layer gets a workflow automatically.
+        # A new setup gets one workflow automatically.
         workflow = Workflow(_("{name} Workflow").format(name=name))
         self.add_child(workflow)
 
     def to_dict(self) -> dict:
-        """Serializes the layer and its children to a dictionary."""
+        """Serializes the setup and its children to a dictionary."""
         result = {
             "uid": self.uid,
-            "type": "layer",
+            "type": "setup",
             "name": self.name,
             "matrix": self.matrix.to_list(),
-            "visible": self.visible,
             "rotary_enabled": self.rotary_enabled,
             "rotary_diameter": self.rotary_diameter,
             "rotary_module_uid": self.rotary_module_uid,
             "stock_material_uid": self.stock_material_uid,
-            "color": self.color,
             "wcs": self.wcs,
-            "post_processors_dicts": self.post_processors_dicts,
             "children": [child.to_dict() for child in self.children],
         }
         result.update(self.extra)
         return result
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> Layer:
-        """Deserializes a dictionary into a Layer instance."""
+    def from_dict(cls, data: dict[str, Any]) -> Setup:
+        """Deserializes a dictionary into a Setup instance."""
         known_keys = {
             "uid",
             "type",
             "name",
             "matrix",
-            "visible",
             "rotary_enabled",
             "rotary_diameter",
             "rotary_module_uid",
             "stock_material_uid",
-            "color",
             "wcs",
-            "post_processors_dicts",
             "children",
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
 
-        layer = cls(name=data.get("name", "Layer"))
-        layer.uid = data["uid"]
-        layer.matrix = Matrix.from_list(data["matrix"])
-        layer.visible = data.get("visible", True)
-        layer.rotary_enabled = data.get("rotary_enabled", False)
-        layer.rotary_diameter = data.get("rotary_diameter", 25.0)
-        layer.rotary_module_uid = data.get("rotary_module_uid")
-        layer.stock_material_uid = data.get("stock_material_uid")
-        layer.color = data.get("color", cls.DEFAULT_COLOR)
-        layer.wcs = data.get("wcs")
-        layer.post_processors_dicts = list(
-            data.get("post_processors_dicts", [])
-        )
-        layer.extra = extra
+        setup = cls(name=data.get("name", "Setup"))
+        setup.uid = data["uid"]
+        setup.matrix = Matrix.from_list(data["matrix"])
+        setup.rotary_enabled = data.get("rotary_enabled", False)
+        setup.rotary_diameter = data.get("rotary_diameter", 25.0)
+        setup.rotary_module_uid = data.get("rotary_module_uid")
+        setup.stock_material_uid = data.get("stock_material_uid")
+        setup.wcs = data.get("wcs")
+        setup.extra = extra
 
-        children = []
+        children: list[DocItem] = []
         for child_data in data.get("children", []):
             child_type = child_data.get("type")
             if child_type == "workflow":
@@ -141,9 +123,26 @@ class Layer(VisibleMixin):
                 children.append(WorkPiece.from_dict(child_data))
             elif child_type == "group":
                 children.append(Group.from_dict(child_data))
-        layer.set_children(children)
+            elif child_type == "stockitem":
+                from .stock import StockItem
 
-        return layer
+                children.append(StockItem.from_dict(child_data))
+        if not any(isinstance(child, Workflow) for child in children):
+            # The workflow created by __init__ keeps the setup runnable.
+            auto_workflow = setup.workflows[0]
+            children.append(auto_workflow)
+        setup.set_children(children)
+
+        return setup
+
+    @property
+    def stock_items(self) -> list[StockItem]:
+        """Returns the setup's StockItem children."""
+        from .stock import StockItem
+
+        return [
+            child for child in self.children if isinstance(child, StockItem)
+        ]
 
     @property
     def workpieces(self) -> list[WorkPiece]:
@@ -159,26 +158,39 @@ class Layer(VisibleMixin):
     def all_workpieces(self) -> list[WorkPiece]:
         """
         Recursively finds and returns a flattened list of all WorkPiece
-        objects contained within this layer, including those inside groups.
+        objects contained within this setup, including those inside
+        groups.
         """
         return self.get_descendants(of_type=WorkPiece)
 
     @property
     def has_fills(self) -> bool:
-        """Check if any workpiece in this layer has fill geometry."""
+        """Check if any workpiece in this setup has fill geometry."""
         for wp in self.all_workpieces:
             fills = wp.fills
             if fills is not None and len(fills) > 0:
                 return True
         return False
 
+    @property
+    def workflows(self) -> list[Workflow]:
+        """Returns the setup's workflows in run order."""
+        return [
+            child for child in self.children if isinstance(child, Workflow)
+        ]
+
     def get_content_items(self) -> list[DocItem]:
         """
-        Returns a list of user-facing items in this layer (e.g.,
-        WorkPieces, Groups), excluding internal objects like Workflows.
+        Returns a list of user-facing items in this setup (e.g.,
+        WorkPieces, Groups), excluding internal objects like Workflows
+        and StockItems.
         """
+        from .stock import StockItem
+
         return [
-            child for child in self.children if not isinstance(child, Workflow)
+            child
+            for child in self.children
+            if not isinstance(child, (Workflow, StockItem))
         ]
 
     @property
@@ -188,22 +200,12 @@ class Layer(VisibleMixin):
 
     @property
     def is_empty(self) -> bool:
-        """Returns True if the layer holds no user-facing items."""
+        """Returns True if the setup holds no user-facing items."""
         return not self.get_content_items()
-
-    @property
-    def workflow(self) -> Workflow | None:
-        """Returns the layer's workflow. A layer must have one workflow."""
-        for child in self.children:
-            if isinstance(child, Workflow):
-                return child
-        # This state should be unreachable for a standard Layer, but subclasses
-        # of it may not have a workflow.
-        return None
 
     def _on_workflow_post_transformer_changed(self, sender):
         """
-        Bubbles up the post_transformer_changed signal from the workflow.
+        Bubbles up the post_transformer_changed signal from a workflow.
         """
         self.per_step_transformer_changed.send(self)
 
@@ -217,20 +219,18 @@ class Layer(VisibleMixin):
 
     def remove_child(self, child: DocItem):
         if isinstance(child, Workflow):
-            # Check if the workflow actually exists before trying to disconnect
-            wf = self.workflow
-            if wf and wf is child:
-                wf.per_step_transformer_changed.disconnect(
-                    self._on_workflow_post_transformer_changed
-                )
+            child.per_step_transformer_changed.disconnect(
+                self._on_workflow_post_transformer_changed
+            )
         super().remove_child(child)
 
     def set_children(self, new_children: Iterable[DocItem]):
         # Disconnect any existing workflow signal handlers
-        if self.workflow:
-            self.workflow.per_step_transformer_changed.disconnect(
-                self._on_workflow_post_transformer_changed
-            )
+        for child in self.children:
+            if isinstance(child, Workflow):
+                child.per_step_transformer_changed.disconnect(
+                    self._on_workflow_post_transformer_changed
+                )
 
         # Connect to the new ones
         for child in new_children:
@@ -244,24 +244,19 @@ class Layer(VisibleMixin):
     @property
     def active(self) -> bool:
         """
-        Returns True if this layer is the currently active layer in the
+        Returns True if this setup is the currently active setup in the
         document.
         """
-        return self.doc.active_layer is self if self.doc else False
+        return self.doc.active_setup is self if self.doc else False
 
     def set_name(self, name: str):
-        """Sets the name of the layer.
+        """Sets the name of the setup.
 
-        Also syncs the workflow name, which is derived from the layer
-        name. Both fire ``renamed``; neither is a content change, so
-        ``updated`` stays untouched.
+        Not a content change, so ``updated`` stays untouched.
         """
         if self.name == name:
             return
         self.name = name
-        wf = self.workflow
-        if wf:
-            wf.name = _("{name} Workflow").format(name=name)
 
     def set_rotary_enabled(self, enabled: bool):
         """Enable or disable rotary attachment mode."""
@@ -284,7 +279,7 @@ class Layer(VisibleMixin):
         self.updated.send(self)
 
     def set_stock_material_uid(self, uid: str | None):
-        """Set the stock material rendered for this rotary layer."""
+        """Set the stock material rendered for this rotary setup."""
         if self.stock_material_uid == uid:
             return
         self.stock_material_uid = uid
@@ -292,26 +287,20 @@ class Layer(VisibleMixin):
 
     @property
     def stock_material(self) -> Material | None:
-        """The Material selected as this layer's rotary stock, if any."""
+        """The Material selected as this setup's rotary stock, if any."""
         if not self.stock_material_uid:
             return None
         return get_context().material_mgr.get_material_or_none(
             self.stock_material_uid
         )
 
-    def set_color(self, color: str):
-        if self.color == color:
-            return
-        self.color = color
-        self.updated.send(self)
-
     def get_subtitle(self, rotary_module_name: str | None = None) -> str:
-        """Returns a subtitle describing the layer type.
+        """Returns a subtitle describing the setup type.
 
         Args:
             rotary_module_name: The name of the selected rotary module,
                 if any. The caller is responsible for resolving the
-                layer's ``rotary_module_uid`` to a name.
+                setup's ``rotary_module_uid`` to a name.
 
         Returns:
             A human-readable subtitle string (e.g. ``"Flat"`` or
@@ -329,17 +318,8 @@ class Layer(VisibleMixin):
         self.wcs = wcs
         self.updated.send(self)
 
-    def set_post_processors_dicts(
-        self, post_processors_dicts: list[dict[str, Any]]
-    ):
-        if self.post_processors_dicts == post_processors_dicts:
-            return
-        self.post_processors_dicts = list(post_processors_dicts)
-        self.post_processor_changed.send(self)
-        self.updated.send(self)
-
     def get_effective_wcs(self, machine) -> str:
-        """Return this layer's WCS or the machine's active WCS."""
+        """Return this setup's WCS or the machine's active WCS."""
         return self.wcs if self.wcs else machine.active_wcs
 
     def mm_to_degrees(self, mm: float) -> float:
@@ -350,53 +330,56 @@ class Layer(VisibleMixin):
         return (mm / circumference) * 360.0
 
     def add_workpiece(self, workpiece: WorkPiece):
-        """Adds a single workpiece to the layer."""
+        """Adds a single workpiece to the setup."""
         self.add_child(workpiece)
 
     def remove_workpiece(self, workpiece: WorkPiece):
-        """Removes a single workpiece from the layer."""
+        """Removes a single workpiece from the setup."""
         self.remove_child(workpiece)
 
     def set_workpieces(self, workpieces: list[WorkPiece]):
         """
-        Sets the layer's workpieces to a new list, preserving the
-        existing workflow and groups.
+        Sets the setup's workpieces to a new list, preserving the
+        existing workflows, groups and stock.
         """
-        groups = [c for c in self.children if isinstance(c, Group)]
-        current_workflow = self.workflow
-        new_children: list[DocItem] = []
-        new_children.extend(workpieces)
-        new_children.extend(groups)
-        if current_workflow:
-            new_children.append(current_workflow)
-        self.set_children(new_children)
-
-    def reorder_workpieces(self, new_workpiece_order: list[WorkPiece]):
-        """
-        Reorders workpieces while preserving the positions of groups
-        and the workflow.
-        """
-        wp_iter = iter(new_workpiece_order)
-        new_children = []
-        for child in self.children:
-            if isinstance(child, WorkPiece):
-                new_children.append(next(wp_iter))
-            else:
-                new_children.append(child)
+        others = [c for c in self.children if not isinstance(c, WorkPiece)]
+        new_children: list[DocItem] = list(workpieces)
+        new_children.extend(others)
         self.set_children(new_children)
 
     def reorder_content_items(self, new_content_order: list[DocItem]):
         """
         Reorders all content items (WorkPieces and Groups) while
-        preserving the workflow's position.
+        preserving the positions of workflows and stock.
+
+        A shorter list drops the content items it does not mention.
         """
         item_iter = iter(new_content_order)
         new_children = []
         for child in self.children:
-            if isinstance(child, Workflow):
+            if isinstance(child, (Workflow, StockItem)):
                 new_children.append(child)
+                continue
+            item = next(item_iter, None)
+            if item is not None:
+                new_children.append(item)
+        self.set_children(new_children)
+
+    def reorder_workflows(self, new_workflow_order: list[Workflow]):
+        """
+        Reorders workflows while preserving the positions of the other
+        children. A shorter list drops the workflows it does not
+        mention.
+        """
+        wf_iter = iter(new_workflow_order)
+        new_children = []
+        for child in self.children:
+            if isinstance(child, Workflow):
+                workflow = next(wf_iter, None)
+                if workflow is not None:
+                    new_children.append(workflow)
             else:
-                new_children.append(next(item_iter))
+                new_children.append(child)
         self.set_children(new_children)
 
     def get_renderable_items(self) -> list[tuple[Step, WorkPiece]]:
@@ -407,14 +390,12 @@ class Layer(VisibleMixin):
             A list of (Step, WorkPiece) tuples that are currently
             visible and have valid geometry for rendering.
         """
-        if not self.visible or not self.workflow:
-            return []
         items = []
-        # Use the correct recursive method to find all workpieces
         for workpiece in self.all_workpieces:
             if any(s <= 0 for s in workpiece.size):
                 continue
-            for step in self.workflow.steps:
-                if step.visible:
-                    items.append((step, workpiece))
+            for workflow in self.workflows:
+                for step in workflow.steps:
+                    if step.visible:
+                        items.append((step, workpiece))
         return items

@@ -4,7 +4,7 @@ from pathlib import Path
 from raygeo.ops.axis import Axis
 
 from rayforge.context import RayforgeContext
-from rayforge.core.layer import Layer
+from rayforge.core.setup import Setup
 from rayforge.machine.assembly import LinkRole
 from rayforge.machine.models.laser import Laser, LaserHead
 from rayforge.machine.models.machine import Machine
@@ -20,7 +20,7 @@ def _make_machine():
 def _make_layer(
     rotary_enabled=False, rotary_module_uid=None, rotary_diameter=25.0
 ):
-    layer = Layer("Test")
+    layer = Setup("Test")
     layer.rotary_enabled = rotary_enabled
     layer.rotary_module_uid = rotary_module_uid
     layer.rotary_diameter = rotary_diameter
@@ -51,7 +51,7 @@ class TestConfigureForLayer:
         machine = _make_machine()
         module = RotaryModule()
         machine.add_rotary_module(module)
-        machine.configure_for_layer(None)
+        machine.configure_for_setup(None)
         assert not machine.assembly.has_rotary
 
     def test_configure_layer_with_rotary(self):
@@ -64,7 +64,7 @@ class TestConfigureForLayer:
             rotary_module_uid=module.uid,
             rotary_diameter=40.0,
         )
-        machine.configure_for_layer(layer)
+        machine.configure_for_setup(layer)
         asm = machine.assembly
         assert asm.has_rotary
         chucks = asm.get_links_by_role(LinkRole.CHUCK)
@@ -76,7 +76,7 @@ class TestConfigureForLayer:
         module = RotaryModule()
         machine.add_rotary_module(module)
         layer = _make_layer(rotary_enabled=False)
-        machine.configure_for_layer(layer)
+        machine.configure_for_setup(layer)
         assert not machine.assembly.has_rotary
 
     def test_configure_switches_between_layers(self):
@@ -89,10 +89,10 @@ class TestConfigureForLayer:
         )
         flat_layer = _make_layer(rotary_enabled=False)
 
-        machine.configure_for_layer(rotary_layer)
+        machine.configure_for_setup(rotary_layer)
         assert machine.assembly.has_rotary
 
-        machine.configure_for_layer(flat_layer)
+        machine.configure_for_setup(flat_layer)
         assert not machine.assembly.has_rotary
 
     def test_same_layer_no_rebuild(self):
@@ -100,10 +100,10 @@ class TestConfigureForLayer:
         module = RotaryModule()
         machine.add_rotary_module(module)
         layer = _make_layer(rotary_enabled=True, rotary_module_uid=module.uid)
-        machine.configure_for_layer(layer)
+        machine.configure_for_setup(layer)
         asm1 = machine.assembly
 
-        machine.configure_for_layer(layer)
+        machine.configure_for_setup(layer)
         asm2 = machine.assembly
         assert asm1 is asm2
 
@@ -112,7 +112,7 @@ class TestConfigureForLayer:
         layer = _make_layer(
             rotary_enabled=True, rotary_module_uid="nonexistent"
         )
-        machine.configure_for_layer(layer)
+        machine.configure_for_setup(layer)
         assert not machine.assembly.has_rotary
 
 
@@ -190,12 +190,12 @@ class TestAssemblyInvalidation:
             rotary_module_uid=module.uid,
             rotary_diameter=30.0,
         )
-        machine.configure_for_layer(layer)
+        machine.configure_for_setup(layer)
         asm_before = machine.assembly
         assert asm_before.has_rotary
 
         layer.rotary_diameter = 50.0
-        machine.configure_for_layer(layer)
+        machine.configure_for_setup(layer)
         asm_after = machine.assembly
         assert asm_after is asm_before
 
@@ -203,7 +203,7 @@ class TestAssemblyInvalidation:
         machine = _make_machine()
         module = RotaryModule()
         machine.add_rotary_module(module)
-        machine.configure_for_layer(None)
+        machine.configure_for_setup(None)
         asm_before = machine.assembly
         module.set_default_diameter(50.0)
         asm_after = machine.assembly
@@ -244,7 +244,7 @@ class TestAssemblyRotarySpecs:
             rotary_module_uid=module.uid,
             rotary_diameter=25.0,
         )
-        machine.configure_for_layer(layer)
+        machine.configure_for_setup(layer)
         chucks = machine.assembly.get_links_by_role(LinkRole.CHUCK)
         assert chucks[0].driver_axis == Axis.A
 
@@ -259,7 +259,7 @@ class TestAssemblyRotarySpecs:
             rotary_module_uid=module.uid,
             rotary_diameter=25.0,
         )
-        machine.configure_for_layer(layer)
+        machine.configure_for_setup(layer)
         chucks = machine.assembly.get_links_by_role(LinkRole.CHUCK)
         assert chucks[0].model is not None
         assert chucks[0].model.path == Path("chuck.glb")
@@ -277,7 +277,7 @@ class TestAssemblyRotarySpecs:
             rotary_module_uid=module.uid,
             rotary_diameter=25.0,
         )
-        machine.configure_for_layer(layer)
+        machine.configure_for_setup(layer)
         bases = [
             link
             for link in machine.assembly._links
@@ -298,7 +298,7 @@ class TestAssemblyRotarySpecs:
             rotary_module_uid=module.uid,
             rotary_diameter=42.0,
         )
-        machine.configure_for_layer(layer)
+        machine.configure_for_setup(layer)
         state = MachineState()
         state.axes[Axis.A] = 360.0
         angles = machine.assembly.chuck_angles(state)
@@ -316,7 +316,7 @@ class TestAssemblyRotarySpecs:
             rotary_module_uid=module.uid,
             rotary_diameter=50.0,
         )
-        machine.configure_for_layer(layer)
+        machine.configure_for_setup(layer)
         assert machine.assembly.has_rotary
 
     def test_diameter_change_does_not_rebuild(self):
@@ -329,11 +329,11 @@ class TestAssemblyRotarySpecs:
             rotary_module_uid=module.uid,
             rotary_diameter=30.0,
         )
-        machine.configure_for_layer(layer)
+        machine.configure_for_setup(layer)
         asm1 = machine.assembly
         assert asm1.has_rotary
 
         layer.rotary_diameter = 40.0
-        machine.configure_for_layer(layer)
+        machine.configure_for_setup(layer)
         asm2 = machine.assembly
         assert asm2 is asm1

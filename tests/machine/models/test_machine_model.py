@@ -546,12 +546,12 @@ class TestMachineModel:
 @pytest.fixture
 def rotary_doc(isolated_machine):
     doc = Doc()
-    doc.active_layer.set_rotary_enabled(True)
-    doc.active_layer.set_rotary_diameter(25.0)
+    doc.active_setup.set_rotary_enabled(True)
+    doc.active_setup.set_rotary_diameter(25.0)
     rm = RotaryModule()
     rm.set_axis(Axis.A)
     isolated_machine.add_rotary_module(rm)
-    doc.active_layer.set_rotary_module_uid(rm.uid)
+    doc.active_setup.set_rotary_module_uid(rm.uid)
     return doc
 
 

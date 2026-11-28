@@ -47,7 +47,7 @@ def _add_workpiece(doc_editor, norm_geo: Geometry, name="Logo", pos=(0, 0)):
     wp.natural_height_mm = HEIGHT_MM
     wp.set_size(WIDTH_MM, HEIGHT_MM)
     wp.pos = pos
-    doc_editor.doc.active_layer.add_child(wp)
+    doc_editor.doc.active_setup.add_child(wp)
     return wp
 
 
@@ -144,7 +144,7 @@ class TestDeleteDuplicates:
         assert len(_contours(wp)) == 3
 
     def test_removes_stacked_copy_of_workpiece(self, doc_editor, cleanup_cmd):
-        layer = doc_editor.doc.active_layer
+        layer = doc_editor.doc.active_setup
         geo = _mm_polyline(FRAME, close=True)
         first = _add_workpiece(doc_editor, geo, name="A", pos=(10, 10))
         copy = _add_workpiece(doc_editor, geo.copy(), name="B", pos=(10, 10))
@@ -167,7 +167,7 @@ class TestDeleteDuplicates:
 
 class TestBreakApart:
     def test_every_contour_becomes_a_workpiece(self, doc_editor, cleanup_cmd):
-        layer = doc_editor.doc.active_layer
+        layer = doc_editor.doc.active_setup
         inner = [(10, 10), (90, 10), (90, 40), (10, 40)]
         geo = _concat(
             _mm_polyline(FRAME, close=True),

@@ -2,7 +2,7 @@ import pytest
 from raygeo.geo import Matrix
 
 from rayforge.core.group import Group
-from rayforge.core.layer import Layer
+from rayforge.core.setup import Setup
 from rayforge.core.stock import StockItem
 from rayforge.core.workpiece import WorkPiece
 
@@ -47,16 +47,16 @@ def test_group_layer_property():
     """
     # 1. Test with no parent
     group = Group("Orphan Group")
-    assert group.layer is None
+    assert group.setup is None
 
     # 2. Test with direct Layer parent
-    layer = Layer("Target Layer")
+    layer = Setup("Target Layer")
     group.parent = None  # Reset just in case
     layer.add_child(group)
 
-    assert group.layer is not None
-    assert group.layer is layer
-    assert group.layer.name == "Target Layer"
+    assert group.setup is not None
+    assert group.setup is layer
+    assert group.setup.name == "Target Layer"
 
     # 3. Test with nested Group (Layer -> OuterGroup -> InnerGroup)
     outer_group = Group("Outer Group")
@@ -68,16 +68,16 @@ def test_group_layer_property():
     layer.add_child(outer_group)
     outer_group.add_child(inner_group)
 
-    assert outer_group.layer is layer
-    assert inner_group.layer is layer
+    assert outer_group.setup is layer
+    assert inner_group.setup is layer
 
     # 4. Test that breaking the chain updates the property result
     layer.remove_child(outer_group)
 
     # outer_group is now orphaned, so inner_group (its child) should also
     # find no layer
-    assert outer_group.layer is None
-    assert inner_group.layer is None
+    assert outer_group.setup is None
+    assert inner_group.setup is None
 
 
 def test_group_add_and_remove_child(workpiece_factory):
@@ -104,7 +104,7 @@ def test_group_add_and_remove_child(workpiece_factory):
 
 def test_group_transformation_hierarchy(workpiece_factory):
     """Tests that world transforms are calculated correctly through groups."""
-    layer = Layer("Test Layer")
+    layer = Setup("Test Layer")
     group = Group()
     wp = workpiece_factory()
 
@@ -201,7 +201,7 @@ def test_signal_bubbling_on_add_child(workpiece_factory, mocker):
     """
     Verify that adding a child to a group bubbles the descendant_added signal.
     """
-    layer = Layer("L1")
+    layer = Setup("L1")
     group = Group("G1")
     wp = workpiece_factory("wp1")
     layer.add_child(group)
@@ -223,7 +223,7 @@ def test_signal_bubbling_on_add_child(workpiece_factory, mocker):
 
 def test_factory_with_empty_list():
     """Tests that the factory returns None for an empty item list."""
-    layer = Layer("test")
+    layer = Setup("test")
     result = Group.create_from_items([], layer)
     assert result is None
 
@@ -234,7 +234,7 @@ def test_factory_with_single_item(workpiece_factory):
     should match the item's, and the item's new local transform should
     be identity.
     """
-    layer = Layer("test")
+    layer = Setup("test")
     wp = workpiece_factory()
     wp.matrix = Matrix.translation(50, 60) @ Matrix.scale(2, 3)
     layer.add_child(wp)
@@ -259,7 +259,7 @@ def test_factory_preserves_world_transform(workpiece_factory):
     The most critical test: ensures that after grouping, the items'
     world transforms are perfectly preserved.
     """
-    layer = Layer("Test Layer")
+    layer = Setup("Test Layer")
     wp1 = workpiece_factory("wp1")
     wp2 = workpiece_factory("wp2")
 
@@ -293,7 +293,7 @@ def test_factory_with_nested_item(workpiece_factory):
     Tests that the factory correctly calculates transforms for an item
     that is already nested in another group.
     """
-    layer = Layer("Test Layer")
+    layer = Setup("Test Layer")
     existing_group = Group("Existing")
     wp = workpiece_factory()
 
@@ -362,7 +362,7 @@ def test_factory_ignores_stock_items(workpiece_factory, stock_item_factory):
     Tests that the group factory method ignores any StockItems in the list
     of items to be grouped.
     """
-    layer = Layer("Test Layer")
+    layer = Setup("Test Layer")
     wp1 = workpiece_factory("wp1")
     stock1 = stock_item_factory("stock1")
 
@@ -399,7 +399,7 @@ def test_factory_returns_none_if_only_stock_items(stock_item_factory):
     Tests that the group factory returns None if the only items to group are
     StockItems.
     """
-    layer = Layer("Test Layer")
+    layer = Setup("Test Layer")
     stock1 = stock_item_factory("stock1")
     stock2 = stock_item_factory("stock2")
     layer.add_child(stock1)

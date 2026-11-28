@@ -118,12 +118,12 @@ class StressTestController:
     def capture_metrics(self) -> MetricsSnapshot:
         """Capture current pipeline state."""
         workpiece_count = sum(
-            1 for wp in self.doc.all_workpieces if wp.layer is not None
+            1 for wp in self.doc.all_workpieces if wp.setup is not None
         )
         step_count = sum(
-            len(layer.workflow.steps)
-            for layer in self.doc.layers
-            if layer.workflow is not None
+            len(layer.workflows[0].steps)
+            for layer in self.doc.setups
+            if layer.workflows[0] is not None
         )
 
         return MetricsSnapshot(
@@ -202,16 +202,16 @@ class StressTestController:
     def _get_available_steps(self) -> list:
         """Get all available steps in the document."""
         steps = []
-        for layer in self.doc.layers:
-            if layer.workflow:
-                steps.extend(layer.workflow.steps)
+        for layer in self.doc.setups:
+            if layer.workflows[0]:
+                steps.extend(layer.workflows[0].steps)
         return steps
 
     async def _execute_invalidation(
         self, invalid_type: InvalidationType
     ) -> None:
         """Execute a single invalidation operation."""
-        layer = self.doc.active_layer
+        layer = self.doc.active_setup
 
         if invalid_type == InvalidationType.ADD_WORKPIECE:
             if len(self._workpieces) < self.config.max_workpieces:
@@ -226,7 +226,7 @@ class StressTestController:
         elif invalid_type == InvalidationType.REMOVE_WORKPIECE:
             if len(self._workpieces) > 1:
                 wp = random.choice(self._workpieces)
-                wp_layer = wp.layer
+                wp_layer = wp.setup
                 if wp_layer:
                     wp_layer.remove_workpiece(wp)
                 self._workpieces.remove(wp)
@@ -236,7 +236,7 @@ class StressTestController:
                 )
 
         elif invalid_type == InvalidationType.ADD_STEP:
-            if layer.workflow and len(self._get_available_steps()) < 5:
+            if layer.workflows[0] and len(self._get_available_steps()) < 5:
                 step_type = random.choice(
                     [
                         self.contour_step_class.create,
@@ -244,15 +244,15 @@ class StressTestController:
                     ]
                 )
                 step = step_type(self.context)
-                layer.workflow.add_step(step)
+                layer.workflows[0].add_step(step)
                 logger.debug(f"Added step '{step.name}'")
 
         elif invalid_type == InvalidationType.REMOVE_STEP:
             steps = self._get_available_steps()
             if len(steps) > 1:
                 step = random.choice(steps)
-                if step.layer and step.layer.workflow:
-                    step.layer.workflow.remove_step(step)
+                if step.setup and step.setup.workflows[0]:
+                    step.setup.workflows[0].remove_step(step)
                     logger.debug(f"Removed step '{step.name}'")
 
         elif invalid_type == InvalidationType.UPDATE_STEP_POWER:
@@ -476,12 +476,12 @@ class StressTestController:
 
         for i in range(self.config.initial_workpiece_count):
             wp = self._create_workpiece()
-            self.doc.active_layer.add_workpiece(wp)
+            self.doc.active_setup.add_workpiece(wp)
             self._workpieces.append(wp)
 
-        if self.doc.active_layer.workflow:
+        if self.doc.active_setup.workflows[0]:
             step = self.contour_step_class.create(self.context)
-            self.doc.active_layer.workflow.add_step(step)
+            self.doc.active_setup.workflows[0].add_step(step)
 
         await asyncio.sleep(0.5)
         settled = await self.wait_for_settle()
@@ -552,9 +552,9 @@ async def test_pipeline_stress_random_invalidations(
     3. No busy state corruption (is_busy reflects actual state)
     """
     doc = Doc()
-    layer = doc.active_layer
-    if layer.workflow:
-        layer.workflow.set_steps([])
+    layer = doc.active_setup
+    if layer.workflows[0]:
+        layer.workflows[0].set_steps([])
 
     pipeline = Pipeline(
         doc=doc,

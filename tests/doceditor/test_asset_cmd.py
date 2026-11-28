@@ -17,7 +17,7 @@ def test_rename_stock_asset(asset_cmd: AssetCmd):
     asset = StockAsset(name="Old Stock Name")
     item = StockItem(stock_asset_uid=asset.uid, name="Old Stock Name")
     doc.add_asset(asset)
-    doc.add_child(item)
+    doc.active_setup.add_child(item)
 
     new_name = "New Stock Name"
     asset_cmd.rename_asset(asset, new_name)
@@ -38,7 +38,7 @@ def test_delete_stock_asset_and_item(asset_cmd: AssetCmd):
     asset = StockAsset(name="Stock To Delete")
     item = StockItem(stock_asset_uid=asset.uid, name="Stock To Delete")
     doc.add_asset(asset)
-    doc.add_child(item)
+    doc.active_setup.add_child(item)
 
     assert len(doc.stock_assets) == 1
     assert len(doc.stock_items) == 1

@@ -63,7 +63,7 @@ def add_barcode(
         )
         transaction.execute(
             ListItemCommand(
-                owner_obj=doc.active_layer,
+                owner_obj=doc.active_setup,
                 item=workpiece,
                 undo_command="remove_child",
                 redo_command="add_child",

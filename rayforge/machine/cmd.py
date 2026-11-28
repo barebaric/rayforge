@@ -26,7 +26,7 @@ from .kinematic_mapping import KinematicMapping
 from .models.coordspace import MachineSpace
 
 if TYPE_CHECKING:
-    from ..core.layer import Layer
+    from ..core.setup import Setup
     from ..doceditor.editor import DocEditor
     from ..shared.tasker.task import Task
     from .models.laser import Laser
@@ -280,7 +280,7 @@ class MachineCmd:
         frame_rect = _job_frame_rect(artifact.ops, include_overscan)
         frame_ops = _build_frame_trace(frame_rect, repeat_count)
 
-        # Apply the active layer's rotary mapping so the frame drives
+        # Apply the active setup's rotary mapping so the frame drives
         # the rotary axis instead of the physical Y axis (issue #356).
         # The regular send path applies this in the machine-transform
         # stage, but the frame ops are built on the fly and bypass the
@@ -289,7 +289,7 @@ class MachineCmd:
         rotary_module = _apply_frame_rotary_mapping(
             frame_ops,
             machine,
-            self._editor.doc.active_layer,
+            self._editor.doc.active_setup,
         )
 
         # Transform world-space frame ops to machine space, then to
@@ -388,10 +388,15 @@ class MachineCmd:
         final_job_action: Callable[..., Coroutine],
         on_progress: Callable[[dict], None] | None = None,
         pointer_dry_run: bool = False,
+        setup_uids: list[str] | None = None,
     ):
         """
         Generic, awaitable job executor that orchestrates artifact
         assembly and execution.
+
+        When *setup_uids* is given, the job is scoped to the workflows
+        of those setups; the filter is cleared again once the job has
+        run so the live preview rebuilds for the whole document.
         """
         handle: BaseArtifactHandle | None = None
         artifact_store = self._editor.pipeline.artifact_store
@@ -413,7 +418,9 @@ class MachineCmd:
                 pipeline.invalidate_job_output()
             try:
                 # 1. Await the job artifact generation from the pipeline
-                handle = await pipeline.generate_job_artifact_async()
+                handle = await pipeline.generate_job_artifact_async(
+                    setup_uids=setup_uids
+                )
             finally:
                 machine.pointer_job_shift_enabled = False
 
@@ -438,6 +445,10 @@ class MachineCmd:
                     pipeline.invalidate_job_output()
 
                 await final_job_action(artifact, machine, on_progress)
+                if setup_uids is not None:
+                    # The scoped artifact is fully consumed; drop the
+                    # filter so the live preview rebuilds unscoped.
+                    pipeline.set_setup_filter(None)
 
         except JobAlreadyRunningError:
             # Already logged as a warning by the guard; not an error.
@@ -491,6 +502,7 @@ class MachineCmd:
         machine: Machine,
         on_progress: Callable[[dict], None] | None = None,
         pointer_dry_run: bool = False,
+        setup_uids: list[str] | None = None,
     ):
         """
         Asynchronously generates ops and sends the job to the machine.
@@ -501,6 +513,9 @@ class MachineCmd:
         the toolpath while the beam runs displaced by the offset, and
         all laser power is capped at the head's framing power so the
         trace does not burn the material.
+
+        When *setup_uids* is given, only the workflows of those setups
+        are included in the job (multi-setup send flow).
         """
         try:
             await self._start_job(
@@ -511,6 +526,7 @@ class MachineCmd:
                 ),
                 on_progress=on_progress,
                 pointer_dry_run=pointer_dry_run,
+                setup_uids=setup_uids,
             )
         except JobAlreadyRunningError as e:
             # An expected refusal, not a failure: the guard's message
@@ -711,9 +727,9 @@ def _warn_if_frame_exceeds_travel(
 def _apply_frame_rotary_mapping(
     frame_ops: Ops,
     machine: Machine,
-    layer: Layer | None,
+    setup: Setup | None,
 ) -> RotaryModule | None:
-    """Apply *layer*'s rotary mapping to the world-space frame ops.
+    """Apply *setup*'s rotary mapping to the world-space frame ops.
 
     Converts the frame's Y movement into rotary degrees (stored in the
     rotary axis' ``extra_axes``) and pins Y to the cylinder axis
@@ -721,13 +737,13 @@ def _apply_frame_rotary_mapping(
     instead of driving the physical Y axis (issue #356).
 
     Returns the resolved rotary module when a valid one applies, or
-    ``None`` when the layer is flat or has no usable rotary module.  The
+    ``None`` when the setup is flat or has no usable rotary module.  The
     caller uses the returned module to run the AXIS_REPLACEMENT
     degrees→machine-units pass after the world→machine transform.
     """
-    if layer is None or not layer.rotary_enabled:
+    if setup is None or not setup.rotary_enabled:
         return None
-    module = machine.get_rotary_module_for_layer(layer)
+    module = machine.get_rotary_module_for_setup(setup)
     if module is None:
         return None
     # AXIS_REPLACEMENT modules can only map to a real machine axis when
@@ -739,7 +755,7 @@ def _apply_frame_rotary_mapping(
         return None
     mapping = KinematicMapping.from_rotary_module(
         module,
-        layer.rotary_diameter,
+        setup.rotary_diameter,
         apply_gear_ratio=True,
     )
     if mapping is not None:

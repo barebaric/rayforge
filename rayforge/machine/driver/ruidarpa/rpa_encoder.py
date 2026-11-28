@@ -29,7 +29,7 @@ from rayforge.pipeline.artifact.encoded import (
 
 if TYPE_CHECKING:
     from rayforge.core.doc import Doc
-    from rayforge.core.layer import Layer
+    from rayforge.core.workflow import Workflow
     from rayforge.machine.models.machine import Machine
 
 logger = logging.getLogger(__name__)
@@ -355,19 +355,20 @@ class RuidaRPAEncoder:
                 min_fraction * 100.0, power_fraction * 100.0
             )
 
-    def _find_layer(self, layer_uid: str) -> Layer | None:
-        """Look up a document layer by uid, or None when unknown."""
+    def _find_workflow(self, workflow_uid: str) -> Workflow | None:
+        """Look up a document workflow by uid, or None when unknown."""
         if self.doc is None:
             return None
-        return next(
-            (layer for layer in self.doc.layers if layer.uid == layer_uid),
-            None,
-        )
+        for setup in self.doc.setups:
+            for workflow in setup.workflows:
+                if workflow.uid == workflow_uid:
+                    return workflow
+        return None
 
-    def _layer_settings(
-        self, layer: Layer | None
+    def _workflow_settings(
+        self, workflow: Workflow | None
     ) -> tuple[float, float, float]:
-        """Extract (speed_mms, frequency_khz, power_pct) for a layer.
+        """Extract (speed_mms, frequency_khz, power_pct) for a workflow.
 
         Reads the first workflow step, falling back to safe defaults. The
         raw power percent is passed through unchanged; GlueScript clamps
@@ -377,12 +378,8 @@ class RuidaRPAEncoder:
         speed_mms = _DEFAULT_LAYER_SPEED_MMS
         power_fraction = _DEFAULT_LAYER_POWER
         frequency_hz = _DEFAULT_LAYER_FREQUENCY_HZ
-        if (
-            layer is not None
-            and layer.workflow is not None
-            and layer.workflow.steps
-        ):
-            first_step = layer.workflow.steps[0]
+        if workflow is not None and workflow.steps:
+            first_step = workflow.steps[0]
             # cut_speed is stored in mm/min; GlueScript expects mm/s.
             speed_mms = float(first_step.cut_speed) / 60.0
             if isinstance(first_step, _LaserProcessStep):
@@ -407,34 +404,30 @@ class RuidaRPAEncoder:
         )
         return speed_mms, frequency_khz, power_pct
 
-    def _layer_min_power_fraction(self, layer: Layer | None) -> float:
-        """Resolve the layer's min-power fraction for power compensation.
+    def _workflow_min_power_fraction(self, workflow: Workflow | None) -> float:
+        """Resolve the workflow's min-power fraction for compensation.
 
         When the driver's ``power_floor_enabled`` toggle is off, the
         floor is ignored and 1.0 is returned so every emitted power
         range keeps min == max (constant power). When enabled, reads the
         first workflow step's min_power attribute when the step declares
-        one, falling back from step.extra to layer.extra and defaulting
-        to the configured power floor. The raw value is clamped once at
-        this boundary so a min below the floor or above 100% never
-        reaches GlueScript as a lower power bound.
+        one, falling back from step.extra to workflow.extra and
+        defaulting to the configured power floor. The raw value is
+        clamped once at this boundary so a min below the floor or above
+        100% never reaches GlueScript as a lower power bound.
         """
         if not self._power_floor_enabled:
             return 1.0
         min_fraction = self._power_floor
-        if (
-            layer is not None
-            and layer.workflow is not None
-            and layer.workflow.steps
-        ):
-            first_step = layer.workflow.steps[0]
+        if workflow is not None and workflow.steps:
+            first_step = workflow.steps[0]
             raw_min: float | None = None
             if isinstance(first_step, _HasMinPower):
                 raw_min = first_step.min_power
             if raw_min is None:
                 raw_min = first_step.extra.get("min_power", None)
             if raw_min is None:
-                raw_min = layer.extra.get("min_power", None)
+                raw_min = workflow.extra.get("min_power", None)
             if raw_min is not None:
                 min_fraction = float(raw_min)
         return min(max(min_fraction, self._power_floor), 1.0)
@@ -893,21 +886,21 @@ class RuidaRPAEncoder:
         wp_uid = ops.workpiece_uid(idx)
         self._gluescript.comment([f"# Workpiece Start uid={wp_uid}"])
 
-        layer = self._find_layer(layer_uid)
-        if layer is None:
+        workflow = self._find_workflow(layer_uid)
+        if workflow is None:
             raise ValueError(
-                f"Layer uid '{layer_uid}' was not found in the document — "
-                "the Ruida encoder requires a declared layer for every "
+                f"Workflow uid '{layer_uid}' was not found in the document "
+                "— the Ruida encoder requires a declared layer for every "
                 "workpiece"
             )
-        label = layer.name
-        color = layer.color
-        speed_mms, frequency_khz, power_pct = self._layer_settings(layer)
+        label = workflow.name
+        color = workflow.color
+        speed_mms, frequency_khz, power_pct = self._workflow_settings(workflow)
         layer_mode = self._compute_layer_mode(ops, idx)
         self._layer_mode = layer_mode
         overscan = self._compute_overscan(ops, idx, layer_mode)
         self._overscan = overscan
-        self._power_min_fraction = self._layer_min_power_fraction(layer)
+        self._power_min_fraction = self._workflow_min_power_fraction(workflow)
         if (
             layer_mode == "VECTOR"
             and overscan == "NONE"

@@ -44,9 +44,9 @@ class RightPanelMode(Enum):
         """Return a translatable label for this panel mode."""
         labels = {
             self.HIDDEN: _("Hidden"),
-            self.ACTIVE_LAYER: _("Active Layer Workflow"),
-            self.NON_EMPTY_LAYERS: _("All Non-Empty Layers"),
-            self.ALL_LAYERS: _("All Layers"),
+            self.ACTIVE_LAYER: _("Active Setup Workflows"),
+            self.NON_EMPTY_LAYERS: _("All Non-Empty Setups"),
+            self.ALL_LAYERS: _("All Workflows"),
         }
         return labels[self]
 

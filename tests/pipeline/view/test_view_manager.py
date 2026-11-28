@@ -310,11 +310,13 @@ def test_on_workpiece_artifact_ready_manages_handles(
     mock_workpiece = MagicMock()
     mock_workpiece.uid = wp_uid
 
+    mock_workflow = MagicMock()
+    mock_workflow.steps = [mock_step]
     mock_layer = MagicMock()
-    mock_layer.workflow.steps = [mock_step]
+    mock_layer.workflows = [mock_workflow]
     mock_doc = MagicMock()
     mock_doc.all_workpieces = [mock_workpiece]
-    mock_doc.layers = [mock_layer]
+    mock_doc.setups = [mock_layer]
     view_manager._pipeline.doc = mock_doc
 
     view_manager.on_workpiece_artifact_ready(
@@ -353,11 +355,13 @@ def test_on_workpiece_artifact_ready_releases_old_handle(
     mock_workpiece = MagicMock()
     mock_workpiece.uid = wp_uid
 
+    mock_workflow = MagicMock()
+    mock_workflow.steps = [mock_step]
     mock_layer = MagicMock()
-    mock_layer.workflow.steps = [mock_step]
+    mock_layer.workflows = [mock_workflow]
     mock_doc = MagicMock()
     mock_doc.all_workpieces = [mock_workpiece]
-    mock_doc.layers = [mock_layer]
+    mock_doc.setups = [mock_layer]
     view_manager._pipeline.doc = mock_doc
 
     view_manager.on_workpiece_artifact_ready(
@@ -389,11 +393,13 @@ def test_on_workpiece_artifact_ready_same_handle_no_signal(
     mock_workpiece = MagicMock()
     mock_workpiece.uid = wp_uid
 
+    mock_workflow = MagicMock()
+    mock_workflow.steps = [mock_step]
     mock_layer = MagicMock()
-    mock_layer.workflow.steps = [mock_step]
+    mock_layer.workflows = [mock_workflow]
     mock_doc = MagicMock()
     mock_doc.all_workpieces = [mock_workpiece]
-    mock_doc.layers = [mock_layer]
+    mock_doc.setups = [mock_layer]
     view_manager._pipeline.doc = mock_doc
 
     view_manager._source_artifact_handles[composite_id] = source_handle
@@ -429,11 +435,13 @@ def test_on_workpiece_artifact_ready_different_handle_emits_signal(
     mock_workpiece = MagicMock()
     mock_workpiece.uid = wp_uid
 
+    mock_workflow = MagicMock()
+    mock_workflow.steps = [mock_step]
     mock_layer = MagicMock()
-    mock_layer.workflow.steps = [mock_step]
+    mock_layer.workflows = [mock_workflow]
     mock_doc = MagicMock()
     mock_doc.all_workpieces = [mock_workpiece]
-    mock_doc.layers = [mock_layer]
+    mock_doc.setups = [mock_layer]
     view_manager._pipeline.doc = mock_doc
 
     old_handle = WorkPieceArtifactHandle(
@@ -550,11 +558,13 @@ def test_on_workpiece_artifact_ready_refcount_increased(
     mock_workpiece = MagicMock()
     mock_workpiece.uid = wp_uid
 
+    mock_workflow = MagicMock()
+    mock_workflow.steps = [mock_step]
     mock_layer = MagicMock()
-    mock_layer.workflow.steps = [mock_step]
+    mock_layer.workflows = [mock_workflow]
     mock_doc = MagicMock()
     mock_doc.all_workpieces = [mock_workpiece]
-    mock_doc.layers = [mock_layer]
+    mock_doc.setups = [mock_layer]
     # Bypass the property setter to avoid triggering a pipeline rebuild
     # on a mock doc (which would crash in intent_builder).
     real_view_manager._pipeline._doc = mock_doc
@@ -607,11 +617,13 @@ def test_on_workpiece_artifact_ready_releases_old_and_refcount_decreased(
     mock_workpiece = MagicMock()
     mock_workpiece.uid = wp_uid
 
+    mock_workflow = MagicMock()
+    mock_workflow.steps = [mock_step]
     mock_layer = MagicMock()
-    mock_layer.workflow.steps = [mock_step]
+    mock_layer.workflows = [mock_workflow]
     mock_doc = MagicMock()
     mock_doc.all_workpieces = [mock_workpiece]
-    mock_doc.layers = [mock_layer]
+    mock_doc.setups = [mock_layer]
     # Bypass the property setter to avoid triggering a pipeline rebuild
     # on a mock doc (which would crash in intent_builder).
     real_view_manager._pipeline._doc = mock_doc
@@ -887,11 +899,13 @@ def test_multiple_position_only_moves_no_signal(
     mock_workpiece = MagicMock()
     mock_workpiece.uid = wp_uid
 
+    mock_workflow = MagicMock()
+    mock_workflow.steps = [mock_step]
     mock_layer = MagicMock()
-    mock_layer.workflow.steps = [mock_step]
+    mock_layer.workflows = [mock_workflow]
     mock_doc = MagicMock()
     mock_doc.all_workpieces = [mock_workpiece]
-    mock_doc.layers = [mock_layer]
+    mock_doc.setups = [mock_layer]
     view_manager._pipeline.doc = mock_doc
 
     view_manager._source_artifact_handles[composite_id] = source_handle
@@ -929,11 +943,13 @@ def test_alternating_artifact_ready_signals(
     mock_workpiece = MagicMock()
     mock_workpiece.uid = wp_uid
 
+    mock_workflow = MagicMock()
+    mock_workflow.steps = [mock_step]
     mock_layer = MagicMock()
-    mock_layer.workflow.steps = [mock_step]
+    mock_layer.workflows = [mock_workflow]
     mock_doc = MagicMock()
     mock_doc.all_workpieces = [mock_workpiece]
-    mock_doc.layers = [mock_layer]
+    mock_doc.setups = [mock_layer]
     view_manager._pipeline.doc = mock_doc
 
     view_manager._current_view_context = context
@@ -1009,11 +1025,13 @@ def test_simulated_position_only_transform_changes(
     mock_workpiece = MagicMock()
     mock_workpiece.uid = wp_uid
 
+    mock_workflow = MagicMock()
+    mock_workflow.steps = [mock_step]
     mock_layer = MagicMock()
-    mock_layer.workflow.steps = [mock_step]
+    mock_layer.workflows = [mock_workflow]
     mock_doc = MagicMock()
     mock_doc.all_workpieces = [mock_workpiece]
-    mock_doc.layers = [mock_layer]
+    mock_doc.setups = [mock_layer]
     view_manager._pipeline.doc = mock_doc
 
     view_manager._current_view_context = context
@@ -1082,11 +1100,13 @@ def test_alternating_signal_debug(view_manager, mock_store, context, caplog):
     mock_workpiece = MagicMock()
     mock_workpiece.uid = wp_uid
 
+    mock_workflow = MagicMock()
+    mock_workflow.steps = [mock_step]
     mock_layer = MagicMock()
-    mock_layer.workflow.steps = [mock_step]
+    mock_layer.workflows = [mock_workflow]
     mock_doc = MagicMock()
     mock_doc.all_workpieces = [mock_workpiece]
-    mock_doc.layers = [mock_layer]
+    mock_doc.setups = [mock_layer]
     view_manager._pipeline.doc = mock_doc
 
     view_manager._current_view_context = context
@@ -1147,11 +1167,13 @@ def test_alternating_keys_cause_alternating_signals(
     mock_workpiece = MagicMock()
     mock_workpiece.uid = wp_uid
 
+    mock_workflow = MagicMock()
+    mock_workflow.steps = [mock_step]
     mock_layer = MagicMock()
-    mock_layer.workflow.steps = [mock_step]
+    mock_layer.workflows = [mock_workflow]
     mock_doc = MagicMock()
     mock_doc.all_workpieces = [mock_workpiece]
-    mock_doc.layers = [mock_layer]
+    mock_doc.setups = [mock_layer]
     view_manager._pipeline.doc = mock_doc
 
     view_manager._current_view_context = context

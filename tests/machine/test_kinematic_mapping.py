@@ -11,8 +11,8 @@ from rayforge.core.doc import Doc
 from rayforge.machine.kinematic_mapping import (
     KinematicMapping,
     RotaryAxisConfig,
-    build_layer_assembly,
-    resolve_layer_rotary,
+    build_setup_assembly,
+    resolve_setup_rotary,
 )
 from rayforge.machine.models.machine import Machine
 from rayforge.machine.models.rotary_module import (
@@ -377,7 +377,7 @@ class TestResolveLayerRotary:
         machine.add_rotary_module(default)
 
         doc = Doc()
-        layer = doc.active_layer
+        layer = doc.active_setup
         layer.uid = "test"
         layer.set_rotary_enabled(enabled)
         if uid_state == "direct":
@@ -387,10 +387,10 @@ class TestResolveLayerRotary:
             machine.set_default_rotary_module_uid(default.uid)
         elif uid_state == "default":
             machine.set_default_rotary_module_uid(default.uid)
-        module = machine.get_rotary_module_for_layer(layer)
+        module = machine.get_rotary_module_for_setup(layer)
         expected = self._expected(enabled, module, mode, axis)
 
-        cfg = resolve_layer_rotary(layer, machine)
+        cfg = resolve_setup_rotary(layer, machine)
         assert cfg == expected
 
         ops = self._make_ops(layer.uid)
@@ -417,61 +417,61 @@ class TestResolveLayerRotary:
         machine.add_rotary_module(rm)
 
         doc = Doc()
-        doc.active_layer.uid = "test"
-        doc.active_layer.set_rotary_enabled(True)
-        doc.active_layer.set_rotary_module_uid(rm.uid)
+        doc.active_setup.uid = "test"
+        doc.active_setup.set_rotary_enabled(True)
+        doc.active_setup.set_rotary_module_uid(rm.uid)
 
-        ops = self._make_ops(doc.active_layer.uid)
+        ops = self._make_ops(doc.active_setup.uid)
         player = OpPlayer(ops, machine, doc)
         player.seek(ops.len() - 1)
-        cfg = resolve_layer_rotary(doc.active_layer, machine)
+        cfg = resolve_setup_rotary(doc.active_setup, machine)
         assert player._source_axis == cfg.source_axis
         assert player._rotary_axis == cfg.rotary_axis
         assert player._rotary_axis == Axis.A
 
     def test_resolver_none_for_unknown_uid(self):
         machine = self._make_machine()
-        layer = Doc().active_layer
+        layer = Doc().active_setup
         layer.uid = "test"
         layer.set_rotary_enabled(True)
         layer.set_rotary_module_uid("ghost-uid")
 
-        cfg = resolve_layer_rotary(layer, machine)
+        cfg = resolve_setup_rotary(layer, machine)
         assert cfg == RotaryAxisConfig(Axis.Y, None, None)
 
 
-class TestBuildLayerAssembly:
+class TestBuildSetupAssembly:
     def _make_machine(self) -> Machine:
         return Machine(RayforgeContext())
 
-    def test_flat_layer_builds_flat_assembly(self):
+    def test_flat_setup_builds_flat_assembly(self):
         machine = self._make_machine()
-        layer = Doc().active_layer
-        assembly = build_layer_assembly(machine, layer)
+        layer = Doc().active_setup
+        assembly = build_setup_assembly(machine, layer)
         assert not assembly.has_rotary
-        assert not machine._layer_configured
+        assert not machine._setup_configured
 
-    def test_rotary_layer_mounts_rotary_module(self):
+    def test_rotary_setup_mounts_rotary_module(self):
         machine = self._make_machine()
         rm = RotaryModule()
         rm.set_mode(RotaryMode.TRUE_4TH_AXIS)
         rm.set_axis(Axis.A)
         machine.add_rotary_module(rm)
 
-        layer = Doc().active_layer
+        layer = Doc().active_setup
         layer.uid = "test"
         layer.set_rotary_enabled(True)
         layer.set_rotary_module_uid(rm.uid)
 
-        assembly = build_layer_assembly(machine, layer)
+        assembly = build_setup_assembly(machine, layer)
         assert assembly.has_rotary
-        assert not machine._layer_configured
+        assert not machine._setup_configured
 
-    def test_none_layer_builds_flat_assembly(self):
+    def test_none_setup_builds_flat_assembly(self):
         machine = self._make_machine()
-        assembly = build_layer_assembly(machine, None)
+        assembly = build_setup_assembly(machine, None)
         assert not assembly.has_rotary
-        assert not machine._layer_configured
+        assert not machine._setup_configured
 
 
 class TestApplyToJobOps:
@@ -505,7 +505,7 @@ class TestApplyToJobOps:
         machine.add_rotary_module(rm)
 
         doc = Doc()
-        layer = doc.active_layer
+        layer = doc.active_setup
         layer.uid = "test"
 
         ops = self._make_ops(layer.uid)
@@ -518,7 +518,7 @@ class TestApplyToJobOps:
     def test_no_rotary_modules_skips(self, monkeypatch):
         machine = self._make_machine()
         doc = Doc()
-        layer = doc.active_layer
+        layer = doc.active_setup
         layer.uid = "test"
         layer.set_rotary_enabled(True)
 
@@ -537,7 +537,7 @@ class TestApplyToJobOps:
         machine.add_rotary_module(rm)
 
         doc = Doc()
-        layer = doc.active_layer
+        layer = doc.active_setup
         layer.uid = "test"
         layer.set_rotary_enabled(True)
         layer.set_rotary_module_uid(rm.uid)
@@ -558,7 +558,7 @@ class TestApplyToJobOps:
         machine.add_rotary_module(rm)
 
         doc = Doc()
-        layer = doc.active_layer
+        layer = doc.active_setup
         layer.uid = "test"
         layer.set_rotary_enabled(True)
         layer.set_rotary_module_uid(rm.uid)

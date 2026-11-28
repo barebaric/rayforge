@@ -42,7 +42,7 @@ if TYPE_CHECKING:
     from ..image.base_renderer import Renderer, RenderSpecification
     from ..image.structures import FillRenderData
     from .asset import IAsset
-    from .layer import Layer
+    from .setup import Setup
     from .source_asset import SourceAsset
 
 
@@ -780,12 +780,12 @@ class WorkPiece(VisibleMixin):
             self.updated.send(self)
 
     @property
-    def layer(self) -> Layer | None:
-        """Traverses the hierarchy to find the parent Layer."""
-        from .layer import Layer  # Local import to avoid circular dependency
+    def setup(self) -> Setup | None:
+        """Traverses the hierarchy to find the parent Setup."""
+        from .setup import Setup  # Local import to avoid circular dependency
 
-        ancestor = self.get_ancestor_by_type(Layer)
-        return ancestor if isinstance(ancestor, Layer) else None
+        ancestor = self.get_ancestor_by_type(Setup)
+        return ancestor if isinstance(ancestor, Setup) else None
 
     def in_world(self) -> WorkPiece:
         """

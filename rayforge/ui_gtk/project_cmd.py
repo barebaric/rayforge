@@ -87,15 +87,15 @@ class ProjectCmd:
 
         machine = self._editor.context.machine
         if machine:
-            new_doc.active_layer.set_rotary_enabled(
+            new_doc.active_setup.set_rotary_enabled(
                 machine.rotary_enabled_default
             )
             default_rm = machine.get_default_rotary_module()
             if default_rm:
-                new_doc.active_layer.set_rotary_diameter(
+                new_doc.active_setup.set_rotary_diameter(
                     default_rm.default_diameter
                 )
-                new_doc.active_layer.set_rotary_module_uid(default_rm.uid)
+                new_doc.active_setup.set_rotary_module_uid(default_rm.uid)
 
         self._editor.set_doc(new_doc)
         self._editor.set_file_path(None)

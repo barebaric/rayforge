@@ -12,7 +12,7 @@ from raygeo.geo.types import Rect
 from ...context import get_context
 from ...core.group import Group
 from ...core.item import DocItem
-from ...core.layer import Layer
+from ...core.setup import Setup
 from ...core.stock import StockItem
 from ...core.workpiece import WorkPiece
 from ...machine.models.machine_panel import PanelOrientation
@@ -83,7 +83,7 @@ class LayoutStrategy(ABC):
         items_to_measure = []
         if isinstance(item, WorkPiece):
             items_to_measure.append(item)
-        elif isinstance(item, (Group, Layer)):
+        elif isinstance(item, (Group, Setup)):
             items_to_measure.extend(item.get_descendants(of_type=WorkPiece))
         elif isinstance(item, StockItem):
             items_to_measure.append(item)

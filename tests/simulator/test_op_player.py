@@ -9,7 +9,7 @@ from rayforge.context import RayforgeContext
 from rayforge.core.doc import Doc
 from rayforge.machine.kinematic_mapping import (
     KinematicMapping,
-    build_layer_assembly,
+    build_setup_assembly,
 )
 from rayforge.machine.models.machine import Machine
 from rayforge.machine.models.rotary_module import RotaryMode, RotaryModule
@@ -381,9 +381,9 @@ def test_replacement_mode_no_rotary_mapping():
     ops.line_to(10, 20, 0)
 
     doc = Doc()
-    doc.active_layer.uid = "test"
-    doc.active_layer.set_rotary_enabled(True)
-    doc.active_layer.set_rotary_module_uid(rm.uid)
+    doc.active_setup.uid = "test"
+    doc.active_setup.set_rotary_enabled(True)
+    doc.active_setup.set_rotary_module_uid(rm.uid)
 
     player = OpPlayer(ops, machine, doc)
     player.seek(ops.len() - 1)
@@ -412,9 +412,9 @@ def test_true_4th_axis_copies_to_rotary():
     mapping.apply(ops)
 
     doc = Doc()
-    doc.active_layer.uid = "test"
-    doc.active_layer.set_rotary_enabled(True)
-    doc.active_layer.set_rotary_module_uid(rm.uid)
+    doc.active_setup.uid = "test"
+    doc.active_setup.set_rotary_enabled(True)
+    doc.active_setup.set_rotary_module_uid(rm.uid)
 
     player = OpPlayer(ops, machine, doc)
     player.seek(ops.len() - 1)
@@ -429,9 +429,9 @@ def _make_rotary_doc(uid, machine):
     rm.default_diameter = 40.0
     machine.add_rotary_module(rm)
     doc = Doc()
-    doc.active_layer.uid = uid
-    doc.active_layer.set_rotary_enabled(True)
-    doc.active_layer.set_rotary_module_uid(rm.uid)
+    doc.active_setup.uid = uid
+    doc.active_setup.set_rotary_enabled(True)
+    doc.active_setup.set_rotary_module_uid(rm.uid)
     return doc
 
 
@@ -467,7 +467,7 @@ def test_seek_preamble_effective_layer_is_first_layer():
 
     player = OpPlayer(ops, machine, doc)
     player.seek(0)
-    assert player.get_effective_layer(doc) is doc.layers[0]
+    assert player.get_effective_setup(doc) is doc.setups[0]
 
 
 def test_seek_flat_layer_builds_flat_assembly():
@@ -475,7 +475,7 @@ def test_seek_flat_layer_builds_flat_assembly():
     rm = RotaryModule()
     machine.add_rotary_module(rm)
     doc = Doc()
-    doc.active_layer.uid = "test"
+    doc.active_setup.uid = "test"
 
     ops = Ops()
     ops.move_to(0, 0, 0)
@@ -484,9 +484,9 @@ def test_seek_flat_layer_builds_flat_assembly():
 
     player = OpPlayer(ops, machine, doc)
     player.seek(ops.len() - 1)
-    assembly = build_layer_assembly(machine, player.get_effective_layer(doc))
+    assembly = build_setup_assembly(machine, player.get_effective_setup(doc))
     assert not assembly.has_rotary
-    assert not machine._layer_configured
+    assert not machine._setup_configured
 
 
 def _make_long_ops(n=1000):
@@ -749,10 +749,10 @@ def _make_replacement_player():
     mapping.apply(ops)
 
     doc = Doc()
-    doc.active_layer.uid = "test"
-    doc.active_layer.set_rotary_enabled(True)
-    doc.active_layer.set_rotary_diameter(diameter)
-    doc.active_layer.set_rotary_module_uid(rm.uid)
+    doc.active_setup.uid = "test"
+    doc.active_setup.set_rotary_enabled(True)
+    doc.active_setup.set_rotary_diameter(diameter)
+    doc.active_setup.set_rotary_module_uid(rm.uid)
 
     player = OpPlayer(ops, machine, doc)
     player.set_playback_params(600.0, 1200.0, 0.0)
@@ -865,10 +865,10 @@ def _make_rotary_arc_player():
     mapping.apply(ops)
 
     doc = Doc()
-    doc.active_layer.uid = "test"
-    doc.active_layer.set_rotary_enabled(True)
-    doc.active_layer.set_rotary_diameter(diameter)
-    doc.active_layer.set_rotary_module_uid(rm.uid)
+    doc.active_setup.uid = "test"
+    doc.active_setup.set_rotary_enabled(True)
+    doc.active_setup.set_rotary_diameter(diameter)
+    doc.active_setup.set_rotary_module_uid(rm.uid)
 
     player = OpPlayer(ops, machine, doc)
     player.set_playback_params(600.0, 3000.0, 0.0)
@@ -1070,10 +1070,10 @@ def _make_true4th_broken_frame_player():
     KinematicMapping(rotary_axis=Axis.A, diameter=40.0).apply(ops)
 
     doc = Doc()
-    doc.active_layer.uid = "test"
-    doc.active_layer.set_rotary_enabled(True)
-    doc.active_layer.set_rotary_diameter(40.0)
-    doc.active_layer.set_rotary_module_uid(rm.uid)
+    doc.active_setup.uid = "test"
+    doc.active_setup.set_rotary_enabled(True)
+    doc.active_setup.set_rotary_diameter(40.0)
+    doc.active_setup.set_rotary_module_uid(rm.uid)
 
     player = OpPlayer(
         ops, machine, doc, build_snapshots=False, time_ops=time_ops

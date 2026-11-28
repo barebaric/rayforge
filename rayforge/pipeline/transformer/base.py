@@ -32,7 +32,7 @@ class OpsTransformer(ABC):
     #: (applied to a layer's merged toolpath in machine space).
     #: Declared by addons; the layer settings render every registered
     #: transformer with this flag, unconditionally.
-    LAYER_APPLICABLE: ClassVar[bool] = False
+    WORKFLOW_APPLICABLE: ClassVar[bool] = False
 
     def __init__(self, enabled: bool = True, **kwargs):
         self._enabled = enabled

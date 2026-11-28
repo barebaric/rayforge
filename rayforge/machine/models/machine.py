@@ -19,8 +19,8 @@ from ...camera.models.camera import Camera
 from ...camera.v4l import migrate_camera_data
 from ...context import RayforgeContext, get_context
 from ...core.capability import MachineCapability
-from ...core.layer import Layer
 from ...core.model import Model
+from ...core.setup import Setup
 from ...shared.tasker import task_mgr
 from ...shared.units.system import UnitSystem
 from ..assembly import Assembly
@@ -286,13 +286,13 @@ class Machine:
         self._bed_mesh: BedMesh | None = None
         # Post processors applied to every job on this machine by
         # default (serialized transformer dicts, resolved via the
-        # transformer registry). Layers can override per transformer.
+        # transformer registry). Workflows can override per transformer.
         self.default_post_processors_dicts: list[dict[str, Any]] = []
 
         self._assembly: Assembly | None = None
         self._assembly_dirty: bool = True
         self._mounted_rotaries: list[RotaryModule] = []
-        self._layer_configured: bool = False
+        self._setup_configured: bool = False
 
     @property
     def controller(self) -> "MachineController":
@@ -526,15 +526,15 @@ class Machine:
     def invalidate_assembly(self):
         self._assembly_dirty = True
 
-    def configure_for_layer(self, layer: Optional["Layer"]) -> None:
+    def configure_for_setup(self, setup: Optional["Setup"]) -> None:
         required_rotaries: list[RotaryModule] = []
-        if layer and layer.rotary_enabled:
-            module = self.get_rotary_module_for_layer(layer)
+        if setup and setup.rotary_enabled:
+            module = self.get_rotary_module_for_setup(setup)
             if module:
                 required_rotaries.append(module)
         if self._assembly_needs_rebuild(required_rotaries):
             self._mounted_rotaries = required_rotaries
-            self._layer_configured = True
+            self._setup_configured = True
             self._assembly_dirty = True
 
     def _assembly_needs_rebuild(
@@ -574,7 +574,7 @@ class Machine:
     ) -> Assembly:
         """Build a throwaway assembly for the given rotary modules.
 
-        Unlike ``configure_for_layer`` + ``assembly``, this never mutates
+        Unlike ``configure_for_setup`` + ``assembly``, this never mutates
         machine state.  When *rotary_modules* is None or empty, a flat
         assembly (no rotary) is built.
         """
@@ -586,7 +586,7 @@ class Machine:
 
     def _build_assembly(self) -> Assembly:
         rotaries = self._mounted_rotaries
-        if not rotaries and not self._layer_configured and self.rotary_modules:
+        if not rotaries and not self._setup_configured and self.rotary_modules:
             rotaries = list(self.rotary_modules.values())[:1]
         rotary_modules_for_build: dict[str, RotaryModule] = {}
         if rotaries:
@@ -1527,22 +1527,22 @@ class Machine:
             )
         return None
 
-    def get_rotary_module_for_layer(
-        self, layer: "Layer"
+    def get_rotary_module_for_setup(
+        self, setup: "Setup"
     ) -> RotaryModule | None:
-        """Resolve the effective rotary module for *layer*.
+        """Resolve the effective rotary module for *setup*.
 
         Returns the module referenced by
-        :attr:`layer.rotary_module_uid` when it exists on this
-        machine.  When the layer has rotary enabled but its module
+        :attr:`setup.rotary_module_uid` when it exists on this
+        machine.  When the setup has rotary enabled but its module
         UID is missing or invalid, falls back to the machine's
         default module (or the first available module when no
         default is set) so that rotary mapping is still applied.
         """
-        if not layer.rotary_enabled:
+        if not setup.rotary_enabled:
             return None
-        if layer.rotary_module_uid:
-            module = self.rotary_modules.get(layer.rotary_module_uid)
+        if setup.rotary_module_uid:
+            module = self.rotary_modules.get(setup.rotary_module_uid)
             if module is not None:
                 return module
         default = self.get_default_rotary_module()
@@ -1552,10 +1552,10 @@ class Machine:
             return next(iter(self.rotary_modules.values()))
         return None
 
-    def get_rotary_axis_for_layer(self, layer: "Layer") -> Axis | None:
-        if not layer.rotary_enabled:
+    def get_rotary_axis_for_setup(self, setup: "Setup") -> Axis | None:
+        if not setup.rotary_enabled:
             return None
-        module = self.get_rotary_module_for_layer(layer)
+        module = self.get_rotary_module_for_setup(setup)
         return module.axis if module else None
 
     def remove_rotary_module(self, module: RotaryModule):

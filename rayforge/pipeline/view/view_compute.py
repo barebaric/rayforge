@@ -24,26 +24,26 @@ MAX_TOTAL_PIXELS = CAIRO_MAX_DIMENSION * CAIRO_MAX_DIMENSION
 def _resolve_color_set(
     render_context: RenderContext,
     laser_uid: str | None = None,
-    layer_uid: str | None = None,
+    workflow_uid: str | None = None,
 ) -> ColorSet:
     """
     Resolve the appropriate ColorSet based on the ops color mode.
 
     When ops_color_mode is OpsColorMode.LAYER, uses layer_color_sets
-    keyed by layer_uid.  Otherwise falls back to laser-specific or
+    keyed by workflow_uid.  Otherwise falls back to laser-specific or
     default colors.
     """
-    if render_context.ops_color_mode == OpsColorMode.LAYER and layer_uid:
-        if layer_uid in render_context.layer_color_sets:
+    if render_context.ops_color_mode == OpsColorMode.LAYER and workflow_uid:
+        if workflow_uid in render_context.layer_color_sets:
             logger.debug(
-                f"_resolve_color_set: using layer color for "
-                f"layer_uid={layer_uid}"
+                f"_resolve_color_set: using workflow color for "
+                f"workflow_uid={workflow_uid}"
             )
             return ColorSet.from_dict(
-                render_context.layer_color_sets[layer_uid]
+                render_context.layer_color_sets[workflow_uid]
             )
         logger.warning(
-            f"_resolve_color_set: layer_uid={layer_uid} "
+            f"_resolve_color_set: workflow_uid={workflow_uid} "
             f"not in layer_color_sets, falling back"
         )
     if laser_uid and laser_uid in render_context.laser_color_sets:
@@ -172,7 +172,7 @@ def render_workpiece_view_in_process(
     artifact: WorkPieceArtifact,
     render_context: RenderContext,
     laser_uid: str | None = None,
-    layer_uid: str | None = None,
+    workflow_uid: str | None = None,
 ) -> tuple[np.ndarray, Rect, tuple[float, float]] | None:
     """
     Render a WorkPieceArtifact into a view bitmap in-process.
@@ -185,7 +185,7 @@ def render_workpiece_view_in_process(
         artifact: The WorkPieceArtifact to render.
         render_context: The RenderContext containing rendering parameters.
         laser_uid: Optional laser UID for color lookup.
-        layer_uid: Optional layer UID for color lookup.
+        workflow_uid: Optional workflow UID for color lookup.
 
     Returns:
         ``(bitmap, bbox_mm, workpiece_size_mm)`` or ``None`` when
@@ -195,7 +195,7 @@ def render_workpiece_view_in_process(
     if not bbox or bbox[2] <= 1e-9 or bbox[3] <= 1e-9:
         return None
 
-    color_set = _resolve_color_set(render_context, laser_uid, layer_uid)
+    color_set = _resolve_color_set(render_context, laser_uid, workflow_uid)
 
     # Expand the content bbox by margin_px on each side so strokes
     # at the edge are not clipped.  The expanded bbox is what raygeo

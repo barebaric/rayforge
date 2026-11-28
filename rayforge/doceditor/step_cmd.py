@@ -5,6 +5,7 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
 from ..core.color_preset import get_color_preset_mgr
+from ..core.setup import Setup
 from ..core.step_registry import step_registry
 from ..core.undo import ChangePropertyCommand, DictItemCommand
 from ..core.vectorization_spec import LayerSource, PassthroughSpec
@@ -157,17 +158,19 @@ class StepCmd:
 
     def initialize_default_steps(self):
         """
-        Adds a default Contour step to the first layer if it has no steps.
+        Adds a default Contour step to the first setup's first workflow
+        if it has no steps.
 
-        Called on application startup or when a new empty document is created.
+        Called on application startup or when a new empty document is
+        created.
         """
         doc = self._doc
-        if not doc.layers:
+        if not doc.setups:
             return
 
-        first_layer = doc.layers[0]
-        workflow = first_layer.workflow
-        if not workflow or workflow.has_steps():
+        first_setup = doc.setups[0]
+        workflows = first_setup.workflows
+        if not workflows or workflows[0].has_steps():
             return
 
         contour_cls = step_registry.get("ContourStep")
@@ -176,41 +179,47 @@ class StepCmd:
 
         step = contour_cls.create(self._context)
         self.apply_best_recipe_to_step(step)
-        workflow.add_step(step)
+        workflows[0].add_step(step)
         logger.info(
             f"Added default '{step.typelabel}' step to "
-            f"layer '{first_layer.name}'."
+            f"workflow '{workflows[0].name}'."
         )
 
-    def add_default_steps_for_layers(self, layers):
+    def add_default_steps_for_workflows(self, workflows):
         """
-        Adds default steps to newly imported layers.
+        Adds default steps to newly created workflows.
 
-        For each layer:
-        - If it was imported from a color source whose color matches a
-          color rule, a step of the rule's step type is created. If that
-          step type is not registered (e.g. its addon was uninstalled),
-          it falls back to the default behavior below and logs a
-          warning.
-        - If workpieces have fills: add Contour + Engrave steps
-        - If workpieces have only unfilled vectors: add Contour only
+        For each workflow:
+        - If it operates on workpieces imported from a color source
+          whose color matches a color rule, a step of the rule's step
+          type is created. If that step type is not registered (e.g.
+          its addon was uninstalled), it falls back to the default
+          behavior below and logs a warning.
+        - If the workpieces have fills: add Contour + Engrave steps
+        - If the workpieces have only unfilled vectors: add Contour
+          only
         """
         contour_cls = step_registry.get("ContourStep")
         engrave_cls = step_registry.get("EngraveStep")
 
-        for layer in layers:
-            workflow = layer.workflow
-            if not workflow or workflow.has_steps():
+        for workflow in workflows:
+            if workflow.has_steps():
                 continue
+            setup = workflow.parent
+            workpieces = (
+                workflow.selected_workpieces(setup.all_workpieces)
+                if isinstance(setup, Setup)
+                else []
+            )
 
-            rule_cls = self._step_class_from_color_rule(layer)
+            rule_cls = self._step_class_from_color_rule(workflow, workpieces)
             if rule_cls is not None:
                 step = rule_cls.create(self._context)
                 self.apply_best_recipe_to_step(step)
                 workflow.add_step(step)
                 logger.info(
                     f"Added default '{step.typelabel}' step to "
-                    f"layer '{layer.name}' (color rule)."
+                    f"workflow '{workflow.name}' (color rule)."
                 )
                 continue
 
@@ -220,33 +229,37 @@ class StepCmd:
                 workflow.add_step(step)
                 logger.info(
                     f"Added default '{step.typelabel}' step to "
-                    f"layer '{layer.name}'."
+                    f"workflow '{workflow.name}'."
                 )
 
-            if layer.has_fills and engrave_cls:
+            has_fills = any(
+                wp.fills is not None and len(wp.fills) > 0 for wp in workpieces
+            )
+            if has_fills and engrave_cls:
                 step = engrave_cls.create(self._context)
                 self.apply_best_recipe_to_step(step)
                 workflow.add_step(step)
                 logger.info(
                     f"Added default '{step.typelabel}' step to "
-                    f"layer '{layer.name}' (has fills)."
+                    f"workflow '{workflow.name}' (has fills)."
                 )
 
-    def _step_class_from_color_rule(self, layer) -> type[Step] | None:
+    def _step_class_from_color_rule(
+        self, workflow, workpieces
+    ) -> type[Step] | None:
         """
-        Resolve the step class a color rule maps to for a layer.
+        Resolve the step class a color rule maps to for a workflow.
 
         Inspects each workpiece's source segment: for color-source
         imports the segment's ``layer_id`` is the resolved SVG color, so
-        the rule applies regardless of whether the workpiece was placed
-        on a fresh layer (which carries the color) or an existing one
-        (which does not). Returns the step class of the first matching
+        the rule applies regardless of which workflow the workpiece was
+        assigned to. Returns the step class of the first matching
         rule, or ``None`` when no rule applies. If a rule matches but
         its step type is no longer registered, a warning is logged and
         ``None`` is returned so the caller falls back to the default
         behavior.
         """
-        for workpiece in layer.all_workpieces:
+        for workpiece in workpieces:
             segment = workpiece.source_segment
             if segment is None:
                 continue
@@ -262,7 +275,8 @@ class StepCmd:
             preset = get_color_preset_mgr().get_preset(color)
             if preset is None:
                 logger.debug(
-                    f"No color rule for layer '{layer.name}' (color {color})."
+                    f"No color rule for workflow '{workflow.name}' "
+                    f"(color {color})."
                 )
                 continue
             cls = step_registry.get(preset.step_type)
@@ -270,7 +284,7 @@ class StepCmd:
                 logger.warning(
                     f"Step type '{preset.step_type}' from a color rule "
                     f"is not registered; falling back to default steps "
-                    f"for layer '{layer.name}'."
+                    f"for workflow '{workflow.name}'."
                 )
                 return None
             return cls

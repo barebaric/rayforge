@@ -532,7 +532,7 @@ class TestMachineCmdPointerDryRun:
         handle = pipeline.artifact_store.put(job_artifact, creator_tag="test")
         flags_during_generation = []
 
-        async def fake_generate():
+        async def fake_generate(setup_uids=None):
             flags_during_generation.append(machine.pointer_job_shift_enabled)
             return handle
 
@@ -573,7 +573,7 @@ class TestMachineCmdPointerDryRun:
         pipeline, invalidate_spy = pipeline_mocks
         handle = pipeline.artifact_store.put(job_artifact, creator_tag="test")
 
-        async def fake_generate():
+        async def fake_generate(setup_uids=None):
             return handle
 
         mocker.patch.object(
@@ -612,7 +612,7 @@ class TestMachineCmdPointerDryRun:
         pipeline, invalidate_spy = pipeline_mocks
         handle = pipeline.artifact_store.put(job_artifact, creator_tag="test")
 
-        async def fake_generate():
+        async def fake_generate(setup_uids=None):
             return handle
 
         mocker.patch.object(

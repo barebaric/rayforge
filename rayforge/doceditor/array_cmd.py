@@ -140,16 +140,16 @@ class ArrayCmd:
                     # The original selection occupies this cell.
                     continue
                 for item in top_level:
-                    layer = _get_item_layer(item)
-                    if layer is None:
+                    setup = _get_item_setup(item)
+                    if setup is None:
                         logger.warning(
-                            "Item '%s' has no layer; skipping.", item.name
+                            "Item '%s' has no setup; skipping.", item.name
                         )
                         continue
                     copy = self._make_copy_at_delta(item, delta)
                     _shift_variable_offsets(copy, index)
                     cmd = ListItemCommand(
-                        owner_obj=layer,
+                        owner_obj=setup,
                         item=copy,
                         undo_command="remove_child",
                         redo_command="add_child",
@@ -163,7 +163,7 @@ class ArrayCmd:
     def _make_copy_at_delta(item: DocItem, delta_world: Matrix) -> DocItem:
         """Duplicates ``item`` and applies a world-space delta to the copy.
 
-        The copy keeps the source item's parent layer, so the world
+        The copy keeps the source item's parent setup, so the world
         delta is converted back into the copy's local matrix relative
         to that unchanged parent.
         """
@@ -186,8 +186,8 @@ def _is_identity(matrix: Matrix) -> bool:
     return matrix.is_identity()
 
 
-def _get_item_layer(item: DocItem):
-    """Returns the layer owning ``item`` (WorkPiece or Group), or None."""
+def _get_item_setup(item: DocItem):
+    """Returns the setup owning ``item`` (WorkPiece or Group), or None."""
     if isinstance(item, (WorkPiece, Group)):
-        return item.layer
+        return item.setup
     return None

@@ -16,7 +16,6 @@ from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 from raygeo.geo import Matrix
 
 from ...context import get_context
-from ...core.layer import Layer
 from ...core.source_asset import SourceAsset
 from ...core.stock import StockItem
 from ...core.stock_asset import StockAsset
@@ -280,10 +279,6 @@ class DragDropCmd:
         for item in items:
             if isinstance(item, WorkPiece):
                 return item
-            if isinstance(item, Layer):
-                result = DragDropCmd._extract_first_workpiece(item.children)
-                if result:
-                    return result
         return None
 
     # --- Overlay & Helper Methods ---

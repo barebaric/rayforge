@@ -74,8 +74,7 @@ def _assert_golden(gcode: str, name: str):
 
 
 def _steps(layer):
-    assert layer.workflow is not None
-    return list(layer.workflow.steps)
+    return list(layer.workflows[0].steps)
 
 
 def _cut_moves(gcode: str) -> list[tuple[float, float]]:
@@ -135,15 +134,18 @@ async def test_each_test_gets_its_own_active_layer(
     doc_editor, machine, generator_id
 ):
     cmd = CalibrationCmd(doc_editor)
-    before = list(doc_editor.doc.layers)
+    before = list(doc_editor.doc.setups)
     record = cmd.create(generator_id)
 
     layer = _layer(doc_editor, record)
     assert layer not in before
-    assert doc_editor.doc.active_layer is layer
+    assert doc_editor.doc.active_setup is layer
     assert layer.name == cmd.generator(generator_id).title
     assert layer.stock_material_uid is not None
-    assert layer.color not in {other.color for other in before}
+    colors = {
+        workflow.color for setup in before for workflow in setup.workflows
+    }
+    assert all(workflow.color not in colors for workflow in layer.workflows)
     assert record in _records(doc_editor)
     assert record.hidden
 
@@ -171,9 +173,9 @@ async def test_create_is_centered_and_one_undo_step(
     doc_editor, machine, generator_id
 ):
     cmd = CalibrationCmd(doc_editor)
-    layers_before = list(doc_editor.doc.layers)
+    layers_before = list(doc_editor.doc.setups)
     assets_before = set(doc_editor.doc.assets)
-    active_before = doc_editor.doc.active_layer
+    active_before = doc_editor.doc.active_setup
     record = cmd.create(generator_id)
     layer = _layer(doc_editor, record)
 
@@ -182,12 +184,12 @@ async def test_create_is_centered_and_one_undo_step(
     assert center == pytest.approx((200.0, 200.0), abs=0.01)
 
     doc_editor.history_manager.undo()
-    assert list(doc_editor.doc.layers) == layers_before
+    assert list(doc_editor.doc.setups) == layers_before
     assert set(doc_editor.doc.assets) == assets_before
-    assert doc_editor.doc.active_layer is active_before
+    assert doc_editor.doc.active_setup is active_before
 
     doc_editor.history_manager.redo()
-    assert layer in doc_editor.doc.layers
+    assert layer in doc_editor.doc.setups
     assert record in _records(doc_editor)
 
 
@@ -249,10 +251,10 @@ async def test_create_needs_a_machine(doc_editor, machine, mocker):
     mocker.patch.object(
         type(doc_editor.context), "machine", new_callable=mocker.PropertyMock
     ).return_value = None
-    layers = list(doc_editor.doc.layers)
+    layers = list(doc_editor.doc.setups)
     with pytest.raises(ValueError):
         CalibrationCmd(doc_editor).create("interval_test")
-    assert list(doc_editor.doc.layers) == layers
+    assert list(doc_editor.doc.setups) == layers
 
 
 @pytest.mark.asyncio
@@ -285,7 +287,7 @@ async def test_update_keeps_steps_the_user_added(doc_editor, machine):
     layer = _layer(doc_editor, record)
     extra = _steps(layer)[0].__class__.create(doc_editor.context)
     extra.name = "Cut out"
-    layer.workflow.add_step(extra)
+    layer.workflows[0].add_step(extra)
 
     params = record.params
     params["count"] = 4
@@ -302,7 +304,7 @@ async def test_update_keeps_a_user_step_between_the_cells(doc_editor, machine):
     record = cmd.create("interval_test", {"count": 2})
     layer = _layer(doc_editor, record)
     extra = _steps(layer)[0].__class__.create(doc_editor.context)
-    layer.workflow.add_child(extra, index=2)
+    layer.workflows[0].add_child(extra, index=2)
 
     cmd.update_params(record, {**record.params, "count": 3})
 
@@ -419,7 +421,7 @@ async def test_deleting_the_layer_removes_the_record(doc_editor, machine):
     owned = {record.uid, *record.state.asset_uids}
     assert owned <= set(doc_editor.doc.assets)
 
-    doc_editor.layer.delete_layer(_layer(doc_editor, record))
+    doc_editor.setup.delete_setup(_layer(doc_editor, record))
 
     assert owned.isdisjoint(doc_editor.doc.assets)
     saved = doc_editor.doc.to_dict()["assets"]
@@ -442,10 +444,10 @@ async def test_deleting_the_layer_keeps_assets_a_moved_cell_uses(
     cmd = CalibrationCmd(doc_editor)
     record = cmd.create("interval_test", {"count": 2})
     moved = cmd.workpieces(record)[-1]
-    other = doc_editor.doc.layers[0]
+    other = doc_editor.doc.setups[0]
     other.add_child(moved)
 
-    doc_editor.layer.delete_layer(_layer(doc_editor, record))
+    doc_editor.setup.delete_setup(_layer(doc_editor, record))
 
     assert moved.source is not None
     assert record.uid not in doc_editor.doc.assets
@@ -474,7 +476,7 @@ async def test_sync_follows_a_new_document(doc_editor, machine):
     old_doc = doc_editor.doc
     doc_editor.set_doc(type(old_doc)())
     record = CalibrationCmd(doc_editor).create("interval_test")
-    doc_editor.layer.delete_layer(_layer(doc_editor, record))
+    doc_editor.setup.delete_setup(_layer(doc_editor, record))
     assert record.uid not in doc_editor.doc.assets
     assert sync is not None
 
@@ -488,9 +490,9 @@ async def test_sync_ignores_other_changes(doc_editor, machine):
     record = cmd.create("material_test_grid")
     assets = set(doc_editor.doc.assets)
     (wp,) = cmd.workpieces(record)
-    other = doc_editor.doc.layers[0]
+    other = doc_editor.doc.setups[0]
 
-    doc_editor.layer.delete_layer(other)
+    doc_editor.setup.delete_setup(other)
     _layer(doc_editor, record).remove_child(wp)
     assert set(doc_editor.doc.assets) == assets
 
@@ -613,8 +615,8 @@ def _old_style_grid(editor, grid_params):
     step.workpiece_uids = [wp.uid]
     width, height = wp.size
     wp.pos = (200 - width / 2, 200 - height / 2)
-    layer = editor.doc.active_layer
-    layer.workflow.add_step(step)
+    layer = editor.doc.active_setup
+    layer.workflows[0].add_step(step)
     layer.add_child(wp)
 
 

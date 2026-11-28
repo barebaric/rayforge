@@ -12,19 +12,20 @@ from .stock import StockElement
 from .workpiece import WorkPieceElement
 
 if TYPE_CHECKING:
-    from ....core.layer import Layer
+    from ....core.setup import Setup
 
 
 logger = logging.getLogger(__name__)
 
 
-class LayerElement(CanvasElement):
+class SetupElement(CanvasElement):
     """
-    A non-selectable container that corresponds to a Layer model.
-    It creates and manages child elements for WorkPieces, Groups, and Steps.
+    A non-selectable container that corresponds to the active Setup
+    model. It creates and manages child elements for WorkPieces,
+    Groups, StockItems, and the steps of all its workflows.
     """
 
-    def __init__(self, layer: "Layer", **kwargs):
+    def __init__(self, setup: "Setup", **kwargs):
         super().__init__(
             x=0,
             y=0,
@@ -33,10 +34,10 @@ class LayerElement(CanvasElement):
             selectable=False,
             background=(0, 0, 0, 0),
             clip=False,
-            data=layer,
+            data=setup,
             **kwargs,
         )
-        self.data: Layer = layer
+        self.data: Setup = setup
         self.data.updated.connect(self.sync_with_model)
         self.data.descendant_added.connect(self.sync_with_model)
         self.data.descendant_removed.connect(self.sync_with_model)
@@ -91,23 +92,15 @@ class LayerElement(CanvasElement):
         parent_of_origin: DocItem | None = None,
     ):
         """
-        Reconciles all child elements with the state of the Layer model.
+        Reconciles all child elements with the state of the Setup model.
         """
         if not self.data or not self.canvas:
             return
 
         logger.debug(
-            f"LayerElement for '{self.data.name}': sync_with_model is"
+            f"SetupElement for '{self.data.name}': sync_with_model is"
             f" executing, called by {origin or sender}."
         )
-        self.set_visible(self.data.visible)
-
-        # Keep child selectability in sync with the layer's visibility.
-        # Elements created while the layer was hidden must become selectable
-        # again once the layer is shown, and vice versa.
-        for child in self.children:
-            if isinstance(child, (WorkPieceElement, GroupElement)):
-                child.selectable = self.data.visible
         from ..surface import WorkSurface
 
         work_surface = cast(WorkSurface, self.canvas)
@@ -124,13 +117,13 @@ class LayerElement(CanvasElement):
             if isinstance(elem, (WorkPieceElement, GroupElement, StockElement))
         ]
 
-        # Remove elements for items no longer in the layer
+        # Remove elements for items no longer in the setup
         for elem in current_visual_elements[:]:
             if elem.data not in model_items:
                 logger.debug(f"Removing visual element: {elem}")
                 elem.remove()
 
-        # Add elements for new items in the layer.
+        # Add elements for new items in the setup.
         current_item_data = {elem.data for elem in self.children}
         items_to_add = model_items - current_item_data
         for item_data in items_to_add:
@@ -140,7 +133,7 @@ class LayerElement(CanvasElement):
                     workpiece=item_data,
                     view_manager=work_surface.editor.view_manager,
                     canvas=self.canvas,
-                    selectable=self.data.visible,
+                    selectable=True,
                 )
                 new_elem.set_base_image_visible(
                     work_surface.are_workpieces_visible()
@@ -149,24 +142,23 @@ class LayerElement(CanvasElement):
                 new_elem = GroupElement(
                     group=item_data,
                     canvas=self.canvas,
-                    selectable=self.data.visible,
+                    selectable=True,
                 )
             elif isinstance(item_data, StockItem):
                 new_elem = StockElement(
                     stock_item=item_data,
                     canvas=self.canvas,
                     # Stock is potentially selectable, but its get_elem_hit
-                    # method will make the final decision based on layer state.
+                    # method will make the final decision based on setup
+                    # state.
                     selectable=True,
                 )
 
             if new_elem:
                 self.add(new_elem)
 
-        if self.data.workflow is None:
-            return  # layers without workflow
-
-        # Reconcile StepElements (Lifecycle Managers)
+        # Reconcile StepElements (Lifecycle Managers) across all the
+        # setup's workflows.
         current_step_elements = [
             elem for elem in self.children if isinstance(elem, StepElement)
         ]
@@ -175,18 +167,20 @@ class LayerElement(CanvasElement):
             for elem in self.children
             if isinstance(elem, WorkPieceElement)
         ]
-        model_steps = set(self.data.workflow.steps)
+        model_steps = {
+            step for workflow in self.data.workflows for step in workflow.steps
+        }
 
         # Remove StepElements for steps that are no longer in the model
         for elem in current_step_elements:
             if elem.data not in model_steps:
                 removed_step_uid = elem.data.uid
                 logger.debug(
-                    "LayerElement detected removal of step "
+                    "SetupElement detected removal of step "
                     f"'{elem.data.name}'. "
                     f"Cleaning up visuals for UID {removed_step_uid}."
                 )
-                # Instruct all workpiece views in this layer to clear the
+                # Instruct all workpiece views in this setup to clear the
                 # surface
                 for wp_view in workpiece_views:
                     wp_view.clear_ops_surface(removed_step_uid)

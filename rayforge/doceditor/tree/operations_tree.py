@@ -76,14 +76,19 @@ class OperationsTree(Gtk.Box):
             self._tree.show([])
             return
         rows: list[Gtk.Widget] = []
-        for layer in self._doc.layers:
+        workflows = [
+            workflow
+            for setup in self._doc.setups
+            for workflow in setup.workflows
+        ]
+        for workflow in workflows:
             rows.extend(
                 WorkflowNode.build_rows(
-                    layer, 0, self._expanded, self._selected, self
+                    workflow, 0, self._expanded, self._selected, self
                 )
             )
         self._tree.show(rows, tail=self._bar)
-        self._bar.set_workflows(self._doc.layers)
+        self._bar.set_workflows(workflows)
 
     def on_row_activated(self, spec):
         self._selected = {spec.uid}

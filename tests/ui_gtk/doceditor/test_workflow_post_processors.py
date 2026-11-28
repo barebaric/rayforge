@@ -1,12 +1,12 @@
-"""UI tests for the layer post processor settings group."""
+"""UI tests for the workflow post processor settings group."""
 
 import pytest
 from gi.repository import Adw
 
-from rayforge.core.layer import Layer
+from rayforge.core.setup import Setup
 from rayforge.machine.models.machine import Machine
-from rayforge.ui_gtk.doceditor.layer_post_processors import (
-    LayerPostProcessorGroup,
+from rayforge.ui_gtk.doceditor.workflow_post_processors import (
+    WorkflowPostProcessorGroup,
 )
 
 MESH_NAME = "MeshCorrectionTransformer"
@@ -57,15 +57,15 @@ def test_renders_unconditionally_without_mesh(ui_context_initializer):
     """The transformer renders even with nothing probed; the addon
     widget reports the missing mesh in its description."""
     _make_machine()
-    layer = Layer(name="l")
-    group = LayerPostProcessorGroup(layer, editor=None)
+    workflow = Setup(name="l").workflows[0]
+    group = WorkflowPostProcessorGroup(workflow, editor=None)
 
     expander = _mesh_group(group)
     assert expander.get_title() == "Bed Mesh Correction"
     assert "No bed mesh has been probed" in (
         _mesh_widget(group).get_description() or ""
     )
-    assert layer.post_processors_dicts == []
+    assert workflow.post_processors_dicts == []
 
 
 @pytest.mark.ui
@@ -78,15 +78,15 @@ def test_follows_machine_default_and_claims_on_edit(
         {"name": MESH_NAME, "enabled": True}
     ]
 
-    layer = Layer(name="l")
-    group = LayerPostProcessorGroup(layer, editor=None)
+    workflow = Setup(name="l").workflows[0]
+    group = WorkflowPostProcessorGroup(workflow, editor=None)
     assert _mesh_group(group).get_subtitle() == "Follows the machine default"
-    assert layer.post_processors_dicts == []
+    assert workflow.post_processors_dicts == []
 
     _mesh_widget(group).param_changed.send(
         _mesh_widget(group), key="enabled", value=False, name="test"
     )
-    assert layer.post_processors_dicts == [
+    assert workflow.post_processors_dicts == [
         {"name": MESH_NAME, "enabled": False}
     ]
     _cls, owned, _source = next(iter(group._group_dicts.values()))
@@ -97,31 +97,31 @@ def test_follows_machine_default_and_claims_on_edit(
 def test_owned_entry_edits_in_place(ui_context_initializer):
     machine = _make_machine()
     _make_mesh(machine)
-    layer = Layer(name="l")
-    layer.post_processors_dicts = [{"name": MESH_NAME, "enabled": True}]
-    group = LayerPostProcessorGroup(layer, editor=None)
-    original_dict = layer.post_processors_dicts[0]
+    workflow = Setup(name="l").workflows[0]
+    workflow.post_processors_dicts = [{"name": MESH_NAME, "enabled": True}]
+    group = WorkflowPostProcessorGroup(workflow, editor=None)
+    original_dict = workflow.post_processors_dicts[0]
 
     _mesh_widget(group).param_changed.send(
         _mesh_widget(group), key="enabled", value=False, name="test"
     )
-    assert layer.post_processors_dicts[0] is original_dict
+    assert workflow.post_processors_dicts[0] is original_dict
     assert original_dict["enabled"] is False
-    assert len(layer.post_processors_dicts) == 1
+    assert len(workflow.post_processors_dicts) == 1
 
 
 @pytest.mark.ui
 def test_subdivide_edit_is_persisted(ui_context_initializer):
     machine = _make_machine()
     _make_mesh(machine)
-    layer = Layer(name="l")
-    layer.post_processors_dicts = [{"name": MESH_NAME, "enabled": True}]
-    group = LayerPostProcessorGroup(layer, editor=None)
+    workflow = Setup(name="l").workflows[0]
+    workflow.post_processors_dicts = [{"name": MESH_NAME, "enabled": True}]
+    group = WorkflowPostProcessorGroup(workflow, editor=None)
 
     _mesh_widget(group).param_changed.send(
         _mesh_widget(group), key="subdivide", value=True, name="test"
     )
-    assert layer.post_processors_dicts == [
+    assert workflow.post_processors_dicts == [
         {"name": MESH_NAME, "enabled": True, "subdivide": True}
     ]
 
@@ -133,9 +133,9 @@ def test_reset_to_machine_default_removes_entry(ui_context_initializer):
     machine.default_post_processors_dicts = [
         {"name": MESH_NAME, "enabled": True}
     ]
-    layer = Layer(name="l")
-    layer.post_processors_dicts = [{"name": MESH_NAME, "enabled": False}]
-    group = LayerPostProcessorGroup(layer, editor=None)
+    workflow = Setup(name="l").workflows[0]
+    workflow.post_processors_dicts = [{"name": MESH_NAME, "enabled": False}]
+    group = WorkflowPostProcessorGroup(workflow, editor=None)
     transformer_cls = next(iter(group._group_dicts.values()))[0]
     group._reset_to_default(transformer_cls)
-    assert layer.post_processors_dicts == []
+    assert workflow.post_processors_dicts == []

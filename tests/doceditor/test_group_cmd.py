@@ -28,7 +28,7 @@ async def test_group_and_ungroup_preserves_transform(doc_editor: DocEditor):
     test for the user-reported bug.
     """
     # 1. Setup: Create items with known transforms in the active layer
-    layer = doc_editor.doc.active_layer
+    layer = doc_editor.doc.active_setup
 
     wp1 = WorkPiece(name="wp1.svg")
     # A simple translation and scale

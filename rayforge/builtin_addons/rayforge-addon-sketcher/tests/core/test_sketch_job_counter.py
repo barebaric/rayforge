@@ -23,7 +23,7 @@ def _place(doc: Doc, sketch: Sketch, offset: int = 0) -> WorkPiece:
     doc.add_asset(sketch)
     wp = WorkPiece.from_geometry_provider(sketch)
     wp.variable_offset = offset
-    doc.active_layer.add_child(wp)
+    doc.active_setup.add_child(wp)
     return wp
 
 
@@ -57,7 +57,7 @@ def test_copies_show_consecutive_numbers():
     second = first.duplicate()
     assert isinstance(second, WorkPiece)
     second.variable_offset = 1
-    doc.active_layer.add_child(second)
+    doc.active_setup.add_child(second)
     assert _resolved(first, box) == "41"
     assert _resolved(second, box) == "42"
 

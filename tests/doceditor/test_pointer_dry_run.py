@@ -26,7 +26,7 @@ def _first_coord(text: str) -> tuple[float, float]:
 def _add_rect_doc_items(doc_editor, contour_step_class, context):
     step = contour_step_class.create(context, name="cut")
     step.set_power(0.8)
-    workflow = doc_editor.doc.active_layer.workflow
+    workflow = doc_editor.doc.active_setup.workflows[0]
     assert workflow is not None
     workflow.add_child(step)
 
@@ -39,7 +39,7 @@ def _add_rect_doc_items(doc_editor, contour_step_class, context):
     wp = WorkPiece(name="rect")
     wp._edited_boundaries = geo
     wp.set_size(50.0, 30.0)
-    doc_editor.doc.active_layer.add_child(wp)
+    doc_editor.doc.active_setup.add_child(wp)
 
 
 @pytest.mark.asyncio

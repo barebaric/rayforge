@@ -87,7 +87,7 @@ class TestHeadlessDocEditor:
     def test_add_workpiece_and_save(self, editor, tmp_path):
         wp = WorkPiece(name="test.svg")
         wp.matrix = wp.matrix @ Matrix.scale(20, 20)
-        editor.doc.active_layer.add_workpiece(wp)
+        editor.doc.active_setup.add_workpiece(wp)
 
         project_path = tmp_path / "with_workpiece.ryp"
         editor.file.save_project_to_path(project_path)
@@ -99,7 +99,7 @@ class TestHeadlessDocEditor:
     def test_save_load_roundtrip_preserves_workpiece(self, editor, tmp_path):
         wp = WorkPiece(name="roundtrip.svg")
         wp.matrix = wp.matrix @ Matrix.scale(30, 30)
-        editor.doc.active_layer.add_workpiece(wp)
+        editor.doc.active_setup.add_workpiece(wp)
 
         path = tmp_path / "roundtrip.ryp"
         editor.file.save_project_to_path(path)
@@ -133,7 +133,7 @@ class TestHeadlessLayout:
             wp2.matrix @ Matrix.translation(50, 50) @ Matrix.scale(10, 10)
         )
 
-        layer = editor.doc.active_layer
+        layer = editor.doc.active_setup
         layer.add_workpiece(wp1)
         layer.add_workpiece(wp2)
 
@@ -145,7 +145,7 @@ class TestHeadlessLayout:
     def test_center_items(self, editor):
         wp = WorkPiece(name="c.svg")
         wp.matrix = wp.matrix @ Matrix.scale(10, 10)
-        layer = editor.doc.active_layer
+        layer = editor.doc.active_setup
         layer.add_workpiece(wp)
 
         editor.layout.center_horizontally([wp], surface_width_mm=100.0)

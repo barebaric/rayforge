@@ -3,7 +3,7 @@ Shared theme colour service.
 
 Owns the single source of truth for the domain colours that both the 2D
 and 3D canvases need: the base ``ColorSet`` (``OPS_COLOR_SPEC``), the
-per-laser colour sets, and the per-layer colour sets.  It binds to one
+per-laser colour sets, and the per-workflow colour sets.  It binds to one
 GTK widget (the main window), resolves the theme colours through that
 widget's style context, and re-resolves lazily when the theme, machine,
 or document changes.
@@ -35,8 +35,8 @@ class ThemeColorService:
     """
     Resolves and caches the shared domain colours for all canvases.
 
-    Base ``ColorSet``, per-laser colour sets, and per-layer colour sets
-    are each resolved exactly once per theme change, keyed by a single
+    Base ``ColorSet``, per-laser colour sets, and per-workflow colour
+    sets are each resolved exactly once per theme change, keyed by a single
     dirty flag.  Both canvases read through this service so laser paths
     and textures stay identical.
     """
@@ -77,7 +77,7 @@ class ThemeColorService:
         self.mark_dirty()
 
     def set_doc(self, doc: Optional["Doc"]):
-        """Set the document whose layers colour the layer paths."""
+        """Set the document whose workflows colour the workflow paths."""
         if doc is self._doc:
             return
         if self._doc is not None:
@@ -120,7 +120,12 @@ class ThemeColorService:
 
     @property
     def layer_color_sets(self) -> dict[str, ColorSet]:
-        """Per-layer colour sets keyed by layer UID."""
+        """Per-workflow colour sets keyed by workflow UID.
+
+        Kept under the historical name: the render contexts and the
+        Rust consumers index colour sets by the span marker uid, which
+        is the workflow's.
+        """
         self._refresh_if_dirty()
         return self._layer_color_sets
 
@@ -161,14 +166,15 @@ class ThemeColorService:
         if self._color_set is None or self._doc is None:
             return {}
         layer_color_sets: dict[str, ColorSet] = {}
-        for layer in self._doc.layers:
-            cut_rgba = hex_to_rgba(layer.color)
-            cut_lut = create_lut_from_color(cut_rgba)
-            data = {
-                "cut": cut_lut,
-                "engrave": cut_lut,
-                "travel": self._color_set.get_rgba("travel"),
-                "zero_power": self._color_set.get_rgba("zero_power"),
-            }
-            layer_color_sets[layer.uid] = ColorSet(_data=data)
+        for setup in self._doc.setups:
+            for workflow in setup.workflows:
+                cut_rgba = hex_to_rgba(workflow.color)
+                cut_lut = create_lut_from_color(cut_rgba)
+                data = {
+                    "cut": cut_lut,
+                    "engrave": cut_lut,
+                    "travel": self._color_set.get_rgba("travel"),
+                    "zero_power": self._color_set.get_rgba("zero_power"),
+                }
+                layer_color_sets[workflow.uid] = ColorSet(_data=data)
         return layer_color_sets

@@ -91,18 +91,18 @@ class LevelsAdapter(RowAdapter):
         self._step = step
 
     def compute_histogram(self) -> None:
-        """(Re)compute the histogram from the step's layer and push
+        """(Re)compute the histogram from the step's setup and push
         it into the preview. No-op without a histogram source.
         """
         step = self._step
         if step is None:
             return
-        layer = step.layer
-        if not layer:
+        setup = step.setup
+        if not setup:
             self.preview.update_histogram(None)
             return
 
-        workpieces = layer.all_workpieces
+        workpieces = setup.all_workpieces
         if not workpieces:
             self.preview.update_histogram(None)
             return

@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any
 from raygeo.geo import Geometry, Matrix
 
 from ..core.item import DocItem
-from ..core.layer import Layer
+from ..core.setup import Setup
 from ..core.source_asset import SourceAsset
 from ..core.source_asset_segment import SourceAssetSegment
 from ..core.tab import Tab
@@ -27,7 +27,11 @@ from ..core.vectorization_spec import (
 from ..core.workpiece import WorkPiece
 from ..image import importer_registry
 from ..image.base_importer import Importer
-from ..image.structures import ImportResult, ParsingResult
+from ..image.structures import (
+    ImportResult,
+    ParsingResult,
+    SourceLayerInfo,
+)
 
 if TYPE_CHECKING:
     from .editor import DocEditor
@@ -210,7 +214,7 @@ class _Fresh:
     """A workpiece produced by running the import pipeline once."""
 
     workpiece: WorkPiece
-    wrapper: Layer | None
+    source_layer: SourceLayerInfo | None = None
 
 
 @dataclass
@@ -221,6 +225,9 @@ class _Plan:
     )
     removals: list[WorkPiece] = field(default_factory=list)
     additions: list[tuple[DocItem, DocItem]] = field(default_factory=list)
+    new_workflows: list[tuple[DocItem, SourceLayerInfo, WorkPiece]] = field(
+        default_factory=list
+    )
 
 
 def _spec_key(spec: VectorizationSpec) -> str:
@@ -236,13 +243,14 @@ def _fresh_items(result: ImportResult) -> dict[str | None, _Fresh]:
     items: dict[str | None, _Fresh] = {}
     if not result.payload:
         return items
+    layers_by_id = {
+        info.layer_id: info for info in result.payload.source_layers
+    }
     for item in result.payload.items:
-        if isinstance(item, Layer):
-            for child in item.get_content_items():
-                if isinstance(child, WorkPiece) and child.source_segment:
-                    items[child.source_segment.layer_id] = _Fresh(child, item)
-        elif isinstance(item, WorkPiece) and item.source_segment:
-            items[item.source_segment.layer_id] = _Fresh(item, None)
+        if isinstance(item, WorkPiece) and item.source_segment:
+            items[item.source_segment.layer_id] = _Fresh(
+                item, layers_by_id.get(item.source_segment.layer_id)
+            )
     return items
 
 
@@ -626,16 +634,32 @@ class ReloadCmd:
         mode = LayerImportMode.NEW_LAYERS
         if isinstance(spec, PassthroughSpec):
             mode = spec.layer_import_mode
-        if new.wrapper is not None and mode == LayerImportMode.NEW_LAYERS:
-            plan.additions.append((self._editor.doc, new.wrapper))
-        elif ref_wp.parent is not None:
-            if new.wrapper is not None:
-                new.wrapper.remove_child(wp)
+        if ref_wp.parent is not None:
             plan.additions.append((ref_wp.parent, wp))
+            if (
+                new.source_layer is not None
+                and mode == LayerImportMode.NEW_LAYERS
+            ):
+                plan.new_workflows.append(
+                    (ref_wp.parent, new.source_layer, wp)
+                )
 
     def _apply(self, asset: SourceAsset, plan: _Plan) -> None:
         name = _("Reload {name}").format(name=asset.name)
         assert plan.source_values is not None
+        new_workflows = []
+        workflow_pairs = []
+        for owner, source_layer, wp in plan.new_workflows:
+            if not isinstance(owner, Setup):
+                continue
+            workflow = self._editor.workflow.create_for_source_layer(
+                owner, source_layer, [wp]
+            )
+            if workflow is not None:
+                new_workflows.append(workflow)
+                workflow_pairs.append((owner, workflow))
+        if new_workflows:
+            self._editor.step.add_default_steps_for_workflows(new_workflows)
         with self._editor.history_manager.transaction(name) as t:
             t.execute(ReplaceSourceDataCommand(asset, plan.source_values))
             for wp, state in plan.updates:
@@ -658,8 +682,12 @@ class ReloadCmd:
                         redo_command="add_child",
                     )
                 )
-        new_layers = [
-            item for _owner, item in plan.additions if isinstance(item, Layer)
-        ]
-        if new_layers:
-            self._editor.step.add_default_steps_for_layers(new_layers)
+            for owner, workflow in workflow_pairs:
+                t.execute(
+                    ListItemCommand(
+                        owner_obj=owner,
+                        item=workflow,
+                        undo_command="remove_child",
+                        redo_command="add_child",
+                    )
+                )

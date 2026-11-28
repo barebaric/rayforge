@@ -6,8 +6,9 @@ from blinker import Signal
 from raygeo.geo import Matrix
 
 from rayforge.core.doc import Doc
-from rayforge.core.layer import Layer
+from rayforge.core.setup import Setup
 from rayforge.core.step import Step
+from rayforge.core.workflow import Workflow
 from rayforge.core.workpiece import WorkPiece
 
 
@@ -19,7 +20,7 @@ def doc():
 @pytest.fixture
 def layer(doc):
     """Provides the active layer from a real Doc, which is a regular Layer."""
-    return doc.active_layer
+    return doc.active_setup
 
 
 @pytest.fixture
@@ -65,7 +66,7 @@ def test_workflow_descendant_added_bubbles_to_layer(layer):
     handler = MagicMock()
     layer.descendant_added.connect(handler)
 
-    workflow = layer.workflow
+    workflow = layer.workflows[0]
     assert workflow is not None
     step = Step("Test Step")
 
@@ -125,74 +126,69 @@ def test_workpiece_transform_change_bubbles_up_to_layer(
     )
 
 
-def test_layer_to_dict_serialization():
-    """Tests serializing a Layer to a dictionary."""
-    layer = Layer("Test Layer")
-    layer.matrix = Matrix.translation(5, 10) @ Matrix.scale(2, 3)
-    layer.visible = False
+def test_setup_to_dict_serialization():
+    """Tests serializing a Setup to a dictionary."""
+    setup = Setup("Test Setup")
+    setup.matrix = Matrix.translation(5, 10) @ Matrix.scale(2, 3)
 
     wp = WorkPiece("test.svg")
     wp.matrix = Matrix.translation(1, 2)
-    layer.add_child(wp)
+    setup.add_child(wp)
 
-    data = layer.to_dict()
+    data = setup.to_dict()
 
     expected_matrix = Matrix.translation(5, 10) @ Matrix.scale(2, 3)
 
-    assert data["type"] == "layer"
-    assert data["name"] == "Test Layer"
+    assert data["type"] == "setup"
+    assert data["name"] == "Test Setup"
     assert data["matrix"] == expected_matrix.to_list()
-    assert data["visible"] is False
     assert "children" in data
     assert len(data["children"]) == 2  # WorkPiece and Workflow
 
 
-def test_layer_from_dict_deserialization():
-    """Tests deserializing a Layer from a dictionary."""
-    layer_dict = {
-        "uid": "test-layer-uid",
-        "type": "layer",
-        "name": "Deserialized Layer",
+def test_setup_from_dict_deserialization():
+    """Tests deserializing a Setup from a dictionary."""
+    setup_dict = {
+        "uid": "test-setup-uid",
+        "type": "setup",
+        "name": "Deserialized Setup",
         "matrix": [[1, 0, 10], [0, 1, 20], [0, 0, 1]],
-        "visible": False,
         "children": [],
     }
 
-    layer = Layer.from_dict(layer_dict)
+    setup = Setup.from_dict(setup_dict)
 
-    assert isinstance(layer, Layer)
-    assert layer.uid == "test-layer-uid"
-    assert layer.name == "Deserialized Layer"
-    assert layer.matrix == Matrix.translation(10, 20)
-    assert layer.visible is False
+    assert isinstance(setup, Setup)
+    assert setup.uid == "test-setup-uid"
+    assert setup.name == "Deserialized Setup"
+    assert setup.matrix == Matrix.translation(10, 20)
+    assert len(setup.workflows) == 1  # The auto-created workflow
 
 
-def test_layer_from_dict_with_no_children():
-    """Tests deserializing a Layer with no children."""
-    layer_dict = {
-        "uid": "empty-layer-uid",
-        "type": "layer",
-        "name": "Empty Layer",
+def test_setup_from_dict_with_no_children_keeps_workflow():
+    """A setup loaded without children keeps its auto-created workflow."""
+    setup_dict = {
+        "uid": "empty-setup-uid",
+        "type": "setup",
+        "name": "Empty Setup",
         "matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
-        "visible": True,
         "children": [],
     }
 
-    layer = Layer.from_dict(layer_dict)
+    setup = Setup.from_dict(setup_dict)
 
-    assert isinstance(layer, Layer)
-    assert layer.uid == "empty-layer-uid"
-    assert layer.name == "Empty Layer"
-    assert layer.visible is True
-    assert len(layer.children) == 0
-    assert layer.workflow is None
+    assert isinstance(setup, Setup)
+    assert setup.uid == "empty-setup-uid"
+    assert setup.name == "Empty Setup"
+    assert len(setup.children) == 1
+    assert len(setup.workflows) == 1
 
 
-def test_layer_from_dict_ignores_unknown_child_types():
+def test_setup_from_dict_ignores_unknown_child_types():
     """Tests that from_dict ignores children with unknown types."""
-    layer_dict = {
-        "uid": "mixed-layer-uid",
-        "type": "layer",
+    setup_dict = {
+        "uid": "mixed-setup-uid",
+        "type": "setup",
         "matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
         "children": [
             {
@@ -206,42 +202,41 @@ def test_layer_from_dict_ignores_unknown_child_types():
         ],
     }
 
-    with patch(
-        "rayforge.core.workflow.Workflow.from_dict"
-    ) as mock_workflow_from_dict:
-        mock_workflow = MagicMock()
-        mock_workflow.get_local_bbox.return_value = None
-        mock_workflow_from_dict.return_value = mock_workflow
+    def fake_from_dict(data):
+        seen.append(data)
+        workflow = Workflow("wf")
+        workflow.uid = data["uid"]
+        return workflow
 
-        layer = Layer.from_dict(layer_dict)
+    seen = []
+    with patch.object(Workflow, "from_dict", side_effect=fake_from_dict):
+        setup = Setup.from_dict(setup_dict)
 
-        assert isinstance(layer, Layer)
-        assert len(layer.children) == 1
-        mock_workflow_from_dict.assert_called_once_with(
-            {
-                "uid": "workflow-uid",
-                "type": "workflow",
-            }
-        )
+    assert isinstance(setup, Setup)
+    assert len(setup.children) == 1
+    assert seen == [
+        {
+            "uid": "workflow-uid",
+            "type": "workflow",
+        }
+    ]
 
 
-def test_layer_roundtrip_serialization():
+def test_setup_roundtrip_serialization():
     """Tests that to_dict() and from_dict() produce equivalent objects."""
-    # Create a layer with various properties
-    original = Layer("Roundtrip Layer")
+    # Create a setup with various properties
+    original = Setup("Roundtrip Setup")
     original.matrix = Matrix.translation(5, 10) @ Matrix.scale(2, 3)
-    original.visible = False
 
     # Serialize and deserialize
     data = original.to_dict()
-    restored = Layer.from_dict(data)
+    restored = Setup.from_dict(data)
 
     # Check that the restored object has the same properties
     assert restored.uid == original.uid
     assert restored.name == original.name
     assert restored.matrix == original.matrix
-    assert restored.visible == original.visible
-    # Layer always has at least a workflow child
+    # A setup always has at least a workflow child
     assert len(restored.children) >= 1
 
 
@@ -250,27 +245,26 @@ def test_layer_forward_compatibility_with_extra_fields():
     Tests that from_dict() preserves extra fields from newer versions
     and to_dict() re-serializes them.
     """
-    layer_dict = {
-        "uid": "layer-forward-456",
-        "type": "layer",
-        "name": "Future Layer",
+    setup_dict = {
+        "uid": "setup-forward-456",
+        "type": "setup",
+        "name": "Future Setup",
         "matrix": Matrix.identity().to_list(),
-        "visible": True,
         "children": [],
         "future_field_string": "some value",
         "future_field_number": 42,
         "future_field_dict": {"nested": "data"},
     }
 
-    layer = Layer.from_dict(layer_dict)
+    setup = Setup.from_dict(setup_dict)
 
     # Verify extra fields are stored
-    assert layer.extra["future_field_string"] == "some value"
-    assert layer.extra["future_field_number"] == 42
-    assert layer.extra["future_field_dict"] == {"nested": "data"}
+    assert setup.extra["future_field_string"] == "some value"
+    assert setup.extra["future_field_number"] == 42
+    assert setup.extra["future_field_dict"] == {"nested": "data"}
 
     # Verify extra fields are re-serialized
-    data = layer.to_dict()
+    data = setup.to_dict()
     assert data["future_field_string"] == "some value"
     assert data["future_field_number"] == 42
     assert data["future_field_dict"] == {"nested": "data"}
@@ -282,18 +276,17 @@ def test_layer_backward_compatibility_with_missing_optional_fields():
     (simulating data from an older version).
     """
     minimal_dict = {
-        "uid": "layer-backward-789",
-        "type": "layer",
+        "uid": "setup-backward-789",
+        "type": "setup",
         "matrix": Matrix.identity().to_list(),
         "children": [],
     }
 
-    layer = Layer.from_dict(minimal_dict)
+    setup = Setup.from_dict(minimal_dict)
 
     # Verify defaults are applied for missing optional fields
-    assert layer.name == "Layer"
-    assert layer.visible is True
-    assert layer.extra == {}
+    assert setup.name == "Setup"
+    assert setup.extra == {}
 
 
 def test_layer_backward_compatibility_with_legacy_stock_item_uid():
@@ -302,24 +295,23 @@ def test_layer_backward_compatibility_with_legacy_stock_item_uid():
     The field is preserved in extra for forward compatibility but not used.
     """
     legacy_dict = {
-        "uid": "layer-legacy-123",
-        "type": "layer",
-        "name": "Legacy Layer",
+        "uid": "setup-legacy-123",
+        "type": "setup",
+        "name": "Legacy Setup",
         "matrix": Matrix.identity().to_list(),
-        "visible": True,
         "stock_item_uid": "old-stock-uid",
         "children": [],
     }
 
-    layer = Layer.from_dict(legacy_dict)
+    setup = Setup.from_dict(legacy_dict)
 
-    # Verify layer loads correctly
-    assert layer.name == "Legacy Layer"
-    assert "stock_item_uid" in layer.extra
-    assert layer.extra["stock_item_uid"] == "old-stock-uid"
+    # Verify setup loads correctly
+    assert setup.name == "Legacy Setup"
+    assert "stock_item_uid" in setup.extra
+    assert setup.extra["stock_item_uid"] == "old-stock-uid"
 
 
-class TestLayerRotary:
+class TestSetupRotary:
     def test_rotary_defaults(self, layer):
         assert layer.rotary_enabled is False
         assert layer.rotary_diameter == 25.0
@@ -361,13 +353,13 @@ class TestLayerRotary:
         assert layer.mm_to_degrees(10.0) == 0.0
 
     def test_rotary_serialization_roundtrip(self):
-        layer = Layer("Rotary Layer")
-        layer.set_rotary_enabled(True)
-        layer.set_rotary_diameter(50.0)
-        data = layer.to_dict()
+        setup = Setup("Rotary Setup")
+        setup.set_rotary_enabled(True)
+        setup.set_rotary_diameter(50.0)
+        data = setup.to_dict()
         assert data["rotary_enabled"] is True
         assert data["rotary_diameter"] == 50.0
-        restored = Layer.from_dict(data)
+        restored = Setup.from_dict(data)
         assert restored.rotary_enabled is True
         assert restored.rotary_diameter == 50.0
 
@@ -388,18 +380,18 @@ class TestLayerRotary:
         handler.assert_not_called()
 
     def test_stock_material_serialization_roundtrip(self):
-        layer = Layer("Rotary Layer")
-        layer.set_stock_material_uid("mat-1")
-        data = layer.to_dict()
+        setup = Setup("Rotary Setup")
+        setup.set_stock_material_uid("mat-1")
+        data = setup.to_dict()
         assert data["stock_material_uid"] == "mat-1"
-        restored = Layer.from_dict(data)
+        restored = Setup.from_dict(data)
         assert restored.stock_material_uid == "mat-1"
 
     def test_stock_material_property_without_uid(self, lite_context):
-        layer = Layer("Rotary Layer")
-        assert layer.stock_material is None
+        setup = Setup("Rotary Setup")
+        assert setup.stock_material is None
 
     def test_stock_material_unknown_uid_is_none(self, lite_context):
-        layer = Layer("Rotary Layer")
-        layer.set_stock_material_uid("does-not-exist")
-        assert layer.stock_material is None
+        setup = Setup("Rotary Setup")
+        setup.set_stock_material_uid("does-not-exist")
+        assert setup.stock_material is None

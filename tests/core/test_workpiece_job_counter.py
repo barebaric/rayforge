@@ -103,7 +103,7 @@ def test_readded_copy_keeps_its_offset():
     doc.job_counter.counter = CounterSettings(current=5)
     first, _provider = place(doc, "{counter}")
     second, _provider = place(doc, "{counter}")
-    layer = doc.active_layer
+    layer = doc.active_setup
     layer.remove_child(first)
     layer.add_child(first)
     assert first.variable_offset == 0

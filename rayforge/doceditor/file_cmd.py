@@ -27,7 +27,7 @@ from raygeo.ops.state import CoolantMode
 from ..context import get_context
 from ..core.doc import Doc
 from ..core.item import DocItem
-from ..core.layer import Layer
+from ..core.setup import Setup
 from ..core.source_asset import SourceAsset
 from ..core.undo import ChangePropertyCommand, ListItemCommand
 from ..core.vectorization_spec import (
@@ -36,6 +36,7 @@ from ..core.vectorization_spec import (
     TraceSpec,
     VectorizationSpec,
 )
+from ..core.workflow import Workflow
 from ..core.workpiece import WorkPiece
 from ..image import (
     Importer,
@@ -53,7 +54,12 @@ from ..image.dxf.exporter import (
     GeometryDxfExporter,
     MultiGeometryDxfExporter,
 )
-from ..image.structures import ImportPayload, ImportResult, ParsingResult
+from ..image.structures import (
+    ImportPayload,
+    ImportResult,
+    ParsingResult,
+    SourceLayerInfo,
+)
 from ..image.svg.exporter import (
     GeometrySvgExporter,
     MultiGeometrySvgExporter,
@@ -86,11 +92,12 @@ def _unsupported_coolant_labels(
     if machine is None:
         return []
     unsupported: set[CoolantMode] = set()
-    for layer in doc.layers:
-        if not layer.workflow:
-            continue
-        for step in layer.workflow.steps:
-            unsupported.update(step.get_unsupported_coolant_methods(machine))
+    for setup in doc.setups:
+        for workflow in setup.workflows:
+            for step in workflow.steps:
+                unsupported.update(
+                    step.get_unsupported_coolant_methods(machine)
+                )
     ordered = sorted(unsupported, key=lambda m: m.value)
     return [_COOLANT_MODE_LABELS[m] for m in ordered]
 
@@ -445,19 +452,6 @@ class FileCmd:
         )
         return native_mime
 
-    def _get_positionable_content(self, items: list[DocItem]) -> list[DocItem]:
-        """
-        Extracts the actual content (WorkPieces, Groups) from a list of
-        imported items, looking inside any top-level Layer containers.
-        """
-        content = []
-        for item in items:
-            if isinstance(item, Layer):
-                content.extend(item.get_content_items())
-            else:
-                content.append(item)
-        return content
-
     def _position_newly_imported_items(
         self,
         items: list[DocItem],
@@ -473,8 +467,8 @@ class FileCmd:
             f"items={len(items)}"
         )
 
-        # Get the actual content to be transformed, looking inside layers.
-        content_to_transform = self._get_positionable_content(items)
+        # The imported items are WorkPieces; transform them directly.
+        content_to_transform = list(items)
         if not content_to_transform:
             return
 
@@ -505,84 +499,104 @@ class FileCmd:
                 content_to_transform, scale_factor
             )
 
-    @staticmethod
-    def _unwrap_item(item: DocItem) -> list[DocItem]:
-        """Extract content items from a Layer, or return the item itself."""
-        if isinstance(item, Layer):
-            return item.get_content_items()
-        return [item]
-
     def _resolve_destinations(
         self,
         items: list[DocItem],
         mode: LayerImportMode,
-        target_layer: Layer | None = None,
-    ) -> list[tuple[DocItem, DocItem]]:
+        source_layers: list[SourceLayerInfo] | None = None,
+    ) -> tuple[
+        list[tuple[DocItem, DocItem]],
+        list[Workflow],
+        list[tuple[Workflow, str]],
+    ]:
         """
-        Resolve each item to a (owner, item) pair based on the import mode.
-        Returns a flat list of (destination_owner, item_to_add) tuples.
+        Resolve each imported workpiece to a (owner, item) pair and
+        build a workflow per imported source layer, based on the import
+        mode.
+
+        All workpieces go into the active setup. NEW_LAYERS creates one
+        workflow per source layer; MAP_TO_EXISTING assigns each source
+        layer's workpieces to the setup's existing workflow at the same
+        index; FLATTEN assigns all of them to the first workflow.
+
+        Returns (pairs, new_workflows, renames): the flat list of
+        (destination_owner, item_to_add) tuples, the workflows created
+        for imported source layers, and (workflow, new_name) rename
+        pairs for still auto-named workflows in MAP_TO_EXISTING mode.
         """
-        target_layer = cast(
-            Layer,
-            target_layer or self._editor.default_workpiece_layer,
-        )
         doc = self._editor.doc
+        target_setup = doc.active_setup
         pairs: list[tuple[DocItem, DocItem]] = []
+        new_workflows: list[Workflow] = []
+        renames: list[tuple[Workflow, str]] = []
+
+        layers_by_id = {info.layer_id: info for info in (source_layers or [])}
+        grouped: dict[str | None, list[WorkPiece]] = {}
+        for item in items:
+            if not isinstance(item, WorkPiece):
+                continue
+            layer_id = (
+                item.source_segment.layer_id if item.source_segment else None
+            )
+            grouped.setdefault(layer_id, []).append(item)
+
+        def _assign(workflow: Workflow, workpieces: list[WorkPiece]) -> None:
+            uids = list(workflow.workpiece_uids)
+            uids.extend(wp.uid for wp in workpieces)
+            workflow.set_workpiece_uids(uids)
 
         if mode == LayerImportMode.MAP_TO_EXISTING:
-            existing = doc.layers
-            for idx, item in enumerate(items):
+            existing = target_setup.workflows
+            auto_name = _("{name} Workflow").format(name=target_setup.name)
+            for idx, (layer_id, workpieces) in enumerate(grouped.items()):
                 if idx < len(existing):
-                    dest = existing[idx]
-                    for child in self._unwrap_item(item):
-                        pairs.append((dest, child))
-                elif isinstance(item, Layer):
-                    pairs.append((doc, item))
-                else:
-                    pairs.append((target_layer, item))
+                    dest_workflow = existing[idx]
+                    _assign(dest_workflow, workpieces)
+                    info = layers_by_id.get(layer_id)
+                    if (
+                        info is not None
+                        and dest_workflow.name == auto_name
+                        and info.name != dest_workflow.name
+                    ):
+                        renames.append((dest_workflow, info.name))
+                for wp in workpieces:
+                    pairs.append((target_setup, wp))
         elif mode == LayerImportMode.NEW_LAYERS:
-            for item in items:
-                if isinstance(item, Layer):
-                    pairs.append((doc, item))
-                else:
-                    pairs.append((target_layer, item))
+            default_workflow = (
+                target_setup.workflows[0] if target_setup.workflows else None
+            )
+            first_group = True
+            for layer_id, workpieces in grouped.items():
+                info = layers_by_id.get(layer_id)
+                if info is not None and default_workflow is not None:
+                    workflow = self._editor.workflow.create_for_source_layer(
+                        target_setup, info, workpieces
+                    )
+                    if workflow is not None:
+                        new_workflows.append(workflow)
+                        pairs.append((target_setup, workflow))
+                        for wp in workpieces:
+                            pairs.append((target_setup, wp))
+                        first_group = False
+                        continue
+                if first_group and default_workflow is not None:
+                    _assign(default_workflow, workpieces)
+                    first_group = False
+                for wp in workpieces:
+                    pairs.append((target_setup, wp))
         else:
+            default_workflow = (
+                target_setup.workflows[0] if target_setup.workflows else None
+            )
+            if default_workflow is not None:
+                _assign(
+                    default_workflow,
+                    [item for item in items if isinstance(item, WorkPiece)],
+                )
             for item in items:
-                for child in self._unwrap_item(item):
-                    pairs.append((target_layer, child))
+                pairs.append((target_setup, item))
 
-        return pairs
-
-    def _plan_layer_renames(
-        self,
-        items: list[DocItem],
-        mode: LayerImportMode,
-        existing_layers: list[Layer],
-    ) -> list[tuple[Layer, str]]:
-        """
-        Plan renames of default-named destination layers that receive
-        content from imported layers.
-
-        Only applies in ``MAP_TO_EXISTING`` mode: an existing layer is
-        renamed to the imported layer name if it still carries an
-        auto-generated default name.
-
-        Returns a list of (layer, new_name) pairs.
-        """
-        if mode != LayerImportMode.MAP_TO_EXISTING:
-            return []
-        renames: list[tuple[Layer, str]] = []
-        for idx, item in enumerate(items):
-            if idx >= len(existing_layers):
-                break
-            dest = existing_layers[idx]
-            if (
-                isinstance(item, Layer)
-                and Doc.is_default_layer_name(dest.name)
-                and item.name != dest.name
-            ):
-                renames.append((dest, item.name))
-        return renames
+        return pairs, new_workflows, renames
 
     @staticmethod
     def _layer_import_mode(
@@ -599,17 +613,17 @@ class FileCmd:
         items: list[DocItem],
         mode: LayerImportMode,
         cmd_name: str,
-        target_layer: Layer | None = None,
-    ) -> list[Layer]:
+        source_layers: list[SourceLayerInfo] | None = None,
+    ) -> list[Workflow]:
         """
         Adds the imported items to the document model using the history
-        manager, resolving destinations and planning layer renames.
+        manager, resolving destinations and creating per-source-layer
+        workflows.
 
-        Returns the list of destination layers that received items.
+        Returns the workflows that received items.
         """
-        pairs = self._resolve_destinations(items, mode, target_layer)
-        renames = self._plan_layer_renames(
-            items, mode, self._editor.doc.layers
+        pairs, new_workflows, renames = self._resolve_destinations(
+            items, mode, source_layers
         )
 
         with self._editor.history_manager.transaction(cmd_name) as t:
@@ -622,27 +636,17 @@ class FileCmd:
                         redo_command="add_child",
                     )
                 )
-            for layer, new_name in renames:
+            for workflow, new_name in renames:
                 t.execute(
                     ChangePropertyCommand(
-                        target=layer,
+                        target=workflow,
                         property_name="name",
                         new_value=new_name,
-                        setter_method_name="set_name",
-                        name=_("Rename layer"),
+                        name=_("Rename workflow"),
                     )
                 )
 
-        dest_layers = []
-        seen = set()
-        for owner, item in pairs:
-            if isinstance(owner, Layer) and owner.uid not in seen:
-                dest_layers.append(owner)
-                seen.add(owner.uid)
-            elif isinstance(item, Layer) and item.uid not in seen:
-                dest_layers.append(item)
-                seen.add(item.uid)
-        return dest_layers
+        return new_workflows
 
     def _commit_items_to_document(
         self,
@@ -651,12 +655,13 @@ class FileCmd:
         filename: Path,
         assets: list["IAsset"] | None = None,
         vectorization_spec: VectorizationSpec | None = None,
-    ) -> list[Layer]:
+        source_layers: list[SourceLayerInfo] | None = None,
+    ) -> list[Workflow]:
         """
-        Adds the imported items and their source to the document model using
-        the history manager.
+        Adds the imported items and their source to the document model
+        using the history manager.
 
-        Returns the list of destination layers that received items.
+        Returns the workflows that received items.
         """
         if source:
             self._editor.doc.add_asset(source)
@@ -667,7 +672,7 @@ class FileCmd:
 
         cmd_name = _("Import {filename}").format(filename=filename.name)
         mode = self._layer_import_mode(vectorization_spec)
-        return self._commit_items(items, mode, cmd_name)
+        return self._commit_items(items, mode, cmd_name, source_layers)
 
     def _finalize_import_on_main_thread(
         self,
@@ -694,17 +699,18 @@ class FileCmd:
         # 2. Add the positioned items to the document model. This is also
         #    safe now as all subsequent signal handling will be on the
         #    main thread.
-        dest_layers = self._commit_items_to_document(
+        dest_workflows = self._commit_items_to_document(
             payload.items,
             payload.source,
             filename,
             payload.assets,
             vectorization_spec,
+            payload.source_layers,
         )
 
-        # 3. Add default steps to the destination layers.
-        if dest_layers:
-            self._editor.step.add_default_steps_for_layers(dest_layers)
+        # 3. Add default steps to the destination workflows.
+        if dest_workflows:
+            self._editor.step.add_default_steps_for_workflows(dest_workflows)
 
     def load_file_from_path(
         self,
@@ -927,9 +933,8 @@ class FileCmd:
             )
             return 1.0
 
-        # We must operate on the actual content (WorkPieces, Groups), not the
-        # top-level containers (Layers).
-        content_items = self._get_positionable_content(items)
+        # The imported items are WorkPieces; measure them directly.
+        content_items = list(items)
         if not content_items:
             logger.warning("No positionable content found to fit/position.")
             return 1.0
@@ -990,7 +995,7 @@ class FileCmd:
             )
             return
 
-        content_items = self._get_positionable_content(items)
+        content_items = list(items)
         if not content_items:
             return
 
@@ -1366,7 +1371,7 @@ class FileCmd:
         source_asset: SourceAsset,
         vectorization_spec: VectorizationSpec,
         position_mm: Point | None = None,
-        target_layer: Layer | None = None,
+        target_setup: Setup | None = None,
     ) -> ImportResult | None:
         """
         Re-run the import pipeline for an existing SourceAsset, producing
@@ -1402,19 +1407,17 @@ class FileCmd:
             return import_result
 
         self._finalize_reimport(
-            import_result.payload.items,
+            import_result.payload,
             position_mm,
             vectorization_spec,
-            target_layer,
         )
         return import_result
 
     def _finalize_reimport(
         self,
-        items: list[DocItem],
+        payload: ImportPayload,
         position_mm: Point | None,
         vectorization_spec: VectorizationSpec | None = None,
-        target_layer: Layer | None = None,
     ):
         """
         Commit reimported items to the document.
@@ -1422,11 +1425,14 @@ class FileCmd:
         Unlike _finalize_import_on_main_thread, this does NOT add a new
         SourceAsset -- the existing one is reused.
         """
-        self._position_newly_imported_items(items, position_mm)
+        self._position_newly_imported_items(payload.items, position_mm)
 
         mode = self._layer_import_mode(vectorization_spec)
-        dest_layers = self._commit_items(
-            items, mode, _("Re-Import"), target_layer=target_layer
+        dest_workflows = self._commit_items(
+            payload.items,
+            mode,
+            _("Re-Import"),
+            payload.source_layers,
         )
-        if dest_layers:
-            self._editor.step.add_default_steps_for_layers(dest_layers)
+        if dest_workflows:
+            self._editor.step.add_default_steps_for_workflows(dest_workflows)

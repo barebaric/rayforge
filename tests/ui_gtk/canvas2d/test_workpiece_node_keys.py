@@ -33,7 +33,7 @@ def element(doc_editor):
     wp.natural_width_mm = 40.0
     wp.natural_height_mm = 40.0
     wp.set_size(40.0, 40.0)
-    doc_editor.doc.active_layer.add_child(wp)
+    doc_editor.doc.active_setup.add_child(wp)
     elem = WorkPieceElement.__new__(WorkPieceElement)
     elem.data = wp
     elem.canvas = MagicMock()

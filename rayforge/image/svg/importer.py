@@ -139,7 +139,6 @@ class SvgImporter(Importer):
             and import_result.payload
             and import_result.payload.items
         ):
-            from ...core.layer import Layer
             from ...core.workpiece import WorkPiece
 
             def count_workpieces(items):
@@ -147,23 +146,15 @@ class SvgImporter(Importer):
                 for item in items:
                     if isinstance(item, WorkPiece):
                         count += 1
-                    elif isinstance(item, Layer):
-                        count += count_workpieces(item.children)
                 return count
 
             def check_for_geometry(items):
-                for item in items:
-                    if isinstance(item, WorkPiece):
-                        if (
-                            item.source_segment
-                            and item.source_segment.pristine_geometry
-                        ):
-                            return True
-                    elif isinstance(item, Layer) and check_for_geometry(
-                        item.children
-                    ):
-                        return True
-                return False
+                return any(
+                    isinstance(item, WorkPiece)
+                    and item.source_segment
+                    and item.source_segment.pristine_geometry
+                    for item in items
+                )
 
             item_count = len(import_result.payload.items)
             wp_count = count_workpieces(import_result.payload.items)

@@ -101,7 +101,7 @@ def test_laser_dot_absolute_positioning(
     # 2. Mock UI dependencies
     mock_editor = MagicMock()
     mock_editor.doc = MagicMock()
-    mock_editor.doc.active_layer.rotary_enabled = False
+    mock_editor.doc.active_setup.rotary_enabled = False
     mock_window = MagicMock()
 
     # 3. Instantiate WorkSurface
@@ -188,7 +188,7 @@ class TestLaserDotWithWCSOffset:
 
         mock_editor = MagicMock()
         mock_editor.doc = MagicMock()
-        mock_editor.doc.active_layer.rotary_enabled = False
+        mock_editor.doc.active_setup.rotary_enabled = False
         mock_window = MagicMock()
         surface = WorkSurface(mock_editor, mock_window, machine)
 
@@ -219,7 +219,7 @@ class TestLaserDotWithWCSOffset:
 
         mock_editor = MagicMock()
         mock_editor.doc = MagicMock()
-        mock_editor.doc.active_layer.rotary_enabled = False
+        mock_editor.doc.active_setup.rotary_enabled = False
         mock_window = MagicMock()
         surface = WorkSurface(mock_editor, mock_window, machine)
 
@@ -252,7 +252,7 @@ class TestLaserDotWithWCSOffset:
 
         mock_editor = MagicMock()
         mock_editor.doc = MagicMock()
-        mock_editor.doc.active_layer.rotary_enabled = False
+        mock_editor.doc.active_setup.rotary_enabled = False
         mock_window = MagicMock()
         surface = WorkSurface(mock_editor, mock_window, machine)
 
@@ -274,7 +274,7 @@ def _make_surface(ui_context_initializer, machine) -> WorkSurface:
     """Builds a WorkSurface with mocked editor/window dependencies."""
     mock_editor = MagicMock()
     mock_editor.doc = MagicMock()
-    mock_editor.doc.active_layer.rotary_enabled = False
+    mock_editor.doc.active_setup.rotary_enabled = False
     return WorkSurface(mock_editor, MagicMock(), machine)
 
 

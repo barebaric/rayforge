@@ -21,8 +21,8 @@ def step():
 def step_in_doc():
     """Provides a Step instance properly parented within a Doc hierarchy."""
     doc = Doc()
-    layer = doc.active_layer
-    workflow = layer.workflow
+    layer = doc.active_setup
+    workflow = layer.workflows[0]
     step = Step(typelabel="HierarchyTest", name="Nested Step")
     assert workflow is not None
     workflow.add_child(step)
@@ -117,10 +117,10 @@ def test_set_name_propagates_to_workflow(step_in_doc):
 
 
 def test_hierarchy_properties(step_in_doc):
-    """Tests the .workflow and .layer properties."""
+    """Tests the .workflow and .setup properties."""
     _doc, layer, workflow, step = step_in_doc
     assert step.workflow is workflow
-    assert step.layer is layer
+    assert step.setup is layer
 
 
 def test_hierarchy_properties_when_detached(step):
@@ -128,7 +128,7 @@ def test_hierarchy_properties_when_detached(step):
     Tests that hierarchy properties return None when the step is detached.
     """
     assert step.workflow is None
-    assert step.layer is None
+    assert step.setup is None
 
 
 def test_get_selected_head(step):
