@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T", bound="DocItem")
 
 
-class Layer(VisibleMixin):
+class Layer(DocItem, VisibleMixin):
     """
     Represents a group of workpieces processed by a single workflow.
 

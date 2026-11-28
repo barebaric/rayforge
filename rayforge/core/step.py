@@ -1,5 +1,4 @@
 import logging
-from abc import ABC
 from collections.abc import Sequence
 from gettext import gettext as _
 from typing import (
@@ -26,7 +25,7 @@ from ..pipeline.transformer.registry import transformer_registry
 from ..shared.units.formatter import format_value
 from .capability import MachineCapability
 from .image_edit import ImageEditStep
-from .item import VisibleMixin
+from .item import DocItem, VisibleMixin
 from .step_registry import step_registry
 from .varset import SpeedVar, VarSet
 
@@ -63,7 +62,7 @@ def legacy_producer_params(data: dict[str, Any]) -> dict[str, Any]:
     return {}
 
 
-class Step(VisibleMixin, ABC):
+class Step(DocItem, VisibleMixin):
     """
     An OpsProducer configuration that operates on WorkPieces.
 
