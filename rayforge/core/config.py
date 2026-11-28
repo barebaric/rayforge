@@ -21,7 +21,9 @@ class OpsColorMode(Enum):
     """Enum for ops color source options."""
 
     LASER = "laser"
-    LAYER = "layer"
+    # The value stays "layer" so configurations saved before the
+    # layer-to-workflow rename keep loading.
+    WORKFLOW = "layer"
 
 
 class StartupBehavior(Enum):

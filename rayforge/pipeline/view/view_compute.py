@@ -29,11 +29,11 @@ def _resolve_color_set(
     """
     Resolve the appropriate ColorSet based on the ops color mode.
 
-    When ops_color_mode is OpsColorMode.LAYER, uses layer_color_sets
+    When ops_color_mode is OpsColorMode.WORKFLOW, uses layer_color_sets
     keyed by workflow_uid.  Otherwise falls back to laser-specific or
     default colors.
     """
-    if render_context.ops_color_mode == OpsColorMode.LAYER and workflow_uid:
+    if render_context.ops_color_mode == OpsColorMode.WORKFLOW and workflow_uid:
         if workflow_uid in render_context.layer_color_sets:
             logger.debug(
                 f"_resolve_color_set: using workflow color for "

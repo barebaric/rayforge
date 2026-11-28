@@ -77,13 +77,13 @@ class ImportDialog(PatchedDialogWindow):
         self._layer_import_model = Gtk.StringList.new(
             [
                 _("Map to Existing"),
-                _("New Layers"),
+                _("New Workflows"),
                 _("Flatten"),
             ]
         )
         self.layer_import_mode_row = Adw.ComboRow(
             title=_("Layer Import Mode"),
-            subtitle=_("How imported layers are mapped to document layers"),
+            subtitle=_("How imported layers are mapped to workflows"),
             model=self._layer_import_model,
             selected=0,
         )

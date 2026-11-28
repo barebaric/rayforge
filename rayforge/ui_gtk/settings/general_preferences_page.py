@@ -64,11 +64,11 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
     # Map for ops color mode options
     OPS_COLOR_MODE_MAP: ClassVar[list[str]] = [
         OpsColorMode.LASER.value,
-        OpsColorMode.LAYER.value,
+        OpsColorMode.WORKFLOW.value,
     ]
     OPS_COLOR_MODE_LABELS: ClassVar[list[str]] = [
         _("Laser Color"),
-        _("Layer Color"),
+        _("Workflow Color"),
     ]
 
     # Ordered right panel display modes shown in the combo row

@@ -8,18 +8,23 @@ from typing import Any
 
 
 class MacroTrigger(Enum):
-    """Defines events in the job lifecycle where G-code can be injected."""
+    """Defines events in the job lifecycle where G-code can be injected.
 
-    LAYER_START = "Before processing a layer"
-    LAYER_END = "After processing a layer"
+    The member names are persisted in machine profiles and mirror the
+    ops command vocabulary; the spans they fire on are the document's
+    workflows.
+    """
+
+    LAYER_START = "Before processing a workflow"
+    LAYER_END = "After processing a workflow"
     WORKPIECE_START = "Before processing a workpiece"
     WORKPIECE_END = "After processing a workpiece"
 
     def label(self) -> str:
         """Return a translatable label for this trigger."""
         labels = {
-            self.LAYER_START: _("Layer Start"),
-            self.LAYER_END: _("Layer End"),
+            self.LAYER_START: _("Workflow Start"),
+            self.LAYER_END: _("Workflow End"),
             self.WORKPIECE_START: _("Workpiece Start"),
             self.WORKPIECE_END: _("Workpiece End"),
         }
@@ -28,8 +33,8 @@ class MacroTrigger(Enum):
     def description(self) -> str:
         """Return a translatable description for this trigger."""
         labels = {
-            self.LAYER_START: _("Before processing a layer"),
-            self.LAYER_END: _("After processing a layer"),
+            self.LAYER_START: _("Before processing a workflow"),
+            self.LAYER_END: _("After processing a workflow"),
             self.WORKPIECE_START: _("Before processing a workpiece"),
             self.WORKPIECE_END: _("After processing a workpiece"),
         }
