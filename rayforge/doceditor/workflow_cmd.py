@@ -123,6 +123,7 @@ class WorkflowCmd:
             property_name="enabled",
             new_value=enabled,
             setter_method_name="set_enabled",
+            on_change_callback=self._editor.pipeline.invalidate_job_output,
             name=_("Toggle workflow"),
         )
         self._editor.history_manager.execute(cmd)

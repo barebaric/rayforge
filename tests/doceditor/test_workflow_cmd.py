@@ -13,6 +13,26 @@ def workflow_cmd(doc_editor):
     return WorkflowCmd(doc_editor)
 
 
+def test_set_workflow_enabled_invalidates_the_job_output(
+    workflow_cmd, monkeypatch
+):
+    """Toggling a workflow must drop any cached G-code, also on undo."""
+    calls = []
+    monkeypatch.setattr(
+        workflow_cmd._editor.pipeline,
+        "invalidate_job_output",
+        lambda: calls.append(True),
+    )
+    layer = Layer("Layer")
+    workflow = layer.workflows[0]
+
+    workflow_cmd.set_workflow_enabled(workflow, False)
+    assert workflow.enabled is False
+    workflow_cmd._editor.history_manager.undo()
+    assert workflow.enabled is True
+    assert len(calls) == 2
+
+
 def test_set_workflow_workpieces(workflow_cmd):
     layer = Layer("Layer")
     workflow = layer.workflows[0]

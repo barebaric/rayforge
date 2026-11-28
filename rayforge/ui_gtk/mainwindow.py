@@ -1840,7 +1840,12 @@ class MainWindow(Adw.ApplicationWindow):
             return
 
         # Try to use existing job artifact first
-        existing_handle = self.doc_editor.pipeline.get_existing_job_handle()
+        pipeline = self.doc_editor.pipeline
+        if not pipeline.can_generate_job():
+            pipeline.invalidate_job_output()
+            self._on_previews_ready(None)
+            return
+        existing_handle = pipeline.get_existing_job_handle()
         if existing_handle is not None:
             # Use existing artifact without regenerating
             self._on_previews_ready(existing_handle)

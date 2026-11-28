@@ -619,3 +619,24 @@ def test_machine_manage_action_opens_machines_page(app_and_window, mocker):
 
     settings_cls.assert_called_once()
     assert settings_cls.call_args.kwargs["initial_page"] == "machines"
+
+
+@pytest.mark.ui
+def test_workflow_eye_toggles_enabled(app_and_window):
+    _app, win = app_and_window
+    workflow = win.doc_editor.doc.active_layer.workflows[0]
+    tree = win.sidebar.operations_tree
+
+    row = tree.find_row(workflow.uid)
+    assert row is not None and row.spec.on
+    tree.on_eye_toggled(row.spec)
+    process_events_for_duration(0.3)
+    assert workflow.enabled is False
+    row = tree.find_row(workflow.uid)
+    assert row is not None and not row.spec.on
+
+    tree.on_eye_toggled(row.spec)
+    process_events_for_duration(0.3)
+    assert workflow.enabled is True
+    row = tree.find_row(workflow.uid)
+    assert row is not None and row.spec.on
