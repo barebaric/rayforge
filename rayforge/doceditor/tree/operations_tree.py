@@ -79,7 +79,7 @@ class OperationsTree(Gtk.Box):
         for layer in self._doc.layers:
             rows.extend(
                 WorkflowNode.build_rows(
-                    layer, 1, self._expanded, self._selected, self
+                    layer, 0, self._expanded, self._selected, self
                 )
             )
         self._tree.show(rows, tail=self._bar)
