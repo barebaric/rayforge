@@ -1206,11 +1206,14 @@ class TestProjectRoundTrip:
         result = file_cmd.load_project_from_path(import_file)
         assert result is True
 
-        # Verify layers loaded correctly
-        assert len(file_cmd._editor.doc.layers) == 3
-        assert file_cmd._editor.doc.layers[0].name == "Layer 1"
-        assert file_cmd._editor.doc.layers[1].name == "Layer 2"
-        assert file_cmd._editor.doc.layers[2].name == "Layer 3"
+        # The three old layers became workflows in one layer.
+        doc = file_cmd._editor.doc
+        assert len(doc.layers) == 1
+        assert [workflow.name for workflow in doc.layers[0].workflows] == [
+            "Layer 1",
+            "Layer 2",
+            "Layer 3",
+        ]
 
         # Export project
         result = file_cmd.save_project_to_path(export_file)
@@ -1221,8 +1224,14 @@ class TestProjectRoundTrip:
         result = file_cmd.load_project_from_path(export_file)
         assert result is True
 
-        # Verify layers after round trip
-        assert len(file_cmd._editor.doc.layers) == 3
+        # Verify workflows after round trip
+        doc = file_cmd._editor.doc
+        assert len(doc.layers) == 1
+        assert [workflow.name for workflow in doc.layers[0].workflows] == [
+            "Layer 1",
+            "Layer 2",
+            "Layer 3",
+        ]
 
     def test_round_trip_workpieces(self, file_cmd, tmp_path):
         """Test round trip for project with workpieces."""
@@ -1343,10 +1352,15 @@ class TestProjectRoundTrip:
         assert result is True
 
         # Verify comprehensive features loaded
-        assert len(file_cmd._editor.doc.layers) == 2
-        assert file_cmd._editor.doc._active_layer_index == 1
-        assert len(file_cmd._editor.doc.stock_items) == 2
-        assert len(file_cmd._editor.doc.all_workpieces) == 2
+        doc = file_cmd._editor.doc
+        assert len(doc.layers) == 1
+        assert doc._active_layer_index == 0
+        assert [workflow.name for workflow in doc.layers[0].workflows] == [
+            "Base Layer",
+            "Design Layer",
+        ]
+        assert len(doc.stock_items) == 2
+        assert len(doc.all_workpieces) == 2
 
         # Export project
         result = file_cmd.save_project_to_path(export_file)
@@ -1358,10 +1372,15 @@ class TestProjectRoundTrip:
         assert result is True
 
         # Verify comprehensive features after round trip
-        assert len(file_cmd._editor.doc.layers) == 2
-        assert file_cmd._editor.doc._active_layer_index == 1
-        assert len(file_cmd._editor.doc.stock_items) == 2
-        assert len(file_cmd._editor.doc.all_workpieces) == 2
+        doc = file_cmd._editor.doc
+        assert len(doc.layers) == 1
+        assert doc._active_layer_index == 0
+        assert [workflow.name for workflow in doc.layers[0].workflows] == [
+            "Base Layer",
+            "Design Layer",
+        ]
+        assert len(doc.stock_items) == 2
+        assert len(doc.all_workpieces) == 2
 
     def test_round_trip_all_project_files(self, file_cmd, tmp_path):
         """

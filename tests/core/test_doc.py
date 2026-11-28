@@ -407,11 +407,13 @@ def test_doc_from_dict_deserialization(doc):
     doc_dict = {
         "uid": "test-doc-uid",
         "type": "doc",
+        "schema_version": 1,
         "active_layer_index": 0,
         "children": [
             {
                 "uid": "layer1-uid",
                 "type": "layer",
+                "children": [],
             }
         ],
         "assets": [],
@@ -589,10 +591,12 @@ def test_doc_from_dict_with_default_active_layer_index():
     doc_dict = {
         "uid": "test-doc-uid",
         "type": "doc",
+        "schema_version": 1,
         "children": [
             {
                 "uid": "layer1-uid",
                 "type": "layer",
+                "children": [],
             }
         ],
         "stock_items": [],
@@ -801,6 +805,7 @@ def test_from_dict_clears_default_layer():
     """
     doc_dict = {
         "uid": "test-doc-uid",
+        "schema_version": 1,
         "children": [
             {
                 "uid": "layer1-uid",
@@ -889,22 +894,28 @@ def test_from_dict_legacy_layer_stock_item_uid():
     assert stock_item.uid == "stock-item-1"
     assert stock_item.name == "Wood Stock"
 
-    # Verify layer loaded correctly
+    # The old layer became a workflow with its name.
     layer = doc.layers[0]
-    assert layer.name == "Layer with Stock"
+    assert layer.name == "Layer 1"
+    workflow = layer.workflows[0]
+    assert workflow.uid == "layer-1"
+    assert workflow.name == "Layer with Stock"
 
     # Verify legacy stock_item_uid is preserved in extra for forward
     # compatibility
-    assert "stock_item_uid" in layer.extra
-    assert layer.extra["stock_item_uid"] == "stock-item-1"
+    assert "stock_item_uid" in workflow.extra
+    assert workflow.extra["stock_item_uid"] == "stock-item-1"
 
     # Verify round-trip serialization preserves the legacy field
     re_serialized = doc.to_dict()
     layer_dict = next(
         c for c in re_serialized["children"] if c["type"] == "layer"
     )
-    assert "stock_item_uid" in layer_dict
-    assert layer_dict["stock_item_uid"] == "stock-item-1"
+    workflow_dict = next(
+        c for c in layer_dict["children"] if c["type"] == "workflow"
+    )
+    assert "stock_item_uid" in workflow_dict
+    assert workflow_dict["stock_item_uid"] == "stock-item-1"
 
 
 def test_get_laser_uid_for_step_returns_laser_uid(doc):

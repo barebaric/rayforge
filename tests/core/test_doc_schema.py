@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 import pytest
+from raygeo.geo import Matrix
 
 from rayforge.core.doc import Doc
 from rayforge.core.doc_schema import (
@@ -22,6 +23,16 @@ def _v0_doc() -> dict:
     return json.loads(V0_DOC_PATH.read_text())
 
 
+def _workflow(layer: dict) -> dict:
+    return next(
+        child for child in layer["children"] if child["type"] == "workflow"
+    )
+
+
+def _content(layer: dict, type_name: str) -> list[dict]:
+    return [child for child in layer["children"] if child["type"] == type_name]
+
+
 def test_migrate_v0_to_v1_shape():
     v1 = migrate(copy.deepcopy(_v0_doc()))
 
@@ -32,42 +43,74 @@ def test_migrate_v0_to_v1_shape():
     assert types == ["layer", "layer"]
 
     cut, engrave = v1["children"]
-    assert cut["uid"] == "layer-1"
-    assert cut["name"] == "Cut"
+    assert cut["name"] == "Layer 1"
     assert cut["wcs"] == "G55"
     assert cut["visible"] is True
     assert "color" not in cut
     assert "post_processors_dicts" not in cut
 
-    # The workflow inherited the layer's color and post processors.
-    workflows = [
-        child for child in cut["children"] if child["type"] == "workflow"
-    ]
-    assert workflows[0]["uid"] == "wf-1"
-    assert workflows[0]["color"] == "#ff0000"
-    assert workflows[0]["post_processors_dicts"] == [
+    # The old layer became a workflow with its own workpieces.
+    cut_workflow = _workflow(cut)
+    assert cut_workflow["uid"] == "layer-1"
+    assert cut_workflow["name"] == "Cut"
+    assert cut_workflow["color"] == "#ff0000"
+    assert cut_workflow["workpiece_uids"] == ["wp-1"]
+    assert cut_workflow["post_processors_dicts"] == [
         {"name": "MeshCorrection"}
     ]
 
-    # The workpiece stayed a content child of the layer.
-    kinds = {child["type"] for child in cut["children"]}
-    assert kinds == {"workflow", "workpiece", "stockitem"}
+    # The workpiece stayed a content child of the new layer.
+    assert [wp["uid"] for wp in _content(cut, "workpiece")] == ["wp-1"]
 
-    # The second layer keeps its visibility; the workflow took the
-    # color.
-    engrave_workflow = next(
-        child for child in engrave["children"] if child["type"] == "workflow"
-    )
+    # The second old layer kept its visibility and became a workflow.
+    assert engrave["name"] == "Layer 2"
+    assert engrave["visible"] is False
+    engrave_workflow = _workflow(engrave)
+    assert engrave_workflow["uid"] == "layer-2"
+    assert engrave_workflow["name"] == "Engrave"
     assert engrave_workflow["color"] == "#00ff00"
+    assert engrave_workflow["workpiece_uids"] == []
+
+
+def test_migrate_groups_layers_by_setup():
+    v0 = _v0_doc()
+    v0["children"][1]["wcs"] = v0["children"][0]["wcs"]
+    v0["children"][1]["visible"] = True
+
+    v1 = migrate(v0)
+
+    assert len(v1["children"]) == 1
+    layer = v1["children"][0]
+    workflows = [
+        child for child in layer["children"] if child["type"] == "workflow"
+    ]
+    assert [workflow["name"] for workflow in workflows] == [
+        "Cut",
+        "Engrave",
+    ]
+    assert [workflow["uid"] for workflow in workflows] == [
+        "layer-1",
+        "layer-2",
+    ]
+    assert workflows[0]["workpiece_uids"] == ["wp-1"]
+    assert workflows[1]["workpiece_uids"] == []
+    assert v1["active_layer_index"] == 0
+
+
+def test_migrate_bakes_layer_transform_into_children():
+    v0 = _v0_doc()
+    transform = Matrix.translation(10, 20)
+    v0["children"][0]["matrix"] = transform.to_list()
+
+    v1 = migrate(v0)
+    layer = v1["children"][0]
+    assert _workflow(layer)["matrix"] == transform.to_list()
+    assert _content(layer, "workpiece")[0]["matrix"] == transform.to_list()
 
 
 def test_migrate_renames_embedded_import_mode():
     v1 = migrate(copy.deepcopy(_v0_doc()))
-    workpiece = next(
-        child
-        for child in v1["children"][0]["children"]
-        if child["type"] == "workpiece"
-    )
+    workpiece = _content(v1["children"][0], "workpiece")[0]
     spec = workpiece["source_segment"]["vectorization_spec"]
     assert spec["layer_import_mode"] == "new_workflows"
 
@@ -75,9 +118,7 @@ def test_migrate_renames_embedded_import_mode():
 def test_migrate_folds_document_stock_into_first_layer():
     v1 = migrate(copy.deepcopy(_v0_doc()))
     first = v1["children"][0]
-    stock = [
-        child for child in first["children"] if child["type"] == "stockitem"
-    ]
+    stock = _content(first, "stockitem")
     assert len(stock) == 1
     assert stock[0]["uid"] == "stock-1"
 
@@ -94,7 +135,7 @@ def test_migrate_keeps_unknown_keys():
     v0["children"][0]["future_layer_field"] = "kept"
     v1 = migrate(copy.deepcopy(v0))
     assert v1["future_doc_field"] == {"x": 1}
-    assert v1["children"][0]["future_layer_field"] == "kept"
+    assert _workflow(v1["children"][0])["future_layer_field"] == "kept"
 
 
 def test_migrate_does_not_mutate_input():
@@ -144,7 +185,11 @@ def test_saving_a_v0_document_writes_v1():
         "layer",
         "layer",
     ]
-    assert doc.active_layer.name == "Engrave"
+    assert doc.active_layer.name == "Layer 2"
+    assert [workflow.name for workflow in doc.workflows] == [
+        "Cut",
+        "Engrave",
+    ]
 
 
 def test_unknown_future_version_is_loaded_as_is(caplog):
