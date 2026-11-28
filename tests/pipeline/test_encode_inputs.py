@@ -13,11 +13,15 @@ from rayforge.machine.models.dialect.grbl import GRBL_DIALECT
 from rayforge.machine.models.laser import LaserHead
 from rayforge.machine.models.macro import Macro, MacroTrigger
 from rayforge.pipeline.encode_inputs import (
-    _build_macro_table,
     build_encode_context,
     encode_gcode,
 )
 from rayforge.shared.units.system import UnitSystem
+
+
+def _macro_table(machine, doc) -> dict:
+    """The encoder's macro table, via the public context builder."""
+    return build_encode_context(Ops(), machine, doc)["macros"]
 
 
 def _make_machine_mock(dialect=GRBL_DIALECT):
@@ -153,7 +157,7 @@ def test_macro_table_fires_layer_hooks_once_per_layer():
     wf1, wf2 = first.workflows
     (wf3,) = second.workflows
 
-    table = _build_macro_table(machine, doc)
+    table = _macro_table(machine, doc)
     starts = table["layer_start_by_uid"]
     ends = table["layer_end_by_uid"]
 
@@ -180,7 +184,7 @@ def test_macro_table_skips_workflows_without_runnable_steps():
     wf2.steps[0].workpiece_uids = ["missing"]
     doc = _make_doc(layer)
 
-    table = _build_macro_table(machine, doc)
+    table = _macro_table(machine, doc)
     starts = table["layer_start_by_uid"]
     ends = table["layer_end_by_uid"]
 
@@ -195,7 +199,7 @@ def test_macro_table_suppresses_hooks_for_workflows_with_no_hooks():
     doc = _make_doc(layer)
     workflow = layer.workflows[0]
 
-    table = _build_macro_table(machine, doc)
+    table = _macro_table(machine, doc)
 
     assert table["layer_start"] is None
     assert table["layer_end"] is None
