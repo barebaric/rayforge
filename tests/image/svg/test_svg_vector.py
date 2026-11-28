@@ -119,7 +119,7 @@ def test_layer_separation_and_positioning():
     layer_ids = [layer.id for layer in manifest.layers]
     spec = PassthroughSpec(
         active_layer_ids=layer_ids,
-        layer_import_mode=LayerImportMode.NEW_LAYERS,
+        layer_import_mode=LayerImportMode.NEW_WORKFLOWS,
     )
     import_result = importer.get_doc_items(vectorization_spec=spec)
     assert import_result is not None
@@ -228,7 +228,7 @@ def test_import_by_color_creates_colored_layers():
     importer = SvgVectorImporter(SVG_COLORS, Path("colors.svg"))
     spec = PassthroughSpec(
         layer_source=LayerSource.COLORS,
-        layer_import_mode=LayerImportMode.NEW_LAYERS,
+        layer_import_mode=LayerImportMode.NEW_WORKFLOWS,
     )
     import_result = importer.get_doc_items(spec)
     assert import_result is not None
@@ -258,7 +258,7 @@ def test_import_by_color_filters_deselected():
     importer = SvgVectorImporter(SVG_COLORS, Path("colors.svg"))
     spec = PassthroughSpec(
         layer_source=LayerSource.COLORS,
-        layer_import_mode=LayerImportMode.NEW_LAYERS,
+        layer_import_mode=LayerImportMode.NEW_WORKFLOWS,
         active_layer_ids=["#ff0000"],
     )
     import_result = importer.get_doc_items(spec)
@@ -286,7 +286,7 @@ def test_import_by_color_stroke_attribute():
     spec = PassthroughSpec(
         layer_source=LayerSource.COLORS,
         color_attr=ColorAttr.STROKE,
-        layer_import_mode=LayerImportMode.NEW_LAYERS,
+        layer_import_mode=LayerImportMode.NEW_WORKFLOWS,
     )
     import_result = importer.get_doc_items(spec)
     assert import_result is not None
@@ -308,7 +308,7 @@ def test_facade_imports_by_color():
     importer = SvgImporter(SVG_COLORS, Path("colors.svg"))
     spec = PassthroughSpec(
         layer_source=LayerSource.COLORS,
-        layer_import_mode=LayerImportMode.NEW_LAYERS,
+        layer_import_mode=LayerImportMode.NEW_WORKFLOWS,
     )
     import_result = importer.get_doc_items(spec)
     assert import_result is not None
@@ -354,7 +354,7 @@ def test_any_mode_splits_fill_and_stroke():
 
     spec = PassthroughSpec(
         layer_source=LayerSource.COLORS,
-        layer_import_mode=LayerImportMode.NEW_LAYERS,
+        layer_import_mode=LayerImportMode.NEW_WORKFLOWS,
     )
     import_result = importer.get_doc_items(spec)
     assert import_result is not None
@@ -390,7 +390,7 @@ def test_any_mode_uses_stroke_color_by_default():
 
     spec = PassthroughSpec(
         layer_source=LayerSource.COLORS,
-        layer_import_mode=LayerImportMode.NEW_LAYERS,
+        layer_import_mode=LayerImportMode.NEW_WORKFLOWS,
     )
     import_result = importer.get_doc_items(spec)
     assert import_result is not None
@@ -435,7 +435,7 @@ def test_orphan_geometry_imported_as_own_layer():
     importer = SvgVectorImporter(SVG_ORPHANS, Path("orphans.svg"))
     spec = PassthroughSpec(
         active_layer_ids=["g1", NO_LAYER_KEY],
-        layer_import_mode=LayerImportMode.NEW_LAYERS,
+        layer_import_mode=LayerImportMode.NEW_WORKFLOWS,
     )
     import_result = importer.get_doc_items(vectorization_spec=spec)
     assert import_result is not None
@@ -461,7 +461,7 @@ def test_orphan_geometry_deselected_stays_out():
     importer = SvgVectorImporter(SVG_ORPHANS, Path("orphans.svg"))
     spec = PassthroughSpec(
         active_layer_ids=["g1"],
-        layer_import_mode=LayerImportMode.NEW_LAYERS,
+        layer_import_mode=LayerImportMode.NEW_WORKFLOWS,
     )
     import_result = importer.get_doc_items(vectorization_spec=spec)
     assert import_result is not None

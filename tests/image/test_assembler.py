@@ -74,7 +74,7 @@ def test_split_layers_creation(assembler, source, mock_geo):
     """
     mock_geo_a = MagicMock(spec=Geometry)
     mock_geo_b = MagicMock(spec=Geometry)
-    spec = PassthroughSpec(layer_import_mode=LayerImportMode.NEW_LAYERS)
+    spec = PassthroughSpec(layer_import_mode=LayerImportMode.NEW_WORKFLOWS)
     plan = [
         LayoutItem(
             layer_id="LayerA",

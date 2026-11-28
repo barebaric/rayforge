@@ -599,7 +599,7 @@ class TestCommitItemsToDocument:
         without renaming existing ones."""
         doc = file_cmd._editor.doc
         wp, info = self._imported_workpiece("chaveiro")
-        spec = PassthroughSpec(layer_import_mode=LayerImportMode.NEW_LAYERS)
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.NEW_WORKFLOWS)
 
         file_cmd._commit_items_to_document(
             [wp],

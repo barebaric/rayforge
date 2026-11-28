@@ -217,7 +217,7 @@ class SceneRenderer(BaseRenderer):
         self.cylinder_renderers: dict[float, CylinderRenderer] = {}
         self.model_renderers: list[ModelRenderer] = []
         self.machine_models: list[MachineModel] = []
-        self.had_rotary_setups = False
+        self.had_rotary_layers = False
         self.cylinder_transform = np.eye(4, dtype=np.float64)
 
         self._viewport: ViewportConfig | None = None

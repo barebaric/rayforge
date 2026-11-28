@@ -12,8 +12,12 @@ class LayerImportMode(Enum):
     """Determines how imported layers are mapped into the document."""
 
     MAP_TO_EXISTING = "map_to_existing"
-    NEW_LAYERS = "new_layers"
+    NEW_WORKFLOWS = "new_workflows"
     FLATTEN = "flatten"
+
+
+#: Values written by older documents, mapped to their replacements.
+_LEGACY_IMPORT_MODES = {"new_layers": LayerImportMode.NEW_WORKFLOWS.value}
 
 
 class LayerSource(Enum):
@@ -111,10 +115,11 @@ class PassthroughSpec(VectorizationSpec):
     def from_dict(cls, data: dict[str, Any]) -> PassthroughSpec:
         mode_str = data.get("layer_import_mode")
         if mode_str:
+            mode_str = _LEGACY_IMPORT_MODES.get(mode_str, mode_str)
             mode = LayerImportMode(mode_str)
         elif "create_new_layers" in data:
             mode = (
-                LayerImportMode.NEW_LAYERS
+                LayerImportMode.NEW_WORKFLOWS
                 if data["create_new_layers"]
                 else LayerImportMode.FLATTEN
             )

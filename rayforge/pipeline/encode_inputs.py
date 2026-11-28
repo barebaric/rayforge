@@ -162,9 +162,15 @@ def _build_macro_table(machine: "Machine") -> dict:
             return None
         return {"name": m.name, "code": m.code, "enabled": m.enabled}
 
+    # The native G-code encoder fires the layer hooks at the span
+    # markers (LayerStart/End), which now carry workflow uids; the
+    # workflow hook keys are consumed by encoders that process
+    # workflow spans separately.
     trigger_map = {
-        MacroTrigger.WORKFLOW_START: "layer_start",
-        MacroTrigger.WORKFLOW_END: "layer_end",
+        MacroTrigger.LAYER_START: "layer_start",
+        MacroTrigger.LAYER_END: "layer_end",
+        MacroTrigger.WORKFLOW_START: "workflow_start",
+        MacroTrigger.WORKFLOW_END: "workflow_end",
         MacroTrigger.WORKPIECE_START: "workpiece_start",
         MacroTrigger.WORKPIECE_END: "workpiece_end",
     }

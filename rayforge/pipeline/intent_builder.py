@@ -94,6 +94,7 @@ if TYPE_CHECKING:
     from ..core.layer import Layer
     from ..core.step import Step
     from ..core.stock import StockItem
+    from ..core.workflow import Workflow
     from ..core.workpiece import WorkPiece
     from ..machine.models.machine import Machine
 
@@ -261,12 +262,6 @@ class IntentBuilder:
     def generation_id(self) -> int:
         return self._generation_id
 
-    def _iter_layers(self, doc: Doc) -> list[Layer]:
-        """The document's layers, optionally scoped by the run filter."""
-        if self._layer_uids is None:
-            return doc.layers
-        return [s for s in doc.layers if s.uid in self._layer_uids]
-
     def build(
         self, doc: Doc, layer_uids: frozenset[str] | None = None
     ) -> list[NodeRequest]:
@@ -283,78 +278,88 @@ class IntentBuilder:
         self._layer_uids = (
             frozenset(layer_uids) if layer_uids is not None else None
         )
+        workflows = doc.workflows_in(self._layer_uids)
         nodes: list[NodeRequest] = []
-        # Map each step's key to the list of upstream compute inputs
-        # — the step aggregate token and placement depend on all of
-        # them. Geometry-less steps contribute a single input with a
-        # ``None`` workpiece.
-        step_compute_inputs: dict[
-            str, list[tuple[str, int, WorkPiece | None]]
-        ] = {}
-        # Per-step aggregate version tokens, used by the job aggregate
-        # token so a position change that invalidates one step's
-        # aggregate also invalidates the job aggregate (and encode).
-        step_tokens: dict[str, int] = {}
 
-        for layer in self._iter_layers(doc):
-            setup_workpieces = list(layer.all_workpieces)
-            for workflow in layer.workflows:
-                if not workflow.enabled:
-                    continue
-                workpieces = workflow.selected_workpieces(setup_workpieces)
-                for step in workflow.steps:
-                    if not step.visible:
-                        continue
-                    if not step.needs_workpieces:
-                        step_compute_inputs[step.uid] = (
-                            self._build_command_node(step, nodes)
-                        )
-                        continue
-                    step_workpieces = step.selected_workpieces(workpieces)
-                    if not step_workpieces:
-                        logger.warning(
-                            "Step %r matches none of its workflow's "
-                            "workpieces (selected uids: %r); skipping it",
-                            step.name,
-                            step.workpiece_uids,
-                        )
-                        continue
-                    inputs = self._build_workpiece_nodes(
-                        step, step_workpieces, nodes
-                    )
-                    step_compute_inputs[step.uid] = inputs
+        step_compute_inputs = self._build_compute_nodes(workflows, nodes)
 
         # Collect every workpiece compute key alongside its workpiece
         # so each stock fold node can depend on the workpiece compute
         # nodes whose world AABB intersects the stock.
-        wp_compute_keys: list[tuple[str, WorkPiece]] = []
-        for inputs in step_compute_inputs.values():
-            for wp_key, _token, wp in inputs:
-                if wp is not None:
-                    wp_compute_keys.append((wp_key, wp))
+        wp_compute_keys: list[tuple[str, WorkPiece]] = [
+            (wp_key, wp)
+            for inputs in step_compute_inputs.values()
+            for wp_key, _token, wp in inputs
+            if wp is not None
+        ]
         self._build_stock_fold_nodes(doc, wp_compute_keys, nodes)
         self._build_rotary_fold_nodes(doc, wp_compute_keys, nodes)
 
-        for layer in self._iter_layers(doc):
-            for workflow in layer.workflows:
-                if not workflow.enabled:
-                    continue
-                for step in workflow.steps:
-                    if not step.visible:
-                        continue
-                    upstream = step_compute_inputs.get(step.uid, [])
-                    if not upstream:
-                        continue
-                    self._build_step_node(step, upstream, nodes)
-                    step_tokens[step.uid] = self._aggregate_token(
-                        step, upstream
-                    )
-
+        step_tokens = self._build_step_aggregates(
+            workflows, step_compute_inputs, nodes
+        )
         if step_tokens:
             self._build_job_node(doc, nodes, step_tokens)
             self._build_machine_transform_node(doc, nodes, step_tokens)
             self._build_encoder_node(doc, nodes, step_tokens)
         return nodes
+
+    def _build_compute_nodes(
+        self,
+        workflows: list[Workflow],
+        nodes: list[NodeRequest],
+    ) -> dict[str, list[tuple[str, int, WorkPiece | None]]]:
+        """Builds the compute node inputs of every visible step.
+
+        Returns the upstream compute inputs per step uid.
+        """
+        step_compute_inputs: dict[
+            str, list[tuple[str, int, WorkPiece | None]]
+        ] = {}
+        for workflow in workflows:
+            workpieces = workflow.workpieces
+            for step in workflow.steps:
+                if not step.visible:
+                    continue
+                if not step.needs_workpieces:
+                    step_compute_inputs[step.uid] = self._build_command_node(
+                        step, nodes
+                    )
+                    continue
+                step_workpieces = step.selected_workpieces(workpieces)
+                if not step_workpieces:
+                    logger.warning(
+                        "Step %r matches none of its workflow's "
+                        "workpieces (selected uids: %r); skipping it",
+                        step.name,
+                        step.workpiece_uids,
+                    )
+                    continue
+                step_compute_inputs[step.uid] = self._build_workpiece_nodes(
+                    step, step_workpieces, nodes
+                )
+        return step_compute_inputs
+
+    def _build_step_aggregates(
+        self,
+        workflows: list[Workflow],
+        step_compute_inputs: dict[
+            str, list[tuple[str, int, WorkPiece | None]]
+        ],
+        nodes: list[NodeRequest],
+    ) -> dict[str, int]:
+        """Builds the per-step aggregate nodes and returns their tokens."""
+        step_tokens: dict[str, int] = {}
+        for workflow in workflows:
+            for step in workflow.steps:
+                if not step.visible:
+                    continue
+                upstream = step_compute_inputs.get(step.uid, [])
+                if not upstream:
+                    continue
+                self._build_step_node(step, upstream, nodes)
+                step_tokens[step.uid] = self._aggregate_token(step, upstream)
+        return step_tokens
 
     # ------------------------------------------------------------------
     # Workpiece compute nodes
@@ -657,7 +662,7 @@ class IntentBuilder:
         rotary module's maximum workpiece length; renderers map their
         (possibly shorter) cylinder through the returned grid.
         """
-        for layer in self._iter_layers(doc):
+        for layer in doc.layers:
             if not layer.rotary_enabled or layer.rotary_diameter <= 0:
                 continue
             module = self._machine.get_rotary_module_for_layer(layer)
@@ -886,28 +891,31 @@ class IntentBuilder:
         # therefore folds in the per-step aggregate tokens so that any
         # upstream change (workpiece move, transformer edit, step
         # param change) propagates through to the job/encode cache.
-        payloads = []
-        for layer in self._iter_layers(doc):
-            for workflow in layer.workflows:
-                if not workflow.enabled:
-                    continue
-                for step in workflow.steps:
-                    if not step.visible:
-                        continue
-                    if step.uid not in step_tokens:
-                        continue
-                    payloads.append(
-                        {
-                            "step_uid": step.uid,
-                            "step_token": step_tokens.get(step.uid, 0),
-                            "step_params": step.get_cache_params(),
-                            "spxf": _canonical(
-                                step.per_step_transformers_dicts
-                            ),
-                        }
-                    )
-        payload: dict[str, Any] = {"kind": "job", "steps": payloads}
+        payload: dict[str, Any] = {
+            "kind": "job",
+            "steps": self._job_token_steps(doc, step_tokens),
+        }
         return _hash_int(payload)
+
+    @staticmethod
+    def _job_token_steps(
+        doc: Doc, step_tokens: dict[str, int]
+    ) -> list[dict[str, Any]]:
+        """The per-step payloads folded into the job token."""
+        payloads = []
+        for workflow in doc.workflows_in(None):
+            for step in workflow.steps:
+                if not step.visible or step.uid not in step_tokens:
+                    continue
+                payloads.append(
+                    {
+                        "step_uid": step.uid,
+                        "step_token": step_tokens.get(step.uid, 0),
+                        "step_params": step.get_cache_params(),
+                        "spxf": _canonical(step.per_step_transformers_dicts),
+                    }
+                )
+        return payloads
 
     # ------------------------------------------------------------------
     # Node construction
@@ -1258,6 +1266,28 @@ class IntentBuilder:
     # Job aggregate stage
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def _workflow_group(
+        workflow: Workflow, step_tokens: dict[str, int]
+    ) -> AggregateGroup | None:
+        """One aggregate group per workflow, or None when it is empty."""
+        step_inputs = [
+            AggregateInput(
+                source_key=step_key(step.uid),
+                placement_matrix=_IDENTITY_4X4,
+                uid=step.uid,
+            )
+            for step in workflow.steps
+            if step.visible and step.uid in step_tokens
+        ]
+        if not step_inputs:
+            return None
+        return AggregateGroup(
+            start_markers=[Marker.LayerStart(uid=workflow.uid, _tag=True)],
+            inputs=step_inputs,
+            end_markers=[Marker.LayerEnd(uid=workflow.uid, _tag=True)],
+        )
+
     def _job_stage(
         self, doc: Doc, step_tokens: dict[str, int]
     ) -> StageSpec.Aggregate:
@@ -1273,38 +1303,12 @@ class IntentBuilder:
         is populated from the resolved machine so the aggregate's time
         estimate is correct.
         """
-        groups: list[AggregateGroup] = []
-        for layer in self._iter_layers(doc):
-            for workflow in layer.workflows:
-                if not workflow.enabled:
-                    continue
-                step_inputs: list[AggregateInput] = []
-                for step in workflow.steps:
-                    if not step.visible:
-                        continue
-                    if step.uid not in step_tokens:
-                        continue
-                    sk = step_key(step.uid)
-                    step_inputs.append(
-                        AggregateInput(
-                            source_key=sk,
-                            placement_matrix=_IDENTITY_4X4,
-                            uid=step.uid,
-                        )
-                    )
-                if not step_inputs:
-                    continue
-                groups.append(
-                    AggregateGroup(
-                        start_markers=[
-                            Marker.LayerStart(uid=workflow.uid, _tag=True)
-                        ],
-                        inputs=step_inputs,
-                        end_markers=[
-                            Marker.LayerEnd(uid=workflow.uid, _tag=True)
-                        ],
-                    )
-                )
+        groups = [
+            group
+            for workflow in doc.workflows_in(self._layer_uids)
+            for group in [self._workflow_group(workflow, step_tokens)]
+            if group is not None
+        ]
         spec = AggregateSpec(
             wrap_start=[Marker.JobStart(_tag=True)],
             groups=groups,
@@ -1418,7 +1422,7 @@ class IntentBuilder:
         # layer. Keyed by workflow uid: the aggregate wraps each
         # workflow's ops in markers carrying that uid.
         layer_wcs_offsets: list[tuple[str, list[float]]] = []
-        for layer in self._iter_layers(doc):
+        for layer in doc.layers:
             effective_wcs = layer.get_effective_wcs(machine)
             cmd_offset = space.get_command_offset(
                 wcs_offset=machine.get_wcs_offset(effective_wcs),
@@ -1435,10 +1439,9 @@ class IntentBuilder:
         default_post_specs = self._build_post_processor_specs(
             machine.default_post_processors_dicts
         )
-        workflow_post_specs = [
+        layer_post_specs = [
             (workflow.uid, specs)
-            for layer in doc.layers
-            for workflow in layer.workflows
+            for workflow in doc.workflows
             if workflow.post_processors_dicts
             for specs in [
                 self._build_post_processor_specs(
@@ -1458,7 +1461,7 @@ class IntentBuilder:
             reverse_z=machine.reverse_z_axis,
             rotary_mappings=rotary_mappings,
             default_transformers=default_post_specs,
-            layer_transformers=workflow_post_specs,
+            layer_transformers=layer_post_specs,
         )
 
     def _build_post_processor_specs(
@@ -1491,7 +1494,7 @@ class IntentBuilder:
         with that uid.
         """
         mappings: list = []
-        for layer in self._iter_layers(doc):
+        for layer in doc.layers:
             if not layer.rotary_enabled:
                 continue
             module = machine.get_rotary_module_for_layer(layer)
@@ -1741,10 +1744,12 @@ def _machine_token_payload(machine: Machine | None, doc: Doc) -> Any:
         ),
         "layer_wcs_offsets": {
             workflow.uid: list(
-                machine.get_wcs_offset(layer.get_effective_wcs(machine))
+                machine.get_wcs_offset(
+                    workflow.layer.get_effective_wcs(machine)
+                )
             )
-            for layer in doc.layers
-            for workflow in layer.workflows
+            for workflow in doc.workflows
+            if workflow.layer is not None
         },
         "pointer_job_shift": machine.pointer_job_shift_enabled,
         "pointer_job_offset": (
@@ -1809,29 +1814,30 @@ def _machine_transform_config_payload(
                 "ny": mesh.ny,
             }
         )
-    for layer in doc.layers:
-        for workflow in layer.workflows:
-            if workflow.post_processors_dicts:
-                payload[f"post_processors:{workflow.uid}"] = _canonical(
-                    workflow.post_processors_dicts
-                )
+    for workflow in doc.workflows:
+        if workflow.post_processors_dicts:
+            payload[f"post_processors:{workflow.uid}"] = _canonical(
+                workflow.post_processors_dicts
+            )
     # Rotary module UIDs per workflow (to detect rotary config
     # changes).
-    for layer in doc.layers:
-        if layer.rotary_enabled:
-            module = machine.get_rotary_module_for_layer(layer)
-            if module is not None:
-                for workflow in layer.workflows:
-                    payload[f"rotary:{workflow.uid}"] = {
-                        "module_uid": module.uid,
-                        "mode": module.mode.value,
-                        "axis": module.axis.name,
-                        "mm_per_rotation": module.mm_per_rotation,
-                        "diameter": layer.rotary_diameter,
-                        "roller_diameter": module.roller_diameter,
-                        "rotary_type": module.rotary_type.value,
-                        "reverse_axis": module.reverse_axis,
-                    }
+    for workflow in doc.workflows:
+        layer = workflow.layer
+        if layer is None or not layer.rotary_enabled:
+            continue
+        module = machine.get_rotary_module_for_layer(layer)
+        if module is None:
+            continue
+        payload[f"rotary:{workflow.uid}"] = {
+            "module_uid": module.uid,
+            "mode": module.mode.value,
+            "axis": module.axis.name,
+            "mm_per_rotation": module.mm_per_rotation,
+            "diameter": layer.rotary_diameter,
+            "roller_diameter": module.roller_diameter,
+            "rotary_type": module.rotary_type.value,
+            "reverse_axis": module.reverse_axis,
+        }
     return payload
 
 

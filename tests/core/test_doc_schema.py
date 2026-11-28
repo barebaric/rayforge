@@ -1,6 +1,8 @@
 """Tests for the versioned document schema migration chain."""
 
 import copy
+import json
+from pathlib import Path
 
 import pytest
 
@@ -10,74 +12,14 @@ from rayforge.core.doc_schema import (
     migrate,
 )
 
+V0_DOC_PATH = Path(__file__).parent.parent / "assets" / "doc_schema_v0.ryp"
+
 IDENTITY = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
 
 
 def _v0_doc() -> dict:
-    """A minimal v0 (layer-based) document dict."""
-    return {
-        "uid": "doc-uid",
-        "type": "doc",
-        "active_layer_index": 1,
-        "children": [
-            {
-                "uid": "layer-1",
-                "type": "layer",
-                "name": "Cut",
-                "matrix": IDENTITY,
-                "visible": True,
-                "color": "#ff0000",
-                "rotary_enabled": False,
-                "rotary_diameter": 25.0,
-                "rotary_module_uid": None,
-                "stock_material_uid": None,
-                "wcs": "G55",
-                "post_processors_dicts": [{"name": "MeshCorrection"}],
-                "children": [
-                    {
-                        "uid": "wf-1",
-                        "type": "workflow",
-                        "name": "Cut Workflow",
-                        "matrix": IDENTITY,
-                        "children": [],
-                    },
-                    {
-                        "uid": "wp-1",
-                        "type": "workpiece",
-                        "name": "part",
-                        "matrix": IDENTITY,
-                        "children": [],
-                    },
-                ],
-            },
-            {
-                "uid": "layer-2",
-                "type": "layer",
-                "name": "Engrave",
-                "matrix": IDENTITY,
-                "visible": False,
-                "color": "#00ff00",
-                "children": [
-                    {
-                        "uid": "wf-2",
-                        "type": "workflow",
-                        "name": "Engrave Workflow",
-                        "matrix": IDENTITY,
-                        "children": [],
-                    }
-                ],
-            },
-            {
-                "uid": "stock-1",
-                "type": "stockitem",
-                "name": "Sheet",
-                "stock_asset_uid": "asset-1",
-                "matrix": IDENTITY,
-                "visible": True,
-            },
-        ],
-        "assets": [],
-    }
+    """The v0 sample document, as saved by an older app version."""
+    return json.loads(V0_DOC_PATH.read_text())
 
 
 def test_migrate_v0_to_v1_shape():
@@ -93,7 +35,7 @@ def test_migrate_v0_to_v1_shape():
     assert cut["uid"] == "layer-1"
     assert cut["name"] == "Cut"
     assert cut["wcs"] == "G55"
-    assert "visible" not in cut
+    assert cut["visible"] is True
     assert "color" not in cut
     assert "post_processors_dicts" not in cut
 
@@ -111,7 +53,7 @@ def test_migrate_v0_to_v1_shape():
     kinds = {child["type"] for child in cut["children"]}
     assert kinds == {"workflow", "workpiece", "stockitem"}
 
-    # The second layer's visibility is dropped; the workflow took the
+    # The second layer keeps its visibility; the workflow took the
     # color.
     engrave_workflow = next(
         child for child in engrave["children"] if child["type"] == "workflow"
@@ -119,7 +61,18 @@ def test_migrate_v0_to_v1_shape():
     assert engrave_workflow["color"] == "#00ff00"
 
 
-def test_migrate_folds_document_stock_into_first_setup():
+def test_migrate_renames_embedded_import_mode():
+    v1 = migrate(copy.deepcopy(_v0_doc()))
+    workpiece = next(
+        child
+        for child in v1["children"][0]["children"]
+        if child["type"] == "workpiece"
+    )
+    spec = workpiece["source_segment"]["vectorization_spec"]
+    assert spec["layer_import_mode"] == "new_workflows"
+
+
+def test_migrate_folds_document_stock_into_first_layer():
     v1 = migrate(copy.deepcopy(_v0_doc()))
     first = v1["children"][0]
     stock = [

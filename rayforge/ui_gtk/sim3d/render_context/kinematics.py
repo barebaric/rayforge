@@ -164,7 +164,7 @@ class KinematicsContext:
         }
         has_rotary = asm.has_rotary
 
-        if not frame.had_rotary_setups:
+        if not frame.had_rotary_layers:
             self._apply_flat(
                 mvp_ui,
                 model_world_transforms=model_world_transforms,

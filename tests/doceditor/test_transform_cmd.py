@@ -259,7 +259,7 @@ def test_set_size_no_items(transform_cmd):
 
 def test_set_size_with_fixed_ratio_width_only(transform_cmd, sample_items):
     """Test setting width with fixed aspect ratio, calculating height."""
-    # Layer item with aspect ratio 2.0 (20x10)
+    # Setup item with aspect ratio 2.0 (20x10)
     item = sample_items[0]
     item.set_size(20, 10)
     assert item.get_current_aspect_ratio() == 2.0
@@ -276,7 +276,7 @@ def test_set_size_with_fixed_ratio_width_only(transform_cmd, sample_items):
 
 def test_set_size_with_fixed_ratio_height_only(transform_cmd, sample_items):
     """Test setting height with fixed aspect ratio, calculating width."""
-    # Layer item with aspect ratio 0.5 (10x20)
+    # Setup item with aspect ratio 0.5 (10x20)
     item = sample_items[0]
     item.set_size(10, 20)
     assert item.get_current_aspect_ratio() == 0.5

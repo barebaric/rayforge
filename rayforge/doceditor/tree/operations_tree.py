@@ -23,6 +23,7 @@ class OperationsTree(Gtk.Box):
     def __init__(self):
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
         self.selection_changed = Signal()
+        self.rename_requested = Signal()
         self.workflow_requested = Signal()
         self.workflow_activated = Signal()
 
@@ -94,6 +95,13 @@ class OperationsTree(Gtk.Box):
         self._selected = {spec.uid}
         self.refresh()
         self.selection_changed.send(self, spec=spec)
+
+    def on_row_renamed(self, spec, name: str):
+        self.rename_requested.send(self, uid=spec.uid, name=name)
+
+    def start_rename(self, uid: str) -> bool:
+        """Starts inline renaming of the row with the given uid."""
+        return self._tree.start_rename(uid)
 
     def on_twisty_toggled(self, spec):
         if spec.uid in self._expanded:

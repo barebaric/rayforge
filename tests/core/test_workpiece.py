@@ -481,7 +481,7 @@ class TestWorkPiece:
             def get_natural_size_from_data(self, **kwargs):
                 return None
 
-        # Layer doc and source with the mock renderer
+        # Setup doc and source with the mock renderer
         doc = Doc()
         source = SourceAsset(
             source_file=Path("nosize.dat"),

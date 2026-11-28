@@ -252,7 +252,7 @@ class TestDXFImporterContract:
 
         spec = PassthroughSpec(
             active_layer_ids=["Layer1", "Layer3"],
-            layer_import_mode=LayerImportMode.NEW_LAYERS,
+            layer_import_mode=LayerImportMode.NEW_WORKFLOWS,
         )
         vec_result = multi_layer_dxf_importer.vectorize(parse_result, spec)
 
@@ -409,9 +409,8 @@ class TestDXFImporter:
         assert len(payload.items) == 1
         item = payload.items[0]
         assert isinstance(item, WorkPiece)
-        wp = item
 
-        boundaries = wp.boundaries
+        boundaries = item.boundaries
         assert boundaries is not None
         assert not boundaries.is_empty()
         data = boundaries.data
@@ -483,9 +482,8 @@ class TestDXFImporter:
         assert len(payload.items) == 1
         item = payload.items[0]
         assert isinstance(item, WorkPiece)
-        wp = item
 
-        boundaries = wp.boundaries
+        boundaries = item.boundaries
         assert boundaries is not None
         assert not boundaries.is_empty()
         data = boundaries.data
@@ -521,7 +519,7 @@ class TestDXFImporter:
         # Import only Layer1 and Layer3, creating separate layers
         spec = PassthroughSpec(
             active_layer_ids=["Layer1", "Layer3"],
-            layer_import_mode=LayerImportMode.NEW_LAYERS,
+            layer_import_mode=LayerImportMode.NEW_WORKFLOWS,
         )
         import_result = multi_layer_dxf_importer.get_doc_items(
             vectorization_spec=spec
@@ -655,7 +653,7 @@ class TestDXFBlockLayers:
         assert parse_result is not None
         spec = PassthroughSpec(
             active_layer_ids=["LAYER_B"],
-            layer_import_mode=LayerImportMode.NEW_LAYERS,
+            layer_import_mode=LayerImportMode.NEW_WORKFLOWS,
         )
         vec_result = block_layer_dxf_importer.vectorize(parse_result, spec)
         geo = vec_result.geometries_by_layer["LAYER_B"]
@@ -674,7 +672,7 @@ class TestDXFBlockLayers:
         assert parse_result is not None
         spec = PassthroughSpec(
             active_layer_ids=["LAYER_A"],
-            layer_import_mode=LayerImportMode.NEW_LAYERS,
+            layer_import_mode=LayerImportMode.NEW_WORKFLOWS,
         )
         vec_result = block_layer0_dxf_importer.vectorize(parse_result, spec)
         assert not vec_result.geometries_by_layer["LAYER_A"].is_empty()
@@ -687,7 +685,7 @@ class TestDXFBlockTransforms:
     ):
         parse_result = block_arc_dxf_importer.parse()
         assert parse_result is not None
-        spec = PassthroughSpec(layer_import_mode=LayerImportMode.NEW_LAYERS)
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.NEW_WORKFLOWS)
         vec_result = block_arc_dxf_importer.vectorize(parse_result, spec)
 
         outside = vec_result.geometries_by_layer["Outside"]
@@ -706,7 +704,7 @@ class TestDXFBlockTransforms:
 
         parse_result = nested_block_dxf_importer.parse()
         assert parse_result is not None
-        spec = PassthroughSpec(layer_import_mode=LayerImportMode.NEW_LAYERS)
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.NEW_WORKFLOWS)
         vec_result = nested_block_dxf_importer.vectorize(parse_result, spec)
 
         geometry = vec_result.geometries_by_layer["LAYER_A"]

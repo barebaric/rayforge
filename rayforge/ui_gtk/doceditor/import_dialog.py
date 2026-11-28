@@ -632,7 +632,7 @@ class ImportDialog(PatchedDialogWindow):
         idx = self.layer_import_mode_row.get_selected()
         modes = [
             LayerImportMode.MAP_TO_EXISTING,
-            LayerImportMode.NEW_LAYERS,
+            LayerImportMode.NEW_WORKFLOWS,
             LayerImportMode.FLATTEN,
         ]
         return (
@@ -689,7 +689,7 @@ class ImportDialog(PatchedDialogWindow):
                         w.set_active(lid in spec.active_layer_ids)
                 mode_map = {
                     LayerImportMode.MAP_TO_EXISTING: 0,
-                    LayerImportMode.NEW_LAYERS: 1,
+                    LayerImportMode.NEW_WORKFLOWS: 1,
                     LayerImportMode.FLATTEN: 2,
                 }
                 idx = mode_map.get(spec.layer_import_mode, 0)

@@ -68,7 +68,6 @@ from .shared.gtk import get_monitor_geometry, report_dialog_error
 from .shared.layer_run_dialog import LayerRunDialog
 from .shared.pointer_alignment_dialog import PointerAlignmentDialog
 from .shared.progress_bar import ProgressBar
-from .shared.rename_dialog import RenameDialog
 from .shared.sanity_check_dialog import SanityCheckDialog
 from .shared.time_estimate_overlay import TimeEstimateOverlay
 from .shared.usage_consent_dialog import UsageConsentDialog
@@ -333,10 +332,10 @@ class MainWindow(Adw.ApplicationWindow):
         self.action_registry = action_registry
 
         # Let addons register action extension handlers before
-        # ActionManager.register_actions() invokes layer handlers.
+        # ActionManager.register_actions() invokes setup handlers.
         call_registration_hooks(context.plugin_mgr, window_required=True)
 
-        # Layer keyboard actions using the new ActionManager.
+        # Setup keyboard actions using the new ActionManager.
         self.action_manager = ActionManager(self)
         self.action_manager.register_actions()
 
@@ -615,7 +614,7 @@ class MainWindow(Adw.ApplicationWindow):
         # Trigger the non-blocking check for app version updates
         self.app_update_checker.check_on_startup()
 
-        # On first launch, offer the machine layer wizard instead of
+        # On first launch, offer the machine setup wizard instead of
         # silently keeping the auto-created placeholder machine. While
         # the consent dialog is up, it chains the presentation so the
         # two don't stack up. The profile-review dialogs likewise run
@@ -631,7 +630,7 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _maybe_present_first_run_wizard(self) -> bool:
         """
-        Presents the layer wizard once if no real machine has ever been
+        Presents the setup wizard once if no real machine has ever been
         set up (only untouched placeholder machines exist).
         """
         context = get_context()
@@ -643,12 +642,12 @@ class MainWindow(Adw.ApplicationWindow):
         if not all(machine.placeholder for machine in machines):
             self._check_profile_updates()
             return GLib.SOURCE_REMOVE
-        logger.info("First launch detected; presenting layer wizard.")
+        logger.info("First launch detected; presenting setup wizard.")
         self.present_setup_wizard()
         return GLib.SOURCE_REMOVE
 
     def present_setup_wizard(self):
-        """Opens the unified machine layer wizard."""
+        """Opens the unified machine setup wizard."""
         if self._setup_wizard is not None:
             self._setup_wizard.present()
             return
@@ -660,9 +659,9 @@ class MainWindow(Adw.ApplicationWindow):
         dialog.present()
 
     def _on_setup_wizard_closed(self, *args) -> bool:
-        """Handles the user cancelling the layer wizard.
+        """Handles the user cancelling the setup wizard.
 
-        Falls back to the placeholder machine and marks layer as
+        Falls back to the placeholder machine and marks setup as
         handled so the wizard is never forced on the user again.
         """
         self._setup_wizard = None
@@ -671,7 +670,7 @@ class MainWindow(Adw.ApplicationWindow):
             return False
         self._setup_wizard_completed = True
         get_context().config.set_setup_completed(True)
-        logger.info("Layer wizard cancelled; keeping placeholder machine.")
+        logger.info("Setup wizard cancelled; keeping placeholder machine.")
         GLib.idle_add(self._check_profile_updates)
         return False
 
@@ -2284,6 +2283,9 @@ class MainWindow(Adw.ApplicationWindow):
         can_group = len(selected_elements) >= 2
         am.get_action("group").set_enabled(can_group)
 
+        can_move_to_layer = has_selection and len(doc.layers) > 1
+        am.get_action("move-to-layer").set_enabled(can_move_to_layer)
+
         can_ungroup = any(
             isinstance(elem.data, Group) for elem in selected_elements
         )
@@ -2816,22 +2818,10 @@ class MainWindow(Adw.ApplicationWindow):
 
     def on_menu_rename(self, action, param):
         selection = self.surface.get_selected_items()
-        if not selection:
+        if len(selection) != 1 or not isinstance(selection[0], DocItem):
             return
-        item = selection[0]
-        if not isinstance(item, DocItem):
-            return
-        root = self.get_root()
-        self._rename_dialog = RenameDialog(
-            root if isinstance(root, Gtk.Window) else None,
-            item,
-            self.doc_editor.edit.rename_item,
-        )
-        self._rename_dialog.connect("destroy", self._on_rename_dialog_destroy)
-        self._rename_dialog.present()
-
-    def _on_rename_dialog_destroy(self, *_):
-        self._rename_dialog = None
+        # The item properties pane edits the name inline.
+        self.item_props_widget.begin_rename()
 
     def on_menu_remove(self, action, param):
         items = self.surface.get_selected_items()

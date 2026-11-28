@@ -129,8 +129,8 @@ def app_and_window(ui_context_initializer, request):
 
 
 @pytest.mark.ui
-def test_rename_opens_dialog_with_item_name(app_and_window, assets_path):
-    """F2 rename opens the rename dialog for the selected item."""
+def test_rename_focuses_inline_name_entry(app_and_window, assets_path):
+    """F2 rename edits the selected item's name inline, without a dialog."""
     _app, win = app_and_window
     project = assets_path / "doceditor" / "assets" / "workpieces_project.ryp"
     assert win.doc_editor.file.load_project_from_path(project)
@@ -140,9 +140,9 @@ def test_rename_opens_dialog_with_item_name(app_and_window, assets_path):
     win.surface.select_items([wp])
     win.on_menu_rename(None, None)
     process_events_for_duration(0.1)
-    dialog = win._rename_dialog
-    assert dialog is not None
-    assert dialog._entry.get_text() == wp.name
+    name_row = win.item_props_widget._name_row
+    assert name_row.get_visible()
+    assert name_row.get_text() == wp.name
 
 
 @pytest.mark.ui

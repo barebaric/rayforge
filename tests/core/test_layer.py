@@ -126,7 +126,7 @@ def test_workpiece_transform_change_bubbles_up_to_layer(
     )
 
 
-def test_setup_to_dict_serialization():
+def test_layer_to_dict_serialization():
     """Tests serializing a Layer to a dictionary."""
     layer = Layer("Test Layer")
     layer.matrix = Matrix.translation(5, 10) @ Matrix.scale(2, 3)
@@ -146,7 +146,7 @@ def test_setup_to_dict_serialization():
     assert len(data["children"]) == 2  # WorkPiece and Workflow
 
 
-def test_setup_from_dict_deserialization():
+def test_layer_from_dict_deserialization():
     """Tests deserializing a Layer from a dictionary."""
     layer_dict = {
         "uid": "test-layer-uid",
@@ -165,7 +165,7 @@ def test_setup_from_dict_deserialization():
     assert len(layer.workflows) == 1  # The auto-created workflow
 
 
-def test_setup_from_dict_with_no_children_keeps_workflow():
+def test_layer_from_dict_with_no_children_keeps_workflow():
     """A layer loaded without children keeps its auto-created workflow."""
     layer_dict = {
         "uid": "empty-layer-uid",
@@ -184,7 +184,7 @@ def test_setup_from_dict_with_no_children_keeps_workflow():
     assert len(layer.workflows) == 1
 
 
-def test_setup_from_dict_ignores_unknown_child_types():
+def test_layer_from_dict_ignores_unknown_child_types():
     """Tests that from_dict ignores children with unknown types."""
     layer_dict = {
         "uid": "mixed-layer-uid",

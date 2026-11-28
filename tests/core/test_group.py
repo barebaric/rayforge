@@ -263,7 +263,7 @@ def test_factory_preserves_world_transform(workpiece_factory):
     wp1 = workpiece_factory("wp1")
     wp2 = workpiece_factory("wp2")
 
-    # Layer with different transformations
+    # Setup with different transformations
     wp1.matrix = Matrix.translation(10, 20)
     wp2.matrix = Matrix.translation(100, 20) @ Matrix.rotation(90)
     layer.add_child(wp1)
@@ -297,7 +297,7 @@ def test_factory_with_nested_item(workpiece_factory):
     existing_group = Group("Existing")
     wp = workpiece_factory()
 
-    # Layer a deep hierarchy: layer -> existing_group -> wp
+    # Setup a deep hierarchy: layer -> existing_group -> wp
     layer.matrix = Matrix.translation(1000, 2000)
     existing_group.matrix = Matrix.scale(2, 2)
     wp.matrix = Matrix.translation(50, 0)

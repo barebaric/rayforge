@@ -514,7 +514,7 @@ class FileCmd:
         build a workflow per imported source layer, based on the import
         mode.
 
-        All workpieces go into the active layer. NEW_LAYERS creates one
+        All workpieces go into the active layer. NEW_WORKFLOWS creates one
         workflow per source layer; MAP_TO_EXISTING assigns each source
         layer's workpieces to the layer's existing workflow at the same
         index; FLATTEN assigns all of them to the first workflow.
@@ -561,7 +561,7 @@ class FileCmd:
                         renames.append((dest_workflow, info.name))
                 for wp in workpieces:
                     pairs.append((target_layer, wp))
-        elif mode == LayerImportMode.NEW_LAYERS:
+        elif mode == LayerImportMode.NEW_WORKFLOWS:
             default_workflow = (
                 target_layer.workflows[0] if target_layer.workflows else None
             )
@@ -603,7 +603,7 @@ class FileCmd:
         vectorization_spec: VectorizationSpec | None,
     ) -> LayerImportMode:
         """Returns the layer import mode of the given spec."""
-        mode = LayerImportMode.NEW_LAYERS
+        mode = LayerImportMode.NEW_WORKFLOWS
         if isinstance(vectorization_spec, PassthroughSpec):
             mode = vectorization_spec.layer_import_mode
         return mode

@@ -164,7 +164,7 @@ class TestImporter:
 
     def test_import_split_by_pen(self):
         data = b"IN;SP1;PU0,0;PD400,0,400,400;SP2;PU800,0;PD1200,0,1200,400;"
-        spec = PassthroughSpec(layer_import_mode=LayerImportMode.NEW_LAYERS)
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.NEW_WORKFLOWS)
         result = HpglImporter(data, Path("two.plt")).get_doc_items(spec)
         assert len(_workpieces(result)) == 2
 

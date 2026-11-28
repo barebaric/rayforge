@@ -154,6 +154,10 @@ class MainMenu(Gio.Menu):
         grouping_group.append(_("Ungroup"), "win.ungroup")
         arrange_menu.append_section(None, grouping_group)
 
+        layer_group = Gio.Menu()
+        layer_group.append(_("Move to Layer…"), "win.move-to-layer")
+        arrange_menu.append_section(None, layer_group)
+
         align_submenu = Gio.Menu()
         align_submenu.append(_("Left"), "win.align-left")
         align_submenu.append(_("Right"), "win.align-right")

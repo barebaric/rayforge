@@ -10,6 +10,8 @@ from typing import Any
 class MacroTrigger(Enum):
     """Defines events in the job lifecycle where G-code can be injected."""
 
+    LAYER_START = "Before processing a layer"
+    LAYER_END = "After processing a layer"
     WORKFLOW_START = "Before processing a workflow"
     WORKFLOW_END = "After processing a workflow"
     WORKPIECE_START = "Before processing a workpiece"
@@ -18,6 +20,8 @@ class MacroTrigger(Enum):
     def label(self) -> str:
         """Return a translatable label for this trigger."""
         labels = {
+            self.LAYER_START: _("Layer Start"),
+            self.LAYER_END: _("Layer End"),
             self.WORKFLOW_START: _("Workflow Start"),
             self.WORKFLOW_END: _("Workflow End"),
             self.WORKPIECE_START: _("Workpiece Start"),
@@ -28,6 +32,8 @@ class MacroTrigger(Enum):
     def description(self) -> str:
         """Return a translatable description for this trigger."""
         labels = {
+            self.LAYER_START: _("Before processing a layer"),
+            self.LAYER_END: _("After processing a layer"),
             self.WORKFLOW_START: _("Before processing a workflow"),
             self.WORKFLOW_END: _("After processing a workflow"),
             self.WORKPIECE_START: _("Before processing a workpiece"),

@@ -1067,11 +1067,11 @@ class WorkSurface(WorldSurface):
         The first workflow of the active layer that runs for the
         element's workpiece decides the color.
         """
-        data = getattr(elem, "data", None)
-        if data is None:
+        data = elem.data
+        if not isinstance(data, (WorkPiece, Group)):
             return None
-        layer = getattr(data, "layer", None)
-        if layer is None or not isinstance(layer, Layer):
+        layer = data.layer
+        if layer is None:
             return None
         for workflow in layer.workflows:
             if data in workflow.selected_workpieces(layer.all_workpieces):
@@ -1597,14 +1597,6 @@ class WorkSurface(WorldSurface):
 
         is_primary = is_primary_modifier(state)
         is_shift = bool(state & Gdk.ModifierType.SHIFT_MASK)
-
-        # Handle moving workpiece to another layer
-        if is_primary and (
-            keyval == Gdk.KEY_Page_Up or keyval == Gdk.KEY_Page_Down
-        ):
-            direction = -1 if keyval == Gdk.KEY_Page_Up else 1
-            self.editor.layer.move_selected_to_adjacent_layer(self, direction)
-            return True
 
         # Handle clipboard and duplication
         if is_primary:

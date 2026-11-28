@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Iterable
-from typing import Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from blinker import Signal
 from raygeo.geo import Matrix
@@ -15,6 +15,9 @@ from .color import COLOR_PALETTE
 from .item import DocItem
 from .step import Step
 from .workpiece import WorkPiece
+
+if TYPE_CHECKING:
+    from .layer import Layer
 
 logger = logging.getLogger(__name__)
 
@@ -158,6 +161,22 @@ class Workflow(DocItem):
     def steps(self) -> list[Step]:
         """Returns a list of all child items that are Steps."""
         return [child for child in self.children if isinstance(child, Step)]
+
+    @property
+    def layer(self) -> Layer | None:
+        """Returns the layer that owns this workflow, if any."""
+        from .layer import Layer
+
+        parent = self.parent
+        return parent if isinstance(parent, Layer) else None
+
+    @property
+    def workpieces(self) -> list[WorkPiece]:
+        """The workpieces this workflow runs for, in document order."""
+        layer = self.layer
+        if layer is None:
+            return []
+        return self.selected_workpieces(layer.all_workpieces)
 
     def __iter__(self):
         """Allows iteration over the work steps."""

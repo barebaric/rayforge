@@ -155,7 +155,7 @@ def test_step_name_change_does_not_bump_geometry_revision():
     assert step.transform_revision == 0
 
 
-def test_setup_name_change_does_not_bump_geometry_revision():
+def test_layer_name_change_does_not_bump_geometry_revision():
     """A Layer rename must not bump any revision counter."""
     doc = Doc()
     layer = doc.active_layer

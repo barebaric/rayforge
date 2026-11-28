@@ -2974,7 +2974,7 @@ class TestRpcTimeoutSetup:
 
 
 class TestSetupVars:
-    """The layer 'usb_device' var is an optional SerialPortVar and
+    """The setup 'usb_device' var is an optional SerialPortVar and
     'magic_number' carries the standard default."""
 
     def test_usb_device_var_is_serial_port_var(
@@ -3453,7 +3453,7 @@ class TestSeedMachineSpeedDefaults:
 
 
 class TestPowerFloorSetup:
-    """The layer 'power_floor' var exposes VECTOR cut compensation floor."""
+    """The setup 'power_floor' var exposes VECTOR cut compensation floor."""
 
     def test_power_floor_var_present_with_driver_defaults(
         self, isolated_context, isolated_machine

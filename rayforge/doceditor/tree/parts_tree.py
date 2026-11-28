@@ -25,6 +25,7 @@ class PartsTree(Gtk.Box):
     def __init__(self):
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
         self.selection_changed = Signal()
+        self.rename_requested = Signal()
         self.visibility_toggled = Signal()
 
         self._doc: Doc | None = None
@@ -103,6 +104,13 @@ class PartsTree(Gtk.Box):
         item = self._doc.find_descendant_by_uid(spec.uid)
         if item is not None:
             self.visibility_toggled.send(self, item=item, on=not spec.on)
+
+    def on_row_renamed(self, spec, name: str):
+        self.rename_requested.send(self, uid=spec.uid, name=name)
+
+    def start_rename(self, uid: str) -> bool:
+        """Starts inline renaming of the row with the given uid."""
+        return self._tree.start_rename(uid)
 
     def on_twisty_toggled(self, spec):
         if spec.uid in self._expanded:

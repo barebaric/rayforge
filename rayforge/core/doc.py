@@ -19,6 +19,7 @@ from .item import DocItem
 from .job_counter import JobCounter
 from .layer import Layer
 from .source_asset import SourceAsset
+from .workflow import Workflow
 from .workpiece import WorkPiece, workpieces_in
 
 if TYPE_CHECKING:
@@ -411,6 +412,46 @@ class Doc(DocItem):
     def layers(self) -> list[Layer]:
         """Returns the document's layers in run order."""
         return [child for child in self.children if isinstance(child, Layer)]
+
+    @property
+    def enabled_layers(self) -> list[Layer]:
+        """The layers that have at least one enabled workflow."""
+        return [
+            layer
+            for layer in self.layers
+            if any(workflow.enabled for workflow in layer.workflows)
+        ]
+
+    @property
+    def workflows(self) -> list[Workflow]:
+        """All workflows of all layers, in run order."""
+        return [
+            workflow for layer in self.layers for workflow in layer.workflows
+        ]
+
+    @property
+    def enabled_workflows(self) -> list[Workflow]:
+        """All enabled workflows of all layers, in run order."""
+        return [workflow for workflow in self.workflows if workflow.enabled]
+
+    def workflows_in(
+        self, layer_uids: Iterable[str] | None = None
+    ) -> list[Workflow]:
+        """The enabled workflows of the given layers, in run order.
+
+        ``None`` selects every layer; used to scope a job to a subset of
+        the document's layers.
+        """
+        if layer_uids is None:
+            return self.enabled_workflows
+        uids = set(layer_uids)
+        return [
+            workflow
+            for layer in self.layers
+            if layer.uid in uids
+            for workflow in layer.workflows
+            if workflow.enabled
+        ]
 
     @staticmethod
     def is_default_layer_name(name: str) -> bool:

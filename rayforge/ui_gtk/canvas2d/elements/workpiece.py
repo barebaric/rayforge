@@ -255,9 +255,8 @@ class WorkPieceElement(CanvasElement):
         self.data._view_cache.clear()
 
         if self.data.layer:
-            for workflow in self.data.layer.workflows:
-                for step in workflow.steps:
-                    self.clear_ops_surface(step.uid)
+            for step in self.data.layer.steps:
+                self.clear_ops_surface(step.uid)
         super().trigger_update()
 
     def trigger_view_update(self, ppm: float = 0.0) -> bool:
@@ -420,11 +419,7 @@ class WorkPieceElement(CanvasElement):
         Called from ``draw()`` when ``_composited_dirty`` is True.
         """
         layer = self.data.layer
-        steps = (
-            [s for w in layer.workflows for s in w.steps]
-            if layer is not None
-            else []
-        )
+        steps = layer.steps if layer is not None else []
         if not steps:
             self._dispose_composited()
             self._composited_dirty = False

@@ -105,7 +105,7 @@ class TestCorelDrawImporterContract:
     def test_vectorize_keeps_layers(self, importer: CorelDrawImporter):
         parse_result = importer.parse()
         assert parse_result is not None
-        spec = PassthroughSpec(layer_import_mode=LayerImportMode.NEW_LAYERS)
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.NEW_WORKFLOWS)
 
         vectorized = importer.vectorize(parse_result, spec)
 

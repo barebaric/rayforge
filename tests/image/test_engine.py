@@ -172,7 +172,7 @@ def test_split_layers_alignment(engine):
 
     spec = PassthroughSpec(
         active_layer_ids=["Top", "Bottom"],
-        layer_import_mode=LayerImportMode.NEW_LAYERS,
+        layer_import_mode=LayerImportMode.NEW_WORKFLOWS,
     )
     plan = engine.calculate_layout(vec_result, spec)
 

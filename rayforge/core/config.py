@@ -138,7 +138,7 @@ class Config:
         self.default_stock_material_uid: str | None = None
         # Default stock thickness in mm, applied to new stock assets.
         self.default_stock_thickness_mm: float = 18.0
-        # Whether the first-run machine layer wizard has been completed
+        # Whether the first-run machine setup wizard has been completed
         # (or dismissed). Absent in older configs; the wizard itself
         # only triggers while placeholder machines are the only ones.
         self.setup_completed: bool = False
@@ -329,7 +329,7 @@ class Config:
         self.changed.send(self)
 
     def set_setup_completed(self, completed: bool):
-        """Marks the first-run machine layer wizard as handled."""
+        """Marks the first-run machine setup wizard as handled."""
         if self.setup_completed == completed:
             return
         self.setup_completed = completed
@@ -551,7 +551,7 @@ class Config:
             "default_stock_thickness_mm", 18.0
         )
 
-        # Load first-run layer flag
+        # Load first-run setup flag
         config.setup_completed = data.get("setup_completed", False)
 
         # Load custom mouse gesture bindings

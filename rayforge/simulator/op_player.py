@@ -8,6 +8,7 @@ from raygeo.ops.types import CommandCategory, CommandType
 
 from ..core.doc import Doc
 from ..core.layer import Layer
+from ..core.workflow import Workflow
 from ..machine.kinematic_mapping import resolve_layer_rotary
 from ..machine.kinematic_math import KinematicMath
 from ..machine.models.machine import Machine
@@ -618,7 +619,9 @@ class OpPlayer:
         item = self._doc.find_descendant_by_uid(uid)
         if isinstance(item, Layer):
             return item
-        return getattr(item, "layer", None)
+        if isinstance(item, Workflow):
+            return item.layer
+        return None
 
     def get_current_layer(self, doc: Doc) -> "Layer | None":
         uid = self.state.current_layer_uid
@@ -670,7 +673,9 @@ class SnapshotBuilder:
         item = self._doc.find_descendant_by_uid(uid)
         if isinstance(item, Layer):
             return item
-        return getattr(item, "layer", None)
+        if isinstance(item, Workflow):
+            return item.layer
+        return None
 
     def advance_to(self, index: int):
         for i in range(self._current_index + 1, index + 1):

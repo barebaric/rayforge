@@ -166,15 +166,14 @@ class ThemeColorService:
         if self._color_set is None or self._doc is None:
             return {}
         layer_color_sets: dict[str, ColorSet] = {}
-        for layer in self._doc.layers:
-            for workflow in layer.workflows:
-                cut_rgba = hex_to_rgba(workflow.color)
-                cut_lut = create_lut_from_color(cut_rgba)
-                data = {
-                    "cut": cut_lut,
-                    "engrave": cut_lut,
-                    "travel": self._color_set.get_rgba("travel"),
-                    "zero_power": self._color_set.get_rgba("zero_power"),
-                }
-                layer_color_sets[workflow.uid] = ColorSet(_data=data)
+        for workflow in self._doc.workflows:
+            cut_rgba = hex_to_rgba(workflow.color)
+            cut_lut = create_lut_from_color(cut_rgba)
+            data = {
+                "cut": cut_lut,
+                "engrave": cut_lut,
+                "travel": self._color_set.get_rgba("travel"),
+                "zero_power": self._color_set.get_rgba("zero_power"),
+            }
+            layer_color_sets[workflow.uid] = ColorSet(_data=data)
         return layer_color_sets

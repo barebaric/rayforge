@@ -77,12 +77,6 @@ class JogDirection(Enum):
 
 logger = logging.getLogger(__name__)
 
-#: Hook trigger names written by older machine profiles.
-_LEGACY_HOOK_TRIGGERS = {
-    "LAYER_START": "WORKFLOW_START",
-    "LAYER_END": "WORKFLOW_END",
-}
-
 MACHINE_SPACE_WCS = "MACHINE"
 
 _MARGIN_EPSILON = 0.1  # mm — minimum work-area dimension after clamping
@@ -465,7 +459,7 @@ class Machine:
         """
         Updates the machine's unit system and emits ``changed`` when
         it actually changed. Set by the probe wizard during device
-        layer or by the user from the machine settings.
+        setup or by the user from the machine settings.
         """
         if self.unit_system != unit_system:
             self.unit_system = unit_system
@@ -2259,9 +2253,6 @@ class Machine:
 
         # Deserialize remaining hookmacros from the (potentially cleaned) data
         for trigger_name, macro_data in hook_data.items():
-            trigger_name = _LEGACY_HOOK_TRIGGERS.get(
-                trigger_name, trigger_name
-            )
             try:
                 trigger = MacroTrigger[trigger_name]
                 ma.hookmacros[trigger] = Macro.from_dict(macro_data)

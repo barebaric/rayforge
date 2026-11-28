@@ -19,7 +19,7 @@ from raygeo.geo import Matrix
 
 from ..context import get_context
 from .group import Group
-from .item import DocItem
+from .item import DocItem, VisibleMixin
 from .step import Step
 from .stock import StockItem
 from .workflow import Workflow
@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T", bound="DocItem")
 
 
-class Layer(DocItem):
+class Layer(VisibleMixin):
     """
     Represents one machine configuration: the workpieces loaded for it,
     the stock they are cut from, and the ordered workflows that run.
@@ -77,6 +77,7 @@ class Layer(DocItem):
             "type": "layer",
             "name": self.name,
             "matrix": self.matrix.to_list(),
+            "visible": self.visible,
             "rotary_enabled": self.rotary_enabled,
             "rotary_diameter": self.rotary_diameter,
             "rotary_module_uid": self.rotary_module_uid,
@@ -95,6 +96,7 @@ class Layer(DocItem):
             "type",
             "name",
             "matrix",
+            "visible",
             "rotary_enabled",
             "rotary_diameter",
             "rotary_module_uid",
@@ -107,6 +109,7 @@ class Layer(DocItem):
         layer = cls(name=data.get("name", "Layer"))
         layer.uid = data["uid"]
         layer.matrix = Matrix.from_list(data["matrix"])
+        layer.visible = data.get("visible", True)
         layer.rotary_enabled = data.get("rotary_enabled", False)
         layer.rotary_diameter = data.get("rotary_diameter", 25.0)
         layer.rotary_module_uid = data.get("rotary_module_uid")
@@ -178,6 +181,11 @@ class Layer(DocItem):
         return [
             child for child in self.children if isinstance(child, Workflow)
         ]
+
+    @property
+    def steps(self) -> list[Step]:
+        """All steps of the layer's workflows, in run order."""
+        return [step for workflow in self.workflows for step in workflow.steps]
 
     def get_content_items(self) -> list[DocItem]:
         """
@@ -390,6 +398,8 @@ class Layer(DocItem):
             A list of (Step, WorkPiece) tuples that are currently
             visible and have valid geometry for rendering.
         """
+        if not self.visible:
+            return []
         items = []
         for workpiece in self.all_workpieces:
             if any(s <= 0 for s in workpiece.size):

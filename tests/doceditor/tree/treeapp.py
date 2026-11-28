@@ -167,6 +167,8 @@ class TreeApp(Adw.Application):
         self.parts_tree.selection_changed.connect(self._on_selection)
         self.operations_tree.selection_changed.connect(self._on_selection)
         self.parts_tree.visibility_toggled.connect(self._on_visibility)
+        self.parts_tree.rename_requested.connect(self._on_rename)
+        self.operations_tree.rename_requested.connect(self._on_rename)
         self.operations_tree.workflow_requested.connect(
             self._on_workflow_requested
         )
@@ -182,6 +184,11 @@ class TreeApp(Adw.Application):
 
     def _on_visibility(self, sender, item, on):
         item.set_visible(on)
+
+    def _on_rename(self, sender, uid, name):
+        item = self.doc.find_descendant_by_uid(uid)
+        if item is not None:
+            item.name = name
 
     def _on_add_part(self, button):
         self.part_counter += 1

@@ -78,6 +78,7 @@ SHORTCUTS = {
     "win.group": f"{PRIMARY_ACCEL}g",
     "win.ungroup": f"{PRIMARY_ACCEL}u",
     "win.split": "<Ctrl><Alt>w",
+    "win.move-to-layer": f"{PRIMARY_ACCEL}Page_Up",
     "win.align-left": f"{PRIMARY_ACCEL}<Shift>Left",
     "win.align-right": f"{PRIMARY_ACCEL}<Shift>Right",
     "win.align-top": f"{PRIMARY_ACCEL}<Shift>Up",
@@ -120,10 +121,10 @@ class ActionExtensionRegistry:
         self._setup_handlers.append(handler)
         if addon_name:
             self._setup_addon_map[id(handler)] = addon_name
-        logger.debug(f"Registered action layer handler: {handler.__name__}")
+        logger.debug(f"Registered action setup handler: {handler.__name__}")
 
     def unregister_setup(self, handler: ActionSetupHandler) -> bool:
-        """Unregister an action layer handler."""
+        """Unregister an action setup handler."""
         try:
             self._setup_handlers.remove(handler)
             self._setup_addon_map.pop(id(handler), None)
@@ -195,13 +196,13 @@ class ActionExtensionRegistry:
         return count
 
     def invoke_setup_handlers(self, action_manager: "ActionManager"):
-        """Invoke all registered layer handlers."""
+        """Invoke all registered setup handlers."""
         for handler in self._setup_handlers:
             try:
                 handler(action_manager)
             except Exception:
                 logger.exception(
-                    f"Error in action layer handler {handler.__name__}"
+                    f"Error in action setup handler {handler.__name__}"
                 )
 
     def invoke_state_update_handlers(self, action_manager: "ActionManager"):
@@ -424,6 +425,9 @@ class ActionManager:
         # Imported Source Actions
         self._add_action("reload-source", self.on_reload_source)
         self._add_action("relink-source", self.on_relink_source)
+
+        # Layer Actions
+        self._add_action("move-to-layer", self.on_move_to_layer)
 
         # Grouping Actions
         self._add_action("group", self.on_group_action)
@@ -840,6 +844,24 @@ class ActionManager:
     def get_action(self, name: str) -> Gio.SimpleAction:
         """Retrieves a registered action by its name."""
         return self.actions[name]
+
+    def on_move_to_layer(self, action, param):
+        """Opens the layer chooser for the selected items."""
+        from .doceditor.move_to_layer_dialog import MoveToLayerDialog
+
+        items = self.win.surface.get_selected_items()
+        items = [item for item in items if isinstance(item, DocItem)]
+        if not items:
+            return
+        dialog = MoveToLayerDialog(
+            parent=self.win, doc=self.editor.doc, items=items
+        )
+        dialog.layer_selected.connect(
+            lambda _sender, layer: self.editor.layer.move_items_to_layer(
+                items, layer
+            )
+        )
+        dialog.present()
 
     def on_group_action(self, action, param):
         """Handler for the 'group' action."""

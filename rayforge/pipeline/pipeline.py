@@ -112,19 +112,18 @@ class Pipeline:
     def _has_workflow_content(self) -> bool:
         if not self._doc:
             return False
-        for layer in self._doc.layers:
-            for workflow in layer.workflows:
-                if not workflow.steps:
-                    continue
-                if layer.all_workpieces:
-                    return True
-                # Geometry-less steps (e.g. the Command step) run
-                # without any workpiece in the layer.
-                if any(
-                    step.visible and not step.needs_workpieces
-                    for step in workflow.steps
-                ):
-                    return True
+        for workflow in self._doc.enabled_workflows:
+            if not workflow.steps:
+                continue
+            if workflow.workpieces:
+                return True
+            # Geometry-less steps (e.g. the Command step) run without
+            # any workpiece in the layer.
+            if any(
+                step.visible and not step.needs_workpieces
+                for step in workflow.steps
+            ):
+                return True
         return False
 
     def _can_generate_job(self) -> bool:
@@ -138,19 +137,17 @@ class Pipeline:
         """
         if not self._doc:
             return False
-        for layer in self._doc.layers:
-            setup_workpieces = list(layer.all_workpieces)
-            for workflow in layer.workflows:
-                if not workflow.steps or not workflow.enabled:
+        for workflow in self._doc.enabled_workflows:
+            if not workflow.steps:
+                continue
+            workpieces = workflow.workpieces
+            for step in workflow.steps:
+                if not step.visible:
                     continue
-                workpieces = workflow.selected_workpieces(setup_workpieces)
-                for step in workflow.steps:
-                    if not step.visible:
-                        continue
-                    if not step.needs_workpieces:
-                        return True
-                    if step.selected_workpieces(workpieces):
-                        return True
+                if not step.needs_workpieces:
+                    return True
+                if step.selected_workpieces(workpieces):
+                    return True
         return False
 
     def _connect_ctl_signals(self) -> None:

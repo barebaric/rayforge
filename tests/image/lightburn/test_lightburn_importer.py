@@ -407,7 +407,7 @@ class TestLightBurnImporter:
 
     def test_new_layers_get_distinct_colors(self):
         importer = self._import("multi_layer.lbrn2")
-        spec = PassthroughSpec(layer_import_mode=LayerImportMode.NEW_LAYERS)
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.NEW_WORKFLOWS)
         result = importer.get_doc_items(spec)
         assert result is not None and result.payload is not None
         colors = [info.color for info in result.payload.source_layers]

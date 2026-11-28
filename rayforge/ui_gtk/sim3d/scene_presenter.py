@@ -873,12 +873,12 @@ class ScenePresenter:
         any_rotary = any(layer.rotary_enabled for layer in self.doc.layers)
         self._mark_scene_dirty()
         if (
-            self._scene.had_rotary_setups
+            self._scene.had_rotary_layers
             and not any_rotary
             and self._get_camera_available()
         ):
             self._reset_view(ViewDirection.ISO)
-        self._scene.had_rotary_setups = any_rotary
+        self._scene.had_rotary_layers = any_rotary
 
         world_to_visual = np.identity(4, dtype=np.float32)
         world_to_cyl_local = np.identity(4, dtype=np.float32)
@@ -926,36 +926,38 @@ class ScenePresenter:
         )
 
         layer_configs: dict[str, LayerRenderConfig] = {}
-        for layer in self.doc.layers:
-            for workflow in layer.workflows:
-                axis_position = 0.0
-                reverse = False
-                axis_position_3d = None
-                cylinder_dir = None
-                if layer.rotary_enabled and machine:
-                    cfg = resolve_layer_rotary(layer, machine)
-                    module = cfg.module
-                    if module is not None:
-                        mapping = KinematicMapping.from_rotary_module(
-                            module,
-                            layer.rotary_diameter,
-                            apply_gear_ratio=False,
+        for workflow in self.doc.workflows:
+            layer = workflow.layer
+            if layer is None:
+                continue
+            axis_position = 0.0
+            reverse = False
+            axis_position_3d = None
+            cylinder_dir = None
+            if layer.rotary_enabled and machine:
+                cfg = resolve_layer_rotary(layer, machine)
+                module = cfg.module
+                if module is not None:
+                    mapping = KinematicMapping.from_rotary_module(
+                        module,
+                        layer.rotary_diameter,
+                        apply_gear_ratio=False,
+                    )
+                    if mapping is not None:
+                        axis_position = mapping.axis_position
+                        axis_position_3d = tuple(
+                            mapping.axis_position_3d.tolist()
                         )
-                        if mapping is not None:
-                            axis_position = mapping.axis_position
-                            axis_position_3d = tuple(
-                                mapping.axis_position_3d.tolist()
-                            )
-                            cylinder_dir = tuple(mapping.cylinder_dir.tolist())
-                            reverse = mapping.reverse
-                layer_configs[workflow.uid] = LayerRenderConfig(
-                    rotary_enabled=layer.rotary_enabled,
-                    rotary_diameter=layer.rotary_diameter,
-                    axis_position=axis_position,
-                    reverse=reverse,
-                    axis_position_3d=axis_position_3d,
-                    cylinder_dir=cylinder_dir,
-                )
+                        cylinder_dir = tuple(mapping.cylinder_dir.tolist())
+                        reverse = mapping.reverse
+            layer_configs[workflow.uid] = LayerRenderConfig(
+                rotary_enabled=layer.rotary_enabled,
+                rotary_diameter=layer.rotary_diameter,
+                axis_position=axis_position,
+                reverse=reverse,
+                axis_position_3d=axis_position_3d,
+                cylinder_dir=cylinder_dir,
+            )
 
         render_config = RenderConfig3D(
             world_to_visual=world_to_visual,

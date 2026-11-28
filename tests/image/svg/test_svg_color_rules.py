@@ -59,7 +59,7 @@ def _import_color_workflows(editor) -> list:
     importer = SvgVectorImporter(SVG_COLORS, Path("colors.svg"))
     spec = PassthroughSpec(
         layer_source=LayerSource.COLORS,
-        layer_import_mode=LayerImportMode.NEW_LAYERS,
+        layer_import_mode=LayerImportMode.NEW_WORKFLOWS,
     )
     import_result = importer.get_doc_items(spec)
     assert import_result is not None
@@ -153,7 +153,7 @@ async def test_rule_not_applied_to_layer_source_import(
     importer = SvgVectorImporter(svg, Path("layer.svg"))
     spec = PassthroughSpec(
         layer_source=LayerSource.SVG_LAYERS,
-        layer_import_mode=LayerImportMode.NEW_LAYERS,
+        layer_import_mode=LayerImportMode.NEW_WORKFLOWS,
     )
     import_result = importer.get_doc_items(spec)
     assert import_result is not None
@@ -202,7 +202,7 @@ async def test_color_rule_via_full_commit_flow(
 
     spec = PassthroughSpec(
         layer_source=LayerSource.COLORS,
-        layer_import_mode=LayerImportMode.NEW_LAYERS,
+        layer_import_mode=LayerImportMode.NEW_WORKFLOWS,
     )
     importer = SvgImporter(SVG_COLORS, Path("colors.svg"))
     import_result = importer.get_doc_items(spec)

@@ -1,0 +1,170 @@
+{
+  "uid": "doc-uid",
+  "type": "doc",
+  "active_layer_index": 1,
+  "children": [
+    {
+      "uid": "layer-1",
+      "type": "layer",
+      "name": "Cut",
+      "matrix": [
+        [
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "visible": true,
+      "color": "#ff0000",
+      "rotary_enabled": false,
+      "rotary_diameter": 25.0,
+      "rotary_module_uid": null,
+      "stock_material_uid": null,
+      "wcs": "G55",
+      "post_processors_dicts": [
+        {
+          "name": "MeshCorrection"
+        }
+      ],
+      "children": [
+        {
+          "uid": "wf-1",
+          "type": "workflow",
+          "name": "Cut Workflow",
+          "matrix": [
+            [
+              1,
+              0,
+              0
+            ],
+            [
+              0,
+              1,
+              0
+            ],
+            [
+              0,
+              0,
+              1
+            ]
+          ],
+          "children": []
+        },
+        {
+          "uid": "wp-1",
+          "type": "workpiece",
+          "name": "part",
+          "matrix": [
+            [
+              1,
+              0,
+              0
+            ],
+            [
+              0,
+              1,
+              0
+            ],
+            [
+              0,
+              0,
+              1
+            ]
+          ],
+          "children": [],
+          "source_segment": {
+            "source_asset_uid": "asset-1",
+            "vectorization_spec": {
+              "type": "PassthroughSpec",
+              "layer_import_mode": "new_layers"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "uid": "layer-2",
+      "type": "layer",
+      "name": "Engrave",
+      "matrix": [
+        [
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "visible": false,
+      "color": "#00ff00",
+      "children": [
+        {
+          "uid": "wf-2",
+          "type": "workflow",
+          "name": "Engrave Workflow",
+          "matrix": [
+            [
+              1,
+              0,
+              0
+            ],
+            [
+              0,
+              1,
+              0
+            ],
+            [
+              0,
+              0,
+              1
+            ]
+          ],
+          "children": []
+        }
+      ]
+    },
+    {
+      "uid": "stock-1",
+      "type": "stockitem",
+      "name": "Sheet",
+      "stock_asset_uid": "asset-1",
+      "matrix": [
+        [
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "visible": true
+    }
+  ],
+  "assets": []
+}

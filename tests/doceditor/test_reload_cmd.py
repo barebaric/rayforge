@@ -81,7 +81,7 @@ def _flatten_spec() -> PassthroughSpec:
 def _color_spec(active=None) -> PassthroughSpec:
     return PassthroughSpec(
         active_layer_ids=active,
-        layer_import_mode=LayerImportMode.NEW_LAYERS,
+        layer_import_mode=LayerImportMode.NEW_WORKFLOWS,
         layer_source=LayerSource.COLORS,
     )
 

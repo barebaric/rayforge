@@ -631,14 +631,14 @@ class ReloadCmd:
         wp = new.workpiece
         wp.matrix = delta @ anchor @ wp.matrix
         wp.source_segment = self._adopt_segment(wp, asset, spec, None)
-        mode = LayerImportMode.NEW_LAYERS
+        mode = LayerImportMode.NEW_WORKFLOWS
         if isinstance(spec, PassthroughSpec):
             mode = spec.layer_import_mode
         if ref_wp.parent is not None:
             plan.additions.append((ref_wp.parent, wp))
             if (
                 new.source_layer is not None
-                and mode == LayerImportMode.NEW_LAYERS
+                and mode == LayerImportMode.NEW_WORKFLOWS
             ):
                 plan.new_workflows.append(
                     (ref_wp.parent, new.source_layer, wp)

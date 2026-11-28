@@ -23,11 +23,10 @@ CURRENT_DOC_SCHEMA_VERSION = 1
 def _migrate_v0_to_v1(data: dict[str, Any]) -> dict[str, Any]:
     """Restructures v0 layers to the v1 shape.
 
-    The document still holds layers, but a layer no longer carries
-    visibility or color: workpieces carry visibility, and the
-    workflow inherits the layer's color. Layer-level post processors
-    move onto the workflow. Document-level stock items move into the
-    first layer, so a layer owns the stock its parts are cut from.
+    The document still holds layers, but a layer no longer carries a
+    color: the workflow inherits it. Layer-level post processors move
+    onto the workflow. Document-level stock items move into the first
+    layer, so a layer owns the stock its parts are cut from.
     """
     children = data.get("children", [])
     new_children: list[dict[str, Any]] = []
@@ -53,8 +52,29 @@ def _migrate_v0_to_v1(data: dict[str, Any]) -> dict[str, Any]:
             new_children = stock_dicts + new_children
 
     result = dict(data)
-    result["children"] = new_children
+    result["children"] = _migrate_import_modes(new_children)
     return result
+
+
+def _migrate_import_modes(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Renames the legacy new-layers import mode in segment specs."""
+    for item in items:
+        segment = item.get("source_segment")
+        if isinstance(segment, dict):
+            spec = segment.get("vectorization_spec")
+            if (
+                isinstance(spec, dict)
+                and spec.get("layer_import_mode") == "new_layers"
+            ):
+                spec = dict(spec)
+                spec["layer_import_mode"] = "new_workflows"
+                segment = dict(segment)
+                segment["vectorization_spec"] = spec
+                item["source_segment"] = segment
+        children = item.get("children")
+        if isinstance(children, list):
+            _migrate_import_modes(children)
+    return items
 
 
 def _layer_to_v1(source: dict[str, Any]) -> dict[str, Any]:
@@ -65,7 +85,6 @@ def _layer_to_v1(source: dict[str, Any]) -> dict[str, Any]:
         if k
         not in (
             "type",
-            "visible",
             "color",
             "post_processors_dicts",
             "children",

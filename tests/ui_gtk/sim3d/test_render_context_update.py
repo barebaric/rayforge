@@ -26,9 +26,9 @@ def _make_camera(width=800, height=600):
     )
 
 
-def _make_scene(had_rotary_setups=False):
+def _make_scene(had_rotary_layers=False):
     scene = MagicMock()
-    scene.had_rotary_setups = had_rotary_setups
+    scene.had_rotary_layers = had_rotary_layers
     scene.cylinder_transform = np.eye(4, dtype=np.float64)
     return scene
 
@@ -71,7 +71,7 @@ def _update(
             if scene
             else _make_scene().cylinder_transform
         ),
-        had_rotary_setups=scene.had_rotary_setups if scene else False,
+        had_rotary_layers=scene.had_rotary_layers if scene else False,
     )
     ctx = RenderContext()
     ctx.update(frame)
@@ -121,7 +121,7 @@ def test_update_rotary_branch_applies_rotation():
     op_player.render_state.return_value = op_player.state
     op_player.get_current_layer.return_value = None
 
-    scene = _make_scene(had_rotary_setups=True)
+    scene = _make_scene(had_rotary_layers=True)
     ctx = _update(scene=scene, op_player=op_player, machine=machine)
 
     assert ctx.kinematics.rotary_axis is Axis.A
@@ -159,7 +159,7 @@ def test_update_populates_machine_kinematics():
     ctx = _update(
         op_player=op_player,
         machine=machine,
-        scene=_make_scene(had_rotary_setups=True),
+        scene=_make_scene(had_rotary_layers=True),
     )
 
     assert ctx.kinematics.has_rotary is True
@@ -213,7 +213,7 @@ def test_update_prefers_playback_assembly_over_machine():
         op_player=op_player,
         machine=machine,
         playback_assembly=playback_assembly,
-        scene=_make_scene(had_rotary_setups=True),
+        scene=_make_scene(had_rotary_layers=True),
     )
 
     assert ctx.kinematics.has_rotary is True

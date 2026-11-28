@@ -98,6 +98,13 @@ def _populate_standard_items(menu: Gio.Menu):
     Helper to append standard items to a menu using flat structure with
     separators.
     """
+    menu.append_item(
+        Gio.MenuItem.new(_("Move to Layer…"), "win.move-to-layer")
+    )
+
+    # Separator
+    menu.append_section(None, Gio.Menu.new())
+
     menu.append_item(Gio.MenuItem.new(_("Group"), "win.group"))
     menu.append_item(Gio.MenuItem.new(_("Ungroup"), "win.ungroup"))
 

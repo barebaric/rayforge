@@ -8,6 +8,7 @@ from raygeo.ops import Ops
 from raygeo.ops.axis import Axis
 
 from ..core.layer import Layer
+from ..core.workflow import Workflow
 from .kinematic_math import KinematicMath
 from .models.rotary_module import RotaryMode, RotaryType
 
@@ -22,16 +23,17 @@ def _resolve_rotary_layer_by_uid(marker_uid: str, doc):
     """Return the Layer if it has rotary enabled.
 
     The span markers carry the workflow uid; the owning layer decides
-    whether rotary mapping applies.
+    whether rotary mapping applies. A bare layer uid is accepted too
+    (e.g. hand-built ops in tests).
     """
     descendant = doc.find_descendant_by_uid(marker_uid)
     if isinstance(descendant, Layer):
         layer = descendant
+    elif isinstance(descendant, Workflow):
+        layer = descendant.layer
     else:
-        layer = getattr(descendant, "layer", None)
-    if not isinstance(layer, Layer):
         return None
-    if not layer.rotary_enabled:
+    if layer is None or not layer.rotary_enabled:
         return None
     return layer
 

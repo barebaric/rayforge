@@ -16,7 +16,6 @@ from ..core.undo.list_cmd import ReorderListCommand
 from ..core.workpiece import WorkPiece
 
 if TYPE_CHECKING:
-    from ..ui_gtk.canvas2d.surface import WorkSurface
     from .editor import DocEditor
 
 logger = logging.getLogger(__name__)
@@ -193,60 +192,6 @@ class LayerCmd:
             setter_method_name="set_layers",
         )
         self._editor.history_manager.execute(cmd)
-
-    def move_selected_to_adjacent_layer(
-        self, surface: WorkSurface, direction: int
-    ):
-        """
-        Creates an undoable command to move selected workpieces to the
-        next or previous layer, preserving the selection.
-
-        Args:
-            surface: The WorkSurface instance containing the selection.
-            direction: 1 for the next layer, -1 for the previous.
-        """
-        selected_wps = surface.get_selected_workpieces()
-        if not selected_wps:
-            return
-
-        doc = self._editor.doc
-        layers = list(doc.layers)
-
-        if len(layers) <= 1:
-            # Not enough layers to move between.
-            return
-
-        # Assume all selected workpieces are on the same layer, which is
-        # a reasonable constraint for this operation.
-        current_layer = selected_wps[0].layer
-        if not current_layer:
-            return
-
-        try:
-            current_index = layers.index(current_layer)
-
-            # Wrap around the layer list.
-            new_index = (current_index + direction + len(layers)) % len(layers)
-            new_layer = layers[new_index]
-
-            # 1. Create the model-only command.
-            cmd = MoveItemsLayerCommand(selected_wps, new_layer, current_layer)
-
-            # 2. Execute the command. The history manager updates the
-            #    model, which triggers signals that cause the UI to
-            #    destructively rebuild the moved elements in the new
-            #    layer element.
-            self._editor.history_manager.execute(cmd)
-
-            # 3. After the model and UI have been updated, explicitly
-            #    re-apply the selection to the newly created UI elements.
-            surface.select_items(selected_wps)
-
-        except ValueError:
-            logger.warning(
-                f"Layer '{current_layer.name}' not found in document's "
-                "layer list."
-            )
 
     def move_items_to_layer(self, items: list[DocItem], target_layer: Layer):
         """Creates an undoable command to move items to a specific

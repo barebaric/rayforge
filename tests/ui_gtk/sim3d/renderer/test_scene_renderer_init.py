@@ -54,7 +54,7 @@ def test_scene_renderer_constructs_children():
     assert scene.ring_renderers == []
     assert scene.cylinder_renderers == {}
     assert scene.model_renderers == []
-    assert scene.had_rotary_setups is False
+    assert scene.had_rotary_layers is False
     assert scene.axis_renderer is None
     assert scene.zone_renderer is None
     assert scene.main_shader is None

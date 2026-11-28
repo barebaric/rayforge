@@ -48,7 +48,7 @@ def test_has_rotary_layer_reflects_layer_flags(doc):
     assert doc.has_rotary_layer is False
 
 
-def test_is_default_setup_name():
+def test_is_default_layer_name():
     """Auto-generated names match the doc's layer naming scheme."""
     assert Doc.is_default_layer_name("Layer")
     assert Doc.is_default_layer_name("Layer 1")
@@ -663,7 +663,7 @@ def test_has_result_logic(doc):
         assert doc.has_result()
 
 
-def test_remove_setup_adjusts_active_index(doc):
+def test_remove_layer_adjusts_active_index(doc):
     """
     Tests that removing a layer correctly adjusts the active layer index.
     """
@@ -738,7 +738,7 @@ def test_remove_last_layer_is_noop(doc):
     assert doc.layers[0] is last_layer
 
 
-def test_set_setups_replaces_setups(doc):
+def test_set_layers_replaces_layers(doc):
     """
     Tests that set_layers replaces the layers, including the stock they
     own.
@@ -793,7 +793,7 @@ def test_set_layers_active_layer_logic(doc):
     assert doc._active_layer_index == 0
 
 
-def test_from_dict_clears_default_setup():
+def test_from_dict_clears_default_layer():
     """
     Tests that Doc.from_dict removes the default layer created by
     __init__ before populating from the dictionary, and that v0 layer
