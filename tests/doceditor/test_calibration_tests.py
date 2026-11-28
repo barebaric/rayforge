@@ -74,8 +74,7 @@ def _assert_golden(gcode: str, name: str):
 
 
 def _steps(layer):
-    assert layer.workflow is not None
-    return list(layer.workflow.steps)
+    return list(layer.workflows[0].steps)
 
 
 def _cut_moves(gcode: str) -> list[tuple[float, float]]:
@@ -143,7 +142,10 @@ async def test_each_test_gets_its_own_active_layer(
     assert doc_editor.doc.active_layer is layer
     assert layer.name == cmd.generator(generator_id).title
     assert layer.stock_material_uid is not None
-    assert layer.color not in {other.color for other in before}
+    colors = {
+        workflow.color for layer in before for workflow in layer.workflows
+    }
+    assert all(workflow.color not in colors for workflow in layer.workflows)
     assert record in _records(doc_editor)
     assert record.hidden
 
@@ -285,7 +287,7 @@ async def test_update_keeps_steps_the_user_added(doc_editor, machine):
     layer = _layer(doc_editor, record)
     extra = _steps(layer)[0].__class__.create(doc_editor.context)
     extra.name = "Cut out"
-    layer.workflow.add_step(extra)
+    layer.workflows[0].add_step(extra)
 
     params = record.params
     params["count"] = 4
@@ -302,7 +304,7 @@ async def test_update_keeps_a_user_step_between_the_cells(doc_editor, machine):
     record = cmd.create("interval_test", {"count": 2})
     layer = _layer(doc_editor, record)
     extra = _steps(layer)[0].__class__.create(doc_editor.context)
-    layer.workflow.add_child(extra, index=2)
+    layer.workflows[0].add_child(extra, index=2)
 
     cmd.update_params(record, {**record.params, "count": 3})
 
@@ -614,7 +616,7 @@ def _old_style_grid(editor, grid_params):
     width, height = wp.size
     wp.pos = (200 - width / 2, 200 - height / 2)
     layer = editor.doc.active_layer
-    layer.workflow.add_step(step)
+    layer.workflows[0].add_step(step)
     layer.add_child(wp)
 
 

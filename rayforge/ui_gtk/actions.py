@@ -2,7 +2,7 @@ import logging
 from collections.abc import Callable
 from gettext import gettext as _
 from gettext import ngettext
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from gi.repository import Adw, Gio, GLib, Gtk
 
@@ -78,8 +78,7 @@ SHORTCUTS = {
     "win.group": f"{PRIMARY_ACCEL}g",
     "win.ungroup": f"{PRIMARY_ACCEL}u",
     "win.split": "<Ctrl><Alt>w",
-    "win.layer-move-up": f"{PRIMARY_ACCEL}Page_Up",
-    "win.layer-move-down": f"{PRIMARY_ACCEL}Page_Down",
+    "win.move-to-layer": f"{PRIMARY_ACCEL}Page_Up",
     "win.align-left": f"{PRIMARY_ACCEL}<Shift>Left",
     "win.align-right": f"{PRIMARY_ACCEL}<Shift>Right",
     "win.align-top": f"{PRIMARY_ACCEL}<Shift>Up",
@@ -116,7 +115,7 @@ class ActionExtensionRegistry:
         self._state_update_addon_map: dict[int, str] = {}
 
     def register_setup(self, handler: ActionSetupHandler, addon_name: str):
-        """Register a handler to be called during action setup."""
+        """Register a handler to be called during action layer."""
         if handler in self._setup_handlers:
             return
         self._setup_handlers.append(handler)
@@ -427,9 +426,8 @@ class ActionManager:
         self._add_action("reload-source", self.on_reload_source)
         self._add_action("relink-source", self.on_relink_source)
 
-        # Layer Management Actions
-        self._add_action("layer-move-up", self.on_layer_move_up)
-        self._add_action("layer-move-down", self.on_layer_move_down)
+        # Layer Actions
+        self._add_action("move-to-layer", self.on_move_to_layer)
 
         # Grouping Actions
         self._add_action("group", self.on_group_action)
@@ -740,10 +738,9 @@ class ActionManager:
         valid_workpieces = [
             wp
             for wp in workpieces_to_process
-            if wp.boundaries
-            and wp.layer
-            and wp.layer.workflow
-            and wp.layer.workflow.has_steps()
+            if wp.layer
+            and wp.layer.workflows
+            and any(w.has_steps() for w in wp.layer.workflows)
         ]
 
         if not valid_workpieces:
@@ -767,8 +764,7 @@ class ActionManager:
         for workpiece in workpieces_to_process:
             if not (
                 workpiece.layer
-                and workpiece.layer.workflow
-                and workpiece.layer.workflow.has_steps()
+                and any(w.has_steps() for w in workpiece.layer.workflows)
             ):
                 continue
 
@@ -849,17 +845,23 @@ class ActionManager:
         """Retrieves a registered action by its name."""
         return self.actions[name]
 
-    def on_layer_move_up(self, action, param):
-        """Handler for the 'layer-move-up' action."""
-        self.editor.layer.move_selected_to_adjacent_layer(
-            self.win.surface, direction=-1
-        )
+    def on_move_to_layer(self, action, param):
+        """Opens the layer chooser for the selected items."""
+        from .doceditor.move_to_layer_dialog import MoveToLayerDialog
 
-    def on_layer_move_down(self, action, param):
-        """Handler for the 'layer-move-down' action."""
-        self.editor.layer.move_selected_to_adjacent_layer(
-            self.win.surface, direction=1
+        items = self.win.surface.get_selected_items()
+        items = [item for item in items if isinstance(item, DocItem)]
+        if not items:
+            return
+        dialog = MoveToLayerDialog(
+            parent=self.win, doc=self.editor.doc, items=items
         )
+        dialog.layer_selected.connect(
+            lambda _sender, layer: self.editor.layer.move_items_to_layer(
+                items, layer
+            )
+        )
+        dialog.present()
 
     def on_group_action(self, action, param):
         """Handler for the 'group' action."""
@@ -872,14 +874,14 @@ class ActionManager:
             for elem in selected_elements
             if isinstance(elem.data, DocItem)
         ]
-        # All items must belong to the same layer to be grouped
-        parent_layer = cast(Layer, items_to_group[0].parent)
-        if not parent_layer or not all(
-            item.parent is parent_layer for item in items_to_group
+        # All items must share the same layer to be grouped
+        parent = items_to_group[0].parent
+        if not isinstance(parent, Layer) or not all(
+            item.parent is parent for item in items_to_group
         ):
             return
 
-        new_group = self.editor.group.group_items(parent_layer, items_to_group)
+        new_group = self.editor.group.group_items(parent, items_to_group)
         if new_group:
             self.win.surface.select_items([new_group])
 

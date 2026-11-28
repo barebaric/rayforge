@@ -2,7 +2,7 @@
 
 from gettext import gettext as _
 
-from gi.repository import Gtk, Pango
+from gi.repository import Gdk, GLib, Gtk, Pango
 
 from ...ui_gtk.icons import get_icon
 from ...ui_gtk.shared.gtk import apply_css
@@ -133,7 +133,8 @@ class NodeRow(Gtk.ListBoxRow):
     Subclasses build their :class:`NodeSpec` from a model item and pass
     it, together with the owning tab (``callbacks``), to this base. The
     callbacks object provides ``on_row_activated(spec)``,
-    ``on_eye_toggled(spec)`` and ``on_twisty_toggled(spec)``.
+    ``on_eye_toggled(spec)``, ``on_twisty_toggled(spec)`` and
+    ``on_row_renamed(spec, name)``.
     """
 
     def __init__(self, spec: NodeSpec, callbacks):
@@ -154,7 +155,8 @@ class NodeRow(Gtk.ListBoxRow):
 
         box.append(self._build_twisty())
         box.append(self._build_lead())
-        box.append(self._build_name())
+        self._name_label = self._build_name()
+        box.append(self._name_label)
         box.append(self._build_detail())
         box.append(self._build_duration())
         box.append(self._build_eye())
@@ -218,6 +220,76 @@ class NodeRow(Gtk.ListBoxRow):
         name.set_ellipsize(Pango.EllipsizeMode.END)
         name.set_hexpand(True)
         return name
+
+    def start_rename(self):
+        """Replaces the name label with an inline entry.
+
+        Enter or leaving the entry commits the new name through the
+        owning tab; Escape cancels. The entry replaces the label in
+        place, so the row keeps its layout while editing.
+        """
+        if not self.spec.selectable:
+            return
+        parent = self._name_label.get_parent()
+        if not isinstance(parent, Gtk.Box):
+            return
+        entry = Gtk.Entry()
+        entry.add_css_class("rf-rename")
+        entry.set_text(self.spec.label)
+        entry.set_hexpand(True)
+        entry.set_valign(Gtk.Align.CENTER)
+
+        committed = False
+
+        def focus_entry(*_args):
+            entry.grab_focus()
+            entry.select_region(0, -1)
+
+        def finish(rename: bool) -> bool:
+            name = entry.get_text().strip()
+            entry.unparent()
+            self._name_label.set_visible(True)
+            if rename and name and name != self.spec.label:
+                self._callbacks.on_row_renamed(self.spec, name)
+            return GLib.SOURCE_REMOVE
+
+        def commit(*_args):
+            nonlocal committed
+            if committed:
+                return
+            committed = True
+            # The focus change that triggered this still manipulates the
+            # entry; removing it right away corrupts GTK's focus
+            # bookkeeping, so tear down once that change is complete.
+            GLib.timeout_add(0, finish, True)
+
+        def cancel(*_args):
+            nonlocal committed
+            if committed:
+                return
+            committed = True
+            GLib.timeout_add(0, finish, False)
+
+        entry.connect("activate", commit)
+        focus = Gtk.EventControllerFocus()
+        focus.connect("leave", lambda _c: commit())
+        entry.add_controller(focus)
+
+        def on_key_pressed(_controller, keyval, *_args):
+            if keyval == Gdk.KEY_Escape:
+                cancel()
+                return True
+            return False
+
+        keys = Gtk.EventControllerKey()
+        keys.connect("key-pressed", on_key_pressed)
+        entry.add_controller(keys)
+
+        # Inserting into a mapped parent maps the entry right away, so
+        # the handlers must be in place before that.
+        entry.connect("map", focus_entry)
+        parent.insert_child_after(entry, self._name_label)
+        self._name_label.set_visible(False)
 
     def _build_detail(self) -> Gtk.Widget:
         detail = Gtk.Label(label=self.spec.detail, xalign=1)

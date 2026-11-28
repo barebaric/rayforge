@@ -804,7 +804,7 @@ class TestLegacyInvert:
         doc = Doc()
         wp = WorkPiece("photo")
         doc.active_layer.add_child(wp)
-        workflow = doc.active_layer.workflow
+        workflow = doc.active_layer.workflows[0]
         assert workflow is not None
         workflow.add_step(EngraveStep(name="Engrave"))
         data = doc.to_dict()

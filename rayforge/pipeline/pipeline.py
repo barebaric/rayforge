@@ -112,16 +112,16 @@ class Pipeline:
     def _has_workflow_content(self) -> bool:
         if not self._doc:
             return False
-        for layer in self._doc.layers:
-            if not (layer.workflow and layer.workflow.steps):
+        for workflow in self._doc.enabled_workflows:
+            if not workflow.steps:
                 continue
-            if layer.all_workpieces:
+            if workflow.workpieces:
                 return True
             # Geometry-less steps (e.g. the Command step) run without
             # any workpiece in the layer.
             if any(
                 step.visible and not step.needs_workpieces
-                for step in layer.workflow.steps
+                for step in workflow.steps
             ):
                 return True
         return False
@@ -137,11 +137,11 @@ class Pipeline:
         """
         if not self._doc:
             return False
-        for layer in self._doc.layers:
-            if not layer.workflow or not layer.workflow.steps:
+        for workflow in self._doc.enabled_workflows:
+            if not workflow.steps:
                 continue
-            workpieces = list(layer.all_workpieces)
-            for step in layer.workflow.steps:
+            workpieces = workflow.workpieces
+            for step in workflow.steps:
                 if not step.visible:
                     continue
                 if not step.needs_workpieces:
@@ -538,7 +538,16 @@ class Pipeline:
         when_done: Callable[
             [BaseArtifactHandle | None, Exception | None], None
         ],
+        layer_uids: list[str] | None = None,
     ):
+        """
+        Generate the job artifact.
+
+        When *layer_uids* is given, the job is scoped to the workflows
+        of those layers (multi-layer send flow). A scoped request
+        always rebuilds: a cached full-document artifact must not be
+        reused for a subset.
+        """
         if not self._doc:
             when_done(None, RuntimeError("No document is loaded."))
             return
@@ -550,9 +559,14 @@ class Pipeline:
             when_done(None, exc)
             return
 
-        if self._last_job_handle is not None:
+        if layer_uids is None and self._last_job_handle is not None:
             when_done(self._last_job_handle, None)
             return
+
+        if layer_uids is not None:
+            # The scoped artifact must come from a fresh rebuild, and
+            # must not be served later as the whole-document artifact.
+            self.invalidate_job_output()
 
         if not self._can_generate_job():
             when_done(
@@ -600,10 +614,15 @@ class Pipeline:
 
         self.job_generation_finished.connect(_on_finished, weak=False)
         self._intent_ctl.rebuild_finished.connect(_on_settled, weak=False)
-        self._intent_ctl.force_rebuild()
+        self._intent_ctl.force_rebuild(
+            layer_uids=frozenset(layer_uids)
+            if layer_uids is not None
+            else None
+        )
 
     async def generate_job_artifact_async(
         self,
+        layer_uids: list[str] | None = None,
     ) -> BaseArtifactHandle | None:
         future = asyncio.get_running_loop().create_future()
 
@@ -614,5 +633,5 @@ class Pipeline:
                 else:
                     future.set_result(handle)
 
-        self.generate_job_artifact(when_done=_when_done)
+        self.generate_job_artifact(when_done=_when_done, layer_uids=layer_uids)
         return await future

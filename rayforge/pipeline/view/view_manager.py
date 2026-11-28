@@ -48,7 +48,7 @@ class ViewEntry:
     render_context: RenderContext | None = None
     source_handle: WorkPieceArtifactHandle | None = None
     laser_uid: str | None = None
-    layer_uid: str | None = None
+    workflow_uid: str | None = None
 
 
 class ViewManager:
@@ -247,7 +247,7 @@ class ViewManager:
         new_context: RenderContext | None,
         source_handle: WorkPieceArtifactHandle | None,
         laser_uid: str | None = None,
-        layer_uid: str | None = None,
+        workflow_uid: str | None = None,
     ) -> bool:
         """Check if a view needs re-rendering."""
         composite_id = (workpiece_uid, step_uid)
@@ -303,9 +303,10 @@ class ViewManager:
             )
             return True
 
-        if entry.layer_uid != layer_uid:
+        if entry.workflow_uid != workflow_uid:
             logger.debug(
-                f"_is_view_stale[{composite_id}]: layer_uid changed -> STALE"
+                f"_is_view_stale[{composite_id}]: "
+                "workflow_uid changed -> STALE"
             )
             return True
 
@@ -433,8 +434,8 @@ class ViewManager:
         step_exists = any(
             s.uid == step.uid
             for layer in doc.layers
-            if layer.workflow
-            for s in layer.workflow.steps
+            for workflow in layer.workflows
+            for s in workflow.steps
         )
         if not step_exists:
             return
@@ -484,14 +485,15 @@ class ViewManager:
             )
         else:
             laser_uid = doc.get_laser_uid_for_step(step.uid)
-            layer_uid = doc.get_layer_uid_for_step(step.uid)
+            workflow_uid = doc.get_workflow_uid_for_step(step.uid)
             entry = self._view_entries.get(composite_id)
             if entry and (
-                entry.laser_uid != laser_uid or entry.layer_uid != layer_uid
+                entry.laser_uid != laser_uid
+                or entry.workflow_uid != workflow_uid
             ):
                 logger.debug(
                     f"Same artifact for {composite_id}, but "
-                    f"laser/layer uid changed -> requesting re-render"
+                    f"laser/workflow uid changed -> requesting re-render"
                 )
                 self.request_view_render(workpiece.uid, step_uid=step.uid)
             else:
@@ -581,7 +583,7 @@ class ViewManager:
 
         doc = self._pipeline.doc
         laser_uid = doc.get_laser_uid_for_step(step_uid) if doc else None
-        layer_uid = doc.get_layer_uid_for_step(step_uid) if doc else None
+        workflow_uid = doc.get_workflow_uid_for_step(step_uid) if doc else None
 
         if not self._is_view_stale(
             workpiece_uid,
@@ -589,7 +591,7 @@ class ViewManager:
             context,
             source_handle,
             laser_uid,
-            layer_uid,
+            workflow_uid,
         ):
             logger.debug(f"View for ({workpiece_uid}, {step_uid}) is valid.")
             self._render_semaphore.release()
@@ -613,7 +615,7 @@ class ViewManager:
         entry.render_context = context
         entry.source_handle = source_handle
         entry.laser_uid = laser_uid
-        entry.layer_uid = layer_uid
+        entry.workflow_uid = workflow_uid
 
         # Retain source handle for the duration of this task
         self._store.retain(source_handle)
@@ -655,7 +657,7 @@ class ViewManager:
             artifact,
             context,
             laser_uid,
-            layer_uid,
+            workflow_uid,
             key=key,
             when_done=when_done_callback,
         )
@@ -822,7 +824,7 @@ class ViewManager:
             entry.render_context = context
             entry.source_handle = None
             entry.laser_uid = None
-            entry.layer_uid = None
+            entry.workflow_uid = None
 
             self._send_view_artifact_created_signals(
                 step_uid, workpiece_uid, view_handle

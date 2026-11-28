@@ -806,7 +806,9 @@ def _doc_with_stock(thickness):
     geo.close_path()
     asset.geometry = geo
     doc.add_asset(asset)
-    doc.add_child(StockItem(stock_asset_uid=asset.uid, name="sheet"))
+    doc.active_layer.add_child(
+        StockItem(stock_asset_uid=asset.uid, name="sheet")
+    )
     return doc
 
 

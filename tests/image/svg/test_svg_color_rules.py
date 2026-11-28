@@ -16,12 +16,12 @@ from rayforge.core.color_preset import (
     get_color_preset_mgr,
     reset_color_preset_mgr,
 )
-from rayforge.core.layer import Layer
 from rayforge.core.vectorization_spec import (
     LayerImportMode,
     LayerSource,
     PassthroughSpec,
 )
+from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.file_cmd import FileCmd
 from rayforge.doceditor.step_cmd import StepCmd
 from rayforge.image.svg.importer import SvgImporter
@@ -50,23 +50,41 @@ def color_rules(tmp_path, monkeypatch):
     reset_color_preset_mgr()
 
 
-def _step_type_names(layer: Layer) -> list:
-    workflow = layer.workflow
-    assert workflow is not None
+def _step_type_names(workflow) -> list:
     return [type(s).__name__ for s in workflow.steps]
 
 
-def _import_color_layers() -> list:
+def _import_color_workflows(editor) -> list:
+    """Builds one attached workflow per imported source color."""
     importer = SvgVectorImporter(SVG_COLORS, Path("colors.svg"))
     spec = PassthroughSpec(
         layer_source=LayerSource.COLORS,
-        layer_import_mode=LayerImportMode.NEW_LAYERS,
+        layer_import_mode=LayerImportMode.NEW_WORKFLOWS,
     )
     import_result = importer.get_doc_items(spec)
     assert import_result is not None
     payload = import_result.payload
     assert payload is not None
-    return [item for item in payload.items if isinstance(item, Layer)]
+
+    layer = editor.doc.active_layer
+    workflows = []
+    for info in payload.source_layers:
+        workpieces = [
+            item
+            for item in payload.items
+            if isinstance(item, WorkPiece)
+            and item.source_segment is not None
+            and item.source_segment.layer_id == info.layer_id
+        ]
+        workflow = editor.workflow.create_for_source_layer(
+            layer, info, workpieces
+        )
+        assert workflow is not None
+        layer.add_child(workflow)
+        for wp in workpieces:
+            layer.add_child(wp)
+        workflows.append(workflow)
+    return workflows
 
 
 @pytest.mark.asyncio
@@ -76,10 +94,10 @@ async def test_color_rule_creates_configured_step(doc_editor, color_rules):
         ColorPreset(color="#ff0000", step_type="EngraveStep")
     )
 
-    layers = _import_color_layers()
-    StepCmd(doc_editor).add_default_steps_for_layers(layers)
+    workflows = _import_color_workflows(doc_editor)
+    StepCmd(doc_editor).add_default_steps_for_workflows(workflows)
 
-    by_color = {layer.color: layer for layer in layers}
+    by_color = {workflow.color: workflow for workflow in workflows}
     assert _step_type_names(by_color["#ff0000"]) == ["EngraveStep"]
     assert _step_type_names(by_color["#00ff00"]) == ["ContourStep"]
 
@@ -87,11 +105,11 @@ async def test_color_rule_creates_configured_step(doc_editor, color_rules):
 @pytest.mark.asyncio
 async def test_no_rules_uses_default_behavior(doc_editor, color_rules):
     """Without any color rules, the default Contour step is added."""
-    layers = _import_color_layers()
-    StepCmd(doc_editor).add_default_steps_for_layers(layers)
+    workflows = _import_color_workflows(doc_editor)
+    StepCmd(doc_editor).add_default_steps_for_workflows(workflows)
 
-    for layer in layers:
-        assert _step_type_names(layer) == ["ContourStep"]
+    for workflow in workflows:
+        assert _step_type_names(workflow) == ["ContourStep"]
 
 
 @pytest.mark.asyncio
@@ -103,11 +121,13 @@ async def test_unavailable_step_type_falls_back(
         ColorPreset(color="#ff0000", step_type="DoesNotExistStep")
     )
 
-    layers = _import_color_layers()
+    workflows = _import_color_workflows(doc_editor)
     with caplog.at_level("WARNING"):
-        StepCmd(doc_editor).add_default_steps_for_layers(layers)
+        StepCmd(doc_editor).add_default_steps_for_workflows(workflows)
 
-    red = next(layer for layer in layers if layer.color == "#ff0000")
+    red = next(
+        workflow for workflow in workflows if workflow.color == "#ff0000"
+    )
     assert _step_type_names(red) == ["ContourStep"]
     assert any("DoesNotExistStep" in r.message for r in caplog.records)
 
@@ -133,19 +153,37 @@ async def test_rule_not_applied_to_layer_source_import(
     importer = SvgVectorImporter(svg, Path("layer.svg"))
     spec = PassthroughSpec(
         layer_source=LayerSource.SVG_LAYERS,
-        layer_import_mode=LayerImportMode.NEW_LAYERS,
+        layer_import_mode=LayerImportMode.NEW_WORKFLOWS,
     )
     import_result = importer.get_doc_items(spec)
     assert import_result is not None
     payload = import_result.payload
     assert payload is not None
-    layers = [item for item in payload.items if isinstance(item, Layer)]
 
-    StepCmd(doc_editor).add_default_steps_for_layers(layers)
+    layer = doc_editor.doc.active_layer
+    workflows = []
+    for info in payload.source_layers:
+        workpieces = [
+            item
+            for item in payload.items
+            if isinstance(item, WorkPiece)
+            and item.source_segment is not None
+            and item.source_segment.layer_id == info.layer_id
+        ]
+        workflow = doc_editor.workflow.create_for_source_layer(
+            layer, info, workpieces
+        )
+        assert workflow is not None
+        layer.add_child(workflow)
+        for wp in workpieces:
+            layer.add_child(wp)
+        workflows.append(workflow)
 
-    for layer in layers:
+    StepCmd(doc_editor).add_default_steps_for_workflows(workflows)
+
+    for workflow in workflows:
         # Default behavior, never the color rule's EngraveStep.
-        assert "EngraveStep" not in _step_type_names(layer)
+        assert "EngraveStep" not in _step_type_names(workflow)
 
 
 @pytest.mark.asyncio
@@ -164,7 +202,7 @@ async def test_color_rule_via_full_commit_flow(
 
     spec = PassthroughSpec(
         layer_source=LayerSource.COLORS,
-        layer_import_mode=LayerImportMode.NEW_LAYERS,
+        layer_import_mode=LayerImportMode.NEW_WORKFLOWS,
     )
     importer = SvgImporter(SVG_COLORS, Path("colors.svg"))
     import_result = importer.get_doc_items(spec)
@@ -177,8 +215,11 @@ async def test_color_rule_via_full_commit_flow(
         payload, Path("colors.svg"), None, spec
     )
 
-    for layer in doc_editor.doc.layers:
-        if layer.color == "#ff0000":
-            assert _step_type_names(layer) == ["EngraveStep"]
-        elif layer.color == "#00ff00":
-            assert _step_type_names(layer) == ["ContourStep"]
+    workflows = [
+        workflow
+        for layer in doc_editor.doc.layers
+        for workflow in layer.workflows
+    ]
+    by_color = {workflow.color: workflow for workflow in workflows}
+    assert _step_type_names(by_color["#ff0000"]) == ["EngraveStep"]
+    assert _step_type_names(by_color["#00ff00"]) == ["ContourStep"]

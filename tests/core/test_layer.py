@@ -8,6 +8,7 @@ from raygeo.geo import Matrix
 from rayforge.core.doc import Doc
 from rayforge.core.layer import Layer
 from rayforge.core.step import Step
+from rayforge.core.workflow import Workflow
 from rayforge.core.workpiece import WorkPiece
 
 
@@ -65,7 +66,7 @@ def test_workflow_descendant_added_bubbles_to_layer(layer):
     handler = MagicMock()
     layer.descendant_added.connect(handler)
 
-    workflow = layer.workflow
+    workflow = layer.workflows[0]
     assert workflow is not None
     step = Step("Test Step")
 
@@ -129,7 +130,6 @@ def test_layer_to_dict_serialization():
     """Tests serializing a Layer to a dictionary."""
     layer = Layer("Test Layer")
     layer.matrix = Matrix.translation(5, 10) @ Matrix.scale(2, 3)
-    layer.visible = False
 
     wp = WorkPiece("test.svg")
     wp.matrix = Matrix.translation(1, 2)
@@ -142,7 +142,6 @@ def test_layer_to_dict_serialization():
     assert data["type"] == "layer"
     assert data["name"] == "Test Layer"
     assert data["matrix"] == expected_matrix.to_list()
-    assert data["visible"] is False
     assert "children" in data
     assert len(data["children"]) == 2  # WorkPiece and Workflow
 
@@ -154,7 +153,6 @@ def test_layer_from_dict_deserialization():
         "type": "layer",
         "name": "Deserialized Layer",
         "matrix": [[1, 0, 10], [0, 1, 20], [0, 0, 1]],
-        "visible": False,
         "children": [],
     }
 
@@ -164,17 +162,16 @@ def test_layer_from_dict_deserialization():
     assert layer.uid == "test-layer-uid"
     assert layer.name == "Deserialized Layer"
     assert layer.matrix == Matrix.translation(10, 20)
-    assert layer.visible is False
+    assert len(layer.workflows) == 1  # The auto-created workflow
 
 
-def test_layer_from_dict_with_no_children():
-    """Tests deserializing a Layer with no children."""
+def test_layer_from_dict_with_no_children_keeps_workflow():
+    """A layer loaded without children keeps its auto-created workflow."""
     layer_dict = {
         "uid": "empty-layer-uid",
         "type": "layer",
         "name": "Empty Layer",
         "matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
-        "visible": True,
         "children": [],
     }
 
@@ -183,9 +180,8 @@ def test_layer_from_dict_with_no_children():
     assert isinstance(layer, Layer)
     assert layer.uid == "empty-layer-uid"
     assert layer.name == "Empty Layer"
-    assert layer.visible is True
-    assert len(layer.children) == 0
-    assert layer.workflow is None
+    assert len(layer.children) == 1
+    assert len(layer.workflows) == 1
 
 
 def test_layer_from_dict_ignores_unknown_child_types():
@@ -206,31 +202,31 @@ def test_layer_from_dict_ignores_unknown_child_types():
         ],
     }
 
-    with patch(
-        "rayforge.core.workflow.Workflow.from_dict"
-    ) as mock_workflow_from_dict:
-        mock_workflow = MagicMock()
-        mock_workflow.get_local_bbox.return_value = None
-        mock_workflow_from_dict.return_value = mock_workflow
+    def fake_from_dict(data):
+        seen.append(data)
+        workflow = Workflow("wf")
+        workflow.uid = data["uid"]
+        return workflow
 
+    seen = []
+    with patch.object(Workflow, "from_dict", side_effect=fake_from_dict):
         layer = Layer.from_dict(layer_dict)
 
-        assert isinstance(layer, Layer)
-        assert len(layer.children) == 1
-        mock_workflow_from_dict.assert_called_once_with(
-            {
-                "uid": "workflow-uid",
-                "type": "workflow",
-            }
-        )
+    assert isinstance(layer, Layer)
+    assert len(layer.children) == 1
+    assert seen == [
+        {
+            "uid": "workflow-uid",
+            "type": "workflow",
+        }
+    ]
 
 
-def test_layer_roundtrip_serialization():
+def test_setup_roundtrip_serialization():
     """Tests that to_dict() and from_dict() produce equivalent objects."""
     # Create a layer with various properties
     original = Layer("Roundtrip Layer")
     original.matrix = Matrix.translation(5, 10) @ Matrix.scale(2, 3)
-    original.visible = False
 
     # Serialize and deserialize
     data = original.to_dict()
@@ -240,8 +236,7 @@ def test_layer_roundtrip_serialization():
     assert restored.uid == original.uid
     assert restored.name == original.name
     assert restored.matrix == original.matrix
-    assert restored.visible == original.visible
-    # Layer always has at least a workflow child
+    # A layer always has at least a workflow child
     assert len(restored.children) >= 1
 
 
@@ -255,7 +250,6 @@ def test_layer_forward_compatibility_with_extra_fields():
         "type": "layer",
         "name": "Future Layer",
         "matrix": Matrix.identity().to_list(),
-        "visible": True,
         "children": [],
         "future_field_string": "some value",
         "future_field_number": 42,
@@ -292,7 +286,6 @@ def test_layer_backward_compatibility_with_missing_optional_fields():
 
     # Verify defaults are applied for missing optional fields
     assert layer.name == "Layer"
-    assert layer.visible is True
     assert layer.extra == {}
 
 
@@ -306,7 +299,6 @@ def test_layer_backward_compatibility_with_legacy_stock_item_uid():
         "type": "layer",
         "name": "Legacy Layer",
         "matrix": Matrix.identity().to_list(),
-        "visible": True,
         "stock_item_uid": "old-stock-uid",
         "children": [],
     }

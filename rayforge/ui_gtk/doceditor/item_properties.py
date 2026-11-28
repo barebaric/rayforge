@@ -2,7 +2,7 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Optional
 
-from gi.repository import GLib, Gtk
+from gi.repository import Adw, GLib, Gtk
 from raygeo.geo import Matrix
 
 from ...context import get_context
@@ -58,6 +58,12 @@ class DocItemPropertiesWidget(Gtk.Box):
         self._rows_container.set_selection_mode(Gtk.SelectionMode.NONE)
         self._main_expander.set_child(self._rows_container)
 
+        self._name_row = Adw.EntryRow(title=_("Name"))
+        self._name_row.set_show_apply_button(False)
+        self._name_row.connect("apply", self._on_name_applied)
+        self._name_row.set_visible(False)
+        self._rows_container.append(self._name_row)
+
         self.providers: list[PropertyProvider] = (
             property_provider_registry.create_instances()
         )
@@ -89,6 +95,29 @@ class DocItemPropertiesWidget(Gtk.Box):
                 self._machine.changed.disconnect(self._on_machine_changed)
             self._machine = machine
             machine.changed.connect(self._on_machine_changed)
+
+    def begin_rename(self):
+        """Focuses the inline name entry for the selected item."""
+        if self._name_row.get_visible():
+            self._name_row.grab_focus()
+
+    def _sync_name_row(self):
+        """Shows the inline name entry while exactly one item is selected."""
+        single = self.items[0] if len(self.items) == 1 else None
+        self._name_row.set_visible(single is not None)
+        if single is None:
+            return
+        if self._name_row.get_text() != single.name:
+            self._name_row.set_text(single.name)
+
+    def _on_name_applied(self, row):
+        """Commits an inline rename of the selected item."""
+        if len(self.items) != 1:
+            return
+        item = self.items[0]
+        new_name = row.get_text().strip()
+        if new_name and new_name != item.name:
+            self.editor.edit.rename_item(item, new_name)
 
     def _on_config_changed(self, config):
         """Handle config changes (including machine switching)."""
@@ -192,6 +221,7 @@ class DocItemPropertiesWidget(Gtk.Box):
         Updates the UI by querying all registered property providers and
         managing the visibility and content of their persistent widgets.
         """
+        self._sync_name_row()
         if not self.items:
             self._main_expander.set_sensitive(False)
             self._main_expander.set_title(_("Item Properties"))

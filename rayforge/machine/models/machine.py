@@ -286,7 +286,7 @@ class Machine:
         self._bed_mesh: BedMesh | None = None
         # Post processors applied to every job on this machine by
         # default (serialized transformer dicts, resolved via the
-        # transformer registry). Layers can override per transformer.
+        # transformer registry). Workflows can override per transformer.
         self.default_post_processors_dicts: list[dict[str, Any]] = []
 
         self._assembly: Assembly | None = None
@@ -719,7 +719,7 @@ class Machine:
 
     def set_driver_args(self, args=None):
         """
-        Replaces the driver's setup arguments, then emits ``changed``.
+        Replaces the driver's layer arguments, then emits ``changed``.
         The controller listens for this signal and performs the
         (debounced) driver rebuild.
         """
@@ -1704,7 +1704,7 @@ class Machine:
 
     def validate_driver_setup(self) -> tuple[bool, str | None]:
         """
-        Validates the machine's driver arguments against the driver's setup
+        Validates the machine's driver arguments against the driver's layer
         VarSet. Delegates to the controller.
 
         Returns:
@@ -2252,6 +2252,10 @@ class Machine:
         ma_data.pop("frozen_dialect", None)
 
         # Deserialize remaining hookmacros from the (potentially cleaned) data
+        # Imported here: schema_migration transitively imports this module.
+        from ..device.schema_migration import migrate_hook_triggers
+
+        hook_data = migrate_hook_triggers(hook_data, ma.schema_version)
         for trigger_name, macro_data in hook_data.items():
             try:
                 trigger = MacroTrigger[trigger_name]

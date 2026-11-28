@@ -99,10 +99,7 @@ def _populate_standard_items(menu: Gio.Menu):
     separators.
     """
     menu.append_item(
-        Gio.MenuItem.new(_("Move Up a Layer"), "win.layer-move-up")
-    )
-    menu.append_item(
-        Gio.MenuItem.new(_("Move Down a Layer"), "win.layer-move-down")
+        Gio.MenuItem.new(_("Move to Layer…"), "win.move-to-layer")
     )
 
     # Separator

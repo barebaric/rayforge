@@ -12,6 +12,7 @@ from blinker import Signal
 
 from ..machine.models.machine import Machine
 from ..shared.util.atomic import atomic_write_yaml, load_yaml_with_backup
+from . import config_schema
 from .vectorization_spec import LayerSource
 
 logger = logging.getLogger(__name__)
@@ -21,7 +22,7 @@ class OpsColorMode(Enum):
     """Enum for ops color source options."""
 
     LASER = "laser"
-    LAYER = "layer"
+    WORKFLOW = "workflow"
 
 
 class StartupBehavior(Enum):
@@ -44,9 +45,9 @@ class RightPanelMode(Enum):
         """Return a translatable label for this panel mode."""
         labels = {
             self.HIDDEN: _("Hidden"),
-            self.ACTIVE_LAYER: _("Active Layer Workflow"),
-            self.NON_EMPTY_LAYERS: _("All Non-Empty Layers"),
-            self.ALL_LAYERS: _("All Layers"),
+            self.ACTIVE_LAYER: _("Active Layer Workflows"),
+            self.NON_EMPTY_LAYERS: _("Workflows of Non-Empty Layers"),
+            self.ALL_LAYERS: _("All Workflows"),
         }
         return labels[self]
 
@@ -103,7 +104,7 @@ class Config:
         # working at the machine. Off by default.
         self.shop_mode: bool = False
         self.auto_pipeline: bool = True
-        self.ops_color_mode: OpsColorMode = OpsColorMode.LASER
+        self.ops_color_mode: OpsColorMode = OpsColorMode.WORKFLOW
         self.check_for_app_updates: bool = True
         # Whether to download new Windows packages in the background when
         # an update is available.
@@ -389,6 +390,7 @@ class Config:
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "schema_version": config_schema.CURRENT_CONFIG_SCHEMA_VERSION,
             "machine": self.machine.id if self.machine else None,
             "theme": self.theme,
             "unit_preferences": self.unit_preferences,
@@ -435,6 +437,7 @@ class Config:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any], get_machine_by_id) -> "Config":
+        data = config_schema.migrate(data)
         config = cls()
         config.theme = data.get("theme", "system")
 
@@ -502,12 +505,12 @@ class Config:
         )
 
         ops_color_mode_str = data.get(
-            "ops_color_mode", OpsColorMode.LASER.value
+            "ops_color_mode", OpsColorMode.WORKFLOW.value
         )
         try:
             config.ops_color_mode = OpsColorMode(ops_color_mode_str)
         except ValueError:
-            config.ops_color_mode = OpsColorMode.LASER
+            config.ops_color_mode = OpsColorMode.WORKFLOW
 
         # Load usage tracking consent date
         config.usage_consent_date = data.get("usage_consent_date", None)

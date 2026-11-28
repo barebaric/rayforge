@@ -7,11 +7,13 @@ from gi.repository import Gtk
 from ...core.step_registry import step_registry
 from ...core.undo.list_cmd import ListItemCommand, ReorderListCommand
 from ...core.workflow import Workflow
+from ..icons import get_icon
 from ..shared.draglist import DragListBox
 from ..shared.expander import ExpanderWithButton
 from ..shared.popover_menu import PopoverMenu
 from .step_box import StepBox
 from .step_settings.dialog import StepSettingsDialog
+from .workflow_settings_dialog import WorkflowSettingsDialog
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor
@@ -42,10 +44,40 @@ class WorkflowView(ExpanderWithButton):
 
         self.add_button.connect("clicked", self.on_button_add_clicked)
 
+        self.settings_button = Gtk.Button(child=get_icon("settings-symbolic"))
+        self.settings_button.add_css_class("flat")
+        self.settings_button.set_tooltip_text(_("Workflow Settings"))
+        self.settings_button.connect("clicked", self._on_settings_clicked)
+        self.add_suffix(self.settings_button)
+        self._settings_dialog: WorkflowSettingsDialog | None = None
+
         self.set_workflow(workflow)
+
+    def _on_settings_clicked(self, button):
+        if self.workflow is None:
+            return
+        if self._settings_dialog is not None:
+            self._settings_dialog.present()
+            return
+        root = self.get_root()
+        self._settings_dialog = WorkflowSettingsDialog(
+            workflow=self.workflow,
+            transient_for=root if isinstance(root, Gtk.Window) else None,
+            editor=self.editor,
+        )
+        self._settings_dialog.connect(
+            "destroy", self._on_settings_dialog_destroy
+        )
+        self._settings_dialog.present()
+
+    def _on_settings_dialog_destroy(self, *_args):
+        self._settings_dialog = None
 
     def set_workflow(self, workflow: Workflow | None):
         """Sets the view to display a different workflow."""
+        if self._settings_dialog is not None:
+            self._settings_dialog.close()
+            self._settings_dialog = None
         if self.workflow:
             try:
                 # Disconnect old handlers

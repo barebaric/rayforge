@@ -166,7 +166,7 @@ class _StubNode:
 def _make_doc(step: _TestStep, *workpieces: WorkPiece) -> Doc:
     doc = Doc()
     layer = doc.active_layer
-    workflow = layer.workflow
+    workflow = layer.workflows[0]
     assert workflow is not None
     workflow.add_child(step)
     for wp in workpieces:
@@ -929,13 +929,13 @@ def _make_doc_with_stock(
     asset.geometry = geo
     doc.add_asset(asset)
     item = StockItem(stock_asset_uid=asset.uid, name="sheet")
-    doc.add_child(item)
+    doc.active_layer.add_child(item)
     return doc, item
 
 
 def _make_controller_with_stock(monkeypatch, machine, step, wp, stock_item):
     """Build a controller whose key map includes ``stock:{uid}``."""
-    doc = stock_item.parent
+    doc = stock_item.doc
     tm = ImmediateMainThreadTaskManager()
     ctrl = IntentController(doc, tm, machine=machine)
     ctrl.connect()

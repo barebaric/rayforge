@@ -26,7 +26,7 @@ def _first_coord(text: str) -> tuple[float, float]:
 def _add_rect_doc_items(doc_editor, contour_step_class, context):
     step = contour_step_class.create(context, name="cut")
     step.set_power(0.8)
-    workflow = doc_editor.doc.active_layer.workflow
+    workflow = doc_editor.doc.active_layer.workflows[0]
     assert workflow is not None
     workflow.add_child(step)
 

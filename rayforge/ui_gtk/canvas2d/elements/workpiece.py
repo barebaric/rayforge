@@ -254,8 +254,8 @@ class WorkPieceElement(CanvasElement):
         # Clear the model cache as well, since the data is invalid
         self.data._view_cache.clear()
 
-        if self.data.layer and self.data.layer.workflow:
-            for step in self.data.layer.workflow.steps:
+        if self.data.layer:
+            for step in self.data.layer.steps:
                 self.clear_ops_surface(step.uid)
         super().trigger_update()
 
@@ -418,7 +418,9 @@ class WorkPieceElement(CanvasElement):
 
         Called from ``draw()`` when ``_composited_dirty`` is True.
         """
-        if not self.data.layer or not self.data.layer.workflow:
+        layer = self.data.layer
+        steps = layer.steps if layer is not None else []
+        if not steps:
             self._dispose_composited()
             self._composited_dirty = False
             return
@@ -436,7 +438,7 @@ class WorkPieceElement(CanvasElement):
             return
 
         visible_steps = []
-        for step in self.data.layer.workflow.steps:
+        for step in steps:
             if not self._ops_visibility.get(step.uid, True):
                 continue
             if step.uid not in self._ops_surface_cache:
@@ -1408,7 +1410,7 @@ class WorkPieceElement(CanvasElement):
         if world_w < 1e-9 or world_h < 1e-9:
             return
 
-        if self.data.layer and self.data.layer.workflow:
+        if self.data.layer:
             registry.touch(self.data.uid)
 
             if self._composited_dirty:

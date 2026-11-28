@@ -81,7 +81,7 @@ def _flatten_spec() -> PassthroughSpec:
 def _color_spec(active=None) -> PassthroughSpec:
     return PassthroughSpec(
         active_layer_ids=active,
-        layer_import_mode=LayerImportMode.NEW_LAYERS,
+        layer_import_mode=LayerImportMode.NEW_WORKFLOWS,
         layer_source=LayerSource.COLORS,
     )
 
@@ -416,7 +416,11 @@ class TestReloadLayers:
         assert report.added == 1
         green = _by_layer_id(editor.doc, asset)["#00ff00"]
         assert isinstance(green.parent, Layer)
-        assert len(editor.doc.layers) == layer_count + 1
+        assert len(editor.doc.layers) == layer_count
+        assert any(
+            green.uid in workflow.workpiece_uids
+            for workflow in green.parent.workflows
+        )
         gx0, _gy0, _gx1, gy1 = _world_bbox(green)
         rx0, _ry0, _rx1, ry1 = _world_bbox(by_id["#ff0000"])
         assert gx0 == pytest.approx(rx0 - 8.0, abs=0.1)

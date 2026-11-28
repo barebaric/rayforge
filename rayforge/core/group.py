@@ -50,7 +50,8 @@ class Group(DocItem, VisibleMixin):
     def all_workpieces(self) -> list[WorkPiece]:
         """
         Recursively finds and returns a flattened list of all WorkPiece
-        objects contained within this layer, including those inside groups.
+        objects contained within this group, including those inside
+        nested groups.
         """
         return self.get_descendants(of_type=WorkPiece)
 

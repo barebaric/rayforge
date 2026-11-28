@@ -38,7 +38,7 @@ class MeshCorrectionTransformer(OpsTransformer):
     SPEC_NAME = "mesh_correction"
 
     #: Applies to a layer's merged toolpath in machine space.
-    LAYER_APPLICABLE = True
+    WORKFLOW_APPLICABLE = True
 
     def __init__(
         self,

@@ -509,7 +509,7 @@ class WorkSurface(WorldSurface):
         self._update_pipeline_view_context()
 
     def _on_doc_structure_changed(self, sender, **kwargs):
-        """Refreshes render context when layers are added/removed."""
+        """Refreshes render context when items are added/removed."""
         logger.debug(f"_on_doc_structure_changed fired: sender={sender}")
         self._update_pipeline_view_context()
 
@@ -663,7 +663,7 @@ class WorkSurface(WorldSurface):
 
     def on_button_press(self, gesture, n_press: int, x: float, y: float):
         """
-        Overrides base to add application-specific layer selection logic
+        Overrides base to add application-specific selection logic
         and handle double-click editing.
         """
         logger.debug("WorkSurface.on_button_press fired")
@@ -745,7 +745,8 @@ class WorkSurface(WorldSurface):
                     )
                     return
 
-        # After the click, check if the active element dictates a layer change.
+        # After the click, check if the active element dictates a layer
+        # change.
         if new_context and isinstance(new_context.data, WorkPiece):
             active_layer = new_context.data.layer
             # If the workpiece's layer is not the document's active layer,
@@ -864,8 +865,9 @@ class WorkSurface(WorldSurface):
         self._connected_layer = None
 
     def _on_active_layer_changed(self, sender):
-        """Reconnect WCS tracking to the new active layer."""
+        """Reconnect WCS tracking and rebuild for the new active layer."""
         self._connect_active_layer_wcs()
+        self.update_from_doc()
         if self.machine:
             self._on_wcs_updated(self.machine)
 
@@ -1060,14 +1062,21 @@ class WorkSurface(WorldSurface):
         self.editor.view_manager.update_render_context(context)
 
     def _get_handle_color(self, elem: CanvasElement) -> ColorRGBA | None:
-        """Returns the layer color for the element's selection handles."""
-        data = getattr(elem, "data", None)
-        if data is None:
+        """Returns the workflow color for the element's selection handles.
+
+        The first workflow of the active layer that runs for the
+        element's workpiece decides the color.
+        """
+        data = elem.data
+        if not isinstance(data, (WorkPiece, Group)):
             return None
-        layer = getattr(data, "layer", None)
+        layer = data.layer
         if layer is None:
             return None
-        return hex_to_rgba(layer.color)
+        for workflow in layer.workflows:
+            if data in workflow.selected_workpieces(layer.all_workpieces):
+                return hex_to_rgba(workflow.color)
+        return None
 
     def _create_and_add_layer_element(self, layer: "Layer"):
         """Creates a new LayerElement and adds it to the canvas root."""
@@ -1102,31 +1111,26 @@ class WorkSurface(WorldSurface):
         """
         Synchronizes the canvas elements with the document model.
 
-        This method ensures that the layers and their contents (workpieces,
-        steps) displayed on the canvas perfectly match the state of the
-        document's data model. It also reorders the LayerElements to match
-        the Z-order of the layers in the document.
+        The canvas shows the active layer only: its content items and
+        stock, and the steps of all its workflows. This method ensures
+        that what is displayed on the canvas perfectly matches the
+        state of the document's data model.
         """
         doc = self.doc
 
-        # --- Step 1: Add and Remove LayerElements ---
-        doc_layers_set = set(doc.layers)
-        current_elements_on_canvas = {
-            elem.data: elem for elem in self.find_by_type(LayerElement)
-        }
-
-        # Remove elements for layers that are no longer in the doc
-        for layer, elem in current_elements_on_canvas.items():
-            if layer not in doc_layers_set:
-                elem.remove()
-
-        # Add elements for new layers that are not yet on the canvas
-        for layer in doc.layers:
-            if layer not in current_elements_on_canvas:
-                self._create_and_add_layer_element(layer)
+        # --- Step 1: Maintain the single LayerElement ---
+        active_layer = doc.active_layer
+        layer_elements = list(self.find_by_type(LayerElement))
+        if layer_elements:
+            layer_elem = layer_elements[0]
+            if layer_elem.data is not active_layer:
+                layer_elem.remove()
+                self._create_and_add_layer_element(active_layer)
+        else:
+            self._create_and_add_layer_element(active_layer)
 
         # --- Step 1.5: Add and Remove StockElements ---
-        doc_stock_items_set = set(doc.stock_items)
+        doc_stock_items_set = set(active_layer.stock_items)
         current_stock_elements_on_canvas = {
             elem.data: elem for elem in self.find_by_type(StockElement)
         }
@@ -1137,31 +1141,24 @@ class WorkSurface(WorldSurface):
                 elem.remove()
 
         # Add elements for new stock items that are not yet on the canvas
-        for stock_item in doc.stock_items:
+        for stock_item in active_layer.stock_items:
             if stock_item not in current_stock_elements_on_canvas:
                 self._create_and_add_stock_element(stock_item)
-
-        # --- Step 2: Reorder LayerElements for Z-stacking ---
-        # The first layer in the list is at the bottom (drawn first).
-        # The last layer is at the top (drawn last).
-        layer_order_map = {layer: i for i, layer in enumerate(doc.layers)}
 
         def sort_key(element: CanvasElement):
             """
             Sort key for root's children. Camera at bottom, then stock,
-            then layers and laser dot on top.
+            then the layer element and laser dot on top.
             """
             if isinstance(element, DotElement):
                 return float("inf") - 1
             if isinstance(element, LayerElement):
-                # LayerElements are ordered according to the doc.layers list.
-                # Add a large offset to ensure all layers are above stock
-                layer_order = layer_order_map.get(
-                    element.data, len(layer_order_map)
-                )
-                return layer_order + 1000
+                # The layer element holds all workpieces and sits above
+                # stock and camera images.
+                return 1000
             if isinstance(element, StockElement):
-                # Stock elements are below all layers but above camera images
+                # Stock elements are below the layer element but above camera
+                # images
                 return 10
             if isinstance(element, CameraImageElement):
                 # Camera images are at the very bottom.
@@ -1175,7 +1172,8 @@ class WorkSurface(WorldSurface):
                 # WCS origin marker is above the extent frame and nogo
                 # zones so it stays visible where they overlap
                 return -1.3
-            # Other elements are above the camera but below stock and layers.
+            # Other elements are above the camera but below stock and
+            # the layer element.
             return -1
 
         self.root.children.sort(key=sort_key)
@@ -1600,14 +1598,6 @@ class WorkSurface(WorldSurface):
         is_primary = is_primary_modifier(state)
         is_shift = bool(state & Gdk.ModifierType.SHIFT_MASK)
 
-        # Handle moving workpiece to another layer
-        if is_primary and (
-            keyval == Gdk.KEY_Page_Up or keyval == Gdk.KEY_Page_Down
-        ):
-            direction = -1 if keyval == Gdk.KEY_Page_Up else 1
-            self.editor.layer.move_selected_to_adjacent_layer(self, direction)
-            return True
-
         # Handle clipboard and duplication
         if is_primary:
             selected_items = [e.data for e in self.get_selected_elements()]
@@ -1779,7 +1769,7 @@ class WorkSurface(WorldSurface):
 
     def select_all(self):
         """
-        Selects all workpieces on all layers.
+        Selects all selectable items on the canvas.
         In edit mode, selects all segments instead.
         """
         if self.edit_context and self.edit_context.handle_edit_select_all():

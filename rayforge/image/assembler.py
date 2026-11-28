@@ -6,7 +6,6 @@ from raygeo.geo.types import Rect
 
 from ..core.color import pick_unused_color
 from ..core.item import DocItem
-from ..core.layer import Layer
 from ..core.source_asset import SourceAsset
 from ..core.source_asset_segment import SourceAssetSegment
 from ..core.step_registry import step_registry
@@ -16,7 +15,7 @@ from ..core.vectorization_spec import (
     VectorizationSpec,
 )
 from ..core.workpiece import WorkPiece
-from .structures import LayoutItem
+from .structures import LayoutItem, SourceLayerInfo
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +24,7 @@ class ItemAssembler:
     """
     Phase 5: Object Assembly.
 
-    Factory that instantiates Rayforge domain objects (WorkPieces, Layers)
+    Factory that instantiates Rayforge domain objects (WorkPieces)
     based on the LayoutPlan calculated by the NormalizationEngine.
 
     Coordinate System Contract:
@@ -36,7 +35,7 @@ class ItemAssembler:
     - world_matrix: Transforms Normalized (0-1, Y-Up) -> World (mm, Y-Up)
 
     Output (DocItems):
-    - WorkPieces and Layers are positioned in World Coordinates (mm, Y-Up)
+    - WorkPieces are positioned in World Coordinates (mm, Y-Up)
     - The transformation matrices are applied to the WorkPiece.matrix
     - Origin (0,0) is at the bottom-left of the workpiece
 
@@ -60,12 +59,14 @@ class ItemAssembler:
         source_name: str,
         geometries: dict[str | None, Geometry],
         document_bounds: Rect | None = None,
-    ) -> list[DocItem]:
+    ) -> tuple[list[DocItem], list[SourceLayerInfo]]:
         """
-        Creates DocItems from the layout plan.
+        Creates WorkPieces from the layout plan.
 
-        Instantiates WorkPieces and Layers based on the LayoutItem
-        configurations calculated by the NormalizationEngine.
+        Instantiates WorkPieces based on the LayoutItem configurations
+        calculated by the NormalizationEngine. For imports that split
+        per source layer, the source layers' metadata is returned
+        alongside so the caller can create a workflow per source layer.
 
         Coordinate System:
         ------------------
@@ -75,8 +76,8 @@ class ItemAssembler:
         - document_bounds: Optional bounds in Native Coordinates
 
         Output:
-        - DocItems (WorkPieces or Layers) positioned in World Coordinates
-          (mm, Y-Up) with transformation matrices applied
+        - WorkPieces positioned in World Coordinates (mm, Y-Up) with
+          transformation matrices applied
 
         Args:
             source_asset: The SourceAsset representing the imported file.
@@ -84,7 +85,6 @@ class ItemAssembler:
                          NormalizationEngine. Each contains transformation
                          matrices and crop windows.
             spec: VectorizationSpec describing the vectorization approach.
-                  Determines whether to create Layers for split items.
             source_name: Base name for the resulting DocItems.
             geometries: Dict of Geometry objects keyed by layer ID.
                         Geometry is in Native Coordinates.
@@ -92,8 +92,10 @@ class ItemAssembler:
                             Used for debugging and reference.
 
         Returns:
-            List of DocItems (WorkPieces or Layers) ready for insertion
-            into the document. May be empty if layout_plan is empty.
+            A (items, source_layers) tuple. items is the list of
+            WorkPieces ready for insertion into the document; may be
+            empty if layout_plan is empty. source_layers carries the
+            per-source-layer metadata in import order.
 
         Frame of Reference:
         ------------------
@@ -108,11 +110,11 @@ class ItemAssembler:
         Invalid inputs may produce undefined results.
         """
         if not layout_plan:
-            return []
+            return [], []
 
-        # If we have multiple items, we generally wrap them in Layers (if
-        # requested by spec) or return a list of WorkPieces.
         items: list[DocItem] = []
+        source_layers: list[SourceLayerInfo] = []
+        seen_layer_ids: set[str] = set()
         used_colors = {item.color for item in layout_plan if item.color}
 
         logger.debug(f"ItemAssembler: document_bounds={document_bounds}")
@@ -176,36 +178,40 @@ class ItemAssembler:
             wp.matrix = item.world_matrix
             wp.natural_width_mm = w_mm
             wp.natural_height_mm = h_mm
+            items.append(wp)
 
-            # 4. Wrap in Layer if splitting is active and meaningful
-            # Hack: Sketches (layer_id="__default__") should never be wrapped
-            # in a layer
+            # 4. Track the source layer's metadata so the caller can
+            # create a workflow per source layer. Sketches
+            # (layer_id="__default__") are not source layers.
             if (
                 item.layer_id
                 and item.layer_id != "__default__"
+                and item.layer_id not in seen_layer_ids
                 and isinstance(spec, PassthroughSpec)
                 and spec.layer_import_mode != LayerImportMode.FLATTEN
             ):
-                layer = Layer(name=name)
-                layer.set_color(item.color or pick_unused_color(used_colors))
-                used_colors.add(layer.color)
-                layer.add_child(wp)
-                # If the importer provided settings, pre-populate a step
-                # on the layer's workflow so that add_default_steps_for_layers
-                # will skip it (workflow.has_steps() -> True).
-                if item.settings:
-                    self._apply_settings(layer, item.settings)
-                items.append(layer)
-            else:
-                items.append(wp)
+                seen_layer_ids.add(item.layer_id)
+                color = item.color or pick_unused_color(used_colors)
+                used_colors.add(color)
+                source_layers.append(
+                    SourceLayerInfo(
+                        layer_id=item.layer_id,
+                        name=name,
+                        color=color,
+                        settings=item.settings,
+                    )
+                )
 
-        return items
+        return items, source_layers
 
     @staticmethod
-    def _apply_settings(layer: Layer, settings: dict[str, Any]) -> None:
-        """Create a configured step on the layer from importer settings.
+    def apply_settings_to_workflow(
+        workflow, name: str, settings: dict[str, Any]
+    ) -> None:
+        """Create a configured step on the workflow from importer
+        settings.
 
-        Layers tagged ``_is_image_layer`` (e.g. LightBurn
+        Source layers tagged ``_is_image_layer`` (e.g. LightBurn
         ``CutSetting_Img``) get an ``EngraveStep``; everything else gets
         a ``ContourStep``.
 
@@ -225,7 +231,7 @@ class ItemAssembler:
             return
 
         try:
-            step = cls(typelabel=typelabel, name=layer.name)
+            step = cls(typelabel=typelabel, name=name)
             per_wp, per_step = cls.get_default_transformers_dicts()
             step.per_workpiece_transformers_dicts = per_wp
             step.per_step_transformers_dicts = per_step
@@ -242,6 +248,4 @@ class ItemAssembler:
                     t["passes"] = passes
                     break
 
-        workflow = layer.workflow
-        if workflow is not None:
-            workflow.add_step(step)
+        workflow.add_step(step)

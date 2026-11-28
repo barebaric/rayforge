@@ -310,8 +310,10 @@ def test_on_workpiece_artifact_ready_manages_handles(
     mock_workpiece = MagicMock()
     mock_workpiece.uid = wp_uid
 
+    mock_workflow = MagicMock()
+    mock_workflow.steps = [mock_step]
     mock_layer = MagicMock()
-    mock_layer.workflow.steps = [mock_step]
+    mock_layer.workflows = [mock_workflow]
     mock_doc = MagicMock()
     mock_doc.all_workpieces = [mock_workpiece]
     mock_doc.layers = [mock_layer]
@@ -353,8 +355,10 @@ def test_on_workpiece_artifact_ready_releases_old_handle(
     mock_workpiece = MagicMock()
     mock_workpiece.uid = wp_uid
 
+    mock_workflow = MagicMock()
+    mock_workflow.steps = [mock_step]
     mock_layer = MagicMock()
-    mock_layer.workflow.steps = [mock_step]
+    mock_layer.workflows = [mock_workflow]
     mock_doc = MagicMock()
     mock_doc.all_workpieces = [mock_workpiece]
     mock_doc.layers = [mock_layer]
@@ -389,8 +393,10 @@ def test_on_workpiece_artifact_ready_same_handle_no_signal(
     mock_workpiece = MagicMock()
     mock_workpiece.uid = wp_uid
 
+    mock_workflow = MagicMock()
+    mock_workflow.steps = [mock_step]
     mock_layer = MagicMock()
-    mock_layer.workflow.steps = [mock_step]
+    mock_layer.workflows = [mock_workflow]
     mock_doc = MagicMock()
     mock_doc.all_workpieces = [mock_workpiece]
     mock_doc.layers = [mock_layer]
@@ -429,8 +435,10 @@ def test_on_workpiece_artifact_ready_different_handle_emits_signal(
     mock_workpiece = MagicMock()
     mock_workpiece.uid = wp_uid
 
+    mock_workflow = MagicMock()
+    mock_workflow.steps = [mock_step]
     mock_layer = MagicMock()
-    mock_layer.workflow.steps = [mock_step]
+    mock_layer.workflows = [mock_workflow]
     mock_doc = MagicMock()
     mock_doc.all_workpieces = [mock_workpiece]
     mock_doc.layers = [mock_layer]
@@ -550,8 +558,10 @@ def test_on_workpiece_artifact_ready_refcount_increased(
     mock_workpiece = MagicMock()
     mock_workpiece.uid = wp_uid
 
+    mock_workflow = MagicMock()
+    mock_workflow.steps = [mock_step]
     mock_layer = MagicMock()
-    mock_layer.workflow.steps = [mock_step]
+    mock_layer.workflows = [mock_workflow]
     mock_doc = MagicMock()
     mock_doc.all_workpieces = [mock_workpiece]
     mock_doc.layers = [mock_layer]
@@ -607,8 +617,10 @@ def test_on_workpiece_artifact_ready_releases_old_and_refcount_decreased(
     mock_workpiece = MagicMock()
     mock_workpiece.uid = wp_uid
 
+    mock_workflow = MagicMock()
+    mock_workflow.steps = [mock_step]
     mock_layer = MagicMock()
-    mock_layer.workflow.steps = [mock_step]
+    mock_layer.workflows = [mock_workflow]
     mock_doc = MagicMock()
     mock_doc.all_workpieces = [mock_workpiece]
     mock_doc.layers = [mock_layer]
@@ -887,8 +899,10 @@ def test_multiple_position_only_moves_no_signal(
     mock_workpiece = MagicMock()
     mock_workpiece.uid = wp_uid
 
+    mock_workflow = MagicMock()
+    mock_workflow.steps = [mock_step]
     mock_layer = MagicMock()
-    mock_layer.workflow.steps = [mock_step]
+    mock_layer.workflows = [mock_workflow]
     mock_doc = MagicMock()
     mock_doc.all_workpieces = [mock_workpiece]
     mock_doc.layers = [mock_layer]
@@ -929,8 +943,10 @@ def test_alternating_artifact_ready_signals(
     mock_workpiece = MagicMock()
     mock_workpiece.uid = wp_uid
 
+    mock_workflow = MagicMock()
+    mock_workflow.steps = [mock_step]
     mock_layer = MagicMock()
-    mock_layer.workflow.steps = [mock_step]
+    mock_layer.workflows = [mock_workflow]
     mock_doc = MagicMock()
     mock_doc.all_workpieces = [mock_workpiece]
     mock_doc.layers = [mock_layer]
@@ -1009,8 +1025,10 @@ def test_simulated_position_only_transform_changes(
     mock_workpiece = MagicMock()
     mock_workpiece.uid = wp_uid
 
+    mock_workflow = MagicMock()
+    mock_workflow.steps = [mock_step]
     mock_layer = MagicMock()
-    mock_layer.workflow.steps = [mock_step]
+    mock_layer.workflows = [mock_workflow]
     mock_doc = MagicMock()
     mock_doc.all_workpieces = [mock_workpiece]
     mock_doc.layers = [mock_layer]
@@ -1082,8 +1100,10 @@ def test_alternating_signal_debug(view_manager, mock_store, context, caplog):
     mock_workpiece = MagicMock()
     mock_workpiece.uid = wp_uid
 
+    mock_workflow = MagicMock()
+    mock_workflow.steps = [mock_step]
     mock_layer = MagicMock()
-    mock_layer.workflow.steps = [mock_step]
+    mock_layer.workflows = [mock_workflow]
     mock_doc = MagicMock()
     mock_doc.all_workpieces = [mock_workpiece]
     mock_doc.layers = [mock_layer]
@@ -1147,8 +1167,10 @@ def test_alternating_keys_cause_alternating_signals(
     mock_workpiece = MagicMock()
     mock_workpiece.uid = wp_uid
 
+    mock_workflow = MagicMock()
+    mock_workflow.steps = [mock_step]
     mock_layer = MagicMock()
-    mock_layer.workflow.steps = [mock_step]
+    mock_layer.workflows = [mock_workflow]
     mock_doc = MagicMock()
     mock_doc.all_workpieces = [mock_workpiece]
     mock_doc.layers = [mock_layer]

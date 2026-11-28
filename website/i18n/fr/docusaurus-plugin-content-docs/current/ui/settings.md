@@ -13,8 +13,8 @@ La page Général contient les paramètres à l'échelle de l'application.
 
 Choisis entre le thème **Système**, **Clair** ou **Sombre** pour correspondre à ton environnement de
 bureau ou ta préférence personnelle. Tu peux aussi configurer les **Couleurs d'opération** pour
-utiliser soit la couleur du laser, soit la couleur du calque comme distinction visuelle sur le
-canevas.
+utiliser soit la couleur du laser, soit la couleur du flux de travail comme distinction visuelle sur
+le canevas. La couleur du flux de travail est utilisée par défaut.
 
 **Mode atelier** remplace l'onglet de commandes du panneau inférieur par une surface de contrôle
 tactile : grands affichages de position par axe avec boutons de zéro, une carte des offsets, des

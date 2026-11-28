@@ -38,8 +38,7 @@ def real_workpiece():
 def doc():
     d = Doc()
     active_layer = d.active_layer
-    assert active_layer.workflow is not None
-    active_layer.workflow.set_steps([])
+    active_layer.workflows[0].set_steps([])
     return d
 
 
@@ -84,9 +83,8 @@ class TestPipelineGeneration:
         """Verifies that after generation completes, a workpiece artifact
         handle is available via get_artifact_handle."""
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
-        assert layer.workflow is not None
         step = contour_step_class.create(context_initializer)
-        layer.workflow.add_step(step)
+        layer.workflows[0].add_step(step)
 
         pipeline = Pipeline(
             doc,
@@ -117,9 +115,8 @@ class TestPipelineGeneration:
     ):
         """Verifies that changing a step power triggers a new rebuild."""
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
-        assert layer.workflow is not None
         step = contour_step_class.create(context_initializer)
-        layer.workflow.add_step(step)
+        layer.workflows[0].add_step(step)
 
         pipeline = Pipeline(
             doc,
@@ -160,9 +157,8 @@ class TestPipelineGeneration:
         """Verifies that changing a workpiece position triggers a
         regeneration for position-sensitive steps."""
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
-        assert layer.workflow is not None
         step = contour_step_class.create(context_initializer)
-        layer.workflow.add_step(step)
+        layer.workflows[0].add_step(step)
 
         pipeline = Pipeline(
             doc,
@@ -203,9 +199,8 @@ class TestPipelineGeneration:
         """Verifies that generate_job_artifact invokes when_done with
         a valid handle on success."""
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
-        assert layer.workflow is not None
         step = contour_step_class.create(context_initializer)
-        layer.workflow.add_step(step)
+        layer.workflows[0].add_step(step)
 
         pipeline = Pipeline(
             doc,
@@ -243,9 +238,8 @@ class TestPipelineGeneration:
     ):
         """Verifies that generate_job_artifact_async returns the handle."""
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
-        assert layer.workflow is not None
         step = contour_step_class.create(context_initializer)
-        layer.workflow.add_step(step)
+        layer.workflows[0].add_step(step)
 
         pipeline = Pipeline(
             doc,
@@ -274,9 +268,8 @@ class TestPipelineGeneration:
         fail the request with a clear error instead of waiting forever
         for a job node that the builder never emits (#596)."""
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
-        assert layer.workflow is not None
         step = contour_step_class.create(context_initializer)
-        layer.workflow.add_step(step)
+        layer.workflows[0].add_step(step)
         step.workpiece_uids = ["00000000-0000-0000-0000-000000000000"]
 
         pipeline = Pipeline(
@@ -308,9 +301,8 @@ class TestPipelineGeneration:
         job_generation_finished, the request must fail instead of
         leaving send/frame wedged forever (#596)."""
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
-        assert layer.workflow is not None
         step = contour_step_class.create(context_initializer)
-        layer.workflow.add_step(step)
+        layer.workflows[0].add_step(step)
 
         pipeline = Pipeline(
             doc,
@@ -324,7 +316,7 @@ class TestPipelineGeneration:
             def __init__(self, **kwargs):
                 pass
 
-            def build(self, doc_arg):
+            def build(self, doc_arg, layer_uids=None):
                 return []
 
         monkeypatch.setattr(
@@ -360,9 +352,8 @@ class TestPipelineGeneration:
         job.
         """
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
-        assert layer.workflow is not None
         step = contour_step_class.create(context_initializer)
-        layer.workflow.add_step(step)
+        layer.workflows[0].add_step(step)
 
         pipeline = Pipeline(
             doc,
@@ -380,7 +371,7 @@ class TestPipelineGeneration:
         gate = threading.Event()
 
         class _GatedBuilder(IntentBuilder):
-            def build(self, doc_arg):
+            def build(self, doc_arg, layer_uids=None):
                 gate.wait(timeout=10)
                 return super().build(doc_arg)
 
@@ -417,9 +408,8 @@ class TestPipelineGeneration:
         """Verifies that a second call returns the cached handle
         without starting a duplicate generation."""
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
-        assert layer.workflow is not None
         step = contour_step_class.create(context_initializer)
-        layer.workflow.add_step(step)
+        layer.workflows[0].add_step(step)
 
         pipeline = Pipeline(
             doc,
@@ -450,9 +440,8 @@ class TestPipelineGeneration:
         """Simulates two rapid property changes on a step, verifying
         that the pipeline settles to a correct final generation."""
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
-        assert layer.workflow is not None
         step = contour_step_class.create(context_initializer)
-        layer.workflow.add_step(step)
+        layer.workflows[0].add_step(step)
 
         pipeline = Pipeline(
             doc,
@@ -491,9 +480,8 @@ class TestPipelineGeneration:
         """Integration test: full pipeline produces an encoded job
         artifact."""
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
-        assert layer.workflow is not None
         step = contour_step_class.create(context_initializer)
-        layer.workflow.add_step(step)
+        layer.workflows[0].add_step(step)
 
         pipeline = Pipeline(
             doc,
@@ -531,9 +519,8 @@ class TestPipelineGeneration:
         machine.add_rotary_module(RotaryModule())
 
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
-        assert layer.workflow is not None
         step = contour_step_class.create(context_initializer)
-        layer.workflow.add_step(step)
+        layer.workflows[0].add_step(step)
 
         pipeline = Pipeline(
             doc,
@@ -574,9 +561,8 @@ class TestPipelineGeneration:
         layer.set_rotary_enabled(True)
         layer.set_rotary_module_uid(rm.uid)
         layer.set_rotary_diameter(25.0)
-        assert layer.workflow is not None
         step = contour_step_class.create(context_initializer)
-        layer.workflow.add_step(step)
+        layer.workflows[0].add_step(step)
 
         pipeline = Pipeline(
             doc,

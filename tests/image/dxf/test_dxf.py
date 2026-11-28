@@ -5,7 +5,6 @@ from unittest.mock import Mock
 import pytest
 from raygeo.geo import Arc, Bezier, Geometry, Matrix
 
-from rayforge.core.layer import Layer
 from rayforge.core.vectorization_spec import LayerImportMode, PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image.base_importer import ImporterFeature
@@ -114,13 +113,8 @@ def _setup_workpiece_with_context(
         return None
 
     payload = import_result.payload
-    # Handle both bare WorkPiece and Layer-wrapped WorkPiece for flexibility
     item = payload.items[0]
-    wp: WorkPiece | None = None
-    if isinstance(item, WorkPiece):
-        wp = item
-    elif isinstance(item, Layer) and item.workpieces:
-        wp = item.workpieces[0]
+    wp: WorkPiece | None = item if isinstance(item, WorkPiece) else None
 
     if not wp:
         return None
@@ -258,7 +252,7 @@ class TestDXFImporterContract:
 
         spec = PassthroughSpec(
             active_layer_ids=["Layer1", "Layer3"],
-            layer_import_mode=LayerImportMode.NEW_LAYERS,
+            layer_import_mode=LayerImportMode.NEW_WORKFLOWS,
         )
         vec_result = multi_layer_dxf_importer.vectorize(parse_result, spec)
 
@@ -415,9 +409,8 @@ class TestDXFImporter:
         assert len(payload.items) == 1
         item = payload.items[0]
         assert isinstance(item, WorkPiece)
-        wp: WorkPiece | Layer = item
 
-        boundaries = wp.boundaries
+        boundaries = item.boundaries
         assert boundaries is not None
         assert not boundaries.is_empty()
         data = boundaries.data
@@ -489,9 +482,8 @@ class TestDXFImporter:
         assert len(payload.items) == 1
         item = payload.items[0]
         assert isinstance(item, WorkPiece)
-        wp: WorkPiece | Layer = item
 
-        boundaries = wp.boundaries
+        boundaries = item.boundaries
         assert boundaries is not None
         assert not boundaries.is_empty()
         data = boundaries.data
@@ -527,7 +519,7 @@ class TestDXFImporter:
         # Import only Layer1 and Layer3, creating separate layers
         spec = PassthroughSpec(
             active_layer_ids=["Layer1", "Layer3"],
-            layer_import_mode=LayerImportMode.NEW_LAYERS,
+            layer_import_mode=LayerImportMode.NEW_WORKFLOWS,
         )
         import_result = multi_layer_dxf_importer.get_doc_items(
             vectorization_spec=spec
@@ -539,12 +531,16 @@ class TestDXFImporter:
         assert len(payload.items) == 2
 
         # Verify only Layer1 and Layer3 are imported
-        layer_names = set()
-        for item in payload.items:
-            if isinstance(item, Layer):
-                layer_names.add(item.name)
-
-        assert layer_names == {"Layer1", "Layer3"}
+        layer_ids = {
+            item.source_segment.layer_id
+            for item in payload.items
+            if isinstance(item, WorkPiece) and item.source_segment is not None
+        }
+        assert layer_ids == {"Layer1", "Layer3"}
+        assert {info.layer_id for info in payload.source_layers} == {
+            "Layer1",
+            "Layer3",
+        }
 
 
 def _z_values(geo: Geometry) -> set[float]:
@@ -657,7 +653,7 @@ class TestDXFBlockLayers:
         assert parse_result is not None
         spec = PassthroughSpec(
             active_layer_ids=["LAYER_B"],
-            layer_import_mode=LayerImportMode.NEW_LAYERS,
+            layer_import_mode=LayerImportMode.NEW_WORKFLOWS,
         )
         vec_result = block_layer_dxf_importer.vectorize(parse_result, spec)
         geo = vec_result.geometries_by_layer["LAYER_B"]
@@ -676,7 +672,7 @@ class TestDXFBlockLayers:
         assert parse_result is not None
         spec = PassthroughSpec(
             active_layer_ids=["LAYER_A"],
-            layer_import_mode=LayerImportMode.NEW_LAYERS,
+            layer_import_mode=LayerImportMode.NEW_WORKFLOWS,
         )
         vec_result = block_layer0_dxf_importer.vectorize(parse_result, spec)
         assert not vec_result.geometries_by_layer["LAYER_A"].is_empty()
@@ -689,7 +685,7 @@ class TestDXFBlockTransforms:
     ):
         parse_result = block_arc_dxf_importer.parse()
         assert parse_result is not None
-        spec = PassthroughSpec(layer_import_mode=LayerImportMode.NEW_LAYERS)
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.NEW_WORKFLOWS)
         vec_result = block_arc_dxf_importer.vectorize(parse_result, spec)
 
         outside = vec_result.geometries_by_layer["Outside"]
@@ -708,7 +704,7 @@ class TestDXFBlockTransforms:
 
         parse_result = nested_block_dxf_importer.parse()
         assert parse_result is not None
-        spec = PassthroughSpec(layer_import_mode=LayerImportMode.NEW_LAYERS)
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.NEW_WORKFLOWS)
         vec_result = nested_block_dxf_importer.vectorize(parse_result, spec)
 
         geometry = vec_result.geometries_by_layer["LAYER_A"]

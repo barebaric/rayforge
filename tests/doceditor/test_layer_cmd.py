@@ -96,6 +96,27 @@ def test_layer_cmd_set_active_layer_no_change(layer_cmd):
     assert len(hm.undo_stack) == initial_history_len
 
 
+def test_layer_cmd_set_layer_visibility(layer_cmd, sample_layer):
+    """Test toggling a layer's visibility is undoable and dirties."""
+    hm = layer_cmd._editor.history_manager
+    layer_cmd.set_layer_visibility(sample_layer, False)
+
+    assert sample_layer.visible is False
+    assert len(hm.undo_stack) == 1
+    assert not layer_cmd._editor.is_saved
+
+    hm.undo()
+    assert sample_layer.visible is True
+
+
+def test_layer_cmd_set_layer_visibility_no_change(layer_cmd, sample_layer):
+    """Test that setting the current visibility does nothing."""
+    hm = layer_cmd._editor.history_manager
+    layer_cmd.set_layer_visibility(sample_layer, True)
+
+    assert len(hm.undo_stack) == 0
+
+
 def test_layer_cmd_delete_layer(layer_cmd):
     """Test deleting a layer."""
     layer1 = Layer(name="Layer 1")

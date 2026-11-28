@@ -13,12 +13,14 @@ from raygeo.template import placeholder_names
 
 from ..core.undo import HistoryManager
 from .asset import IAsset, UnknownAsset
-from .color import COLOR_PALETTE
+from .doc_schema import CURRENT_DOC_SCHEMA_VERSION, migrate
 from .image_edit import ImageEditStep, missing_image_edit_ops
 from .item import DocItem
 from .job_counter import JobCounter
 from .layer import Layer
 from .source_asset import SourceAsset
+from .step import Step
+from .workflow import Workflow
 from .workpiece import WorkPiece, workpieces_in
 
 if TYPE_CHECKING:
@@ -49,19 +51,20 @@ class Doc(DocItem):
         self.asset_order: list[str] = []
         self._loading = False
         self._known_workpiece_keys: set[str] = set()
+        # Set when the loaded file uses a newer schema than this app
+        # supports; the loader warns the user in that case.
+        self.newer_schema_version: int | None = None
 
         # The job counter, passed to text templates as {counter}
         self._job_counter = JobCounter()
         self._job_counter.changed.connect(self._on_job_counter_changed)
         self.descendant_added.connect(self._on_item_added_for_templates)
 
-        # A new document starts with three empty workpiece layers
-        for i in range(3):
-            workpiece_layer = Layer(_("Layer {}").format(i + 1))
-            workpiece_layer.color = COLOR_PALETTE[i % len(COLOR_PALETTE)]
-            self.add_child(workpiece_layer)
+        # A new document starts with one layer holding one workflow
+        layer = Layer(_("Layer {}").format(1))
+        self.add_child(layer)
 
-        # The new workpiece layer should be active by default
+        # The new layer should be active by default
         self._active_layer_index: int = 0
 
     @classmethod
@@ -98,7 +101,15 @@ class Doc(DocItem):
                 raise TypeError(f"Unknown document item type '{item_type}'")
             return item_class.from_dict(item_data)
 
+        original_version = data.get("schema_version", 0)
+        data = migrate(data)
+
         doc = cls()
+        if (
+            isinstance(original_version, int)
+            and original_version > CURRENT_DOC_SCHEMA_VERSION
+        ):
+            doc.newer_schema_version = original_version
         doc._loading = True
         doc.uid = data.get("uid", doc.uid)
         doc.job_counter = JobCounter.from_dict(data.get("job_counter"))
@@ -124,7 +135,8 @@ class Doc(DocItem):
         for src_data in source_assets_data.values():
             doc.add_asset(SourceAsset.from_dict(src_data))
 
-        # Load children (Layers and StockItems) from unified list
+        # Load children (Layers; v0 documents carried stock at the
+        # document level, which the migration folds into layers)
         children = []
         children_data = data.get("children", [])
         for d in children_data:
@@ -156,7 +168,15 @@ class Doc(DocItem):
             else:
                 children.append(StockItem.from_dict(d))
 
-        doc.set_children(children)
+        layers = [c for c in children if isinstance(c, Layer)]
+        stock_items = [c for c in children if isinstance(c, StockItem)]
+        if stock_items:
+            if not layers:
+                layers.append(Layer(_("Layer {}").format(len(layers) + 1)))
+            first = layers[0]
+            first.set_children(stock_items + list(first.children))
+
+        doc.set_children(layers)
         doc._active_layer_index = data.get("active_layer_index", 0)
         doc.adopt_legacy_image_edits()
         doc._loading = False
@@ -168,12 +188,17 @@ class Doc(DocItem):
 
     @property
     def stock_items(self) -> list["StockItem"]:
-        """Returns a list of all child items that are StockItems."""
+        """Returns all StockItems across the document's layers."""
         from .stock import StockItem
 
-        return [
-            child for child in self.children if isinstance(child, StockItem)
-        ]
+        items: list[StockItem] = []
+        for layer in self.layers:
+            items.extend(
+                child
+                for child in layer.children
+                if isinstance(child, StockItem)
+            )
+        return items
 
     def get_source_asset_by_uid(self, uid: str) -> SourceAsset | None:
         """
@@ -186,6 +211,7 @@ class Doc(DocItem):
         return {
             "uid": self.uid,
             "type": "doc",
+            "schema_version": CURRENT_DOC_SCHEMA_VERSION,
             "active_layer_index": self._active_layer_index,
             "children": [child.to_dict() for child in self.children],
             "assets": [asset.to_dict() for asset in self.get_all_assets()],
@@ -394,8 +420,53 @@ class Doc(DocItem):
 
     @property
     def layers(self) -> list[Layer]:
-        """Returns a list of all child items that are Layers."""
+        """Returns the document's layers in run order."""
         return [child for child in self.children if isinstance(child, Layer)]
+
+    @property
+    def enabled_layers(self) -> list[Layer]:
+        """The layers that have at least one enabled workflow."""
+        return [
+            layer
+            for layer in self.layers
+            if any(workflow.enabled for workflow in layer.workflows)
+        ]
+
+    @property
+    def workflows(self) -> list[Workflow]:
+        """All workflows of all layers, in run order."""
+        return [
+            workflow for layer in self.layers for workflow in layer.workflows
+        ]
+
+    @property
+    def enabled_workflows(self) -> list[Workflow]:
+        """All enabled workflows of all layers, in run order."""
+        return [workflow for workflow in self.workflows if workflow.enabled]
+
+    @property
+    def steps(self) -> list["Step"]:
+        """All steps of all layers' workflows, in run order."""
+        return [step for workflow in self.workflows for step in workflow.steps]
+
+    def workflows_in(
+        self, layer_uids: Iterable[str] | None = None
+    ) -> list[Workflow]:
+        """The enabled workflows of the given layers, in run order.
+
+        ``None`` selects every layer; used to scope a job to a subset of
+        the document's layers.
+        """
+        if layer_uids is None:
+            return self.enabled_workflows
+        uids = set(layer_uids)
+        return [
+            workflow
+            for layer in self.layers
+            if layer.uid in uids
+            for workflow in layer.workflows
+            if workflow.enabled
+        ]
 
     @staticmethod
     def is_default_layer_name(name: str) -> bool:
@@ -447,8 +518,8 @@ class Doc(DocItem):
 
     def get_top_level_items(self) -> list["DocItem"]:
         """
-        Returns a list of all top-level, user-facing items in the document by
-        querying each layer for its content.
+        Returns a list of all top-level, user-facing items in the document
+        by querying each layer for its content.
         """
         top_items = []
         for layer in self.layers:
@@ -487,7 +558,7 @@ class Doc(DocItem):
         return child
 
     def remove_child(self, child: DocItem):
-        if isinstance(child, Layer) and child.workflow:
+        if isinstance(child, Layer):
             child.per_step_transformer_changed.disconnect(
                 self._on_layer_per_step_transformer_changed
             )
@@ -496,13 +567,10 @@ class Doc(DocItem):
     def set_children(self, new_children: Iterable[DocItem]):
         new_children_list = list(new_children)
 
-        old_layers = self.layers
-        for layer in old_layers:
-            # Ensure the layer has a workflow before disconnecting
-            if layer.workflow:
-                layer.per_step_transformer_changed.disconnect(
-                    self._on_layer_per_step_transformer_changed
-                )
+        for layer in self.layers:
+            layer.per_step_transformer_changed.disconnect(
+                self._on_layer_per_step_transformer_changed
+            )
 
         new_layers = [c for c in new_children_list if isinstance(c, Layer)]
         for layer in new_layers:
@@ -519,14 +587,14 @@ class Doc(DocItem):
             return
 
         if len(self.layers) <= 1:
-            msg = "A document must have at least one workpiece layer."
+            msg = "A document must have at least one layer."
             logger.warning(msg)
             return
 
         # Safely adjust active layer index before removal
         old_active_layer = self.active_layer
         layers_before_remove = self.layers
-        layer_index_to_remove = layers_before_remove.index(layer)
+        setup_index_to_remove = layers_before_remove.index(layer)
 
         # Remove the child. This will trigger signals.
         self.remove_child(layer)
@@ -535,24 +603,22 @@ class Doc(DocItem):
         # _active_layer_index is still valid.
         if old_active_layer is layer:
             # The active layer was deleted. Choose the one before it, or 0.
-            new_index = max(0, layer_index_to_remove - 1)
+            new_index = max(0, setup_index_to_remove - 1)
             self._active_layer_index = new_index
             self.active_layer_changed.send(self)
-        elif layer_index_to_remove < self._active_layer_index:
-            # A layer before the active one was removed, so the active index
-            # must shift.
+        elif setup_index_to_remove < self._active_layer_index:
+            # A layer before the active one was removed, so the active
+            # index must shift.
             self._active_layer_index -= 1
-            # The active layer instance hasn't changed, so no change signal
-            # needed.
+            # The active layer instance hasn't changed, so no change
+            # signal needed.
 
     def set_layers(self, layers: list[Layer]):
         new_layers_list = list(layers)
 
-        # A document must always have at least one workpiece layer.
+        # A document must always have at least one layer.
         if len(new_layers_list) < 1:
-            raise ValueError(
-                "A document must have at least one workpiece layer."
-            )
+            raise ValueError("A document must have at least one layer.")
 
         # Preserve the active layer if it still exists in the new list
         old_active_layer = None
@@ -565,19 +631,15 @@ class Doc(DocItem):
             else:
                 new_active_index = 0
         except ValueError:
-            # The old active layer is not in the new list, so pick a default.
+            # The old active layer is not in the new list, so pick a
+            # default.
             new_active_index = 0
 
         self._active_layer_index = new_active_index
-        # Preserve non-layer children (like StockItems)
-        non_layer_children = [
-            c for c in self.children if not isinstance(c, Layer)
-        ]
-        new_children_list = new_layers_list + non_layer_children
-        self.set_children(new_children_list)
+        self.set_children(new_layers_list)
 
-        # After the state is consistent, send the active_layer_changed signal
-        # if the active layer instance has actually changed.
+        # After the state is consistent, send the active_layer_changed
+        # signal if the active layer instance has actually changed.
         if old_active_layer is not self.active_layer:
             self.active_layer_changed.send(self)
 
@@ -590,8 +652,8 @@ class Doc(DocItem):
         return self.has_workpiece() and any(
             step.visible
             for layer in self.layers
-            if layer.workflow
-            for step in layer.workflow.steps
+            for workflow in layer.workflows
+            for step in workflow.steps
         )
 
     def get_laser_uid_for_step(self, step_uid: str) -> str | None:
@@ -605,27 +667,28 @@ class Doc(DocItem):
             The selected_head_uid for the step, or None if not found.
         """
         for layer in self.layers:
-            if layer.workflow:
-                for step in layer.workflow.steps:
+            for workflow in layer.workflows:
+                for step in workflow.steps:
                     if step.uid == step_uid:
                         return step.selected_head_uid
         return None
 
-    def get_layer_uid_for_step(self, step_uid: str) -> str | None:
+    def get_workflow_uid_for_step(self, step_uid: str) -> str | None:
         """
-        Look up the layer_uid for a step by its UID.
+        Look up the workflow uid for a step by its UID.
 
         Args:
             step_uid: The unique identifier of the step.
 
         Returns:
-            The uid of the layer containing the step, or None if not found.
+            The uid of the workflow containing the step, or None if
+            not found.
         """
         for layer in self.layers:
-            if layer.workflow:
-                for step in layer.workflow.steps:
+            for workflow in layer.workflows:
+                for step in workflow.steps:
                     if step.uid == step_uid:
-                        return layer.uid
+                        return workflow.uid
         return None
 
     @property
@@ -643,12 +706,11 @@ class Doc(DocItem):
         once, so this is safe to call after every load.
         """
         for layer in self.layers:
-            if not layer.workflow:
-                continue
-            for step in layer.workflow.steps:
-                edits = step.pop_legacy_image_edits()
-                if edits:
-                    _append_image_edits(layer.all_workpieces, edits)
+            for workflow in layer.workflows:
+                for step in workflow.steps:
+                    edits = step.pop_legacy_image_edits()
+                    if edits:
+                        _append_image_edits(layer.all_workpieces, edits)
 
     @property
     def missing_step_types(self) -> set[str]:
@@ -657,8 +719,8 @@ class Doc(DocItem):
 
         missing: set[str] = set()
         for layer in self.layers:
-            if layer.workflow:
-                for step in layer.workflow.steps:
+            for workflow in layer.workflows:
+                for step in workflow.steps:
                     name = type(step).__name__
                     if step_registry.get(name) is None:
                         missing.add(step.original_step_type or step.typelabel)

@@ -125,12 +125,18 @@ Hooks are **automatic G-code injections** triggered by specific events during jo
 
 Rayforge supports these hook triggers:
 
-| Trigger             | When It Runs                     | Common Uses                         |
-| ------------------- | -------------------------------- | ----------------------------------- |
-| **Layer Start**     | Before processing each layer     | Tool change, power adjust, comments |
-| **Layer End**       | After processing each layer      | Progress notification, pause        |
-| **Workpiece Start** | Before processing each workpiece | Part numbering, alignment marks     |
-| **Workpiece End**   | After processing each workpiece  | Cooldown, inspection pause          |
+| Trigger             | When It Runs                            | Common Uses                      |
+| ------------------- | --------------------------------------- | -------------------------------- |
+| **Layer Start**     | Before the first workflow of each layer | Tool change, WCS check, comments |
+| **Layer End**       | After the last workflow of each layer   | Progress notification, pause     |
+| **Workflow Start**  | Before processing each workflow         | Power adjust, comments           |
+| **Workflow End**    | After processing each workflow          | Progress notification, pause     |
+| **Workpiece Start** | Before processing each workpiece        | Part numbering, alignment marks  |
+| **Workpiece End**   | After processing each workpiece         | Cooldown, inspection pause       |
+
+A layer groups the workflows that share one physical setup (stock, workpiece placement, WCS,
+rotary). Layer hooks run once around all of a layer's workflows; workflow hooks run for every
+workflow.
 
 <!-- prettier-ignore-start -->
 :::note[Job-Level G-code]
@@ -169,6 +175,18 @@ postscript settings, not hooks. See [G-code Settings](gcode) for details.
 
 ---
 
+#### Workflow Start: Add Comment
+
+**Trigger:** Workflow Start **Code:**
+
+```gcode
+; Layer {layer_name}: workflow start
+```
+
+**Purpose:** Separates the workflows of one layer in the G-code.
+
+---
+
 #### Workpiece Start: Part Numbering
 
 **Trigger:** Workpiece Start **Code:**
@@ -184,24 +202,30 @@ postscript settings, not hooks. See [G-code Settings](gcode) for details.
 
 ### Hook Execution Order
 
-For a job with 2 layers, each with 2 workpieces:
+For a job with 2 layers; the first contains two workflows, the second contains one:
 
 ```
   [Layer Start Hook] (Layer 1)
-    [Workpiece Start Hook] (Workpiece 1)
-      ... workpiece 1 G-code ...
-    [Workpiece End Hook] (Workpiece 1)
-    [Workpiece Start Hook] (Workpiece 2)
-      ... workpiece 2 G-code ...
-    [Workpiece End Hook] (Workpiece 2)
+    [Workflow Start Hook] (Cutting)
+      [Workpiece Start Hook] (Workpiece 1)
+        ... workpiece 1 G-code ...
+      [Workpiece End Hook] (Workpiece 1)
+      [Workpiece Start Hook] (Workpiece 2)
+        ... workpiece 2 G-code ...
+      [Workpiece End Hook] (Workpiece 2)
+    [Workflow End Hook] (Cutting)
+    [Workflow Start Hook] (Engraving)
+      [Workpiece Start Hook] (Workpiece 1)
+        ... workpiece 1 G-code ...
+      [Workpiece End Hook] (Workpiece 1)
+    [Workflow End Hook] (Engraving)
   [Layer End Hook] (Layer 1)
   [Layer Start Hook] (Layer 2)
-    [Workpiece Start Hook] (Workpiece 3)
-      ... workpiece 3 G-code ...
-    [Workpiece End Hook] (Workpiece 3)
-    [Workpiece Start Hook] (Workpiece 4)
-      ... workpiece 4 G-code ...
-    [Workpiece End Hook] (Workpiece 4)
+    [Workflow Start Hook] (Layer 2 Workflow)
+      [Workpiece Start Hook] (Workpiece 3)
+        ... workpiece 3 G-code ...
+      [Workpiece End Hook] (Workpiece 3)
+    [Workflow End Hook] (Layer 2 Workflow)
   [Layer End Hook] (Layer 2)
 ```
 

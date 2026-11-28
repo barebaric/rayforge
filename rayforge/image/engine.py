@@ -108,11 +108,16 @@ class NormalizationEngine:
         """
         bx, by, bw, bh = bounds
 
-        # Protect against degenerate bounds
+        # Protect against degenerate bounds. A zero-width or zero-height
+        # bbox (e.g. a single vertical line) still needs a renderable
+        # crop window, so expand it around the content instead of only
+        # substituting a size for the scale.
         if bw <= 0:
             bw = 1.0
+            bx -= 0.5
         if bh <= 0:
             bh = 1.0
+            by -= 0.5
 
         # 1. Normalization Matrix: Native -> Unit Square (0-1, Y-Up)
         scale_matrix = Matrix.scale(1.0 / bw, 1.0 / bh)
@@ -165,7 +170,7 @@ class NormalizationEngine:
             layer_name=layer_name,
             world_matrix=world_matrix,
             normalization_matrix=norm_matrix,
-            crop_window=bounds,
+            crop_window=(bx, by, bw, bh),
             settings=settings,
             color=color,
         )

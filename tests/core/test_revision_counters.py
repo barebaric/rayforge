@@ -156,17 +156,14 @@ def test_step_name_change_does_not_bump_geometry_revision():
 
 
 def test_layer_name_change_does_not_bump_geometry_revision():
-    """A Layer rename (including the derived workflow rename) must not
-    bump any revision counter."""
+    """A Layer rename must not bump any revision counter."""
     doc = Doc()
     layer = doc.active_layer
-    assert layer.workflow is not None
     assert layer.geometry_revision == 0
     layer.set_name("renamed")
     assert layer.name == "renamed"
     assert layer.geometry_revision == 0
-    assert layer.workflow.name == "renamed Workflow"
-    assert layer.workflow.geometry_revision == 0
+    assert layer.workflows[0].geometry_revision == 0
 
 
 def test_name_setter_sends_renamed_signal():

@@ -295,6 +295,26 @@ class LayoutItem:
 
 
 @dataclass
+class SourceLayerInfo:
+    """Metadata of one source-file layer produced by an import.
+
+    Importers that split their content per source layer hand this to
+    the document so a workflow can be created per source layer.
+
+    Attributes:
+        layer_id: The source file's layer identifier.
+        name: Human-readable layer name.
+        color: The layer color, if the source defines one.
+        settings: Importer settings dict for the layer, if any.
+    """
+
+    layer_id: str | None
+    name: str
+    color: str | None = None
+    settings: dict[str, Any] | None = None
+
+
+@dataclass
 class ImportPayload:
     """
     A container for the complete result of Phase 5 (Assemble).
@@ -309,9 +329,11 @@ class ImportPayload:
 
     Attributes:
         source: The SourceAsset representing the imported file.
-        items: List of DocItems (WorkPieces or Layers) ready for insertion.
+        items: List of DocItems (WorkPieces) ready for insertion.
         assets: Optional list of IAsset objects (e.g., Sketches) for special
                 importers that need to create reusable asset definitions.
+        source_layers: Metadata of the source layers the items belong
+                to, in import order. Empty for merged imports.
 
     Error Handling:
     ---------------
@@ -322,6 +344,7 @@ class ImportPayload:
     source: "SourceAsset"
     items: list["DocItem"]
     assets: list["IAsset"] = field(default_factory=list)
+    source_layers: list["SourceLayerInfo"] = field(default_factory=list)
 
 
 @dataclass

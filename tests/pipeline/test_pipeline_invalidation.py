@@ -35,8 +35,8 @@ def _zero_debounce(zero_debounce_delay):
 @pytest.fixture
 def doc():
     d = Doc()
-    assert d.active_layer.workflow is not None
-    d.active_layer.workflow.set_steps([])
+    assert d.active_layer.workflows[0] is not None
+    d.active_layer.workflows[0].set_steps([])
     return d
 
 
@@ -91,7 +91,7 @@ class TestPipelineInvalidation:
         """Changing workpiece geometry should trigger a new rebuild."""
         self._setup_doc_with_workpiece(doc, real_workpiece)
         step = contour_step_class.create(context_initializer)
-        doc.active_layer.workflow.add_step(step)
+        doc.active_layer.workflows[0].add_step(step)
 
         pipeline = Pipeline(
             doc,
@@ -120,7 +120,7 @@ class TestPipelineInvalidation:
         """Changing workpiece position should trigger a rebuild."""
         self._setup_doc_with_workpiece(doc, real_workpiece)
         step = contour_step_class.create(context_initializer)
-        doc.active_layer.workflow.add_step(step)
+        doc.active_layer.workflows[0].add_step(step)
 
         pipeline = Pipeline(
             doc,
@@ -149,7 +149,7 @@ class TestPipelineInvalidation:
         """Changing workpiece rotation should trigger a rebuild."""
         self._setup_doc_with_workpiece(doc, real_workpiece)
         step = contour_step_class.create(context_initializer)
-        doc.active_layer.workflow.add_step(step)
+        doc.active_layer.workflows[0].add_step(step)
 
         pipeline = Pipeline(
             doc,
@@ -178,7 +178,7 @@ class TestPipelineInvalidation:
         """Changing step power should trigger a rebuild."""
         self._setup_doc_with_workpiece(doc, real_workpiece)
         step = contour_step_class.create(context_initializer)
-        doc.active_layer.workflow.add_step(step)
+        doc.active_layer.workflows[0].add_step(step)
 
         pipeline = Pipeline(
             doc,
@@ -210,7 +210,7 @@ class TestPipelineInvalidation:
     ):
         """Adding a workpiece to the doc should trigger a rebuild."""
         step = contour_step_class.create(context_initializer)
-        doc.active_layer.workflow.add_step(step)
+        doc.active_layer.workflows[0].add_step(step)
 
         pipeline = Pipeline(
             doc,
@@ -245,7 +245,7 @@ class TestPipelineInvalidation:
         group.add_child(real_workpiece)
 
         step = contour_step_class.create(context_initializer)
-        doc.active_layer.workflow.add_step(step)
+        doc.active_layer.workflows[0].add_step(step)
 
         pipeline = Pipeline(
             doc,
@@ -274,7 +274,7 @@ class TestPipelineInvalidation:
         """Transforming a layer should trigger a rebuild."""
         self._setup_doc_with_workpiece(doc, real_workpiece)
         step = contour_step_class.create(context_initializer)
-        doc.active_layer.workflow.add_step(step)
+        doc.active_layer.workflows[0].add_step(step)
 
         pipeline = Pipeline(
             doc,
@@ -310,7 +310,7 @@ class TestPipelineInvalidation:
         # CPU work can exceed the settle timeout on a heavily loaded
         # parallel test run, making the test flaky.
         step.pixels_per_mm = (5, 5)
-        doc.active_layer.workflow.add_step(step)
+        doc.active_layer.workflows[0].add_step(step)
 
         pipeline = Pipeline(
             doc,

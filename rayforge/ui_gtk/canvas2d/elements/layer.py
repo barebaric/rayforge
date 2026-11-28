@@ -20,8 +20,9 @@ logger = logging.getLogger(__name__)
 
 class LayerElement(CanvasElement):
     """
-    A non-selectable container that corresponds to a Layer model.
-    It creates and manages child elements for WorkPieces, Groups, and Steps.
+    A non-selectable container that corresponds to the active Layer
+    model. It creates and manages child elements for WorkPieces,
+    Groups, StockItems, and the steps of all its workflows.
     """
 
     def __init__(self, layer: "Layer", **kwargs):
@@ -102,9 +103,9 @@ class LayerElement(CanvasElement):
         )
         self.set_visible(self.data.visible)
 
-        # Keep child selectability in sync with the layer's visibility.
-        # Elements created while the layer was hidden must become selectable
-        # again once the layer is shown, and vice versa.
+        # Keep child selectability in sync with the layer's visibility:
+        # elements created while the layer was hidden must become
+        # selectable again once it is shown, and vice versa.
         for child in self.children:
             if isinstance(child, (WorkPieceElement, GroupElement)):
                 child.selectable = self.data.visible
@@ -156,17 +157,16 @@ class LayerElement(CanvasElement):
                     stock_item=item_data,
                     canvas=self.canvas,
                     # Stock is potentially selectable, but its get_elem_hit
-                    # method will make the final decision based on layer state.
+                    # method will make the final decision based on layer
+                    # state.
                     selectable=True,
                 )
 
             if new_elem:
                 self.add(new_elem)
 
-        if self.data.workflow is None:
-            return  # layers without workflow
-
-        # Reconcile StepElements (Lifecycle Managers)
+        # Reconcile StepElements (Lifecycle Managers) across all the
+        # layer's workflows.
         current_step_elements = [
             elem for elem in self.children if isinstance(elem, StepElement)
         ]
@@ -175,7 +175,9 @@ class LayerElement(CanvasElement):
             for elem in self.children
             if isinstance(elem, WorkPieceElement)
         ]
-        model_steps = set(self.data.workflow.steps)
+        model_steps = {
+            step for workflow in self.data.workflows for step in workflow.steps
+        }
 
         # Remove StepElements for steps that are no longer in the model
         for elem in current_step_elements:

@@ -3,7 +3,6 @@ from unittest.mock import MagicMock
 import pytest
 from raygeo.geo import Geometry, Matrix
 
-from rayforge.core.layer import Layer
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.vectorization_spec import LayerImportMode, PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
@@ -51,9 +50,12 @@ def test_single_item_creation(assembler, source, spec, mock_geo):
     ]
     geometries: dict[str | None, Geometry] = {"some_layer": mock_geo}
 
-    items = assembler.create_items(source, plan, spec, "TestFile", geometries)
+    items, source_layers = assembler.create_items(
+        source, plan, spec, "TestFile", geometries
+    )
 
     assert len(items) == 1
+    assert source_layers == []
     wp = items[0]
     assert isinstance(wp, WorkPiece)
     assert wp.name == "TestFile"
@@ -72,7 +74,7 @@ def test_split_layers_creation(assembler, source, mock_geo):
     """
     mock_geo_a = MagicMock(spec=Geometry)
     mock_geo_b = MagicMock(spec=Geometry)
-    spec = PassthroughSpec(layer_import_mode=LayerImportMode.NEW_LAYERS)
+    spec = PassthroughSpec(layer_import_mode=LayerImportMode.NEW_WORKFLOWS)
     plan = [
         LayoutItem(
             layer_id="LayerA",
@@ -94,28 +96,24 @@ def test_split_layers_creation(assembler, source, mock_geo):
         "LayerB": mock_geo_b,
     }
 
-    items = assembler.create_items(source, plan, spec, "TestFile", geometries)
+    items, source_layers = assembler.create_items(
+        source, plan, spec, "TestFile", geometries
+    )
 
     assert len(items) == 2
+    assert [info.layer_id for info in source_layers] == ["LayerA", "LayerB"]
+    assert [info.name for info in source_layers] == ["LayerA", "LayerB"]
 
-    layer_a = items[0]
-    assert isinstance(layer_a, Layer)
-    if isinstance(layer_a, Layer):
-        assert layer_a.name == "LayerA"
-        assert len(layer_a.children) == 2
-        wp_a = next(c for c in layer_a.children if isinstance(c, WorkPiece))
-        if wp_a.source_segment:
-            assert wp_a.source_segment.layer_id == "LayerA"
-            assert wp_a.source_segment.pristine_geometry is mock_geo_a
+    wp_a = items[0]
+    assert isinstance(wp_a, WorkPiece)
+    assert wp_a.source_segment is not None
+    assert wp_a.source_segment.layer_id == "LayerA"
+    assert wp_a.source_segment.pristine_geometry is mock_geo_a
 
-    layer_b = items[1]
-    assert isinstance(layer_b, Layer)
-    if isinstance(layer_b, Layer):
-        assert layer_b.name == "LayerB"
-
-        wp_b = next(c for c in layer_b.children if isinstance(c, WorkPiece))
-        if wp_b.source_segment:
-            assert wp_b.source_segment.pristine_geometry is mock_geo_b
-        tx, ty = wp_b.matrix.get_translation()
-        assert tx == 10.0
-        assert ty == 10.0
+    wp_b = items[1]
+    assert isinstance(wp_b, WorkPiece)
+    assert wp_b.source_segment is not None
+    assert wp_b.source_segment.pristine_geometry is mock_geo_b
+    tx, ty = wp_b.matrix.get_translation()
+    assert tx == 10.0
+    assert ty == 10.0

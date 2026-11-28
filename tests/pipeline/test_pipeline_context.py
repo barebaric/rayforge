@@ -25,8 +25,7 @@ def _zero_debounce(zero_debounce_delay):
 def doc():
     d = Doc()
     active_layer = d.active_layer
-    assert active_layer.workflow is not None
-    active_layer.workflow.set_steps([])
+    active_layer.workflows[0].set_steps([])
     return d
 
 

@@ -291,9 +291,7 @@ def test_clear_all_items(edit_cmd: EditCmd, doc_editor: DocEditor):
     assert len(layer1.get_content_items()) == 0
     assert len(layer2.get_content_items()) == 0
     # Make sure workflows are preserved
-    assert layer1.workflow is not None
     assert len(layer1.children) == 1
-    assert layer2.workflow is not None
     assert len(layer2.children) == 1
 
     doc_editor.history_manager.undo()

@@ -8,6 +8,7 @@ from raygeo.ops.types import CommandCategory, CommandType
 
 from ..core.doc import Doc
 from ..core.layer import Layer
+from ..core.workflow import Workflow
 from ..machine.kinematic_mapping import resolve_layer_rotary
 from ..machine.kinematic_math import KinematicMath
 from ..machine.models.machine import Machine
@@ -487,9 +488,8 @@ class OpPlayer:
     def _create_home_state(self) -> MachineState:
         return create_home_state(self._machine)
 
-    def _update_rotary_config(self, layer_uid: str) -> None:
-        item = self._doc.find_descendant_by_uid(layer_uid)
-        layer = item if isinstance(item, Layer) else None
+    def _update_rotary_config(self, marker_uid: str) -> None:
+        layer = self._resolve_layer_by_uid(marker_uid)
         cfg = resolve_layer_rotary(layer, self._machine)
         self._source_axis = cfg.source_axis
         self._rotary_axis = cfg.rotary_axis
@@ -610,19 +610,30 @@ class OpPlayer:
                 return i
         return 0
 
-    def get_current_layer(self, doc: Doc) -> Layer | None:
-        uid = self.state.current_layer_uid
-        if uid:
-            item = doc.find_descendant_by_uid(uid)
-            if isinstance(item, Layer):
-                return item
+    def _resolve_layer_by_uid(self, uid: str) -> "Layer | None":
+        """Resolve a marker uid to its layer.
+
+        Production spans carry the workflow uid; a bare layer uid is
+        accepted as well (e.g. hand-built ops in tests).
+        """
+        item = self._doc.find_descendant_by_uid(uid)
+        if isinstance(item, Layer):
+            return item
+        if isinstance(item, Workflow):
+            return item.layer
         return None
 
-    def get_effective_layer(self, doc: Doc) -> Layer | None:
+    def get_current_layer(self, doc: Doc) -> "Layer | None":
+        uid = self.state.current_layer_uid
+        if uid:
+            return self._resolve_layer_by_uid(uid)
+        return None
+
+    def get_effective_layer(self, doc: Doc) -> "Layer | None":
         """Return the layer that should drive playback configuration.
 
-        Falls back to the first layer of the document while the player is
-        in the preamble (before the first LAYER_START command).
+        Falls back to the first layer of the document while the player
+        is in the preamble (before the first LAYER_START command).
         """
         layer = self.get_current_layer(doc)
         if layer is None and doc.layers:
@@ -653,12 +664,24 @@ class SnapshotBuilder:
         self._rotary_dpm: float = 0.0
         self.state = initial_state
 
+    def _resolve_layer_by_uid(self, uid: str) -> "Layer | None":
+        """Resolve a marker uid to its layer.
+
+        Production spans carry the workflow uid; a bare layer uid is
+        accepted as well.
+        """
+        item = self._doc.find_descendant_by_uid(uid)
+        if isinstance(item, Layer):
+            return item
+        if isinstance(item, Workflow):
+            return item.layer
+        return None
+
     def advance_to(self, index: int):
         for i in range(self._current_index + 1, index + 1):
             ct = self.ops.command_type(i)
             if ct == CommandType.LAYER_START:
-                item = self._doc.find_descendant_by_uid(self.ops.layer_uid(i))
-                layer = item if isinstance(item, Layer) else None
+                layer = self._resolve_layer_by_uid(self.ops.layer_uid(i))
                 cfg = resolve_layer_rotary(layer, self._machine)
                 self._source_axis = cfg.source_axis
                 self._rotary_axis = cfg.rotary_axis

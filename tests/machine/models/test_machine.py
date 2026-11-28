@@ -638,8 +638,7 @@ class TestMachine:
         await wait_for_tasks_to_finish(task_mgr)
         # Add a step to the workflow, which is required for job assembly.
         step = contour_step_class.create(lite_context)
-        workflow = doc.active_layer.workflow
-        assert workflow is not None
+        workflow = doc.active_layer.workflows[0]
         workflow.add_step(step)
 
         # Add a workpiece to the document, which will trigger ops generation.
@@ -687,8 +686,7 @@ class TestMachine:
 
         # Add a step to the workflow, which is required for job assembly.
         step = contour_step_class.create(lite_context)
-        workflow = doc.active_layer.workflow
-        assert workflow is not None
+        workflow = doc.active_layer.workflows[0]
         workflow.add_step(step)
 
         # Add a workpiece to the document.
@@ -739,8 +737,7 @@ class TestMachine:
         head.set_frame_repeat_count(3)
 
         step = contour_step_class.create(lite_context)
-        workflow = doc.active_layer.workflow
-        assert workflow is not None
+        workflow = doc.active_layer.workflows[0]
         workflow.add_step(step)
 
         workpiece, source = create_test_workpiece_and_source()
@@ -807,8 +804,7 @@ class TestMachine:
         assert machine.can_frame() is True
 
         step = contour_step_class.create(lite_context)
-        workflow = doc.active_layer.workflow
-        assert workflow is not None
+        workflow = doc.active_layer.workflows[0]
         workflow.add_step(step)
 
         workpiece, source = create_test_workpiece_and_source()
@@ -863,8 +859,7 @@ class TestMachine:
         machine.update_wcs_offset("G56", (60.0, 60.0, 0.0))
 
         step = contour_step_class.create(lite_context)
-        workflow = doc.active_layer.workflow
-        assert workflow is not None
+        workflow = doc.active_layer.workflows[0]
         workflow.add_step(step)
 
         source_file = Path("test.svg")
@@ -947,8 +942,7 @@ class TestMachine:
         machine.update_wcs_offset("G56", (0.0, 0.0, 0.0))
 
         step = contour_step_class.create(lite_context)
-        workflow = doc.active_layer.workflow
-        assert workflow is not None
+        workflow = doc.active_layer.workflows[0]
         workflow.add_step(step)
 
         workpiece, source = create_test_workpiece_and_source()
@@ -1011,8 +1005,7 @@ class TestMachine:
         machine.set_origin(Origin.BOTTOM_LEFT)
 
         step = contour_step_class.create(lite_context)
-        workflow = doc.active_layer.workflow
-        assert workflow is not None
+        workflow = doc.active_layer.workflows[0]
         workflow.add_step(step)
 
         workpiece, source = create_test_workpiece_and_source()
@@ -1060,8 +1053,7 @@ class TestMachine:
         head.set_pointer_offset_enabled(True)
 
         step = contour_step_class.create(lite_context)
-        workflow = doc.active_layer.workflow
-        assert workflow is not None
+        workflow = doc.active_layer.workflows[0]
         workflow.add_step(step)
 
         workpiece, source = create_test_workpiece_and_source()
@@ -1774,7 +1766,7 @@ class TestMachine:
         """
         Test that home method accepts multiple axes using binary operators.
         """
-        # Create driver directly to avoid setup issues, then replace
+        # Create driver directly to avoid layer issues, then replace
         # its Rust session with a mock to avoid connection issues.
         machine.set_driver(SmoothieDriver, {"host": "test", "port": 23})
         await wait_for_tasks_to_finish(task_mgr)
@@ -1940,7 +1932,7 @@ class TestMachine:
         assert new_machine.dialect_uid != "grbl"
         assert "JOB_START" not in new_machine.hookmacros
         assert "JOB_END" not in new_machine.hookmacros
-        assert MacroTrigger.LAYER_START in new_machine.hookmacros
+        assert MacroTrigger.WORKFLOW_START in new_machine.hookmacros
 
         # Assert New Dialect Content
         migrated_dialect = lite_context.dialect_mgr.get(
@@ -2018,7 +2010,7 @@ class TestMachine:
             == initial_dialect_count + 1
         )
         assert new_machine.dialect_uid != "smoothieware"
-        assert MacroTrigger.LAYER_START in new_machine.hookmacros
+        assert MacroTrigger.WORKFLOW_START in new_machine.hookmacros
 
     @pytest.mark.asyncio
     async def test_sync_wcs_on_connect(
@@ -2654,7 +2646,7 @@ class TestJogDelegation:
         unaffected by the active WCS offset.
 
         This supersedes the work-space evaluation from #574: that
-        setup paired a bottom-left origin with firmware that reports
+        layer paired a bottom-left origin with firmware that reports
         negative positions and a G54 used as a UI correction - the
         misconfiguration later diagnosed in #613. With the machine
         configured to match the firmware (top-right origin, reversed

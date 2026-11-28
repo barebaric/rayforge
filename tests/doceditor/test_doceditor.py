@@ -107,7 +107,7 @@ async def test_import_svg_export_gcode(
     step.set_cut_speed(3000)
     step.visible = True
 
-    workflow = doc_editor.doc.active_layer.workflow
+    workflow = doc_editor.doc.active_layer.workflows[0]
     assert workflow is not None, (
         "Active layer must have a workflow for this test"
     )
@@ -203,7 +203,7 @@ async def test_import_svg_export_gcode_with_air_assist(
     step.set_air_assist(True)
     step.visible = True
 
-    workflow = doc_editor.doc.active_layer.workflow
+    workflow = doc_editor.doc.active_layer.workflows[0]
     assert workflow is not None, (
         "Active layer must have a workflow for this test"
     )
@@ -472,7 +472,7 @@ async def test_frame_job_rotary_svg_drives_a_axis(
     step.set_power(0.5)
     step.set_cut_speed(3000)
     step.visible = True
-    workflow = layer.workflow
+    workflow = layer.workflows[0]
     assert workflow is not None
     workflow.add_step(step)
 

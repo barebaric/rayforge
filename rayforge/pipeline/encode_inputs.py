@@ -108,7 +108,7 @@ def _build_job_path_vars(ops: Ops, doc: "Doc") -> dict[str, str]:
     }
 
 
-def _build_layer_path_vars_for_doc(
+def _build_workflow_path_vars_for_doc(
     doc: "Doc", machine: "Machine"
 ) -> dict[str, dict[str, str]]:
     result: dict[str, dict[str, str]] = {}
@@ -117,12 +117,14 @@ def _build_layer_path_vars_for_doc(
     for layer in doc.layers:
         wcs = layer.get_effective_wcs(machine)
         wcs_offset = machine.get_job_wcs_offset(machine.get_wcs_offset(wcs))
-        result[layer.uid] = {
-            "layer.name": layer.name,
-            "wcs_offset[0]": _repr_val(wcs_offset[0]),
-            "wcs_offset[1]": _repr_val(wcs_offset[1]),
-            "wcs_offset[2]": _repr_val(wcs_offset[2]),
-        }
+        for workflow in layer.workflows:
+            result[workflow.uid] = {
+                "layer.name": layer.name,
+                "workflow.name": workflow.name,
+                "wcs_offset[0]": _repr_val(wcs_offset[0]),
+                "wcs_offset[1]": _repr_val(wcs_offset[1]),
+                "wcs_offset[2]": _repr_val(wcs_offset[2]),
+            }
     return result
 
 
@@ -132,44 +134,102 @@ def _build_workpiece_path_vars_for_doc(
     result: dict[str, dict[str, str]] = {}
     if not doc:
         return result
-    for layer in doc.layers:
-        for wp in layer.all_workpieces:
-            pos = wp.pos
-            size = wp.size
-            counter = doc.job_counter.counter.value_at(wp.variable_offset)
-            result[wp.uid] = {
-                "workpiece.name": wp.name,
-                "workpiece.counter": str(counter),
-                "workpiece.pos[0]": _repr_val(pos[0]),
-                "workpiece.pos[1]": _repr_val(pos[1]),
-                "workpiece.size[0]": _repr_val(size[0]),
-                "workpiece.size[1]": _repr_val(size[1]),
-            }
+    for wp in doc.all_workpieces:
+        pos = wp.pos
+        size = wp.size
+        counter = doc.job_counter.counter.value_at(wp.variable_offset)
+        result[wp.uid] = {
+            "workpiece.name": wp.name,
+            "workpiece.counter": str(counter),
+            "workpiece.pos[0]": _repr_val(pos[0]),
+            "workpiece.pos[1]": _repr_val(pos[1]),
+            "workpiece.size[0]": _repr_val(size[0]),
+            "workpiece.size[1]": _repr_val(size[1]),
+        }
     return result
 
 
 # ── Macro table ───────────────────────────────────────────────────
 
 
-def _build_macro_table(machine: "Machine") -> dict:
+def _macro_dict(macro) -> dict | None:
+    """The JSON form of one macro, or None when it is unset."""
+    if macro is None:
+        return None
+    return {
+        "name": macro.name,
+        "code": macro.code,
+        "enabled": macro.enabled,
+    }
+
+
+def _merged_macros(macros: list) -> dict | None:
+    """Merges several trigger macros into one, preserving their order."""
+    active = [m for m in macros if m is not None and m.enabled]
+    if not active:
+        return None
+    if len(active) == 1:
+        return _macro_dict(active[0])
+    return {
+        "name": active[0].name,
+        "code": [line for m in active for line in (m.code or [])],
+        "enabled": True,
+    }
+
+
+def _span_hook_maps(
+    doc: "Doc | None", hooks: dict
+) -> tuple[dict[str, dict | None], dict[str, dict | None]]:
+    """Builds the per-workflow overrides for the layer hooks.
+
+    Job spans are workflow spans, so a layer's start hook belongs to
+    the span of its first runnable workflow, and its end hook belongs
+    to the span of the last one. Every workflow span carries the
+    workflow hooks; spans without any hook map to None so they do not
+    fall back to the layer-only defaults.
+    """
+    starts: dict[str, dict | None] = {}
+    ends: dict[str, dict | None] = {}
+    if doc is None:
+        return starts, ends
+    for layer in doc.layers:
+        workflows = [
+            workflow
+            for workflow in layer.workflows
+            if workflow.enabled and workflow.has_runnable_steps()
+        ]
+        if not workflows:
+            continue
+        last = workflows[-1]
+        for workflow in workflows:
+            start_macros = [hooks.get(MacroTrigger.WORKFLOW_START)]
+            if workflow is workflows[0]:
+                start_macros.insert(0, hooks.get(MacroTrigger.LAYER_START))
+            starts[workflow.uid] = _merged_macros(start_macros)
+
+            end_macros = [hooks.get(MacroTrigger.WORKFLOW_END)]
+            if workflow is last:
+                end_macros.append(hooks.get(MacroTrigger.LAYER_END))
+            ends[workflow.uid] = _merged_macros(end_macros)
+    return starts, ends
+
+
+def _build_macro_table(machine: "Machine", doc: "Doc | None") -> dict:
     """Build the MacroTable dict for the Rust encoder."""
     hooks = machine.hookmacros
     macros = machine.macros  # Dict[str, Macro]
+    layer_starts, layer_ends = _span_hook_maps(doc, hooks)
 
-    def _macro_dict(m) -> dict | None:
-        if m is None:
-            return None
-        return {"name": m.name, "code": m.code, "enabled": m.enabled}
-
-    trigger_map = {
-        MacroTrigger.LAYER_START: "layer_start",
-        MacroTrigger.LAYER_END: "layer_end",
-        MacroTrigger.WORKPIECE_START: "workpiece_start",
-        MacroTrigger.WORKPIECE_END: "workpiece_end",
+    table: dict = {
+        "layer_start": _macro_dict(hooks.get(MacroTrigger.LAYER_START)),
+        "layer_end": _macro_dict(hooks.get(MacroTrigger.LAYER_END)),
+        "layer_start_by_uid": layer_starts,
+        "layer_end_by_uid": layer_ends,
+        "workpiece_start": _macro_dict(
+            hooks.get(MacroTrigger.WORKPIECE_START)
+        ),
+        "workpiece_end": _macro_dict(hooks.get(MacroTrigger.WORKPIECE_END)),
     }
-    table: dict = {}
-    for trigger, key in trigger_map.items():
-        table[key] = _macro_dict(hooks.get(trigger))
 
     # All macros by name for @include resolution
     all_macros: dict[str, dict] = {}
@@ -209,13 +269,18 @@ def _build_heads(machine: "Machine") -> list[dict]:
 # ── Layer WCS ─────────────────────────────────────────────────────
 
 
-def _build_layer_wcs(doc: "Doc", machine: "Machine") -> dict[str, str]:
-    """Per-layer WCS command, keyed by layer UID."""
+def _build_workflow_wcs(doc: "Doc", machine: "Machine") -> dict[str, str]:
+    """Per-workflow WCS command, keyed by workflow UID.
+
+    The encoder matches these against the span markers, whose uid is
+    the workflow's; the value is the workflow's layer WCS.
+    """
     result: dict[str, str] = {}
     if not doc:
         return result
     for layer in doc.layers:
-        result[layer.uid] = layer.get_effective_wcs(machine)
+        for workflow in layer.workflows:
+            result[workflow.uid] = layer.get_effective_wcs(machine)
     return result
 
 
@@ -235,10 +300,10 @@ def build_encode_context(ops: Ops, machine: "Machine", doc: "Doc") -> dict:
         "default_head_uid": machine.get_default_head().uid,
         "heads": _build_heads(machine),
         "active_wcs": machine.active_wcs,
-        "layer_wcs": _build_layer_wcs(doc, machine),
-        "macros": _build_macro_table(machine),
+        "layer_wcs": _build_workflow_wcs(doc, machine),
+        "macros": _build_macro_table(machine, doc),
         "path_vars": path_vars,
-        "layer_path_vars": _build_layer_path_vars_for_doc(doc, machine),
+        "layer_path_vars": _build_workflow_path_vars_for_doc(doc, machine),
         "workpiece_path_vars": _build_workpiece_path_vars_for_doc(doc),
         "has_z_axis": machine.has_z_axis,
         "power_cap": machine.get_job_power_cap(),

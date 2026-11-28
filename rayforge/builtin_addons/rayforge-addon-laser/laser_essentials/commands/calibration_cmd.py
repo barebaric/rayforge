@@ -71,8 +71,13 @@ class CalibrationCmd:
         layer = self._new_layer(generator.title)
         for wp in built.workpieces:
             layer.add_child(wp)
-        assert layer.workflow is not None
-        layer.workflow.set_steps(built.steps)
+        workflow = layer.workflows[0]
+        workflow.set_steps(built.steps)
+        workflow.set_color(
+            pick_unused_color(
+                {wf.color for s in self._doc.layers for wf in s.workflows}
+            )
+        )
         record = CalibrationRecord(
             generator_id=generator.id,
             layer_uid=layer.uid,
@@ -89,7 +94,7 @@ class CalibrationCmd:
         return record
 
     def _new_layer(self, title: str) -> Layer:
-        """A layer named after the test, with an unused color."""
+        """A layer named after the test."""
         names = {layer.name for layer in self._doc.layers}
         name = title
         number = 2
@@ -98,10 +103,8 @@ class CalibrationCmd:
             number += 1
         layer = Layer(name)
         material = get_context().material_mgr.get_default_material()
-        layer.set_stock_material_uid(material.uid)
-        layer.set_color(
-            pick_unused_color({layer.color for layer in self._doc.layers})
-        )
+        if material is not None:
+            layer.set_stock_material_uid(material.uid)
         return layer
 
     @staticmethod
@@ -121,7 +124,7 @@ class CalibrationCmd:
             return self.workpieces(record)
         generator = self.generator(record.generator_id)
         layer = self._doc.find_descendant_by_uid(record.layer_uid)
-        if not isinstance(layer, Layer) or layer.workflow is None:
+        if not isinstance(layer, Layer) or not layer.workflows:
             raise ValueError(_("The layer of this test no longer exists."))
         built = self._build(generator, params)
         old_wps = self.workpieces(record)
@@ -318,8 +321,7 @@ class RebuildCalibrationCommand(Command):
             parent.add_children(items)
 
     def _swap_steps(self, out: list[Step], into: list[Step]):
-        workflow = self._layer.workflow
-        assert workflow is not None
+        workflow = self._layer.workflows[0]
         current = workflow.children
         positions = [current.index(s) for s in out if s in current]
         index = min(positions) if positions else 0

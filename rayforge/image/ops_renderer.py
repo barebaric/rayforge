@@ -98,11 +98,17 @@ class OpsRenderer(Renderer):
         geo_width = geo_max_x - geo_min_x
         geo_height = geo_max_y - geo_min_y
 
-        if geo_width <= 1e-9 or geo_height <= 1e-9:
-            logger.warning(
-                "Geometry has zero size. Returning transparent surface."
-            )
-            return surface  # Return transparent surface if no size
+        # A line-only or point-like geometry has a zero extent on one
+        # or both axes. Give it a unit box so it can be rendered; the
+        # line sits in the middle of the surface.
+        if geo_width <= 1e-9:
+            geo_min_x -= 0.5
+            geo_max_x += 0.5
+            geo_width = geo_max_x - geo_min_x
+        if geo_height <= 1e-9:
+            geo_min_y -= 0.5
+            geo_max_y += 0.5
+            geo_height = geo_max_y - geo_min_y
 
         scale_x = render_width / geo_width
         scale_y = render_height / geo_height

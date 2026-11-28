@@ -416,7 +416,7 @@ class Importer(ABC):
 
         # Phase 5: Assemble
         assembler = ItemAssembler()
-        items = assembler.create_items(
+        items, source_layers = assembler.create_items(
             source_asset=source_asset,
             layout_plan=plan,
             spec=spec,
@@ -425,7 +425,9 @@ class Importer(ABC):
             document_bounds=vec_result.source_parse_result.document_bounds,
         )
 
-        payload = ImportPayload(source_asset, items)
+        payload = ImportPayload(
+            source_asset, items, source_layers=source_layers
+        )
         final_payload = self._post_process_payload(payload)
 
         return ImportResult(

@@ -8,6 +8,7 @@ from raygeo.ops import Ops
 from raygeo.ops.axis import Axis
 
 from ..core.layer import Layer
+from ..core.workflow import Workflow
 from .kinematic_math import KinematicMath
 from .models.rotary_module import RotaryMode, RotaryType
 
@@ -18,14 +19,23 @@ if TYPE_CHECKING:
     from .models.rotary_module import RotaryModule
 
 
-def _resolve_rotary_layer_by_uid(layer_uid: str, doc):
-    """Return the Layer if it has rotary enabled."""
-    descendant = doc.find_descendant_by_uid(layer_uid)
-    if not isinstance(descendant, Layer):
+def _resolve_rotary_layer_by_uid(marker_uid: str, doc):
+    """Return the Layer if it has rotary enabled.
+
+    The span markers carry the workflow uid; the owning layer decides
+    whether rotary mapping applies. A bare layer uid is accepted too
+    (e.g. hand-built ops in tests).
+    """
+    descendant = doc.find_descendant_by_uid(marker_uid)
+    if isinstance(descendant, Layer):
+        layer = descendant
+    elif isinstance(descendant, Workflow):
+        layer = descendant.layer
+    else:
         return None
-    if not descendant.rotary_enabled:
+    if layer is None or not layer.rotary_enabled:
         return None
-    return descendant
+    return layer
 
 
 def _is_valid_replacement_module(module):
@@ -235,9 +245,10 @@ class KinematicMapping:
         """Apply per-layer rotary axis mapping to a full job's ops.
 
         Walks the command stream looking for ``LayerStartCommand``
-        markers.  For each layer that has rotary enabled, resolves the
-        layer's ``RotaryModule`` and applies a ``KinematicMapping``
-        (Y→degrees) to that layer's movement commands in-place.
+        markers (whose uid is the workflow's).  For each marker whose
+        layer has rotary enabled, resolves the layer's ``RotaryModule``
+        and applies a ``KinematicMapping`` (Y→degrees) to that span's
+        movement commands in-place.
 
         This is the single entry point for both the UI path (3D canvas /
         OpPlayer via ``job_compute.py``) and the G-code encoding path
@@ -267,8 +278,8 @@ class KinematicMapping:
         if not machine.rotary_modules or not doc.has_rotary_layer:
             return
 
-        def _on_layer(layer_uid: str, layer_ops: Ops) -> None:
-            layer = _resolve_rotary_layer_by_uid(layer_uid, doc)
+        def _on_setup(marker_uid: str, span_ops: Ops) -> None:
+            layer = _resolve_rotary_layer_by_uid(marker_uid, doc)
             if layer is None:
                 return
             module = machine.get_rotary_module_for_layer(layer)
@@ -281,15 +292,15 @@ class KinematicMapping:
             )
             if mapping is None:
                 return
-            mapping.apply(layer_ops)
+            mapping.apply(span_ops)
             if apply_scaled_mu and module.mode == RotaryMode.AXIS_REPLACEMENT:
                 KinematicMapping.degrees_to_mm_pass(
-                    layer_ops,
+                    span_ops,
                     module.mm_per_rotation,
                     target_axis=module.axis,
                 )
 
-        ops.transform_layers(_on_layer)
+        ops.transform_layers(_on_setup)
 
     @staticmethod
     def degrees_to_mm_pass(

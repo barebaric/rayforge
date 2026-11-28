@@ -12,15 +12,19 @@ current (sentinel) value and the suggested value (the laser-type
 default or nominal default).
 """
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from gettext import gettext as _
+from typing import Any
 
 from ..models.laser import LaserHead
 from .profile_diff import HEADS_SECTION, SettingDiff, apply_head_value
 
 # Bump when new head/machine settings are added that existing machines
 # should be prompted to review. Version 0 = pre-schema-version machines.
-CURRENT_SCHEMA_VERSION = 1
+# Version 2: job spans are workflows, so a saved layer hook now fires
+# per workflow span; see :func:`migrate_hook_triggers`.
+CURRENT_SCHEMA_VERSION = 2
 
 # Sentinel indicating "follow the laser-type default". Matches the
 # LaserHead default for wavelength_nm / max_power_watts.
@@ -122,8 +126,50 @@ def _suggested_value(head: LaserHead, key: str) -> float:
     return _SENTINEL
 
 
+def _migrate_v2_hook_triggers(
+    hookmacros: dict[str, Any],
+) -> dict[str, Any]:
+    """Renames layer hooks saved before spans became workflows.
+
+    Job spans used to be layers and are now workflows, so the hook a
+    user configured to run at a span boundary is a workflow hook.
+    """
+    renamed = {
+        "LAYER_START": "WORKFLOW_START",
+        "LAYER_END": "WORKFLOW_END",
+    }
+    return {
+        renamed.get(trigger_name, trigger_name): macro_data
+        for trigger_name, macro_data in hookmacros.items()
+    }
+
+
+#: Load-time data migrations, keyed by the schema version they
+#: introduce. Unlike the reviewable setting diffs above, these are
+#: silent transforms applied when an older machine is loaded.
+_HOOK_MIGRATIONS: dict[int, Callable[[dict[str, Any]], dict[str, Any]]] = {
+    2: _migrate_v2_hook_triggers,
+}
+
+
+def migrate_hook_triggers(
+    hookmacros: dict[str, Any], machine_version: int
+) -> dict[str, Any]:
+    """Chains the hook trigger migrations up to the current version.
+
+    Applies every migration introduced after *machine_version*. The
+    migrations are idempotent, so a machine that was already saved in
+    the new form loads unchanged.
+    """
+    for version in sorted(_HOOK_MIGRATIONS):
+        if machine_version < version:
+            hookmacros = _HOOK_MIGRATIONS[version](hookmacros)
+    return hookmacros
+
+
 __all__ = [
     "CURRENT_SCHEMA_VERSION",
     "apply_schema_migrations",
     "find_schema_migrations",
+    "migrate_hook_triggers",
 ]

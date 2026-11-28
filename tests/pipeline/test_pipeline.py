@@ -32,7 +32,7 @@ def _zero_debounce(zero_debounce_delay):
 def real_workpiece():
     """Creates a lightweight WorkPiece with transforms, but no source."""
     workpiece = WorkPiece(name="real_workpiece.svg")
-    # Importer will set size and pos, we simulate it in the setup helper.
+    # Importer will set size and pos, we simulate it in the layer helper.
     return workpiece
 
 
@@ -41,8 +41,7 @@ def doc():
     d = Doc()
     # Get the active layer (the first workpiece layer) and clear its steps
     active_layer = d.active_layer
-    assert active_layer.workflow is not None
-    active_layer.workflow.set_steps([])
+    active_layer.workflows[0].set_steps([])
     return d
 
 
@@ -88,9 +87,8 @@ class TestPipeline:
         """
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
-        assert layer.workflow is not None
         step = contour_step_class.create(context_initializer)
-        layer.workflow.add_step(step)
+        layer.workflows[0].add_step(step)
 
         pipeline = Pipeline(
             doc,
@@ -258,10 +256,9 @@ class TestPipeline:
         """A workflow whose steps are all hidden cannot produce a job
         aggregate, so generation fails fast instead of rebuilding."""
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
-        assert layer.workflow is not None
         step = contour_step_class.create(context_initializer)
         step.visible = False
-        layer.workflow.add_step(step)
+        layer.workflows[0].add_step(step)
 
         pipeline = Pipeline(
             doc,
@@ -298,9 +295,8 @@ class TestPipeline:
         """
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
-        assert layer.workflow is not None
         step = contour_step_class.create(context_initializer)
-        layer.workflow.add_step(step)
+        layer.workflows[0].add_step(step)
 
         mock_processing_state_handler = MagicMock()
 
@@ -389,9 +385,8 @@ class TestPipeline:
         and the artifact reflects the new size.
         """
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
-        assert layer.workflow is not None
         step = contour_step_class.create(context_initializer)
-        layer.workflow.add_step(step)
+        layer.workflows[0].add_step(step)
 
         pipeline = Pipeline(
             doc,

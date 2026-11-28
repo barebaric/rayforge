@@ -49,7 +49,7 @@ def _build_doc() -> Doc:
     cut_step.power = 0.5
     cut_step.cut_speed = 300
     cut_step.frequency = 20000
-    workflow = doc.layers[0].workflow
+    workflow = doc.layers[0].workflows[0]
     assert workflow is not None
     workflow.add_step(cut_step)
     return doc
@@ -57,7 +57,7 @@ def _build_doc() -> Doc:
 
 def _build_duplicated_workpieces_job(doc: Doc) -> Ops:
     """One layer, three workpieces, SET_POWER only inside the first."""
-    layer_uid = doc.layers[0].uid
+    layer_uid = doc.layers[0].workflows[0].uid
     ops = Ops()
     ops.job_start()
     ops.layer_start(layer_uid=layer_uid)
@@ -79,7 +79,7 @@ def _build_duplicated_workpieces_job(doc: Doc) -> Ops:
 
 def _build_mode_changing_job(doc: Doc) -> Ops:
     """One layer; the second workpiece switches to a raster fill."""
-    layer_uid = doc.layers[0].uid
+    layer_uid = doc.layers[0].workflows[0].uid
     ops = Ops()
     ops.job_start()
     ops.layer_start(layer_uid=layer_uid)
@@ -144,7 +144,7 @@ class TestDuplicateWorkpiecePower:
 
     def test_no_power_emitted_without_set_power_op(self):
         doc = _build_doc()
-        layer_uid = doc.layers[0].uid
+        layer_uid = doc.layers[0].workflows[0].uid
         ops = Ops()
         ops.job_start()
         ops.layer_start(layer_uid=layer_uid)

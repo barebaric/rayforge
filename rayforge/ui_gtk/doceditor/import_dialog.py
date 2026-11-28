@@ -10,7 +10,6 @@ from raygeo.geo import Matrix
 
 from ...context import get_context
 from ...core.item import DocItem
-from ...core.layer import Layer
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import (
     LayerImportMode,
@@ -78,13 +77,13 @@ class ImportDialog(PatchedDialogWindow):
         self._layer_import_model = Gtk.StringList.new(
             [
                 _("Map to Existing"),
-                _("New Layers"),
+                _("New Workflows"),
                 _("Flatten"),
             ]
         )
         self.layer_import_mode_row = Adw.ComboRow(
             title=_("Layer Import Mode"),
-            subtitle=_("How imported layers are mapped to document layers"),
+            subtitle=_("How imported layers are mapped to workflows"),
             model=self._layer_import_model,
             selected=0,
         )
@@ -633,7 +632,7 @@ class ImportDialog(PatchedDialogWindow):
         idx = self.layer_import_mode_row.get_selected()
         modes = [
             LayerImportMode.MAP_TO_EXISTING,
-            LayerImportMode.NEW_LAYERS,
+            LayerImportMode.NEW_WORKFLOWS,
             LayerImportMode.FLATTEN,
         ]
         return (
@@ -690,7 +689,7 @@ class ImportDialog(PatchedDialogWindow):
                         w.set_active(lid in spec.active_layer_ids)
                 mode_map = {
                     LayerImportMode.MAP_TO_EXISTING: 0,
-                    LayerImportMode.NEW_LAYERS: 1,
+                    LayerImportMode.NEW_WORKFLOWS: 1,
                     LayerImportMode.FLATTEN: 2,
                 }
                 idx = mode_map.get(spec.layer_import_mode, 0)
@@ -937,10 +936,6 @@ class ImportDialog(PatchedDialogWindow):
                 geometry_to_cairo(world_geo, ctx)
                 ctx.stroke()
                 ctx.restore()
-            elif isinstance(item, Layer):
-                layer_color = self._hex_to_rgb(item.color)
-                for child in item.children:
-                    draw_item(child, layer_color or color)
 
         for item in payload.items:
             draw_item(item)

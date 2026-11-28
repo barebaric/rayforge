@@ -28,11 +28,11 @@ class OpsTransformer(ABC):
     #: (e.g. ``"overscan"``), used to label batch progress details.
     SPEC_NAME: ClassVar[str] = ""
 
-    #: Whether this transformer can be used as a layer post processor
-    #: (applied to a layer's merged toolpath in machine space).
-    #: Declared by addons; the layer settings render every registered
-    #: transformer with this flag, unconditionally.
-    LAYER_APPLICABLE: ClassVar[bool] = False
+    #: Whether this transformer can be used as a workflow post processor
+    #: (applied to a workflow's merged toolpath in machine space).
+    #: Declared by addons; the workflow settings render every
+    #: registered transformer with this flag, unconditionally.
+    WORKFLOW_APPLICABLE: ClassVar[bool] = False
 
     def __init__(self, enabled: bool = True, **kwargs):
         self._enabled = enabled

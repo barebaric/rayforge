@@ -12,6 +12,8 @@ class MacroTrigger(Enum):
 
     LAYER_START = "Before processing a layer"
     LAYER_END = "After processing a layer"
+    WORKFLOW_START = "Before processing a workflow"
+    WORKFLOW_END = "After processing a workflow"
     WORKPIECE_START = "Before processing a workpiece"
     WORKPIECE_END = "After processing a workpiece"
 
@@ -20,6 +22,8 @@ class MacroTrigger(Enum):
         labels = {
             self.LAYER_START: _("Layer Start"),
             self.LAYER_END: _("Layer End"),
+            self.WORKFLOW_START: _("Workflow Start"),
+            self.WORKFLOW_END: _("Workflow End"),
             self.WORKPIECE_START: _("Workpiece Start"),
             self.WORKPIECE_END: _("Workpiece End"),
         }
@@ -30,6 +34,8 @@ class MacroTrigger(Enum):
         labels = {
             self.LAYER_START: _("Before processing a layer"),
             self.LAYER_END: _("After processing a layer"),
+            self.WORKFLOW_START: _("Before processing a workflow"),
+            self.WORKFLOW_END: _("After processing a workflow"),
             self.WORKPIECE_START: _("Before processing a workpiece"),
             self.WORKPIECE_END: _("After processing a workpiece"),
         }

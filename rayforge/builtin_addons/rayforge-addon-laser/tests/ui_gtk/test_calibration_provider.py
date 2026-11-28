@@ -69,7 +69,7 @@ def _set(provider, key, value):
 
 def _step(editor, record):
     layer = editor.doc.find_descendant_by_uid(record.layer_uid)
-    (step,) = layer.workflow.steps
+    (step,) = layer.workflows[0].steps
     return step
 
 

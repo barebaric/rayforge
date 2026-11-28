@@ -617,8 +617,8 @@ class ScenePresenter:
 
         Connected to ``OpPlayer.layer_changed`` and also called once on
         player creation.  Resolves the effective layer (current or the
-        first layer while in the preamble) and updates the scene's
-        cylinder transform without mutating the live machine.
+        first while in the preamble) and updates the scene's cylinder
+        transform without mutating the live machine.
         """
         machine = self._context.machine
         if machine is None or player is None:
@@ -926,7 +926,10 @@ class ScenePresenter:
         )
 
         layer_configs: dict[str, LayerRenderConfig] = {}
-        for layer in self.doc.layers:
+        for workflow in self.doc.workflows:
+            layer = workflow.layer
+            if layer is None:
+                continue
             axis_position = 0.0
             reverse = False
             axis_position_3d = None
@@ -947,7 +950,7 @@ class ScenePresenter:
                         )
                         cylinder_dir = tuple(mapping.cylinder_dir.tolist())
                         reverse = mapping.reverse
-            layer_configs[layer.uid] = LayerRenderConfig(
+            layer_configs[workflow.uid] = LayerRenderConfig(
                 rotary_enabled=layer.rotary_enabled,
                 rotary_diameter=layer.rotary_diameter,
                 axis_position=axis_position,

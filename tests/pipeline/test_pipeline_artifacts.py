@@ -34,8 +34,7 @@ def real_workpiece():
 def doc():
     d = Doc()
     active_layer = d.active_layer
-    assert active_layer.workflow is not None
-    active_layer.workflow.set_steps([])
+    active_layer.workflows[0].set_steps([])
     return d
 
 
@@ -77,9 +76,8 @@ class TestPipelineArtifacts:
         """Verifies retrieving a WorkPieceArtifactHandle after
         generation completes."""
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
-        assert layer.workflow is not None
         step = contour_step_class.create(context_initializer)
-        layer.workflow.add_step(step)
+        layer.workflows[0].add_step(step)
 
         pipeline = Pipeline(
             doc,
@@ -114,9 +112,8 @@ class TestPipelineArtifacts:
         """Verifies retrieving the full WorkPieceArtifact after
         generation completes."""
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
-        assert layer.workflow is not None
         step = contour_step_class.create(context_initializer)
-        layer.workflow.add_step(step)
+        layer.workflows[0].add_step(step)
 
         pipeline = Pipeline(
             doc,

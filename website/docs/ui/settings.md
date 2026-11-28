@@ -19,7 +19,7 @@ The General page contains application-wide settings.
 
 Choose between **System**, **Light**, or **Dark** theme to match your desktop environment or
 personal preference. You can also configure **Operation Colors** to use either the laser color or
-the layer color for visual distinction on the canvas.
+the workflow color for visual distinction on the canvas. Workflow color is the default.
 
 **Shop mode** replaces the bottom panel's Controls tab with a touch-friendly control surface: large
 per-axis position readouts with zero buttons, an offsets card, oversized jog speed/step steppers,

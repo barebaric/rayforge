@@ -6,7 +6,6 @@ import sys
 import threading
 import time
 from pathlib import Path
-from typing import Any
 
 import pytest
 
@@ -130,32 +129,20 @@ def app_and_window(ui_context_initializer, request):
 
 
 @pytest.mark.ui
-def test_rename_shortcut_reveals_layer_tab(app_and_window, assets_path):
-    """F2 rename works for any selection and shows the layer tab."""
+def test_rename_focuses_inline_name_entry(app_and_window, assets_path):
+    """F2 rename edits the selected item's name inline, without a dialog."""
     _app, win = app_and_window
     project = assets_path / "doceditor" / "assets" / "workpieces_project.ryp"
     assert win.doc_editor.file.load_project_from_path(project)
     process_events_for_duration(0.5)
 
     wp = next(iter(win.doc_editor.doc.get_descendants(of_type=WorkPiece)))
-
-    def row_widget() -> Any:
-        for col in win.bottom_panel.layers_tab._columns:
-            for row, item in col._row_items.items():
-                if item is wp:
-                    return row.get_child()
-        return None
-
-    # A canvas-style selection: rename works and reveals the layer tab.
-    win.bottom_panel.set_visible(False)
     win.surface.select_items([wp])
     win.on_menu_rename(None, None)
-    area = win.bottom_panel.dock_layout.find_item_area("layers")
-    assert win.bottom_panel.get_visible()
-    assert area.get_active_item() == "layers"
-    widget = row_widget()
-    assert widget is not None
-    assert widget._rename_entry is not None
+    process_events_for_duration(0.1)
+    name_row = win.item_props_widget._name_row
+    assert name_row.get_visible()
+    assert name_row.get_text() == wp.name
 
 
 @pytest.mark.ui

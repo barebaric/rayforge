@@ -387,16 +387,30 @@ class TestLightBurnImporter:
         data = _load(filename)
         return LightBurnImporter(data, source_file=ASSETS / filename)
 
+    @staticmethod
+    def _workflows_from_payload(payload) -> list:
+        """Builds detached workflows exactly like FileCmd does on import."""
+        from rayforge.core.workflow import Workflow
+        from rayforge.image.assembler import ItemAssembler
+
+        workflows = []
+        for info in payload.source_layers:
+            workflow = Workflow(name=info.name)
+            if info.color:
+                workflow.set_color(info.color)
+            if info.settings:
+                ItemAssembler.apply_settings_to_workflow(
+                    workflow, info.name, info.settings
+                )
+            workflows.append(workflow)
+        return workflows
+
     def test_new_layers_get_distinct_colors(self):
         importer = self._import("multi_layer.lbrn2")
-        spec = PassthroughSpec(layer_import_mode=LayerImportMode.NEW_LAYERS)
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.NEW_WORKFLOWS)
         result = importer.get_doc_items(spec)
         assert result is not None and result.payload is not None
-        colors = [
-            item.color
-            for item in result.payload.items
-            if isinstance(item, Layer)
-        ]
+        colors = [info.color for info in result.payload.source_layers]
         assert len(colors) == 2
         assert len(set(colors)) == 2
 
@@ -696,51 +710,40 @@ class TestLightBurnImporter:
         result = importer.get_doc_items()
         assert result is not None
         assert result.payload is not None
-        found = False
-        for item in result.payload.items:
-            if isinstance(item, Layer):
-                wf = item.workflow
-                # If ContourStep is registered (addons loaded), the step
-                # should already exist on the workflow with the right
-                # settings.  Otherwise the assembler silently leaves the
-                # workflow empty and add_default_steps_for_layers will
-                # create a default step later.
-                if wf and wf.has_steps():
-                    step: Any = wf.steps[0]
-                    assert abs(step.power - 0.2) < 1e-6
-                    assert step.cut_speed == 500
-                found = True
-                break
-        assert found, "No Layer found in imported items"
+        workflows = self._workflows_from_payload(result.payload)
+        assert workflows, "No source layers in imported payload"
+        wf = workflows[0]
+        # If ContourStep is registered (addons loaded), the step should
+        # already exist on the workflow with the right settings.
+        # Otherwise the workflow stays empty and
+        # add_default_steps_for_workflows creates a default step later.
+        if wf.has_steps():
+            step: Any = wf.steps[0]
+            assert abs(step.power - 0.2) < 1e-6
+            assert step.cut_speed == 500
 
     def test_assembler_creates_step_with_passes(self):
         importer = self._import("fence.lbrn2")
         result = importer.get_doc_items()
         assert result is not None
         assert result.payload is not None
-        found = False
-        for item in result.payload.items:
-            if isinstance(item, Layer):
-                wf = item.workflow
-                if wf and wf.has_steps():
-                    step: Any = wf.steps[0]
-                    assert abs(step.power - 0.7) < 1e-6
-                    assert step.cut_speed == 400
-                    assert abs(step.offset_mm - 0.03) < 1e-6
-                found = True
-                break
-        assert found, "No Layer found in imported items"
+        workflows = self._workflows_from_payload(result.payload)
+        assert workflows, "No source layers in imported payload"
+        wf = workflows[0]
+        if wf.has_steps():
+            step: Any = wf.steps[0]
+            assert abs(step.power - 0.7) < 1e-6
+            assert step.cut_speed == 400
+            assert abs(step.offset_mm - 0.03) < 1e-6
 
     def test_assembler_omits_step_when_no_settings(self):
         importer = self._import("multi_layer.lbrn2")
         result = importer.get_doc_items()
         assert result is not None
         assert result.payload is not None
-        for item in result.payload.items:
-            if isinstance(item, Layer):
-                wf = item.workflow
-                # No settings available → no step pre-created
-                assert wf is None or not wf.has_steps()
+        for wf in self._workflows_from_payload(result.payload):
+            # No settings available → no step pre-created
+            assert not wf.has_steps()
 
     def test_image_layer_import_produces_engrave_step(self):
         """End-to-end: dot_width.lbrn2 (CutSetting_Img) must produce a
@@ -760,15 +763,11 @@ class TestLightBurnImporter:
         assert result is not None
         assert result.payload is not None
 
-        layer = None
-        for item in result.payload.items:
-            if isinstance(item, Layer):
-                layer = item
-                break
-        assert layer is not None, "No Layer in imported items"
+        workflows = self._workflows_from_payload(result.payload)
+        assert workflows, "No source layers in imported items"
 
-        wf = layer.workflow
-        assert wf is not None and wf.has_steps(), (
+        wf = workflows[0]
+        assert wf.has_steps(), (
             "Image layer ended up with no step — _apply_settings "
             "likely swallowed an EngraveStep construction error."
         )
@@ -795,9 +794,8 @@ class TestLightBurnImporter:
         assert result is not None and result.payload is not None
         steps = [
             step
-            for item in result.payload.items
-            if isinstance(item, Layer) and item.workflow is not None
-            for step in item.workflow.steps
+            for wf in self._workflows_from_payload(result.payload)
+            for step in wf.steps
         ]
         assert steps
         step = cast(Any, steps[0])
@@ -824,8 +822,9 @@ class TestApplySettingsDispatch:
         contour_cls, engrave_cls = self._step_classes()
 
         layer = Layer(name="img")
-        ItemAssembler._apply_settings(
-            layer,
+        ItemAssembler.apply_settings_to_workflow(
+            layer.workflows[0],
+            "img",
             {
                 "power": 0.5,
                 "min_power_level": 0.1,
@@ -837,7 +836,7 @@ class TestApplySettingsDispatch:
                 "_is_image_layer": True,
             },
         )
-        wf = layer.workflow
+        wf = layer.workflows[0]
         assert wf is not None and wf.has_steps()
         step: Any = wf.steps[0]
         assert isinstance(step, engrave_cls)
@@ -855,11 +854,12 @@ class TestApplySettingsDispatch:
         contour_cls, engrave_cls = self._step_classes()
 
         layer = Layer(name="cut")
-        ItemAssembler._apply_settings(
-            layer,
+        ItemAssembler.apply_settings_to_workflow(
+            layer.workflows[0],
+            "cut",
             {"power": 0.7, "cut_speed": 400, "offset_mm": 0.03},
         )
-        wf = layer.workflow
+        wf = layer.workflows[0]
         assert wf is not None and wf.has_steps()
         step: Any = wf.steps[0]
         assert isinstance(step, contour_cls)
@@ -878,10 +878,11 @@ class TestApplySettingsDispatch:
         _contour_cls, engrave_cls = self._step_classes()
 
         layer = Layer(name="img")
-        ItemAssembler._apply_settings(
-            layer,
+        ItemAssembler.apply_settings_to_workflow(
+            layer.workflows[0],
+            "img",
             {"_is_image_layer": True, "offset_mm": 0.0},
         )
-        wf = layer.workflow
+        wf = layer.workflows[0]
         assert wf is not None and wf.has_steps()
         assert isinstance(wf.steps[0], engrave_cls)

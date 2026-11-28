@@ -6,7 +6,7 @@ from blinker import Signal
 from gi.repository import Gtk
 
 from ...core.color import COLOR_PALETTE
-from ...core.layer import Layer
+from ...core.workflow import Workflow
 from ...ui_gtk.icons import get_icon
 from .node import swatch_button
 
@@ -63,22 +63,22 @@ class WorkflowBar(Gtk.Box):
         popover.set_child(row)
         return popover
 
-    def set_workflows(self, layers: list[Layer]):
+    def set_workflows(self, workflows: list[Workflow]):
         """Rebuilds the swatches from the workflows that exist."""
         child = self._swatches.get_first_child()
         while child:
             next_child = child.get_next_sibling()
             self._swatches.remove(child)
             child = next_child
-        for layer in layers:
-            swatch = swatch_button(layer.color, diameter=16)
+        for workflow in workflows:
+            swatch = swatch_button(workflow.color, diameter=16)
             swatch.add_css_class("rf-pill-swatch")
             swatch.set_valign(Gtk.Align.CENTER)
-            swatch.set_tooltip_text(layer.name)
+            swatch.set_tooltip_text(workflow.name)
             swatch.connect(
                 "clicked",
-                lambda b, workflow=layer.workflow: (
-                    self.workflow_activated.send(self, workflow=workflow)
+                lambda b, workflow=workflow: self.workflow_activated.send(
+                    self, workflow=workflow
                 ),
             )
             self._swatches.append(swatch)

@@ -128,7 +128,13 @@ class ColorPresetDialog(Adw.MessageDialog):
                 self._step_type_index(current_step_type)
             )
 
-        group = Adw.PreferencesGroup()
+        group = Adw.PreferencesGroup(
+            description=_(
+                "On color-based SVG imports, shapes in this color are "
+                "grouped into one workflow and receive the chosen step "
+                "type."
+            )
+        )
         group.add(self.label_row)
         group.add(self.color_row)
         group.add(self.step_type_row)

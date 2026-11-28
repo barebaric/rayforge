@@ -105,6 +105,12 @@ class GcodeContext:
                 _("The name of the current layer being processed."),
             ),
         ],
+        "workflow": [
+            (
+                "workflow.name",
+                _("The name of the current workflow being processed."),
+            ),
+        ],
         "workpiece": [
             (
                 "workpiece.name",
@@ -128,8 +134,10 @@ class GcodeContext:
         static documentation dictionary.
         """
         docs = cls._DOCS["job"]
-        if level in ("layer", "workpiece"):
+        if level in ("layer", "workflow", "workpiece"):
             docs = docs + cls._DOCS["layer"]
+        if level in ("workflow", "workpiece"):
+            docs = docs + cls._DOCS["workflow"]
         if level == "workpiece":
             docs = docs + cls._DOCS["workpiece"]
         return sorted(docs, key=lambda item: item[0])

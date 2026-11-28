@@ -23,6 +23,7 @@ class OperationsTree(Gtk.Box):
     def __init__(self):
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
         self.selection_changed = Signal()
+        self.rename_requested = Signal()
         self.workflow_requested = Signal()
         self.workflow_activated = Signal()
 
@@ -55,12 +56,14 @@ class OperationsTree(Gtk.Box):
         doc.descendant_added.connect(self._on_doc_changed)
         doc.descendant_removed.connect(self._on_doc_changed)
         doc.descendant_updated.connect(self._on_doc_changed)
+        doc.descendant_renamed.connect(self._on_doc_changed)
         doc.updated.connect(self._on_doc_changed)
 
     def _disconnect(self, doc: Doc):
         doc.descendant_added.disconnect(self._on_doc_changed)
         doc.descendant_removed.disconnect(self._on_doc_changed)
         doc.descendant_updated.disconnect(self._on_doc_changed)
+        doc.descendant_renamed.disconnect(self._on_doc_changed)
         doc.updated.disconnect(self._on_doc_changed)
 
     def _on_doc_changed(self, sender, **kwargs):
@@ -76,19 +79,31 @@ class OperationsTree(Gtk.Box):
             self._tree.show([])
             return
         rows: list[Gtk.Widget] = []
-        for layer in self._doc.layers:
+        workflows = [
+            workflow
+            for layer in self._doc.layers
+            for workflow in layer.workflows
+        ]
+        for workflow in workflows:
             rows.extend(
                 WorkflowNode.build_rows(
-                    layer, 0, self._expanded, self._selected, self
+                    workflow, 0, self._expanded, self._selected, self
                 )
             )
         self._tree.show(rows, tail=self._bar)
-        self._bar.set_workflows(self._doc.layers)
+        self._bar.set_workflows(workflows)
 
     def on_row_activated(self, spec):
         self._selected = {spec.uid}
         self.refresh()
         self.selection_changed.send(self, spec=spec)
+
+    def on_row_renamed(self, spec, name: str):
+        self.rename_requested.send(self, uid=spec.uid, name=name)
+
+    def start_rename(self, uid: str) -> bool:
+        """Starts inline renaming of the row with the given uid."""
+        return self._tree.start_rename(uid)
 
     def on_twisty_toggled(self, spec):
         if spec.uid in self._expanded:

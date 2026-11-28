@@ -13,7 +13,8 @@ A página Geral contém configurações gerais do aplicativo.
 
 Escolha entre o tema **Sistema**, **Claro** ou **Escuro** para corresponder ao seu ambiente de
 desktop ou preferência pessoal. Você também pode configurar as **Cores da operação** para usar a cor
-do laser ou a cor da camada como distinção visual na tela.
+do laser ou a cor do fluxo de trabalho como distinção visual na tela. A cor do fluxo de trabalho é o
+padrão.
 
 **Modo oficina** substitui a aba de controles do painel inferior por uma superfície de controle
 sensível ao toque: leituras de posição grandes por eixo com botões de zero, um cartão de offsets,

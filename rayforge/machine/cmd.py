@@ -388,10 +388,15 @@ class MachineCmd:
         final_job_action: Callable[..., Coroutine],
         on_progress: Callable[[dict], None] | None = None,
         pointer_dry_run: bool = False,
+        layer_uids: list[str] | None = None,
     ):
         """
         Generic, awaitable job executor that orchestrates artifact
         assembly and execution.
+
+        When *layer_uids* is given, the job is scoped to the workflows
+        of those layers; the filter is cleared again once the job has
+        run so the live preview rebuilds for the whole document.
         """
         handle: BaseArtifactHandle | None = None
         artifact_store = self._editor.pipeline.artifact_store
@@ -413,7 +418,9 @@ class MachineCmd:
                 pipeline.invalidate_job_output()
             try:
                 # 1. Await the job artifact generation from the pipeline
-                handle = await pipeline.generate_job_artifact_async()
+                handle = await pipeline.generate_job_artifact_async(
+                    layer_uids=layer_uids
+                )
             finally:
                 machine.pointer_job_shift_enabled = False
 
@@ -438,6 +445,10 @@ class MachineCmd:
                     pipeline.invalidate_job_output()
 
                 await final_job_action(artifact, machine, on_progress)
+                if layer_uids is not None:
+                    # The scoped artifact is fully consumed; drop it so
+                    # the next rebuild serves the whole document.
+                    pipeline.invalidate_job_output()
 
         except JobAlreadyRunningError:
             # Already logged as a warning by the guard; not an error.
@@ -491,6 +502,7 @@ class MachineCmd:
         machine: Machine,
         on_progress: Callable[[dict], None] | None = None,
         pointer_dry_run: bool = False,
+        layer_uids: list[str] | None = None,
     ):
         """
         Asynchronously generates ops and sends the job to the machine.
@@ -501,6 +513,9 @@ class MachineCmd:
         the toolpath while the beam runs displaced by the offset, and
         all laser power is capped at the head's framing power so the
         trace does not burn the material.
+
+        When *layer_uids* is given, only the workflows of those layers
+        are included in the job (multi-layer send flow).
         """
         try:
             await self._start_job(
@@ -511,6 +526,7 @@ class MachineCmd:
                 ),
                 on_progress=on_progress,
                 pointer_dry_run=pointer_dry_run,
+                layer_uids=layer_uids,
             )
         except JobAlreadyRunningError as e:
             # An expected refusal, not a failure: the guard's message

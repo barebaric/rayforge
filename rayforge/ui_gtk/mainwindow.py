@@ -65,6 +65,7 @@ from .main_menu import MainMenu
 from .project_cmd import ProjectCmd
 from .settings.settings_dialog import SettingsWindow
 from .shared.gtk import get_monitor_geometry, report_dialog_error
+from .shared.layer_run_dialog import LayerRunDialog
 from .shared.pointer_alignment_dialog import PointerAlignmentDialog
 from .shared.progress_bar import ProgressBar
 from .shared.sanity_check_dialog import SanityCheckDialog
@@ -499,14 +500,6 @@ class MainWindow(Adw.ApplicationWindow):
 
         self.bottom_panel.gcode_viewer.line_activated.connect(
             self._on_gcode_line_activated
-        )
-
-        # Connect edit item requests from the layers tab
-        self.bottom_panel.edit_item_requested.connect(
-            self._on_edit_item_requested
-        )
-        self.bottom_panel.select_items_requested.connect(
-            self._on_select_items_requested
         )
 
         config = get_context().config
@@ -1276,7 +1269,7 @@ class MainWindow(Adw.ApplicationWindow):
     def _initialize_document(self):
         """
         Adds required initial state to a new document, such as default
-        steps to workpiece layers.
+        steps to the layers' workflows.
         """
         self.doc_editor.step.initialize_default_steps()
 
@@ -1495,7 +1488,7 @@ class MainWindow(Adw.ApplicationWindow):
     ):
         self._update_actions_and_ui()
         # After undo/redo, the document state may have changed in ways
-        # that require a full UI sync (e.g., layer visibility).
+        # that require a full UI sync (e.g., workpiece visibility).
         self.on_doc_changed(self.doc_editor.doc)
         self._update_macros_menu()
 
@@ -1504,7 +1497,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.surface.update_from_doc()
         self._update_workflow_views()
 
-        # Sync the selectability of stock items based on active layer
+        # Sync the selectability of stock items based on visibility
         self._sync_element_selectability()
 
         # Update button sensitivity and other state
@@ -1526,7 +1519,7 @@ class MainWindow(Adw.ApplicationWindow):
     def _sync_element_selectability(self):
         """
         Updates the 'selectable' property of StockElements on the canvas
-        based on which layer is currently active and their visibility.
+        based on their visibility.
         """
         # Find all StockElement instances currently on the canvas
         for element in self.surface.find_by_type(StockElement):
@@ -1557,16 +1550,18 @@ class MainWindow(Adw.ApplicationWindow):
             return []
         if mode == RightPanelMode.NON_EMPTY_LAYERS:
             return [
-                layer.workflow
+                workflow
                 for layer in doc.layers
-                if not layer.is_empty and layer.workflow
+                if not layer.is_empty
+                for workflow in layer.workflows
             ]
         if mode == RightPanelMode.ALL_LAYERS:
-            return [layer.workflow for layer in doc.layers if layer.workflow]
-        active = doc.active_layer
-        if active and active.workflow:
-            return [active.workflow]
-        return []
+            return [
+                workflow
+                for layer in doc.layers
+                for workflow in layer.workflows
+            ]
+        return list(doc.active_layer.workflows)
 
     def _update_workflow_views(self):
         """
@@ -1916,8 +1911,6 @@ class MainWindow(Adw.ApplicationWindow):
         self._apply_right_panel_visibility()
         self.bottom_panel.update_position_menu_sensitivity()
         self._update_actions_and_ui()
-        selected_uids = {item.uid for item in selected_items}
-        self.bottom_panel.update_layer_selection(selected_uids)
 
     def on_config_changed(self, sender, **kwargs):
         config = get_context().config
@@ -2290,15 +2283,13 @@ class MainWindow(Adw.ApplicationWindow):
         can_group = len(selected_elements) >= 2
         am.get_action("group").set_enabled(can_group)
 
+        can_move_to_layer = has_selection and len(doc.layers) > 1
+        am.get_action("move-to-layer").set_enabled(can_move_to_layer)
+
         can_ungroup = any(
             isinstance(elem.data, Group) for elem in selected_elements
         )
         am.get_action("ungroup").set_enabled(can_ungroup)
-
-        # Update sensitivity for Layer actions
-        can_move_layers = has_selection and len(doc.layers) > 1
-        am.get_action("layer-move-up").set_enabled(can_move_layers)
-        am.get_action("layer-move-down").set_enabled(can_move_layers)
 
         # Update sensitivity for 3D view actions
         is_3d_view_active = self.view_stack.get_visible_child_name() == "3d"
@@ -2643,7 +2634,10 @@ class MainWindow(Adw.ApplicationWindow):
         if not machine:
             return
 
-        def _proceed(pointer_dry_run: bool = False):
+        def _proceed(
+            pointer_dry_run: bool = False,
+            layer_uids: list[str] | None = None,
+        ):
             focus_action = self.action_manager.get_action("toggle-focus")
             focus_state = focus_action.get_state()
             if focus_state and focus_state.get_boolean():
@@ -2653,22 +2647,40 @@ class MainWindow(Adw.ApplicationWindow):
                 machine,
                 on_progress=self._on_job_progress_updated,
                 pointer_dry_run=pointer_dry_run,
+                layer_uids=layer_uids,
             )
             self._run_machine_job(job_coro)
 
-        def _confirm_pointer_alignment():
+        def _confirm_pointer_alignment(layer_uids=None):
             # Jobs burn with the unshifted beam, so ask every time
             # while the user is aiming with the pointer dot.
             if machine.pointer_alignment_enabled:
                 dialog = PointerAlignmentDialog(
                     parent=self,
-                    on_proceed=_proceed,
+                    on_proceed=lambda dry_run: _proceed(
+                        pointer_dry_run=dry_run,
+                        layer_uids=layer_uids,
+                    ),
                 )
                 dialog.present()
             else:
-                _proceed()
+                _proceed(layer_uids=layer_uids)
 
-        self._run_sanity_check_and_proceed(_confirm_pointer_alignment)
+        def _choose_layers():
+            doc = self.doc_editor.doc
+            if doc is None or len(doc.layers) <= 1:
+                _confirm_pointer_alignment()
+                return
+            dialog = LayerRunDialog(parent=self, doc=doc)
+            dialog.run_requested.connect(
+                lambda sender, layer_uids: _confirm_pointer_alignment(
+                    layer_uids=layer_uids
+                )
+            )
+            dialog.cancelled.connect(lambda sender: None)
+            dialog.present()
+
+        self._run_sanity_check_and_proceed(_choose_layers)
 
     def on_hold_state_change(
         self, action: Gio.SimpleAction, value: GLib.Variant
@@ -2806,17 +2818,10 @@ class MainWindow(Adw.ApplicationWindow):
 
     def on_menu_rename(self, action, param):
         selection = self.surface.get_selected_items()
-        if not selection:
+        if len(selection) != 1 or not isinstance(selection[0], DocItem):
             return
-        item = selection[0]
-        if not isinstance(item, DocItem):
-            return
-        # Make sure the user can see the rename editor.
-        self.bottom_panel.set_visible(True)
-        area = self.bottom_panel.dock_layout.find_item_area("layers")
-        if area:
-            area.set_active_item("layers")
-        self.bottom_panel.layers_tab.start_item_rename(item)
+        # The item properties pane edits the name inline.
+        self.item_props_widget.begin_rename()
 
     def on_menu_remove(self, action, param):
         items = self.surface.get_selected_items()

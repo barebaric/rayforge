@@ -123,12 +123,18 @@ pendant l'exécution du travail.
 
 Rayforge supporte ces déclencheurs de hooks :
 
-| Déclencheur         | Quand il S'exécute                   | Utilisations Courantes                                    |
-| ------------------- | ------------------------------------ | --------------------------------------------------------- |
-| **Début de Calque** | Avant le traitement de chaque calque | Changement d'outil, ajustement de puissance, commentaires |
-| **Fin de Calque**   | Après le traitement de chaque calque | Notification de progression, pause                        |
-| **Début de Pièce**  | Avant le traitement de chaque pièce  | Numérotation des pièces, marques d'alignement             |
-| **Fin de Pièce**    | Après le traitement de chaque pièce  | Refroidissement, pause d'inspection                       |
+| Déclencheur           | Quand il S'exécute                         | Utilisations Courantes                                |
+| --------------------- | ------------------------------------------ | ----------------------------------------------------- |
+| **Début de Calque**   | Avant le premier workflow de chaque calque | Changement d'outil, vérification du WCS, commentaires |
+| **Fin de Calque**     | Après le dernier workflow de chaque calque | Notification de progression, pause                    |
+| **Début de Workflow** | Avant le traitement de chaque workflow     | Ajustement de puissance, commentaires                 |
+| **Fin de Workflow**   | Après le traitement de chaque workflow     | Notification de progression, pause                    |
+| **Début de Pièce**    | Avant le traitement de chaque pièce        | Numérotation des pièces, marques d'alignement         |
+| **Fin de Pièce**      | Après le traitement de chaque pièce        | Refroidissement, pause d'inspection                   |
+
+Un calque regroupe les workflows qui partagent une même configuration physique (matière, placement
+des pièces, WCS, rotatif). Les hooks de calque s'exécutent une fois autour de tous les workflows
+d'un calque ; les hooks de workflow s'exécutent pour chaque workflow.
 
 <!-- prettier-ignore-start -->
 :::note[G-code au Niveau du Travail]
@@ -168,6 +174,18 @@ paramètres de préambule et postscript du dialecte, pas via les hooks. Voir
 
 ---
 
+#### Début de Workflow : Ajouter un Commentaire
+
+**Déclencheur :** Début de Workflow **Code :**
+
+```gcode
+; Calque {layer_name} : début de workflow
+```
+
+**Objectif :** Sépare les workflows d'un calque dans le G-code.
+
+---
+
 #### Début de Pièce : Numérotation des Pièces
 
 **Déclencheur :** Début de Pièce **Code :**
@@ -183,24 +201,30 @@ paramètres de préambule et postscript du dialecte, pas via les hooks. Voir
 
 ### Ordre d'Exécution des Hooks
 
-Pour un travail avec 2 calques, chacun avec 2 pièces :
+Pour un travail avec 2 calques ; le premier contient deux workflows, le second un :
 
 ```
   [Hook Début de Calque] (Calque 1)
-    [Hook Début de Pièce] (Pièce 1)
-       ... G-code de la pièce 1 ...
-    [Hook Fin de Pièce] (Pièce 1)
-    [Hook Début de Pièce] (Pièce 2)
-       ... G-code de la pièce 2 ...
-    [Hook Fin de Pièce] (Pièce 2)
+    [Hook Début de Workflow] (Découpe)
+      [Hook Début de Pièce] (Pièce 1)
+         ... G-code de la pièce 1 ...
+      [Hook Fin de Pièce] (Pièce 1)
+      [Hook Début de Pièce] (Pièce 2)
+         ... G-code de la pièce 2 ...
+      [Hook Fin de Pièce] (Pièce 2)
+    [Hook Fin de Workflow] (Découpe)
+    [Hook Début de Workflow] (Gravure)
+      [Hook Début de Pièce] (Pièce 1)
+         ... G-code de la pièce 1 ...
+      [Hook Fin de Pièce] (Pièce 1)
+    [Hook Fin de Workflow] (Gravure)
   [Hook Fin de Calque] (Calque 1)
   [Hook Début de Calque] (Calque 2)
-    [Hook Début de Pièce] (Pièce 3)
-       ... G-code de la pièce 3 ...
-    [Hook Fin de Pièce] (Pièce 3)
-    [Hook Début de Pièce] (Pièce 4)
-       ... G-code de la pièce 4 ...
-    [Hook Fin de Pièce] (Pièce 4)
+    [Hook Début de Workflow] (Workflow du calque 2)
+      [Hook Début de Pièce] (Pièce 3)
+         ... G-code de la pièce 3 ...
+      [Hook Fin de Pièce] (Pièce 3)
+    [Hook Fin de Workflow] (Workflow du calque 2)
   [Hook Fin de Calque] (Calque 2)
 ```
 

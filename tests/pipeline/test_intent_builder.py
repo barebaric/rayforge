@@ -91,7 +91,7 @@ class _TestStep(Step):
 def _make_doc(step: _TestStep, *workpieces: WorkPiece) -> Doc:
     doc = Doc()
     layer = doc.active_layer
-    wf = layer.workflow
+    wf = layer.workflows[0]
     assert wf is not None
     wf.add_child(step)
     for wp in workpieces:
@@ -389,7 +389,7 @@ def test_layers_without_workpieces_skipped_for_compute(isolated_machine):
     step = _TestStep(name="s1")
     doc = Doc()
     layer = doc.active_layer
-    workflow = layer.workflow
+    workflow = layer.workflows[0]
     assert workflow is not None
     workflow.add_child(step)
     # No workpieces added.
@@ -1720,7 +1720,7 @@ def _make_doc_with_stock(
     doc.add_asset(asset)
     item = StockItem(stock_asset_uid=asset.uid, name="sheet")
     item.visible = stock_visible
-    doc.add_child(item)
+    doc.active_layer.add_child(item)
     return doc
 
 
@@ -2031,7 +2031,7 @@ def _make_doc_with_stock_and_wp(
     doc.add_asset(asset)
     item = StockItem(stock_asset_uid=asset.uid, name="sheet")
     item.visible = stock_visible
-    doc.add_child(item)
+    doc.active_layer.add_child(item)
     return doc, item
 
 
@@ -2062,7 +2062,7 @@ def test_builds_one_fold_node_per_visible_stock(isolated_machine):
     asset2.geometry = geo2
     doc.add_asset(asset2)
     item2 = StockItem(stock_asset_uid=asset2.uid, name="sheet2")
-    doc.add_child(item2)
+    doc.active_layer.add_child(item2)
 
     nodes = IntentBuilder(machine=isolated_machine).build(doc)
     keys = [n.key for n in nodes]

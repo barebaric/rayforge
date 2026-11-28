@@ -35,6 +35,7 @@ from .step_cmd import StepCmd
 from .stock_cmd import StockCmd
 from .tab_cmd import TabCmd
 from .transform_cmd import TransformCmd
+from .workflow_cmd import WorkflowCmd
 
 if TYPE_CHECKING:
     from ..context import RayforgeContext
@@ -154,6 +155,7 @@ class DocEditor:
         self.file = FileCmd(self, self.task_manager)
         self.group = GroupCmd(self, self.task_manager)
         self.job_counter = JobCounterCmd(self)
+        self.workflow = WorkflowCmd(self)
         self.layer = LayerCmd(self)
         self.layout = LayoutCmd(self, self.task_manager)
         self.path_cleanup = PathCleanupCmd(self)
@@ -519,17 +521,14 @@ class DocEditor:
         valid_head_uids = {head.uid for head in machine.heads}
         default_head_uid = machine.heads[0].uid
 
-        for layer in self.doc.layers:
-            if not layer.workflow:
-                continue
-            for step in layer.workflow.steps:
-                if step.selected_head_uid not in valid_head_uids:
-                    logger.info(
-                        f"Step '{step.name}' references non-existent head "
-                        f"'{step.selected_head_uid}', "
-                        f"resetting to default '{default_head_uid}'"
-                    )
-                    step.selected_head_uid = default_head_uid
+        for step in self.doc.steps:
+            if step.selected_head_uid not in valid_head_uids:
+                logger.info(
+                    f"Step '{step.name}' references non-existent "
+                    f"head '{step.selected_head_uid}', "
+                    f"resetting to default '{default_head_uid}'"
+                )
+                step.selected_head_uid = default_head_uid
 
     def _reconcile_rotary_modules(self):
         """

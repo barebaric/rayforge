@@ -55,8 +55,7 @@ def build_demo_doc() -> Doc:
 
     parts = Layer("Parts")
     doc.add_layer(parts)
-    parts_workflow = parts.workflow
-    assert parts_workflow is not None
+    parts_workflow = parts.workflows[0]
     ribs = Group("Ribs")
     parts.add_child(ribs)
     for name, width, height in (("Rib L", 70, 40), ("Rib R", 70, 40)):
@@ -71,10 +70,9 @@ def build_demo_doc() -> Doc:
     parts_workflow.add_step(ContourStep(name="Contour outer"))
 
     names = Layer("Names")
-    names.set_color(COLOR_PALETTE[1])
     doc.add_layer(names)
-    names_workflow = names.workflow
-    assert names_workflow is not None
+    names_workflow = names.workflows[0]
+    names_workflow.set_color(COLOR_PALETTE[1])
     for name in ("Rib L", "Rib R", "Fuselage"):
         workpiece = WorkPiece(f"{name} name")
         workpiece.natural_width_mm = 24
@@ -89,7 +87,7 @@ def build_demo_doc() -> Doc:
     stock_asset = StockAsset(name="Balsa 3 mm")
     stock_asset.thickness = 3.0
     doc.add_asset(stock_asset)
-    doc.add_child(
+    parts.add_child(
         StockItem(stock_asset_uid=stock_asset.uid, name="Balsa 3 mm")
     )
     return doc
@@ -133,7 +131,7 @@ class TreeApp(Adw.Application):
         page = sys.argv[1] if len(sys.argv) > 1 else "parts"
         stack.set_visible_child_name(page)
         if page == "operations" and self.doc.layers:
-            first_workflow = self.doc.layers[0].workflow
+            first_workflow = self.doc.layers[0].workflows[0]
             assert first_workflow is not None
             self.operations_tree.expand(first_workflow.uid)
         sidebar.append(switcher)
@@ -153,6 +151,7 @@ class TreeApp(Adw.Application):
         controls.append(info)
 
         for label, handler in (
+            ("Rename selected", self._on_rename_selected),
             ("Add part", self._on_add_part),
             ("Duplicate selected", self._on_duplicate),
             ("Delete selected", self._on_delete),
@@ -165,10 +164,23 @@ class TreeApp(Adw.Application):
 
         columns.append(controls)
 
+        shortcuts = Gtk.ShortcutController()
+        shortcuts.add_shortcut(
+            Gtk.Shortcut.new(
+                Gtk.ShortcutTrigger.parse_string("F2"),
+                Gtk.CallbackAction.new(
+                    lambda _widget, _args: self._on_rename_selected(None)
+                ),
+            )
+        )
+        win.add_controller(shortcuts)
+
         self.info = info
         self.parts_tree.selection_changed.connect(self._on_selection)
         self.operations_tree.selection_changed.connect(self._on_selection)
         self.parts_tree.visibility_toggled.connect(self._on_visibility)
+        self.parts_tree.rename_requested.connect(self._on_rename)
+        self.operations_tree.rename_requested.connect(self._on_rename)
         self.operations_tree.workflow_requested.connect(
             self._on_workflow_requested
         )
@@ -184,6 +196,26 @@ class TreeApp(Adw.Application):
 
     def _on_visibility(self, sender, item, on):
         item.set_visible(on)
+
+    def _on_rename(self, sender, uid, name):
+        item = self.doc.find_descendant_by_uid(uid)
+        if item is not None:
+            item.name = name
+
+    def _on_rename_selected(self, _button) -> bool:
+        """Starts inline renaming of the selected row."""
+        item = self.selected_item
+        if item is None:
+            self.info.set_label("Select a row to rename it")
+            return True
+        started = self.parts_tree.start_rename(item.uid)
+        if not started:
+            started = self.operations_tree.start_rename(item.uid)
+        if not started:
+            self.info.set_label(
+                "The selected row is not visible in the current tab"
+            )
+        return True
 
     def _on_add_part(self, button):
         self.part_counter += 1
@@ -212,16 +244,17 @@ class TreeApp(Adw.Application):
             return
         if not isinstance(self.selected_item, Workflow):
             return
-        setup = self.selected_item.parent
-        if setup is not None:
-            setup.remove_child(self.selected_item)
+        layer = self.selected_item.parent
+        if layer is not None:
+            layer.remove_child(self.selected_item)
         self.selected_item = None
         self.info.set_label("Nothing selected")
 
     def _on_workflow_requested(self, sender, color):
-        layer = Layer(f"Workflow {len(self.doc.layers) + 1}")
-        layer.set_color(color)
-        self.doc.add_layer(layer)
+        layer = self.doc.active_layer
+        workflow = Workflow(f"Workflow {len(layer.workflows) + 1}")
+        workflow.set_color(color)
+        layer.add_child(workflow)
 
     def _on_workflow_activated(self, sender, workflow):
         self.info.set_label(f"Workflow picked: {workflow.name}")

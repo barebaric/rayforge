@@ -15,9 +15,7 @@ from ..core.stock import StockItem
 from ..core.undo import (
     ChangePropertyCommand,
     ListItemCommand,
-    ReorderListCommand,
 )
-from ..core.workflow import Workflow
 from ..core.workpiece import WorkPiece
 from .boundaries import edited_boundaries_command
 
@@ -178,7 +176,7 @@ class EditCmd:
                 newly_duplicated_items.append(new_item)
 
                 if isinstance(new_item, StockItem):
-                    owner = self._editor.doc
+                    owner = self._editor.doc.active_layer
                 else:
                     owner = target_layer
 
@@ -278,8 +276,8 @@ class EditCmd:
 
     def clear_all_items(self):
         """
-        Removes all workpieces and groups from all layers in the document in a
-        single undoable transaction.
+        Removes all workpieces and groups from all layers in the
+        document in a single undoable transaction.
         """
         doc = self._editor.doc
         if not doc.has_workpiece():
@@ -287,19 +285,18 @@ class EditCmd:
 
         with doc.history_manager.transaction(_("Remove all workpieces")) as t:
             for layer in doc.layers:
-                # A layer is considered "not empty" if it has any children
-                # besides its mandatory workflow.
-                if any(
-                    not isinstance(child, Workflow) for child in layer.children
-                ):
-                    command = ReorderListCommand(
-                        target_obj=layer,
-                        list_property_name="children",
-                        new_list=[layer.workflow],
-                        setter_method_name="set_children",
-                        name=_("Clear Layer Items"),
+                # A layer is considered "not empty" if it has any content
+                # besides its workflows and stock.
+                for item in layer.get_content_items():
+                    t.execute(
+                        ListItemCommand(
+                            owner_obj=layer,
+                            item=item,
+                            undo_command="add_child",
+                            redo_command="remove_child",
+                            name=_("Remove item"),
+                        )
                     )
-                    t.execute(command)
 
     def reset_paste_counter(self):
         """

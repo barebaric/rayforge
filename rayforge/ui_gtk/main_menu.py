@@ -155,12 +155,7 @@ class MainMenu(Gio.Menu):
         arrange_menu.append_section(None, grouping_group)
 
         layer_group = Gio.Menu()
-        layer_group.append(
-            _("Move Selection to Layer Above"), "win.layer-move-up"
-        )
-        layer_group.append(
-            _("Move Selection to Layer Below"), "win.layer-move-down"
-        )
+        layer_group.append(_("Move to Layer…"), "win.move-to-layer")
         arrange_menu.append_section(None, layer_group)
 
         align_submenu = Gio.Menu()

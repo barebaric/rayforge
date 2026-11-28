@@ -125,12 +125,17 @@ M5
 
 Rayforge इन हुक ट्रिगरों का समर्थन करता है:
 
-| ट्रिगर            | कब चलता है                    | सामान्य उपयोग                     |
-| ---------------- | ---------------------------- | -------------------------------- |
-| **लेयर प्रारंभ**    | प्रत्येक लेयर प्रोसेस करने से पहले    | टूल बदलाव, शक्ति समायोजन, टिप्पणियाँ |
-| **लेयर समाप्त**    | प्रत्येक लेयर प्रोसेस करने के बाद    | प्रगति अधिसूचना, विराम             |
-| **वर्कपीस प्रारंभ** | प्रत्येक वर्कपीस प्रोसेस करने से पहले | पार्ट क्रमांकन, संरेखण निशान          |
-| **वर्कपीस समाप्त** | प्रत्येक वर्कपीस प्रोसेस करने के बाद | कूलडाउन, निरीक्षण विराम            |
+| ट्रिगर            | कब चलता है                     | सामान्य उपयोग                |
+| ---------------- | ----------------------------- | --------------------------- |
+| **लेयर प्रारंभ**    | प्रत्येक लेयर के पहले वर्कफ़्लो से पहले  | टूल बदलाव, WCS जाँच, टिप्पणियाँ |
+| **लेयर समाप्त**    | प्रत्येक लेयर के अंतिम वर्कफ़्लो के बाद | प्रगति अधिसूचना, विराम        |
+| **वर्कफ़्लो प्रारंभ** | प्रत्येक वर्कफ़्लो प्रोसेस करने से पहले  | शक्ति समायोजन, टिप्पणियाँ      |
+| **वर्कफ़्लो समाप्त** | प्रत्येक वर्कफ़्लो प्रोसेस करने के बाद  | प्रगति अधिसूचना, विराम        |
+| **वर्कपीस प्रारंभ** | प्रत्येक वर्कपीस प्रोसेस करने से पहले  | पार्ट क्रमांकन, संरेखण निशान     |
+| **वर्कपीस समाप्त** | प्रत्येक वर्कपीस प्रोसेस करने के बाद  | कूलडाउन, निरीक्षण विराम       |
+
+एक लेयर उन वर्कफ़्लो को समूहित करती है जो एक ही भौतिक सेटअप (स्टॉक, वर्कपीस प्लेसमेंट, WCS, रोटरी) साझा करते हैं.
+लेयर हुक एक लेयर के सभी वर्कफ़्लो के चारों ओर एक बार चलते हैं; वर्कफ़्लो हुक प्रत्येक वर्कफ़्लो के लिए चलते हैं.
 
 <!-- prettier-ignore-start -->
 :::note[जॉब-स्तरीय G-code]
@@ -169,6 +174,18 @@ Rayforge इन हुक ट्रिगरों का समर्थन क
 
 ---
 
+#### वर्कफ़्लो प्रारंभ: टिप्पणी जोड़ें
+
+**ट्रिगर:** वर्कफ़्लो प्रारंभ **कोड:**
+
+```gcode
+; Starting layer: {layer_name}, workflow start
+```
+
+**उद्देश्य:** G-code में एक लेयर के वर्कफ़्लो को अलग करता है.
+
+---
+
 #### वर्कपीस प्रारंभ: पार्ट क्रमांकन
 
 **ट्रिगर:** वर्कपीस प्रारंभ **कोड:**
@@ -184,24 +201,30 @@ Rayforge इन हुक ट्रिगरों का समर्थन क
 
 ### हुक निष्पादन क्रम
 
-2 लेयरों वाले जॉब के लिए, प्रत्येक में 2 वर्कपीस:
+2 लेयरों वाले जॉब के लिए; पहली में दो वर्कफ़्लो और दूसरी में एक:
 
 ```
   [Layer Start Hook] (Layer 1)
-    [Workpiece Start Hook] (Workpiece 1)
-      ... workpiece 1 G-code ...
-    [Workpiece End Hook] (Workpiece 1)
-    [Workpiece Start Hook] (Workpiece 2)
-      ... workpiece 2 G-code ...
-    [Workpiece End Hook] (Workpiece 2)
+    [Workflow Start Hook] (Cut)
+      [Workpiece Start Hook] (Workpiece 1)
+        ... workpiece 1 G-code ...
+      [Workpiece End Hook] (Workpiece 1)
+      [Workpiece Start Hook] (Workpiece 2)
+        ... workpiece 2 G-code ...
+      [Workpiece End Hook] (Workpiece 2)
+    [Workflow End Hook] (Cut)
+    [Workflow Start Hook] (Engrave)
+      [Workpiece Start Hook] (Workpiece 1)
+        ... workpiece 1 G-code ...
+      [Workpiece End Hook] (Workpiece 1)
+    [Workflow End Hook] (Engrave)
   [Layer End Hook] (Layer 1)
   [Layer Start Hook] (Layer 2)
-    [Workpiece Start Hook] (Workpiece 3)
-      ... workpiece 3 G-code ...
-    [Workpiece End Hook] (Workpiece 3)
-    [Workpiece Start Hook] (Workpiece 4)
-      ... workpiece 4 G-code ...
-    [Workpiece End Hook] (Workpiece 4)
+    [Workflow Start Hook] (Layer 2 Workflow)
+      [Workpiece Start Hook] (Workpiece 3)
+        ... workpiece 3 G-code ...
+      [Workpiece End Hook] (Workpiece 3)
+    [Workflow End Hook] (Layer 2 Workflow)
   [Layer End Hook] (Layer 2)
 ```
 

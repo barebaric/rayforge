@@ -13,8 +13,8 @@ Die Seite Allgemein enthält anwendungsweite Einstellungen.
 
 Wähle zwischen dem **System**-, **Hell**- oder **Dunkel**-Design, um dich an deine Desktop-Umgebung
 oder persönliche Vorliebe anzupassen. Du kannst auch **Operationsfarben** konfigurieren und wählen,
-ob die Laserfarbe oder die Ebenenfarbe zur visuellen Unterscheidung auf der Arbeitsfläche verwendet
-wird.
+ob die Laserfarbe oder die Workflowfarbe zur visuellen Unterscheidung auf der Arbeitsfläche
+verwendet wird. Standardmäßig wird die Workflowfarbe verwendet.
 
 **Shop-Modus** ersetzt den Steuerungs-Tab im unteren Panel durch eine touchfreundliche
 Bedienoberfläche: große Positionsanzeigen pro Achse mit Null-Tasten, eine Offsets-Karte, übergroße

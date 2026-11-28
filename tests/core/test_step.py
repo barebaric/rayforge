@@ -22,7 +22,7 @@ def step_in_doc():
     """Provides a Step instance properly parented within a Doc hierarchy."""
     doc = Doc()
     layer = doc.active_layer
-    workflow = layer.workflow
+    workflow = layer.workflows[0]
     step = Step(typelabel="HierarchyTest", name="Nested Step")
     assert workflow is not None
     workflow.add_child(step)
