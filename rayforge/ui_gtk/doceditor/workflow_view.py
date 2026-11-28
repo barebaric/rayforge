@@ -13,7 +13,7 @@ from ..shared.expander import ExpanderWithButton
 from ..shared.popover_menu import PopoverMenu
 from .step_box import StepBox
 from .step_settings.dialog import StepSettingsDialog
-from .workflow_post_processors import WorkflowPostProcessorGroup
+from .workflow_settings_dialog import WorkflowSettingsDialog
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor
@@ -44,18 +44,40 @@ class WorkflowView(ExpanderWithButton):
 
         self.add_button.connect("clicked", self.on_button_add_clicked)
 
-        self.post_processor_button = Gtk.MenuButton(
-            child=get_icon("settings-symbolic")
-        )
-        self.post_processor_button.add_css_class("flat")
-        self.post_processor_button.set_tooltip_text(_("Post Processing"))
-        self.post_processor_button.set_popover(Gtk.Popover())
-        self.add_suffix(self.post_processor_button)
+        self.settings_button = Gtk.Button(child=get_icon("settings-symbolic"))
+        self.settings_button.add_css_class("flat")
+        self.settings_button.set_tooltip_text(_("Workflow Settings"))
+        self.settings_button.connect("clicked", self._on_settings_clicked)
+        self.add_suffix(self.settings_button)
+        self._settings_dialog: WorkflowSettingsDialog | None = None
 
         self.set_workflow(workflow)
 
+    def _on_settings_clicked(self, button):
+        if self.workflow is None:
+            return
+        if self._settings_dialog is not None:
+            self._settings_dialog.present()
+            return
+        root = self.get_root()
+        self._settings_dialog = WorkflowSettingsDialog(
+            workflow=self.workflow,
+            transient_for=root if isinstance(root, Gtk.Window) else None,
+            editor=self.editor,
+        )
+        self._settings_dialog.connect(
+            "destroy", self._on_settings_dialog_destroy
+        )
+        self._settings_dialog.present()
+
+    def _on_settings_dialog_destroy(self, *_args):
+        self._settings_dialog = None
+
     def set_workflow(self, workflow: Workflow | None):
         """Sets the view to display a different workflow."""
+        if self._settings_dialog is not None:
+            self._settings_dialog.close()
+            self._settings_dialog = None
         if self.workflow:
             try:
                 # Disconnect old handlers
@@ -86,22 +108,6 @@ class WorkflowView(ExpanderWithButton):
             self.workflow.descendant_updated.connect(self.on_workflow_changed)
             # Trigger initial full population and metadata update
             self.on_workflow_changed(self.workflow)
-            self._update_post_processor_popover()
-
-    def _update_post_processor_popover(self):
-        """Points the header button's popover at the current workflow."""
-        popover = Gtk.Popover()
-        if self.workflow:
-            group = WorkflowPostProcessorGroup(self.workflow, self.editor)
-            scrolled = Gtk.ScrolledWindow()
-            scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-            scrolled.set_child(group)
-            scrolled.set_max_content_width(420)
-            scrolled.set_propagate_natural_width(True)
-            scrolled.set_max_content_height(500)
-            scrolled.set_propagate_natural_height(True)
-            popover.set_child(scrolled)
-        self.post_processor_button.set_popover(popover)
 
     def on_workflow_renamed(self, sender):
         """A workflow rename only changes the displayed title."""
