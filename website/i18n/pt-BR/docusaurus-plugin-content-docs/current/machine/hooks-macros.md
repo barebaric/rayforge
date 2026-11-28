@@ -123,12 +123,19 @@ trabalho.
 
 O Rayforge suporta estes gatilhos de hook:
 
-| Gatilho              | Quando Executa                 | Usos Comuns                                          |
-| -------------------- | ------------------------------ | ---------------------------------------------------- |
-| **Início da Camada** | Antes de processar cada camada | Troca de ferramenta, ajuste de potência, comentários |
-| **Fim da Camada**    | Após processar cada camada     | Notificação de progresso, pausa                      |
-| **Início da Peça**   | Antes de processar cada peça   | Numeração de peças, marcas de alinhamento            |
-| **Fim da Peça**      | Após processar cada peça       | Resfriamento, pausa de inspeção                      |
+| Gatilho                         | Quando Executa                                     | Usos Comuns                                          |
+| ------------------------------- | -------------------------------------------------- | ---------------------------------------------------- |
+| **Início da Camada**            | Antes do primeiro fluxo de trabalho de cada camada | Troca de ferramenta, verificação de WCS, comentários |
+| **Fim da Camada**               | Após o último fluxo de trabalho de cada camada     | Notificação de progresso, pausa                      |
+| **Início do Fluxo de Trabalho** | Antes de processar cada fluxo de trabalho          | Ajuste de potência, comentários                      |
+| **Fim do Fluxo de Trabalho**    | Após processar cada fluxo de trabalho              | Notificação de progresso, pausa                      |
+| **Início da Peça**              | Antes de processar cada peça                       | Numeração de peças, marcas de alinhamento            |
+| **Fim da Peça**                 | Após processar cada peça                           | Resfriamento, pausa de inspeção                      |
+
+Uma camada agrupa os fluxos de trabalho que compartilham a mesma configuração física (material,
+posicionamento das peças, WCS, rotativo). Os hooks de camada são executados uma vez ao redor de
+todos os fluxos de trabalho de uma camada; os hooks de fluxo de trabalho são executados para cada
+fluxo de trabalho.
 
 <!-- prettier-ignore-start -->
 :::note[G-code a Nível de Trabalho]
@@ -160,11 +167,22 @@ configurações de preâmbulo e postscript do dialeto, não através de hooks. V
 **Gatilho:** Início da Camada **Código:**
 
 ```gcode
-; Iniciando camada: {layer_name}
-; Índice da camada: {layer_index}
+; Iniciando camada: {layer.name}
 ```
 
 **Propósito:** Torna o G-code mais legível para depuração.
+
+---
+
+#### Início do Fluxo de Trabalho: Adicionar Comentário
+
+**Gatilho:** Início do Fluxo de Trabalho **Código:**
+
+```gcode
+; Camada {layer.name}, fluxo de trabalho: {workflow.name}
+```
+
+**Propósito:** Separa os fluxos de trabalho de uma camada no G-code.
 
 ---
 
@@ -183,24 +201,30 @@ configurações de preâmbulo e postscript do dialeto, não através de hooks. V
 
 ### Ordem de Execução dos Hooks
 
-Para um trabalho com 2 camadas, cada uma com 2 peças:
+Para um trabalho com 2 camadas; a primeira contém dois fluxos de trabalho e a segunda um:
 
 ```
   [Hook Início da Camada] (Camada 1)
-    [Hook Início da Peça] (Peça 1)
-       ... G-code da peça 1 ...
-    [Hook Fim da Peça] (Peça 1)
-    [Hook Início da Peça] (Peça 2)
-       ... G-code da peça 2 ...
-    [Hook Fim da Peça] (Peça 2)
+    [Hook Início do Fluxo de Trabalho] (Corte)
+      [Hook Início da Peça] (Peça 1)
+         ... G-code da peça 1 ...
+      [Hook Fim da Peça] (Peça 1)
+      [Hook Início da Peça] (Peça 2)
+         ... G-code da peça 2 ...
+      [Hook Fim da Peça] (Peça 2)
+    [Hook Fim do Fluxo de Trabalho] (Corte)
+    [Hook Início do Fluxo de Trabalho] (Gravação)
+      [Hook Início da Peça] (Peça 1)
+         ... G-code da peça 1 ...
+      [Hook Fim da Peça] (Peça 1)
+    [Hook Fim do Fluxo de Trabalho] (Gravação)
   [Hook Fim da Camada] (Camada 1)
   [Hook Início da Camada] (Camada 2)
-    [Hook Início da Peça] (Peça 3)
-       ... G-code da peça 3 ...
-    [Hook Fim da Peça] (Peça 3)
-    [Hook Início da Peça] (Peça 4)
-       ... G-code da peça 4 ...
-    [Hook Fim da Peça] (Peça 4)
+    [Hook Início do Fluxo de Trabalho] (Fluxo da camada 2)
+      [Hook Início da Peça] (Peça 3)
+         ... G-code da peça 3 ...
+      [Hook Fim da Peça] (Peça 3)
+    [Hook Fim do Fluxo de Trabalho] (Fluxo da camada 2)
   [Hook Fim da Camada] (Camada 2)
 ```
 
@@ -224,11 +248,10 @@ Variáveis usam a sintaxe `{variable_name}` e são substituídas durante a gera�
 
 **Variáveis de nível de camada:**
 
-| Variável         | Descrição                              | Valor de Exemplo |
-| ---------------- | -------------------------------------- | ---------------- |
-| `{layer_name}`   | Nome da camada atual                   | "Cut Layer"      |
-| `{layer_index}`  | Índice baseado em zero da camada atual | 0, 1, 2...       |
-| `{total_layers}` | Número total de camadas no trabalho    | 3                |
+| Variável          | Descrição                       | Valor de Exemplo  |
+| ----------------- | ------------------------------- | ----------------- |
+| `{layer.name}`    | Nome da camada atual            | "Camada de Corte" |
+| `{workflow.name}` | Nome do fluxo de trabalho atual | "Gravação"        |
 
 **Variáveis de nível de peça:**
 
@@ -253,7 +276,7 @@ Variáveis usam a sintaxe `{variable_name}` e são substituídas durante a gera�
 
 ```gcode
 ; ========================================
-; Camada {layer_index} de {total_layers}: {layer_name}
+; Camada: {layer.name}
 ; Trabalho: {job_name}
 ; Hora: {time}
 ; ========================================
@@ -263,7 +286,7 @@ Variáveis usam a sintaxe `{variable_name}` e são substituídas durante a gera�
 
 ```gcode
 ; ========================================
-; Camada 0 de 3: Cut Layer
+; Camada: Camada de Corte
 ; Trabalho: test-project
 ; Hora: 14:30:25
 ; ========================================

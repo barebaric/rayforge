@@ -123,12 +123,18 @@ ejecución del trabajo.
 
 Rayforge soporta estos disparadores de hooks:
 
-| Disparador          | Cuándo se Ejecuta              | Usos Comunes                                           |
-| ------------------- | ------------------------------ | ------------------------------------------------------ |
-| **Inicio de Capa**  | Antes de procesar cada capa    | Cambio de herramienta, ajuste de potencia, comentarios |
-| **Fin de Capa**     | Después de procesar cada capa  | Notificación de progreso, pausa                        |
-| **Inicio de Pieza** | Antes de procesar cada pieza   | Numeración de partes, marcas de alineación             |
-| **Fin de Pieza**    | Después de procesar cada pieza | Enfriamiento, pausa de inspección                      |
+| Disparador                     | Cuándo se Ejecuta                                | Usos Comunes                                      |
+| ------------------------------ | ------------------------------------------------ | ------------------------------------------------- |
+| **Inicio de Capa**             | Antes del primer flujo de trabajo de cada capa   | Cambio de herramienta, verificar WCS, comentarios |
+| **Fin de Capa**                | Después del último flujo de trabajo de cada capa | Notificación de progreso, pausa                   |
+| **Inicio de Flujo de Trabajo** | Antes de procesar cada flujo de trabajo          | Ajuste de potencia, comentarios                   |
+| **Fin de Flujo de Trabajo**    | Después de procesar cada flujo de trabajo        | Notificación de progreso, pausa                   |
+| **Inicio de Pieza**            | Antes de procesar cada pieza                     | Numeración de partes, marcas de alineación        |
+| **Fin de Pieza**               | Después de procesar cada pieza                   | Enfriamiento, pausa de inspección                 |
+
+Una capa agrupa los flujos de trabajo que comparten una misma configuración física (material,
+colocación de piezas, WCS, rotativo). Los hooks de capa se ejecutan una vez alrededor de todos los
+flujos de trabajo de una capa; los hooks de flujo de trabajo se ejecutan para cada flujo de trabajo.
 
 <!-- prettier-ignore-start -->
 :::note[Código G a Nivel de Trabajo]
@@ -160,11 +166,22 @@ los ajustes de preámbulo y postscript del dialecto, no mediante hooks. Ver
 **Disparador:** Inicio de Capa **Código:**
 
 ```gcode
-; Iniciando capa: {layer_name}
-; Índice de capa: {layer_index}
+; Iniciando capa: {layer.name}
 ```
 
 **Propósito:** Hace el código G más legible para depuración.
+
+---
+
+#### Inicio de Flujo de Trabajo: Añadir Comentario
+
+**Disparador:** Inicio de Flujo de Trabajo **Código:**
+
+```gcode
+; Capa {layer.name}, flujo de trabajo: {workflow.name}
+```
+
+**Propósito:** Separa los flujos de trabajo de una capa en el código G.
 
 ---
 
@@ -183,24 +200,30 @@ los ajustes de preámbulo y postscript del dialecto, no mediante hooks. Ver
 
 ### Orden de Ejecución de Hooks
 
-Para un trabajo con 2 capas, cada una con 2 piezas:
+Para un trabajo con 2 capas; la primera contiene dos flujos de trabajo y la segunda uno:
 
 ```
   [Hook Inicio de Capa] (Capa 1)
-    [Hook Inicio de Pieza] (Pieza 1)
-       ... código G de pieza 1 ...
-    [Hook Fin de Pieza] (Pieza 1)
-    [Hook Inicio de Pieza] (Pieza 2)
-       ... código G de pieza 2 ...
-    [Hook Fin de Pieza] (Pieza 2)
+    [Hook Inicio de Flujo de Trabajo] (Corte)
+      [Hook Inicio de Pieza] (Pieza 1)
+         ... código G de pieza 1 ...
+      [Hook Fin de Pieza] (Pieza 1)
+      [Hook Inicio de Pieza] (Pieza 2)
+         ... código G de pieza 2 ...
+      [Hook Fin de Pieza] (Pieza 2)
+    [Hook Fin de Flujo de Trabajo] (Corte)
+    [Hook Inicio de Flujo de Trabajo] (Grabado)
+      [Hook Inicio de Pieza] (Pieza 1)
+         ... código G de pieza 1 ...
+      [Hook Fin de Pieza] (Pieza 1)
+    [Hook Fin de Flujo de Trabajo] (Grabado)
   [Hook Fin de Capa] (Capa 1)
   [Hook Inicio de Capa] (Capa 2)
-    [Hook Inicio de Pieza] (Pieza 3)
-       ... código G de pieza 3 ...
-    [Hook Fin de Pieza] (Pieza 3)
-    [Hook Inicio de Pieza] (Pieza 4)
-       ... código G de pieza 4 ...
-    [Hook Fin de Pieza] (Pieza 4)
+    [Hook Inicio de Flujo de Trabajo] (Flujo de la capa 2)
+      [Hook Inicio de Pieza] (Pieza 3)
+         ... código G de pieza 3 ...
+      [Hook Fin de Pieza] (Pieza 3)
+    [Hook Fin de Flujo de Trabajo] (Flujo de la capa 2)
   [Hook Fin de Capa] (Capa 2)
 ```
 
@@ -225,11 +248,10 @@ Las variables usan la sintaxis `{variable_name}` y se reemplazan durante la gene
 
 **Variables a nivel de capa:**
 
-| Variable         | Descripción                             | Valor de Ejemplo |
-| ---------------- | --------------------------------------- | ---------------- |
-| `{layer_name}`   | Nombre de la capa actual                | "Capa de Corte"  |
-| `{layer_index}`  | Índice basado en cero de la capa actual | 0, 1, 2...       |
-| `{total_layers}` | Número total de capas en el trabajo     | 3                |
+| Variable          | Descripción                        | Valor de Ejemplo |
+| ----------------- | ---------------------------------- | ---------------- |
+| `{layer.name}`    | Nombre de la capa actual           | "Capa de Corte"  |
+| `{workflow.name}` | Nombre del flujo de trabajo actual | "Grabado"        |
 
 **Variables a nivel de pieza:**
 
@@ -254,7 +276,7 @@ Las variables usan la sintaxis `{variable_name}` y se reemplazan durante la gene
 
 ```gcode
 ; ========================================
-; Capa {layer_index} de {total_layers}: {layer_name}
+; Capa: {layer.name}
 ; Trabajo: {job_name}
 ; Hora: {time}
 ; ========================================
@@ -264,7 +286,7 @@ Las variables usan la sintaxis `{variable_name}` y se reemplazan durante la gene
 
 ```gcode
 ; ========================================
-; Capa 0 de 3: Capa de Corte
+; Capa: Capa de Corte
 ; Trabajo: test-project
 ; Hora: 14:30:25
 ; ========================================

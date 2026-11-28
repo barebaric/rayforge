@@ -124,12 +124,18 @@ Jobausführung ausgelöst werden.
 
 Rayforge unterstützt diese Hook-Auslöser:
 
-| Auslöser            | Wann es ausgeführt wird                | Häufige Verwendungen                           |
-| ------------------- | -------------------------------------- | ---------------------------------------------- |
-| **Ebenen-Start**    | Vor der Verarbeitung jeder Ebene       | Werkzeugwechsel, Leistung anpassen, Kommentare |
-| **Ebenen-Ende**     | Nach der Verarbeitung jeder Ebene      | Fortschrittsbenachrichtigung, Pause            |
-| **Werkstück-Start** | Vor der Verarbeitung jedes Werkstücks  | Teilenummerierung, Ausrichtungsmarkierungen    |
-| **Werkstück-Ende**  | Nach der Verarbeitung jedes Werkstücks | Abkühlen, Inspektionspause                     |
+| Auslöser            | Wann es ausgeführt wird                | Häufige Verwendungen                        |
+| ------------------- | -------------------------------------- | ------------------------------------------- |
+| **Ebenen-Start**    | Vor dem ersten Workflow jeder Ebene    | Werkzeugwechsel, WCS prüfen, Kommentare     |
+| **Ebenen-Ende**     | Nach dem letzten Workflow jeder Ebene  | Fortschrittsbenachrichtigung, Pause         |
+| **Workflow-Start**  | Vor der Verarbeitung jedes Workflows   | Leistung anpassen, Kommentare               |
+| **Workflow-Ende**   | Nach der Verarbeitung jedes Workflows  | Fortschrittsbenachrichtigung, Pause         |
+| **Werkstück-Start** | Vor der Verarbeitung jedes Werkstücks  | Teilenummerierung, Ausrichtungsmarkierungen |
+| **Werkstück-Ende**  | Nach der Verarbeitung jedes Werkstücks | Abkühlen, Inspektionspause                  |
+
+Eine Ebene gruppiert die Workflows, die sich eine physische Einrichtung teilen (Rohmaterial,
+Werkstückplatzierung, WCS, Rotationsachse). Ebenen-Hooks laufen einmal um alle Workflows einer Ebene
+herum; Workflow-Hooks laufen für jeden Workflow.
 
 <!-- prettier-ignore-start -->
 :::note[Job-Level G-Code]
@@ -161,11 +167,22 @@ Postscript-Einstellungen des Dialekts konfiguriert, nicht über Hooks. Siehe
 **Auslöser:** Ebenen-Start **Code:**
 
 ```gcode
-; Starte Ebene: {layer_name}
-; Ebenen-Index: {layer_index}
+; Starte Ebene: {layer.name}
 ```
 
 **Zweck:** Macht G-Code besser lesbar zum Debuggen.
+
+---
+
+#### Workflow-Start: Kommentar hinzufügen
+
+**Auslöser:** Workflow-Start **Code:**
+
+```gcode
+; Ebene {layer.name}, Workflow: {workflow.name}
+```
+
+**Zweck:** Trennt die Workflows einer Ebene im G-Code.
 
 ---
 
@@ -184,24 +201,30 @@ Postscript-Einstellungen des Dialekts konfiguriert, nicht über Hooks. Siehe
 
 ### Hook-Ausführungsreihenfolge
 
-Für einen Job mit 2 Ebenen, jede mit 2 Werkstücken:
+Für einen Job mit 2 Ebenen; die erste enthält zwei Workflows, die zweite einen:
 
 ```
   [Ebenen-Start Hook] (Ebene 1)
-    [Werkstück-Start Hook] (Werkstück 1)
-       ... Werkstück 1 G-Code ...
-    [Werkstück-Ende Hook] (Werkstück 1)
-    [Werkstück-Start Hook] (Werkstück 2)
-       ... Werkstück 2 G-Code ...
-    [Werkstück-Ende Hook] (Werkstück 2)
+    [Workflow-Start Hook] (Schneiden)
+      [Werkstück-Start Hook] (Werkstück 1)
+         ... Werkstück 1 G-Code ...
+      [Werkstück-Ende Hook] (Werkstück 1)
+      [Werkstück-Start Hook] (Werkstück 2)
+         ... Werkstück 2 G-Code ...
+      [Werkstück-Ende Hook] (Werkstück 2)
+    [Workflow-Ende Hook] (Schneiden)
+    [Workflow-Start Hook] (Gravieren)
+      [Werkstück-Start Hook] (Werkstück 1)
+         ... Werkstück 1 G-Code ...
+      [Werkstück-Ende Hook] (Werkstück 1)
+    [Workflow-Ende Hook] (Gravieren)
   [Ebenen-Ende Hook] (Ebene 1)
   [Ebenen-Start Hook] (Ebene 2)
-    [Werkstück-Start Hook] (Werkstück 3)
-       ... Werkstück 3 G-Code ...
-    [Werkstück-Ende Hook] (Werkstück 3)
-    [Werkstück-Start Hook] (Werkstück 4)
-       ... Werkstück 4 G-Code ...
-    [Werkstück-Ende Hook] (Werkstück 4)
+    [Workflow-Start Hook] (Workflow von Ebene 2)
+      [Werkstück-Start Hook] (Werkstück 3)
+         ... Werkstück 3 G-Code ...
+      [Werkstück-Ende Hook] (Werkstück 3)
+    [Workflow-Ende Hook] (Workflow von Ebene 2)
   [Ebenen-Ende Hook] (Ebene 2)
 ```
 
@@ -225,11 +248,10 @@ Variablen verwenden die `{variable_name}`-Syntax und werden während der G-Code-
 
 **Ebenen-Level-Variablen:**
 
-| Variable         | Beschreibung                             | Beispielwert    |
-| ---------------- | ---------------------------------------- | --------------- |
-| `{layer_name}`   | Name der aktuellen Ebene                 | "Schnitt-Ebene" |
-| `{layer_index}`  | Null-basierter Index der aktuellen Ebene | 0, 1, 2...      |
-| `{total_layers}` | Gesamtzahl der Ebenen im Job             | 3               |
+| Variable          | Beschreibung                 | Beispielwert    |
+| ----------------- | ---------------------------- | --------------- |
+| `{layer.name}`    | Name der aktuellen Ebene     | "Schnitt-Ebene" |
+| `{workflow.name}` | Name des aktuellen Workflows | "Gravur"        |
 
 **Werkstück-Level-Variablen:**
 
@@ -254,7 +276,7 @@ Variablen verwenden die `{variable_name}`-Syntax und werden während der G-Code-
 
 ```gcode
 ; ========================================
-; Ebene {layer_index} von {total_layers}: {layer_name}
+; Ebene: {layer.name}
 ; Job: {job_name}
 ; Uhrzeit: {time}
 ; ========================================
@@ -264,7 +286,7 @@ Variablen verwenden die `{variable_name}`-Syntax und werden während der G-Code-
 
 ```gcode
 ; ========================================
-; Ebene 0 von 3: Schnitt-Ebene
+; Ebene: Schnitt-Ebene
 ; Job: test-projekt
 ; Uhrzeit: 14:30:25
 ; ========================================
