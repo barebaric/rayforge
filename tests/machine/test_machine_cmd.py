@@ -173,7 +173,7 @@ class TestMachineCmdJobMonitoring:
         machine.job_finished.connect(job_finished_spy)
 
         # --- Act ---
-        # Setup progress spy AFTER the job starts and monitor is created
+        # Layer progress spy AFTER the job starts and monitor is created
         def on_job_started(sender):
             monitor = machine_cmd._current_monitor
             assert monitor is not None
@@ -532,7 +532,7 @@ class TestMachineCmdPointerDryRun:
         handle = pipeline.artifact_store.put(job_artifact, creator_tag="test")
         flags_during_generation = []
 
-        async def fake_generate(setup_uids=None):
+        async def fake_generate(layer_uids=None):
             flags_during_generation.append(machine.pointer_job_shift_enabled)
             return handle
 
@@ -573,7 +573,7 @@ class TestMachineCmdPointerDryRun:
         pipeline, invalidate_spy = pipeline_mocks
         handle = pipeline.artifact_store.put(job_artifact, creator_tag="test")
 
-        async def fake_generate(setup_uids=None):
+        async def fake_generate(layer_uids=None):
             return handle
 
         mocker.patch.object(
@@ -612,7 +612,7 @@ class TestMachineCmdPointerDryRun:
         pipeline, invalidate_spy = pipeline_mocks
         handle = pipeline.artifact_store.put(job_artifact, creator_tag="test")
 
-        async def fake_generate(setup_uids=None):
+        async def fake_generate(layer_uids=None):
             return handle
 
         mocker.patch.object(

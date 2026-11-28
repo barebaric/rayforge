@@ -104,7 +104,7 @@ class StepSettingsDialog(PatchedDialogWindow):
 
         # --- Workpieces (read-only) ---
         self.workpieces_view: WorkpiecesPage | None = None
-        if step.needs_workpieces and step.setup is not None:
+        if step.needs_workpieces and step.layer is not None:
             self.workpieces_view = WorkpiecesPage(self.editor, self.step)
             scrolled_page3 = Gtk.ScrolledWindow(
                 child=self.workpieces_view,

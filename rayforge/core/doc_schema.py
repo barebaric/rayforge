@@ -21,14 +21,13 @@ CURRENT_DOC_SCHEMA_VERSION = 1
 
 
 def _migrate_v0_to_v1(data: dict[str, Any]) -> dict[str, Any]:
-    """Layer-based (v0) → setup-based (v1).
+    """Restructures v0 layers to the v1 shape.
 
-    Each layer becomes a Setup: its job settings carry over, its
-    visibility and color are dropped (workpieces carry visibility;
-    the workflow inherits the color). Layer-level post processors
-    move onto the workflow, whose uid replaces the layer's uid as the
-    span marker key downstream. Document-level stock items move into
-    the first setup.
+    The document still holds layers, but a layer no longer carries
+    visibility or color: workpieces carry visibility, and the
+    workflow inherits the layer's color. Layer-level post processors
+    move onto the workflow. Document-level stock items move into the
+    first layer, so a layer owns the stock its parts are cut from.
     """
     children = data.get("children", [])
     new_children: list[dict[str, Any]] = []
@@ -36,18 +35,18 @@ def _migrate_v0_to_v1(data: dict[str, Any]) -> dict[str, Any]:
 
     for child in children:
         if child.get("type") == "layer":
-            new_children.append(_layer_to_setup(child))
+            new_children.append(_layer_to_v1(child))
         elif child.get("type") == "stockitem":
             stock_dicts.append(child)
         else:
             new_children.append(child)
 
     if stock_dicts and new_children:
-        first_setup = next(
-            (c for c in new_children if c.get("type") == "setup"), None
+        first_layer = next(
+            (c for c in new_children if c.get("type") == "layer"), None
         )
-        if first_setup is not None:
-            first_setup["children"] = stock_dicts + first_setup.get(
+        if first_layer is not None:
+            first_layer["children"] = stock_dicts + first_layer.get(
                 "children", []
             )
         else:
@@ -55,16 +54,14 @@ def _migrate_v0_to_v1(data: dict[str, Any]) -> dict[str, Any]:
 
     result = dict(data)
     result["children"] = new_children
-    result["active_setup_index"] = data.get("active_layer_index", 0)
-    result.pop("active_layer_index", None)
     return result
 
 
-def _layer_to_setup(layer: dict[str, Any]) -> dict[str, Any]:
-    """Transforms one layer dict into a setup dict, uid-preserving."""
-    setup = {
+def _layer_to_v1(source: dict[str, Any]) -> dict[str, Any]:
+    """Transforms one v0 layer dict to the v1 shape, uid-preserving."""
+    migrated = {
         k: v
-        for k, v in layer.items()
+        for k, v in source.items()
         if k
         not in (
             "type",
@@ -74,15 +71,15 @@ def _layer_to_setup(layer: dict[str, Any]) -> dict[str, Any]:
             "children",
         )
     }
-    setup["type"] = "setup"
+    migrated["type"] = "layer"
 
-    color = layer.get("color")
-    post_dicts = layer.get("post_processors_dicts")
+    color = source.get("color")
+    post_dicts = source.get("post_processors_dicts")
 
-    workflows = []
+    workflows: list[dict[str, Any]] = []
     migrated_workflows: list[dict[str, Any]] = []
     content = []
-    for child in layer.get("children", []):
+    for child in source.get("children", []):
         if child.get("type") == "workflow":
             workflows.append(child)
         else:
@@ -96,8 +93,8 @@ def _layer_to_setup(layer: dict[str, Any]) -> dict[str, Any]:
             workflow["post_processors_dicts"] = list(post_dicts)
         migrated_workflows.append(workflow)
 
-    setup["children"] = content + migrated_workflows
-    return setup
+    migrated["children"] = content + migrated_workflows
+    return migrated
 
 
 _MIGRATIONS: dict[int, Callable[[dict[str, Any]], dict[str, Any]]] = {

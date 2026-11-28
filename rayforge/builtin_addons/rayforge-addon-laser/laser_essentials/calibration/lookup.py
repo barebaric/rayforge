@@ -57,16 +57,16 @@ def find_record(doc: "Doc", workpiece_uid: str) -> CalibrationRecord | None:
 
 def _legacy_record(wp: DocItem) -> CalibrationRecord | None:
     assert isinstance(wp, WorkPiece)
-    setup = wp.setup
-    if setup is None:
+    layer = wp.layer
+    if layer is None:
         return None
-    for workflow in setup.workflows:
+    for workflow in layer.workflows:
         for step in workflow.steps:
             if (
                 step.ASSEMBLER_NAME == "material_test_grid"
                 and step.workpiece_uids == [wp.uid]
             ):
-                return _record_from_step(step, wp, setup.uid)
+                return _record_from_step(step, wp, layer.uid)
     return None
 
 

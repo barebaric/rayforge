@@ -17,7 +17,7 @@ from .doc_schema import CURRENT_DOC_SCHEMA_VERSION, migrate
 from .image_edit import ImageEditStep, missing_image_edit_ops
 from .item import DocItem
 from .job_counter import JobCounter
-from .setup import Setup
+from .layer import Layer
 from .source_asset import SourceAsset
 from .workpiece import WorkPiece, workpieces_in
 
@@ -41,7 +41,7 @@ class Doc(DocItem):
     def __init__(self):
         super().__init__()
         self.history_manager = HistoryManager()
-        self.active_setup_changed = Signal()
+        self.active_layer_changed = Signal()
         self.job_assembly_invalidated = Signal()
 
         # Asset Management
@@ -55,12 +55,12 @@ class Doc(DocItem):
         self._job_counter.changed.connect(self._on_job_counter_changed)
         self.descendant_added.connect(self._on_item_added_for_templates)
 
-        # A new document starts with one setup holding one workflow
-        setup = Setup(_("Setup {}").format(1))
-        self.add_child(setup)
+        # A new document starts with one layer holding one workflow
+        layer = Layer(_("Layer {}").format(1))
+        self.add_child(layer)
 
-        # The new setup should be active by default
-        self._active_setup_index: int = 0
+        # The new layer should be active by default
+        self._active_layer_index: int = 0
 
     @classmethod
     def from_dict(cls, data: dict) -> "Doc":
@@ -73,7 +73,7 @@ class Doc(DocItem):
         from .stock_asset import StockAsset
 
         # --- Polymorphic Deserialization Factories ---
-        item_class_map = {"setup": Setup, "stockitem": StockItem}
+        item_class_map = {"layer": Layer, "stockitem": StockItem}
 
         def _deserialize_asset(asset_data: dict) -> IAsset:
             asset_type = asset_data.get("type")
@@ -103,9 +103,9 @@ class Doc(DocItem):
         doc.uid = data.get("uid", doc.uid)
         doc.job_counter = JobCounter.from_dict(data.get("job_counter"))
 
-        # Clear the default setup created by __init__
+        # Clear the default layer created by __init__
         doc.set_children([])
-        doc._active_setup_index = -1
+        doc._active_layer_index = -1
 
         # Load assets first from unified list
         for asset_data in data.get("assets", []):
@@ -124,8 +124,8 @@ class Doc(DocItem):
         for src_data in source_assets_data.values():
             doc.add_asset(SourceAsset.from_dict(src_data))
 
-        # Load children (Setups; v0 documents carried stock at the
-        # document level, which the migration folds into setups)
+        # Load children (Layers; v0 documents carried stock at the
+        # document level, which the migration folds into layers)
         children = []
         children_data = data.get("children", [])
         for d in children_data:
@@ -157,16 +157,16 @@ class Doc(DocItem):
             else:
                 children.append(StockItem.from_dict(d))
 
-        setups = [c for c in children if isinstance(c, Setup)]
+        layers = [c for c in children if isinstance(c, Layer)]
         stock_items = [c for c in children if isinstance(c, StockItem)]
         if stock_items:
-            if not setups:
-                setups.append(Setup(_("Setup {}").format(len(setups) + 1)))
-            first = setups[0]
+            if not layers:
+                layers.append(Layer(_("Layer {}").format(len(layers) + 1)))
+            first = layers[0]
             first.set_children(stock_items + list(first.children))
 
-        doc.set_children(setups)
-        doc._active_setup_index = data.get("active_setup_index", 0)
+        doc.set_children(layers)
+        doc._active_layer_index = data.get("active_layer_index", 0)
         doc.adopt_legacy_image_edits()
         doc._loading = False
         doc._known_workpiece_keys = {
@@ -177,14 +177,14 @@ class Doc(DocItem):
 
     @property
     def stock_items(self) -> list["StockItem"]:
-        """Returns all StockItems across the document's setups."""
+        """Returns all StockItems across the document's layers."""
         from .stock import StockItem
 
         items: list[StockItem] = []
-        for setup in self.setups:
+        for layer in self.layers:
             items.extend(
                 child
-                for child in setup.children
+                for child in layer.children
                 if isinstance(child, StockItem)
             )
         return items
@@ -201,7 +201,7 @@ class Doc(DocItem):
             "uid": self.uid,
             "type": "doc",
             "schema_version": CURRENT_DOC_SCHEMA_VERSION,
-            "active_setup_index": self._active_setup_index,
+            "active_layer_index": self._active_layer_index,
             "children": [child.to_dict() for child in self.children],
             "assets": [asset.to_dict() for asset in self.get_all_assets()],
             "job_counter": self._job_counter.to_dict(),
@@ -408,21 +408,21 @@ class Doc(DocItem):
         return self
 
     @property
-    def setups(self) -> list[Setup]:
-        """Returns the document's setups in run order."""
-        return [child for child in self.children if isinstance(child, Setup)]
+    def layers(self) -> list[Layer]:
+        """Returns the document's layers in run order."""
+        return [child for child in self.children if isinstance(child, Layer)]
 
     @staticmethod
-    def is_default_setup_name(name: str) -> bool:
+    def is_default_layer_name(name: str) -> bool:
         """
         Returns True for names produced by this document's auto-naming
-        scheme, such as "Setup 1".
+        scheme, such as "Layer 1".
 
-        Setups created by :meth:`Doc.__init__` are named this way. They
+        Layers created by :meth:`Doc.__init__` are named this way. They
         were never manually renamed, so their names may be overwritten
-        with imported setup names.
+        with imported layer names.
         """
-        base = _("Setup")
+        base = _("Layer")
         if name == base:
             return True
         if not name.startswith(base):
@@ -430,15 +430,15 @@ class Doc(DocItem):
         return name[len(base) :].strip().isdigit()
 
     @property
-    def has_rotary_setup(self) -> bool:
-        """Whether any setup has rotary mode enabled.
+    def has_rotary_layer(self) -> bool:
+        """Whether any layer has rotary mode enabled.
 
-        Doc-level fact used to skip the per-setup kinematic walk in
+        Doc-level fact used to skip the per-layer kinematic walk in
         :meth:`KinematicMapping.apply_to_job_ops` for flat jobs, since
         that walk forces a copy-on-write clone of the command array for
-        every setup even when the callback does nothing.
+        every layer even when the callback does nothing.
         """
-        return any(setup.rotary_enabled for setup in self.setups)
+        return any(layer.rotary_enabled for layer in self.layers)
 
     @property
     def all_workpieces(self) -> list[WorkPiece]:
@@ -447,156 +447,156 @@ class Doc(DocItem):
         objects contained within this document.
         """
         wps = []
-        for setup in self.setups:
-            wps.extend(setup.all_workpieces)
+        for layer in self.layers:
+            wps.extend(layer.all_workpieces)
         return wps
 
     def add_workpiece(self, workpiece: WorkPiece):
-        """Adds a workpiece to the currently active setup."""
-        self.active_setup.add_workpiece(workpiece)
+        """Adds a workpiece to the currently active layer."""
+        self.active_layer.add_workpiece(workpiece)
 
     def remove_workpiece(self, workpiece: WorkPiece):
-        """Removes a workpiece from the setup that owns it."""
+        """Removes a workpiece from the layer that owns it."""
         if workpiece.parent:
             workpiece.parent.remove_child(workpiece)
 
     def get_top_level_items(self) -> list["DocItem"]:
         """
         Returns a list of all top-level, user-facing items in the document
-        by querying each setup for its content.
+        by querying each layer for its content.
         """
         top_items = []
-        for setup in self.setups:
-            top_items.extend(setup.get_content_items())
+        for layer in self.layers:
+            top_items.extend(layer.get_content_items())
         return top_items
 
     @property
-    def active_setup(self) -> Setup:
-        """Returns the currently active setup."""
-        if not self.setups:
-            raise IndexError("Document has no setups.")
-        return self.setups[self._active_setup_index]
+    def active_layer(self) -> Layer:
+        """Returns the currently active layer."""
+        if not self.layers:
+            raise IndexError("Document has no layers.")
+        return self.layers[self._active_layer_index]
 
-    @active_setup.setter
-    def active_setup(self, setup: Setup):
-        """Sets the active setup by instance."""
+    @active_layer.setter
+    def active_layer(self, layer: Layer):
+        """Sets the active layer by instance."""
         try:
-            new_index = self.setups.index(setup)
-            if self._active_setup_index != new_index:
-                self._active_setup_index = new_index
+            new_index = self.layers.index(layer)
+            if self._active_layer_index != new_index:
+                self._active_layer_index = new_index
                 self.updated.send(self)
-                self.active_setup_changed.send(self)
+                self.active_layer_changed.send(self)
         except ValueError:
-            logger.warning("Attempted to set a non-existent setup as active.")
+            logger.warning("Attempted to set a non-existent layer as active.")
 
-    def _on_setup_per_step_transformer_changed(self, sender):
+    def _on_layer_per_step_transformer_changed(self, sender):
         """Special-case bubbling for a non-standard signal."""
         self.job_assembly_invalidated.send(self)
 
     def add_child(self, child: T, index: int | None = None) -> T:
-        if isinstance(child, Setup):
+        if isinstance(child, Layer):
             child.per_step_transformer_changed.connect(
-                self._on_setup_per_step_transformer_changed
+                self._on_layer_per_step_transformer_changed
             )
         super().add_child(child, index)
         return child
 
     def remove_child(self, child: DocItem):
-        if isinstance(child, Setup):
+        if isinstance(child, Layer):
             child.per_step_transformer_changed.disconnect(
-                self._on_setup_per_step_transformer_changed
+                self._on_layer_per_step_transformer_changed
             )
         super().remove_child(child)
 
     def set_children(self, new_children: Iterable[DocItem]):
         new_children_list = list(new_children)
 
-        for setup in self.setups:
-            setup.per_step_transformer_changed.disconnect(
-                self._on_setup_per_step_transformer_changed
+        for layer in self.layers:
+            layer.per_step_transformer_changed.disconnect(
+                self._on_layer_per_step_transformer_changed
             )
 
-        new_setups = [c for c in new_children_list if isinstance(c, Setup)]
-        for setup in new_setups:
-            setup.per_step_transformer_changed.connect(
-                self._on_setup_per_step_transformer_changed
+        new_layers = [c for c in new_children_list if isinstance(c, Layer)]
+        for layer in new_layers:
+            layer.per_step_transformer_changed.connect(
+                self._on_layer_per_step_transformer_changed
             )
         super().set_children(new_children_list)
 
-    def add_setup(self, setup: Setup):
-        self.add_child(setup)
+    def add_layer(self, layer: Layer):
+        self.add_child(layer)
 
-    def remove_setup(self, setup: Setup):
-        if setup not in self.setups:
+    def remove_layer(self, layer: Layer):
+        if layer not in self.layers:
             return
 
-        if len(self.setups) <= 1:
-            msg = "A document must have at least one setup."
+        if len(self.layers) <= 1:
+            msg = "A document must have at least one layer."
             logger.warning(msg)
             return
 
-        # Safely adjust active setup index before removal
-        old_active_setup = self.active_setup
-        setups_before_remove = self.setups
-        setup_index_to_remove = setups_before_remove.index(setup)
+        # Safely adjust active layer index before removal
+        old_active_layer = self.active_layer
+        setups_before_remove = self.layers
+        setup_index_to_remove = setups_before_remove.index(layer)
 
         # Remove the child. This will trigger signals.
-        self.remove_child(setup)
+        self.remove_child(layer)
 
-        # After removal, the list of setups is shorter. We need to ensure
-        # _active_setup_index is still valid.
-        if old_active_setup is setup:
-            # The active setup was deleted. Choose the one before it, or 0.
+        # After removal, the list of layers is shorter. We need to ensure
+        # _active_layer_index is still valid.
+        if old_active_layer is layer:
+            # The active layer was deleted. Choose the one before it, or 0.
             new_index = max(0, setup_index_to_remove - 1)
-            self._active_setup_index = new_index
-            self.active_setup_changed.send(self)
-        elif setup_index_to_remove < self._active_setup_index:
-            # A setup before the active one was removed, so the active
+            self._active_layer_index = new_index
+            self.active_layer_changed.send(self)
+        elif setup_index_to_remove < self._active_layer_index:
+            # A layer before the active one was removed, so the active
             # index must shift.
-            self._active_setup_index -= 1
-            # The active setup instance hasn't changed, so no change
+            self._active_layer_index -= 1
+            # The active layer instance hasn't changed, so no change
             # signal needed.
 
-    def set_setups(self, setups: list[Setup]):
-        new_setups_list = list(setups)
+    def set_layers(self, layers: list[Layer]):
+        new_layers_list = list(layers)
 
-        # A document must always have at least one setup.
-        if len(new_setups_list) < 1:
-            raise ValueError("A document must have at least one setup.")
+        # A document must always have at least one layer.
+        if len(new_layers_list) < 1:
+            raise ValueError("A document must have at least one layer.")
 
-        # Preserve the active setup if it still exists in the new list
-        old_active_setup = None
-        if self.setups and self._active_setup_index >= 0:
-            old_active_setup = self.active_setup
+        # Preserve the active layer if it still exists in the new list
+        old_active_layer = None
+        if self.layers and self._active_layer_index >= 0:
+            old_active_layer = self.active_layer
 
         try:
-            if old_active_setup:
-                new_active_index = new_setups_list.index(old_active_setup)
+            if old_active_layer:
+                new_active_index = new_layers_list.index(old_active_layer)
             else:
                 new_active_index = 0
         except ValueError:
-            # The old active setup is not in the new list, so pick a
+            # The old active layer is not in the new list, so pick a
             # default.
             new_active_index = 0
 
-        self._active_setup_index = new_active_index
-        self.set_children(new_setups_list)
+        self._active_layer_index = new_active_index
+        self.set_children(new_layers_list)
 
-        # After the state is consistent, send the active_setup_changed
-        # signal if the active setup instance has actually changed.
-        if old_active_setup is not self.active_setup:
-            self.active_setup_changed.send(self)
+        # After the state is consistent, send the active_layer_changed
+        # signal if the active layer instance has actually changed.
+        if old_active_layer is not self.active_layer:
+            self.active_layer_changed.send(self)
 
     def has_workpiece(self):
         return bool(self.all_workpieces)
 
     def has_result(self):
         # A result is possible if there's a workpiece and at least one
-        # workflow (in any setup) has at least one visible step.
+        # workflow (in any layer) has at least one visible step.
         return self.has_workpiece() and any(
             step.visible
-            for setup in self.setups
-            for workflow in setup.workflows
+            for layer in self.layers
+            for workflow in layer.workflows
             for step in workflow.steps
         )
 
@@ -610,8 +610,8 @@ class Doc(DocItem):
         Returns:
             The selected_head_uid for the step, or None if not found.
         """
-        for setup in self.setups:
-            for workflow in setup.workflows:
+        for layer in self.layers:
+            for workflow in layer.workflows:
                 for step in workflow.steps:
                     if step.uid == step_uid:
                         return step.selected_head_uid
@@ -628,8 +628,8 @@ class Doc(DocItem):
             The uid of the workflow containing the step, or None if
             not found.
         """
-        for setup in self.setups:
-            for workflow in setup.workflows:
+        for layer in self.layers:
+            for workflow in layer.workflows:
                 for step in workflow.steps:
                     if step.uid == step_uid:
                         return workflow.uid
@@ -646,15 +646,15 @@ class Doc(DocItem):
     def adopt_legacy_image_edits(self) -> None:
         """
         Moves image edits that older files kept as step settings onto
-        the workpieces of the step's setup. Steps hand them over only
+        the workpieces of the step's layer. Steps hand them over only
         once, so this is safe to call after every load.
         """
-        for setup in self.setups:
-            for workflow in setup.workflows:
+        for layer in self.layers:
+            for workflow in layer.workflows:
                 for step in workflow.steps:
                     edits = step.pop_legacy_image_edits()
                     if edits:
-                        _append_image_edits(setup.all_workpieces, edits)
+                        _append_image_edits(layer.all_workpieces, edits)
 
     @property
     def missing_step_types(self) -> set[str]:
@@ -662,8 +662,8 @@ class Doc(DocItem):
         from .step_registry import step_registry
 
         missing: set[str] = set()
-        for setup in self.setups:
-            for workflow in setup.workflows:
+        for layer in self.layers:
+            for workflow in layer.workflows:
                 for step in workflow.steps:
                     name = type(step).__name__
                     if step_registry.get(name) is None:

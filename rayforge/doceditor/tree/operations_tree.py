@@ -78,8 +78,8 @@ class OperationsTree(Gtk.Box):
         rows: list[Gtk.Widget] = []
         workflows = [
             workflow
-            for setup in self._doc.setups
-            for workflow in setup.workflows
+            for layer in self._doc.layers
+            for workflow in layer.workflows
         ]
         for workflow in workflows:
             rows.extend(

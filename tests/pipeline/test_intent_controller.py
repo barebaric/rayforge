@@ -165,7 +165,7 @@ class _StubNode:
 
 def _make_doc(step: _TestStep, *workpieces: WorkPiece) -> Doc:
     doc = Doc()
-    layer = doc.active_setup
+    layer = doc.active_layer
     workflow = layer.workflows[0]
     assert workflow is not None
     workflow.add_child(step)
@@ -337,7 +337,7 @@ def test_run_intent_called(monkeypatch, isolated_machine):
 
 def test_rotary_panel_error_is_reported(isolated_machine):
     doc = _make_doc(_TestStep(name="s1"), WorkPiece(name="wp"))
-    doc.active_setup.set_rotary_enabled(True)
+    doc.active_layer.set_rotary_enabled(True)
     isolated_machine.set_panel_orientation(PanelOrientation.ROTATED_LEFT)
     tm = ImmediateMainThreadTaskManager()
     ctrl = IntentController(doc, tm, machine=isolated_machine)
@@ -350,7 +350,7 @@ def test_rotary_panel_error_is_reported(isolated_machine):
 
     assert messages == [
         (
-            "Rotary setups require the Native panel orientation. "
+            "Rotary layers require the Native panel orientation. "
             "Set Machine → Hardware → Panel Orientation to Native."
         )
     ]
@@ -929,7 +929,7 @@ def _make_doc_with_stock(
     asset.geometry = geo
     doc.add_asset(asset)
     item = StockItem(stock_asset_uid=asset.uid, name="sheet")
-    doc.active_setup.add_child(item)
+    doc.active_layer.add_child(item)
     return doc, item
 
 
@@ -1040,7 +1040,7 @@ def _make_doc_with_rotary_layer(step: _TestStep, wp: WorkPiece):
     wp.matrix = Matrix.scale(50.0, 50.0)
 
     doc = _make_doc(step, wp)
-    layer = doc.active_setup
+    layer = doc.active_layer
     layer.rotary_enabled = True
     layer.rotary_diameter = 50.0
     return doc, layer

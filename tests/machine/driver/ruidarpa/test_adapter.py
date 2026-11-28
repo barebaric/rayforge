@@ -357,10 +357,10 @@ class TestRunRouting:
     def _job_ops(doc):
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].uid)
         ops.move_to(5.0, 5.0, 0.0)
         ops.line_to(10.0, 8.0, 0.0)
-        ops.layer_end(layer_uid=doc.setups[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].uid)
         ops.job_end()
         return ops
 
@@ -2974,7 +2974,7 @@ class TestRpcTimeoutSetup:
 
 
 class TestSetupVars:
-    """The setup 'usb_device' var is an optional SerialPortVar and
+    """The layer 'usb_device' var is an optional SerialPortVar and
     'magic_number' carries the standard default."""
 
     def test_usb_device_var_is_serial_port_var(
@@ -3230,7 +3230,7 @@ class TestTcpProtocolSetup:
     async def test_setup_stores_resolved_protocol(
         self, isolated_context, isolated_machine
     ):
-        """setup() must resolve and store the protocol from tcp_proto."""
+        """layer() must resolve and store the protocol from tcp_proto."""
         adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
         adapter.setup(udp_host="192.168.1.10", tcp_proto=True)
         assert adapter._protocol == PROTOCOL_TCP
@@ -3453,7 +3453,7 @@ class TestSeedMachineSpeedDefaults:
 
 
 class TestPowerFloorSetup:
-    """The setup 'power_floor' var exposes VECTOR cut compensation floor."""
+    """The layer 'power_floor' var exposes VECTOR cut compensation floor."""
 
     def test_power_floor_var_present_with_driver_defaults(
         self, isolated_context, isolated_machine

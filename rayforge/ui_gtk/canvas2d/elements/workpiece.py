@@ -254,8 +254,8 @@ class WorkPieceElement(CanvasElement):
         # Clear the model cache as well, since the data is invalid
         self.data._view_cache.clear()
 
-        if self.data.setup:
-            for workflow in self.data.setup.workflows:
+        if self.data.layer:
+            for workflow in self.data.layer.workflows:
                 for step in workflow.steps:
                     self.clear_ops_surface(step.uid)
         super().trigger_update()
@@ -419,10 +419,10 @@ class WorkPieceElement(CanvasElement):
 
         Called from ``draw()`` when ``_composited_dirty`` is True.
         """
-        setup = self.data.setup
+        layer = self.data.layer
         steps = (
-            [s for w in setup.workflows for s in w.steps]
-            if setup is not None
+            [s for w in layer.workflows for s in w.steps]
+            if layer is not None
             else []
         )
         if not steps:
@@ -1273,7 +1273,7 @@ class WorkPieceElement(CanvasElement):
         Removes the cached ops surface for a step and schedules a
         composite rebuild.
 
-        Called by ``SetupElement.sync_with_model`` when a step is
+        Called by ``LayerElement.sync_with_model`` when a step is
         deleted from the workflow.  Must mark the composite dirty so
         the next draw() rebuilds it without the removed step.
         """
@@ -1415,7 +1415,7 @@ class WorkPieceElement(CanvasElement):
         if world_w < 1e-9 or world_h < 1e-9:
             return
 
-        if self.data.setup:
+        if self.data.layer:
             registry.touch(self.data.uid)
 
             if self._composited_dirty:

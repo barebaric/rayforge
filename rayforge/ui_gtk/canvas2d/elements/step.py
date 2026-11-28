@@ -20,7 +20,7 @@ class StepElement(CanvasElement):
     This element is the "controller" for a Step in the view. Its primary job
     is to listen to its model for visibility changes and then broadcast that
     state to all sibling WorkPieceElements within the same layer.
-    Its lifecycle is automatically managed by its parent SetupElement.
+    Its lifecycle is automatically managed by its parent LayerElement.
     """
 
     def __init__(
@@ -70,7 +70,7 @@ class StepElement(CanvasElement):
     def _update_sibling_ops_visibility(self):
         """
         THE CORE LOGIC: Finds all WorkPieceElement siblings in the same parent
-        (SetupElement) and tells them to update the visibility of the ops
+        (LayerElement) and tells them to update the visibility of the ops
         layer corresponding to this step.
         """
         if not self.parent:
@@ -85,7 +85,7 @@ class StepElement(CanvasElement):
             f"({is_visible}) to siblings."
         )
 
-        # Iterate through all children of the parent (the SetupElement)
+        # Iterate through all children of the parent (the LayerElement)
         for child in parent.children:
             if isinstance(child, (WorkPieceElement, GroupElement)):
                 child.set_ops_visibility(step_uid, is_visible)

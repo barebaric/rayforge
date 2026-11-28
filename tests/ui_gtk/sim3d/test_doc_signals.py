@@ -54,8 +54,8 @@ def _machine():
 
 def _doc():
     doc = MagicMock()
-    doc.active_setup_changed = Signal()
-    doc.active_setup = None
+    doc.active_layer_changed = Signal()
+    doc.active_layer = None
     return doc
 
 
@@ -76,7 +76,7 @@ def test_connect_subscribes_machine_signals(ui_context_initializer):
     )
     hub.connect()
     machine.wcs_updated.send(machine)
-    assert hub._active_setup_wcs_conn is None
+    assert hub._active_layer_wcs_conn is None
 
 
 @pytest.mark.ui
@@ -84,7 +84,7 @@ def test_connect_active_setup_wcs(ui_context_initializer):
     machine = _machine()
     doc = _doc()
     layer = _layer()
-    doc.active_setup = layer
+    doc.active_layer = layer
     doc_editor = MagicMock()
     doc_editor.doc = doc
 
@@ -93,7 +93,7 @@ def test_connect_active_setup_wcs(ui_context_initializer):
     )
     hub.connect()
 
-    assert hub._active_setup_wcs_conn is not None
+    assert hub._active_layer_wcs_conn is not None
     rendered.clear()
     layer.updated.send(layer)
     assert rendered == [True]

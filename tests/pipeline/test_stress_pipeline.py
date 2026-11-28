@@ -118,11 +118,11 @@ class StressTestController:
     def capture_metrics(self) -> MetricsSnapshot:
         """Capture current pipeline state."""
         workpiece_count = sum(
-            1 for wp in self.doc.all_workpieces if wp.setup is not None
+            1 for wp in self.doc.all_workpieces if wp.layer is not None
         )
         step_count = sum(
             len(layer.workflows[0].steps)
-            for layer in self.doc.setups
+            for layer in self.doc.layers
             if layer.workflows[0] is not None
         )
 
@@ -202,7 +202,7 @@ class StressTestController:
     def _get_available_steps(self) -> list:
         """Get all available steps in the document."""
         steps = []
-        for layer in self.doc.setups:
+        for layer in self.doc.layers:
             if layer.workflows[0]:
                 steps.extend(layer.workflows[0].steps)
         return steps
@@ -211,7 +211,7 @@ class StressTestController:
         self, invalid_type: InvalidationType
     ) -> None:
         """Execute a single invalidation operation."""
-        layer = self.doc.active_setup
+        layer = self.doc.active_layer
 
         if invalid_type == InvalidationType.ADD_WORKPIECE:
             if len(self._workpieces) < self.config.max_workpieces:
@@ -226,7 +226,7 @@ class StressTestController:
         elif invalid_type == InvalidationType.REMOVE_WORKPIECE:
             if len(self._workpieces) > 1:
                 wp = random.choice(self._workpieces)
-                wp_layer = wp.setup
+                wp_layer = wp.layer
                 if wp_layer:
                     wp_layer.remove_workpiece(wp)
                 self._workpieces.remove(wp)
@@ -251,8 +251,8 @@ class StressTestController:
             steps = self._get_available_steps()
             if len(steps) > 1:
                 step = random.choice(steps)
-                if step.setup and step.setup.workflows[0]:
-                    step.setup.workflows[0].remove_step(step)
+                if step.layer and step.layer.workflows[0]:
+                    step.layer.workflows[0].remove_step(step)
                     logger.debug(f"Removed step '{step.name}'")
 
         elif invalid_type == InvalidationType.UPDATE_STEP_POWER:
@@ -476,12 +476,12 @@ class StressTestController:
 
         for i in range(self.config.initial_workpiece_count):
             wp = self._create_workpiece()
-            self.doc.active_setup.add_workpiece(wp)
+            self.doc.active_layer.add_workpiece(wp)
             self._workpieces.append(wp)
 
-        if self.doc.active_setup.workflows[0]:
+        if self.doc.active_layer.workflows[0]:
             step = self.contour_step_class.create(self.context)
-            self.doc.active_setup.workflows[0].add_step(step)
+            self.doc.active_layer.workflows[0].add_step(step)
 
         await asyncio.sleep(0.5)
         settled = await self.wait_for_settle()
@@ -552,7 +552,7 @@ async def test_pipeline_stress_random_invalidations(
     3. No busy state corruption (is_busy reflects actual state)
     """
     doc = Doc()
-    layer = doc.active_setup
+    layer = doc.active_layer
     if layer.workflows[0]:
         layer.workflows[0].set_steps([])
 

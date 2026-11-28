@@ -4,7 +4,7 @@ import pytest
 
 from rayforge.core.doc import Doc
 from rayforge.core.group import Group
-from rayforge.core.setup import Setup
+from rayforge.core.layer import Layer
 from rayforge.core.step import Step
 from rayforge.core.stock import StockItem
 from rayforge.core.stock_asset import StockAsset
@@ -38,8 +38,8 @@ def doc() -> Doc:
     doc = Doc()
     doc.set_children([])
 
-    parts = Setup("Parts")
-    doc.add_setup(parts)
+    parts = Layer("Parts")
+    doc.add_layer(parts)
     parts_workflow = parts.workflows[0]
     ribs = Group("Ribs")
     parts.add_child(ribs)
@@ -58,8 +58,8 @@ def doc() -> Doc:
     inner.workpiece_uids = [rib_left.uid, rib_right.uid]
     parts_workflow.add_step(inner)
 
-    names = Setup("Names")
-    doc.add_setup(names)
+    names = Layer("Names")
+    doc.add_layer(names)
     names_workflow = names.workflows[0]
     name = WorkPiece("Fuselage name")
     names.add_child(name)
@@ -68,7 +68,7 @@ def doc() -> Doc:
     asset = StockAsset(name="Balsa 3 mm")
     asset.thickness = 3.0
     doc.add_asset(asset)
-    doc.setups[0].add_child(
+    doc.layers[0].add_child(
         StockItem(stock_asset_uid=asset.uid, name="Balsa 3 mm")
     )
     return doc
@@ -95,7 +95,7 @@ def test_stock_spec_selection(doc):
 
 
 def test_group_spec(doc):
-    group = doc.setups[0].content_items[0]
+    group = doc.layers[0].content_items[0]
     spec = GroupNode.build_spec(group, 1)
     assert spec.kind == "group"
     assert spec.label == "Ribs"
@@ -112,7 +112,7 @@ def test_group_spec(doc):
 
 
 def test_workpiece_spec(doc):
-    workpiece = doc.setups[0].all_workpieces[0]
+    workpiece = doc.layers[0].all_workpieces[0]
     spec = WorkPieceNode.build_spec(workpiece, 2)
     assert spec.kind == "workpiece"
     assert spec.label == "Rib L"
@@ -129,7 +129,7 @@ def test_workpiece_spec(doc):
 
 
 def test_steps_for_respects_step_scoping(doc):
-    parts_layer = doc.setups[0]
+    parts_layer = doc.layers[0]
     rib_left = parts_layer.all_workpieces[0]
     fuselage = parts_layer.all_workpieces[-1]
     workflow = parts_layer.workflows[0]
@@ -153,7 +153,7 @@ def test_steps_for_respects_step_scoping(doc):
 
 
 def test_step_spec(doc):
-    parts_workflow = doc.setups[0].workflows[0]
+    parts_workflow = doc.layers[0].workflows[0]
     step = parts_workflow.steps[0]
     spec = StepNode.build_spec(step, 2)
     assert spec.kind == "step"
@@ -167,7 +167,7 @@ def test_step_spec(doc):
 
 
 def test_workflow_spec(doc):
-    parts = doc.setups[0]
+    parts = doc.layers[0]
     workflow = parts.workflows[0]
     spec = WorkflowNode.build_spec(workflow, 1)
     assert spec.kind == "workflow"
@@ -182,7 +182,7 @@ def test_workflow_spec(doc):
 
 
 def test_part_spec(doc):
-    parts = doc.setups[0]
+    parts = doc.layers[0]
     workflow = parts.workflows[0]
     rib_left = parts.all_workpieces[0]
     fuselage = parts.all_workpieces[-1]
@@ -202,7 +202,7 @@ def test_part_spec(doc):
 
 
 def test_part_spec_selection(doc):
-    parts = doc.setups[0]
+    parts = doc.layers[0]
     workflow = parts.workflows[0]
     rib_left = parts.all_workpieces[0]
     spec = PartNode.build_spec(rib_left, 1, workflow, 2, {rib_left.uid})

@@ -26,8 +26,8 @@ def _zero_debounce(zero_debounce_delay):
 @pytest.fixture
 def doc():
     d = Doc()
-    assert d.active_setup.workflows[0] is not None
-    d.active_setup.workflows[0].set_steps([])
+    assert d.active_layer.workflows[0] is not None
+    d.active_layer.workflows[0].set_steps([])
     return d
 
 
@@ -39,7 +39,7 @@ async def _settle(pipeline: Pipeline, timeout: float = 10.0) -> None:
 
 
 @pytest.fixture
-def material_test_setup(
+def material_test_layer(
     doc, task_mgr, test_machine_and_config, context_initializer
 ):
     """A doc with a material test step and an 80x80 workpiece, plus a
@@ -51,9 +51,9 @@ def material_test_setup(
 
     workpiece = WorkPiece(name="mtg")
     workpiece.set_size(80.0, 80.0)
-    doc.active_setup.add_workpiece(workpiece)
+    doc.active_layer.add_workpiece(workpiece)
     step.workpiece_uids = [workpiece.uid]
-    doc.active_setup.workflows[0].add_step(step)
+    doc.active_layer.workflows[0].add_step(step)
 
     pipeline = Pipeline(
         doc,
@@ -67,11 +67,11 @@ def material_test_setup(
 class TestMaterialTestResize:
     @pytest.mark.asyncio
     async def test_resize_regenerates_ops_at_new_size(
-        self, material_test_setup
+        self, material_test_layer
     ):
         """A resize followed by the app's pause/resume sequence must
         regenerate the ops for the new size."""
-        _doc, pipeline, step, workpiece = material_test_setup
+        _doc, pipeline, step, workpiece = material_test_layer
         await _settle(pipeline)
 
         artifact = pipeline.get_artifact(step, workpiece)
@@ -92,12 +92,12 @@ class TestMaterialTestResize:
 
     @pytest.mark.asyncio
     async def test_late_output_keeps_generation_time_size(
-        self, material_test_setup
+        self, material_test_layer
     ):
         """An output computed before a resize but delivered after it must
         carry the size its ops were generated at, not the workpiece's
         live size."""
-        _doc, pipeline, step, workpiece = material_test_setup
+        _doc, pipeline, step, workpiece = material_test_layer
         await _settle(pipeline)
 
         stale = pipeline.get_artifact(step, workpiece)

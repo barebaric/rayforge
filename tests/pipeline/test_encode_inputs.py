@@ -43,7 +43,7 @@ def _make_machine_mock(dialect=GRBL_DIALECT):
 def _make_doc_mock():
     doc = MagicMock()
     doc.name = "TestDoc"
-    doc.setups = []
+    doc.layers = []
     doc.find_descendant_by_uid.return_value = None
     return doc
 
@@ -98,7 +98,7 @@ def test_build_encode_context_includes_counter():
     doc.job_counter.counter = CounterSettings(current=7, step=2)
     wp = WorkPiece("part")
     wp.variable_offset = 2
-    doc.active_setup.add_child(wp)
+    doc.active_layer.add_child(wp)
 
     ops = Ops()
     context = build_encode_context(ops, machine, doc)

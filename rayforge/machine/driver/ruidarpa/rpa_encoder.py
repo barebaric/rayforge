@@ -359,8 +359,8 @@ class RuidaRPAEncoder:
         """Look up a document workflow by uid, or None when unknown."""
         if self.doc is None:
             return None
-        for setup in self.doc.setups:
-            for workflow in setup.workflows:
+        for layer in self.doc.layers:
+            for workflow in layer.workflows:
                 if workflow.uid == workflow_uid:
                     return workflow
         return None

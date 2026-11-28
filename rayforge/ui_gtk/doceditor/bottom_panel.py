@@ -145,7 +145,7 @@ class BottomPanel(Gtk.Box):
         self._click_to_zero_mode = False
         self._move_to_mode = False
         self._updating_wcs_ui = False
-        self._active_setup = None
+        self._active_layer = None
         self._get_bounds_callback: (
             Callable[[], tuple[float, float, float, float] | None] | None
         ) = None
@@ -309,32 +309,32 @@ class BottomPanel(Gtk.Box):
         self.tab_changed.send(self, name=name)
 
     def set_doc(self, doc):
-        self._disconnect_setup_signals()
+        self._disconnect_layer_signals()
         self.doc = doc
         self.asset_browser.set_doc(doc)
         if doc:
-            doc.active_setup_changed.connect(self._on_active_setup_changed)
-            self._connect_setup_signals()
+            doc.active_layer_changed.connect(self._on_active_layer_changed)
+            self._connect_layer_signals()
         if self.machine:
             self._update_wcs_ui()
 
-    def _on_active_setup_changed(self, sender):
-        self._disconnect_setup_signals()
-        self._connect_setup_signals()
+    def _on_active_layer_changed(self, sender):
+        self._disconnect_layer_signals()
+        self._connect_layer_signals()
         if self.machine:
             self._update_wcs_ui()
 
-    def _connect_setup_signals(self):
-        if self.doc and self.doc.active_setup:
-            self._active_setup = self.doc.active_setup
-            self._active_setup.updated.connect(self._on_setup_updated)
+    def _connect_layer_signals(self):
+        if self.doc and self.doc.active_layer:
+            self._active_layer = self.doc.active_layer
+            self._active_layer.updated.connect(self._on_layer_updated)
 
-    def _disconnect_setup_signals(self):
-        if self._active_setup:
-            self._active_setup.updated.disconnect(self._on_setup_updated)
-            self._active_setup = None
+    def _disconnect_layer_signals(self):
+        if self._active_layer:
+            self._active_layer.updated.disconnect(self._on_layer_updated)
+            self._active_layer = None
 
-    def _on_setup_updated(self, sender):
+    def _on_layer_updated(self, sender):
         if self.machine:
             self._update_wcs_ui()
 
@@ -847,14 +847,14 @@ class BottomPanel(Gtk.Box):
         self.zero_row.set_visible(not hide_wcs_controls)
 
         setup_has_wcs = (
-            self.doc and self.doc.active_setup and self.doc.active_setup.wcs
+            self.doc and self.doc.active_layer and self.doc.active_layer.wcs
         )
         self.wcs_row.set_sensitive(not setup_has_wcs)
         if setup_has_wcs:
             self.wcs_row.set_tooltip_text(
                 _(
-                    "Overridden by the current setup. "
-                    "Change it in the setup settings."
+                    "Overridden by the current layer. "
+                    "Change it in the layer settings."
                 )
             )
         else:

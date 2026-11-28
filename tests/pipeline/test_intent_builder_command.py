@@ -56,7 +56,7 @@ class _CommandLikeStep(Step):
 
 def _make_doc(*items) -> Doc:
     doc = Doc()
-    layer = doc.active_setup
+    layer = doc.active_layer
     wf = layer.workflows[0]
     assert wf is not None
     for item in items:

@@ -93,7 +93,7 @@ def test_workpiece_from_barcode():
     asset = BarcodeAsset(content="hello", module_mm=0.5)
     doc.add_asset(asset)
     wp = WorkPiece.from_geometry_provider(asset)
-    doc.active_setup.add_child(wp)
+    doc.active_layer.add_child(wp)
     assert wp.size == pytest.approx((10.5, 10.5))
     assert cast(BarcodeAsset, wp.get_geometry_provider()) is asset
     assert wp.boundaries is not None
@@ -108,7 +108,7 @@ def test_document_round_trip():
     asset = BarcodeAsset(content="hello", symbology=Symbology.QR)
     doc.add_asset(asset)
     wp = WorkPiece.from_geometry_provider(asset)
-    doc.active_setup.add_child(wp)
+    doc.active_layer.add_child(wp)
     restored = Doc.from_dict(doc.to_dict())
     (restored_wp,) = restored.all_workpieces
     provider = restored_wp.get_geometry_provider()
@@ -123,9 +123,9 @@ def test_counter_offsets_and_save_load():
     asset = BarcodeAsset(content="{counter}", symbology=Symbology.CODE128)
     doc.add_asset(asset)
     first = WorkPiece.from_geometry_provider(asset)
-    doc.active_setup.add_child(first)
+    doc.active_layer.add_child(first)
     second = WorkPiece.from_geometry_provider(asset)
-    doc.active_setup.add_child(second)
+    doc.active_layer.add_child(second)
 
     assert first.variable_offset == 0
     assert second.variable_offset == 1

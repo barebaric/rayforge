@@ -33,7 +33,7 @@ from .varset import SpeedVar, VarSet
 if TYPE_CHECKING:
     from ..context import RayforgeContext
     from ..machine.models.machine import Machine
-    from .setup import Setup
+    from .layer import Layer
     from .workflow import Workflow
     from .workpiece import WorkPiece
 
@@ -79,8 +79,8 @@ class Step(VisibleMixin, ABC):
     ASSEMBLER_NAME: ClassVar[str] = ""
     uses_global_state: ClassVar[bool] = False
 
-    #: Whether this step kind operates on the setup's workpieces.
-    #: Geometry-less steps (e.g. the Command step) run once per setup
+    #: Whether this step kind operates on the layer's workpieces.
+    #: Geometry-less steps (e.g. the Command step) run once per layer
     #: at their workflow position instead of once per workpiece; the
     #: intent builder gives them a single compute node with no
     #: workpiece markers.
@@ -413,7 +413,7 @@ class Step(VisibleMixin, ABC):
         for the single compute node of a geometry-less step
         (``needs_workpieces == False``).
 
-        Such steps run once per setup at their workflow position and
+        Such steps run once per layer at their workflow position and
         have no workpiece context; the default returns an empty part
         and a bare :class:`ContourSpec` payload. Geometry-less step
         kinds override this with their own assembler (see
@@ -552,7 +552,7 @@ class Step(VisibleMixin, ABC):
         """
         Image edits that an older file stored as a setting of this step.
         They are handed over once, after the document is loaded, to the
-        workpieces of the step's setup; later calls return nothing.
+        workpieces of the step's layer; later calls return nothing.
         """
         return []
 
@@ -766,17 +766,17 @@ class Step(VisibleMixin, ABC):
         return self._original_step_type
 
     @property
-    def setup(self) -> Optional["Setup"]:
-        """Returns the parent setup, if it exists."""
+    def layer(self) -> Optional["Layer"]:
+        """Returns the parent layer, if it exists."""
         # Local import to prevent circular dependency at module load time
-        from .setup import Setup
+        from .layer import Layer
 
         workflow = self.workflow
         if not workflow:
             return None
 
-        setup = workflow.parent
-        return setup if isinstance(setup, Setup) else None
+        layer = workflow.parent
+        return layer if isinstance(layer, Layer) else None
 
     @property
     def workflow(self) -> Optional["Workflow"]:
@@ -838,7 +838,7 @@ class Step(VisibleMixin, ABC):
     def set_workpiece_uids(self, uids: list[str]):
         """
         Sets the workpieces this step applies to (empty means all of
-        the setup's workpieces) and notifies listeners of the change.
+        the layer's workpieces) and notifies listeners of the change.
         """
         normalized = list(dict.fromkeys(uids))
         if self.workpiece_uids == normalized:

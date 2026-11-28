@@ -1,0 +1,288 @@
+from __future__ import annotations
+
+import logging
+from gettext import gettext as _
+from typing import TYPE_CHECKING
+
+from ..context import get_context
+from ..core.group import Group
+from ..core.item import DocItem
+from ..core.layer import Layer
+from ..core.undo import (
+    ChangePropertyCommand,
+    Command,
+)
+from ..core.undo.list_cmd import ReorderListCommand
+from ..core.workpiece import WorkPiece
+
+if TYPE_CHECKING:
+    from ..ui_gtk.canvas2d.surface import WorkSurface
+    from .editor import DocEditor
+
+logger = logging.getLogger(__name__)
+
+
+class MoveItemsLayerCommand(Command):
+    """
+    An undoable command to move one or more DocItems (workpieces or
+    groups) to a different layer.
+    """
+
+    def __init__(
+        self,
+        items: list[DocItem] | list[WorkPiece],
+        new_layer: Layer,
+        old_layer: Layer,
+        name: str | None = None,
+    ):
+        super().__init__(name)
+        self.items = list(items)
+        self.new_layer = new_layer
+        self.old_layer = old_layer
+        if not name:
+            self.name = _("Move to another layer")
+
+    def _move(self, from_layer: Layer, to_layer: Layer):
+        for item in self.items:
+            to_layer.add_child(item)
+
+    def execute(self):
+        self._move(self.old_layer, self.new_layer)
+
+    def undo(self):
+        self._move(self.new_layer, self.old_layer)
+
+
+class AddLayerAndSetActiveCommand(Command):
+    """
+    An undoable command to add a new layer and set it as the active
+    layer.
+    """
+
+    def __init__(
+        self,
+        editor: DocEditor,
+        new_layer: Layer | None = None,
+        name: str = "Add layer",
+    ):
+        super().__init__(name=name)
+        self._editor = editor
+        self.new_layer = new_layer or self._create_default_layer()
+        self._old_active_setup: Layer | None = None
+
+    def _create_default_layer(self) -> Layer:
+        """Creates a new layer with a default, unique name."""
+        base_name = _("Layer")
+        existing_names = {layer.name for layer in self._editor.doc.layers}
+        highest_num = 0
+        for name in existing_names:
+            if name.startswith(base_name):
+                try:
+                    num_part = name[len(base_name) :].strip()
+                    if num_part.isdigit():
+                        highest_num = max(highest_num, int(num_part))
+                except ValueError:
+                    continue  # Ignore names that don't parse correctly
+
+        new_name = f"{base_name} {highest_num + 1}"
+        layer = Layer(name=new_name)
+        material = get_context().material_mgr.get_default_material()
+        if material is not None:
+            layer.set_stock_material_uid(material.uid)
+        return layer
+
+    def execute(self):
+        """Adds the layer and makes it active."""
+        self._old_active_setup = self._editor.doc.active_layer
+        new_list = self._editor.doc.layers + [self.new_layer]
+        cmd = ReorderListCommand(
+            target_obj=self._editor.doc,
+            list_property_name="layers",
+            new_list=new_list,
+            setter_method_name="set_layers",
+        )
+        cmd.execute()
+        self._editor.doc.active_layer = self.new_layer
+
+    def undo(self):
+        """Removes the layer and restores the previous active layer."""
+        new_list = [
+            s for s in self._editor.doc.layers if s is not self.new_layer
+        ]
+        cmd = ReorderListCommand(
+            target_obj=self._editor.doc,
+            list_property_name="layers",
+            new_list=new_list,
+            setter_method_name="set_layers",
+        )
+        cmd.execute()
+        if self._old_active_setup in self._editor.doc.layers:
+            self._editor.doc.active_layer = self._old_active_setup
+
+
+class LayerCmd:
+    """Handles commands related to layer manipulation."""
+
+    def __init__(self, editor: DocEditor):
+        self._editor = editor
+
+    def set_active_layer(self, layer: Layer):
+        """Sets the active layer."""
+        if self._editor.doc.active_layer is layer:
+            return
+        old_layer = self._editor.doc.active_layer
+        cmd = ChangePropertyCommand(
+            target=self._editor.doc,
+            property_name="active_layer",
+            new_value=layer,
+            old_value=old_layer,
+            name=_("Set active layer"),
+        )
+        self._editor.history_manager.execute(cmd)
+
+    def add_layer_and_set_active(self, new_layer: Layer | None = None):
+        """Adds a new layer to the document and sets it as active."""
+        cmd = AddLayerAndSetActiveCommand(self._editor, new_layer)
+        self._editor.history_manager.execute(cmd)
+
+    def rename_layer(self, layer: Layer, new_name: str):
+        """Renames a layer with an undoable command."""
+        if new_name == layer.name:
+            return
+        cmd = ChangePropertyCommand(
+            target=layer,
+            property_name="name",
+            new_value=new_name,
+            setter_method_name="set_name",
+            name=_("Rename layer"),
+        )
+        self._editor.history_manager.execute(cmd)
+
+    def set_layer_stock_material(self, layer: Layer, material_uid: str | None):
+        """Sets a layer's rotary stock material with an undoable
+        command."""
+        if material_uid == layer.stock_material_uid:
+            return
+        cmd = ChangePropertyCommand(
+            target=layer,
+            property_name="stock_material_uid",
+            new_value=material_uid,
+            setter_method_name="set_stock_material_uid",
+            name=_("Change layer stock material"),
+        )
+        self._editor.history_manager.execute(cmd)
+
+    def delete_layer(self, layer: Layer):
+        """Deletes a layer with an undoable command."""
+        new_list = [s for s in self._editor.doc.layers if s is not layer]
+        cmd = ReorderListCommand(
+            target_obj=self._editor.doc,
+            list_property_name="layers",
+            new_list=new_list,
+            setter_method_name="set_layers",
+            name=_("Remove layer '{name}'").format(name=layer.name),
+        )
+        self._editor.history_manager.execute(cmd)
+
+    def reorder_layers(self, new_order: list[Layer]):
+        """Reorders layers with an undoable command."""
+        cmd = ReorderListCommand(
+            target_obj=self._editor.doc,
+            list_property_name="layers",
+            new_list=new_order,
+            setter_method_name="set_layers",
+        )
+        self._editor.history_manager.execute(cmd)
+
+    def move_selected_to_adjacent_layer(
+        self, surface: WorkSurface, direction: int
+    ):
+        """
+        Creates an undoable command to move selected workpieces to the
+        next or previous layer, preserving the selection.
+
+        Args:
+            surface: The WorkSurface instance containing the selection.
+            direction: 1 for the next layer, -1 for the previous.
+        """
+        selected_wps = surface.get_selected_workpieces()
+        if not selected_wps:
+            return
+
+        doc = self._editor.doc
+        layers = list(doc.layers)
+
+        if len(layers) <= 1:
+            # Not enough layers to move between.
+            return
+
+        # Assume all selected workpieces are on the same layer, which is
+        # a reasonable constraint for this operation.
+        current_layer = selected_wps[0].layer
+        if not current_layer:
+            return
+
+        try:
+            current_index = layers.index(current_layer)
+
+            # Wrap around the layer list.
+            new_index = (current_index + direction + len(layers)) % len(layers)
+            new_layer = layers[new_index]
+
+            # 1. Create the model-only command.
+            cmd = MoveItemsLayerCommand(selected_wps, new_layer, current_layer)
+
+            # 2. Execute the command. The history manager updates the
+            #    model, which triggers signals that cause the UI to
+            #    destructively rebuild the moved elements in the new
+            #    layer element.
+            self._editor.history_manager.execute(cmd)
+
+            # 3. After the model and UI have been updated, explicitly
+            #    re-apply the selection to the newly created UI elements.
+            surface.select_items(selected_wps)
+
+        except ValueError:
+            logger.warning(
+                f"Layer '{current_layer.name}' not found in document's "
+                "layer list."
+            )
+
+    def move_items_to_layer(self, items: list[DocItem], target_layer: Layer):
+        """Creates an undoable command to move items to a specific
+        layer."""
+        if not items:
+            return
+
+        by_layer: dict[Layer, list[DocItem]] = {}
+        for item in items:
+            if isinstance(item, (WorkPiece, Group)):
+                layer = item.layer
+            else:
+                continue
+            if not layer or layer is target_layer:
+                continue
+            by_layer.setdefault(layer, []).append(item)
+
+        if not by_layer:
+            return
+
+        history = self._editor.history_manager
+        with history.transaction(_("Move to another layer")) as t:
+            for source_layer, setup_items in by_layer.items():
+                cmd = MoveItemsLayerCommand(
+                    setup_items, target_layer, source_layer
+                )
+                t.execute(cmd)
+
+    def reorder_content_items(self, layer: Layer, new_order: list[DocItem]):
+        """Reorders content items within a layer with an undoable
+        command."""
+        cmd = ReorderListCommand(
+            target_obj=layer,
+            list_property_name="content_items",
+            new_list=new_order,
+            setter_method_name="reorder_content_items",
+            name=_("Reorder items"),
+        )
+        self._editor.history_manager.execute(cmd)

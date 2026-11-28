@@ -20,7 +20,7 @@ from raygeo.ops.state import AirAssistMode
 from raygeo.ops.types import RasterMode, SectionType
 
 from rayforge.core.doc import Doc
-from rayforge.core.setup import Setup
+from rayforge.core.layer import Layer
 from rayforge.core.step import Step
 from rayforge.machine.driver.ruidarpa.rpa_encoder import RuidaRPAEncoder
 from rayforge.machine.models.laser import Laser
@@ -66,31 +66,31 @@ def build_representative_job():
     a linearized arc, a scan line, and per-op settings.
     """
     doc = Doc()
-    cut_setup = doc.setups[0]
-    cut_setup.set_name("Cut")
-    doc.add_setup(Setup("Engrave"))
-    doc.add_setup(Setup("Default"))
-    engrave_setup = doc.setups[1]
-    default_setup = doc.setups[2]
-    cut_setup.workflows[0].name = "Cut"
-    engrave_setup.workflows[0].name = "Engrave"
-    default_setup.workflows[0].name = "Default"
-    cut_setup.workflows[0].set_color("#ff6600")
-    engrave_setup.workflows[0].set_color("#33cc33")
-    default_setup.workflows[0].set_color("#00ccff")
+    cut_layer = doc.layers[0]
+    cut_layer.set_name("Cut")
+    doc.add_layer(Layer("Engrave"))
+    doc.add_layer(Layer("Default"))
+    engrave_layer = doc.layers[1]
+    default_layer = doc.layers[2]
+    cut_layer.workflows[0].name = "Cut"
+    engrave_layer.workflows[0].name = "Engrave"
+    default_layer.workflows[0].name = "Default"
+    cut_layer.workflows[0].set_color("#ff6600")
+    engrave_layer.workflows[0].set_color("#33cc33")
+    default_layer.workflows[0].set_color("#00ccff")
 
     cut_step = CutStep()
     cut_step.power = 0.5
     cut_step.cut_speed = 300
     cut_step.frequency = 20000
-    cut_workflow = cut_setup.workflows[0]
+    cut_workflow = cut_layer.workflows[0]
     cut_workflow.add_step(cut_step)
 
     engrave_step = CutStep()
     engrave_step.power = 0.5  # 50%
     engrave_step.cut_speed = 150
     engrave_step.frequency = 30000
-    engrave_workflow = engrave_setup.workflows[0]
+    engrave_workflow = engrave_layer.workflows[0]
     engrave_workflow.add_step(engrave_step)
 
     ops = Ops()
@@ -98,7 +98,7 @@ def build_representative_job():
 
     # Layer 0: Cut — vector outline, per-op settings, near move/cut,
     # arc, air assist.
-    layer0 = cut_setup.workflows[0].uid
+    layer0 = cut_layer.workflows[0].uid
     ops.layer_start(layer_uid=layer0)
     ops.workpiece_start("wp-0")
     ops.ops_section_start(SectionType.VECTOR_OUTLINE, "wp-0")
@@ -118,7 +118,7 @@ def build_representative_job():
 
     # Layer 1: Engrave — image section, low-power pass-through, far
     # move/cut, scan line.
-    layer1 = engrave_setup.workflows[0].uid
+    layer1 = engrave_layer.workflows[0].uid
     ops.layer_start(layer_uid=layer1)
     ops.workpiece_start("wp-1")
     ops.ops_section_start(
@@ -140,7 +140,7 @@ def build_representative_job():
 
     # Layer 2: Default — vector outline, no workflow steps, encoder
     # defaults apply.
-    layer2 = default_setup.workflows[0].uid
+    layer2 = default_layer.workflows[0].uid
     ops.layer_start(layer_uid=layer2)
     ops.workpiece_start("wp-2")
     ops.ops_section_start(SectionType.VECTOR_OUTLINE, "wp-2")

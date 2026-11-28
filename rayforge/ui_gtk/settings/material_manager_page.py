@@ -42,7 +42,7 @@ class MaterialManagerPage(TrackedPreferencesPage):
         )
         self.default_material_row = MaterialRow(
             _("Default Stock Material"),
-            _("Material used when a new stock or rotary setup is created"),
+            _("Material used when a new stock or rotary layer is created"),
             on_select=self._on_default_material_selected,
         )
         config = get_context().config

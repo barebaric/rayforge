@@ -166,8 +166,8 @@ class ThemeColorService:
         if self._color_set is None or self._doc is None:
             return {}
         layer_color_sets: dict[str, ColorSet] = {}
-        for setup in self._doc.setups:
-            for workflow in setup.workflows:
+        for layer in self._doc.layers:
+            for workflow in layer.workflows:
                 cut_rgba = hex_to_rgba(workflow.color)
                 cut_lut = create_lut_from_color(cut_rgba)
                 data = {

@@ -1,4 +1,4 @@
-"""A dialog that asks which setups a job should run."""
+"""A dialog that asks which layers a job should run."""
 
 from gettext import gettext as _
 
@@ -8,11 +8,11 @@ from gi.repository import Gtk
 from ...core.doc import Doc
 
 
-class SetupRunDialog(Gtk.Dialog):
-    """Lists the document's setups with a checkbox each.
+class LayerRunDialog(Gtk.Dialog):
+    """Lists the document's layers with a checkbox each.
 
-    Multi-setup documents run one physical configuration at a time, so
-    Start Job asks which setups to include. The checked setups' uids
+    Multi-layer documents run one physical configuration at a time, so
+    Start Job asks which layers to include. The checked layers' uids
     are reported via :attr:`run_requested`; cancelling reports
     :attr:`cancelled`.
     """
@@ -32,8 +32,8 @@ class SetupRunDialog(Gtk.Dialog):
         content.set_spacing(6)
         intro = Gtk.Label(
             label=_(
-                "This document has multiple setups. Choose which ones "
-                "to run; you change the physical setup between jobs."
+                "This document has multiple layers. Choose which ones "
+                "to run; you change the physical layer between jobs."
             ),
             wrap=True,
             xalign=0,
@@ -42,17 +42,17 @@ class SetupRunDialog(Gtk.Dialog):
         content.append(intro)
 
         self._checks: list[tuple[str, Gtk.CheckButton]] = []
-        for setup in doc.setups:
-            check = Gtk.CheckButton(label=setup.name, active=True)
+        for layer in doc.layers:
+            check = Gtk.CheckButton(label=layer.name, active=True)
             content.append(check)
-            self._checks.append((setup.uid, check))
+            self._checks.append((layer.uid, check))
 
         self.connect("response", self._on_response)
 
     def _on_response(self, dialog, response):
         if response == Gtk.ResponseType.OK:
             uids = [uid for uid, check in self._checks if check.get_active()]
-            self.run_requested.send(self, setup_uids=uids)
+            self.run_requested.send(self, layer_uids=uids)
         else:
             self.cancelled.send(self)
         self.destroy()

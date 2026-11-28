@@ -8,7 +8,7 @@ layers, with correct positions, and that everything is undoable.
 
 import pytest
 
-from rayforge.core.setup import Setup
+from rayforge.core.layer import Layer
 from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.array import (
     ArrayMode,
@@ -35,14 +35,14 @@ def multilayer_selection(doc_editor):
     (size 10x10 at origin). Both are top-level and span two layers,
     which is the core scenario for the array tool.
     """
-    layer_a = doc_editor.doc.active_setup
+    layer_a = doc_editor.doc.active_layer
     layer_a.set_name("Layer A")
     wp_a = WorkPiece(name="wp_a")
     wp_a.set_size(10, 10)
     wp_a.pos = (0, 0)
     layer_a.add_child(wp_a)
 
-    layer_b = Setup(name="Layer B")
+    layer_b = Layer(name="Layer B")
     doc_editor.doc.add_child(layer_b)
     wp_b = WorkPiece(name="wp_b")
     wp_b.set_size(10, 10)
@@ -229,7 +229,7 @@ def test_compute_plan_is_pure(array_cmd, multilayer_selection):
 def test_array_copies_get_increasing_offsets(array_cmd, doc_editor):
     source = WorkPiece(name="source")
     source.set_size(10, 10)
-    doc_editor.doc.active_setup.add_child(source)
+    doc_editor.doc.active_layer.add_child(source)
     params = ArrayParams(
         mode=ArrayMode.GRID,
         grid=GridArrayParams(

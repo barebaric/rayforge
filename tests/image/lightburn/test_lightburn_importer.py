@@ -7,7 +7,7 @@ from typing import Any, cast
 import pytest
 from raygeo.geo import Matrix
 
-from rayforge.core.setup import Setup
+from rayforge.core.layer import Layer
 from rayforge.core.step_registry import step_registry
 from rayforge.core.vectorization_spec import (
     LayerImportMode,
@@ -821,7 +821,7 @@ class TestApplySettingsDispatch:
     def test_image_layer_creates_engrave_step(self):
         contour_cls, engrave_cls = self._step_classes()
 
-        layer = Setup(name="img")
+        layer = Layer(name="img")
         ItemAssembler.apply_settings_to_workflow(
             layer.workflows[0],
             "img",
@@ -853,7 +853,7 @@ class TestApplySettingsDispatch:
     def test_vector_layer_creates_contour_step(self):
         contour_cls, engrave_cls = self._step_classes()
 
-        layer = Setup(name="cut")
+        layer = Layer(name="cut")
         ItemAssembler.apply_settings_to_workflow(
             layer.workflows[0],
             "cut",
@@ -877,7 +877,7 @@ class TestApplySettingsDispatch:
         # be tolerated on image layers without crashing.
         _contour_cls, engrave_cls = self._step_classes()
 
-        layer = Setup(name="img")
+        layer = Layer(name="img")
         ItemAssembler.apply_settings_to_workflow(
             layer.workflows[0],
             "img",

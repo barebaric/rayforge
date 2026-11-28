@@ -21,7 +21,7 @@ from rayforge.ui_gtk.doceditor.step_settings.pages.workpieces import (
 def attached_step(editor):
     """A step on the editor's active layer, with two workpieces."""
     step = Step(typelabel="Fake", name="fake")
-    layer = editor.doc.active_setup
+    layer = editor.doc.active_layer
     layer.workflows[0].add_step(step)
     wp_a = WorkPiece(name="wp-a")
     wp_b = WorkPiece(name="wp-b")

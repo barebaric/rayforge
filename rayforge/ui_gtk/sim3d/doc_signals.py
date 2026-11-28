@@ -2,7 +2,7 @@
 Document/model signal hub for the 3D canvas.
 
 Owns the machine and document signal subscriptions, the viewport (re)build
-on WCS/setup changes, and the active-setup WCS tracking.  The canvas asks
+on WCS/layer changes, and the active-layer WCS tracking.  The canvas asks
 the hub to refresh the viewport through callbacks and keeps scene
 compilation out of this module.
 """
@@ -44,7 +44,7 @@ class DocSignalHub:
         self._refresh_scene = refresh_scene
         self._get_gl_initialized = get_gl_initialized
 
-        self._active_setup_wcs_conn = None
+        self._active_layer_wcs_conn = None
         self._cached_has_z_axis: bool | None = None
 
     @property
@@ -59,9 +59,9 @@ class DocSignalHub:
 
     @property
     def rotary_enabled(self) -> bool:
-        """Returns True if the active setup has rotary mode enabled."""
-        if self.doc and self.doc.active_setup:
-            return self.doc.active_setup.rotary_enabled
+        """Returns True if the active layer has rotary mode enabled."""
+        if self.doc and self.doc.active_layer:
+            return self.doc.active_layer.rotary_enabled
         return False
 
     def connect(self):
@@ -72,13 +72,13 @@ class DocSignalHub:
             machine.changed.connect(self._on_wcs_updated)
             self._on_wcs_updated(machine)
 
-        self.doc.active_setup_changed.connect(self._on_active_setup_changed)
-        self._connect_active_setup_wcs()
+        self.doc.active_layer_changed.connect(self._on_active_layer_changed)
+        self._connect_active_layer_wcs()
 
     def disconnect(self):
         """Unsubscribe from the machine and doc signals."""
-        self._disconnect_active_setup_wcs()
-        self.doc.active_setup_changed.disconnect(self._on_active_setup_changed)
+        self._disconnect_active_layer_wcs()
+        self.doc.active_layer_changed.disconnect(self._on_active_layer_changed)
 
         machine = self._context.machine
         if machine:
@@ -127,46 +127,46 @@ class DocSignalHub:
         self._mark_scene_dirty()
         self._request_render()
 
-    def _get_active_setup_wcs_offset(self, machine: "Machine"):
-        """Returns the WCS offset for the active setup."""
-        layer = self.doc.active_setup if self.doc else None
+    def _get_active_layer_wcs_offset(self, machine: "Machine"):
+        """Returns the WCS offset for the active layer."""
+        layer = self.doc.active_layer if self.doc else None
         if layer and layer.wcs:
             return machine.get_wcs_offset(layer.wcs)
         return machine.get_active_wcs_offset()
 
     def _build_viewport(self, machine: "Machine") -> "ViewportConfig":
-        """Build a ViewportConfig using the active setup's WCS."""
+        """Build a ViewportConfig using the active layer's WCS."""
         from .viewport import ViewportConfig
 
         return ViewportConfig.from_machine_with_wcs(
-            machine, self._get_active_setup_wcs_offset(machine)
+            machine, self._get_active_layer_wcs_offset(machine)
         )
 
-    def _connect_active_setup_wcs(self):
-        """Connect to the active setup's updated signal for WCS changes."""
-        self._disconnect_active_setup_wcs()
+    def _connect_active_layer_wcs(self):
+        """Connect to the active layer's updated signal for WCS changes."""
+        self._disconnect_active_layer_wcs()
 
-        layer = self.doc.active_setup
+        layer = self.doc.active_layer
         if layer:
-            self._active_setup_wcs_conn = layer.updated.connect(
-                self._on_active_setup_updated
+            self._active_layer_wcs_conn = layer.updated.connect(
+                self._on_active_layer_updated
             )
 
-    def _disconnect_active_setup_wcs(self):
+    def _disconnect_active_layer_wcs(self):
         """Disconnect the active layer's updated signal."""
-        if self._active_setup_wcs_conn is not None:
-            old_layer = self.doc.active_setup
-            old_layer.updated.disconnect(self._active_setup_wcs_conn)
-            self._active_setup_wcs_conn = None
+        if self._active_layer_wcs_conn is not None:
+            old_layer = self.doc.active_layer
+            old_layer.updated.disconnect(self._active_layer_wcs_conn)
+            self._active_layer_wcs_conn = None
 
-    def _on_active_setup_changed(self, sender):
+    def _on_active_layer_changed(self, sender):
         """Reconnect WCS tracking to the new active layer."""
-        self._connect_active_setup_wcs()
+        self._connect_active_layer_wcs()
         machine = self._context.machine
         if machine:
             self._on_wcs_updated(machine)
 
-    def _on_active_setup_updated(self, layer):
+    def _on_active_layer_updated(self, layer):
         """Handle property changes on the active layer, including WCS."""
         machine = self._context.machine
         if machine:

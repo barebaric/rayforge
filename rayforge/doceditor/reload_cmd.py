@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any
 from raygeo.geo import Geometry, Matrix
 
 from ..core.item import DocItem
-from ..core.setup import Setup
+from ..core.layer import Layer
 from ..core.source_asset import SourceAsset
 from ..core.source_asset_segment import SourceAssetSegment
 from ..core.tab import Tab
@@ -650,7 +650,7 @@ class ReloadCmd:
         new_workflows = []
         workflow_pairs = []
         for owner, source_layer, wp in plan.new_workflows:
-            if not isinstance(owner, Setup):
+            if not isinstance(owner, Layer):
                 continue
             workflow = self._editor.workflow.create_for_source_layer(
                 owner, source_layer, [wp]

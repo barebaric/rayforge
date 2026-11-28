@@ -8,7 +8,7 @@ from raygeo.geo import Matrix
 
 from ..core.group import Group, GroupingResult
 from ..core.item import DocItem
-from ..core.setup import Setup
+from ..core.layer import Layer
 from ..core.undo.command import Command
 
 if TYPE_CHECKING:
@@ -26,14 +26,14 @@ class _CreateGroupCommand(Command):
 
     def __init__(
         self,
-        setup: Setup,
+        layer: Layer,
         items_to_group: list[DocItem],
         pipeline: "Pipeline",
         name: str = "Group Items",
         precalculated_result: GroupingResult | None = None,
     ):
         super().__init__(name)
-        self.setup = setup
+        self.layer = layer
         self.items_to_group = list(items_to_group)
         self.pipeline = pipeline
         self.new_group: Group | None = None
@@ -59,7 +59,7 @@ class _CreateGroupCommand(Command):
         # add/remove signals during the model mutation.
         with self.pipeline.paused():
             self.new_group = result.new_group
-            self.setup.add_child(self.new_group)
+            self.layer.add_child(self.new_group)
 
             # --- Bulk Reparenting to Prevent Signal Storm ---
             # 1. Group items by their original parent.
@@ -104,7 +104,7 @@ class _CreateGroupCommand(Command):
                 item.matrix = self._original_matrices[item.uid]
 
             # 5. Finally, remove the now-empty group.
-            self.setup.remove_child(self.new_group)
+            self.layer.remove_child(self.new_group)
 
 
 class _UngroupCommand(Command):
@@ -230,7 +230,7 @@ class GroupCmd:
         self._editor = editor
         self._task_manager = task_manager
 
-    def group_items(self, setup: Setup, items_to_group: list[DocItem]):
+    def group_items(self, layer: Layer, items_to_group: list[DocItem]):
         """
         Creates and executes an undoable command to group items. This operation
         runs as a background task.
@@ -246,7 +246,7 @@ class GroupCmd:
             context.flush()
             await asyncio.sleep(0.01)
 
-            result = Group.create_from_items(items_to_group, setup)
+            result = Group.create_from_items(items_to_group, layer)
 
             context.set_progress(1.0)
             return result
@@ -265,7 +265,7 @@ class GroupCmd:
                     return
 
                 command = _CreateGroupCommand(
-                    setup=setup,
+                    layer=layer,
                     items_to_group=items_to_group,
                     pipeline=self._editor.pipeline,
                     precalculated_result=result,

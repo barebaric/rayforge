@@ -241,11 +241,11 @@ class LayoutCmd:
         """Determine items to layout based on selection context."""
         if not selected_items:
             # If nothing is selected, get all top-level content items from
-            # the current active setup only.
+            # the current active layer only.
             items_to_layout = []
-            active_setup = self._editor.doc.active_setup
-            if active_setup:
-                items_to_layout.extend(active_setup.get_content_items())
+            active_layer = self._editor.doc.active_layer
+            if active_layer:
+                items_to_layout.extend(active_layer.get_content_items())
         else:
             # For any selection, only pack the top-level selected items.
             # E.g., if a group and its child are both selected, only pack the

@@ -24,7 +24,7 @@ def _zero_debounce(zero_debounce_delay):
 @pytest.fixture
 def doc():
     d = Doc()
-    active_layer = d.active_setup
+    active_layer = d.active_layer
     active_layer.workflows[0].set_steps([])
     return d
 
@@ -61,8 +61,8 @@ class TestPipelineContextIntegration:
         workpiece.source_segment = gen_config
         workpiece.set_size(50, 30)
         workpiece.pos = 10, 20
-        doc.active_setup.add_workpiece(workpiece)
-        return doc.active_setup
+        doc.active_layer.add_workpiece(workpiece)
+        return doc.active_layer
 
     def test_pipeline_creates_initial_generation(self, doc, mock_task_mgr):
         """Test that pipeline creation sets up an initial generation ID."""

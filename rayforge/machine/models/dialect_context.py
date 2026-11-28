@@ -6,7 +6,7 @@ from raygeo.geo.types import Point3D, Rect
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
-    from ...core.setup import Setup
+    from ...core.layer import Layer
     from ...core.workpiece import WorkPiece
     from ...machine.models.machine import Machine
 
@@ -26,14 +26,14 @@ class GcodeContext:
     doc: "Doc"
     job: JobInfo
     # Assigning default values makes these fields optional in the constructor
-    setup: Optional["Setup"] = None
+    layer: Optional["Layer"] = None
     workpiece: Optional["WorkPiece"] = None
 
     @property
     def wcs_offset(self) -> Point3D:
-        """The (x, y, z) offset for the current setup's effective WCS."""
-        if self.setup:
-            effective_wcs = self.setup.get_effective_wcs(self.machine)
+        """The (x, y, z) offset for the current layer's effective WCS."""
+        if self.layer:
+            effective_wcs = self.layer.get_effective_wcs(self.machine)
             return self.machine.get_job_wcs_offset(
                 self.machine.get_wcs_offset(effective_wcs)
             )
@@ -43,9 +43,9 @@ class GcodeContext:
 
     @property
     def wcs_name(self) -> str:
-        """The name of the current setup's effective WCS (e.g., 'G54')."""
-        if self.setup:
-            return self.setup.get_effective_wcs(self.machine)
+        """The name of the current layer's effective WCS (e.g., 'G54')."""
+        if self.layer:
+            return self.layer.get_effective_wcs(self.machine)
         return self.machine.active_wcs
 
     # --- Static Variable Documentation ---

@@ -11,7 +11,7 @@ from ...context import get_context
 from ...core.color import ColorRGBA, hex_to_rgba
 from ...core.group import Group
 from ...core.item import DocItem
-from ...core.setup import Setup
+from ...core.layer import Layer
 from ...core.stock import StockItem
 from ...core.stock_asset import StockAsset
 from ...core.workpiece import WorkPiece
@@ -29,8 +29,8 @@ from .elements.axis_extent_frame import (
 from .elements.camera_image import CameraImageElement
 from .elements.dot import DotElement
 from .elements.group import GroupElement
+from .elements.layer import LayerElement
 from .elements.nogo_zone import NogoZoneElement
-from .elements.setup import SetupElement
 from .elements.stock import StockElement
 from .elements.tab_handle import TabHandleElement
 from .elements.work_origin import WorkOriginElement
@@ -213,8 +213,8 @@ class WorkSurface(WorldSurface):
 
         self.editor.pipeline.data_stale.connect(self._on_pipeline_data_stale)
 
-        self._active_setup_wcs_conn = None
-        self._connected_setup = None
+        self._active_layer_wcs_conn = None
+        self._connected_layer = None
         self._connected_doc = None
         self._connect_doc_signals()
 
@@ -525,18 +525,18 @@ class WorkSurface(WorldSurface):
         if not doc:
             return
         doc.history_manager.changed.connect(self._on_history_changed)
-        doc.active_setup_changed.connect(self._on_active_setup_changed)
+        doc.active_layer_changed.connect(self._on_active_layer_changed)
         doc.descendant_added.connect(self._on_doc_structure_changed)
         doc.descendant_removed.connect(self._on_doc_structure_changed)
-        self._connect_active_setup_wcs()
+        self._connect_active_layer_wcs()
         self._connected_doc = doc
 
     def _disconnect_doc_signals(self):
-        self._disconnect_active_setup_wcs()
+        self._disconnect_active_layer_wcs()
         doc = self._connected_doc
         if doc:
             doc.history_manager.changed.disconnect(self._on_history_changed)
-            doc.active_setup_changed.disconnect(self._on_active_setup_changed)
+            doc.active_layer_changed.disconnect(self._on_active_layer_changed)
             doc.descendant_added.disconnect(self._on_doc_structure_changed)
             doc.descendant_removed.disconnect(self._on_doc_structure_changed)
             self._connected_doc = None
@@ -745,14 +745,14 @@ class WorkSurface(WorldSurface):
                     )
                     return
 
-        # After the click, check if the active element dictates a setup
+        # After the click, check if the active element dictates a layer
         # change.
         if new_context and isinstance(new_context.data, WorkPiece):
-            active_setup = new_context.data.setup
-            # If the workpiece's setup is not the document's active setup,
+            active_layer = new_context.data.layer
+            # If the workpiece's layer is not the document's active layer,
             # create an undoable command to change it.
-            if active_setup and active_setup != self.doc.active_setup:
-                self.editor.setup.set_active_setup(active_setup)
+            if active_layer and active_layer != self.doc.active_layer:
+                self.editor.layer.set_active_layer(active_layer)
 
     def on_motion(self, gesture: Gtk.Gesture, x: float, y: float) -> None:
         if self._click_to_zero_mode or self._move_head_mode:
@@ -815,7 +815,7 @@ class WorkSurface(WorldSurface):
                 *panel.get_workarea_origin_in_machine()
             )
         else:
-            wcs_x, wcs_y, _ = self._get_active_setup_wcs_offset()
+            wcs_x, wcs_y, _ = self._get_active_layer_wcs_offset()
             canvas_x, canvas_y = self._machine_coords_to_canvas(wcs_x, wcs_y)
 
         self._work_origin_element.set_pos(canvas_x, canvas_y)
@@ -824,55 +824,55 @@ class WorkSurface(WorldSurface):
         self.queue_draw()
 
     def _is_rotary_active(self):
-        """Returns True if the active setup has rotary mode enabled."""
+        """Returns True if the active layer has rotary mode enabled."""
         return (
             self.doc is not None
-            and self.doc.active_setup is not None
-            and self.doc.active_setup.rotary_enabled
+            and self.doc.active_layer is not None
+            and self.doc.active_layer.rotary_enabled
         )
 
-    def _get_active_setup_wcs_offset(self):
+    def _get_active_layer_wcs_offset(self):
         """
-        Returns the WCS offset for the active setup.
+        Returns the WCS offset for the active layer.
 
-        If the active setup has a specific WCS, uses that. Otherwise
+        If the active layer has a specific WCS, uses that. Otherwise
         falls back to the machine's active WCS.
         """
         if self.machine and self.doc:
-            setup = self.doc.active_setup
-            if setup and setup.wcs:
-                return self.machine.get_wcs_offset(setup.wcs)
+            layer = self.doc.active_layer
+            if layer and layer.wcs:
+                return self.machine.get_wcs_offset(layer.wcs)
         if self.machine:
             return self.machine.get_active_wcs_offset()
         return (0.0, 0.0, 0.0)
 
-    def _connect_active_setup_wcs(self):
-        """Connect to the active setup's updated signal for WCS changes."""
-        self._disconnect_active_setup_wcs()
-        setup = self.doc.active_setup if self.doc else None
-        if setup:
-            self._active_setup_wcs_conn = setup.updated.connect(
-                self._on_active_setup_updated
+    def _connect_active_layer_wcs(self):
+        """Connect to the active layer's updated signal for WCS changes."""
+        self._disconnect_active_layer_wcs()
+        layer = self.doc.active_layer if self.doc else None
+        if layer:
+            self._active_layer_wcs_conn = layer.updated.connect(
+                self._on_active_layer_updated
             )
-            self._connected_setup = setup
+            self._connected_layer = layer
 
-    def _disconnect_active_setup_wcs(self):
-        if self._connected_setup and self._active_setup_wcs_conn:
-            self._connected_setup.updated.disconnect(
-                self._active_setup_wcs_conn
+    def _disconnect_active_layer_wcs(self):
+        if self._connected_layer and self._active_layer_wcs_conn:
+            self._connected_layer.updated.disconnect(
+                self._active_layer_wcs_conn
             )
-        self._active_setup_wcs_conn = None
-        self._connected_setup = None
+        self._active_layer_wcs_conn = None
+        self._connected_layer = None
 
-    def _on_active_setup_changed(self, sender):
-        """Reconnect WCS tracking and rebuild for the new active setup."""
-        self._connect_active_setup_wcs()
+    def _on_active_layer_changed(self, sender):
+        """Reconnect WCS tracking and rebuild for the new active layer."""
+        self._connect_active_layer_wcs()
         self.update_from_doc()
         if self.machine:
             self._on_wcs_updated(self.machine)
 
-    def _on_active_setup_updated(self, setup):
-        """Handle property changes on the active setup, including WCS."""
+    def _on_active_layer_updated(self, layer):
+        """Handle property changes on the active layer, including WCS."""
         if self.machine:
             self._on_wcs_updated(self.machine)
 
@@ -890,7 +890,7 @@ class WorkSurface(WorldSurface):
 
         # Get offset for axis labels (where 0,0 should appear)
         if self.machine:
-            wcs_offset = self._get_active_setup_wcs_offset()
+            wcs_offset = self._get_active_layer_wcs_offset()
             wcs_is_workarea = self.machine.wcs_origin_is_workarea_origin
             origin_offset_mm = self.machine.panel.get_axis_label_origin(
                 wcs_offset=wcs_offset,
@@ -1064,37 +1064,37 @@ class WorkSurface(WorldSurface):
     def _get_handle_color(self, elem: CanvasElement) -> ColorRGBA | None:
         """Returns the workflow color for the element's selection handles.
 
-        The first workflow of the active setup that runs for the
+        The first workflow of the active layer that runs for the
         element's workpiece decides the color.
         """
         data = getattr(elem, "data", None)
         if data is None:
             return None
-        setup = getattr(data, "setup", None)
-        if setup is None or not isinstance(setup, Setup):
+        layer = getattr(data, "layer", None)
+        if layer is None or not isinstance(layer, Layer):
             return None
-        for workflow in setup.workflows:
-            if data in workflow.selected_workpieces(setup.all_workpieces):
+        for workflow in layer.workflows:
+            if data in workflow.selected_workpieces(layer.all_workpieces):
                 return hex_to_rgba(workflow.color)
         return None
 
-    def _create_and_add_setup_element(self, setup: "Setup"):
-        """Creates a new SetupElement and adds it to the canvas root."""
-        logger.debug(f"Adding new SetupElement for '{setup.name}'")
-        setup_elem = SetupElement(setup=setup, canvas=self)
-        self.root.add(setup_elem)
-        self._apply_setup_panel_transform(setup_elem)
+    def _create_and_add_layer_element(self, layer: "Layer"):
+        """Creates a new LayerElement and adds it to the canvas root."""
+        logger.debug(f"Adding new LayerElement for '{layer.name}'")
+        layer_elem = LayerElement(layer=layer, canvas=self)
+        self.root.add(layer_elem)
+        self._apply_layer_panel_transform(layer_elem)
 
-    def _apply_setup_panel_transform(self, setup_elem: CanvasElement) -> None:
-        """Rotate a setup's document (WORLD) content into PANEL space."""
+    def _apply_layer_panel_transform(self, layer_elem: CanvasElement) -> None:
+        """Rotate a layer's document (WORLD) content into PANEL space."""
         if not self.machine:
             return
-        setup_elem.set_transform(self.machine.panel.get_world_to_panel_2d())
+        layer_elem.set_transform(self.machine.panel.get_world_to_panel_2d())
 
-    def _sync_setup_transforms(self) -> None:
-        """Re-apply the PANEL rotation to every setup element."""
-        for setup_elem in self.find_by_type(SetupElement):
-            self._apply_setup_panel_transform(setup_elem)
+    def _sync_layer_transforms(self) -> None:
+        """Re-apply the PANEL rotation to every layer element."""
+        for layer_elem in self.find_by_type(LayerElement):
+            self._apply_layer_panel_transform(layer_elem)
 
     def _create_and_add_stock_element(self, stock_item: StockItem):
         """Creates a new StockElement and adds it to the canvas root."""
@@ -1111,26 +1111,26 @@ class WorkSurface(WorldSurface):
         """
         Synchronizes the canvas elements with the document model.
 
-        The canvas shows the active setup only: its content items and
+        The canvas shows the active layer only: its content items and
         stock, and the steps of all its workflows. This method ensures
         that what is displayed on the canvas perfectly matches the
         state of the document's data model.
         """
         doc = self.doc
 
-        # --- Step 1: Maintain the single SetupElement ---
-        active_setup = doc.active_setup
-        setup_elements = list(self.find_by_type(SetupElement))
-        if setup_elements:
-            setup_elem = setup_elements[0]
-            if setup_elem.data is not active_setup:
-                setup_elem.remove()
-                self._create_and_add_setup_element(active_setup)
+        # --- Step 1: Maintain the single LayerElement ---
+        active_layer = doc.active_layer
+        layer_elements = list(self.find_by_type(LayerElement))
+        if layer_elements:
+            layer_elem = layer_elements[0]
+            if layer_elem.data is not active_layer:
+                layer_elem.remove()
+                self._create_and_add_layer_element(active_layer)
         else:
-            self._create_and_add_setup_element(active_setup)
+            self._create_and_add_layer_element(active_layer)
 
         # --- Step 1.5: Add and Remove StockElements ---
-        doc_stock_items_set = set(active_setup.stock_items)
+        doc_stock_items_set = set(active_layer.stock_items)
         current_stock_elements_on_canvas = {
             elem.data: elem for elem in self.find_by_type(StockElement)
         }
@@ -1141,23 +1141,23 @@ class WorkSurface(WorldSurface):
                 elem.remove()
 
         # Add elements for new stock items that are not yet on the canvas
-        for stock_item in active_setup.stock_items:
+        for stock_item in active_layer.stock_items:
             if stock_item not in current_stock_elements_on_canvas:
                 self._create_and_add_stock_element(stock_item)
 
         def sort_key(element: CanvasElement):
             """
             Sort key for root's children. Camera at bottom, then stock,
-            then the setup element and laser dot on top.
+            then the layer element and laser dot on top.
             """
             if isinstance(element, DotElement):
                 return float("inf") - 1
-            if isinstance(element, SetupElement):
-                # The setup element holds all workpieces and sits above
+            if isinstance(element, LayerElement):
+                # The layer element holds all workpieces and sits above
                 # stock and camera images.
                 return 1000
             if isinstance(element, StockElement):
-                # Stock elements are below the setup element but above camera
+                # Stock elements are below the layer element but above camera
                 # images
                 return 10
             if isinstance(element, CameraImageElement):
@@ -1173,7 +1173,7 @@ class WorkSurface(WorldSurface):
                 # zones so it stays visible where they overlap
                 return -1.3
             # Other elements are above the camera but below stock and
-            # the setup element.
+            # the layer element.
             return -1
 
         self.root.children.sort(key=sort_key)
@@ -1333,7 +1333,7 @@ class WorkSurface(WorldSurface):
         ):
             self.reset_view()
         else:
-            self._sync_setup_transforms()
+            self._sync_layer_transforms()
             self._update_extent_frame()
             self._sync_camera_elements()
             self._sync_nogo_zone_elements()
@@ -1395,13 +1395,13 @@ class WorkSurface(WorldSurface):
             view.x_axis_right, view.y_axis_down
         )
 
-        self._sync_setup_transforms()
+        self._sync_layer_transforms()
 
         self._update_extent_frame()
 
         super().reset_view()
 
-        if self.doc.active_setup.rotary_enabled and self.machine:
+        if self.doc.active_layer.rotary_enabled and self.machine:
             self._center_on_rotary_axis()
 
         new_ratio = width_mm / height_mm if height_mm > 0 else 1.0
@@ -1425,9 +1425,9 @@ class WorkSurface(WorldSurface):
             self._workarea_bg_element.set_visible(False)
             return
 
-        active_setup = self.doc.active_setup
+        active_layer = self.doc.active_layer
 
-        if active_setup.rotary_enabled:
+        if active_layer.rotary_enabled:
             self._update_extent_frame_rotary()
         else:
             self._update_extent_frame_flat()
@@ -1468,8 +1468,8 @@ class WorkSurface(WorldSurface):
     def _update_extent_frame_rotary(self):
         """Updates extent frame and workarea for rotary mode."""
         assert self.machine
-        active_setup = self.doc.active_setup
-        diameter = active_setup.rotary_diameter
+        active_layer = self.doc.active_layer
+        diameter = active_layer.rotary_diameter
         circumference = math.pi * diameter
         half_circ = circumference / 2.0
 
@@ -1598,12 +1598,12 @@ class WorkSurface(WorldSurface):
         is_primary = is_primary_modifier(state)
         is_shift = bool(state & Gdk.ModifierType.SHIFT_MASK)
 
-        # Handle moving workpiece to another setup
+        # Handle moving workpiece to another layer
         if is_primary and (
             keyval == Gdk.KEY_Page_Up or keyval == Gdk.KEY_Page_Down
         ):
             direction = -1 if keyval == Gdk.KEY_Page_Up else 1
-            self.editor.setup.move_selected_to_adjacent_setup(self, direction)
+            self.editor.layer.move_selected_to_adjacent_layer(self, direction)
             return True
 
         # Handle clipboard and duplication

@@ -4,7 +4,7 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
-from ..core.setup import Setup
+from ..core.layer import Layer
 from ..core.undo import (
     ChangePropertyCommand,
     DictItemCommand,
@@ -27,7 +27,7 @@ class WorkflowCmd:
 
     def create_for_source_layer(
         self,
-        setup: Setup,
+        layer: Layer,
         source_layer: Any,
         workpieces: list[WorkPiece],
     ) -> Workflow | None:
@@ -53,10 +53,10 @@ class WorkflowCmd:
             )
         return workflow
 
-    def add_workflow(self, setup: Setup, workflow: Workflow):
-        """Adds a workflow to a setup with an undoable command."""
+    def add_workflow(self, layer: Layer, workflow: Workflow):
+        """Adds a workflow to a layer with an undoable command."""
         cmd = ListItemCommand(
-            owner_obj=setup,
+            owner_obj=layer,
             item=workflow,
             undo_command="remove_child",
             redo_command="add_child",
@@ -78,10 +78,10 @@ class WorkflowCmd:
         )
         self._editor.history_manager.execute(cmd)
 
-    def reorder_workflows(self, setup: Setup, new_order: list[Workflow]):
-        """Reorders a setup's workflows with an undoable command."""
+    def reorder_workflows(self, layer: Layer, new_order: list[Workflow]):
+        """Reorders a layer's workflows with an undoable command."""
         cmd = ReorderListCommand(
-            target_obj=setup,
+            target_obj=layer,
             list_property_name="workflows",
             new_list=new_order,
             setter_method_name="reorder_workflows",
@@ -170,8 +170,8 @@ class WorkflowCmd:
         """Picks a palette color no workflow in the document uses."""
         used = {
             workflow.color
-            for setup in self._editor.doc.setups
-            for workflow in setup.workflows
+            for layer in self._editor.doc.layers
+            for workflow in layer.workflows
         }
         from ..core.color import pick_unused_color
 

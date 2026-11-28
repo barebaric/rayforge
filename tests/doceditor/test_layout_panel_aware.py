@@ -10,7 +10,7 @@ and un-rotate the resulting deltas back into WORLD space.
 import pytest
 from raygeo.geo import Matrix
 
-from rayforge.core.setup import Setup
+from rayforge.core.layer import Layer
 from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.layout.align import (
     BboxAlignBottomStrategy,
@@ -37,7 +37,7 @@ def active_machine(lite_context, sync_machine):
     return sync_machine
 
 
-def _workpiece(layer: Setup, name: str, pos, size) -> WorkPiece:
+def _workpiece(layer: Layer, name: str, pos, size) -> WorkPiece:
     wp = WorkPiece(name=name)
     wp.set_size(*size)
     wp.pos = pos
@@ -78,7 +78,7 @@ def _panel_bbox(machine, item):
 class TestPanelAwareAlign:
     def test_align_left_rotated_right(self, active_machine):
         active_machine.panel.set_orientation(PanelOrientation.ROTATED_RIGHT)
-        layer = Setup(name="L")
+        layer = Layer(name="L")
         a = _workpiece(layer, "a", (100, 50), (20, 10))
 
         _apply(BboxAlignLeftStrategy([a]), [a])
@@ -89,7 +89,7 @@ class TestPanelAwareAlign:
 
     def test_align_right_rotated_right(self, active_machine):
         active_machine.panel.set_orientation(PanelOrientation.ROTATED_RIGHT)
-        layer = Setup(name="L")
+        layer = Layer(name="L")
         a = _workpiece(layer, "a", (200, 100), (20, 10))
 
         _apply(BboxAlignRightStrategy([a], surface_width_mm=300.0), [a])
@@ -100,7 +100,7 @@ class TestPanelAwareAlign:
 
     def test_align_top_rotated_right(self, active_machine):
         active_machine.panel.set_orientation(PanelOrientation.ROTATED_RIGHT)
-        layer = Setup(name="L")
+        layer = Layer(name="L")
         a = _workpiece(layer, "a", (200, 100), (20, 10))
 
         _apply(BboxAlignTopStrategy([a], surface_height_mm=400.0), [a])
@@ -111,7 +111,7 @@ class TestPanelAwareAlign:
 
     def test_align_bottom_rotated_right(self, active_machine):
         active_machine.panel.set_orientation(PanelOrientation.ROTATED_RIGHT)
-        layer = Setup(name="L")
+        layer = Layer(name="L")
         a = _workpiece(layer, "a", (200, 100), (20, 10))
 
         _apply(BboxAlignBottomStrategy([a]), [a])
@@ -122,7 +122,7 @@ class TestPanelAwareAlign:
 
     def test_center_horizontally_rotated_right(self, active_machine):
         active_machine.panel.set_orientation(PanelOrientation.ROTATED_RIGHT)
-        layer = Setup(name="L")
+        layer = Layer(name="L")
         a = _workpiece(layer, "a", (200, 100), (20, 10))
 
         _apply(BboxAlignCenterStrategy([a], surface_width_mm=300.0), [a])
@@ -133,7 +133,7 @@ class TestPanelAwareAlign:
 
     def test_center_vertically_rotated_right(self, active_machine):
         active_machine.panel.set_orientation(PanelOrientation.ROTATED_RIGHT)
-        layer = Setup(name="L")
+        layer = Layer(name="L")
         a = _workpiece(layer, "a", (200, 100), (20, 10))
 
         _apply(BboxAlignMiddleStrategy([a], surface_height_mm=400.0), [a])
@@ -144,7 +144,7 @@ class TestPanelAwareAlign:
 
     def test_align_left_multi_rotated_right(self, active_machine):
         active_machine.panel.set_orientation(PanelOrientation.ROTATED_RIGHT)
-        layer = Setup(name="L")
+        layer = Layer(name="L")
         a = _workpiece(layer, "a", (100, 50), (20, 10))
         b = _workpiece(layer, "b", (300, 150), (20, 10))
 
@@ -158,7 +158,7 @@ class TestPanelAwareAlign:
         )
 
     def test_align_native_matches_world(self, active_machine):
-        layer = Setup(name="L")
+        layer = Layer(name="L")
         a = _workpiece(layer, "a", (100, 50), (20, 10))
 
         _apply(BboxAlignLeftStrategy([a]), [a])
@@ -171,7 +171,7 @@ class TestPanelAwareAlign:
 class TestPanelAwareSpread:
     def test_spread_horizontally_rotated_right(self, active_machine):
         active_machine.panel.set_orientation(PanelOrientation.ROTATED_RIGHT)
-        layer = Setup(name="L")
+        layer = Layer(name="L")
         # Placed along world Y so they line up across the panel X axis.
         a = _workpiece(layer, "a", (200, 100), (20, 10))
         b = _workpiece(layer, "b", (200, 200), (20, 10))
@@ -187,7 +187,7 @@ class TestPanelAwareSpread:
 
     def test_spread_vertically_rotated_right(self, active_machine):
         active_machine.panel.set_orientation(PanelOrientation.ROTATED_RIGHT)
-        layer = Setup(name="L")
+        layer = Layer(name="L")
         # Placed along world X so they line up across the panel Y axis.
         a = _workpiece(layer, "a", (100, 200), (20, 10))
         b = _workpiece(layer, "b", (200, 200), (20, 10))
@@ -207,7 +207,7 @@ class TestPanelAwareFlip:
         """Flip mirrors along the presented vertical axis through the
         item's centre, keeping the on-screen bbox and centre fixed."""
         active_machine.panel.set_orientation(PanelOrientation.ROTATED_RIGHT)
-        layer = Setup(name="L")
+        layer = Layer(name="L")
         a = _workpiece(layer, "a", (100, 50), (20, 10))
 
         bbox_before = _panel_bbox(active_machine, a)
@@ -235,7 +235,7 @@ class TestPanelAwareFlip:
 
     def test_flip_vertical_rotated_right(self, active_machine):
         active_machine.panel.set_orientation(PanelOrientation.ROTATED_RIGHT)
-        layer = Setup(name="L")
+        layer = Layer(name="L")
         a = _workpiece(layer, "a", (100, 50), (20, 10))
 
         bbox_before = _panel_bbox(active_machine, a)
@@ -261,7 +261,7 @@ class TestPanelAwareFlip:
         assert _panel_bbox(active_machine, a) == pytest.approx(bbox_before)
 
     def test_flip_native_matches_world(self, active_machine):
-        layer = Setup(name="L")
+        layer = Layer(name="L")
         a = _workpiece(layer, "a", (100, 50), (20, 10))
 
         corner_before = a.get_world_transform().transform_point((0.0, 0.0))

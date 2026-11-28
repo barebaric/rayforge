@@ -1,6 +1,6 @@
 import pytest
 
-from rayforge.core.setup import Setup
+from rayforge.core.layer import Layer
 from rayforge.core.tab import Tab
 from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.tab_cmd import TabCmd
@@ -15,7 +15,7 @@ def tab_cmd(doc_editor):
 @pytest.fixture
 def sample_workpiece(doc_editor):
     """Provides a sample WorkPiece instance."""
-    layer = Setup(name="Test Layer")
+    layer = Layer(name="Test Layer")
     doc_editor.doc.add_child(layer)
     workpiece = WorkPiece(name="Test WP")
     layer.add_child(workpiece)

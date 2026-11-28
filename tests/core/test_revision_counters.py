@@ -114,7 +114,7 @@ def test_workpiece_revision_bumps():
     from rayforge.core.workpiece import WorkPiece
 
     doc = Doc()
-    layer = doc.active_setup
+    layer = doc.active_layer
     wp = WorkPiece(name="wp")
     layer.add_child(wp)
 
@@ -156,14 +156,14 @@ def test_step_name_change_does_not_bump_geometry_revision():
 
 
 def test_setup_name_change_does_not_bump_geometry_revision():
-    """A Setup rename must not bump any revision counter."""
+    """A Layer rename must not bump any revision counter."""
     doc = Doc()
-    setup = doc.active_setup
-    assert setup.geometry_revision == 0
-    setup.set_name("renamed")
-    assert setup.name == "renamed"
-    assert setup.geometry_revision == 0
-    assert setup.workflows[0].geometry_revision == 0
+    layer = doc.active_layer
+    assert layer.geometry_revision == 0
+    layer.set_name("renamed")
+    assert layer.name == "renamed"
+    assert layer.geometry_revision == 0
+    assert layer.workflows[0].geometry_revision == 0
 
 
 def test_name_setter_sends_renamed_signal():

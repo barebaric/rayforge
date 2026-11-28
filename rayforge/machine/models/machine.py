@@ -19,8 +19,8 @@ from ...camera.models.camera import Camera
 from ...camera.v4l import migrate_camera_data
 from ...context import RayforgeContext, get_context
 from ...core.capability import MachineCapability
+from ...core.layer import Layer
 from ...core.model import Model
-from ...core.setup import Setup
 from ...shared.tasker import task_mgr
 from ...shared.units.system import UnitSystem
 from ..assembly import Assembly
@@ -76,6 +76,12 @@ class JogDirection(Enum):
 
 
 logger = logging.getLogger(__name__)
+
+#: Hook trigger names written by older machine profiles.
+_LEGACY_HOOK_TRIGGERS = {
+    "LAYER_START": "WORKFLOW_START",
+    "LAYER_END": "WORKFLOW_END",
+}
 
 MACHINE_SPACE_WCS = "MACHINE"
 
@@ -292,7 +298,7 @@ class Machine:
         self._assembly: Assembly | None = None
         self._assembly_dirty: bool = True
         self._mounted_rotaries: list[RotaryModule] = []
-        self._setup_configured: bool = False
+        self._layer_configured: bool = False
 
     @property
     def controller(self) -> "MachineController":
@@ -459,7 +465,7 @@ class Machine:
         """
         Updates the machine's unit system and emits ``changed`` when
         it actually changed. Set by the probe wizard during device
-        setup or by the user from the machine settings.
+        layer or by the user from the machine settings.
         """
         if self.unit_system != unit_system:
             self.unit_system = unit_system
@@ -526,15 +532,15 @@ class Machine:
     def invalidate_assembly(self):
         self._assembly_dirty = True
 
-    def configure_for_setup(self, setup: Optional["Setup"]) -> None:
+    def configure_for_layer(self, layer: Optional["Layer"]) -> None:
         required_rotaries: list[RotaryModule] = []
-        if setup and setup.rotary_enabled:
-            module = self.get_rotary_module_for_setup(setup)
+        if layer and layer.rotary_enabled:
+            module = self.get_rotary_module_for_layer(layer)
             if module:
                 required_rotaries.append(module)
         if self._assembly_needs_rebuild(required_rotaries):
             self._mounted_rotaries = required_rotaries
-            self._setup_configured = True
+            self._layer_configured = True
             self._assembly_dirty = True
 
     def _assembly_needs_rebuild(
@@ -574,7 +580,7 @@ class Machine:
     ) -> Assembly:
         """Build a throwaway assembly for the given rotary modules.
 
-        Unlike ``configure_for_setup`` + ``assembly``, this never mutates
+        Unlike ``configure_for_layer`` + ``assembly``, this never mutates
         machine state.  When *rotary_modules* is None or empty, a flat
         assembly (no rotary) is built.
         """
@@ -586,7 +592,7 @@ class Machine:
 
     def _build_assembly(self) -> Assembly:
         rotaries = self._mounted_rotaries
-        if not rotaries and not self._setup_configured and self.rotary_modules:
+        if not rotaries and not self._layer_configured and self.rotary_modules:
             rotaries = list(self.rotary_modules.values())[:1]
         rotary_modules_for_build: dict[str, RotaryModule] = {}
         if rotaries:
@@ -719,7 +725,7 @@ class Machine:
 
     def set_driver_args(self, args=None):
         """
-        Replaces the driver's setup arguments, then emits ``changed``.
+        Replaces the driver's layer arguments, then emits ``changed``.
         The controller listens for this signal and performs the
         (debounced) driver rebuild.
         """
@@ -1527,22 +1533,22 @@ class Machine:
             )
         return None
 
-    def get_rotary_module_for_setup(
-        self, setup: "Setup"
+    def get_rotary_module_for_layer(
+        self, layer: "Layer"
     ) -> RotaryModule | None:
-        """Resolve the effective rotary module for *setup*.
+        """Resolve the effective rotary module for *layer*.
 
         Returns the module referenced by
-        :attr:`setup.rotary_module_uid` when it exists on this
-        machine.  When the setup has rotary enabled but its module
+        :attr:`layer.rotary_module_uid` when it exists on this
+        machine.  When the layer has rotary enabled but its module
         UID is missing or invalid, falls back to the machine's
         default module (or the first available module when no
         default is set) so that rotary mapping is still applied.
         """
-        if not setup.rotary_enabled:
+        if not layer.rotary_enabled:
             return None
-        if setup.rotary_module_uid:
-            module = self.rotary_modules.get(setup.rotary_module_uid)
+        if layer.rotary_module_uid:
+            module = self.rotary_modules.get(layer.rotary_module_uid)
             if module is not None:
                 return module
         default = self.get_default_rotary_module()
@@ -1552,10 +1558,10 @@ class Machine:
             return next(iter(self.rotary_modules.values()))
         return None
 
-    def get_rotary_axis_for_setup(self, setup: "Setup") -> Axis | None:
-        if not setup.rotary_enabled:
+    def get_rotary_axis_for_layer(self, layer: "Layer") -> Axis | None:
+        if not layer.rotary_enabled:
             return None
-        module = self.get_rotary_module_for_setup(setup)
+        module = self.get_rotary_module_for_layer(layer)
         return module.axis if module else None
 
     def remove_rotary_module(self, module: RotaryModule):
@@ -1704,7 +1710,7 @@ class Machine:
 
     def validate_driver_setup(self) -> tuple[bool, str | None]:
         """
-        Validates the machine's driver arguments against the driver's setup
+        Validates the machine's driver arguments against the driver's layer
         VarSet. Delegates to the controller.
 
         Returns:
@@ -2253,6 +2259,9 @@ class Machine:
 
         # Deserialize remaining hookmacros from the (potentially cleaned) data
         for trigger_name, macro_data in hook_data.items():
+            trigger_name = _LEGACY_HOOK_TRIGGERS.get(
+                trigger_name, trigger_name
+            )
             try:
                 trigger = MacroTrigger[trigger_name]
                 ma.hookmacros[trigger] = Macro.from_dict(macro_data)

@@ -112,14 +112,14 @@ class Pipeline:
     def _has_workflow_content(self) -> bool:
         if not self._doc:
             return False
-        for setup in self._doc.setups:
-            for workflow in setup.workflows:
+        for layer in self._doc.layers:
+            for workflow in layer.workflows:
                 if not workflow.steps:
                     continue
-                if setup.all_workpieces:
+                if layer.all_workpieces:
                     return True
                 # Geometry-less steps (e.g. the Command step) run
-                # without any workpiece in the setup.
+                # without any workpiece in the layer.
                 if any(
                     step.visible and not step.needs_workpieces
                     for step in workflow.steps
@@ -138,9 +138,9 @@ class Pipeline:
         """
         if not self._doc:
             return False
-        for setup in self._doc.setups:
-            setup_workpieces = list(setup.all_workpieces)
-            for workflow in setup.workflows:
+        for layer in self._doc.layers:
+            setup_workpieces = list(layer.all_workpieces)
+            for workflow in layer.workflows:
                 if not workflow.steps or not workflow.enabled:
                     continue
                 workpieces = workflow.selected_workpieces(setup_workpieces)
@@ -477,7 +477,7 @@ class Pipeline:
             ops
             and self._doc
             and self._machine
-            and self._doc.has_rotary_setup
+            and self._doc.has_rotary_layer
             and MachineCapability.ROTARY in self._machine.get_capabilities()
         ):
             mapped_ops = ops.copy()
@@ -541,13 +541,13 @@ class Pipeline:
         when_done: Callable[
             [BaseArtifactHandle | None, Exception | None], None
         ],
-        setup_uids: list[str] | None = None,
+        layer_uids: list[str] | None = None,
     ):
         """
         Generate the job artifact.
 
-        When *setup_uids* is given, the job is scoped to the workflows
-        of those setups (multi-setup send flow). A scoped request
+        When *layer_uids* is given, the job is scoped to the workflows
+        of those layers (multi-layer send flow). A scoped request
         always rebuilds: a cached full-document artifact must not be
         reused for a subset.
         """
@@ -562,11 +562,11 @@ class Pipeline:
             when_done(None, exc)
             return
 
-        if setup_uids is None and self._last_job_handle is not None:
+        if layer_uids is None and self._last_job_handle is not None:
             when_done(self._last_job_handle, None)
             return
 
-        self.set_setup_filter(setup_uids)
+        self.set_layer_filter(layer_uids)
 
         if not self._can_generate_job():
             when_done(
@@ -618,7 +618,7 @@ class Pipeline:
 
     async def generate_job_artifact_async(
         self,
-        setup_uids: list[str] | None = None,
+        layer_uids: list[str] | None = None,
     ) -> BaseArtifactHandle | None:
         future = asyncio.get_running_loop().create_future()
 
@@ -629,19 +629,19 @@ class Pipeline:
                 else:
                     future.set_result(handle)
 
-        self.generate_job_artifact(when_done=_when_done, setup_uids=setup_uids)
+        self.generate_job_artifact(when_done=_when_done, layer_uids=layer_uids)
         return await future
 
-    def set_setup_filter(self, setup_uids: list[str] | None) -> None:
-        """Scopes subsequent rebuilds to the given setups.
+    def set_layer_filter(self, layer_uids: list[str] | None) -> None:
+        """Scopes subsequent rebuilds to the given layers.
 
-        ``None`` clears the scope. Used by the multi-setup send flow:
-        a scoped run rebuilds with only the selected setups'
+        ``None`` clears the scope. Used by the multi-layer send flow:
+        a scoped run rebuilds with only the selected layers'
         workflows, and the filter is cleared again afterwards so the
         live preview covers the whole document.
         """
-        self._intent_ctl.setup_filter = (
-            frozenset(setup_uids) if setup_uids is not None else None
+        self._intent_ctl.layer_filter = (
+            frozenset(layer_uids) if layer_uids is not None else None
         )
-        if setup_uids is not None:
+        if layer_uids is not None:
             self.invalidate_job_output()

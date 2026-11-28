@@ -66,7 +66,7 @@ def _import_color_workflows(editor) -> list:
     payload = import_result.payload
     assert payload is not None
 
-    setup = editor.doc.active_setup
+    layer = editor.doc.active_layer
     workflows = []
     for info in payload.source_layers:
         workpieces = [
@@ -77,12 +77,12 @@ def _import_color_workflows(editor) -> list:
             and item.source_segment.layer_id == info.layer_id
         ]
         workflow = editor.workflow.create_for_source_layer(
-            setup, info, workpieces
+            layer, info, workpieces
         )
         assert workflow is not None
-        setup.add_child(workflow)
+        layer.add_child(workflow)
         for wp in workpieces:
-            setup.add_child(wp)
+            layer.add_child(wp)
         workflows.append(workflow)
     return workflows
 
@@ -160,7 +160,7 @@ async def test_rule_not_applied_to_layer_source_import(
     payload = import_result.payload
     assert payload is not None
 
-    setup = doc_editor.doc.active_setup
+    layer = doc_editor.doc.active_layer
     workflows = []
     for info in payload.source_layers:
         workpieces = [
@@ -171,12 +171,12 @@ async def test_rule_not_applied_to_layer_source_import(
             and item.source_segment.layer_id == info.layer_id
         ]
         workflow = doc_editor.workflow.create_for_source_layer(
-            setup, info, workpieces
+            layer, info, workpieces
         )
         assert workflow is not None
-        setup.add_child(workflow)
+        layer.add_child(workflow)
         for wp in workpieces:
-            setup.add_child(wp)
+            layer.add_child(wp)
         workflows.append(workflow)
 
     StepCmd(doc_editor).add_default_steps_for_workflows(workflows)
@@ -217,8 +217,8 @@ async def test_color_rule_via_full_commit_flow(
 
     workflows = [
         workflow
-        for setup in doc_editor.doc.setups
-        for workflow in setup.workflows
+        for layer in doc_editor.doc.layers
+        for workflow in layer.workflows
     ]
     by_color = {workflow.color: workflow for workflow in workflows}
     assert _step_type_names(by_color["#ff0000"]) == ["EngraveStep"]

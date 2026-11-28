@@ -6,7 +6,7 @@ document back and this follows again.
 - The preview of a Material Test Grid follows its step, so a recipe
   applied to the step resizes the grid.
 - The record and the hidden source assets of a test leave the document
-  with the test's setup and come back when the setup does.
+  with the test's layer and come back when the layer does.
 """
 
 import json
@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 from rayforge.core.asset import IAsset
 from rayforge.core.item import DocItem
-from rayforge.core.setup import Setup
+from rayforge.core.layer import Layer
 from rayforge.core.step import Step
 from rayforge.core.workpiece import WorkPiece
 
@@ -68,7 +68,7 @@ class CalibrationSync:
             sync_grid_preview(self._doc, origin)
 
     def _on_removed(self, sender, *, origin: DocItem, **kwargs):
-        if not isinstance(origin, Setup):
+        if not isinstance(origin, Layer):
             return
         assets = [
             asset
@@ -83,7 +83,7 @@ class CalibrationSync:
         self._doc.updated.send(self._doc)
 
     def _on_added(self, sender, *, origin: DocItem, **kwargs):
-        if not isinstance(origin, Setup):
+        if not isinstance(origin, Layer):
             return
         assets = self._parked.pop(origin.uid, [])
         for asset in assets:

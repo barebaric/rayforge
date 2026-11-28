@@ -41,7 +41,7 @@ def doc_with_workpiece(doc):
 
     wp = WorkPiece("test_wp")
     wp.source_segment = segment
-    doc.active_setup.add_child(wp)
+    doc.active_layer.add_child(wp)
 
     return doc, wp, source
 
@@ -147,7 +147,7 @@ class TestWorkPieceWithSketch:
         wp_with_transient.geometry_provider_uid = sketch_from_doc.uid
         wp_with_transient._transient_geometry_provider = transient_provider
 
-        doc.active_setup.add_child(wp_with_transient)
+        doc.active_layer.add_child(wp_with_transient)
 
         retrieved_transient = wp_with_transient.get_geometry_provider()
         assert retrieved_transient is not None
@@ -264,10 +264,10 @@ class TestWorkPieceWithSketch:
         doc.add_asset(sketch)
 
         wp_a = WorkPiece.from_geometry_provider(sketch)
-        doc.active_setup.add_child(wp_a)
+        doc.active_layer.add_child(wp_a)
 
         wp_b = WorkPiece.from_geometry_provider(sketch)
-        doc.active_setup.add_child(wp_b)
+        doc.active_layer.add_child(wp_b)
 
         assert wp_a._resolved_text_cache != {}
         assert wp_b._resolved_text_cache != {}
@@ -292,7 +292,7 @@ class TestWorkPieceWithSketch:
         doc.add_asset(sketch)
 
         wp = WorkPiece.from_geometry_provider(sketch)
-        doc.active_setup.add_child(wp)
+        doc.active_layer.add_child(wp)
 
         first_cache = dict(wp._resolved_text_cache)
         wp.clear_render_cache()
@@ -318,7 +318,7 @@ class TestWorkPieceWithSketch:
         doc.add_asset(sketch)
 
         wp = WorkPiece.from_geometry_provider(sketch)
-        doc.active_setup.add_child(wp)
+        doc.active_layer.add_child(wp)
         original_cache = dict(wp._resolved_text_cache)
 
         world = wp.in_world()
@@ -341,7 +341,7 @@ class TestWorkPieceWithSketch:
         doc.add_asset(sketch)
 
         wp = WorkPiece.from_geometry_provider(sketch)
-        doc.active_setup.add_child(wp)
+        doc.active_layer.add_child(wp)
         original_cache = dict(wp._resolved_text_cache)
 
         data = wp.to_dict()
@@ -365,7 +365,7 @@ class TestWorkPieceWithSketch:
         doc.add_asset(sketch)
 
         wp = WorkPiece.from_geometry_provider(sketch)
-        doc.active_setup.add_child(wp)
+        doc.active_layer.add_child(wp)
         first_val = next(iter(wp._resolved_text_cache.values()))
 
         wp.get_geometry_provider()
@@ -396,7 +396,7 @@ def test_undo_reverts_rendered_text_not_just_size(doc):
     doc.add_asset(sketch)
 
     wp = WorkPiece.from_geometry_provider(sketch)
-    doc.active_setup.add_child(wp)
+    doc.active_layer.add_child(wp)
     _ = wp.boundaries
 
     # Enter the sketcher: snapshot the pre-edit state.
@@ -478,7 +478,7 @@ class TestSketchReferencePoint:
         doc.add_asset(sketch)
 
         wp = WorkPiece.from_geometry_provider(sketch)
-        doc.active_setup.add_child(wp)
+        doc.active_layer.add_child(wp)
 
         assert wp._reference_anchor == (0.0, 0.0)
         assert wp.has_reference_point()
@@ -488,7 +488,7 @@ class TestSketchReferencePoint:
         doc.add_asset(sketch)
 
         wp = WorkPiece.from_geometry_provider(sketch)
-        doc.active_setup.add_child(wp)
+        doc.active_layer.add_child(wp)
         wp.anchor_mode = AnchorMode.REFERENCE
         wp.pos = (11.0, 13.0)
 
@@ -507,7 +507,7 @@ class TestSketchReferencePoint:
         doc.add_asset(sketch)
 
         wp = WorkPiece.from_geometry_provider(sketch)
-        doc.active_setup.add_child(wp)
+        doc.active_layer.add_child(wp)
         wp.pos = (11.0, 13.0)
 
         corner_before = wp.get_anchor_world()
@@ -521,7 +521,7 @@ class TestSketchReferencePoint:
         doc.add_asset(sketch)
 
         wp = WorkPiece.from_geometry_provider(sketch)
-        doc.active_setup.add_child(wp)
+        doc.active_layer.add_child(wp)
         wp.anchor_mode = AnchorMode.CENTER
         wp.pos = (11.0, 13.0)
 
@@ -542,7 +542,7 @@ class TestSketchReferencePoint:
         doc.add_asset(sketch)
 
         wp = WorkPiece.from_geometry_provider(sketch)
-        doc.active_setup.add_child(wp)
+        doc.active_layer.add_child(wp)
         wp.anchor_mode = AnchorMode.REFERENCE
         wp.pos = (11.0, 13.0)
 

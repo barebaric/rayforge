@@ -13,7 +13,7 @@ from .item import DocItem, VisibleMixin
 from .workpiece import WorkPiece
 
 if TYPE_CHECKING:
-    from .setup import Setup
+    from .layer import Layer
 
 logger = logging.getLogger(__name__)
 
@@ -39,12 +39,12 @@ class Group(VisibleMixin):
         self.extra: dict[str, Any] = {}
 
     @property
-    def setup(self) -> Setup | None:
-        """Traverses the hierarchy to find the parent Setup."""
-        from .setup import Setup  # Local import to avoid circular dependency
+    def layer(self) -> Layer | None:
+        """Traverses the hierarchy to find the parent Layer."""
+        from .layer import Layer  # Local import to avoid circular dependency
 
-        ancestor = self.get_ancestor_by_type(Setup)
-        return ancestor if isinstance(ancestor, Setup) else None
+        ancestor = self.get_ancestor_by_type(Layer)
+        return ancestor if isinstance(ancestor, Layer) else None
 
     @property
     def all_workpieces(self) -> list[WorkPiece]:

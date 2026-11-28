@@ -45,7 +45,7 @@ def split_cmd(doc_editor):
 @pytest.fixture
 def workpiece_on_layer(doc_editor):
     """Creates a workpiece on the active layer."""
-    layer = doc_editor.doc.active_setup
+    layer = doc_editor.doc.active_layer
 
     # Create dummy geometry for the workpiece so it has something to split
     geo = Geometry()
@@ -124,7 +124,7 @@ def test_split_no_op(split_cmd, workpiece_on_layer):
 
 def test_split_ignores_non_workpiece(split_cmd, doc_editor):
     non_wp_item = MagicMock()
-    non_wp_item.parent = doc_editor.doc.active_setup
+    non_wp_item.parent = doc_editor.doc.active_layer
     # It needs to not be an instance of WorkPiece
     assert not isinstance(non_wp_item, WorkPiece)
 
@@ -138,7 +138,7 @@ def test_connectivity_strategy_real_split(split_cmd, doc_editor):
     Test that the real ConnectivitySplitStrategy actually splits a disjoint
     geometry and correctly sizes/positions the fragments.
     """
-    layer = doc_editor.doc.active_setup
+    layer = doc_editor.doc.active_layer
 
     # Construct a geometry with two disjoint components in a normalized 0-1
     # space. Imagine a 30x10 bounding box.

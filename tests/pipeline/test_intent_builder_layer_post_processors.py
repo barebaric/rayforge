@@ -8,7 +8,7 @@ the new inputs.
 import pytest
 
 from rayforge.core.doc import Doc
-from rayforge.core.setup import Setup
+from rayforge.core.layer import Layer
 from rayforge.pipeline.intent_builder import (
     IntentBuilder,
     _canonical,
@@ -139,7 +139,7 @@ def test_layer_override_builds_layer_transformers(isolated_machine):
     isolated_machine.set_bed_mesh(_make_bed_mesh())
 
     doc = Doc()
-    doc.active_setup.workflows[0].post_processors_dicts = [
+    doc.active_layer.workflows[0].post_processors_dicts = [
         {"name": "MeshCorrectionTransformer", "enabled": False}
     ]
     spec = _builder(isolated_machine)._build_machine_transform_stage(doc)
@@ -155,7 +155,7 @@ def test_layer_entry_without_machine_default(isolated_machine):
     isolated_machine.set_bed_mesh(_make_bed_mesh())
 
     doc = Doc()
-    doc.active_setup.workflows[0].post_processors_dicts = [dict(MESH_DICT)]
+    doc.active_layer.workflows[0].post_processors_dicts = [dict(MESH_DICT)]
     spec = _builder(isolated_machine)._build_machine_transform_stage(doc)
     assert spec.default_transformers == []
     assert len(spec.layer_transformers) == 1
@@ -163,10 +163,10 @@ def test_layer_entry_without_machine_default(isolated_machine):
 
 def test_post_processor_workflow_round_trip(isolated_machine):
     """Workflow.post_processors_dicts survive to_dict/from_dict."""
-    setup = Setup(name="l")
-    workflow = setup.workflows[0]
+    layer = Layer(name="l")
+    workflow = layer.workflows[0]
     workflow.post_processors_dicts = [dict(MESH_DICT)]
-    restored = Setup.from_dict(setup.to_dict())
+    restored = Layer.from_dict(layer.to_dict())
     assert restored.workflows[0].post_processors_dicts == [dict(MESH_DICT)]
 
 
@@ -200,7 +200,7 @@ def test_machine_transform_token_changes_with_layer_override(isolated_machine):
     builder = _builder(isolated_machine)
     token_before = builder._machine_transform_token(doc, {})
 
-    doc.active_setup.workflows[0].post_processors_dicts = [dict(MESH_DICT)]
+    doc.active_layer.workflows[0].post_processors_dicts = [dict(MESH_DICT)]
     token_after = builder._machine_transform_token(doc, {})
     assert token_before != token_after
 

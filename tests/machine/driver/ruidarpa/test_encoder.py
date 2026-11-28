@@ -25,7 +25,7 @@ from raygeo.ops.types import RasterMode, SectionType
 from ruida_pa.ruidadriver.rd_gluescript import GlueScript
 
 from rayforge.core.doc import Doc
-from rayforge.core.setup import Setup
+from rayforge.core.layer import Layer
 from rayforge.core.step import Step
 from rayforge.machine.driver.ruidarpa import rpa_encoder
 from rayforge.machine.driver.ruidarpa.rpa_encoder import RuidaRPAEncoder
@@ -141,22 +141,22 @@ class TestRuidaRPAEncoderBasics:
         """Each encode() call should reset internal state."""
         ops1 = Ops()
         ops1.job_start()
-        ops1.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops1.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops1.workpiece_start("wp-0")
         ops1.set_power(0.5)
         ops1.move_to(0.0, 0.0, 0.0)
         ops1.workpiece_end("wp-0")
-        ops1.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops1.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops1.job_end()
         encoder.encode(ops1, mock_machine, doc)
 
         ops2 = Ops()
         ops2.job_start()
-        ops2.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops2.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops2.workpiece_start("wp-0")
         ops2.move_to(0.0, 0.0, 0.0)
         ops2.workpiece_end("wp-0")
-        ops2.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops2.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops2.job_end()
         result2 = encoder.encode(ops2, mock_machine, doc)
 
@@ -177,12 +177,12 @@ class TestJobStructure:
     def _simple_job(self, doc):
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.move_to(5.0, 5.0, 0.0)
         ops.line_to(10.0, 8.0, 0.0)
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         return ops
 
@@ -202,15 +202,15 @@ class TestLayerDeclaration:
         """Layers without workflow steps should use safe defaults."""
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         result = encoder.encode(ops, mock_machine, doc)
 
         assert (
-            "declare_layer('Setup 1 Workflow', '#00ccff', 'VECTOR', 'NONE', "
+            "declare_layer('Layer 1 Workflow', '#00ccff', 'VECTOR', 'NONE', "
             "100.0, 20.0, 20.0, 20.0)" in result.text
         )
 
@@ -219,19 +219,19 @@ class TestLayerDeclaration:
         step = CutStep()
         step.power = 0.5
         step.cut_speed = 300
-        doc.setups[0].workflows[0].add_step(step)
+        doc.layers[0].workflows[0].add_step(step)
 
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         result = encoder.encode(ops, mock_machine, doc)
 
         assert (
-            "declare_layer('Setup 1 Workflow', '#00ccff', 'VECTOR', 'NONE', "
+            "declare_layer('Layer 1 Workflow', '#00ccff', 'VECTOR', 'NONE', "
             "5.0, 20.0, 50.0, 50.0)" in result.text
         )
 
@@ -240,14 +240,14 @@ class TestLayerDeclaration:
     ):
         """A step without laser attributes must use safe defaults."""
         step = BareStep()
-        doc.setups[0].workflows[0].add_step(step)
+        doc.layers[0].workflows[0].add_step(step)
 
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         result = encoder.encode(ops, mock_machine, doc)
 
@@ -275,14 +275,14 @@ class TestLayerDeclaration:
                 "frequency": 30000,
             }
         )
-        doc.setups[0].workflows[0].add_step(step)
+        doc.layers[0].workflows[0].add_step(step)
 
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         result = encoder.encode(ops, mock_machine, doc)
 
@@ -305,14 +305,14 @@ class TestLayerDeclaration:
         """
         step = CutStep()
         step.power = 0.05
-        doc.setups[0].workflows[0].add_step(step)
+        doc.layers[0].workflows[0].add_step(step)
 
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
 
         result = encoder.encode(ops, mock_machine, doc)
@@ -333,11 +333,11 @@ class TestLayerDeclaration:
         clamped at the job power cap (the framing power)."""
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.set_power(0.5)
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
 
         head = mock_machine.get_default_laser_head()
@@ -356,11 +356,11 @@ class TestLayerDeclaration:
         """Without a job power cap, emitted power is untouched."""
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.set_power(0.5)
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
 
         assert mock_machine.pointer_job_shift_enabled is False
@@ -398,7 +398,7 @@ class TestLayerDeclaration:
         """
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.ops_section_start(SectionType.VECTOR_OUTLINE, "wp-0")
         ops.move_to(1.0, 1.0, 0.0)
@@ -409,7 +409,7 @@ class TestLayerDeclaration:
         ops.move_to(2.0, 2.0, 0.0)
         ops.ops_section_end(SectionType.VECTOR_OUTLINE)
         ops.workpiece_end("wp-1")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         result = encoder.encode(ops, mock_machine, doc)
 
@@ -419,7 +419,7 @@ class TestLayerDeclaration:
             if line.startswith("declare_layer(")
         ]
         assert len(declared) == 1
-        assert "'Setup 1 Workflow'" in declared[0]
+        assert "'Layer 1 Workflow'" in declared[0]
         assert "'#00ccff'" in declared[0]
 
     def test_per_workpiece_mode_from_sections(
@@ -428,7 +428,7 @@ class TestLayerDeclaration:
         """Two workpieces in one layer derive their own declare_layer modes."""
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.ops_section_start(
             SectionType.RASTER_FILL,
@@ -445,7 +445,7 @@ class TestLayerDeclaration:
         ops.set_power(0.5)
         ops.ops_section_end(SectionType.VECTOR_OUTLINE)
         ops.workpiece_end("wp-1")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         result = encoder.encode(ops, mock_machine, doc)
 
@@ -465,11 +465,11 @@ class TestMoveCutForms:
         """Small moves should use the near form."""
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.move_to(5.0, 5.0, 0.0)
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         result = encoder.encode(ops, mock_machine, doc)
 
@@ -479,12 +479,12 @@ class TestMoveCutForms:
         """Moves beyond the 8.192mm threshold must use the far form."""
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.move_to(0.0, 0.0, 0.0)
         ops.move_to(150.0, 0.0, 0.0)
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         result = encoder.encode(ops, mock_machine, doc)
 
@@ -494,12 +494,12 @@ class TestMoveCutForms:
         """Small cuts should use the near form."""
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.move_to(0.0, 0.0, 0.0)
         ops.line_to(5.0, 5.0, 0.0)
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         result = encoder.encode(ops, mock_machine, doc)
 
@@ -509,12 +509,12 @@ class TestMoveCutForms:
         """Cuts beyond the 8.192mm threshold must use the far form."""
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.move_to(0.0, 0.0, 0.0)
         ops.line_to(20.0, 0.0, 0.0)
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         result = encoder.encode(ops, mock_machine, doc)
 
@@ -528,11 +528,11 @@ class TestSettingsCommands:
         """SET_POWER should emit a power_range transcript line."""
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.set_power(0.5)
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         result = encoder.encode(ops, mock_machine, doc)
 
@@ -551,13 +551,13 @@ class TestSettingsCommands:
         """
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.set_power(0.05)
         ops.move_to(0.0, 0.0, 0.0)
         ops.line_to(5.0, 5.0, 0.0)
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
 
         result = encoder.encode(ops, mock_machine, doc)
@@ -576,11 +576,11 @@ class TestSettingsCommands:
         """Legacy SET_COOLANT must warn instead of silently dropping."""
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.set_coolant(CoolantMode.FLOOD)
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         result = encoder.encode(ops, mock_machine, doc)
 
@@ -593,11 +593,11 @@ class TestSettingsCommands:
         """SET_FEED_RATE should emit a cut_speed transcript line."""
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.set_feed_rate(200)
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         result = encoder.encode(ops, mock_machine, doc)
 
@@ -607,11 +607,11 @@ class TestSettingsCommands:
         """SET_RAPID_RATE should emit a move_speed transcript line."""
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.set_rapid_rate(500)
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         result = encoder.encode(ops, mock_machine, doc)
 
@@ -621,11 +621,11 @@ class TestSettingsCommands:
         """SET_FREQUENCY should convert Hz to KHz for gluescript."""
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.set_frequency(20000)
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         result = encoder.encode(ops, mock_machine, doc)
 
@@ -635,11 +635,11 @@ class TestSettingsCommands:
         """SET_PULSE_WIDTH should pass microseconds to gluescript pwm."""
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.set_pulse_width(50)
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         result = encoder.encode(ops, mock_machine, doc)
 
@@ -652,11 +652,11 @@ class TestSettingsCommands:
         caplog.set_level(logging.WARNING, logger=rpa_encoder.logger.name)
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.dwell(250)
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         result = encoder.encode(ops, mock_machine, doc)
 
@@ -667,13 +667,13 @@ class TestSettingsCommands:
         """Air assist toggle should emit ON then OFF lines."""
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.set_air_assist(AirAssistMode.ON)
         ops.move_to(0.0, 0.0, 0.0)
         ops.set_air_assist(AirAssistMode.OFF)
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         result = encoder.encode(ops, mock_machine, doc)
 
@@ -697,11 +697,11 @@ class TestSettingsCommands:
         CONSTANT by calling set_power_scaling_enabled on the backend."""
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.set_power_mode(mode)
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
 
         mock_gluescript = Mock(spec=GlueScript)
@@ -726,11 +726,11 @@ class TestSettingsCommands:
         mock_machine.driver_args = {"power_scaling_enabled": False}
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.set_power_mode(mode)
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
 
         mock_gluescript = Mock(spec=GlueScript)
@@ -749,13 +749,13 @@ class TestSettingsCommands:
         caplog.set_level(logging.WARNING, logger=rpa_encoder.logger.name)
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.set_head("laser-2")
         ops.set_power(0.5)
         ops.set_head("laser-1")
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         result = encoder.encode(ops, mock_machine, doc)
 
@@ -778,11 +778,11 @@ class TestSettingsCommands:
 
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.set_head("laser_2")
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         result = encoder.encode(ops, mock_machine, doc)
 
@@ -791,11 +791,11 @@ class TestSettingsCommands:
 
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.set_head("laser_1")
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         result = encoder.encode(ops, mock_machine, doc)
 
@@ -810,11 +810,11 @@ class TestSettingsCommands:
 
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.set_head("laser-3")
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         result = encoder.encode(ops, mock_machine, doc)
 
@@ -828,7 +828,7 @@ class TestSectionPowerRouting:
     def _raster_job(self, doc, raster_mode, power):
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.ops_section_start(
             SectionType.RASTER_FILL, "wp-0", raster_mode=raster_mode
@@ -836,7 +836,7 @@ class TestSectionPowerRouting:
         ops.set_power(power)
         ops.ops_section_end(SectionType.RASTER_FILL, raster_mode=raster_mode)
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         return ops
 
@@ -867,7 +867,7 @@ class TestSectionPowerRouting:
         """IMAGE layers declare min==max power (no floor bias)."""
         step = CutStep()
         step.power = 0.5
-        doc.setups[0].workflows[0].add_step(step)
+        doc.layers[0].workflows[0].add_step(step)
 
         ops = self._raster_job(doc, RasterMode.VARIABLE_POWER, 0.5)
         result = encoder.encode(ops, mock_machine, doc)
@@ -911,7 +911,7 @@ class TestSectionPowerRouting:
         for raster_mode, expected in cases:
             ops = Ops()
             ops.job_start()
-            ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+            ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
             ops.workpiece_start("wp-0")
             if raster_mode is None:
                 ops.set_power(0.5)
@@ -926,7 +926,7 @@ class TestSectionPowerRouting:
                     SectionType.RASTER_FILL, raster_mode=raster_mode
                 )
             ops.workpiece_end("wp-0")
-            ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+            ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
             ops.job_end()
             result = encoder.encode(ops, mock_machine, doc)
             declared = [
@@ -949,7 +949,7 @@ class TestSectionPowerRouting:
         """The first raster section determines the layer mode."""
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.ops_section_start(
             SectionType.RASTER_FILL,
@@ -970,7 +970,7 @@ class TestSectionPowerRouting:
             SectionType.RASTER_FILL, raster_mode=RasterMode.DEPTH_MAP
         )
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         result = encoder.encode(ops, mock_machine, doc)
 
@@ -987,7 +987,7 @@ class TestSectionPowerRouting:
         """SET_POWER after OPS_SECTION_END must fall back to power_range()."""
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.ops_section_start(
             SectionType.RASTER_FILL,
@@ -999,7 +999,7 @@ class TestSectionPowerRouting:
         )
         ops.set_power(0.5)
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         result = encoder.encode(ops, mock_machine, doc)
 
@@ -1031,11 +1031,11 @@ class TestPowerCompensation:
     def _vector_job(doc, power):
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.set_power(power)
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         return ops
 
@@ -1059,7 +1059,7 @@ class TestPowerCompensation:
         step = CutStep()
         step.power = 0.5
         step.min_power = 0.3
-        doc.setups[0].workflows[0].add_step(step)
+        doc.layers[0].workflows[0].add_step(step)
 
         result = encoder.encode(self._vector_job(doc, 0.5), mock_machine, doc)
 
@@ -1084,7 +1084,7 @@ class TestPowerCompensation:
                 "min_power": 0.3,
             }
         )
-        doc.setups[0].workflows[0].add_step(step)
+        doc.layers[0].workflows[0].add_step(step)
 
         result = encoder.encode(self._vector_job(doc, 0.5), mock_machine, doc)
 
@@ -1099,8 +1099,8 @@ class TestPowerCompensation:
         }
         step = CutStep()
         step.power = 0.5
-        doc.setups[0].workflows[0].add_step(step)
-        doc.setups[0].workflows[0].extra["min_power"] = 0.3
+        doc.layers[0].workflows[0].add_step(step)
+        doc.layers[0].workflows[0].extra["min_power"] = 0.3
 
         result = encoder.encode(self._vector_job(doc, 0.5), mock_machine, doc)
 
@@ -1116,36 +1116,36 @@ class TestPowerCompensation:
         step0.power = 0.5
         step0.min_power = 0.3
         step0.extra["min_power"] = 0.35
-        doc.setups[0].workflows[0].extra["min_power"] = 0.4
-        doc.setups[0].workflows[0].add_step(step0)
+        doc.layers[0].workflows[0].extra["min_power"] = 0.4
+        doc.layers[0].workflows[0].add_step(step0)
 
         step1 = CutStep()
         step1.power = 0.5
         step1.extra["min_power"] = 0.35
-        setup2 = Setup("Setup 2")
-        doc.add_setup(setup2)
+        setup2 = Layer("Layer 2")
+        doc.add_layer(setup2)
         setup2.workflows[0].extra["min_power"] = 0.4
         setup2.workflows[0].add_step(step1)
 
         step2 = CutStep()
         step2.power = 0.5
-        setup3 = Setup("Setup 3")
-        doc.add_setup(setup3)
+        setup3 = Layer("Layer 3")
+        doc.add_layer(setup3)
         setup3.workflows[0].extra["min_power"] = 0.4
         setup3.workflows[0].add_step(step2)
 
         expected = {
-            doc.setups[0]: 30.0,
+            doc.layers[0]: 30.0,
             setup2: 35.0,
             setup3: 40.0,
         }
-        for setup, min_pct in expected.items():
+        for layer, min_pct in expected.items():
             ops = Ops()
             ops.job_start()
-            ops.layer_start(layer_uid=setup.workflows[0].uid)
+            ops.layer_start(layer_uid=layer.workflows[0].uid)
             ops.workpiece_start("wp-0")
             ops.workpiece_end("wp-0")
-            ops.layer_end(layer_uid=setup.workflows[0].uid)
+            ops.layer_end(layer_uid=layer.workflows[0].uid)
             ops.job_end()
             result = encoder.encode(ops, mock_machine, doc)
             assert self._declared_min_power(result.text) == min_pct
@@ -1154,7 +1154,7 @@ class TestPowerCompensation:
         """Vector layers without min_power keep min==max by default."""
         step = CutStep()
         step.power = 0.5
-        doc.setups[0].workflows[0].add_step(step)
+        doc.layers[0].workflows[0].add_step(step)
 
         result = encoder.encode(self._vector_job(doc, 0.5), mock_machine, doc)
 
@@ -1171,7 +1171,7 @@ class TestPowerCompensation:
         step = CutStep()
         step.power = 0.5
         step.min_power = 0.03
-        doc.setups[0].workflows[0].add_step(step)
+        doc.layers[0].workflows[0].add_step(step)
 
         result = encoder.encode(self._vector_job(doc, 0.5), mock_machine, doc)
 
@@ -1196,7 +1196,7 @@ class TestPowerCompensation:
         step = CutStep()
         step.power = 0.5
         step.min_power = 0.3
-        doc.setups[0].workflows[0].add_step(step)
+        doc.layers[0].workflows[0].add_step(step)
 
         result = encoder.encode(
             self._vector_job(doc, power), mock_machine, doc
@@ -1212,11 +1212,11 @@ class TestPowerCompensation:
         step = CutStep()
         step.power = 0.5
         step.min_power = 0.3
-        doc.setups[0].workflows[0].add_step(step)
+        doc.layers[0].workflows[0].add_step(step)
 
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.ops_section_start(
             SectionType.RASTER_FILL,
@@ -1228,7 +1228,7 @@ class TestPowerCompensation:
             SectionType.RASTER_FILL, raster_mode=RasterMode.CONSTANT_POWER
         )
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         result = encoder.encode(ops, mock_machine, doc)
 
@@ -1248,16 +1248,16 @@ class TestPowerCompensation:
         step = CutStep()
         step.power = 0.5
         step.min_power = 0.3
-        doc.setups[0].workflows[0].add_step(step)
+        doc.layers[0].workflows[0].add_step(step)
 
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         for index in range(2):
             ops.workpiece_start(f"wp-{index}")
             ops.set_power(0.5)
             ops.workpiece_end(f"wp-{index}")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         result = encoder.encode(ops, mock_machine, doc)
 
@@ -1271,11 +1271,11 @@ class TestPowerFloorFromDriverArgs:
     def _vector_job(doc, power):
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.set_power(power)
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         return ops
 
@@ -1298,7 +1298,7 @@ class TestPowerFloorFromDriverArgs:
         }
         step = CutStep()
         step.power = 0.5
-        doc.setups[0].workflows[0].add_step(step)
+        doc.layers[0].workflows[0].add_step(step)
 
         result = encoder.encode(self._vector_job(doc, 0.5), mock_machine, doc)
 
@@ -1312,7 +1312,7 @@ class TestPowerFloorFromDriverArgs:
         mock_machine.driver_args = {}
         step = CutStep()
         step.power = 0.5
-        doc.setups[0].workflows[0].add_step(step)
+        doc.layers[0].workflows[0].add_step(step)
 
         result = encoder.encode(self._vector_job(doc, 0.5), mock_machine, doc)
 
@@ -1331,7 +1331,7 @@ class TestPowerFloorFromDriverArgs:
         }
         step = CutStep()
         step.power = 0.5
-        doc.setups[0].workflows[0].add_step(step)
+        doc.layers[0].workflows[0].add_step(step)
 
         result = encoder.encode(self._vector_job(doc, 0.5), mock_machine, doc)
 
@@ -1350,11 +1350,11 @@ class TestPowerFloorEnabledToggle:
     def _vector_job(doc, power):
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.set_power(power)
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         return ops
 
@@ -1379,7 +1379,7 @@ class TestPowerFloorEnabledToggle:
         step = CutStep()
         step.power = 0.5
         step.min_power = 0.3
-        doc.setups[0].workflows[0].add_step(step)
+        doc.layers[0].workflows[0].add_step(step)
 
         result = encoder.encode(self._vector_job(doc, 0.5), mock_machine, doc)
 
@@ -1396,7 +1396,7 @@ class TestPowerFloorEnabledToggle:
         mock_machine.driver_args = {"power_floor": 20.0}
         step = CutStep()
         step.power = 0.5
-        doc.setups[0].workflows[0].add_step(step)
+        doc.layers[0].workflows[0].add_step(step)
 
         result = encoder.encode(self._vector_job(doc, 0.5), mock_machine, doc)
 
@@ -1411,7 +1411,7 @@ class TestPowerFloorEnabledToggle:
         }
         step = CutStep()
         step.power = 0.5
-        doc.setups[0].workflows[0].add_step(step)
+        doc.layers[0].workflows[0].add_step(step)
 
         result = encoder.encode(self._vector_job(doc, 0.5), mock_machine, doc)
 
@@ -1426,7 +1426,7 @@ class TestImagePowerBias:
         """Build an IMAGE-layer job with a scan line of given pixel values."""
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.ops_section_start(
             SectionType.RASTER_FILL,
@@ -1440,7 +1440,7 @@ class TestImagePowerBias:
             raster_mode=RasterMode.VARIABLE_POWER,
         )
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         return ops
 
@@ -1497,17 +1497,17 @@ class TestImagePowerBias:
         }
         step = CutStep()
         step.power = 0.5
-        doc.setups[0].workflows[0].add_step(step)
+        doc.layers[0].workflows[0].add_step(step)
 
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.set_power(0.5)
         ops.move_to(0.0, 0.0, 0.0)
         ops.arc_to(10.0, 0.0, 5.0, 0.0, clockwise=True)
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         result = encoder.encode(ops, mock_machine, doc)
 
@@ -1526,11 +1526,11 @@ class TestImagePowerBias:
         mock_machine.driver_args = {"image_power_bias": 10.0}
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.set_power(0.5)
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         result = encoder.encode(ops, mock_machine, doc)
 
@@ -1574,7 +1574,7 @@ class TestLayerOverscan:
     def _overscan_job(self, doc, scan_end):
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.ops_section_start(
             SectionType.RASTER_FILL,
@@ -1587,7 +1587,7 @@ class TestLayerOverscan:
             SectionType.RASTER_FILL, raster_mode=RasterMode.VARIABLE_POWER
         )
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         return ops
 
@@ -1625,11 +1625,11 @@ class TestLayerOverscan:
         """A vector layer (no sections) must yield NONE overscan."""
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.set_power(0.5)
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         assert self._declared_overscan(encoder, mock_machine, doc, ops) == (
             "NONE"
@@ -1641,7 +1641,7 @@ class TestLayerOverscan:
         """RASTER layers (CONSTANT_POWER) derive overscan from angle."""
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.ops_section_start(
             SectionType.RASTER_FILL,
@@ -1654,7 +1654,7 @@ class TestLayerOverscan:
             SectionType.RASTER_FILL, raster_mode=RasterMode.CONSTANT_POWER
         )
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         assert self._declared_overscan(encoder, mock_machine, doc, ops) == (
             "X_BI"
@@ -1666,7 +1666,7 @@ class TestLayerOverscan:
         """RASTER layers without scan lines must yield NONE overscan."""
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.ops_section_start(
             SectionType.RASTER_FILL,
@@ -1678,7 +1678,7 @@ class TestLayerOverscan:
             SectionType.RASTER_FILL, raster_mode=RasterMode.VARIABLE_POWER
         )
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         assert self._declared_overscan(encoder, mock_machine, doc, ops) == (
             "NONE"
@@ -1691,7 +1691,7 @@ class TestLayerOverscan:
         set_overscan at the section boundary."""
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         # The workpiece-declared overscan derives from the raster
         # section's horizontal scan (X_BI), so the leading vector section
@@ -1710,7 +1710,7 @@ class TestLayerOverscan:
             SectionType.RASTER_FILL, raster_mode=RasterMode.VARIABLE_POWER
         )
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
 
         mock_gluescript = Mock()
@@ -1730,7 +1730,7 @@ class TestLayerOverscan:
         """A vector section after a raster section downgrades to NONE."""
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.ops_section_start(
             SectionType.RASTER_FILL,
@@ -1746,7 +1746,7 @@ class TestLayerOverscan:
         ops.move_to(1.0, 1.0, 0.0)
         ops.ops_section_end(SectionType.VECTOR_OUTLINE)
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
 
         mock_gluescript = Mock()
@@ -1767,7 +1767,7 @@ class TestLayerOverscan:
         caplog.set_level(logging.INFO, logger=rpa_encoder.logger.name)
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.ops_section_start(SectionType.VECTOR_OUTLINE, "wp-0")
         ops.move_to(0.0, 0.0, 0.0)
@@ -1783,7 +1783,7 @@ class TestLayerOverscan:
             SectionType.RASTER_FILL, raster_mode=RasterMode.VARIABLE_POWER
         )
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
 
         mock_gluescript = Mock(spec=GlueScript)
@@ -1809,7 +1809,7 @@ class TestLayerOverscan:
         overscan (material test grid engrave fills)."""
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.ops_section_start(
             SectionType.RASTER_FILL,
@@ -1825,7 +1825,7 @@ class TestLayerOverscan:
             SectionType.RASTER_FILL, raster_mode=RasterMode.CONSTANT_POWER
         )
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
 
         result = encoder.encode(ops, mock_machine, doc)
@@ -1844,13 +1844,13 @@ class TestCurveLinearization:
         """ARC_TO should decompose into cut segments."""
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.move_to(0.0, 0.0, 0.0)
         ops.set_power(0.5)
         ops.arc_to(10.0, 0.0, 5.0, 0.0, clockwise=True)
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         result = encoder.encode(ops, mock_machine, doc)
 
@@ -1863,7 +1863,7 @@ class TestCurveLinearization:
         """SCAN_LINE should decompose into power and cut segments."""
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.move_to(0.0, 0.0, 0.0)
         # All values map above the 8% controller minimum so the raw
@@ -1871,7 +1871,7 @@ class TestCurveLinearization:
         power_values = bytearray([64, 128, 255, 128, 64])
         ops.scan_to(5.0, 0.0, 0.0, power_values)
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         result = encoder.encode(ops, mock_machine, doc)
 
@@ -1889,7 +1889,7 @@ class TestCurveLinearization:
         """
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.ops_section_start(
             SectionType.RASTER_FILL,
@@ -1902,7 +1902,7 @@ class TestCurveLinearization:
             SectionType.RASTER_FILL, raster_mode=RasterMode.CONSTANT_POWER
         )
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
 
         mock_gluescript = Mock(spec=GlueScript)
@@ -1927,7 +1927,7 @@ class TestCurveLinearization:
         """VARIABLE_POWER scans keep moves for 0-power pixels."""
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.ops_section_start(
             SectionType.RASTER_FILL,
@@ -1940,7 +1940,7 @@ class TestCurveLinearization:
             SectionType.RASTER_FILL, raster_mode=RasterMode.VARIABLE_POWER
         )
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         result = encoder.encode(ops, mock_machine, doc)
 
@@ -1961,14 +1961,14 @@ class TestOpMapGeneration:
         ops = Ops()
         ops.job_start()  # 0 -> declare_job line
         ops.layer_start(
-            layer_uid=doc.setups[0].workflows[0].uid
+            layer_uid=doc.layers[0].workflows[0].uid
         )  # 1 -> nothing
         ops.workpiece_start("wp-0")  # 2 -> comment + declare_layer
         ops.set_power(0.5)  # 3 -> power_range line
         ops.move_to(5.0, 5.0, 0.0)  # 4 -> move_xy_to line
         ops.line_to(10.0, 8.0, 0.0)  # 5 -> cut_xy_to line
         ops.workpiece_end("wp-0")  # 6 -> comment
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)  # 7 -> nothing
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)  # 7 -> nothing
         ops.job_end()  # 8 -> end_job line
         return ops
 
@@ -2075,38 +2075,38 @@ class TestOpMapGeneration:
         ops = Ops()
         ops.job_start()  # 0 -> declare_job line
         ops.layer_start(
-            layer_uid=doc.setups[0].workflows[0].uid
+            layer_uid=doc.layers[0].workflows[0].uid
         )  # 1 -> nothing
         ops.workpiece_start("wp-0")  # 2 -> comment + declare_layer
         ops.set_power(0.5)  # 3 -> power_range line
         ops.move_to(5.0, 5.0, 0.0)  # 4 -> move_xy_to line
         ops.workpiece_end("wp-0")  # 5 -> comment
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)  # 6 -> nothing
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)  # 6 -> nothing
         ops.layer_start(
-            layer_uid=doc.setups[1].workflows[0].uid
+            layer_uid=doc.layers[1].workflows[0].uid
         )  # 7 -> nothing
         ops.workpiece_start("wp-1")  # 8 -> comment + declare_layer
         ops.move_to(1.0, 1.0, 0.0)  # 9 -> move_xy_to line
         ops.workpiece_end("wp-1")  # 10 -> comment
         ops.layer_end(
-            layer_uid=doc.setups[1].workflows[0].uid
+            layer_uid=doc.layers[1].workflows[0].uid
         )  # 11 -> nothing
         ops.layer_start(
-            layer_uid=doc.setups[2].workflows[0].uid
+            layer_uid=doc.layers[2].workflows[0].uid
         )  # 12 -> nothing
         ops.workpiece_start("wp-2")  # 13 -> comment + declare_layer
         ops.line_to(9.0, 9.0, 0.0)  # 14 -> cut_xy_to line
         ops.workpiece_end("wp-2")  # 15 -> comment
         ops.layer_end(
-            layer_uid=doc.setups[2].workflows[0].uid
+            layer_uid=doc.layers[2].workflows[0].uid
         )  # 16 -> nothing
         ops.job_end()  # 17 -> end_job line
         return ops
 
     def test_three_layer_op_map_positions(self, encoder, mock_machine, doc):
-        """A 3-setup job must keep exact per-setup op_map positions."""
-        doc.add_setup(Setup("Setup 2"))
-        doc.add_setup(Setup("Setup 3"))
+        """A 3-layer job must keep exact per-layer op_map positions."""
+        doc.add_layer(Layer("Layer 2"))
+        doc.add_layer(Layer("Layer 3"))
         result = encoder.encode(self._three_layer_job(doc), mock_machine, doc)
         lines = result.text.split("\n")
         op_map = result.op_map
@@ -2161,24 +2161,24 @@ class TestOpMapLayoutPinning:
 
     def test_two_layer_layout_positions(self, encoder, mock_machine, doc):
         """Header/attrs/actions/end_job keep fixed positions."""
-        doc.add_setup(Setup("Setup 2"))
+        doc.add_layer(Layer("Layer 2"))
         ops = Ops()
         ops.job_start()  # 0 -> declare_job line
         ops.layer_start(
-            layer_uid=doc.setups[0].workflows[0].uid
+            layer_uid=doc.layers[0].workflows[0].uid
         )  # 1 -> nothing
         ops.workpiece_start("wp-0")  # 2 -> comment + declare_layer
         ops.move_to(5.0, 5.0, 0.0)  # 3 -> move_xy_to line
         ops.workpiece_end("wp-0")  # 4 -> comment
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)  # 5 -> nothing
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)  # 5 -> nothing
         ops.layer_start(
-            layer_uid=doc.setups[1].workflows[0].uid
+            layer_uid=doc.layers[1].workflows[0].uid
         )  # 6 -> nothing
         ops.workpiece_start("wp-1")  # 7 -> comment + declare_layer
         ops.line_to(10.0, 8.0, 0.0)  # 8 -> cut_xy_to line
         ops.workpiece_end("wp-1")  # 9 -> comment
         ops.layer_end(
-            layer_uid=doc.setups[1].workflows[0].uid
+            layer_uid=doc.layers[1].workflows[0].uid
         )  # 10 -> nothing
         ops.job_end()  # 11 -> end_job line
         result = encoder.encode(ops, mock_machine, doc)
@@ -2225,7 +2225,7 @@ class TestErrorHandling:
         """An incomplete job (no JOB_END) must fail loudly."""
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.move_to(0.0, 0.0, 0.0)
 
         with pytest.raises(RuntimeError, match="JOB_END"):
@@ -2270,8 +2270,8 @@ class TestErrorHandling:
         """LAYER_END without any WORKPIECE_START must fail loudly."""
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
 
         with pytest.raises(ValueError, match="WORKPIECE_START"):
             encoder.encode(ops, mock_machine, doc)
@@ -2296,23 +2296,23 @@ class TestErrorHandling:
 
 
 def _plan_job(doc):
-    """Return Ops for a small two-setup plan test job."""
-    doc.add_setup(Setup("Setup 2"))
+    """Return Ops for a small two-layer plan test job."""
+    doc.add_layer(Layer("Layer 2"))
     ops = Ops()
     ops.job_start()
-    ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+    ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
     ops.workpiece_start("wp-0")
     ops.set_power(0.5)
     ops.move_to(5.0, 5.0, 0.0)
     ops.line_to(10.0, 8.0, 0.0)
     ops.workpiece_end("wp-0")
-    ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
-    ops.layer_start(layer_uid=doc.setups[1].workflows[0].uid)
+    ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
+    ops.layer_start(layer_uid=doc.layers[1].workflows[0].uid)
     ops.workpiece_start("wp-1")
     ops.set_feed_rate(200)
     ops.move_to(20.0, 20.0, 0.0)
     ops.workpiece_end("wp-1")
-    ops.layer_end(layer_uid=doc.setups[1].workflows[0].uid)
+    ops.layer_end(layer_uid=doc.layers[1].workflows[0].uid)
     ops.job_end()
     return ops
 
@@ -2374,7 +2374,7 @@ class TestTranscriptOutput:
         """select_laser, power, and power_range all appear as lines."""
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.set_head("laser-2")
         ops.ops_section_start(
@@ -2388,7 +2388,7 @@ class TestTranscriptOutput:
         )
         ops.set_power(0.5)
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         result = encoder.encode(ops, mock_machine, doc)
         lines = result.text.split("\n")
@@ -2489,12 +2489,12 @@ class TestInjectedGluescript:
     def _job(doc):
         ops = Ops()
         ops.job_start()
-        ops.layer_start(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_start(layer_uid=doc.layers[0].workflows[0].uid)
         ops.workpiece_start("wp-0")
         ops.move_to(5.0, 5.0, 0.0)
         ops.line_to(10.0, 8.0, 0.0)
         ops.workpiece_end("wp-0")
-        ops.layer_end(layer_uid=doc.setups[0].workflows[0].uid)
+        ops.layer_end(layer_uid=doc.layers[0].workflows[0].uid)
         ops.job_end()
         return ops
 

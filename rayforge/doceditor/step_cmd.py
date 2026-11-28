@@ -5,7 +5,7 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
 from ..core.color_preset import get_color_preset_mgr
-from ..core.setup import Setup
+from ..core.layer import Layer
 from ..core.step_registry import step_registry
 from ..core.undo import ChangePropertyCommand, DictItemCommand
 from ..core.vectorization_spec import LayerSource, PassthroughSpec
@@ -158,18 +158,18 @@ class StepCmd:
 
     def initialize_default_steps(self):
         """
-        Adds a default Contour step to the first setup's first workflow
+        Adds a default Contour step to the first layer's first workflow
         if it has no steps.
 
         Called on application startup or when a new empty document is
         created.
         """
         doc = self._doc
-        if not doc.setups:
+        if not doc.layers:
             return
 
-        first_setup = doc.setups[0]
-        workflows = first_setup.workflows
+        first_layer = doc.layers[0]
+        workflows = first_layer.workflows
         if not workflows or workflows[0].has_steps():
             return
 
@@ -205,10 +205,10 @@ class StepCmd:
         for workflow in workflows:
             if workflow.has_steps():
                 continue
-            setup = workflow.parent
+            layer = workflow.parent
             workpieces = (
-                workflow.selected_workpieces(setup.all_workpieces)
-                if isinstance(setup, Setup)
+                workflow.selected_workpieces(layer.all_workpieces)
+                if isinstance(layer, Layer)
                 else []
             )
 

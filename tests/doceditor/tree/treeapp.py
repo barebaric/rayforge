@@ -19,7 +19,7 @@ from gi.repository import Adw, Gtk
 from rayforge.core.color import COLOR_PALETTE
 from rayforge.core.doc import Doc
 from rayforge.core.group import Group
-from rayforge.core.setup import Setup
+from rayforge.core.layer import Layer
 from rayforge.core.step import Step
 from rayforge.core.stock import StockItem
 from rayforge.core.stock_asset import StockAsset
@@ -53,8 +53,8 @@ def build_demo_doc() -> Doc:
     doc = Doc()
     doc.set_children([])
 
-    parts = Setup("Parts")
-    doc.add_setup(parts)
+    parts = Layer("Parts")
+    doc.add_layer(parts)
     parts_workflow = parts.workflows[0]
     ribs = Group("Ribs")
     parts.add_child(ribs)
@@ -69,8 +69,8 @@ def build_demo_doc() -> Doc:
     parts.add_child(fuselage)
     parts_workflow.add_step(ContourStep(name="Contour outer"))
 
-    names = Setup("Names")
-    doc.add_setup(names)
+    names = Layer("Names")
+    doc.add_layer(names)
     names_workflow = names.workflows[0]
     names_workflow.set_color(COLOR_PALETTE[1])
     for name in ("Rib L", "Rib R", "Fuselage"):
@@ -130,8 +130,8 @@ class TreeApp(Adw.Application):
         stack.add_titled(self.operations_tree, "operations", "Operations")
         page = sys.argv[1] if len(sys.argv) > 1 else "parts"
         stack.set_visible_child_name(page)
-        if page == "operations" and self.doc.setups:
-            first_workflow = self.doc.setups[0].workflows[0]
+        if page == "operations" and self.doc.layers:
+            first_workflow = self.doc.layers[0].workflows[0]
             assert first_workflow is not None
             self.operations_tree.expand(first_workflow.uid)
         sidebar.append(switcher)
@@ -188,7 +188,7 @@ class TreeApp(Adw.Application):
         workpiece = WorkPiece(f"Part {self.part_counter}")
         workpiece.natural_width_mm = 30
         workpiece.natural_height_mm = 20
-        self.doc.active_setup.add_child(workpiece)
+        self.doc.active_layer.add_child(workpiece)
 
     def _on_duplicate(self, button):
         item = self.selected_item
@@ -210,17 +210,17 @@ class TreeApp(Adw.Application):
             return
         if not isinstance(self.selected_item, Workflow):
             return
-        setup = self.selected_item.parent
-        if setup is not None:
-            setup.remove_child(self.selected_item)
+        layer = self.selected_item.parent
+        if layer is not None:
+            layer.remove_child(self.selected_item)
         self.selected_item = None
         self.info.set_label("Nothing selected")
 
     def _on_workflow_requested(self, sender, color):
-        setup = self.doc.active_setup
-        workflow = Workflow(f"Workflow {len(setup.workflows) + 1}")
+        layer = self.doc.active_layer
+        workflow = Workflow(f"Workflow {len(layer.workflows) + 1}")
         workflow.set_color(color)
-        setup.add_child(workflow)
+        layer.add_child(workflow)
 
     def _on_workflow_activated(self, sender, workflow):
         self.info.set_label(f"Workflow picked: {workflow.name}")

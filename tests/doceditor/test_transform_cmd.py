@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from rayforge.core.setup import Setup
+from rayforge.core.layer import Layer
 from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.transform_cmd import TransformCmd
 
@@ -17,7 +17,7 @@ def transform_cmd(doc_editor):
 @pytest.fixture
 def sample_items(doc_editor):
     """Provides sample DocItem instances."""
-    layer = Setup(name="Test Layer")
+    layer = Layer(name="Test Layer")
     doc_editor.doc.add_child(layer)
     item1 = WorkPiece(name="Item 1")
     item2 = WorkPiece(name="Item 2")
@@ -131,7 +131,7 @@ def test_set_position_with_x_axis_right(transform_cmd, sample_items):
 
 def test_set_position_group_preserves_relative(doc_editor):
     tc = TransformCmd(doc_editor)
-    layer = Setup(name="L")
+    layer = Layer(name="L")
     doc_editor.doc.add_child(layer)
     a = WorkPiece(name="A")
     a.set_size(20, 20)
@@ -174,7 +174,7 @@ def test_set_position_group_all_machine_origins(doc_editor):
         ),
     }
     for name, (m2w, w2m) in transforms.items():
-        layer = Setup(name="L")
+        layer = Layer(name="L")
         doc_editor.doc.add_child(layer)
         a = WorkPiece(name="A")
         a.set_size(20, 20)
@@ -259,7 +259,7 @@ def test_set_size_no_items(transform_cmd):
 
 def test_set_size_with_fixed_ratio_width_only(transform_cmd, sample_items):
     """Test setting width with fixed aspect ratio, calculating height."""
-    # Setup item with aspect ratio 2.0 (20x10)
+    # Layer item with aspect ratio 2.0 (20x10)
     item = sample_items[0]
     item.set_size(20, 10)
     assert item.get_current_aspect_ratio() == 2.0
@@ -276,7 +276,7 @@ def test_set_size_with_fixed_ratio_width_only(transform_cmd, sample_items):
 
 def test_set_size_with_fixed_ratio_height_only(transform_cmd, sample_items):
     """Test setting height with fixed aspect ratio, calculating width."""
-    # Setup item with aspect ratio 0.5 (10x20)
+    # Layer item with aspect ratio 0.5 (10x20)
     item = sample_items[0]
     item.set_size(10, 20)
     assert item.get_current_aspect_ratio() == 0.5
@@ -296,7 +296,7 @@ def test_set_size_with_fixed_ratio_height_only(transform_cmd, sample_items):
 
 def test_set_size_group(doc_editor):
     tc = TransformCmd(doc_editor)
-    layer = Setup(name="L")
+    layer = Layer(name="L")
     doc_editor.doc.add_child(layer)
     a = WorkPiece(name="A")
     a.set_size(20, 20)
@@ -331,7 +331,7 @@ def test_set_size_group_fixed_ratio_width_only(doc_editor):
     """Group resize with only width provided and fixed_ratio=True:
     height is calculated to preserve the group's aspect ratio."""
     tc = TransformCmd(doc_editor)
-    layer = Setup(name="L")
+    layer = Layer(name="L")
     doc_editor.doc.add_child(layer)
     a = WorkPiece(name="A")
     a.set_size(20, 20)
@@ -366,7 +366,7 @@ def test_set_size_group_fixed_ratio_height_only(doc_editor):
     """Group resize with only height provided and fixed_ratio=True:
     width is calculated to preserve the group's aspect ratio."""
     tc = TransformCmd(doc_editor)
-    layer = Setup(name="L")
+    layer = Layer(name="L")
     doc_editor.doc.add_child(layer)
     a = WorkPiece(name="A")
     a.set_size(20, 20)
@@ -419,7 +419,7 @@ def test_set_angle_preserves_centers(doc_editor):
     """Per-item angle: each item rotates around its own center, so
     world-space centres remain unchanged."""
     tc = TransformCmd(doc_editor)
-    layer = Setup(name="L")
+    layer = Layer(name="L")
     doc_editor.doc.add_child(layer)
     a = WorkPiece(name="A")
     a.set_size(20, 20)
@@ -448,7 +448,7 @@ def test_set_angle_group_rotates_as_whole(doc_editor):
     """Group rotation: items rotate around the bounding-box centre;
     their world-space centres move but the group midpoint stays fixed."""
     tc = TransformCmd(doc_editor)
-    layer = Setup(name="L")
+    layer = Layer(name="L")
     doc_editor.doc.add_child(layer)
     a = WorkPiece(name="A")
     a.set_size(20, 20)
@@ -502,7 +502,7 @@ def test_set_shear(transform_cmd, sample_items):
 def test_set_shear_preserves_centers(doc_editor):
     """Per-item shear: centres stay put."""
     tc = TransformCmd(doc_editor)
-    layer = Setup(name="L")
+    layer = Layer(name="L")
     doc_editor.doc.add_child(layer)
     a = WorkPiece(name="A")
     a.set_size(20, 20)
@@ -536,7 +536,7 @@ def test_set_shear_preserves_centers(doc_editor):
 def test_set_shear_group_preserves_midpoint(doc_editor):
     """Group shear keeps the group's bounding-box centre fixed."""
     tc = TransformCmd(doc_editor)
-    layer = Setup(name="L")
+    layer = Layer(name="L")
     doc_editor.doc.add_child(layer)
     a = WorkPiece(name="A")
     a.set_size(20, 20)
@@ -561,7 +561,7 @@ def test_set_shear_group_reset_converges(doc_editor):
     """Shear reset must converge to 0 in a single call, even after
     multiple incremental shear steps."""
     tc = TransformCmd(doc_editor)
-    layer = Setup(name="L")
+    layer = Layer(name="L")
     doc_editor.doc.add_child(layer)
     a = WorkPiece(name="A")
     a.set_size(20, 20)
@@ -596,7 +596,7 @@ def test_reset_position(transform_cmd, sample_items):
 
 def test_reset_position_group(doc_editor):
     tc = TransformCmd(doc_editor)
-    layer = Setup(name="L")
+    layer = Layer(name="L")
     doc_editor.doc.add_child(layer)
     a = WorkPiece(name="A")
     a.set_size(20, 20)
@@ -629,7 +629,7 @@ def test_reset_angle(transform_cmd, sample_items):
 
 def test_reset_angle_group(doc_editor):
     tc = TransformCmd(doc_editor)
-    layer = Setup(name="L")
+    layer = Layer(name="L")
     doc_editor.doc.add_child(layer)
     a = WorkPiece(name="A")
     a.set_size(20, 20)
@@ -654,7 +654,7 @@ def test_reset_shear(transform_cmd, sample_items):
 
 def test_reset_shear_group(doc_editor):
     tc = TransformCmd(doc_editor)
-    layer = Setup(name="L")
+    layer = Layer(name="L")
     doc_editor.doc.add_child(layer)
     a = WorkPiece(name="A")
     a.set_size(20, 20)
@@ -675,7 +675,7 @@ def test_reset_shear_group(doc_editor):
 
 def test_get_position_group(doc_editor):
     tc = TransformCmd(doc_editor)
-    layer = Setup(name="L")
+    layer = Layer(name="L")
     doc_editor.doc.add_child(layer)
     a = WorkPiece(name="A")
     a.set_size(20, 20)
@@ -694,7 +694,7 @@ def test_get_position_group(doc_editor):
 
 def test_get_size_group(doc_editor):
     tc = TransformCmd(doc_editor)
-    layer = Setup(name="L")
+    layer = Layer(name="L")
     doc_editor.doc.add_child(layer)
     a = WorkPiece(name="A")
     a.set_size(20, 20)
@@ -712,7 +712,7 @@ def test_get_size_group(doc_editor):
 
 def test_get_angle_group(doc_editor):
     tc = TransformCmd(doc_editor)
-    layer = Setup(name="L")
+    layer = Layer(name="L")
     doc_editor.doc.add_child(layer)
     a = WorkPiece(name="A")
     a.set_size(20, 20)
@@ -723,7 +723,7 @@ def test_get_angle_group(doc_editor):
 
 def test_get_shear_group(doc_editor):
     tc = TransformCmd(doc_editor)
-    layer = Setup(name="L")
+    layer = Layer(name="L")
     doc_editor.doc.add_child(layer)
     a = WorkPiece(name="A")
     a.set_size(20, 20)

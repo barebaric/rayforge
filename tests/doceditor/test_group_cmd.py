@@ -27,8 +27,8 @@ async def test_group_and_ungroup_preserves_transform(doc_editor: DocEditor):
     local transformations relative to their parent layer. This is the core
     test for the user-reported bug.
     """
-    # 1. Setup: Create items with known transforms in the active layer
-    layer = doc_editor.doc.active_setup
+    # 1. Layer: Create items with known transforms in the active layer
+    layer = doc_editor.doc.active_layer
 
     wp1 = WorkPiece(name="wp1.svg")
     # A simple translation and scale

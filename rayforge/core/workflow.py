@@ -26,10 +26,10 @@ class Workflow(DocItem):
     """
     An ordered sequence of Steps that defines a manufacturing process.
 
-    A Setup holds its workflows in run order. A Workflow carries the
-    operation-level concerns of the setup's parts it runs for: its
+    A Layer holds its workflows in run order. A Workflow carries the
+    operation-level concerns of the layer's parts it runs for: its
     color (used to identify it across the UI), the workpieces it
-    operates on (empty means all parts of the setup), its enabled
+    operates on (empty means all parts of the layer), its enabled
     flag, and post processors applied to its merged machine-space
     toolpath. It automatically bubbles signals from its child steps.
     """
@@ -47,7 +47,7 @@ class Workflow(DocItem):
         self.per_step_transformer_changed = Signal()
         self.color: str = self.DEFAULT_COLOR
         # The workpieces this workflow runs for, by uid. An empty list
-        # means all workpieces of the setup.
+        # means all workpieces of the layer.
         self.workpiece_uids: list[str] = []
         self.enabled: bool = True
         # Workflow-level post processors, applied to the workflow's
@@ -136,7 +136,7 @@ class Workflow(DocItem):
         The given workpieces this workflow runs for, in input order.
 
         An empty ``workpiece_uids`` filter matches every workpiece of
-        the setup; a set filter matches only the workpieces whose uid
+        the layer; a set filter matches only the workpieces whose uid
         it lists, and silently skips uids that are not present.
         """
 

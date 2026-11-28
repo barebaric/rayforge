@@ -99,14 +99,14 @@ def _windows(app, win):
 @pytest.mark.parametrize("action", ACTIONS)
 def test_create_shows_settings_in_the_panel(app_and_window, action):
     app, win = app_and_window
-    layers_before = len(win.doc_editor.doc.setups)
+    layers_before = len(win.doc_editor.doc.layers)
 
     win.lookup_action(action).activate(None)
     process_events_for_duration(1.5)
 
     doc = win.doc_editor.doc
-    assert len(doc.setups) == layers_before + 1
-    layer = doc.active_setup
+    assert len(doc.layers) == layers_before + 1
+    layer = doc.active_layer
     assert set(_selected(win)) == set(layer.all_workpieces)
     assert win.item_revealer.get_reveal_child()
     provider, expander = _provider(win)
@@ -136,7 +136,7 @@ def test_change_rebuilds_and_keeps_the_selection(app_and_window):
     row.get_spin_button().set_value(3)
     process_events_for_duration(1.5)
 
-    layer = win.doc_editor.doc.active_setup
+    layer = win.doc_editor.doc.active_layer
     new = set(_selected(win))
     assert len(layer.all_workpieces) == 4
     assert new == set(layer.all_workpieces)
@@ -163,7 +163,7 @@ def test_scrolling_stops_when_the_test_is_deselected(app_and_window, deselect):
     else:
         other = WorkPiece("Other")
         other.set_size(5.0, 5.0)
-        win.doc_editor.doc.setups[0].add_child(other)
+        win.doc_editor.doc.layers[0].add_child(other)
         process_events_for_duration(0.3)
         win.surface.select_items([other])
     process_events_for_duration(1.0)

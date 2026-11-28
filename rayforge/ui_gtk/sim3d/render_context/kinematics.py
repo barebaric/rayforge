@@ -93,7 +93,7 @@ class KinematicsContext:
         return self.rotary_axis is not None and self.has_rotary
 
     def mvp_for(self, renderer_is_rotary: bool) -> np.ndarray:
-        """MVP for a toolpath renderer, rotary or flat setup."""
+        """MVP for a toolpath renderer, rotary or flat layer."""
         if renderer_is_rotary and self._mvp_rot is not None:
             return self._mvp_rot
         return self._mvp_ui
@@ -250,13 +250,13 @@ def _with_z_lift(t: np.ndarray, z_lift: float) -> np.ndarray:
 def _current_rotary_diameter(
     op_player: "OpPlayer", doc: Optional["Doc"]
 ) -> float:
-    """Return the current setup's rotary diameter, or 0.0 if none."""
+    """Return the current layer's rotary diameter, or 0.0 if none."""
     if doc is None:
         return 0.0
-    current_setup = op_player.get_current_setup(doc)
-    if current_setup is None:
+    current_layer = op_player.get_current_layer(doc)
+    if current_layer is None:
         return 0.0
-    return current_setup.rotary_diameter or 0.0
+    return current_layer.rotary_diameter or 0.0
 
 
 def _head_focal_distance(

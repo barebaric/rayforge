@@ -107,7 +107,7 @@ async def test_import_svg_export_gcode(
     step.set_cut_speed(3000)
     step.visible = True
 
-    workflow = doc_editor.doc.active_setup.workflows[0]
+    workflow = doc_editor.doc.active_layer.workflows[0]
     assert workflow is not None, (
         "Active layer must have a workflow for this test"
     )
@@ -203,7 +203,7 @@ async def test_import_svg_export_gcode_with_air_assist(
     step.set_air_assist(True)
     step.visible = True
 
-    workflow = doc_editor.doc.active_setup.workflows[0]
+    workflow = doc_editor.doc.active_layer.workflows[0]
     assert workflow is not None, (
         "Active layer must have a workflow for this test"
     )
@@ -245,7 +245,7 @@ def test_saved_state_with_undo_redo(doc_editor):
     assert doc_editor.is_saved is True
     assert len(saved_states) == 0
 
-    doc_editor.setup.add_setup_and_set_active()
+    doc_editor.layer.add_layer_and_set_active()
     assert doc_editor.is_saved is False
     assert len(saved_states) == 1
     assert saved_states[-1] is False
@@ -277,14 +277,14 @@ def test_saved_state_with_multiple_changes(doc_editor):
 
     doc_editor.saved_state_changed.connect(on_saved_state_changed)
 
-    doc_editor.setup.add_setup_and_set_active()
-    doc_editor.setup.add_setup_and_set_active()
+    doc_editor.layer.add_layer_and_set_active()
+    doc_editor.layer.add_layer_and_set_active()
     assert doc_editor.is_saved is False
 
     doc_editor.mark_as_saved()
     assert doc_editor.is_saved is True
 
-    doc_editor.setup.add_setup_and_set_active()
+    doc_editor.layer.add_layer_and_set_active()
     assert doc_editor.is_saved is False
 
     while doc_editor.history_manager.can_undo():
@@ -302,7 +302,7 @@ def test_mark_as_unsaved_clears_checkpoint(doc_editor):
     """
     Test that mark_as_unsaved clears the checkpoint.
     """
-    doc_editor.setup.add_setup_and_set_active()
+    doc_editor.layer.add_layer_and_set_active()
     doc_editor.mark_as_saved()
     assert doc_editor.is_saved is True
 
@@ -411,11 +411,11 @@ async def test_configure_machine_uses_first_layer(doc_editor):
     rm = RotaryModule()
     machine.add_rotary_module(rm)
 
-    first_layer = editor.doc.setups[0]
+    first_layer = editor.doc.layers[0]
     first_layer.set_rotary_enabled(True)
     first_layer.set_rotary_module_uid(rm.uid)
 
-    with patch.object(machine, "configure_for_setup") as mock_cfg:
+    with patch.object(machine, "configure_for_layer") as mock_cfg:
         editor.configure_machine()
         await editor.wait_until_settled()
     mock_cfg.assert_called_with(first_layer)
@@ -430,7 +430,7 @@ async def test_configure_machine_mounts_rotary_for_first_layer(
     rm = RotaryModule()
     machine.add_rotary_module(rm)
 
-    first_layer = editor.doc.setups[0]
+    first_layer = editor.doc.layers[0]
     first_layer.set_rotary_enabled(True)
     first_layer.set_rotary_module_uid(rm.uid)
 
@@ -462,7 +462,7 @@ async def test_frame_job_rotary_svg_drives_a_axis(
     rm.set_axis(Axis.A)
     machine.add_rotary_module(rm)
 
-    layer = doc_editor.doc.active_setup
+    layer = doc_editor.doc.active_layer
     layer.set_rotary_enabled(True)
     layer.set_rotary_module_uid(rm.uid)
 

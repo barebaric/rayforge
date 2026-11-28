@@ -12,20 +12,20 @@ from .stock import StockElement
 from .workpiece import WorkPieceElement
 
 if TYPE_CHECKING:
-    from ....core.setup import Setup
+    from ....core.layer import Layer
 
 
 logger = logging.getLogger(__name__)
 
 
-class SetupElement(CanvasElement):
+class LayerElement(CanvasElement):
     """
-    A non-selectable container that corresponds to the active Setup
+    A non-selectable container that corresponds to the active Layer
     model. It creates and manages child elements for WorkPieces,
     Groups, StockItems, and the steps of all its workflows.
     """
 
-    def __init__(self, setup: "Setup", **kwargs):
+    def __init__(self, layer: "Layer", **kwargs):
         super().__init__(
             x=0,
             y=0,
@@ -34,10 +34,10 @@ class SetupElement(CanvasElement):
             selectable=False,
             background=(0, 0, 0, 0),
             clip=False,
-            data=setup,
+            data=layer,
             **kwargs,
         )
-        self.data: Setup = setup
+        self.data: Layer = layer
         self.data.updated.connect(self.sync_with_model)
         self.data.descendant_added.connect(self.sync_with_model)
         self.data.descendant_removed.connect(self.sync_with_model)
@@ -92,13 +92,13 @@ class SetupElement(CanvasElement):
         parent_of_origin: DocItem | None = None,
     ):
         """
-        Reconciles all child elements with the state of the Setup model.
+        Reconciles all child elements with the state of the Layer model.
         """
         if not self.data or not self.canvas:
             return
 
         logger.debug(
-            f"SetupElement for '{self.data.name}': sync_with_model is"
+            f"LayerElement for '{self.data.name}': sync_with_model is"
             f" executing, called by {origin or sender}."
         )
         from ..surface import WorkSurface
@@ -117,13 +117,13 @@ class SetupElement(CanvasElement):
             if isinstance(elem, (WorkPieceElement, GroupElement, StockElement))
         ]
 
-        # Remove elements for items no longer in the setup
+        # Remove elements for items no longer in the layer
         for elem in current_visual_elements[:]:
             if elem.data not in model_items:
                 logger.debug(f"Removing visual element: {elem}")
                 elem.remove()
 
-        # Add elements for new items in the setup.
+        # Add elements for new items in the layer.
         current_item_data = {elem.data for elem in self.children}
         items_to_add = model_items - current_item_data
         for item_data in items_to_add:
@@ -149,7 +149,7 @@ class SetupElement(CanvasElement):
                     stock_item=item_data,
                     canvas=self.canvas,
                     # Stock is potentially selectable, but its get_elem_hit
-                    # method will make the final decision based on setup
+                    # method will make the final decision based on layer
                     # state.
                     selectable=True,
                 )
@@ -158,7 +158,7 @@ class SetupElement(CanvasElement):
                 self.add(new_elem)
 
         # Reconcile StepElements (Lifecycle Managers) across all the
-        # setup's workflows.
+        # layer's workflows.
         current_step_elements = [
             elem for elem in self.children if isinstance(elem, StepElement)
         ]
@@ -176,11 +176,11 @@ class SetupElement(CanvasElement):
             if elem.data not in model_steps:
                 removed_step_uid = elem.data.uid
                 logger.debug(
-                    "SetupElement detected removal of step "
+                    "LayerElement detected removal of step "
                     f"'{elem.data.name}'. "
                     f"Cleaning up visuals for UID {removed_step_uid}."
                 )
-                # Instruct all workpiece views in this setup to clear the
+                # Instruct all workpiece views in this layer to clear the
                 # surface
                 for wp_view in workpiece_views:
                     wp_view.clear_ops_surface(removed_step_uid)

@@ -3,7 +3,7 @@
 import pytest
 from gi.repository import Adw
 
-from rayforge.core.setup import Setup
+from rayforge.core.layer import Layer
 from rayforge.machine.models.machine import Machine
 from rayforge.ui_gtk.doceditor.workflow_post_processors import (
     WorkflowPostProcessorGroup,
@@ -57,7 +57,7 @@ def test_renders_unconditionally_without_mesh(ui_context_initializer):
     """The transformer renders even with nothing probed; the addon
     widget reports the missing mesh in its description."""
     _make_machine()
-    workflow = Setup(name="l").workflows[0]
+    workflow = Layer(name="l").workflows[0]
     group = WorkflowPostProcessorGroup(workflow, editor=None)
 
     expander = _mesh_group(group)
@@ -78,7 +78,7 @@ def test_follows_machine_default_and_claims_on_edit(
         {"name": MESH_NAME, "enabled": True}
     ]
 
-    workflow = Setup(name="l").workflows[0]
+    workflow = Layer(name="l").workflows[0]
     group = WorkflowPostProcessorGroup(workflow, editor=None)
     assert _mesh_group(group).get_subtitle() == "Follows the machine default"
     assert workflow.post_processors_dicts == []
@@ -97,7 +97,7 @@ def test_follows_machine_default_and_claims_on_edit(
 def test_owned_entry_edits_in_place(ui_context_initializer):
     machine = _make_machine()
     _make_mesh(machine)
-    workflow = Setup(name="l").workflows[0]
+    workflow = Layer(name="l").workflows[0]
     workflow.post_processors_dicts = [{"name": MESH_NAME, "enabled": True}]
     group = WorkflowPostProcessorGroup(workflow, editor=None)
     original_dict = workflow.post_processors_dicts[0]
@@ -114,7 +114,7 @@ def test_owned_entry_edits_in_place(ui_context_initializer):
 def test_subdivide_edit_is_persisted(ui_context_initializer):
     machine = _make_machine()
     _make_mesh(machine)
-    workflow = Setup(name="l").workflows[0]
+    workflow = Layer(name="l").workflows[0]
     workflow.post_processors_dicts = [{"name": MESH_NAME, "enabled": True}]
     group = WorkflowPostProcessorGroup(workflow, editor=None)
 
@@ -133,7 +133,7 @@ def test_reset_to_machine_default_removes_entry(ui_context_initializer):
     machine.default_post_processors_dicts = [
         {"name": MESH_NAME, "enabled": True}
     ]
-    workflow = Setup(name="l").workflows[0]
+    workflow = Layer(name="l").workflows[0]
     workflow.post_processors_dicts = [{"name": MESH_NAME, "enabled": False}]
     group = WorkflowPostProcessorGroup(workflow, editor=None)
     transformer_cls = next(iter(group._group_dicts.values()))[0]

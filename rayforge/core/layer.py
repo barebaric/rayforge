@@ -1,5 +1,5 @@
 """
-Defines the Setup class: one machine configuration within a document.
+Defines the Layer class: one machine configuration within a document.
 """
 
 from __future__ import annotations
@@ -34,23 +34,23 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T", bound="DocItem")
 
 
-class Setup(DocItem):
+class Layer(DocItem):
     """
     Represents one machine configuration: the workpieces loaded for it,
     the stock they are cut from, and the ordered workflows that run.
 
-    A Setup owns the job settings of its physical configuration (WCS,
-    rotary attachment). A document holds one or more Setups in run
-    order; the canvas and the sidebar follow the active setup. It is a
+    A Layer owns the job settings of its physical configuration (WCS,
+    rotary attachment). A document holds one or more Layers in run
+    order; the canvas and the sidebar follow the active layer. It is a
     `DocItem` and automatically manages its children and bubbles up
     signals.
     """
 
     def __init__(self, name: str):
-        """Initializes a Setup instance.
+        """Initializes a Layer instance.
 
         Args:
-            name: The user-facing name of the setup.
+            name: The user-facing name of the layer.
         """
         super().__init__(name=name)
         self.rotary_enabled: bool = False
@@ -66,15 +66,15 @@ class Setup(DocItem):
         # Forward compatibility: store unknown attributes
         self.extra: dict[str, Any] = {}
 
-        # A new setup gets one workflow automatically.
+        # A new layer gets one workflow automatically.
         workflow = Workflow(_("{name} Workflow").format(name=name))
         self.add_child(workflow)
 
     def to_dict(self) -> dict:
-        """Serializes the setup and its children to a dictionary."""
+        """Serializes the layer and its children to a dictionary."""
         result = {
             "uid": self.uid,
-            "type": "setup",
+            "type": "layer",
             "name": self.name,
             "matrix": self.matrix.to_list(),
             "rotary_enabled": self.rotary_enabled,
@@ -88,8 +88,8 @@ class Setup(DocItem):
         return result
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> Setup:
-        """Deserializes a dictionary into a Setup instance."""
+    def from_dict(cls, data: dict[str, Any]) -> Layer:
+        """Deserializes a dictionary into a Layer instance."""
         known_keys = {
             "uid",
             "type",
@@ -104,15 +104,15 @@ class Setup(DocItem):
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
 
-        setup = cls(name=data.get("name", "Setup"))
-        setup.uid = data["uid"]
-        setup.matrix = Matrix.from_list(data["matrix"])
-        setup.rotary_enabled = data.get("rotary_enabled", False)
-        setup.rotary_diameter = data.get("rotary_diameter", 25.0)
-        setup.rotary_module_uid = data.get("rotary_module_uid")
-        setup.stock_material_uid = data.get("stock_material_uid")
-        setup.wcs = data.get("wcs")
-        setup.extra = extra
+        layer = cls(name=data.get("name", "Layer"))
+        layer.uid = data["uid"]
+        layer.matrix = Matrix.from_list(data["matrix"])
+        layer.rotary_enabled = data.get("rotary_enabled", False)
+        layer.rotary_diameter = data.get("rotary_diameter", 25.0)
+        layer.rotary_module_uid = data.get("rotary_module_uid")
+        layer.stock_material_uid = data.get("stock_material_uid")
+        layer.wcs = data.get("wcs")
+        layer.extra = extra
 
         children: list[DocItem] = []
         for child_data in data.get("children", []):
@@ -128,16 +128,16 @@ class Setup(DocItem):
 
                 children.append(StockItem.from_dict(child_data))
         if not any(isinstance(child, Workflow) for child in children):
-            # The workflow created by __init__ keeps the setup runnable.
-            auto_workflow = setup.workflows[0]
+            # The workflow created by __init__ keeps the layer runnable.
+            auto_workflow = layer.workflows[0]
             children.append(auto_workflow)
-        setup.set_children(children)
+        layer.set_children(children)
 
-        return setup
+        return layer
 
     @property
     def stock_items(self) -> list[StockItem]:
-        """Returns the setup's StockItem children."""
+        """Returns the layer's StockItem children."""
         from .stock import StockItem
 
         return [
@@ -158,14 +158,14 @@ class Setup(DocItem):
     def all_workpieces(self) -> list[WorkPiece]:
         """
         Recursively finds and returns a flattened list of all WorkPiece
-        objects contained within this setup, including those inside
+        objects contained within this layer, including those inside
         groups.
         """
         return self.get_descendants(of_type=WorkPiece)
 
     @property
     def has_fills(self) -> bool:
-        """Check if any workpiece in this setup has fill geometry."""
+        """Check if any workpiece in this layer has fill geometry."""
         for wp in self.all_workpieces:
             fills = wp.fills
             if fills is not None and len(fills) > 0:
@@ -174,14 +174,14 @@ class Setup(DocItem):
 
     @property
     def workflows(self) -> list[Workflow]:
-        """Returns the setup's workflows in run order."""
+        """Returns the layer's workflows in run order."""
         return [
             child for child in self.children if isinstance(child, Workflow)
         ]
 
     def get_content_items(self) -> list[DocItem]:
         """
-        Returns a list of user-facing items in this setup (e.g.,
+        Returns a list of user-facing items in this layer (e.g.,
         WorkPieces, Groups), excluding internal objects like Workflows
         and StockItems.
         """
@@ -200,7 +200,7 @@ class Setup(DocItem):
 
     @property
     def is_empty(self) -> bool:
-        """Returns True if the setup holds no user-facing items."""
+        """Returns True if the layer holds no user-facing items."""
         return not self.get_content_items()
 
     def _on_workflow_post_transformer_changed(self, sender):
@@ -244,13 +244,13 @@ class Setup(DocItem):
     @property
     def active(self) -> bool:
         """
-        Returns True if this setup is the currently active setup in the
+        Returns True if this layer is the currently active layer in the
         document.
         """
-        return self.doc.active_setup is self if self.doc else False
+        return self.doc.active_layer is self if self.doc else False
 
     def set_name(self, name: str):
-        """Sets the name of the setup.
+        """Sets the name of the layer.
 
         Not a content change, so ``updated`` stays untouched.
         """
@@ -279,7 +279,7 @@ class Setup(DocItem):
         self.updated.send(self)
 
     def set_stock_material_uid(self, uid: str | None):
-        """Set the stock material rendered for this rotary setup."""
+        """Set the stock material rendered for this rotary layer."""
         if self.stock_material_uid == uid:
             return
         self.stock_material_uid = uid
@@ -287,7 +287,7 @@ class Setup(DocItem):
 
     @property
     def stock_material(self) -> Material | None:
-        """The Material selected as this setup's rotary stock, if any."""
+        """The Material selected as this layer's rotary stock, if any."""
         if not self.stock_material_uid:
             return None
         return get_context().material_mgr.get_material_or_none(
@@ -295,12 +295,12 @@ class Setup(DocItem):
         )
 
     def get_subtitle(self, rotary_module_name: str | None = None) -> str:
-        """Returns a subtitle describing the setup type.
+        """Returns a subtitle describing the layer type.
 
         Args:
             rotary_module_name: The name of the selected rotary module,
                 if any. The caller is responsible for resolving the
-                setup's ``rotary_module_uid`` to a name.
+                layer's ``rotary_module_uid`` to a name.
 
         Returns:
             A human-readable subtitle string (e.g. ``"Flat"`` or
@@ -319,7 +319,7 @@ class Setup(DocItem):
         self.updated.send(self)
 
     def get_effective_wcs(self, machine) -> str:
-        """Return this setup's WCS or the machine's active WCS."""
+        """Return this layer's WCS or the machine's active WCS."""
         return self.wcs if self.wcs else machine.active_wcs
 
     def mm_to_degrees(self, mm: float) -> float:
@@ -330,16 +330,16 @@ class Setup(DocItem):
         return (mm / circumference) * 360.0
 
     def add_workpiece(self, workpiece: WorkPiece):
-        """Adds a single workpiece to the setup."""
+        """Adds a single workpiece to the layer."""
         self.add_child(workpiece)
 
     def remove_workpiece(self, workpiece: WorkPiece):
-        """Removes a single workpiece from the setup."""
+        """Removes a single workpiece from the layer."""
         self.remove_child(workpiece)
 
     def set_workpieces(self, workpieces: list[WorkPiece]):
         """
-        Sets the setup's workpieces to a new list, preserving the
+        Sets the layer's workpieces to a new list, preserving the
         existing workflows, groups and stock.
         """
         others = [c for c in self.children if not isinstance(c, WorkPiece)]

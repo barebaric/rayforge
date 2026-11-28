@@ -114,10 +114,10 @@ def _build_workflow_path_vars_for_doc(
     result: dict[str, dict[str, str]] = {}
     if not doc:
         return result
-    for setup in doc.setups:
-        wcs = setup.get_effective_wcs(machine)
+    for layer in doc.layers:
+        wcs = layer.get_effective_wcs(machine)
         wcs_offset = machine.get_job_wcs_offset(machine.get_wcs_offset(wcs))
-        for workflow in setup.workflows:
+        for workflow in layer.workflows:
             result[workflow.uid] = {
                 "workflow.name": workflow.name,
                 "wcs_offset[0]": _repr_val(wcs_offset[0]),
@@ -133,8 +133,8 @@ def _build_workpiece_path_vars_for_doc(
     result: dict[str, dict[str, str]] = {}
     if not doc:
         return result
-    for setup in doc.setups:
-        for wp in setup.all_workpieces:
+    for layer in doc.layers:
+        for wp in layer.all_workpieces:
             pos = wp.pos
             size = wp.size
             counter = doc.job_counter.counter.value_at(wp.variable_offset)
@@ -163,8 +163,8 @@ def _build_macro_table(machine: "Machine") -> dict:
         return {"name": m.name, "code": m.code, "enabled": m.enabled}
 
     trigger_map = {
-        MacroTrigger.LAYER_START: "layer_start",
-        MacroTrigger.LAYER_END: "layer_end",
+        MacroTrigger.WORKFLOW_START: "layer_start",
+        MacroTrigger.WORKFLOW_END: "layer_end",
         MacroTrigger.WORKPIECE_START: "workpiece_start",
         MacroTrigger.WORKPIECE_END: "workpiece_end",
     }
@@ -214,14 +214,14 @@ def _build_workflow_wcs(doc: "Doc", machine: "Machine") -> dict[str, str]:
     """Per-workflow WCS command, keyed by workflow UID.
 
     The encoder matches these against the span markers, whose uid is
-    the workflow's; the value is the workflow's setup WCS.
+    the workflow's; the value is the workflow's layer WCS.
     """
     result: dict[str, str] = {}
     if not doc:
         return result
-    for setup in doc.setups:
-        for workflow in setup.workflows:
-            result[workflow.uid] = setup.get_effective_wcs(machine)
+    for layer in doc.layers:
+        for workflow in layer.workflows:
+            result[workflow.uid] = layer.get_effective_wcs(machine)
     return result
 
 

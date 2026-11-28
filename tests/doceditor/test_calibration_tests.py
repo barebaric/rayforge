@@ -24,7 +24,7 @@ from rayforge.pipeline.artifact import JobArtifact
 
 DATA = Path(__file__).parent / "data" / "calibration_tests"
 
-# The laser addon is importable through the sys.path setup of the root
+# The laser addon is importable through the sys.path layer of the root
 # conftest; static analysis does not see that path.
 _calibration = importlib.import_module("laser_essentials.calibration")
 _command = importlib.import_module("laser_essentials.commands.calibration_cmd")
@@ -134,16 +134,16 @@ async def test_each_test_gets_its_own_active_layer(
     doc_editor, machine, generator_id
 ):
     cmd = CalibrationCmd(doc_editor)
-    before = list(doc_editor.doc.setups)
+    before = list(doc_editor.doc.layers)
     record = cmd.create(generator_id)
 
     layer = _layer(doc_editor, record)
     assert layer not in before
-    assert doc_editor.doc.active_setup is layer
+    assert doc_editor.doc.active_layer is layer
     assert layer.name == cmd.generator(generator_id).title
     assert layer.stock_material_uid is not None
     colors = {
-        workflow.color for setup in before for workflow in setup.workflows
+        workflow.color for layer in before for workflow in layer.workflows
     }
     assert all(workflow.color not in colors for workflow in layer.workflows)
     assert record in _records(doc_editor)
@@ -173,9 +173,9 @@ async def test_create_is_centered_and_one_undo_step(
     doc_editor, machine, generator_id
 ):
     cmd = CalibrationCmd(doc_editor)
-    layers_before = list(doc_editor.doc.setups)
+    layers_before = list(doc_editor.doc.layers)
     assets_before = set(doc_editor.doc.assets)
-    active_before = doc_editor.doc.active_setup
+    active_before = doc_editor.doc.active_layer
     record = cmd.create(generator_id)
     layer = _layer(doc_editor, record)
 
@@ -184,12 +184,12 @@ async def test_create_is_centered_and_one_undo_step(
     assert center == pytest.approx((200.0, 200.0), abs=0.01)
 
     doc_editor.history_manager.undo()
-    assert list(doc_editor.doc.setups) == layers_before
+    assert list(doc_editor.doc.layers) == layers_before
     assert set(doc_editor.doc.assets) == assets_before
-    assert doc_editor.doc.active_setup is active_before
+    assert doc_editor.doc.active_layer is active_before
 
     doc_editor.history_manager.redo()
-    assert layer in doc_editor.doc.setups
+    assert layer in doc_editor.doc.layers
     assert record in _records(doc_editor)
 
 
@@ -251,10 +251,10 @@ async def test_create_needs_a_machine(doc_editor, machine, mocker):
     mocker.patch.object(
         type(doc_editor.context), "machine", new_callable=mocker.PropertyMock
     ).return_value = None
-    layers = list(doc_editor.doc.setups)
+    layers = list(doc_editor.doc.layers)
     with pytest.raises(ValueError):
         CalibrationCmd(doc_editor).create("interval_test")
-    assert list(doc_editor.doc.setups) == layers
+    assert list(doc_editor.doc.layers) == layers
 
 
 @pytest.mark.asyncio
@@ -421,7 +421,7 @@ async def test_deleting_the_layer_removes_the_record(doc_editor, machine):
     owned = {record.uid, *record.state.asset_uids}
     assert owned <= set(doc_editor.doc.assets)
 
-    doc_editor.setup.delete_setup(_layer(doc_editor, record))
+    doc_editor.layer.delete_layer(_layer(doc_editor, record))
 
     assert owned.isdisjoint(doc_editor.doc.assets)
     saved = doc_editor.doc.to_dict()["assets"]
@@ -444,10 +444,10 @@ async def test_deleting_the_layer_keeps_assets_a_moved_cell_uses(
     cmd = CalibrationCmd(doc_editor)
     record = cmd.create("interval_test", {"count": 2})
     moved = cmd.workpieces(record)[-1]
-    other = doc_editor.doc.setups[0]
+    other = doc_editor.doc.layers[0]
     other.add_child(moved)
 
-    doc_editor.setup.delete_setup(_layer(doc_editor, record))
+    doc_editor.layer.delete_layer(_layer(doc_editor, record))
 
     assert moved.source is not None
     assert record.uid not in doc_editor.doc.assets
@@ -476,7 +476,7 @@ async def test_sync_follows_a_new_document(doc_editor, machine):
     old_doc = doc_editor.doc
     doc_editor.set_doc(type(old_doc)())
     record = CalibrationCmd(doc_editor).create("interval_test")
-    doc_editor.setup.delete_setup(_layer(doc_editor, record))
+    doc_editor.layer.delete_layer(_layer(doc_editor, record))
     assert record.uid not in doc_editor.doc.assets
     assert sync is not None
 
@@ -490,9 +490,9 @@ async def test_sync_ignores_other_changes(doc_editor, machine):
     record = cmd.create("material_test_grid")
     assets = set(doc_editor.doc.assets)
     (wp,) = cmd.workpieces(record)
-    other = doc_editor.doc.setups[0]
+    other = doc_editor.doc.layers[0]
 
-    doc_editor.setup.delete_setup(other)
+    doc_editor.layer.delete_layer(other)
     _layer(doc_editor, record).remove_child(wp)
     assert set(doc_editor.doc.assets) == assets
 
@@ -615,7 +615,7 @@ def _old_style_grid(editor, grid_params):
     step.workpiece_uids = [wp.uid]
     width, height = wp.size
     wp.pos = (200 - width / 2, 200 - height / 2)
-    layer = editor.doc.active_setup
+    layer = editor.doc.active_layer
     layer.workflows[0].add_step(step)
     layer.add_child(wp)
 

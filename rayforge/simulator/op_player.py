@@ -7,8 +7,8 @@ from raygeo.ops.axis import Axis
 from raygeo.ops.types import CommandCategory, CommandType
 
 from ..core.doc import Doc
-from ..core.setup import Setup
-from ..machine.kinematic_mapping import resolve_setup_rotary
+from ..core.layer import Layer
+from ..machine.kinematic_mapping import resolve_layer_rotary
 from ..machine.kinematic_math import KinematicMath
 from ..machine.models.machine import Machine
 from ..machine.models.rotary_module import RotaryType
@@ -488,14 +488,14 @@ class OpPlayer:
         return create_home_state(self._machine)
 
     def _update_rotary_config(self, marker_uid: str) -> None:
-        setup = self._resolve_setup_by_uid(marker_uid)
-        cfg = resolve_setup_rotary(setup, self._machine)
+        layer = self._resolve_layer_by_uid(marker_uid)
+        cfg = resolve_layer_rotary(layer, self._machine)
         self._source_axis = cfg.source_axis
         self._rotary_axis = cfg.rotary_axis
         if cfg.rotary_axis is not None and cfg.module is not None:
             diameter = (
-                setup.rotary_diameter
-                if setup and setup.rotary_diameter
+                layer.rotary_diameter
+                if layer and layer.rotary_diameter
                 else cfg.module.default_diameter
             )
             ratio = KinematicMath.gear_ratio(
@@ -609,33 +609,33 @@ class OpPlayer:
                 return i
         return 0
 
-    def _resolve_setup_by_uid(self, uid: str) -> "Setup | None":
-        """Resolve a marker uid to its setup.
+    def _resolve_layer_by_uid(self, uid: str) -> "Layer | None":
+        """Resolve a marker uid to its layer.
 
-        Production spans carry the workflow uid; a bare setup uid is
+        Production spans carry the workflow uid; a bare layer uid is
         accepted as well (e.g. hand-built ops in tests).
         """
         item = self._doc.find_descendant_by_uid(uid)
-        if isinstance(item, Setup):
+        if isinstance(item, Layer):
             return item
-        return getattr(item, "setup", None)
+        return getattr(item, "layer", None)
 
-    def get_current_setup(self, doc: Doc) -> "Setup | None":
+    def get_current_layer(self, doc: Doc) -> "Layer | None":
         uid = self.state.current_layer_uid
         if uid:
-            return self._resolve_setup_by_uid(uid)
+            return self._resolve_layer_by_uid(uid)
         return None
 
-    def get_effective_setup(self, doc: Doc) -> "Setup | None":
-        """Return the setup that should drive playback configuration.
+    def get_effective_layer(self, doc: Doc) -> "Layer | None":
+        """Return the layer that should drive playback configuration.
 
-        Falls back to the first setup of the document while the player
+        Falls back to the first layer of the document while the player
         is in the preamble (before the first LAYER_START command).
         """
-        setup = self.get_current_setup(doc)
-        if setup is None and doc.setups:
-            setup = doc.setups[0]
-        return setup
+        layer = self.get_current_layer(doc)
+        if layer is None and doc.layers:
+            layer = doc.layers[0]
+        return layer
 
     def _emit_layer_change(self):
         uid = self.state.current_layer_uid
@@ -661,29 +661,29 @@ class SnapshotBuilder:
         self._rotary_dpm: float = 0.0
         self.state = initial_state
 
-    def _resolve_setup_by_uid(self, uid: str) -> "Setup | None":
-        """Resolve a marker uid to its setup.
+    def _resolve_layer_by_uid(self, uid: str) -> "Layer | None":
+        """Resolve a marker uid to its layer.
 
-        Production spans carry the workflow uid; a bare setup uid is
+        Production spans carry the workflow uid; a bare layer uid is
         accepted as well.
         """
         item = self._doc.find_descendant_by_uid(uid)
-        if isinstance(item, Setup):
+        if isinstance(item, Layer):
             return item
-        return getattr(item, "setup", None)
+        return getattr(item, "layer", None)
 
     def advance_to(self, index: int):
         for i in range(self._current_index + 1, index + 1):
             ct = self.ops.command_type(i)
             if ct == CommandType.LAYER_START:
-                setup = self._resolve_setup_by_uid(self.ops.layer_uid(i))
-                cfg = resolve_setup_rotary(setup, self._machine)
+                layer = self._resolve_layer_by_uid(self.ops.layer_uid(i))
+                cfg = resolve_layer_rotary(layer, self._machine)
                 self._source_axis = cfg.source_axis
                 self._rotary_axis = cfg.rotary_axis
                 if cfg.rotary_axis is not None and cfg.module is not None:
                     diameter = (
-                        setup.rotary_diameter
-                        if setup and setup.rotary_diameter
+                        layer.rotary_diameter
+                        if layer and layer.rotary_diameter
                         else cfg.module.default_diameter
                     )
                     ratio = KinematicMath.gear_ratio(

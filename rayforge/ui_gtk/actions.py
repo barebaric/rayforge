@@ -9,7 +9,7 @@ from gi.repository import Adw, Gio, GLib, Gtk
 from ..context import get_context
 from ..core.group import Group
 from ..core.item import DocItem
-from ..core.setup import Setup
+from ..core.layer import Layer
 from ..core.source_asset import SourceAsset
 from ..core.stock import StockItem
 from ..core.workpiece import WorkPiece
@@ -114,16 +114,16 @@ class ActionExtensionRegistry:
         self._state_update_addon_map: dict[int, str] = {}
 
     def register_setup(self, handler: ActionSetupHandler, addon_name: str):
-        """Register a handler to be called during action setup."""
+        """Register a handler to be called during action layer."""
         if handler in self._setup_handlers:
             return
         self._setup_handlers.append(handler)
         if addon_name:
             self._setup_addon_map[id(handler)] = addon_name
-        logger.debug(f"Registered action setup handler: {handler.__name__}")
+        logger.debug(f"Registered action layer handler: {handler.__name__}")
 
     def unregister_setup(self, handler: ActionSetupHandler) -> bool:
-        """Unregister an action setup handler."""
+        """Unregister an action layer handler."""
         try:
             self._setup_handlers.remove(handler)
             self._setup_addon_map.pop(id(handler), None)
@@ -195,13 +195,13 @@ class ActionExtensionRegistry:
         return count
 
     def invoke_setup_handlers(self, action_manager: "ActionManager"):
-        """Invoke all registered setup handlers."""
+        """Invoke all registered layer handlers."""
         for handler in self._setup_handlers:
             try:
                 handler(action_manager)
             except Exception:
                 logger.exception(
-                    f"Error in action setup handler {handler.__name__}"
+                    f"Error in action layer handler {handler.__name__}"
                 )
 
     def invoke_state_update_handlers(self, action_manager: "ActionManager"):
@@ -576,10 +576,10 @@ class ActionManager:
         if selected_wps:
             has_workpieces = True
         else:
-            current_setup = self.doc.active_setup
+            current_layer = self.doc.active_layer
             has_workpieces = (
-                current_setup
-                and len(current_setup.get_descendants(WorkPiece)) > 0
+                current_layer
+                and len(current_layer.get_descendants(WorkPiece)) > 0
             )
         layout_info = action_registry.get("layout-pixel-perfect")
         if layout_info and layout_info.action:
@@ -734,9 +734,9 @@ class ActionManager:
         valid_workpieces = [
             wp
             for wp in workpieces_to_process
-            if wp.setup
-            and wp.setup.workflows
-            and any(w.has_steps() for w in wp.setup.workflows)
+            if wp.layer
+            and wp.layer.workflows
+            and any(w.has_steps() for w in wp.layer.workflows)
         ]
 
         if not valid_workpieces:
@@ -759,8 +759,8 @@ class ActionManager:
         # 1. Execute the command to update the data model.
         for workpiece in workpieces_to_process:
             if not (
-                workpiece.setup
-                and any(w.has_steps() for w in workpiece.setup.workflows)
+                workpiece.layer
+                and any(w.has_steps() for w in workpiece.layer.workflows)
             ):
                 continue
 
@@ -852,9 +852,9 @@ class ActionManager:
             for elem in selected_elements
             if isinstance(elem.data, DocItem)
         ]
-        # All items must share the same setup to be grouped
+        # All items must share the same layer to be grouped
         parent = items_to_group[0].parent
-        if not isinstance(parent, Setup) or not all(
+        if not isinstance(parent, Layer) or not all(
             item.parent is parent for item in items_to_group
         ):
             return

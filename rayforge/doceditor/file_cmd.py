@@ -27,7 +27,7 @@ from raygeo.ops.state import CoolantMode
 from ..context import get_context
 from ..core.doc import Doc
 from ..core.item import DocItem
-from ..core.setup import Setup
+from ..core.layer import Layer
 from ..core.source_asset import SourceAsset
 from ..core.undo import ChangePropertyCommand, ListItemCommand
 from ..core.vectorization_spec import (
@@ -92,8 +92,8 @@ def _unsupported_coolant_labels(
     if machine is None:
         return []
     unsupported: set[CoolantMode] = set()
-    for setup in doc.setups:
-        for workflow in setup.workflows:
+    for layer in doc.layers:
+        for workflow in layer.workflows:
             for step in workflow.steps:
                 unsupported.update(
                     step.get_unsupported_coolant_methods(machine)
@@ -514,9 +514,9 @@ class FileCmd:
         build a workflow per imported source layer, based on the import
         mode.
 
-        All workpieces go into the active setup. NEW_LAYERS creates one
+        All workpieces go into the active layer. NEW_LAYERS creates one
         workflow per source layer; MAP_TO_EXISTING assigns each source
-        layer's workpieces to the setup's existing workflow at the same
+        layer's workpieces to the layer's existing workflow at the same
         index; FLATTEN assigns all of them to the first workflow.
 
         Returns (pairs, new_workflows, renames): the flat list of
@@ -525,7 +525,7 @@ class FileCmd:
         pairs for still auto-named workflows in MAP_TO_EXISTING mode.
         """
         doc = self._editor.doc
-        target_setup = doc.active_setup
+        target_layer = doc.active_layer
         pairs: list[tuple[DocItem, DocItem]] = []
         new_workflows: list[Workflow] = []
         renames: list[tuple[Workflow, str]] = []
@@ -546,8 +546,8 @@ class FileCmd:
             workflow.set_workpiece_uids(uids)
 
         if mode == LayerImportMode.MAP_TO_EXISTING:
-            existing = target_setup.workflows
-            auto_name = _("{name} Workflow").format(name=target_setup.name)
+            existing = target_layer.workflows
+            auto_name = _("{name} Workflow").format(name=target_layer.name)
             for idx, (layer_id, workpieces) in enumerate(grouped.items()):
                 if idx < len(existing):
                     dest_workflow = existing[idx]
@@ -560,33 +560,33 @@ class FileCmd:
                     ):
                         renames.append((dest_workflow, info.name))
                 for wp in workpieces:
-                    pairs.append((target_setup, wp))
+                    pairs.append((target_layer, wp))
         elif mode == LayerImportMode.NEW_LAYERS:
             default_workflow = (
-                target_setup.workflows[0] if target_setup.workflows else None
+                target_layer.workflows[0] if target_layer.workflows else None
             )
             first_group = True
             for layer_id, workpieces in grouped.items():
                 info = layers_by_id.get(layer_id)
                 if info is not None and default_workflow is not None:
                     workflow = self._editor.workflow.create_for_source_layer(
-                        target_setup, info, workpieces
+                        target_layer, info, workpieces
                     )
                     if workflow is not None:
                         new_workflows.append(workflow)
-                        pairs.append((target_setup, workflow))
+                        pairs.append((target_layer, workflow))
                         for wp in workpieces:
-                            pairs.append((target_setup, wp))
+                            pairs.append((target_layer, wp))
                         first_group = False
                         continue
                 if first_group and default_workflow is not None:
                     _assign(default_workflow, workpieces)
                     first_group = False
                 for wp in workpieces:
-                    pairs.append((target_setup, wp))
+                    pairs.append((target_layer, wp))
         else:
             default_workflow = (
-                target_setup.workflows[0] if target_setup.workflows else None
+                target_layer.workflows[0] if target_layer.workflows else None
             )
             if default_workflow is not None:
                 _assign(
@@ -594,7 +594,7 @@ class FileCmd:
                     [item for item in items if isinstance(item, WorkPiece)],
                 )
             for item in items:
-                pairs.append((target_setup, item))
+                pairs.append((target_layer, item))
 
         return pairs, new_workflows, renames
 
@@ -1371,7 +1371,7 @@ class FileCmd:
         source_asset: SourceAsset,
         vectorization_spec: VectorizationSpec,
         position_mm: Point | None = None,
-        target_setup: Setup | None = None,
+        target_layer: Layer | None = None,
     ) -> ImportResult | None:
         """
         Re-run the import pipeline for an existing SourceAsset, producing

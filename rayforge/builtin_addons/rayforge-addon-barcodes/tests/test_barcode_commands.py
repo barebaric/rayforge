@@ -109,7 +109,7 @@ def test_setting_keeps_the_resolved_counter_value():
     asset = BarcodeAsset(content="{counter}", symbology=Symbology.CODE128)
     editor.doc.add_asset(asset)
     wp = WorkPiece.from_geometry_provider(asset)
-    editor.doc.active_setup.add_child(wp)
+    editor.doc.active_layer.add_child(wp)
     assert asset.error is None
 
     width = wp.size[0]

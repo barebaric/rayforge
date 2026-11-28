@@ -14,12 +14,12 @@ _WORKPIECE_ICON = "model-symbolic"
 
 
 def _workflow_for(workpiece: WorkPiece) -> Workflow | None:
-    """The first workflow of the part's setup that runs for it."""
-    setup = workpiece.setup
-    if setup is None:
+    """The first workflow of the part's layer that runs for it."""
+    layer = workpiece.layer
+    if layer is None:
         return None
-    workpieces = setup.all_workpieces
-    for workflow in setup.workflows:
+    workpieces = layer.all_workpieces
+    for workflow in layer.workflows:
         if workpiece in workflow.selected_workpieces(workpieces):
             return workflow
     return None

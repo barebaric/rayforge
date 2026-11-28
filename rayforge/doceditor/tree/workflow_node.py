@@ -5,7 +5,7 @@ from gettext import ngettext
 
 from gi.repository import Gtk
 
-from ...core.setup import Setup
+from ...core.layer import Layer
 from ...core.workflow import Workflow
 from .node import NodeRow
 from .specs import NodeSpec
@@ -35,9 +35,9 @@ class WorkflowNode(NodeRow):
     ) -> NodeSpec:
         step_count = len([step for step in workflow.steps if step.visible])
         workpieces: list = []
-        setup = workflow.parent
-        if isinstance(setup, Setup):
-            workpieces = workflow.selected_workpieces(setup.all_workpieces)
+        layer = workflow.parent
+        if isinstance(layer, Layer):
+            workpieces = workflow.selected_workpieces(layer.all_workpieces)
         return NodeSpec(
             kind="workflow",
             uid=workflow.uid,
@@ -68,10 +68,10 @@ class WorkflowNode(NodeRow):
         ]
         if workflow.uid not in expanded:
             return rows
-        setup = workflow.parent
-        if not isinstance(setup, Setup):
+        layer = workflow.parent
+        if not isinstance(layer, Layer):
             return rows
-        workpieces = workflow.selected_workpieces(setup.all_workpieces)
+        workpieces = workflow.selected_workpieces(layer.all_workpieces)
         for number, workpiece in enumerate(workpieces, start=1):
             rows.append(
                 PartNode(

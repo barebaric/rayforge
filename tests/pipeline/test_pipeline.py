@@ -32,7 +32,7 @@ def _zero_debounce(zero_debounce_delay):
 def real_workpiece():
     """Creates a lightweight WorkPiece with transforms, but no source."""
     workpiece = WorkPiece(name="real_workpiece.svg")
-    # Importer will set size and pos, we simulate it in the setup helper.
+    # Importer will set size and pos, we simulate it in the layer helper.
     return workpiece
 
 
@@ -40,7 +40,7 @@ def real_workpiece():
 def doc():
     d = Doc()
     # Get the active layer (the first workpiece layer) and clear its steps
-    active_layer = d.active_setup
+    active_layer = d.active_layer
     active_layer.workflows[0].set_steps([])
     return d
 
@@ -70,8 +70,8 @@ class TestPipeline:
         # Simulate importer setting the size and pos
         workpiece.set_size(50, 30)
         workpiece.pos = 10, 20
-        doc.active_setup.add_workpiece(workpiece)
-        return doc.active_setup
+        doc.active_layer.add_workpiece(workpiece)
+        return doc.active_layer
 
     def test_generate_job_fire_and_forget(
         self,
@@ -148,7 +148,7 @@ class TestPipeline:
     ):
         machine = context_initializer.machine
         machine.set_panel_orientation(PanelOrientation.ROTATED_RIGHT)
-        doc.active_setup.set_rotary_enabled(True)
+        doc.active_layer.set_rotary_enabled(True)
         pipeline = Pipeline(
             doc,
             mock_task_mgr,

@@ -217,14 +217,14 @@ class AIWorkpieceGeneratorDialog(PatchedDialogWindow):
                 ws_height / 2 - height / 2,
             )
 
-        target_setup = self._editor.default_workpiece_setup
+        target_layer = self._editor.default_workpiece_layer
         with self._editor.history_manager.transaction(
             _("Add AI-Generated Workpiece")
         ) as t:
             from rayforge.core.undo import ListItemCommand
 
             command = ListItemCommand(
-                owner_obj=target_setup,
+                owner_obj=target_layer,
                 item=workpiece,
                 undo_command="remove_child",
                 redo_command="add_child",

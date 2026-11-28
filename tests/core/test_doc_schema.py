@@ -84,11 +84,10 @@ def test_migrate_v0_to_v1_shape():
     v1 = migrate(copy.deepcopy(_v0_doc()))
 
     assert v1["schema_version"] == CURRENT_DOC_SCHEMA_VERSION
-    assert "active_layer_index" not in v1
-    assert v1["active_setup_index"] == 1
+    assert v1["active_layer_index"] == 1
 
     types = [child["type"] for child in v1["children"]]
-    assert types == ["setup", "setup"]
+    assert types == ["layer", "layer"]
 
     cut, engrave = v1["children"]
     assert cut["uid"] == "layer-1"
@@ -108,11 +107,11 @@ def test_migrate_v0_to_v1_shape():
         {"name": "MeshCorrection"}
     ]
 
-    # The workpiece stayed a content child of the setup.
+    # The workpiece stayed a content child of the layer.
     kinds = {child["type"] for child in cut["children"]}
     assert kinds == {"workflow", "workpiece", "stockitem"}
 
-    # The second setup's visibility is dropped; the workflow took the
+    # The second layer's visibility is dropped; the workflow took the
     # color.
     engrave_workflow = next(
         child for child in engrave["children"] if child["type"] == "workflow"
@@ -157,12 +156,12 @@ def test_migrate_current_document_is_unchanged():
         "uid": "doc-uid",
         "type": "doc",
         "schema_version": CURRENT_DOC_SCHEMA_VERSION,
-        "active_setup_index": 0,
+        "active_layer_index": 0,
         "children": [
             {
-                "uid": "setup-1",
-                "type": "setup",
-                "name": "Setup 1",
+                "uid": "layer-1",
+                "type": "layer",
+                "name": "Layer 1",
                 "matrix": IDENTITY,
                 "children": [],
             }
@@ -177,10 +176,10 @@ def test_doc_round_trip_stamps_version():
     assert data["schema_version"] == CURRENT_DOC_SCHEMA_VERSION
 
     restored = Doc.from_dict(data)
-    assert len(restored.setups) == 1
-    assert restored.setups[0].uid == doc.setups[0].uid
+    assert len(restored.layers) == 1
+    assert restored.layers[0].uid == doc.layers[0].uid
     assert (
-        restored.setups[0].workflows[0].uid == doc.setups[0].workflows[0].uid
+        restored.layers[0].workflows[0].uid == doc.layers[0].workflows[0].uid
     )
 
 
@@ -189,10 +188,10 @@ def test_saving_a_v0_document_writes_v1():
     data = doc.to_dict()
     assert data["schema_version"] == CURRENT_DOC_SCHEMA_VERSION
     assert [child["type"] for child in data["children"]] == [
-        "setup",
-        "setup",
+        "layer",
+        "layer",
     ]
-    assert doc.active_setup.name == "Engrave"
+    assert doc.active_layer.name == "Engrave"
 
 
 def test_unknown_future_version_is_loaded_as_is(caplog):
@@ -217,4 +216,4 @@ def test_missing_or_zero_version_runs_chain(version):
         data["schema_version"] = version
     result = migrate(copy.deepcopy(data))
     assert result["schema_version"] == CURRENT_DOC_SCHEMA_VERSION
-    assert result["children"][0]["type"] == "setup"
+    assert result["children"][0]["type"] == "layer"

@@ -50,7 +50,7 @@ class _AddStockCommand(Command):
 
     def do(self):
         self.doc.add_asset(self.asset, silent=True)
-        self.doc.active_setup.add_child(self.item)
+        self.doc.active_layer.add_child(self.item)
 
     def undo(self):
         parent = self.item.parent
@@ -115,7 +115,7 @@ class ConvertToStockCommand(Command):
             self.original_parent.remove_child(self.workpiece)
 
         self.doc.add_asset(self.asset, silent=True)
-        self.doc.active_setup.add_child(self.stock_item)
+        self.doc.active_layer.add_child(self.stock_item)
 
     def undo(self):
         parent = self.stock_item.parent

@@ -433,8 +433,8 @@ class ViewManager:
 
         step_exists = any(
             s.uid == step.uid
-            for setup in doc.setups
-            for workflow in setup.workflows
+            for layer in doc.layers
+            for workflow in layer.workflows
             for s in workflow.steps
         )
         if not step_exists:

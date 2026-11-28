@@ -2,7 +2,7 @@ import pytest
 
 from rayforge.core.group import Group
 from rayforge.core.item import DocItem
-from rayforge.core.setup import Setup
+from rayforge.core.layer import Layer
 from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.edit_cmd import EditCmd
 from rayforge.doceditor.editor import DocEditor
@@ -28,7 +28,7 @@ def items_on_layer(doc_editor):
       - wp4 (WorkPiece)
     Returns a dictionary of these items.
     """
-    layer = doc_editor.doc.active_setup
+    layer = doc_editor.doc.active_layer
     wp1 = WorkPiece(name="wp1")
     wp1.pos = (10, 10)
     group1 = Group(name="group1")
@@ -109,7 +109,7 @@ def test_get_top_level_items(edit_cmd: EditCmd, items_on_layer):
 
 
 def test_copy_paste(edit_cmd: EditCmd, doc_editor: DocEditor):
-    layer = doc_editor.doc.active_setup
+    layer = doc_editor.doc.active_layer
     wp1 = WorkPiece(name="wp1")
     wp1.pos = (10, 20)
     edit_cmd.add_items([wp1])
@@ -180,7 +180,7 @@ def test_copy_paste_nested(edit_cmd: EditCmd, items_on_layer):
 
 
 def test_cut_paste_with_undo(edit_cmd: EditCmd, doc_editor: DocEditor):
-    layer = doc_editor.doc.active_setup
+    layer = doc_editor.doc.active_layer
     wp1 = WorkPiece(name="wp1")
     wp1.pos = (100, 200)
     edit_cmd.add_items([wp1])
@@ -215,7 +215,7 @@ def test_cut_paste_with_undo(edit_cmd: EditCmd, doc_editor: DocEditor):
 
 
 def test_duplicate(edit_cmd: EditCmd, doc_editor: DocEditor):
-    layer = doc_editor.doc.active_setup
+    layer = doc_editor.doc.active_layer
     wp1 = WorkPiece(name="wp1")
     wp1.pos = (50, -50)
     edit_cmd.add_items([wp1])
@@ -269,9 +269,9 @@ def test_remove_items_with_undo(
 
 
 def test_clear_all_items(edit_cmd: EditCmd, doc_editor: DocEditor):
-    layer1 = doc_editor.doc.setups[0]
-    layer2 = Setup(name="Layer 2")
-    doc_editor.doc.add_setup(layer2)
+    layer1 = doc_editor.doc.layers[0]
+    layer2 = Layer(name="Layer 2")
+    doc_editor.doc.add_layer(layer2)
 
     wp1 = WorkPiece(name="L1 WP1")
     g1 = Group(name="L1 G1")
@@ -322,7 +322,7 @@ def test_reset_paste_counter(edit_cmd: EditCmd):
 
 def test_rename_item(edit_cmd: EditCmd, doc_editor: DocEditor):
     """Test renaming a workpiece with an undoable command."""
-    layer = doc_editor.doc.active_setup
+    layer = doc_editor.doc.active_layer
     wp = WorkPiece(name="logo.svg")
     layer.add_child(wp)
 
@@ -339,7 +339,7 @@ def test_rename_item_ignores_empty_and_unchanged(
     edit_cmd: EditCmd, doc_editor: DocEditor
 ):
     """Test that empty or identical names are ignored."""
-    layer = doc_editor.doc.active_setup
+    layer = doc_editor.doc.active_layer
     wp = WorkPiece(name="logo.svg")
     layer.add_child(wp)
 

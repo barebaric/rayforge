@@ -21,9 +21,11 @@ class OpsColorMode(Enum):
     """Enum for ops color source options."""
 
     LASER = "laser"
-    # The value stays "layer" so configurations saved before the
-    # layer-to-workflow rename keep loading.
-    WORKFLOW = "layer"
+    WORKFLOW = "workflow"
+
+
+#: Values written by older config files, mapped to their replacements.
+_LEGACY_OPS_COLOR_MODES = {"layer": OpsColorMode.WORKFLOW.value}
 
 
 class StartupBehavior(Enum):
@@ -46,8 +48,8 @@ class RightPanelMode(Enum):
         """Return a translatable label for this panel mode."""
         labels = {
             self.HIDDEN: _("Hidden"),
-            self.ACTIVE_LAYER: _("Active Setup Workflows"),
-            self.NON_EMPTY_LAYERS: _("Workflows of Non-Empty Setups"),
+            self.ACTIVE_LAYER: _("Active Layer Workflows"),
+            self.NON_EMPTY_LAYERS: _("Workflows of Non-Empty Layers"),
             self.ALL_LAYERS: _("All Workflows"),
         }
         return labels[self]
@@ -136,7 +138,7 @@ class Config:
         self.default_stock_material_uid: str | None = None
         # Default stock thickness in mm, applied to new stock assets.
         self.default_stock_thickness_mm: float = 18.0
-        # Whether the first-run machine setup wizard has been completed
+        # Whether the first-run machine layer wizard has been completed
         # (or dismissed). Absent in older configs; the wizard itself
         # only triggers while placeholder machines are the only ones.
         self.setup_completed: bool = False
@@ -327,7 +329,7 @@ class Config:
         self.changed.send(self)
 
     def set_setup_completed(self, completed: bool):
-        """Marks the first-run machine setup wizard as handled."""
+        """Marks the first-run machine layer wizard as handled."""
         if self.setup_completed == completed:
             return
         self.setup_completed = completed
@@ -506,6 +508,9 @@ class Config:
         ops_color_mode_str = data.get(
             "ops_color_mode", OpsColorMode.LASER.value
         )
+        ops_color_mode_str = _LEGACY_OPS_COLOR_MODES.get(
+            ops_color_mode_str, ops_color_mode_str
+        )
         try:
             config.ops_color_mode = OpsColorMode(ops_color_mode_str)
         except ValueError:
@@ -546,7 +551,7 @@ class Config:
             "default_stock_thickness_mm", 18.0
         )
 
-        # Load first-run setup flag
+        # Load first-run layer flag
         config.setup_completed = data.get("setup_completed", False)
 
         # Load custom mouse gesture bindings

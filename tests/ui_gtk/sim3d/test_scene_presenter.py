@@ -23,8 +23,8 @@ from raygeo.ops.material.spec import (
 )
 
 from rayforge.core.doc import Doc
+from rayforge.core.layer import Layer
 from rayforge.core.material import Material
-from rayforge.core.setup import Setup
 from rayforge.core.stock import StockItem
 from rayforge.core.stock_asset import StockAsset
 from rayforge.core.workpiece import WorkPiece
@@ -128,7 +128,7 @@ def test_update_scene_from_doc_skips_when_not_initialized(
 @pytest.mark.ui
 def test_update_scene_from_doc_schedules_compilation(ui_context_initializer):
     doc_editor = MagicMock()
-    doc_editor.doc.setups = []
+    doc_editor.doc.layers = []
     presenter, _, _ = _make_presenter(doc_editor=doc_editor)
     presenter._schedule_scene_preparation = MagicMock()
 
@@ -209,7 +209,7 @@ def test_on_playback_layer_changed_builds_assembly(ui_context_initializer):
     layer = MagicMock()
     layer.rotary_enabled = True
     layer.rotary_module_uid = rm.uid
-    doc.setups = [layer]
+    doc.layers = [layer]
 
     scene = MagicMock()
     presenter, _, calls = _make_presenter(
@@ -506,7 +506,7 @@ def test_update_workpiece_images_rotary_layer_gets_cylinder_spec(
     wp._source_segment = MagicMock()
     wp.set_size(60, 40)
 
-    layer = Setup(name="rot")
+    layer = Layer(name="rot")
     layer.set_rotary_enabled(True)
     layer.set_rotary_diameter(50.0)
     wp.parent = layer
@@ -515,7 +515,7 @@ def test_update_workpiece_images_rotary_layer_gets_cylinder_spec(
     rm = RotaryModule()
     rm.set_mode(RotaryMode.TRUE_4TH_AXIS)
     rm.set_axis(Axis.A)
-    machine.get_rotary_module_for_setup.return_value = rm
+    machine.get_rotary_module_for_layer.return_value = rm
 
     doc_editor = MagicMock()
     doc_editor.doc.get_descendants.return_value = [wp]
@@ -806,7 +806,7 @@ def _doc_with_stock(thickness):
     geo.close_path()
     asset.geometry = geo
     doc.add_asset(asset)
-    doc.active_setup.add_child(
+    doc.active_layer.add_child(
         StockItem(stock_asset_uid=asset.uid, name="sheet")
     )
     return doc
@@ -878,7 +878,7 @@ def _rotary_doc_editor(layer):
     doc_editor = MagicMock()
     doc = MagicMock()
     doc.stock_items = []
-    doc.setups = [layer]
+    doc.layers = [layer]
     doc_editor.doc = doc
     return doc_editor
 
@@ -887,7 +887,7 @@ def _rotary_doc_editor(layer):
 def test_build_rotary_stock_specs_attaches_burn(ui_context_initializer):
     """A rotary layer whose uid has a stored material state gets a
     burn entry in its spec."""
-    layer = Setup(name="rot")
+    layer = Layer(name="rot")
     layer.set_rotary_enabled(True)
     layer.set_rotary_diameter(50.0)
     material = Material(uid="m1", name="cherry")
@@ -899,7 +899,7 @@ def test_build_rotary_stock_specs_attaches_burn(ui_context_initializer):
     rm.max_workpiece_length = 300.0
     machine.get_default_rotary_module.return_value = rm
 
-    with patch.object(Setup, "stock_material", material):
+    with patch.object(Layer, "stock_material", material):
         presenter, _, _ = _make_presenter(doc_editor=doc_editor)
         viewport = MagicMock()
         viewport.width_mm = 400.0
@@ -926,7 +926,7 @@ def test_refresh_material_states_includes_rotary_layers(
 ):
     """Handles keyed by a rotary layer's uid are picked up on
     refresh, not just flat stock item handles."""
-    layer = Setup(name="rot")
+    layer = Layer(name="rot")
     layer.set_rotary_enabled(True)
     layer.set_rotary_diameter(50.0)
 
@@ -939,7 +939,7 @@ def test_refresh_material_states_includes_rotary_layers(
     doc_editor.pipeline = pipeline
 
     material = Material(uid="m1", name="cherry")
-    with patch.object(Setup, "stock_material", material):
+    with patch.object(Layer, "stock_material", material):
         presenter, defaults, _ = _make_presenter(doc_editor=doc_editor)
         defaults[
             "context"

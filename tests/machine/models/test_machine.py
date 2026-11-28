@@ -638,13 +638,13 @@ class TestMachine:
         await wait_for_tasks_to_finish(task_mgr)
         # Add a step to the workflow, which is required for job assembly.
         step = contour_step_class.create(lite_context)
-        workflow = doc.active_setup.workflows[0]
+        workflow = doc.active_layer.workflows[0]
         workflow.add_step(step)
 
         # Add a workpiece to the document, which will trigger ops generation.
         workpiece, source = create_test_workpiece_and_source()
         doc.add_asset(source)
-        doc.active_setup.add_child(workpiece)
+        doc.active_layer.add_child(workpiece)
 
         # Wait for the background processing to finish.
         await doc_editor.wait_until_settled()
@@ -686,13 +686,13 @@ class TestMachine:
 
         # Add a step to the workflow, which is required for job assembly.
         step = contour_step_class.create(lite_context)
-        workflow = doc.active_setup.workflows[0]
+        workflow = doc.active_layer.workflows[0]
         workflow.add_step(step)
 
         # Add a workpiece to the document.
         workpiece, source = create_test_workpiece_and_source()
         doc.add_asset(source)
-        doc.active_setup.add_child(workpiece)
+        doc.active_layer.add_child(workpiece)
 
         # Wait for background processing to complete.
         await doc_editor.wait_until_settled()
@@ -737,12 +737,12 @@ class TestMachine:
         head.set_frame_repeat_count(3)
 
         step = contour_step_class.create(lite_context)
-        workflow = doc.active_setup.workflows[0]
+        workflow = doc.active_layer.workflows[0]
         workflow.add_step(step)
 
         workpiece, source = create_test_workpiece_and_source()
         doc.add_asset(source)
-        doc.active_setup.add_child(workpiece)
+        doc.active_layer.add_child(workpiece)
 
         await doc_editor.wait_until_settled()
         await wait_for_tasks_to_finish(task_mgr)
@@ -804,12 +804,12 @@ class TestMachine:
         assert machine.can_frame() is True
 
         step = contour_step_class.create(lite_context)
-        workflow = doc.active_setup.workflows[0]
+        workflow = doc.active_layer.workflows[0]
         workflow.add_step(step)
 
         workpiece, source = create_test_workpiece_and_source()
         doc.add_asset(source)
-        doc.active_setup.add_child(workpiece)
+        doc.active_layer.add_child(workpiece)
 
         await doc_editor.wait_until_settled()
         await wait_for_tasks_to_finish(task_mgr)
@@ -859,7 +859,7 @@ class TestMachine:
         machine.update_wcs_offset("G56", (60.0, 60.0, 0.0))
 
         step = contour_step_class.create(lite_context)
-        workflow = doc.active_setup.workflows[0]
+        workflow = doc.active_layer.workflows[0]
         workflow.add_step(step)
 
         source_file = Path("test.svg")
@@ -877,7 +877,7 @@ class TestMachine:
         workpiece = WorkPiece(name=source_file.name, source_segment=gen_config)
         workpiece.matrix = workpiece.matrix @ Matrix.scale(10, 10)
         doc.add_asset(source)
-        doc.active_setup.add_child(workpiece)
+        doc.active_layer.add_child(workpiece)
 
         await doc_editor.wait_until_settled()
         await wait_for_tasks_to_finish(task_mgr)
@@ -942,12 +942,12 @@ class TestMachine:
         machine.update_wcs_offset("G56", (0.0, 0.0, 0.0))
 
         step = contour_step_class.create(lite_context)
-        workflow = doc.active_setup.workflows[0]
+        workflow = doc.active_layer.workflows[0]
         workflow.add_step(step)
 
         workpiece, source = create_test_workpiece_and_source()
         doc.add_asset(source)
-        doc.active_setup.add_child(workpiece)
+        doc.active_layer.add_child(workpiece)
 
         await doc_editor.wait_until_settled()
         await wait_for_tasks_to_finish(task_mgr)
@@ -1005,12 +1005,12 @@ class TestMachine:
         machine.set_origin(Origin.BOTTOM_LEFT)
 
         step = contour_step_class.create(lite_context)
-        workflow = doc.active_setup.workflows[0]
+        workflow = doc.active_layer.workflows[0]
         workflow.add_step(step)
 
         workpiece, source = create_test_workpiece_and_source()
         doc.add_asset(source)
-        doc.active_setup.add_child(workpiece)
+        doc.active_layer.add_child(workpiece)
 
         await doc_editor.wait_until_settled()
         await wait_for_tasks_to_finish(task_mgr)
@@ -1053,12 +1053,12 @@ class TestMachine:
         head.set_pointer_offset_enabled(True)
 
         step = contour_step_class.create(lite_context)
-        workflow = doc.active_setup.workflows[0]
+        workflow = doc.active_layer.workflows[0]
         workflow.add_step(step)
 
         workpiece, source = create_test_workpiece_and_source()
         doc.add_asset(source)
-        doc.active_setup.add_child(workpiece)
+        doc.active_layer.add_child(workpiece)
 
         await doc_editor.wait_until_settled()
         await wait_for_tasks_to_finish(task_mgr)
@@ -1095,9 +1095,9 @@ class TestMachine:
         rm.set_axis(Axis.A)
         sync_machine.add_rotary_module(rm)
 
-        doc.active_setup.set_rotary_enabled(True)
-        doc.active_setup.set_rotary_module_uid(rm.uid)
-        doc.active_setup.set_rotary_diameter(25.0)
+        doc.active_layer.set_rotary_enabled(True)
+        doc.active_layer.set_rotary_module_uid(rm.uid)
+        doc.active_layer.set_rotary_diameter(25.0)
 
         frame_ops = Ops()
         frame_ops.set_power(1.0)
@@ -1106,7 +1106,7 @@ class TestMachine:
         frame_ops.line_to(100.0, 50.0, 0.0)
 
         module = _apply_frame_rotary_mapping(
-            frame_ops, sync_machine, doc.active_setup
+            frame_ops, sync_machine, doc.active_layer
         )
         assert module is rm
 
@@ -1131,7 +1131,7 @@ class TestMachine:
         frame_ops.line_to(10.0, 10.0, 0.0)
 
         module = _apply_frame_rotary_mapping(
-            frame_ops, sync_machine, doc.active_setup
+            frame_ops, sync_machine, doc.active_layer
         )
         assert module is None
         line_idx = frame_ops.indices_of(CommandType.LINE_TO)[0]
@@ -1766,7 +1766,7 @@ class TestMachine:
         """
         Test that home method accepts multiple axes using binary operators.
         """
-        # Create driver directly to avoid setup issues, then replace
+        # Create driver directly to avoid layer issues, then replace
         # its Rust session with a mock to avoid connection issues.
         machine.set_driver(SmoothieDriver, {"host": "test", "port": 23})
         await wait_for_tasks_to_finish(task_mgr)
@@ -1932,7 +1932,7 @@ class TestMachine:
         assert new_machine.dialect_uid != "grbl"
         assert "JOB_START" not in new_machine.hookmacros
         assert "JOB_END" not in new_machine.hookmacros
-        assert MacroTrigger.LAYER_START in new_machine.hookmacros
+        assert MacroTrigger.WORKFLOW_START in new_machine.hookmacros
 
         # Assert New Dialect Content
         migrated_dialect = lite_context.dialect_mgr.get(
@@ -2010,7 +2010,7 @@ class TestMachine:
             == initial_dialect_count + 1
         )
         assert new_machine.dialect_uid != "smoothieware"
-        assert MacroTrigger.LAYER_START in new_machine.hookmacros
+        assert MacroTrigger.WORKFLOW_START in new_machine.hookmacros
 
     @pytest.mark.asyncio
     async def test_sync_wcs_on_connect(
@@ -2646,7 +2646,7 @@ class TestJogDelegation:
         unaffected by the active WCS offset.
 
         This supersedes the work-space evaluation from #574: that
-        setup paired a bottom-left origin with firmware that reports
+        layer paired a bottom-left origin with firmware that reports
         negative positions and a G54 used as a UI correction - the
         misconfiguration later diagnosed in #613. With the machine
         configured to match the firmware (top-right origin, reversed
