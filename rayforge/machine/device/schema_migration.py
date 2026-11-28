@@ -12,6 +12,7 @@ current (sentinel) value and the suggested value (the laser-type
 default or nominal default).
 """
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from gettext import gettext as _
 from typing import Any
@@ -24,15 +25,6 @@ from .profile_diff import HEADS_SECTION, SettingDiff, apply_head_value
 # Version 2: job spans are workflows, so a saved layer hook now fires
 # per workflow span; see :func:`migrate_hook_triggers`.
 CURRENT_SCHEMA_VERSION = 2
-
-#: The schema version at which hook trigger semantics changed.
-HOOK_TRIGGER_MIGRATION_VERSION = 2
-
-#: Hook trigger names saved before the span semantics changed.
-_LEGACY_HOOK_TRIGGERS = {
-    "LAYER_START": "WORKFLOW_START",
-    "LAYER_END": "WORKFLOW_END",
-}
 
 # Sentinel indicating "follow the laser-type default". Matches the
 # LaserHead default for wavelength_nm / max_power_watts.
@@ -134,29 +126,49 @@ def _suggested_value(head: LaserHead, key: str) -> float:
     return _SENTINEL
 
 
+def _migrate_v2_hook_triggers(
+    hookmacros: dict[str, Any],
+) -> dict[str, Any]:
+    """Renames layer hooks saved before spans became workflows.
+
+    Job spans used to be layers and are now workflows, so the hook a
+    user configured to run at a span boundary is a workflow hook.
+    """
+    renamed = {
+        "LAYER_START": "WORKFLOW_START",
+        "LAYER_END": "WORKFLOW_END",
+    }
+    return {
+        renamed.get(trigger_name, trigger_name): macro_data
+        for trigger_name, macro_data in hookmacros.items()
+    }
+
+
+#: Load-time data migrations, keyed by the schema version they
+#: introduce. Unlike the reviewable setting diffs above, these are
+#: silent transforms applied when an older machine is loaded.
+_HOOK_MIGRATIONS: dict[int, Callable[[dict[str, Any]], dict[str, Any]]] = {
+    2: _migrate_v2_hook_triggers,
+}
+
+
 def migrate_hook_triggers(
     hookmacros: dict[str, Any], machine_version: int
 ) -> dict[str, Any]:
-    """Renames hook triggers saved before the span semantics changed.
+    """Chains the hook trigger migrations up to the current version.
 
-    Job spans used to be layers and are now workflows, so the hook a
-    user configured to run at a span boundary is a workflow hook. The
-    rename runs on load for machines stored before
-    :data:`HOOK_TRIGGER_MIGRATION_VERSION`; it is idempotent, so a
-    machine that was already saved in the new form loads unchanged.
+    Applies every migration introduced after *machine_version*. The
+    migrations are idempotent, so a machine that was already saved in
+    the new form loads unchanged.
     """
-    if machine_version >= HOOK_TRIGGER_MIGRATION_VERSION:
-        return hookmacros
-    migrated: dict[str, Any] = {}
-    for trigger_name, macro_data in hookmacros.items():
-        new_name = _LEGACY_HOOK_TRIGGERS.get(trigger_name, trigger_name)
-        migrated[new_name] = macro_data
-    return migrated
+    for version in sorted(_HOOK_MIGRATIONS):
+        if machine_version < version:
+            hookmacros = _HOOK_MIGRATIONS[version](hookmacros)
+    return hookmacros
 
 
 __all__ = [
     "CURRENT_SCHEMA_VERSION",
-    "HOOK_TRIGGER_MIGRATION_VERSION",
     "apply_schema_migrations",
     "find_schema_migrations",
     "migrate_hook_triggers",
