@@ -8,7 +8,7 @@ from raygeo.geo import Geometry, Matrix
 from raygeo.geo.types import Rect
 
 from .color import ColorRGBA, hex_to_rgba, normalize_color
-from .item import DocItem
+from .item import DocItem, VisibleMixin
 
 if TYPE_CHECKING:
     from .asset import IAsset
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class StockItem(DocItem):
+class StockItem(DocItem, VisibleMixin):
     """
     Represents an instance of a stock material in the document.
 
@@ -36,7 +36,6 @@ class StockItem(DocItem):
     def __init__(self, stock_asset_uid: str, name: str = "Stock"):
         super().__init__(name=name)
         self.stock_asset_uid: str = stock_asset_uid
-        self.visible: bool = True
         self.color: str | None = self.COLOR_INHERIT
         self.extra: dict[str, Any] = {}
 
@@ -269,13 +268,6 @@ class StockItem(DocItem):
         """
         asset = self.stock_asset
         return asset.material if asset else None
-
-    def set_visible(self, visible: bool):
-        """Sets the visibility of the stock item."""
-        if self.visible == visible:
-            return
-        self.visible = visible
-        self.updated.send(self)
 
     def set_color(self, color: str | None):
         """

@@ -33,7 +33,7 @@ from .asset_registry import asset_type_registry
 from .geometry_provider import IGeometryProvider
 from .image_cache import new_image_cache
 from .image_edit import ImageEditStep, apply_image_edits
-from .item import DocItem
+from .item import DocItem, VisibleMixin
 from .source_asset_segment import SourceAssetSegment
 from .tab import Tab
 from .vectorization_spec import TraceSpec
@@ -104,7 +104,7 @@ class AnchorMode(Enum):
         return labels[self]
 
 
-class WorkPiece(DocItem):
+class WorkPiece(DocItem, VisibleMixin):
     """
     Represents a real-world workpiece. It is a lightweight data container,
     holding its transformation matrix and a link to its source and shape
@@ -1140,6 +1140,7 @@ class WorkPiece(DocItem):
             "matrix": self._matrix.to_list(),
             "width_mm": self.natural_width_mm,
             "height_mm": self.natural_height_mm,
+            "visible": self.visible,
             "anchor_mode": self._anchor_mode.name,
             "tabs": [asdict(t) for t in self._tabs],
             "tabs_enabled": self._tabs_enabled,
@@ -1194,6 +1195,7 @@ class WorkPiece(DocItem):
             "matrix",
             "width_mm",
             "height_mm",
+            "visible",
             "anchor_mode",
             "tabs",
             "tabs_enabled",
@@ -1232,6 +1234,7 @@ class WorkPiece(DocItem):
         wp.matrix = Matrix.from_list(data["matrix"])
         wp.natural_width_mm = data.get("width_mm", 0.0)
         wp.natural_height_mm = data.get("height_mm", 0.0)
+        wp.visible = data.get("visible", True)
         try:
             wp._anchor_mode = AnchorMode[data.get("anchor_mode", "CORNER")]
         except KeyError:
