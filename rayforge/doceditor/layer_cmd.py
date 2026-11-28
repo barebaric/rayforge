@@ -125,20 +125,6 @@ class LayerCmd:
     def __init__(self, editor: DocEditor):
         self._editor = editor
 
-    def set_active_layer(self, layer: Layer):
-        """Sets the active layer."""
-        if self._editor.doc.active_layer is layer:
-            return
-        old_layer = self._editor.doc.active_layer
-        cmd = ChangePropertyCommand(
-            target=self._editor.doc,
-            property_name="active_layer",
-            new_value=layer,
-            old_value=old_layer,
-            name=_("Set active layer"),
-        )
-        self._editor.history_manager.execute(cmd)
-
     def add_layer_and_set_active(self, new_layer: Layer | None = None):
         """Adds a new layer to the document and sets it as active."""
         cmd = AddLayerAndSetActiveCommand(self._editor, new_layer)
@@ -181,6 +167,20 @@ class LayerCmd:
             new_value=material_uid,
             setter_method_name="set_stock_material_uid",
             name=_("Change layer stock material"),
+        )
+        self._editor.history_manager.execute(cmd)
+
+    def set_active_layer(self, layer: Layer):
+        """Sets the active layer."""
+        if self._editor.doc.active_layer is layer:
+            return
+        old_layer = self._editor.doc.active_layer
+        cmd = ChangePropertyCommand(
+            target=self._editor.doc,
+            property_name="active_layer",
+            new_value=layer,
+            old_value=old_layer,
+            name=_("Set active layer"),
         )
         self._editor.history_manager.execute(cmd)
 
