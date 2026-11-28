@@ -151,6 +151,7 @@ class TreeApp(Adw.Application):
         controls.append(info)
 
         for label, handler in (
+            ("Rename selected", self._on_rename_selected),
             ("Add part", self._on_add_part),
             ("Duplicate selected", self._on_duplicate),
             ("Delete selected", self._on_delete),
@@ -162,6 +163,17 @@ class TreeApp(Adw.Application):
             controls.append(button)
 
         columns.append(controls)
+
+        shortcuts = Gtk.ShortcutController()
+        shortcuts.add_shortcut(
+            Gtk.Shortcut.new(
+                Gtk.ShortcutTrigger.parse_string("F2"),
+                Gtk.CallbackAction.new(
+                    lambda _widget, _args: self._on_rename_selected(None)
+                ),
+            )
+        )
+        win.add_controller(shortcuts)
 
         self.info = info
         self.parts_tree.selection_changed.connect(self._on_selection)
@@ -189,6 +201,21 @@ class TreeApp(Adw.Application):
         item = self.doc.find_descendant_by_uid(uid)
         if item is not None:
             item.name = name
+
+    def _on_rename_selected(self, _button) -> bool:
+        """Starts inline renaming of the selected row."""
+        item = self.selected_item
+        if item is None:
+            self.info.set_label("Select a row to rename it")
+            return True
+        started = self.parts_tree.start_rename(item.uid)
+        if not started:
+            started = self.operations_tree.start_rename(item.uid)
+        if not started:
+            self.info.set_label(
+                "The selected row is not visible in the current tab"
+            )
+        return True
 
     def _on_add_part(self, button):
         self.part_counter += 1

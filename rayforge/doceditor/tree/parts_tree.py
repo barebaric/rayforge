@@ -54,12 +54,14 @@ class PartsTree(Gtk.Box):
         doc.descendant_added.connect(self._on_doc_changed)
         doc.descendant_removed.connect(self._on_doc_changed)
         doc.descendant_updated.connect(self._on_doc_changed)
+        doc.descendant_renamed.connect(self._on_doc_changed)
         doc.updated.connect(self._on_doc_changed)
 
     def _disconnect(self, doc: Doc):
         doc.descendant_added.disconnect(self._on_doc_changed)
         doc.descendant_removed.disconnect(self._on_doc_changed)
         doc.descendant_updated.disconnect(self._on_doc_changed)
+        doc.descendant_renamed.disconnect(self._on_doc_changed)
         doc.updated.disconnect(self._on_doc_changed)
 
     def _on_doc_changed(self, sender, **kwargs):
