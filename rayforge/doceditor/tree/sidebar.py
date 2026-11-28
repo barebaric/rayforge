@@ -39,10 +39,10 @@ class Sidebar(Gtk.Box):
 
     _CSS = """
     .rf-layer-button {
-        min-width: 34px;
-        min-height: 34px;
+        min-width: 26px;
+        min-height: 26px;
         padding: 0;
-        border-radius: 6px;
+        border-radius: 5px;
     }
     """
 
@@ -57,11 +57,13 @@ class Sidebar(Gtk.Box):
         self._syncing_layers = False
         self._layer_settings_dialog: LayerSettingsDialog | None = None
         self._layer_buttons_by_layer: list[tuple[Gtk.ToggleButton, Layer]] = []
+        self._layer_dropdown: Gtk.DropDown | None = None
 
         header = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         header.set_margin_start(8)
         header.set_margin_end(8)
         header.set_margin_top(8)
+        header.set_margin_bottom(8)
         self._layer_buttons = Gtk.Box(
             orientation=Gtk.Orientation.HORIZONTAL, spacing=4
         )
@@ -176,35 +178,76 @@ class Sidebar(Gtk.Box):
         signature = tuple((layer.uid, layer.name) for layer in layers)
         if signature != self._layer_signature:
             self._layer_signature = signature
-            self._rebuild_layer_buttons(layers)
+            self._rebuild_layer_selector(layers)
+        active = doc.active_layer if doc is not None and doc.layers else None
+        index = next(
+            (i for i, layer in enumerate(layers) if layer is active), 0
+        )
         self._syncing_layers = True
-        for button, layer in self._layer_buttons_by_layer:
-            button.set_active(layer is doc.active_layer if doc else False)
+        if self._layer_dropdown is not None:
+            self._layer_dropdown.set_selected(index)
+        else:
+            for button, layer in self._layer_buttons_by_layer:
+                button.set_active(layer is active)
         self._syncing_layers = False
         self.parts_tree.set_layer(
             doc.active_layer if doc is not None and doc.layers else None
         )
 
-    def _rebuild_layer_buttons(self, layers):
+    def _rebuild_layer_selector(self, layers):
         child = self._layer_buttons.get_first_child()
         while child:
             next_child = child.get_next_sibling()
             self._layer_buttons.remove(child)
             child = next_child
         self._layer_buttons_by_layer = []
-        for index, layer in enumerate(layers):
-            button = Gtk.ToggleButton(label=str(index + 1))
-            button.add_css_class("rf-layer-button")
-            button.set_tooltip_text(layer.name)
-            button.connect("toggled", self._on_layer_button_toggled, layer)
-            self._layer_buttons.append(button)
-            self._layer_buttons_by_layer.append((button, layer))
+        self._layer_dropdown = None
+
+        if len(layers) > 4:
+            dropdown = Gtk.DropDown(
+                model=Gtk.StringList.new([layer.name for layer in layers])
+            )
+            dropdown.set_hexpand(True)
+            dropdown.set_tooltip_text(_("Active layer"))
+            dropdown.connect(
+                "notify::selected", self._on_layer_dropdown_selected
+            )
+            self._layer_buttons.append(dropdown)
+            self._layer_dropdown = dropdown
+        else:
+            for index, layer in enumerate(layers):
+                button = Gtk.ToggleButton(label=str(index + 1))
+                button.add_css_class("rf-layer-button")
+                button.set_size_request(26, 26)
+                button.set_tooltip_text(layer.name)
+                button.connect("toggled", self._on_layer_button_toggled, layer)
+                context = Gtk.GestureClick()
+                context.set_button(3)
+                context.connect(
+                    "pressed",
+                    self._on_layer_button_context,
+                    button,
+                    layer,
+                )
+                button.add_controller(context)
+                self._layer_buttons.append(button)
+                self._layer_buttons_by_layer.append((button, layer))
 
         add_button = Gtk.Button(child=get_icon("add-symbolic"))
         add_button.add_css_class("flat")
+        add_button.set_size_request(26, 26)
         add_button.set_tooltip_text(_("Add Layer"))
         add_button.connect("clicked", self._on_add_layer_clicked)
         self._layer_buttons.append(add_button)
+
+    def _on_layer_dropdown_selected(self, dropdown, _pspec):
+        if self._syncing_layers or self._doc is None:
+            return
+        index = dropdown.get_selected()
+        layers = self._doc.layers
+        if 0 <= index < len(layers):
+            self._close_layer_settings()
+            self.editor.layer.set_active_layer(layers[index])
 
     def _on_layer_button_toggled(self, button, layer):
         if self._syncing_layers:

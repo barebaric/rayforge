@@ -11,7 +11,7 @@ class LayerSeparatorNode(NodeRow):
         spec = NodeSpec(
             kind="layer-separator",
             uid=f"layer-separator:{layer.uid}",
-            label=f"---- {layer.name} ----",
+            label=layer.name,
             selectable=False,
         )
         super().__init__(spec, callbacks)

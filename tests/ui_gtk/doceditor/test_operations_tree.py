@@ -1,11 +1,13 @@
 """UI tests for the Operations tree interactions."""
 
 import pytest
+from gi.repository import Gtk
 
 from rayforge.core.doc import Doc
 from rayforge.core.layer import Layer
 from rayforge.core.workflow import Workflow
 from rayforge.core.workpiece import WorkPiece
+from rayforge.doceditor.tree.add_workflow_button import WorkflowBar
 from rayforge.doceditor.tree.operations_tree import OperationsTree
 
 
@@ -92,4 +94,20 @@ def test_shows_a_separator_before_each_layer(ui_context_initializer):
         for row in tree.rows()
         if row.spec.kind == "layer-separator"
     ]
-    assert separators == ["---- Layer ----", "---- Second ----"]
+    assert separators == ["Layer", "Second"]
+
+
+@pytest.mark.ui
+def test_workflow_bar_offers_three_colors_and_custom(ui_context_initializer):
+    bar = WorkflowBar()
+    events = []
+
+    def on_requested(sender, color):
+        events.append(color)
+
+    bar.workflow_requested.connect(on_requested, weak=False)
+    buttons = [child for child in bar if isinstance(child, Gtk.Button)]
+    assert len(buttons) == 4
+
+    buttons[0].emit("clicked")
+    assert events and events[0].startswith("#")

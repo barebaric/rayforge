@@ -41,10 +41,18 @@ _CSS = """
     font-size: 90%;
     opacity: 0.6;
 }
+.rf-tree-list > row.rf-layer-separator {
+    margin-top: 8px;
+    border-top: 1px solid alpha(currentColor, 0.15);
+}
+.rf-tree-list > row.rf-layer-separator .rf-row {
+    padding-top: 5px;
+}
 .rf-tree-list > row.rf-layer-separator .rf-name {
-    font-size: 90%;
-    font-weight: bold;
-    opacity: 0.55;
+    font-size: 85%;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    opacity: 0.6;
 }
 .rf-tree-list > row.drop-above {
     box-shadow: inset 0 2px 0 @accent_bg_color;

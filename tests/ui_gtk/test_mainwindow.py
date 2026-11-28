@@ -249,6 +249,23 @@ def test_part_visibility_hides_the_canvas_element(app_and_window):
 
 
 @pytest.mark.ui
+def test_sidebar_uses_a_dropdown_for_many_layers(app_and_window):
+    _app, win = app_and_window
+    doc = win.doc_editor.doc
+    for index in range(4):
+        doc.add_layer(Layer(f"Extra {index}"))
+    process_events_for_duration(0.3)
+
+    dropdown = win.sidebar._layer_dropdown
+    assert dropdown is not None
+    assert dropdown.get_model().get_n_items() == 5
+
+    dropdown.set_selected(3)
+    process_events_for_duration(0.2)
+    assert doc.active_layer is doc.layers[3]
+
+
+@pytest.mark.ui
 def test_sidebar_opens_layer_settings(app_and_window):
     _app, win = app_and_window
     win.sidebar._layer_settings_button.emit("clicked")
