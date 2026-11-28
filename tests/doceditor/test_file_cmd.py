@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -6,6 +7,7 @@ from raygeo.geo import Matrix
 from raygeo.ops.state import CoolantMode
 
 from rayforge.core.doc import Doc
+from rayforge.core.doc_schema import CURRENT_DOC_SCHEMA_VERSION
 from rayforge.core.group import Group
 from rayforge.core.layer import Layer
 from rayforge.core.source_asset import SourceAsset
@@ -1421,3 +1423,41 @@ class TestProjectRoundTrip:
                 f"Document state changed after round trip for "
                 f"{project_file.name}"
             )
+
+
+def test_newer_schema_warns_on_load(file_cmd, tmp_path):
+    """Opening a document from a newer app version shows a warning."""
+    newer = CURRENT_DOC_SCHEMA_VERSION + 1
+    path = tmp_path / "future.ryp"
+    path.write_text(
+        json.dumps(
+            {
+                "uid": "future-doc",
+                "type": "doc",
+                "schema_version": newer,
+                "active_layer_index": 0,
+                "children": [
+                    {
+                        "uid": "layer-1",
+                        "type": "layer",
+                        "name": "Layer 1",
+                        "matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+                        "children": [],
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    messages: list[str] = []
+
+    def on_notification(sender, message: str = "", **kwargs):
+        messages.append(message)
+
+    file_cmd._editor.notification_requested.connect(
+        on_notification, weak=False
+    )
+
+    assert file_cmd.load_project_from_path(path)
+    assert file_cmd._editor.doc.newer_schema_version == newer
+    assert any("newer" in message.lower() for message in messages)

@@ -51,6 +51,9 @@ class Doc(DocItem):
         self.asset_order: list[str] = []
         self._loading = False
         self._known_workpiece_keys: set[str] = set()
+        # Set when the loaded file uses a newer schema than this app
+        # supports; the loader warns the user in that case.
+        self.newer_schema_version: int | None = None
 
         # The job counter, passed to text templates as {counter}
         self._job_counter = JobCounter()
@@ -98,9 +101,15 @@ class Doc(DocItem):
                 raise TypeError(f"Unknown document item type '{item_type}'")
             return item_class.from_dict(item_data)
 
+        original_version = data.get("schema_version", 0)
         data = migrate(data)
 
         doc = cls()
+        if (
+            isinstance(original_version, int)
+            and original_version > CURRENT_DOC_SCHEMA_VERSION
+        ):
+            doc.newer_schema_version = original_version
         doc._loading = True
         doc.uid = data.get("uid", doc.uid)
         doc.job_counter = JobCounter.from_dict(data.get("job_counter"))

@@ -215,3 +215,20 @@ def test_missing_or_zero_version_runs_chain(version):
     result = migrate(copy.deepcopy(data))
     assert result["schema_version"] == CURRENT_DOC_SCHEMA_VERSION
     assert result["children"][0]["type"] == "layer"
+
+
+def test_newer_schema_sets_flag():
+    newer = CURRENT_DOC_SCHEMA_VERSION + 3
+    data = {
+        "uid": "doc-uid",
+        "type": "doc",
+        "schema_version": newer,
+        "children": [],
+    }
+    doc = Doc.from_dict(data)
+    assert doc.newer_schema_version == newer
+
+
+def test_current_schema_has_no_newer_flag():
+    assert Doc().newer_schema_version is None
+    assert Doc.from_dict(Doc().to_dict()).newer_schema_version is None

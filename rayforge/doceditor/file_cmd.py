@@ -26,6 +26,7 @@ from raygeo.ops.state import CoolantMode
 
 from ..context import get_context
 from ..core.doc import Doc
+from ..core.doc_schema import CURRENT_DOC_SCHEMA_VERSION
 from ..core.item import DocItem
 from ..core.layer import Layer
 from ..core.source_asset import SourceAsset
@@ -1363,6 +1364,21 @@ class FileCmd:
             self._editor.set_file_path(file_path)
             self._editor.mark_as_saved()
             self._editor.doc.updated.send(self._editor.doc)
+
+            if new_doc.newer_schema_version is not None:
+                self._editor.notification_requested.send(
+                    self,
+                    message=_(
+                        "This project uses document schema {version}, which "
+                        "is newer than this version of Rayforge supports "
+                        "({supported}). Some data may not load or save "
+                        "correctly."
+                    ).format(
+                        version=new_doc.newer_schema_version,
+                        supported=CURRENT_DOC_SCHEMA_VERSION,
+                    ),
+                    persistent=True,
+                )
 
             labels = _unsupported_coolant_labels(
                 new_doc, self._editor.context.machine
