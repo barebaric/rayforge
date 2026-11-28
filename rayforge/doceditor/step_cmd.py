@@ -24,7 +24,6 @@ class StepCmd:
 
     def __init__(self, editor: DocEditor):
         self._editor = editor
-        self._doc = editor.doc
         self._context = editor.context
 
     def set_step_param(
@@ -75,7 +74,7 @@ class StepCmd:
         document via an undoable command.
         """
         # Get the stock items from the document
-        stock_items = self._doc.stock_items
+        stock_items = self._editor.doc.stock_items
         machine = self._context.machine
 
         # Query the RecipeManager for the best match for this step type.
@@ -164,7 +163,7 @@ class StepCmd:
         Called on application startup or when a new empty document is
         created.
         """
-        doc = self._doc
+        doc = self._editor.doc
         if not doc.layers:
             return
 

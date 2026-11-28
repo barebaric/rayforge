@@ -1,32 +1,27 @@
-"""The row for one workpiece, with the steps that operate on it."""
+"""The row for one workpiece, with the features detected in it."""
 
 from collections.abc import Set as AbstractSet
+from gettext import gettext as _
+from gettext import ngettext
 
 from gi.repository import Gtk
 
-from ...core.workflow import Workflow
-from ...core.workpiece import WorkPiece
+from ...core.workpiece import WorkPiece, WorkpieceFeatureKind
+from .feature_node import FeatureNode
 from .node import NodeRow
 from .specs import NodeSpec
-from .step_node import steps_for
 
 _WORKPIECE_ICON = "model-symbolic"
-
-
-def _workflow_for(workpiece: WorkPiece) -> Workflow | None:
-    """The first workflow of the part's layer that runs for it."""
-    layer = workpiece.layer
-    if layer is None:
-        return None
-    workpieces = layer.all_workpieces
-    for workflow in layer.workflows:
-        if workpiece in workflow.selected_workpieces(workpieces):
-            return workflow
-    return None
+_FEATURE_LABELS = {
+    WorkpieceFeatureKind.OUTER_PATHS: _("Outer paths"),
+    WorkpieceFeatureKind.INNER_PATHS: _("Inner paths"),
+    WorkpieceFeatureKind.OPEN_PATHS: _("Open paths"),
+    WorkpieceFeatureKind.FILLS: _("Fills"),
+}
 
 
 class WorkPieceNode(NodeRow):
-    """The row for one part, optionally followed by its steps."""
+    """The row for one part, optionally followed by its features."""
 
     def __init__(
         self,
@@ -47,8 +42,6 @@ class WorkPieceNode(NodeRow):
         expanded: AbstractSet[str] = frozenset(),
         selected: AbstractSet[str] = frozenset(),
     ) -> NodeSpec:
-        workflow = _workflow_for(workpiece)
-        steps = steps_for(workpiece, workflow)
         return NodeSpec(
             kind="workpiece",
             uid=workpiece.uid,
@@ -59,7 +52,7 @@ class WorkPieceNode(NodeRow):
             eye=True,
             on=workpiece.visible,
             selected=workpiece.uid in selected,
-            has_children=bool(steps),
+            has_children=_has_features(workpiece),
             expanded=workpiece.uid in expanded,
         )
 
@@ -72,17 +65,44 @@ class WorkPieceNode(NodeRow):
         selected: AbstractSet[str],
         callbacks,
     ) -> list[Gtk.Widget]:
-        from .step_node import StepNode
-
         rows: list[Gtk.Widget] = [
             cls(workpiece, depth, expanded, selected, callbacks)
         ]
         if workpiece.uid not in expanded:
             return rows
-        workflow = _workflow_for(workpiece)
-        for step in steps_for(workpiece, workflow):
-            rows.append(StepNode(step, depth + 1, callbacks))
+        rows.extend(_feature_rows(workpiece, depth, callbacks))
         return rows
+
+
+def _has_features(workpiece: WorkPiece) -> bool:
+    boundaries = workpiece.boundaries
+    if boundaries is not None and not boundaries.is_empty():
+        return True
+    return bool(workpiece.fills)
+
+
+def _feature_rows(
+    workpiece: WorkPiece, depth: int, callbacks
+) -> list[Gtk.Widget]:
+    rows: list[Gtk.Widget] = []
+    for feature in workpiece.detect_features():
+        if feature.kind is WorkpieceFeatureKind.FILLS:
+            detail = ngettext("{n} fill", "{n} fills", feature.count).format(
+                n=feature.count
+            )
+        else:
+            detail = _("{n} paths").format(n=feature.count)
+        rows.append(
+            FeatureNode(
+                workpiece.uid,
+                feature.kind.value,
+                _FEATURE_LABELS[feature.kind],
+                detail,
+                depth,
+                callbacks,
+            )
+        )
+    return rows
 
 
 def _size_detail(workpiece: WorkPiece) -> str:

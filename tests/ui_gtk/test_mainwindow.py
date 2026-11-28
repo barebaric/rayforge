@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 
 from rayforge.context import get_context
+from rayforge.core.layer import Layer
 from rayforge.core.workpiece import WorkPiece
 from rayforge.machine.models.machine import Machine
 
@@ -29,11 +30,28 @@ import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 gi.require_version("Gdk", "4.0")
-from gi.repository import Adw, GLib
+from gi.repository import Adw, GLib, Gtk
 
+from rayforge.ui_gtk.canvas2d.elements.workpiece import WorkPieceElement
+from rayforge.ui_gtk.doceditor.property_providers.workflow import (
+    WorkflowPropertyProvider,
+)
 from rayforge.ui_gtk.mainwindow import MainWindow
 
 logger = logging.getLogger(__name__)
+
+
+def _find_entry(widget):
+    """Finds the inline rename entry inside a row."""
+    if isinstance(widget, Gtk.Entry):
+        return widget
+    child = widget.get_first_child()
+    while child:
+        found = _find_entry(child)
+        if found is not None:
+            return found
+        child = child.get_next_sibling()
+    return None
 
 
 # Helper functions adapted for robust testing
@@ -130,7 +148,7 @@ def app_and_window(ui_context_initializer, request):
 
 @pytest.mark.ui
 def test_rename_focuses_inline_name_entry(app_and_window, assets_path):
-    """F2 rename edits the selected item's name inline, without a dialog."""
+    """F2 rename edits the selected item's name inline in the sidebar."""
     _app, win = app_and_window
     project = assets_path / "doceditor" / "assets" / "workpieces_project.ryp"
     assert win.doc_editor.file.load_project_from_path(project)
@@ -138,11 +156,203 @@ def test_rename_focuses_inline_name_entry(app_and_window, assets_path):
 
     wp = next(iter(win.doc_editor.doc.get_descendants(of_type=WorkPiece)))
     win.surface.select_items([wp])
+    process_events_for_duration(0.2)
     win.on_menu_rename(None, None)
+    process_events_for_duration(0.2)
+
+    row = win.sidebar.parts_tree.find_row(wp.uid)
+    assert row is not None
+    entry = _find_entry(row)
+    assert entry is not None
+    assert entry.get_text() == wp.name
+
+
+@pytest.mark.ui
+def test_sidebar_shows_only_the_active_layer_parts(app_and_window):
+    _app, win = app_and_window
+    doc = win.doc_editor.doc
+    first = WorkPiece("Sidebar A")
+    doc.active_layer.add_child(first)
+
+    second_layer = Layer("Second")
+    doc.add_layer(second_layer)
+    second = WorkPiece("Sidebar B")
+    second_layer.add_child(second)
+    process_events_for_duration(0.3)
+
+    assert win.sidebar.get_visible()
+    assert win.sidebar.parts_tree.find_row(first.uid) is not None
+    assert win.sidebar.parts_tree.find_row(second.uid) is None
+
+    win.doc_editor.layer.set_active_layer(second_layer)
+    process_events_for_duration(0.3)
+    assert win.sidebar.parts_tree.find_row(first.uid) is None
+    assert win.sidebar.parts_tree.find_row(second.uid) is not None
+
+
+@pytest.mark.ui
+def test_sidebar_selection_drives_the_canvas_selection(app_and_window):
+    _app, win = app_and_window
+    wp = WorkPiece("Pick me")
+    win.doc_editor.doc.active_layer.add_child(wp)
+    process_events_for_duration(0.2)
+
+    win.sidebar.select_item(wp)
+    process_events_for_duration(0.2)
+    assert list(win.surface.get_selected_items()) == [wp]
+    row = win.sidebar.parts_tree.find_row(wp.uid)
+    assert row is not None and row.spec.selected
+
+    win.surface.select_items([])
+    process_events_for_duration(0.2)
+    row = win.sidebar.parts_tree.find_row(wp.uid)
+    assert row is not None and not row.spec.selected
+
+
+@pytest.mark.ui
+def test_toggle_sidebar_action_hides_and_restores_it(app_and_window):
+    _app, win = app_and_window
+    action = win.action_manager.get_action("toggle_sidebar")
+    config = get_context().config
+    assert win.sidebar.get_visible()
+
+    action.change_state(GLib.Variant.new_boolean(False))
+    process_events_for_duration(0.2)
+    assert not win.sidebar.get_visible()
+    assert config.sidebar_visible is False
+
+    action.change_state(GLib.Variant.new_boolean(True))
+    process_events_for_duration(0.2)
+    assert win.sidebar.get_visible()
+    assert config.sidebar_visible is True
+
+
+@pytest.mark.ui
+def test_part_visibility_hides_the_canvas_element(app_and_window):
+    _app, win = app_and_window
+    wp = WorkPiece("Hidden part")
+    win.doc_editor.doc.active_layer.add_child(wp)
+    process_events_for_duration(0.2)
+    element = next(
+        elem
+        for elem in win.surface.find_by_type(WorkPieceElement)
+        if elem.data is wp
+    )
+    row = win.sidebar.parts_tree.find_row(wp.uid)
+    assert element.visible and row is not None
+
+    win.sidebar.parts_tree.on_eye_toggled(row.spec)
+    process_events_for_duration(0.3)
+
+    assert wp.visible is False
+    assert element.visible is False
+
+
+@pytest.mark.ui
+def test_sidebar_uses_a_dropdown_for_many_layers(app_and_window):
+    _app, win = app_and_window
+    doc = win.doc_editor.doc
+    for index in range(4):
+        doc.add_layer(Layer(f"Extra {index}"))
+    process_events_for_duration(0.3)
+
+    dropdown = win.sidebar._layer_dropdown
+    assert dropdown is not None
+    assert dropdown.get_model().get_n_items() == 5
+
+    dropdown.set_selected(3)
+    process_events_for_duration(0.2)
+    assert doc.active_layer is doc.layers[3]
+
+
+@pytest.mark.ui
+def test_sidebar_opens_layer_settings(app_and_window):
+    _app, win = app_and_window
+    win.sidebar._layer_settings_button.emit("clicked")
+    process_events_for_duration(0.2)
+
+    dialog = win.sidebar._layer_settings_dialog
+    assert dialog is not None
+    assert dialog.layer is win.doc_editor.doc.active_layer
+
+    win.sidebar._close_layer_settings()
     process_events_for_duration(0.1)
-    name_row = win.item_props_widget._name_row
-    assert name_row.get_visible()
-    assert name_row.get_text() == wp.name
+    assert win.sidebar._layer_settings_dialog is None
+
+
+@pytest.mark.ui
+def test_sidebar_layer_buttons_switch_and_add_layers(app_and_window):
+    _app, win = app_and_window
+    doc = win.doc_editor.doc
+    second = Layer("Second")
+    doc.add_layer(second)
+    process_events_for_duration(0.3)
+
+    buttons = [
+        child
+        for child in win.sidebar._layer_buttons
+        if isinstance(child, Gtk.ToggleButton)
+    ]
+    assert len(buttons) == 2
+    buttons[1].set_active(True)
+    process_events_for_duration(0.2)
+    assert doc.active_layer is second
+
+    # The active layer button cannot be toggled off.
+    buttons[1].set_active(False)
+    process_events_for_duration(0.2)
+    assert buttons[1].get_active()
+    assert doc.active_layer is second
+
+    layer_count = len(doc.layers)
+    win.sidebar._add_layer_button.emit("clicked")
+    process_events_for_duration(0.2)
+    assert len(doc.layers) == layer_count + 1
+
+
+@pytest.mark.ui
+def test_hidden_layer_button_is_crossed_out(app_and_window):
+    _app, win = app_and_window
+    doc = win.doc_editor.doc
+    second = Layer("Second")
+    doc.add_layer(second)
+    process_events_for_duration(0.3)
+
+    win.doc_editor.layer.set_layer_visibility(second, False)
+    process_events_for_duration(0.3)
+
+    button = win.sidebar._layer_buttons_by_layer[1][0]
+    label = button.get_child()
+    assert label.has_css_class("rf-layer-button-hidden")
+    assert "hidden" in button.get_tooltip_text()
+
+
+@pytest.mark.ui
+def test_workflow_selection_shows_workflow_properties(app_and_window):
+    _app, win = app_and_window
+    doc = win.doc_editor.doc
+    layer = doc.active_layer
+    workflow = layer.workflows[0]
+    part = WorkPiece("Part")
+    layer.add_child(part)
+    process_events_for_duration(0.2)
+
+    win.sidebar.select_item(workflow)
+    process_events_for_duration(0.2)
+
+    provider = next(
+        p
+        for p in win.item_props_widget.providers
+        if isinstance(p, WorkflowPropertyProvider)
+    )
+    assert win.item_revealer.get_reveal_child()
+    assert provider.name_row.get_text() == workflow.name
+    assert not win.item_props_widget._name_row.get_visible()
+
+    provider.name_row.set_text("Renamed workflow")
+    provider.name_row.emit("apply")
+    process_events_for_duration(0.2)
+    assert workflow.name == "Renamed workflow"
 
 
 @pytest.mark.ui
@@ -409,3 +619,24 @@ def test_machine_manage_action_opens_machines_page(app_and_window, mocker):
 
     settings_cls.assert_called_once()
     assert settings_cls.call_args.kwargs["initial_page"] == "machines"
+
+
+@pytest.mark.ui
+def test_workflow_eye_toggles_enabled(app_and_window):
+    _app, win = app_and_window
+    workflow = win.doc_editor.doc.active_layer.workflows[0]
+    tree = win.sidebar.operations_tree
+
+    row = tree.find_row(workflow.uid)
+    assert row is not None and row.spec.on
+    tree.on_eye_toggled(row.spec)
+    process_events_for_duration(0.3)
+    assert workflow.enabled is False
+    row = tree.find_row(workflow.uid)
+    assert row is not None and not row.spec.on
+
+    tree.on_eye_toggled(row.spec)
+    process_events_for_duration(0.3)
+    assert workflow.enabled is True
+    row = tree.find_row(workflow.uid)
+    assert row is not None and row.spec.on

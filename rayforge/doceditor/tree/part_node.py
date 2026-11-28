@@ -27,6 +27,7 @@ class PartNode(NodeRow):
             self.build_spec(workpiece, number, workflow, depth, selected),
             callbacks,
         )
+        self.workflow = workflow
 
     @staticmethod
     def build_spec(

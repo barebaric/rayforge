@@ -210,7 +210,7 @@ class TestLayerDeclaration:
         result = encoder.encode(ops, mock_machine, doc)
 
         assert (
-            "declare_layer('Layer 1 Workflow', '#00ccff', 'VECTOR', 'NONE', "
+            "declare_layer('Workflow 1', '#00ccff', 'VECTOR', 'NONE', "
             "100.0, 20.0, 20.0, 20.0)" in result.text
         )
 
@@ -231,7 +231,7 @@ class TestLayerDeclaration:
         result = encoder.encode(ops, mock_machine, doc)
 
         assert (
-            "declare_layer('Layer 1 Workflow', '#00ccff', 'VECTOR', 'NONE', "
+            "declare_layer('Workflow 1', '#00ccff', 'VECTOR', 'NONE', "
             "5.0, 20.0, 50.0, 50.0)" in result.text
         )
 
@@ -419,7 +419,7 @@ class TestLayerDeclaration:
             if line.startswith("declare_layer(")
         ]
         assert len(declared) == 1
-        assert "'Layer 1 Workflow'" in declared[0]
+        assert "'Workflow 1'" in declared[0]
         assert "'#00ccff'" in declared[0]
 
     def test_per_workpiece_mode_from_sections(

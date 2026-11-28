@@ -516,9 +516,8 @@ class TestCommitItemsToDocument:
         wp.source_segment = segment
         return wp, SourceLayerInfo(layer_id=layer_id, name=name)
 
-    def test_commit_maps_to_existing_and_renames(self, file_cmd):
-        """Map to Existing renames the auto-named workflow to the imported
-        source layer name."""
+    def test_commit_maps_to_existing(self, file_cmd):
+        """Map to Existing assigns parts without renaming the workflow."""
         source = SourceAsset(
             source_file=Path("chaveiros.svg"),
             original_data=b"<svg></svg>",
@@ -529,7 +528,7 @@ class TestCommitItemsToDocument:
             layer_import_mode=LayerImportMode.MAP_TO_EXISTING
         )
 
-        file_cmd._commit_items_to_document(
+        dest = file_cmd._commit_items_to_document(
             [wp],
             source,
             Path("chaveiros.svg"),
@@ -539,9 +538,33 @@ class TestCommitItemsToDocument:
 
         doc = file_cmd._editor.doc
         assert doc.layers[0].name == "Layer 1"
-        assert doc.layers[0].workflows[0].name == "chaveiro"
+        assert doc.layers[0].workflows[0].name == "Workflow 1"
+        assert dest == [doc.layers[0].workflows[0]]
         assert wp in doc.layers[0].children
         assert wp.uid in doc.layers[0].workflows[0].workpiece_uids
+
+    def test_commit_maps_to_existing_creates_extra_workflow(self, file_cmd):
+        """Source layers beyond the existing workflows get new ones."""
+        first, first_info = self._imported_workpiece("first", "one")
+        second, second_info = self._imported_workpiece("second", "two")
+        spec = PassthroughSpec(
+            layer_import_mode=LayerImportMode.MAP_TO_EXISTING
+        )
+
+        dest = file_cmd._commit_items_to_document(
+            [first, second],
+            None,
+            Path("layers.svg"),
+            vectorization_spec=spec,
+            source_layers=[first_info, second_info],
+        )
+
+        workflows = file_cmd._editor.doc.active_layer.workflows
+        assert len(workflows) == 2
+        assert dest == workflows
+        assert first.uid in workflows[0].workpiece_uids
+        assert second.uid in workflows[1].workpiece_uids
+        assert second.uid not in workflows[0].workpiece_uids
 
     def test_commit_preserves_manually_named_workflow(self, file_cmd):
         """Map to Existing keeps the name of a manually renamed
@@ -570,8 +593,8 @@ class TestCommitItemsToDocument:
         assert doc.layers[0].workflows[0].name == "My Workflow"
         assert wp in doc.layers[0].children
 
-    def test_commit_rename_is_undoable(self, file_cmd):
-        """Undoing the import restores the previous workflow name."""
+    def test_commit_map_to_existing_is_undoable(self, file_cmd):
+        """Undoing the import removes the mapped parts again."""
         source = SourceAsset(
             source_file=Path("chaveiros.svg"),
             original_data=b"<svg></svg>",
@@ -591,14 +614,12 @@ class TestCommitItemsToDocument:
         )
 
         doc = file_cmd._editor.doc
-        assert doc.layers[0].workflows[0].name == "chaveiro"
+        assert wp in doc.layers[0].children
         file_cmd._editor.history_manager.undo()
-        assert doc.layers[0].workflows[0].name == "Layer 1 Workflow"
         assert wp not in doc.layers[0].children
 
-    def test_commit_new_layers_creates_workflow(self, file_cmd):
-        """New Layers mode creates a workflow per imported source layer
-        without renaming existing ones."""
+    def test_commit_new_workflows_reuses_blank_workflow(self, file_cmd):
+        """A blank layer reuses its generated workflow for the import."""
         doc = file_cmd._editor.doc
         wp, info = self._imported_workpiece("chaveiro")
         spec = PassthroughSpec(layer_import_mode=LayerImportMode.NEW_WORKFLOWS)
@@ -611,10 +632,33 @@ class TestCommitItemsToDocument:
             source_layers=[info],
         )
 
-        assert doc.layers[0].workflows[0].name == "Layer 1 Workflow"
-        assert doc.layers[0].workflows[1].name == "chaveiro"
+        workflows = doc.layers[0].workflows
+        assert len(workflows) == 1
+        assert workflows[0].name == "Workflow 1"
         assert wp in doc.layers[0].children
-        assert wp.uid in doc.layers[0].workflows[1].workpiece_uids
+        assert wp.uid in workflows[0].workpiece_uids
+
+    def test_commit_new_workflows_scopes_existing_workflow(self, file_cmd):
+        """Existing parts stay in their workflow, imported parts do not."""
+        layer = file_cmd._editor.doc.active_layer
+        existing = WorkPiece("Existing")
+        layer.add_child(existing)
+        wp, info = self._imported_workpiece("chaveiro")
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.NEW_WORKFLOWS)
+
+        file_cmd._commit_items_to_document(
+            [wp],
+            None,
+            Path("chaveiros.svg"),
+            vectorization_spec=spec,
+            source_layers=[info],
+        )
+
+        workflows = layer.workflows
+        assert workflows[0].workpiece_uids == [existing.uid]
+        assert workflows[1].name == "chaveiro"
+        assert wp.uid in workflows[1].workpiece_uids
+        assert wp.uid not in workflows[0].workpiece_uids
 
 
 class TestFinalizeImportOnMainThread:
@@ -632,6 +676,37 @@ class TestFinalizeImportOnMainThread:
         assert sample_payload.items[0] in (
             file_cmd._editor.doc.active_layer.children
         )
+
+    def test_finalize_import_does_not_duplicate_parts(
+        self, file_cmd, sample_payload
+    ):
+        """A command line import into a blank document stays in one
+        workflow."""
+        layer = file_cmd._editor.doc.active_layer
+
+        file_cmd._finalize_import_on_main_thread(
+            sample_payload, Path("test.svg"), None
+        )
+
+        assert len(layer.workflows) == 1
+        selected = layer.workflows[0].selected_workpieces(layer.all_workpieces)
+        assert selected == [sample_payload.items[0]]
+
+    def test_finalize_mapped_import_adds_default_steps(
+        self, file_cmd, sample_payload
+    ):
+        """A mapped empty workflow gets default steps for its new parts."""
+        workflow = file_cmd._editor.doc.active_layer.workflows[0]
+        assert not workflow.steps
+        spec = PassthroughSpec(
+            layer_import_mode=LayerImportMode.MAP_TO_EXISTING
+        )
+
+        file_cmd._finalize_import_on_main_thread(
+            sample_payload, Path("test.svg"), None, spec
+        )
+
+        assert [step.typelabel for step in workflow.steps] == ["Contour"]
 
 
 class TestPreviewResult:

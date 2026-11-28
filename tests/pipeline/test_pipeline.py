@@ -245,6 +245,32 @@ class TestPipeline:
         assert len(mock_task_mgr.created_tasks) == tasks_before
 
     @pytest.mark.asyncio
+    async def test_no_workflow_content_invalidates_cached_job(
+        self,
+        doc,
+        mock_task_mgr,
+        context_initializer,
+    ):
+        """Disabling the last workflow must not leave stale G-code
+        available to previews, export, or send."""
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
+        stale = MagicMock()
+        stale.key = "stale-job"
+        stale.refcount = 1
+        pipeline._last_job_handle = stale
+        pipeline._last_aggregate_output = object()
+
+        pipeline.generate_job_artifact(when_done=MagicMock())
+
+        assert pipeline._last_job_handle is None
+        assert pipeline._last_aggregate_output is None
+
+    @pytest.mark.asyncio
     async def test_generate_job_artifact_hidden_steps_fails_fast(
         self,
         doc,

@@ -1,88 +1,78 @@
-"""The "+ Workflow" pill for adding and picking workflows."""
+"""The "+ Workflow" pill for adding workflows."""
 
 from gettext import gettext as _
 
 from blinker import Signal
-from gi.repository import Gtk
+from gi.repository import GLib, Gtk
 
-from ...core.color import COLOR_PALETTE
-from ...core.workflow import Workflow
+from ...core.color import pick_contrasting_colors
 from ...ui_gtk.icons import get_icon
 from .node import swatch_button
 
+_QUICK_COLORS = 3
+
 
 class WorkflowBar(Gtk.Box):
-    """The "Workflow [swatches] +" pill shown below the Operations tree.
+    """The quick-add workflow bar shown below the Operations tree.
 
-    The swatches show the workflows that exist, in run order; picking
-    one reports :attr:`workflow_activated`. The plus button opens the
-    color picker and reports :attr:`workflow_requested` with the picked
-    color. Creating the workflow is the caller's job.
+    The swatches are quick-add buttons for the most contrasting colors;
+    the plus button opens a custom color dialog.
     """
 
     def __init__(self):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         self.workflow_requested = Signal()
-        self.workflow_activated = Signal()
 
         self.add_css_class("rf-pill")
         self.set_halign(Gtk.Align.CENTER)
         self.set_valign(Gtk.Align.CENTER)
+        self.set_margin_top(10)
+        self.set_margin_bottom(4)
 
         title = Gtk.Label(label=_("Workflow"), xalign=0)
         title.add_css_class("rf-pill-title")
         self.append(title)
 
-        self._swatches = Gtk.Box(
-            orientation=Gtk.Orientation.HORIZONTAL, spacing=6
-        )
-        self._swatches.set_valign(Gtk.Align.CENTER)
-        self.append(self._swatches)
-
-        plus = Gtk.MenuButton(css_classes=["flat", "rf-pill-swatch"])
-        icon = get_icon("add-symbolic")
-        icon.set_pixel_size(14)
-        plus.set_child(icon)
-        plus.set_tooltip_text(_("Add workflow"))
-        plus.set_valign(Gtk.Align.CENTER)
-        self._popover = self._build_color_popover()
-        plus.set_popover(self._popover)
-        self.append(plus)
-
-    def _build_color_popover(self) -> Gtk.Popover:
-        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        row.set_margin_start(10)
-        row.set_margin_end(10)
-        row.set_margin_top(8)
-        row.set_margin_bottom(8)
-        for color in COLOR_PALETTE:
-            swatch = swatch_button(color)
-            swatch.connect("clicked", self._on_color_clicked, color)
-            row.append(swatch)
-        popover = Gtk.Popover()
-        popover.set_child(row)
-        return popover
-
-    def set_workflows(self, workflows: list[Workflow]):
-        """Rebuilds the swatches from the workflows that exist."""
-        child = self._swatches.get_first_child()
-        while child:
-            next_child = child.get_next_sibling()
-            self._swatches.remove(child)
-            child = next_child
-        for workflow in workflows:
-            swatch = swatch_button(workflow.color, diameter=16)
+        for color in pick_contrasting_colors(_QUICK_COLORS):
+            swatch = swatch_button(color, diameter=16)
             swatch.add_css_class("rf-pill-swatch")
             swatch.set_valign(Gtk.Align.CENTER)
-            swatch.set_tooltip_text(workflow.name)
+            swatch.set_tooltip_text(
+                _("Add workflow with color {color}").format(color=color)
+            )
             swatch.connect(
                 "clicked",
-                lambda b, workflow=workflow: self.workflow_activated.send(
-                    self, workflow=workflow
+                lambda _button, color=color: self.workflow_requested.send(
+                    self, color=color
                 ),
             )
-            self._swatches.append(swatch)
+            self.append(swatch)
 
-    def _on_color_clicked(self, button, color):
-        self._popover.popdown()
+        custom = Gtk.Button(css_classes=["flat", "rf-pill-swatch"])
+        icon = get_icon("add-symbolic")
+        icon.set_pixel_size(14)
+        custom.set_child(icon)
+        custom.set_tooltip_text(_("Add workflow with a custom color"))
+        custom.set_valign(Gtk.Align.CENTER)
+        custom.connect("clicked", self._on_custom_color_clicked)
+        self.append(custom)
+
+    def _on_custom_color_clicked(self, button):
+        root = self.get_root()
+        parent = root if isinstance(root, Gtk.Window) else None
+        dialog = Gtk.ColorDialog()
+        dialog.set_with_alpha(False)
+        dialog.choose_rgba(parent, None, None, self._on_color_chosen)
+
+    def _on_color_chosen(self, dialog, result):
+        try:
+            rgba = dialog.choose_rgba_finish(result)
+        except GLib.Error:
+            return
+        if rgba is None:
+            return
+        red = round(rgba.red * 255)
+        green = round(rgba.green * 255)
+        blue = round(rgba.blue * 255)
+        color = f"#{red:02x}{green:02x}{blue:02x}"
         self.workflow_requested.send(self, color=color)

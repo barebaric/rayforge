@@ -2,6 +2,7 @@ import pytest
 
 from rayforge import config as config_module
 from rayforge.context import get_context
+from rayforge.core.doc import Doc
 from rayforge.core.recipe import Recipe
 from rayforge.core.step import Step
 from rayforge.doceditor.step_cmd import StepCmd
@@ -11,6 +12,18 @@ from rayforge.doceditor.step_cmd import StepCmd
 def step_cmd(doc_editor):
     """Provides a StepCmd instance."""
     return StepCmd(doc_editor)
+
+
+def test_initialize_default_steps_uses_the_current_document(doc_editor):
+    """Default steps go to the document that is active after a swap."""
+    new_doc = Doc()
+    doc_editor.set_doc(new_doc)
+    workflow = new_doc.active_layer.workflows[0]
+    assert not workflow.steps
+
+    doc_editor.step.initialize_default_steps()
+
+    assert [step.typelabel for step in workflow.steps] == ["Contour"]
 
 
 def test_set_step_param(step_cmd):

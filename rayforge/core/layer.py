@@ -67,7 +67,7 @@ class Layer(DocItem, VisibleMixin):
         self.extra: dict[str, Any] = {}
 
         # A new layer gets one workflow automatically.
-        workflow = Workflow(_("{name} Workflow").format(name=name))
+        workflow = Workflow(_("Workflow 1"))
         self.add_child(workflow)
 
     def to_dict(self) -> dict:

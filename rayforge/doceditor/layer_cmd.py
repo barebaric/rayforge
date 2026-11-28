@@ -187,6 +187,10 @@ class LayerCmd:
     def delete_layer(self, layer: Layer):
         """Deletes a layer with an undoable command."""
         new_list = [s for s in self._editor.doc.layers if s is not layer]
+        if not new_list:
+            # A document must keep one layer; deleting the last one
+            # replaces it with a fresh empty layer.
+            new_list = [Layer(_("Layer 1"))]
         cmd = ReorderListCommand(
             target_obj=self._editor.doc,
             list_property_name="layers",

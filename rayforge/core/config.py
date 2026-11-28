@@ -99,6 +99,8 @@ class Config:
         self.bottom_panel: dict[str, Any] | None = None
         self.right_panel_visible: bool = True
         self.right_panel_mode: RightPanelMode = RightPanelMode.NON_EMPTY_LAYERS
+        self.sidebar_visible: bool = True
+        self.sidebar_width: int = 300
         self.canvas_view: CanvasViewState = CanvasViewState()
         # Shop mode: large, high-contrast position readouts for
         # working at the machine. Off by default.
@@ -210,6 +212,21 @@ class Config:
         if self.right_panel_mode == mode:
             return
         self.right_panel_mode = mode
+        self.changed.send(self)
+
+    def set_sidebar_visible(self, visible: bool):
+        """Sets the sidebar visibility state."""
+        if self.sidebar_visible == visible:
+            return
+        self.sidebar_visible = visible
+        self.changed.send(self)
+
+    def set_sidebar_width(self, width: int):
+        """Sets the sidebar width in pixels."""
+        width = max(0, int(width))
+        if self.sidebar_width == width:
+            return
+        self.sidebar_width = width
         self.changed.send(self)
 
     def set_shop_mode(self, enabled: bool):
@@ -408,6 +425,8 @@ class Config:
             "bottom_panel": self.bottom_panel,
             "right_panel_visible": self.right_panel_visible,
             "right_panel_mode": self.right_panel_mode.value,
+            "sidebar_visible": self.sidebar_visible,
+            "sidebar_width": self.sidebar_width,
             "canvas_view": self.canvas_view.to_dict(),
             "shop_mode": self.shop_mode,
             "auto_pipeline": self.auto_pipeline,
@@ -478,6 +497,8 @@ class Config:
         # Load UI visibility states
         config.bottom_panel = data.get("bottom_panel", None)
         config.right_panel_visible = data.get("right_panel_visible", True)
+        config.sidebar_visible = data.get("sidebar_visible", True)
+        config.sidebar_width = data.get("sidebar_width", 300)
         default_panel_mode = RightPanelMode.NON_EMPTY_LAYERS.value
         panel_mode_str = data.get("right_panel_mode", default_panel_mode)
         try:

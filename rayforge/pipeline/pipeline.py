@@ -533,6 +533,10 @@ class Pipeline:
 
         self.generate_job_artifact(when_done=no_op)
 
+    def can_generate_job(self) -> bool:
+        """True when the document has enabled, visible steps to run."""
+        return self._can_generate_job()
+
     def generate_job_artifact(
         self,
         when_done: Callable[
@@ -559,16 +563,8 @@ class Pipeline:
             when_done(None, exc)
             return
 
-        if layer_uids is None and self._last_job_handle is not None:
-            when_done(self._last_job_handle, None)
-            return
-
-        if layer_uids is not None:
-            # The scoped artifact must come from a fresh rebuild, and
-            # must not be served later as the whole-document artifact.
-            self.invalidate_job_output()
-
         if not self._can_generate_job():
+            self.invalidate_job_output()
             when_done(
                 None,
                 RuntimeError(
@@ -577,6 +573,15 @@ class Pipeline:
                 ),
             )
             return
+
+        if layer_uids is None and self._last_job_handle is not None:
+            when_done(self._last_job_handle, None)
+            return
+
+        if layer_uids is not None:
+            # The scoped artifact must come from a fresh rebuild, and
+            # must not be served later as the whole-document artifact.
+            self.invalidate_job_output()
 
         request_generation = self._intent_ctl.generation_id
 

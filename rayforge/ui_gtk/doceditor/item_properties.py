@@ -9,6 +9,7 @@ from ...context import get_context
 from ...core.group import Group
 from ...core.item import DocItem
 from ...core.stock import StockItem
+from ...core.workflow import Workflow
 from ...core.workpiece import WorkPiece
 from ..shared.expander import Expander
 from .property_providers import (
@@ -104,9 +105,11 @@ class DocItemPropertiesWidget(Gtk.Box):
     def _sync_name_row(self):
         """Shows the inline name entry while exactly one item is selected."""
         single = self.items[0] if len(self.items) == 1 else None
-        self._name_row.set_visible(single is not None)
-        if single is None:
+        # Workflows have their own name row in their property provider.
+        if single is None or isinstance(single, Workflow):
+            self._name_row.set_visible(False)
             return
+        self._name_row.set_visible(True)
         if self._name_row.get_text() != single.name:
             self._name_row.set_text(single.name)
 

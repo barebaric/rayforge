@@ -139,14 +139,15 @@ class Workflow(DocItem):
         The given workpieces this workflow runs for, in input order.
 
         An empty ``workpiece_uids`` filter matches every workpiece of
-        the layer; a set filter matches only the workpieces whose uid
-        it lists, and silently skips uids that are not present.
+        the layer, in input order. An explicit filter also defines the
+        order the parts run in, and silently skips uids that are not
+        present.
         """
 
         if not self.workpiece_uids:
             return list(workpieces)
-        uids = set(self.workpiece_uids)
-        return [wp for wp in workpieces if wp.uid in uids]
+        by_uid = {wp.uid: wp for wp in workpieces}
+        return [by_uid[uid] for uid in self.workpiece_uids if uid in by_uid]
 
     def set_post_processors_dicts(
         self, post_processors_dicts: list[dict[str, Any]]

@@ -118,7 +118,7 @@ def test_workpiece_spec(doc):
     assert spec.label == "Rib L"
     assert spec.detail == "70 × 40 mm"
     assert spec.eye is True and spec.on is True
-    assert spec.has_children is True
+    assert spec.has_children is False
     assert spec.expanded is False
 
     spec = WorkPieceNode.build_spec(workpiece, 2, expanded={workpiece.uid})
@@ -171,7 +171,7 @@ def test_workflow_spec(doc):
     workflow = parts.workflows[0]
     spec = WorkflowNode.build_spec(workflow, 1)
     assert spec.kind == "workflow"
-    assert spec.label == "Parts Workflow"
+    assert spec.label == "Workflow 1"
     assert spec.color == workflow.color
     assert spec.detail == "2 steps"
     assert spec.has_children is True
@@ -207,3 +207,25 @@ def test_part_spec_selection(doc):
     rib_left = parts.all_workpieces[0]
     spec = PartNode.build_spec(rib_left, 1, workflow, 2, {rib_left.uid})
     assert spec.selected is True
+
+
+def test_workpiece_feature_rows(doc):
+    from raygeo.geo import Geometry
+
+    workpiece = doc.layers[0].all_workpieces[0]
+    geometry = Geometry()
+    geometry.move_to(0, 0)
+    geometry.line_to(10, 0)
+    geometry.line_to(10, 10)
+    geometry.line_to(0, 10)
+    geometry.close_path()
+    inner = Geometry()
+    inner.move_to(2, 2)
+    inner.line_to(4, 2)
+    inner.line_to(4, 4)
+    inner.close_path()
+    geometry.extend(inner)
+    workpiece._edited_boundaries = geometry
+
+    spec = WorkPieceNode.build_spec(workpiece, 2)
+    assert spec.has_children is True
