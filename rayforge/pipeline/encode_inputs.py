@@ -152,44 +152,79 @@ def _build_workpiece_path_vars_for_doc(
 # ── Macro table ───────────────────────────────────────────────────
 
 
-def _build_macro_table(machine: "Machine") -> dict:
+def _macro_dict(macro) -> dict | None:
+    """The JSON form of one macro, or None when it is unset."""
+    if macro is None:
+        return None
+    return {
+        "name": macro.name,
+        "code": macro.code,
+        "enabled": macro.enabled,
+    }
+
+
+def _merged_macros(macros: list) -> dict | None:
+    """Merges several trigger macros into one, preserving their order."""
+    active = [m for m in macros if m is not None and m.enabled]
+    if not active:
+        return None
+    if len(active) == 1:
+        return _macro_dict(active[0])
+    return {
+        "name": active[0].name,
+        "code": [line for m in active for line in (m.code or [])],
+        "enabled": True,
+    }
+
+
+def _span_hook_maps(
+    doc: "Doc | None", hooks: dict
+) -> tuple[dict[str, dict | None], dict[str, dict | None]]:
+    """Builds the per-workflow overrides for the layer hooks.
+
+    Job spans are workflow spans, so a layer's start hook belongs to
+    the span of its first runnable workflow, and its end hook belongs
+    to the span of the last one. Every workflow span carries the
+    workflow hooks; spans without any hook map to None so they do not
+    fall back to the layer-only defaults.
+    """
+    starts: dict[str, dict | None] = {}
+    ends: dict[str, dict | None] = {}
+    if doc is None:
+        return starts, ends
+    for layer in doc.layers:
+        workflows = [
+            workflow
+            for workflow in layer.workflows
+            if workflow.enabled and workflow.has_runnable_steps()
+        ]
+        if not workflows:
+            continue
+        last = workflows[-1]
+        for workflow in workflows:
+            start_macros = [hooks.get(MacroTrigger.WORKFLOW_START)]
+            if workflow is workflows[0]:
+                start_macros.insert(0, hooks.get(MacroTrigger.LAYER_START))
+            starts[workflow.uid] = _merged_macros(start_macros)
+
+            end_macros = [hooks.get(MacroTrigger.WORKFLOW_END)]
+            if workflow is last:
+                end_macros.append(hooks.get(MacroTrigger.LAYER_END))
+            ends[workflow.uid] = _merged_macros(end_macros)
+    return starts, ends
+
+
+def _build_macro_table(machine: "Machine", doc: "Doc | None") -> dict:
     """Build the MacroTable dict for the Rust encoder."""
     hooks = machine.hookmacros
     macros = machine.macros  # Dict[str, Macro]
-
-    def _macro_dict(m) -> dict | None:
-        if m is None:
-            return None
-        return {"name": m.name, "code": m.code, "enabled": m.enabled}
-
-    # Job spans are workflow spans, so both the layer and the workflow
-    # hooks fire at the span markers (LayerStart/End). When a machine
-    # defines both, their code runs in that order.
-    def _merged(macros: list) -> dict | None:
-        active = [m for m in macros if m is not None and m.enabled]
-        if not active:
-            return None
-        if len(active) == 1:
-            return _macro_dict(active[0])
-        return {
-            "name": active[0].name,
-            "code": [line for m in active for line in (m.code or [])],
-            "enabled": True,
-        }
+    layer_starts, layer_ends = _span_hook_maps(doc, hooks)
 
     table: dict = {
-        "layer_start": _merged(
-            [
-                hooks.get(MacroTrigger.WORKFLOW_START),
-                hooks.get(MacroTrigger.LAYER_START),
-            ]
-        ),
-        "layer_end": _merged(
-            [
-                hooks.get(MacroTrigger.WORKFLOW_END),
-                hooks.get(MacroTrigger.LAYER_END),
-            ]
-        ),
+        "layer_start": _macro_dict(hooks.get(MacroTrigger.LAYER_START)),
+        "layer_end": _macro_dict(hooks.get(MacroTrigger.LAYER_END)),
+        "layer_start_by_uid": layer_starts,
+        "layer_end_by_uid": layer_ends,
         "workpiece_start": _macro_dict(
             hooks.get(MacroTrigger.WORKPIECE_START)
         ),
@@ -266,7 +301,7 @@ def build_encode_context(ops: Ops, machine: "Machine", doc: "Doc") -> dict:
         "heads": _build_heads(machine),
         "active_wcs": machine.active_wcs,
         "layer_wcs": _build_workflow_wcs(doc, machine),
-        "macros": _build_macro_table(machine),
+        "macros": _build_macro_table(machine, doc),
         "path_vars": path_vars,
         "layer_path_vars": _build_workflow_path_vars_for_doc(doc, machine),
         "workpiece_path_vars": _build_workpiece_path_vars_for_doc(doc),

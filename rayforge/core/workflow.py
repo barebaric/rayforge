@@ -178,6 +178,19 @@ class Workflow(DocItem):
             return []
         return self.selected_workpieces(layer.all_workpieces)
 
+    def has_runnable_steps(self) -> bool:
+        """Whether a visible step targets at least one of the workflow's
+        workpieces."""
+        workpieces = self.workpieces
+        return any(
+            step.visible
+            and (
+                not step.needs_workpieces
+                or step.selected_workpieces(workpieces)
+            )
+            for step in self.steps
+        )
+
     def __iter__(self):
         """Allows iteration over the work steps."""
         return iter(self.steps)
