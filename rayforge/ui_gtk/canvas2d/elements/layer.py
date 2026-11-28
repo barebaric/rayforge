@@ -20,9 +20,9 @@ logger = logging.getLogger(__name__)
 
 class LayerElement(CanvasElement):
     """
-    A non-selectable container for one Layer model. It creates and
-    manages child elements for WorkPieces, Groups, StockItems, and the
-    steps of all the layer's workflows.
+    A non-selectable container that corresponds to the active Layer
+    model. It creates and manages child elements for WorkPieces,
+    Groups, StockItems, and the steps of all its workflows.
     """
 
     def __init__(self, layer: "Layer", **kwargs):

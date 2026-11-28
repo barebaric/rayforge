@@ -1111,31 +1111,26 @@ class WorkSurface(WorldSurface):
         """
         Synchronizes the canvas elements with the document model.
 
-        Every layer is shown with its content items, stock and the
-        steps of all its workflows, stacked in document order. This
-        method ensures that what is displayed on the canvas perfectly
-        matches the state of the document's data model.
+        The canvas shows the active layer only: its content items and
+        stock, and the steps of all its workflows. This method ensures
+        that what is displayed on the canvas perfectly matches the
+        state of the document's data model.
         """
         doc = self.doc
 
-        # --- Step 1: Add and Remove LayerElements ---
-        doc_layers_set = set(doc.layers)
-        current_elements_on_canvas = {
-            elem.data: elem for elem in self.find_by_type(LayerElement)
-        }
-
-        # Remove elements for layers that are no longer in the doc
-        for layer, elem in current_elements_on_canvas.items():
-            if layer not in doc_layers_set:
-                elem.remove()
-
-        # Add elements for new layers that are not yet on the canvas
-        for layer in doc.layers:
-            if layer not in current_elements_on_canvas:
-                self._create_and_add_layer_element(layer)
+        # --- Step 1: Maintain the single LayerElement ---
+        active_layer = doc.active_layer
+        layer_elements = list(self.find_by_type(LayerElement))
+        if layer_elements:
+            layer_elem = layer_elements[0]
+            if layer_elem.data is not active_layer:
+                layer_elem.remove()
+                self._create_and_add_layer_element(active_layer)
+        else:
+            self._create_and_add_layer_element(active_layer)
 
         # --- Step 1.5: Add and Remove StockElements ---
-        doc_stock_items_set = set(doc.stock_items)
+        doc_stock_items_set = set(active_layer.stock_items)
         current_stock_elements_on_canvas = {
             elem.data: elem for elem in self.find_by_type(StockElement)
         }
@@ -1146,27 +1141,23 @@ class WorkSurface(WorldSurface):
                 elem.remove()
 
         # Add elements for new stock items that are not yet on the canvas
-        for stock_item in doc.stock_items:
+        for stock_item in active_layer.stock_items:
             if stock_item not in current_stock_elements_on_canvas:
                 self._create_and_add_stock_element(stock_item)
-
-        layer_order_map = {layer: i for i, layer in enumerate(doc.layers)}
 
         def sort_key(element: CanvasElement):
             """
             Sort key for root's children. Camera at bottom, then stock,
-            then the layers and laser dot on top.
+            then the layer element and laser dot on top.
             """
             if isinstance(element, DotElement):
                 return float("inf") - 1
             if isinstance(element, LayerElement):
-                # LayerElements are ordered according to doc.layers.
-                layer_order = layer_order_map.get(
-                    element.data, len(layer_order_map)
-                )
-                return layer_order + 1000
+                # The layer element holds all workpieces and sits above
+                # stock and camera images.
+                return 1000
             if isinstance(element, StockElement):
-                # Stock elements are below the layers but above camera
+                # Stock elements are below the layer element but above camera
                 # images
                 return 10
             if isinstance(element, CameraImageElement):
@@ -1182,7 +1173,7 @@ class WorkSurface(WorldSurface):
                 # zones so it stays visible where they overlap
                 return -1.3
             # Other elements are above the camera but below stock and
-            # the layers.
+            # the layer element.
             return -1
 
         self.root.children.sort(key=sort_key)
