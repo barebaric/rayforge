@@ -30,7 +30,7 @@ from ..core.doc_schema import CURRENT_DOC_SCHEMA_VERSION
 from ..core.item import DocItem
 from ..core.layer import Layer
 from ..core.source_asset import SourceAsset
-from ..core.undo import ChangePropertyCommand, ListItemCommand
+from ..core.undo import ListItemCommand
 from ..core.vectorization_spec import (
     LayerImportMode,
     PassthroughSpec,
@@ -46,6 +46,7 @@ from ..image import (
     exporter_registry,
     importer_registry,
 )
+from ..image.assembler import ItemAssembler
 from ..image.base_exporter import Exporter
 from ..image.coreldraw.exporter import (
     CorelDrawExporter,
@@ -501,11 +502,7 @@ class FileCmd:
         items: list[DocItem],
         mode: LayerImportMode,
         source_layers: list[SourceLayerInfo] | None = None,
-    ) -> tuple[
-        list[tuple[DocItem, DocItem]],
-        list[Workflow],
-        list[tuple[Workflow, str]],
-    ]:
+    ) -> tuple[list[tuple[DocItem, DocItem]], list[Workflow]]:
         """
         Resolve each imported workpiece to a (owner, item) pair and
         build a workflow per imported source layer, based on the import
@@ -516,20 +513,20 @@ class FileCmd:
         layer's workpieces to the layer's existing workflow at the same
         index; FLATTEN assigns all of them to the first workflow.
 
-        Returns (pairs, new_workflows, renames): the flat list of
-        (destination_owner, item_to_add) tuples, the workflows created
-        for imported source layers, and (workflow, new_name) rename
-        pairs for still auto-named workflows in MAP_TO_EXISTING mode.
+        Returns (pairs, dest_workflows): the flat list of
+        (destination_owner, item_to_add) tuples and the workflows that
+        received imported parts.
         """
         target_layer = self._editor.doc.active_layer
-        layers_by_id = {info.layer_id: info for info in (source_layers or [])}
         grouped = self._group_by_source_layer(items)
-        resolver = {
-            LayerImportMode.MAP_TO_EXISTING: self._map_to_existing,
-            LayerImportMode.NEW_WORKFLOWS: self._new_workflows,
-            LayerImportMode.FLATTEN: self._flatten,
-        }[mode]
-        return resolver(target_layer, items, grouped, layers_by_id)
+        if mode is LayerImportMode.MAP_TO_EXISTING:
+            return self._map_to_existing(target_layer, grouped)
+        if mode is LayerImportMode.NEW_WORKFLOWS:
+            layers_by_id = {
+                info.layer_id: info for info in (source_layers or [])
+            }
+            return self._new_workflows(target_layer, grouped, layers_by_id)
+        return self._flatten(target_layer, items)
 
     @staticmethod
     def _group_by_source_layer(
@@ -556,80 +553,85 @@ class FileCmd:
     def _map_to_existing(
         self,
         target_layer: Layer,
-        items: list[DocItem],
         grouped: dict[str | None, list[WorkPiece]],
-        layers_by_id: dict[str | None, SourceLayerInfo],
-    ) -> tuple[
-        list[tuple[DocItem, DocItem]],
-        list[Workflow],
-        list[tuple[Workflow, str]],
-    ]:
+    ) -> tuple[list[tuple[DocItem, DocItem]], list[Workflow]]:
         """Assigns imported parts to the layer's workflows by index."""
         pairs: list[tuple[DocItem, DocItem]] = []
-        renames: list[tuple[Workflow, str]] = []
+        dest_workflows: list[Workflow] = []
         existing = target_layer.workflows
-        auto_name = _("Workflow 1")
-        for idx, (layer_id, workpieces) in enumerate(grouped.items()):
+        for idx, workpieces in enumerate(grouped.values()):
             if idx < len(existing):
-                dest_workflow = existing[idx]
-                self._assign(dest_workflow, workpieces)
-                info = layers_by_id.get(layer_id)
-                if (
-                    info is not None
-                    and dest_workflow.name == auto_name
-                    and info.name != dest_workflow.name
-                ):
-                    renames.append((dest_workflow, info.name))
+                workflow = existing[idx]
+                self._assign(workflow, workpieces)
+                dest_workflows.append(workflow)
             pairs.extend((target_layer, wp) for wp in workpieces)
-        return pairs, [], renames
+        return pairs, dest_workflows
 
     def _new_workflows(
         self,
         target_layer: Layer,
-        items: list[DocItem],
         grouped: dict[str | None, list[WorkPiece]],
         layers_by_id: dict[str | None, SourceLayerInfo],
-    ) -> tuple[
-        list[tuple[DocItem, DocItem]],
-        list[Workflow],
-        list[tuple[Workflow, str]],
-    ]:
-        """Creates one workflow per imported source layer."""
+    ) -> tuple[list[tuple[DocItem, DocItem]], list[Workflow]]:
+        """Creates one workflow per imported source layer.
+
+        On a layer without parts, existing workflows that select every
+        part are reused for the imported source layers. This keeps the
+        generated default workflow from also claiming the imported
+        parts. On a layer that already has parts, those workflows are
+        scoped to the existing parts so the imported parts are not
+        duplicated.
+        """
         pairs: list[tuple[DocItem, DocItem]] = []
-        new_workflows: list[Workflow] = []
-        default_workflow = (
-            target_layer.workflows[0] if target_layer.workflows else None
-        )
+        dest_workflows: list[Workflow] = []
+        existing = target_layer.workflows
+        existing_uids = [wp.uid for wp in target_layer.all_workpieces]
+        reusable: list[Workflow] = []
+        for workflow in existing:
+            if workflow.workpiece_uids:
+                continue
+            if existing_uids:
+                workflow.set_workpiece_uids(existing_uids)
+            else:
+                reusable.append(workflow)
+        default_workflow = existing[0] if existing else None
         first_group = True
         for layer_id, workpieces in grouped.items():
             info = layers_by_id.get(layer_id)
+            if reusable:
+                workflow = reusable.pop(0)
+                if info is not None and info.settings:
+                    workflow.set_steps([])
+                    ItemAssembler.apply_settings_to_workflow(
+                        workflow, info.name, info.settings
+                    )
+                self._assign(workflow, workpieces)
+                dest_workflows.append(workflow)
+                pairs.extend((target_layer, wp) for wp in workpieces)
+                first_group = False
+                continue
             if info is not None and default_workflow is not None:
                 workflow = self._editor.workflow.create_for_source_layer(
                     target_layer, info, workpieces
                 )
                 if workflow is not None:
-                    new_workflows.append(workflow)
+                    dest_workflows.append(workflow)
                     pairs.append((target_layer, workflow))
                     pairs.extend((target_layer, wp) for wp in workpieces)
                     first_group = False
                     continue
             if first_group and default_workflow is not None:
                 self._assign(default_workflow, workpieces)
+                dest_workflows.append(default_workflow)
                 first_group = False
             pairs.extend((target_layer, wp) for wp in workpieces)
-        return pairs, new_workflows, []
+        return pairs, dest_workflows
 
     def _flatten(
         self,
         target_layer: Layer,
         items: list[DocItem],
-        grouped: dict[str | None, list[WorkPiece]],
-        layers_by_id: dict[str | None, SourceLayerInfo],
-    ) -> tuple[
-        list[tuple[DocItem, DocItem]],
-        list[Workflow],
-        list[tuple[Workflow, str]],
-    ]:
+    ) -> tuple[list[tuple[DocItem, DocItem]], list[Workflow]]:
         """Assigns every imported part to the first workflow."""
         pairs: list[tuple[DocItem, DocItem]] = [
             (target_layer, item) for item in items
@@ -642,7 +644,8 @@ class FileCmd:
                 default_workflow,
                 [item for item in items if isinstance(item, WorkPiece)],
             )
-        return pairs, [], []
+            return pairs, [default_workflow]
+        return pairs, []
 
     @staticmethod
     def _layer_import_mode(
@@ -668,7 +671,7 @@ class FileCmd:
 
         Returns the workflows that received items.
         """
-        pairs, new_workflows, renames = self._resolve_destinations(
+        pairs, new_workflows = self._resolve_destinations(
             items, mode, source_layers
         )
 
@@ -680,15 +683,6 @@ class FileCmd:
                         item=item,
                         undo_command="remove_child",
                         redo_command="add_child",
-                    )
-                )
-            for workflow, new_name in renames:
-                t.execute(
-                    ChangePropertyCommand(
-                        target=workflow,
-                        property_name="name",
-                        new_value=new_name,
-                        name=_("Rename workflow"),
                     )
                 )
 
