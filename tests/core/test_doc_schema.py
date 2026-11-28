@@ -232,3 +232,18 @@ def test_newer_schema_sets_flag():
 def test_current_schema_has_no_newer_flag():
     assert Doc().newer_schema_version is None
     assert Doc.from_dict(Doc().to_dict()).newer_schema_version is None
+
+
+def test_migrate_uses_workflow_name_when_layer_matches_part():
+    """A layer named after its only part keeps the workflow's name."""
+    v0 = _v0_doc()
+    v0["children"] = [v0["children"][0]]
+    v0["children"][0]["children"][1]["name"] = "Cut"
+    v0["children"][0]["name"] = "Cut"
+    v0["children"][0]["children"][0]["name"] = "Cut Workflow"
+    v0["children"][0]["visible"] = True
+
+    v1 = migrate(v0)
+
+    workflow = _workflow(v1["children"][0])
+    assert workflow["name"] == "Cut Workflow"

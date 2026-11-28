@@ -184,6 +184,7 @@ def _layer_children_to_v1(source: dict[str, Any]) -> list[dict[str, Any]]:
             content.append(child)
 
     workpiece_uids = _collect_workpiece_uids(content)
+    part_names = _collect_workpiece_names(content)
     if not workflows:
         workflows = [
             {
@@ -203,6 +204,7 @@ def _layer_children_to_v1(source: dict[str, Any]) -> list[dict[str, Any]]:
                 workflow,
                 index,
                 workpiece_uids,
+                part_names,
                 layer_matrix,
             )
         )
@@ -218,6 +220,7 @@ def _workflow_to_v1(
     workflow: dict[str, Any],
     index: int,
     workpiece_uids: list[str],
+    part_names: set[str],
     layer_matrix: list[list[float]] | None,
 ) -> dict[str, Any]:
     """Builds the workflow for one old layer."""
@@ -229,9 +232,19 @@ def _workflow_to_v1(
         # The old layer's uid identified the cut span in jobs, so the
         # workflow inherits it. Its name is the user-visible operation.
         migrated["uid"] = layer.get("uid", migrated.get("uid"))
-        migrated["name"] = (
-            layer.get("name") or workflow.get("name") or _("Workflow")
-        )
+        layer_name = layer.get("name")
+        workflow_name = workflow.get("name")
+        if (
+            layer_name
+            and layer_name in part_names
+            and workflow_name
+            and workflow_name != layer_name
+        ):
+            # An old layer named after its only part makes a confusing
+            # workflow name; keep the more descriptive old workflow name.
+            migrated["name"] = workflow_name
+        else:
+            migrated["name"] = layer_name or workflow_name or _("Workflow")
         for key, value in layer.items():
             if key not in _LAYER_KEYS and key not in migrated:
                 migrated[key] = copy.deepcopy(value)
@@ -254,6 +267,17 @@ def _collect_workpiece_uids(items: list[dict[str, Any]]) -> list[str]:
             uids.append(uid)
         uids.extend(_collect_workpiece_uids(item.get("children", [])))
     return uids
+
+
+def _collect_workpiece_names(items: list[dict[str, Any]]) -> set[str]:
+    """Collects the names of all workpieces in a content subtree."""
+    names: set[str] = set()
+    for item in items:
+        name = item.get("name")
+        if item.get("type") == "workpiece" and name:
+            names.add(name)
+        names.update(_collect_workpiece_names(item.get("children", [])))
+    return names
 
 
 def _bake_matrix(
