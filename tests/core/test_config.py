@@ -365,3 +365,46 @@ class TestImportLayerSource:
             get_machine_by_id=lambda mid: None,
         )
         assert restored.import_layer_source is None
+
+
+class TestSidebar:
+    def test_defaults(self):
+        config = Config()
+        assert config.sidebar_visible is True
+        assert config.sidebar_width == 300
+
+    def test_setters_emit_changed_once(self):
+        config = Config()
+        calls = []
+
+        def on_changed(sender, **kwargs):
+            calls.append(sender)
+
+        config.changed.connect(on_changed, weak=False)
+
+        config.set_sidebar_visible(False)
+        config.set_sidebar_visible(False)
+        config.set_sidebar_width(280)
+        config.set_sidebar_width(280)
+
+        assert len(calls) == 2
+
+    def test_width_is_sanitized(self):
+        config = Config()
+        config.set_sidebar_width(-10)
+        assert config.sidebar_width == 0
+
+    def test_round_trip(self):
+        config = Config()
+        config.set_sidebar_visible(False)
+        config.set_sidebar_width(260)
+        data = config.to_dict()
+
+        restored = Config.from_dict(data, get_machine_by_id=lambda mid: None)
+        assert restored.sidebar_visible is False
+        assert restored.sidebar_width == 260
+
+    def test_absent_keys_fall_back_to_defaults(self):
+        restored = Config.from_dict({}, get_machine_by_id=lambda mid: None)
+        assert restored.sidebar_visible is True
+        assert restored.sidebar_width == 300

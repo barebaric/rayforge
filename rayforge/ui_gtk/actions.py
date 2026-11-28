@@ -350,6 +350,11 @@ class ActionManager:
             self.win.on_toggle_right_panel_state_change,
             GLib.Variant.new_boolean(config.right_panel_visible),
         )
+        self._add_stateful_action(
+            "toggle_sidebar",
+            self.win.on_toggle_sidebar_state_change,
+            GLib.Variant.new_boolean(config.sidebar_visible),
+        )
 
         # 3D View Control Actions
         self._add_action("view_top", self.win.on_view_top)

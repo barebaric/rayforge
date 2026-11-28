@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 
 from rayforge.context import get_context
+from rayforge.core.layer import Layer
 from rayforge.core.workpiece import WorkPiece
 from rayforge.machine.models.machine import Machine
 
@@ -29,11 +30,24 @@ import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 gi.require_version("Gdk", "4.0")
-from gi.repository import Adw, GLib
+from gi.repository import Adw, GLib, Gtk
 
 from rayforge.ui_gtk.mainwindow import MainWindow
 
 logger = logging.getLogger(__name__)
+
+
+def _find_entry(widget):
+    """Finds the inline rename entry inside a row."""
+    if isinstance(widget, Gtk.Entry):
+        return widget
+    child = widget.get_first_child()
+    while child:
+        found = _find_entry(child)
+        if found is not None:
+            return found
+        child = child.get_next_sibling()
+    return None
 
 
 # Helper functions adapted for robust testing
@@ -130,7 +144,7 @@ def app_and_window(ui_context_initializer, request):
 
 @pytest.mark.ui
 def test_rename_focuses_inline_name_entry(app_and_window, assets_path):
-    """F2 rename edits the selected item's name inline, without a dialog."""
+    """F2 rename edits the selected item's name inline in the sidebar."""
     _app, win = app_and_window
     project = assets_path / "doceditor" / "assets" / "workpieces_project.ryp"
     assert win.doc_editor.file.load_project_from_path(project)
@@ -138,11 +152,90 @@ def test_rename_focuses_inline_name_entry(app_and_window, assets_path):
 
     wp = next(iter(win.doc_editor.doc.get_descendants(of_type=WorkPiece)))
     win.surface.select_items([wp])
+    process_events_for_duration(0.2)
     win.on_menu_rename(None, None)
+    process_events_for_duration(0.2)
+
+    row = win.sidebar.parts_tree.find_row(wp.uid)
+    assert row is not None
+    entry = _find_entry(row)
+    assert entry is not None
+    assert entry.get_text() == wp.name
+
+
+@pytest.mark.ui
+def test_sidebar_shows_only_the_active_layer_parts(app_and_window):
+    _app, win = app_and_window
+    doc = win.doc_editor.doc
+    first = WorkPiece("Sidebar A")
+    doc.active_layer.add_child(first)
+
+    second_layer = Layer("Second")
+    doc.add_layer(second_layer)
+    second = WorkPiece("Sidebar B")
+    second_layer.add_child(second)
+    process_events_for_duration(0.3)
+
+    assert win.sidebar.get_visible()
+    assert win.sidebar.parts_tree.find_row(first.uid) is not None
+    assert win.sidebar.parts_tree.find_row(second.uid) is None
+
+    win.doc_editor.layer.set_active_layer(second_layer)
+    process_events_for_duration(0.3)
+    assert win.sidebar.parts_tree.find_row(first.uid) is None
+    assert win.sidebar.parts_tree.find_row(second.uid) is not None
+
+
+@pytest.mark.ui
+def test_sidebar_selection_drives_the_canvas_selection(app_and_window):
+    _app, win = app_and_window
+    wp = WorkPiece("Pick me")
+    win.doc_editor.doc.active_layer.add_child(wp)
+    process_events_for_duration(0.2)
+
+    win.sidebar.select_item(wp)
+    process_events_for_duration(0.2)
+    assert list(win.surface.get_selected_items()) == [wp]
+    row = win.sidebar.parts_tree.find_row(wp.uid)
+    assert row is not None and row.spec.selected
+
+    win.surface.select_items([])
+    process_events_for_duration(0.2)
+    row = win.sidebar.parts_tree.find_row(wp.uid)
+    assert row is not None and not row.spec.selected
+
+
+@pytest.mark.ui
+def test_toggle_sidebar_action_hides_and_restores_it(app_and_window):
+    _app, win = app_and_window
+    action = win.action_manager.get_action("toggle_sidebar")
+    config = get_context().config
+    assert win.sidebar.get_visible()
+
+    action.change_state(GLib.Variant.new_boolean(False))
+    process_events_for_duration(0.2)
+    assert not win.sidebar.get_visible()
+    assert config.sidebar_visible is False
+
+    action.change_state(GLib.Variant.new_boolean(True))
+    process_events_for_duration(0.2)
+    assert win.sidebar.get_visible()
+    assert config.sidebar_visible is True
+
+
+@pytest.mark.ui
+def test_sidebar_opens_layer_settings(app_and_window):
+    _app, win = app_and_window
+    win.sidebar._layer_settings_button.emit("clicked")
+    process_events_for_duration(0.2)
+
+    dialog = win.sidebar._layer_settings_dialog
+    assert dialog is not None
+    assert dialog.layer is win.doc_editor.doc.active_layer
+
+    win.sidebar._close_layer_settings()
     process_events_for_duration(0.1)
-    name_row = win.item_props_widget._name_row
-    assert name_row.get_visible()
-    assert name_row.get_text() == wp.name
+    assert win.sidebar._layer_settings_dialog is None
 
 
 @pytest.mark.ui

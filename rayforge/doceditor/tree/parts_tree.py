@@ -5,6 +5,7 @@ from gi.repository import Gtk
 
 from ...core.doc import Doc
 from ...core.group import Group
+from ...core.layer import Layer
 from ...core.workpiece import WorkPiece
 from .group_node import GroupNode
 from .stock_node import StockNode
@@ -29,10 +30,32 @@ class PartsTree(Gtk.Box):
         self.visibility_toggled = Signal()
 
         self._doc: Doc | None = None
+        self._layer: Layer | None = None
         self._expanded: set = set()
         self._selected: set = set()
         self._tree = TreeWidget()
         self.append(self._tree)
+
+    def set_layer(self, layer: Layer | None):
+        """Restricts the tree to one layer; None shows all layers."""
+        if self._layer is layer:
+            return
+        self._layer = layer
+        self.refresh()
+
+    def set_selected_items(self, items):
+        """Highlights the given model items, expanding their groups."""
+        for item in items:
+            parent = item.parent
+            while parent is not None:
+                if isinstance(parent, Group):
+                    self._expanded.add(parent.uid)
+                parent = parent.parent
+        uids = {item.uid for item in items}
+        if uids == self._selected:
+            return
+        self._selected = uids
+        self.refresh()
 
     def set_doc(self, doc: Doc | None):
         if self._doc is doc:
@@ -77,9 +100,10 @@ class PartsTree(Gtk.Box):
             self._tree.show([])
             return
         rows: list[Gtk.Widget] = []
-        for stock in self._doc.stock_items:
-            rows.append(StockNode(stock, 0, self._selected, self))
-        for layer in self._doc.layers:
+        layers = [self._layer] if self._layer is not None else self._doc.layers
+        for layer in layers:
+            for stock in layer.stock_items:
+                rows.append(StockNode(stock, 0, self._selected, self))
             for item in layer.content_items:
                 if isinstance(item, Group):
                     rows.extend(
@@ -109,6 +133,10 @@ class PartsTree(Gtk.Box):
 
     def on_row_renamed(self, spec, name: str):
         self.rename_requested.send(self, uid=spec.uid, name=name)
+
+    def find_row(self, uid: str):
+        """Returns the row with the given uid, or None."""
+        return self._tree.find_row(uid)
 
     def start_rename(self, uid: str) -> bool:
         """Starts inline renaming of the row with the given uid."""

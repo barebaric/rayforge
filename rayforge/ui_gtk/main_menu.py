@@ -93,6 +93,7 @@ class MainMenu(Gio.Menu):
         # View Menu
         view_menu = Gio.Menu()
         visibility_group = Gio.Menu()
+        visibility_group.append(_("Show Sidebar"), "win.toggle_sidebar")
         visibility_group.append(
             _("Show Right Panel"), "win.toggle_right_panel"
         )

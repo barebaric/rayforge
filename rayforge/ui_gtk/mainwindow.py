@@ -17,8 +17,11 @@ from ..core.config import RightPanelMode
 from ..core.group import Group
 from ..core.item import DocItem
 from ..core.registration import call_registration_hooks
+from ..core.stock import StockItem
 from ..core.undo import Command, HistoryManager
+from ..core.workpiece import WorkPiece
 from ..doceditor.editor import DocEditor
+from ..doceditor.tree.sidebar import Sidebar
 from ..machine.cmd import MachineCmd
 from ..machine.driver import find_driver_cls
 from ..machine.driver.driver import DeviceState, DeviceStatus
@@ -156,6 +159,7 @@ class MainWindow(Adw.ApplicationWindow):
         self._last_bottom_panel_height = 200
         self._saved_bottom_panel_visible = False
         self._old_doc = None  # Track previous document for signal reconnection
+        self._sidebar_item: DocItem | None = None
         self.canvas3d: Canvas3D | None = None
         self._canvas3d_vis_overlay: VisibilityOverlay | None = None
         self._surface_vis_overlay: VisibilityOverlay | None = None
@@ -292,10 +296,25 @@ class MainWindow(Adw.ApplicationWindow):
         self._connect_toolbar_signals()
         main_ui_box.append(self.toolbar)
 
+        # A horizontal paned holds the document sidebar and the canvas.
+        self.content_paned = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
+        self.content_paned.set_resize_start_child(False)
+        self.content_paned.set_resize_end_child(True)
+        self.content_paned.set_shrink_start_child(False)
+        self.content_paned.set_shrink_end_child(False)
+        self.sidebar = Sidebar(self.doc_editor)
+        self.content_paned.set_start_child(self.sidebar)
+        self._sidebar_width_timeout_id: int | None = None
+        self.content_paned.connect(
+            "notify::position", self._on_sidebar_position_changed
+        )
+        self.connect("unmap", self._on_sidebar_unmapped)
+        main_ui_box.append(self.content_paned)
+
         # Create an overlay so the right panel can float above the canvas.
         self._canvas_overlay = Gtk.Overlay()
         self._canvas_overlay.set_vexpand(True)
-        main_ui_box.append(self._canvas_overlay)
+        self.content_paned.set_end_child(self._canvas_overlay)
 
         # Apply styles
         display = Gdk.Display.get_default()
@@ -467,6 +486,11 @@ class MainWindow(Adw.ApplicationWindow):
         right_pane_box.append(self.item_revealer)
 
         self._update_workflow_views()
+
+        self.sidebar.item_selected.connect(self._on_sidebar_item_selected)
+        self.sidebar.set_doc(self.doc_editor.doc)
+        self.sidebar.set_visible(get_context().config.sidebar_visible)
+        GLib.idle_add(self._restore_sidebar_width)
 
         # Connect signals for item selection and actions
         self.surface.selection_changed.connect(self._on_selection_changed)
@@ -1668,6 +1692,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Update child views to point to the new document
         self.bottom_panel.set_doc(new_doc)
+        self.sidebar.set_doc(new_doc)
 
         # Initialize new document
         self._initialize_document()
@@ -1906,11 +1931,64 @@ class MainWindow(Adw.ApplicationWindow):
 
         self.item_props_widget.set_items(selected_items)
         self.item_revealer.set_reveal_child(bool(selected_items))
+        if selected_items:
+            self._sidebar_item = None
+        self.sidebar.set_selected_items(selected_items)
         # Revealing or hiding the item properties changes whether the
         # pane has content and thus whether it allocates space.
         self._apply_right_panel_visibility()
         self.bottom_panel.update_position_menu_sensitivity()
         self._update_actions_and_ui()
+
+    def _on_sidebar_item_selected(self, sender, item: DocItem):
+        """Shows the sidebar selection on the canvas or in the properties."""
+        if isinstance(item, (Group, WorkPiece, StockItem)):
+            self.surface.select_items([item])
+            return
+        self.surface.unselect_all()
+        self._sidebar_item = item
+        self.item_props_widget.set_items([item])
+        self.item_revealer.set_reveal_child(True)
+        self.sidebar.set_selected_items([item])
+        self._apply_right_panel_visibility()
+        self._update_actions_and_ui()
+
+    def _action_items(self) -> list[DocItem]:
+        """Items targeted by rename/remove: canvas, else sidebar."""
+        items = list(self.surface.get_selected_items())
+        if items:
+            return items
+        return [self._sidebar_item] if self._sidebar_item is not None else []
+
+    def _restore_sidebar_width(self) -> bool:
+        width = get_context().config.sidebar_width
+        if width > 0:
+            self.content_paned.set_position(width)
+        return GLib.SOURCE_REMOVE
+
+    def _on_sidebar_position_changed(self, paned, _pspec):
+        if not self.sidebar.get_visible():
+            return
+        if paned.get_position() <= 0:
+            return
+        if self._sidebar_width_timeout_id is not None:
+            GLib.source_remove(self._sidebar_width_timeout_id)
+        self._sidebar_width_timeout_id = GLib.timeout_add(
+            400, self._save_sidebar_width
+        )
+
+    def _on_sidebar_unmapped(self, _widget):
+        if self._sidebar_width_timeout_id is not None:
+            GLib.source_remove(self._sidebar_width_timeout_id)
+            self._sidebar_width_timeout_id = None
+
+    def _save_sidebar_width(self) -> bool:
+        self._sidebar_width_timeout_id = None
+        if self.sidebar.get_visible():
+            get_context().config.set_sidebar_width(
+                self.content_paned.get_position()
+            )
+        return GLib.SOURCE_REMOVE
 
     def on_config_changed(self, sender, **kwargs):
         config = get_context().config
@@ -2260,6 +2338,7 @@ class MainWindow(Adw.ApplicationWindow):
         # Update actions that don't depend on the machine state
         selected_elements = self.surface.get_selected_elements()
         has_selection = len(selected_elements) > 0
+        can_rename_or_remove = has_selection or self._sidebar_item is not None
 
         am.get_action("undo").set_enabled(
             self.doc_editor.history_manager.can_undo()
@@ -2275,8 +2354,8 @@ class MainWindow(Adw.ApplicationWindow):
         )
         am.get_action("select_all").set_enabled(doc.has_workpiece())
         am.get_action("duplicate").set_enabled(has_selection)
-        am.get_action("rename-item").set_enabled(has_selection)
-        am.get_action("remove").set_enabled(has_selection)
+        am.get_action("rename-item").set_enabled(can_rename_or_remove)
+        am.get_action("remove").set_enabled(can_rename_or_remove)
         am.get_action("clear").set_enabled(doc.has_workpiece())
 
         # Update sensitivity for Grouping actions
@@ -2357,6 +2436,16 @@ class MainWindow(Adw.ApplicationWindow):
         action.set_state(value)
         get_context().config.set_right_panel_visible(is_visible)
         self._apply_right_panel_visibility()
+
+    def on_toggle_sidebar_state_change(
+        self, action: Gio.SimpleAction, value: GLib.Variant
+    ):
+        is_visible = value.get_boolean()
+        action.set_state(value)
+        self.sidebar.set_visible(is_visible)
+        get_context().config.set_sidebar_visible(is_visible)
+        if is_visible:
+            GLib.idle_add(self._restore_sidebar_width)
 
     def _on_dialog_notification(self, sender, message: str = ""):
         """Shows a toast when requested by a child dialog."""
@@ -2817,16 +2906,18 @@ class MainWindow(Adw.ApplicationWindow):
             self.surface.select_items(newly_duplicated)
 
     def on_menu_rename(self, action, param):
-        selection = self.surface.get_selected_items()
-        if len(selection) != 1 or not isinstance(selection[0], DocItem):
+        items = self._action_items()
+        if len(items) != 1 or not isinstance(items[0], DocItem):
             return
-        # The item properties pane edits the name inline.
+        if self.sidebar.start_rename(items[0].uid):
+            return
         self.item_props_widget.begin_rename()
 
     def on_menu_remove(self, action, param):
-        items = self.surface.get_selected_items()
+        items = self._action_items()
         if items:
             self.doc_editor.edit.remove_items(list(items))
+            self._sidebar_item = None
 
     def show_about_dialog(self, action, param):
         dialog = AboutDialog(transient_for=self)

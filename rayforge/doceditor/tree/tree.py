@@ -56,14 +56,21 @@ class TreeWidget(Gtk.ScrolledWindow):
         if tail is not None:
             self._tail_box.append(tail)
 
-    def start_rename(self, uid: str) -> bool:
-        """Starts inline renaming of the row with the given uid."""
+    def find_row(self, uid: str):
+        """Returns the row with the given uid, or None."""
         from .node import NodeRow
 
         child = self._list.get_first_child()
         while child:
             if isinstance(child, NodeRow) and child.spec.uid == uid:
-                child.start_rename()
-                return True
+                return child
             child = child.get_next_sibling()
-        return False
+        return None
+
+    def start_rename(self, uid: str) -> bool:
+        """Starts inline renaming of the row with the given uid."""
+        row = self.find_row(uid)
+        if row is None:
+            return False
+        row.start_rename()
+        return True

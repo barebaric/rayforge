@@ -1,0 +1,301 @@
+"""Dialog for configuring a layer's physical setup."""
+
+from gettext import gettext as _
+from typing import TYPE_CHECKING, Optional
+
+from gi.repository import Adw, Gtk
+
+from ...context import get_context
+from ...core.layer import Layer
+from ..icons import get_icon
+from ..machine.wcs_dialog import WcsDialog
+from ..shared.patched_dialog_window import PatchedDialogWindow
+from ..shared.pref_rows.length_spin_row import LengthSpinRow
+from .material_selector import MaterialRow
+
+if TYPE_CHECKING:
+    from ...doceditor.editor import DocEditor
+
+
+class LayerSettingsDialog(PatchedDialogWindow):
+    """Configures the active layer's setup and appearance."""
+
+    def __init__(
+        self,
+        layer: Layer,
+        transient_for: Gtk.Window | None,
+        editor: Optional["DocEditor"] = None,
+        **kwargs,
+    ):
+        super().__init__(transient_for=transient_for, **kwargs)
+        self.layer = layer
+        self.editor = editor
+        self._is_initializing = True
+
+        self.set_title(_("{name} - Settings").format(name=layer.name))
+        self.set_default_size(600, -1)
+        self.set_modal(False)
+
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.set_content(main_box)
+
+        header = Adw.HeaderBar()
+        main_box.append(header)
+        close_button = Gtk.Button(label=_("Close"))
+        close_button.add_css_class("suggested-action")
+        close_button.connect("clicked", lambda w: self.close())
+        header.pack_end(close_button)
+
+        content = Adw.PreferencesPage()
+        main_box.append(content)
+
+        general_group = Adw.PreferencesGroup(
+            title=_("General"),
+            description=_(
+                "Basic layer settings such as its name and visibility."
+            ),
+        )
+        content.add(general_group)
+
+        self.name_row = Adw.EntryRow(title=_("Name"))
+        self.name_row.set_text(layer.name)
+        self.name_row.connect("changed", self._on_name_changed)
+        general_group.add(self.name_row)
+
+        self.visible_row = Adw.SwitchRow(
+            title=_("Visible"),
+            subtitle=_("Show this layer's content on the canvas"),
+        )
+        self.visible_row.set_active(layer.visible)
+        self.visible_row.connect("notify::active", self._on_visible_changed)
+        general_group.add(self.visible_row)
+
+        setup_group = Adw.PreferencesGroup(
+            title=_("Setup"),
+            description=_("The work coordinate system used for this layer."),
+        )
+        content.add(setup_group)
+
+        self._populate_wcs_store()
+        self.wcs_row = Adw.ComboRow(
+            title=_("Coordinate System"),
+            subtitle=_(
+                "The work coordinate system origin to use for this layer. "
+                "By default, use the WCS selected in the main window"
+            ),
+            model=self._wcs_store,
+        )
+        self.edit_offsets_btn = Gtk.Button(child=get_icon("edit-symbolic"))
+        self.edit_offsets_btn.set_tooltip_text(_("Edit Offsets Manually"))
+        self.edit_offsets_btn.add_css_class("flat")
+        self.edit_offsets_btn.set_valign(Gtk.Align.CENTER)
+        self.edit_offsets_btn.connect("clicked", self._on_edit_offsets_clicked)
+        self.wcs_row.add_suffix(self.edit_offsets_btn)
+        self._select_current_wcs()
+        self._update_edit_button_sensitivity()
+        self.wcs_row.connect("notify::selected", self._on_wcs_changed)
+        setup_group.add(self.wcs_row)
+
+        rotary_group = Adw.PreferencesGroup(
+            title=_("Rotary Attachment"),
+            description=_(
+                "Configure rotary attachment for cylindrical objects. "
+                "When enabled, Y-axis movements are converted to "
+                "rotational movements in degrees."
+            ),
+        )
+        content.add(rotary_group)
+
+        self.rotary_enabled_row = Adw.SwitchRow()
+        self.rotary_enabled_row.set_title(_("Enable Rotary Mode"))
+        self.rotary_enabled_row.set_subtitle(
+            _("Convert Y-axis to rotary axis")
+        )
+        self.rotary_enabled_row.set_active(layer.rotary_enabled)
+        self.rotary_enabled_row.connect(
+            "notify::active", self._on_rotary_enabled_changed
+        )
+        rotary_group.add(self.rotary_enabled_row)
+
+        self._populate_module_store()
+        self.module_row = Adw.ComboRow(
+            title=_("Rotary Module"),
+            subtitle=_("Select the rotary module for this layer"),
+            model=self._module_store,
+        )
+        self._select_current_module()
+        self.module_row.connect("notify::selected", self._on_module_changed)
+        self.module_row.set_sensitive(layer.rotary_enabled)
+        rotary_group.add(self.module_row)
+
+        self.rotary_diameter_row = LengthSpinRow(
+            _("Object Diameter"),
+            _("Diameter of the cylindrical object"),
+            lower=1,
+            upper=1000,
+            value_in_base=layer.rotary_diameter,
+        )
+        self.rotary_diameter_row.value_changed.connect(
+            self._on_rotary_diameter_changed
+        )
+        self.rotary_diameter_row.set_sensitive(layer.rotary_enabled)
+        rotary_group.add(self.rotary_diameter_row)
+
+        self.stock_material_row = MaterialRow(
+            _("Stock Material"),
+            _("Material rendered on the rotary object"),
+            on_select=self._on_stock_material_selected,
+        )
+        self.stock_material_row.set_sensitive(layer.rotary_enabled)
+        rotary_group.add(self.stock_material_row)
+        self.stock_material_row.set_material(layer.stock_material)
+
+        self._is_initializing = False
+
+        has_modules = bool(self._module_uids)
+        if not has_modules:
+            self.module_row.set_sensitive(False)
+        if not self.layer.rotary_module_uid and has_modules:
+            self.layer.set_rotary_module_uid(self._module_uids[0])
+
+    def _populate_wcs_store(self):
+        self._wcs_store = Gtk.StringList()
+        self._wcs_values: list[str | None] = [None]
+        self._wcs_store.append(_("Default"))
+        machine = get_context().machine
+        if machine:
+            for wcs in machine.supported_wcs:
+                self._wcs_store.append(wcs)
+                self._wcs_values.append(wcs)
+
+    def _select_current_wcs(self):
+        wcs = self.layer.wcs
+        if wcs and wcs in self._wcs_values:
+            self.wcs_row.set_selected(self._wcs_values.index(wcs))
+        else:
+            self.wcs_row.set_selected(0)
+
+    def _get_selected_wcs(self) -> str | None:
+        idx = self.wcs_row.get_selected()
+        if idx < len(self._wcs_values):
+            return self._wcs_values[idx]
+        return None
+
+    def _on_wcs_changed(self, row, _param):
+        if self._is_initializing:
+            return
+        wcs = self._get_selected_wcs()
+        self.layer.set_wcs(wcs)
+        self._update_edit_button_sensitivity()
+
+    def _update_edit_button_sensitivity(self):
+        wcs = self._get_selected_wcs()
+        self.edit_offsets_btn.set_sensitive(wcs is not None)
+
+    def _on_edit_offsets_clicked(self, button):
+        machine = get_context().machine
+        if not machine:
+            return
+        root = self.get_root()
+        self._edit_dialog = WcsDialog(
+            machine=machine,
+            transient_for=root if isinstance(root, Gtk.Window) else None,
+        )
+        self._edit_dialog.connect("destroy", self._on_edit_dialog_destroy)
+        self._edit_dialog.present()
+
+    def _on_edit_dialog_destroy(self, *_):
+        self._edit_dialog = None
+
+    def _populate_module_store(self):
+        self._module_store = Gtk.StringList()
+        self._module_uids: list[str] = []
+        machine = get_context().machine
+        if machine:
+            for module in sorted(
+                machine.rotary_modules.values(), key=lambda m: m.name
+            ):
+                self._module_store.append(module.name)
+                self._module_uids.append(module.uid)
+
+    def _select_current_module(self):
+        uid = self.layer.rotary_module_uid
+        if uid and uid in self._module_uids:
+            self.module_row.set_selected(self._module_uids.index(uid))
+        elif self._module_uids:
+            self.module_row.set_selected(0)
+            self.layer.set_rotary_module_uid(self._module_uids[0])
+
+    def _on_rotary_enabled_changed(self, row, _):
+        if self._is_initializing:
+            return
+        enabled = row.get_active()
+        self.module_row.set_sensitive(enabled)
+        self.rotary_diameter_row.set_sensitive(enabled)
+        self.stock_material_row.set_sensitive(enabled)
+        self.layer.set_rotary_enabled(enabled)
+        if enabled and self.layer.rotary_module_uid is None:
+            machine = get_context().machine
+            if machine:
+                default_rm = machine.get_default_rotary_module()
+                if default_rm:
+                    self.layer.set_rotary_module_uid(default_rm.uid)
+                    self.layer.set_rotary_diameter(default_rm.default_diameter)
+                    self.rotary_diameter_row.set_value_in_base_units(
+                        default_rm.default_diameter
+                    )
+
+    def _on_module_changed(self, row, _param):
+        if self._is_initializing:
+            return
+        idx = row.get_selected()
+        if idx < len(self._module_uids):
+            uid = self._module_uids[idx]
+            self.layer.set_rotary_module_uid(uid)
+            machine = get_context().machine
+            if machine:
+                rm = machine.get_rotary_module_by_uid(uid)
+                if rm:
+                    self.layer.set_rotary_diameter(rm.default_diameter)
+                    self.rotary_diameter_row.set_value_in_base_units(
+                        rm.default_diameter
+                    )
+
+    def _on_rotary_diameter_changed(self, row):
+        if self._is_initializing:
+            return
+        diameter = self.rotary_diameter_row.get_value_in_base_units()
+        self.layer.set_rotary_diameter(diameter)
+
+    def _on_stock_material_selected(self, material_uid: str | None):
+        if material_uid is None:
+            return
+        if self.editor is not None:
+            self.editor.layer.set_layer_stock_material(
+                self.layer, material_uid
+            )
+        else:
+            self.layer.set_stock_material_uid(material_uid)
+
+    def _on_name_changed(self, row):
+        if self._is_initializing:
+            return
+        new_name = row.get_text().strip()
+        if not new_name or new_name == self.layer.name:
+            return
+        if self.editor is not None:
+            self.editor.layer.rename_layer(self.layer, new_name)
+        else:
+            self.layer.name = new_name
+        self.set_title(_("{name} - Settings").format(name=new_name))
+
+    def _on_visible_changed(self, row, _param):
+        if self._is_initializing:
+            return
+        visible = row.get_active()
+        if visible == self.layer.visible:
+            return
+        if self.editor is not None:
+            self.editor.layer.set_layer_visibility(self.layer, visible)
+        else:
+            self.layer.set_visible(visible)

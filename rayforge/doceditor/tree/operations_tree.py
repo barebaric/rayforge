@@ -36,6 +36,14 @@ class OperationsTree(Gtk.Box):
         self._bar.workflow_activated.connect(self._on_workflow_activated)
         self.append(self._tree)
 
+    def set_selected_items(self, items):
+        """Highlights the given model items."""
+        uids = {item.uid for item in items}
+        if uids == self._selected:
+            return
+        self._selected = uids
+        self.refresh()
+
     def set_doc(self, doc: Doc | None):
         if self._doc is doc:
             return
@@ -100,6 +108,10 @@ class OperationsTree(Gtk.Box):
 
     def on_row_renamed(self, spec, name: str):
         self.rename_requested.send(self, uid=spec.uid, name=name)
+
+    def find_row(self, uid: str):
+        """Returns the row with the given uid, or None."""
+        return self._tree.find_row(uid)
 
     def start_rename(self, uid: str) -> bool:
         """Starts inline renaming of the row with the given uid."""

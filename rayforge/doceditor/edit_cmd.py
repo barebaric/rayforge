@@ -10,7 +10,7 @@ from typing import (
 
 from raygeo.geo import Geometry, Move
 
-from ..core.item import DocItem
+from ..core.item import DocItem, VisibleMixin
 from ..core.stock import StockItem
 from ..core.undo import (
     ChangePropertyCommand,
@@ -271,6 +271,21 @@ class EditCmd:
             property_name="name",
             new_value=new_name,
             name=_("Rename item"),
+        )
+        self._editor.history_manager.execute(command)
+
+    def set_item_visibility(self, item: DocItem, visible: bool):
+        """Sets an item's visibility with an undoable command."""
+        if not isinstance(item, VisibleMixin):
+            return
+        if item.visible == visible:
+            return
+        command = ChangePropertyCommand(
+            target=item,
+            property_name="visible",
+            new_value=visible,
+            setter_method_name="set_visible",
+            name=_("Toggle visibility"),
         )
         self._editor.history_manager.execute(command)
 
