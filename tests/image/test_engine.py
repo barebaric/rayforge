@@ -226,3 +226,26 @@ def test_empty_content_fallback(engine):
     item = plan[0]
     # Should match page bounds
     assert item.crop_window == (0, 0, 100, 100)
+
+
+def test_degenerate_layer_bounds_expand_around_content(engine):
+    """A line-only layer gets a renderable crop instead of a zero bbox."""
+    vec_result = create_vec_result(
+        document_bounds=(0, 0, 100, 100),
+        layers=[("line", (50, 10, 0, 20))],
+        is_y_down=False,
+    )
+    spec = PassthroughSpec(
+        active_layer_ids=["line"],
+        layer_import_mode=LayerImportMode.NEW_WORKFLOWS,
+    )
+
+    (item,) = engine.calculate_layout(vec_result, spec)
+
+    assert item.crop_window == pytest.approx((49.5, 10, 1, 20))
+    width_mm, height_mm = item.world_matrix.get_abs_scale()
+    assert width_mm == pytest.approx(1.0)
+    assert height_mm == pytest.approx(20.0)
+    # The line sits in the middle of the expanded crop.
+    x_norm, _y_norm = item.normalization_matrix.transform_point(50, 10)
+    assert x_norm == pytest.approx(0.5)
