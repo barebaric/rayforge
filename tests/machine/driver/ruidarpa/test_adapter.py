@@ -3230,7 +3230,7 @@ class TestTcpProtocolSetup:
     async def test_setup_stores_resolved_protocol(
         self, isolated_context, isolated_machine
     ):
-        """layer() must resolve and store the protocol from tcp_proto."""
+        """setup() must resolve and store the protocol from tcp_proto."""
         adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
         adapter.setup(udp_host="192.168.1.10", tcp_proto=True)
         assert adapter._protocol == PROTOCOL_TCP
