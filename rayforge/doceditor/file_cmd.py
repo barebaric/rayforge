@@ -600,11 +600,14 @@ class FileCmd:
             info = layers_by_id.get(layer_id)
             if reusable:
                 workflow = reusable.pop(0)
-                if info is not None and info.settings:
-                    workflow.set_steps([])
-                    ItemAssembler.apply_settings_to_workflow(
-                        workflow, info.name, info.settings
-                    )
+                if info is not None:
+                    if info.color:
+                        workflow.set_color(info.color)
+                    if info.settings:
+                        workflow.set_steps([])
+                        ItemAssembler.apply_settings_to_workflow(
+                            workflow, info.name, info.settings
+                        )
                 self._assign(workflow, workpieces)
                 dest_workflows.append(workflow)
                 pairs.extend((target_layer, wp) for wp in workpieces)
