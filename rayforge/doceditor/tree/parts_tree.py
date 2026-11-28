@@ -145,6 +145,10 @@ class PartsTree(Gtk.Box):
             y=y,
         )
 
+    def rows(self):
+        """Yields the visible node rows."""
+        return self._tree.rows()
+
     def find_row(self, uid: str):
         """Returns the row with the given uid, or None."""
         return self._tree.find_row(uid)

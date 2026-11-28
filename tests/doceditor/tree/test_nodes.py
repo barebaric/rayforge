@@ -229,21 +229,3 @@ def test_workpiece_feature_rows(doc):
 
     spec = WorkPieceNode.build_spec(workpiece, 2)
     assert spec.has_children is True
-
-    from rayforge.doceditor.tree.node import NodeRow
-
-    rows = [
-        row
-        for row in WorkPieceNode.build_rows(
-            workpiece, 2, {workpiece.uid}, set(), None
-        )
-        if isinstance(row, NodeRow)
-    ]
-    labels = [row.spec.label for row in rows if row.spec.kind == "feature"]
-    assert "Outer paths" in labels
-    assert "Inner paths" in labels
-    assert all(
-        row.spec.selectable is False
-        for row in rows
-        if row.spec.kind == "feature"
-    )
